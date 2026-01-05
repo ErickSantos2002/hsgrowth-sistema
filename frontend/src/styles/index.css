@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 1) preencher a viewport inteira */
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* 2) fundo padrão (claro) no body e no #root */
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  /* 🌞 Claro */
+  @apply bg-gray-100 text-black transition-colors;
+}
+
+/* 3) mesmo fundo no modo escuro para body, html e #root */
+.dark html,
+.dark body,
+.dark #root {
+  /* 🌚 Escuro (tema cinza moderno) */
+  background-color: #121212;
+  color: #d1d1d1;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* Ícone do calendário branco no modo escuro */
+.dark input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* 🔹 Scrollbar customizado */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #4b5563; /* cinza médio */
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #2563eb; /* azul no hover */
+}
+/* 🌑 Scrollbar no dark */
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #6b7280;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #525252;
+}
+
+/* 📊 Variáveis base */
+@layer base {
+  :root {
+    --chart-text: #000000;
+    --chart-axis: #475569;
+
+    /* 🔔 Toast notifications - Light mode */
+    --toast-bg: #ffffff;
+    --toast-color: #1f2937;
+    --toast-border: #e5e7eb;
+  }
+  .dark {
+    --chart-text: #e0e0e0;
+    --chart-axis: #a3a3a3;
+
+    /* 🎨 Paleta adicional para componentes */
+    --bg-primary: #1e1e1e; /* fundo principal */
+    --bg-secondary: #2a2a2a; /* cards */
+    --text-primary: #d1d1d1; /* texto */
+    --border-color: #3a3a3a; /* bordas */
+
+    /* 🔔 Toast notifications - Dark mode */
+    --toast-bg: #1e1e1e;
+    --toast-color: #d1d1d1;
+    --toast-border: #2d2d2d;
+  }
+}
+
+/* Exemplo opcional:
+.dark .card {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+*/

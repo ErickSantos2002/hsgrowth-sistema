@@ -1,0 +1,7 @@
+"""
+Endpoints da API v1.
+Centraliza imports de todos os routers.
+"""
+from app.api.v1.endpoints import auth, users, boards, cards, gamification, automations, transfers
+
+__all__ = ["auth", "users", "boards", "cards", "gamification", "automations", "transfers"]
