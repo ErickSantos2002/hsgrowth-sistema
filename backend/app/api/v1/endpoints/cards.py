@@ -22,7 +22,69 @@ from app.models.user import User
 router = APIRouter()
 
 
-@router.get("", response_model=CardListResponse, summary="Listar cards")
+@router.get(
+    "",
+    response_model=CardListResponse,
+    summary="Listar cards",
+    description="""
+    Lista todos os cards de um board específico com paginação e filtros avançados.
+
+    **Parâmetros obrigatórios:**
+    - `board_id`: ID do board que contém os cards
+
+    **Filtros disponíveis:**
+    - `page`: Número da página (padrão: 1)
+    - `page_size`: Quantidade por página (padrão: 50, máximo: 100)
+    - `assigned_to_id`: Filtrar por responsável (ID do usuário)
+    - `is_won`: Filtrar apenas cards ganhos (true/false)
+    - `is_lost`: Filtrar apenas cards perdidos (true/false)
+
+    **Multi-tenancy:**
+    - Retorna apenas cards da conta do usuário autenticado
+    - Isolamento automático por `account_id`
+
+    **Resposta:**
+    - Lista de cards com dados completos (valor, responsável, lista, datas)
+    - Metadados de paginação (total, páginas)
+    - Cards deletados não são retornados
+
+    **Use este endpoint para:**
+    - Exibir pipeline de vendas (quadro Kanban)
+    - Listar cards por vendedor
+    - Filtrar cards ganhos/perdidos para relatórios
+    """,
+    responses={
+        200: {
+            "description": "Lista de cards retornada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "cards": [
+                            {
+                                "id": 1,
+                                "title": "Proposta - Empresa XYZ",
+                                "description": "Negociação de contrato anual",
+                                "list_name": "Negociação",
+                                "value": 50000.00,
+                                "assigned_to_name": "João Silva",
+                                "due_date": "2026-01-15",
+                                "is_won": False,
+                                "is_lost": False,
+                                "created_at": "2026-01-01T10:00:00"
+                            }
+                        ],
+                        "total": 42,
+                        "page": 1,
+                        "page_size": 50,
+                        "total_pages": 1
+                    }
+                }
+            }
+        },
+        401: {"description": "Não autenticado"},
+        404: {"description": "Board não encontrado"}
+    }
+)
 async def list_cards(
     board_id: int = Query(..., description="ID do board"),
     page: int = Query(1, ge=1, description="Número da página"),
@@ -34,14 +96,7 @@ async def list_cards(
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Lista cards de um board com paginação e filtros.
-
-    - **board_id**: ID do board (obrigatório)
-    - **page**: Número da página (padrão: 1)
-    - **page_size**: Tamanho da página (padrão: 50, máx: 100)
-    - **assigned_to_id**: Filtrar por usuário responsável (opcional)
-    - **is_won**: Filtrar por cards ganhos (opcional)
-    - **is_lost**: Filtrar por cards perdidos (opcional)
+    Endpoint de listagem de cards.
     """
     service = CardService(db)
     return service.list_cards(
@@ -105,22 +160,83 @@ async def get_card(
     )
 
 
-@router.post("", response_model=CardResponse, summary="Criar card", status_code=201)
+@router.post(
+    "",
+    response_model=CardResponse,
+    summary="Criar card",
+    description="""
+    Cria um novo card (lead/oportunidade) no pipeline de vendas.
+
+    **Campos obrigatórios:**
+    - `title`: Título descritivo do card
+    - `list_id`: ID da lista onde o card será criado
+
+    **Campos opcionais:**
+    - `description`: Descrição detalhada da oportunidade
+    - `assigned_to_id`: ID do vendedor responsável
+    - `value`: Valor monetário estimado (decimal)
+    - `due_date`: Data de vencimento/follow-up (formato: YYYY-MM-DD)
+    - `contact_info`: JSON com dados de contato (nome, email, telefone, etc)
+
+    **Automações:**
+    - Dispara trigger `card_created` para automações configuradas
+    - Pode atribuir pontos de gamificação automaticamente
+    - Pode enviar notificações para o responsável
+
+    **Posicionamento:**
+    - Card é adicionado ao final da lista automaticamente
+    - Position é calculada com base nos cards existentes
+
+    **Validações:**
+    - Lista deve existir e pertencer à conta do usuário
+    - Assigned_to_id deve ser usuário da mesma conta
+    - Value deve ser número positivo ou zero
+
+    **Gamificação:**
+    - Criador pode ganhar pontos pela criação
+    - Responsável pode ganhar pontos ao converter
+    """,
+    status_code=201,
+    responses={
+        201: {
+            "description": "Card criado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 42,
+                        "title": "Proposta - Empresa ABC",
+                        "description": "Contrato de consultoria anual",
+                        "list_id": 3,
+                        "list_name": "Qualificação",
+                        "assigned_to_id": 5,
+                        "assigned_to_name": "Ana Santos",
+                        "value": 75000.00,
+                        "due_date": "2026-01-20",
+                        "contact_info": {
+                            "name": "Carlos Silva",
+                            "email": "carlos@abc.com",
+                            "phone": "+55 11 98765-4321"
+                        },
+                        "is_won": False,
+                        "is_lost": False,
+                        "position": 10.0,
+                        "created_at": "2026-01-06T16:00:00"
+                    }
+                }
+            }
+        },
+        400: {"description": "Dados inválidos"},
+        401: {"description": "Não autenticado"},
+        404: {"description": "Lista não encontrada"}
+    }
+)
 async def create_card(
     card_data: CardCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Cria um novo card.
-
-    - **title**: Título do card
-    - **description**: Descrição (opcional)
-    - **list_id**: ID da lista onde o card será criado
-    - **assigned_to_id**: ID do usuário responsável (opcional)
-    - **value**: Valor monetário (opcional)
-    - **due_date**: Data de vencimento (opcional)
-    - **contact_info**: Informações de contato em JSON (opcional)
+    Endpoint de criação de card.
     """
     service = CardService(db)
     card = service.create_card(card_data, current_user)

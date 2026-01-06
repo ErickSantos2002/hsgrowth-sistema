@@ -14,7 +14,62 @@ from app.models.user import User
 router = APIRouter()
 
 
-@router.get("", response_model=UserListResponse, summary="Listar usuários")
+@router.get(
+    "",
+    response_model=UserListResponse,
+    summary="Listar usuários",
+    description="""
+    Lista todos os usuários da conta do usuário autenticado com paginação.
+
+    **Filtros disponíveis:**
+    - `page`: Número da página (padrão: 1, mínimo: 1)
+    - `page_size`: Quantidade de usuários por página (padrão: 50, máximo: 100)
+    - `is_active`: Filtrar por status ativo (true/false, opcional)
+
+    **Multi-tenancy:**
+    - Retorna apenas usuários da mesma conta do usuário autenticado
+    - Isolamento automático por `account_id`
+
+    **Resposta:**
+    - Lista de usuários com dados básicos e relacionamentos (role, account)
+    - Metadados de paginação (total, páginas, página atual)
+    - Usuários deletados (soft delete) não são retornados
+
+    **Ordenação:**
+    - Por padrão ordenado por `created_at` (mais recentes primeiro)
+    """,
+    responses={
+        200: {
+            "description": "Lista de usuários retornada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "users": [
+                            {
+                                "id": 1,
+                                "email": "joao@exemplo.com",
+                                "username": "joao",
+                                "full_name": "João Silva",
+                                "role_name": "Vendedor",
+                                "account_name": "HSGrowth",
+                                "is_active": True,
+                                "created_at": "2026-01-06T10:00:00"
+                            }
+                        ],
+                        "total": 15,
+                        "page": 1,
+                        "page_size": 50,
+                        "total_pages": 1
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Não autenticado",
+            "content": {"application/json": {"example": {"detail": "Not authenticated"}}}
+        }
+    }
+)
 async def list_users(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
@@ -23,11 +78,7 @@ async def list_users(
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Lista todos os usuários da conta do usuário autenticado.
-
-    - **page**: Número da página (padrão: 1)
-    - **page_size**: Tamanho da página (padrão: 50, máx: 100)
-    - **is_active**: Filtrar por usuários ativos/inativos (opcional)
+    Endpoint de listagem de usuários.
     """
     service = UserService(db)
     return service.list_users(
@@ -38,13 +89,64 @@ async def list_users(
     )
 
 
-@router.get("/me", response_model=UserResponse, summary="Dados do usuário logado")
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="Dados do usuário logado",
+    description="""
+    Retorna todos os dados do usuário atualmente autenticado.
+
+    **Use este endpoint para:**
+    - Obter informações do perfil do usuário logado
+    - Verificar permissões e role
+    - Exibir dados no frontend (header, perfil, etc)
+
+    **Dados retornados:**
+    - Informações básicas (id, email, username, nome completo)
+    - Dados da conta e role (account_name, role_name)
+    - Metadados (last_login_at, created_at, updated_at)
+    - Avatar e telefone (se preenchidos)
+
+    **Autenticação:**
+    - Requer token JWT válido no header Authorization
+    - Bearer token deve estar ativo e não expirado
+    """,
+    responses={
+        200: {
+            "description": "Dados do usuário retornados com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "email": "joao@exemplo.com",
+                        "username": "joao",
+                        "full_name": "João Silva",
+                        "avatar_url": "https://exemplo.com/avatar.jpg",
+                        "phone": "+55 11 98765-4321",
+                        "account_id": 1,
+                        "account_name": "HSGrowth",
+                        "role_id": 2,
+                        "role_name": "Vendedor",
+                        "is_active": True,
+                        "last_login_at": "2026-01-06T14:30:00",
+                        "created_at": "2025-12-01T10:00:00",
+                        "updated_at": "2026-01-06T14:30:00"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Não autenticado ou token inválido",
+            "content": {"application/json": {"example": {"detail": "Not authenticated"}}}
+        }
+    }
+)
 async def get_current_user_data(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Retorna os dados do usuário autenticado.
+    Endpoint de dados do usuário autenticado.
     """
     # Converte para response schema
     return UserResponse(
@@ -98,23 +200,84 @@ async def get_user(
     )
 
 
-@router.post("", response_model=UserResponse, summary="Criar usuário", status_code=201)
+@router.post(
+    "",
+    response_model=UserResponse,
+    summary="Criar usuário",
+    description="""
+    Cria um novo usuário no sistema.
+
+    **Campos obrigatórios:**
+    - `email`: Email único (formato válido)
+    - `username`: Nome de usuário único (3-30 caracteres)
+    - `password`: Senha forte (mínimo 6 caracteres)
+    - `full_name`: Nome completo do usuário
+
+    **Campos opcionais:**
+    - `account_id`: ID da conta (usa conta do usuário logado se não fornecido)
+    - `role_id`: ID do role (padrão: 2 - salesperson)
+    - `avatar_url`: URL do avatar
+    - `phone`: Telefone de contato
+
+    **Validações:**
+    - Email deve ser único no sistema
+    - Username deve ser único no sistema
+    - Senha é automaticamente criptografada com bcrypt
+    - Email deve ter formato válido
+
+    **Permissões:**
+    - TODO: Apenas admins e managers devem poder criar usuários
+    - Usuários criados pertencem à mesma conta do criador
+
+    **Segurança:**
+    - Senha nunca é retornada na resposta
+    - Hash bcrypt com salt automático
+    """,
+    status_code=201,
+    responses={
+        201: {
+            "description": "Usuário criado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 10,
+                        "email": "maria@exemplo.com",
+                        "username": "maria",
+                        "full_name": "Maria Santos",
+                        "account_id": 1,
+                        "account_name": "HSGrowth",
+                        "role_id": 2,
+                        "role_name": "Vendedor",
+                        "is_active": True,
+                        "created_at": "2026-01-06T15:30:00"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Email ou username já existe",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "email_exists": {"value": {"detail": "Email já cadastrado"}},
+                        "username_exists": {"value": {"detail": "Nome de usuário já cadastrado"}}
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Não autenticado",
+            "content": {"application/json": {"example": {"detail": "Not authenticated"}}}
+        }
+    }
+)
 async def create_user(
     user_data: UserCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Cria um novo usuário.
-
-    Nota: Em produção, este endpoint deve ser restrito a admins.
-
-    - **email**: Email único do usuário
-    - **username**: Nome de usuário único
-    - **password**: Senha (mínimo 6 caracteres)
-    - **full_name**: Nome completo
-    - **account_id**: ID da conta
-    - **role_id**: ID do role
+    Endpoint de criação de usuário.
     """
     # TODO: Adicionar verificação de permissão (apenas admins)
     service = UserService(db)

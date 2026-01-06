@@ -1,0 +1,237 @@
+version: '3.8'
+
+services:
+  # ==================== PostgreSQL Database ====================
+  postgres:
+    image: postgres:15-alpine
+    container_name: hsgrowth-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-hsgrowth}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hsgrowth123}
+      POSTGRES_DB: ${DB_NAME:-hsgrowth_crm}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-hsgrowth} -d ${DB_NAME:-hsgrowth_crm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hsgrowth-network
+
+  # ==================== Redis Cache & Queue ====================
+  redis:
+    image: redis:7-alpine
+    container_name: hsgrowth-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hsgrowth-network
+
+  # ==================== FastAPI Application ====================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: ${ENVIRONMENT:-production}
+    container_name: hsgrowth-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Application
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-False}
+      HOST: ${HOST:-0.0.0.0}
+      PORT: ${PORT:-8000}
+      WORKERS: ${WORKERS:-4}
+
+      # Database
+      DATABASE_URL: postgresql://${DB_USER:-hsgrowth}:${DB_PASSWORD:-hsgrowth123}@postgres:5432/${DB_NAME:-hsgrowth_crm}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-hsgrowth}
+      DB_PASSWORD: ${DB_PASSWORD:-hsgrowth123}
+      DB_NAME: ${DB_NAME:-hsgrowth_crm}
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: ${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
+
+      # Redis & Celery
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123}
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+
+      # Email (Microsoft 365)
+      SMTP_HOST: ${SMTP_HOST:-smtp.office365.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-HSGrowth CRM}
+
+      # Frontend
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:5173","http://localhost:3000"]}
+
+      # Logs
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      UVICORN_LOG_LEVEL: info
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-90}
+
+      # Seed (apenas dev)
+      RUN_SEED: ${RUN_SEED:-false}
+
+    volumes:
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - hsgrowth-network
+
+  # ==================== Celery Worker ====================
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: ${ENVIRONMENT:-production}
+    container_name: hsgrowth-celery-worker
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app worker --loglevel=${LOG_LEVEL:-info} --concurrency=${CELERY_WORKERS:-4}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Mesmas variáveis da API
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-False}
+
+      # Database
+      DATABASE_URL: postgresql://${DB_USER:-hsgrowth}:${DB_PASSWORD:-hsgrowth123}@postgres:5432/${DB_NAME:-hsgrowth_crm}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-hsgrowth}
+      DB_PASSWORD: ${DB_PASSWORD:-hsgrowth123}
+      DB_NAME: ${DB_NAME:-hsgrowth_crm}
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: ${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
+
+      # Redis & Celery
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123}
+
+      # Email
+      SMTP_HOST: ${SMTP_HOST:-smtp.office365.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-HSGrowth CRM}
+
+      # Logs
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-90}
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - hsgrowth-network
+
+  # ==================== Celery Beat (Scheduler) ====================
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: ${ENVIRONMENT:-production}
+    container_name: hsgrowth-celery-beat
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app beat --loglevel=${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Mesmas variáveis da API
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-False}
+
+      # Database
+      DATABASE_URL: postgresql://${DB_USER:-hsgrowth}:${DB_PASSWORD:-hsgrowth123}@postgres:5432/${DB_NAME:-hsgrowth_crm}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-hsgrowth}
+      DB_PASSWORD: ${DB_PASSWORD:-hsgrowth123}
+      DB_NAME: ${DB_NAME:-hsgrowth_crm}
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: ${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
+
+      # Redis & Celery
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123}
+
+      # Logs
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-90}
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - hsgrowth-network
+
+# ==================== Networks ====================
+networks:
+  hsgrowth-network:
+    driver: bridge
+
+# ==================== Volumes ====================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

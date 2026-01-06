@@ -8,7 +8,7 @@ HSGrowth CRM é um sistema completo de Customer Relationship Management (CRM) fo
 
 ### Status de Implementação
 
-**Progresso Geral:** 9 de 18 fases concluídas (50%)
+**Progresso Geral:** 17 de 18 fases concluídas (94%)
 
 #### ✅ Módulos Implementados
 
@@ -19,17 +19,18 @@ HSGrowth CRM é um sistema completo de Customer Relationship Management (CRM) fo
 - **Gamificação** - Sistema de pontos, badges e rankings periódicos
 - **Automações** - Automações trigger e scheduled com histórico de execuções
 - **Transferências** - Transferência de cards entre vendedores com fluxo de aprovação
+- **Relatórios e Dashboard** - KPIs, relatórios de vendas, conversão e transferências
+- **Notificações In-App** - Sistema completo de notificações para usuários
+- **Serviço de Email** - Envio de emails via SMTP Microsoft 365 com templates HTML
+- **Módulo Admin** - Endpoints administrativos para gestão do sistema
+- **Workers Assíncronos** - Celery para tasks assíncronas e APScheduler para cron jobs
+- **Testes Automatizados** - Suite completa de testes unitários e de integração
+- **Scripts Utilitários** - Scripts para seed, backup, importação e manutenção
+- **Deploy e Produção** - Docker, docker-compose, multi-stage builds e scripts de inicialização
 
 #### 🚧 Em Desenvolvimento
 
-- Relatórios e Dashboard
-- Notificações In-App
-- Serviço de Email
-- Módulo Admin
-- Workers Assíncronos
-- Testes Automatizados
-- Scripts Utilitários
-- Deploy e Documentação
+- Documentação Final (Swagger/OpenAPI)
 
 ## 🚀 Tecnologias
 
@@ -40,6 +41,9 @@ HSGrowth CRM é um sistema completo de Customer Relationship Management (CRM) fo
 - **Pydantic** 2.5.3 - Validação de dados
 - **Python-Jose** - JWT tokens
 - **Passlib** - Hash de senhas com bcrypt
+- **Celery** - Processamento assíncrono de tarefas
+- **Redis** - Broker para Celery e cache
+- **APScheduler** - Agendador de tarefas periódicas (cron jobs)
 - **Loguru** - Sistema de logging
 
 ## 📁 Estrutura do Projeto
@@ -70,6 +74,10 @@ backend/
 │   ├── repositories/          # Camada de acesso a dados
 │   ├── services/              # Lógica de negócio
 │   ├── middleware/            # Middlewares
+│   ├── workers/               # Celery e APScheduler
+│   │   ├── celery_app.py
+│   │   ├── tasks.py
+│   │   └── scheduler.py
 │   └── main.py               # Entry point
 ├── alembic/                   # Migrations
 ├── tests/                     # Testes (a implementar)
@@ -81,15 +89,237 @@ backend/
 └── README.md
 ```
 
-## 🔧 Instalação
+## 📝 Correções Recentes (06/01/2026)
 
-### Pré-requisitos
+Foram realizadas várias correções na infraestrutura Docker e na suite de testes:
+
+### Correções de Infraestrutura
+
+1. **LOG_LEVEL Case Sensitivity** - Resolvido conflito entre Loguru (uppercase) e Uvicorn (lowercase)
+   - Adicionada variável `UVICORN_LOG_LEVEL=info` no docker-compose.yml
+   - Modificado `scripts/start.sh` para usar a variável correta
+
+2. **Incompatibilidade bcrypt/passlib** - Fixada versão do bcrypt para evitar erros
+   - Adicionado `bcrypt==4.0.1` no requirements.txt (compatível com passlib 1.7.4)
+   - Resolvido erro: `ValueError: password cannot be longer than 72 bytes`
+
+3. **Health Check do PostgreSQL** - Corrigido erro "database does not exist"
+   - Adicionado parâmetro `-d ${DB_NAME}` ao pg_isready no docker-compose.yml
+   - PostgreSQL agora verifica conexão ao banco correto (hsgrowth_crm)
+
+4. **Imports Incorretos** - Corrigidos múltiplos imports de módulo inexistente
+   - `app.core.database` → `app.db.session` e `app.db.base`
+   - Arquivos corrigidos: tasks.py, scheduler.py, conftest.py
+
+5. **Ferramentas CLI no Docker** - Adicionadas ao Dockerfile
+   - postgresql-client (para pg_isready)
+   - redis-tools (para redis-cli)
+
+### Correções nos Testes
+
+1. **Fixtures de Usuários** - Corrigida sintaxe no conftest.py
+   - Criada fixture `test_roles` para criar roles no banco
+   - Corrigido: `password` → `password_hash`
+   - Corrigido: `role` (string) → `role_id` (FK)
+
+2. **Testes de Usuários** - Corrigidos em test_users.py
+   - 3 instâncias de User criadas incorretamente
+   - Adicionado parâmetro `test_roles` nas funções de teste
+
+### Status Atual dos Containers
+
+- ✅ **PostgreSQL**: Healthy (sem erros)
+- ✅ **Redis**: Healthy
+- ✅ **API**: Healthy (rodando com Uvicorn)
+- ⚠️  **Celery Workers**: Unhealthy (não afeta testes, correção futura)
+
+## 🔧 Instalação e Deploy
+
+### Opção 1: Deploy com Docker (Recomendado)
+
+A maneira mais rápida e fácil de rodar o sistema completo em produção.
+
+#### Pré-requisitos
+
+- Docker 20.10 ou superior
+- Docker Compose 2.0 ou superior
+
+#### Passo a Passo
+
+1. **Clone o repositório**
+
+```bash
+git clone https://github.com/seu-usuario/hsgrowth-sistema.git
+cd hsgrowth-sistema/backend
+```
+
+2. **Configure as variáveis de ambiente**
+
+Copie o arquivo de exemplo e edite com suas configurações:
+
+```bash
+cp .env.example .env
+```
+
+Edite o arquivo `.env` e configure as variáveis OBRIGATÓRIAS:
+
+```env
+# OBRIGATÓRIO: Gere uma chave secreta forte
+# Exemplo: python -c "import secrets; print(secrets.token_urlsafe(32))"
+JWT_SECRET=sua-chave-secreta-super-segura-aqui
+
+# OBRIGATÓRIO: Defina senhas fortes
+DB_PASSWORD=senha-forte-do-postgres
+REDIS_PASSWORD=senha-forte-do-redis
+
+# OBRIGATÓRIO: Configuração de email (Microsoft 365)
+SMTP_USER=seu_email@empresa.com
+SMTP_PASSWORD=sua_senha_do_email
+SMTP_FROM=seu_email@empresa.com
+
+# OPCIONAL: URL do frontend para CORS
+FRONTEND_URL=http://seu-dominio.com
+CORS_ORIGINS=["http://seu-dominio.com","http://localhost:5173"]
+```
+
+3. **Inicie os containers**
+
+```bash
+# Modo produção (padrão)
+docker-compose up -d
+
+# Para desenvolvimento com logs visíveis
+docker-compose up
+```
+
+Isso iniciará automaticamente:
+- **PostgreSQL** (porta 5432) - Banco de dados
+- **Redis** (porta 6379) - Cache e message broker
+- **API** (porta 8000) - Servidor FastAPI
+- **Celery Worker** - Processamento assíncrono
+- **Celery Beat** - Agendador de tarefas
+
+4. **Verifique se os serviços estão rodando**
+
+```bash
+docker-compose ps
+```
+
+Todos devem estar com status "healthy".
+
+5. **Acesse a API**
+
+A API estará disponível em `http://localhost:8000`
+
+- **Swagger UI:** http://localhost:8000/docs
+- **Health Check:** http://localhost:8000/health
+
+6. **Popule o banco com dados iniciais (opcional)**
+
+```bash
+docker-compose exec api python scripts/seed_database.py
+```
+
+Credenciais criadas:
+- Admin: `admin@demo.com` / `admin123`
+- Manager: `carlos@demo.com` / `manager123`
+
+#### Comandos Úteis do Docker
+
+```bash
+# Ver logs de todos os serviços
+docker-compose logs -f
+
+# Ver logs de um serviço específico
+docker-compose logs -f api
+docker-compose logs -f celery-worker
+
+# Parar todos os containers
+docker-compose down
+
+# Parar e remover volumes (CUIDADO: apaga o banco!)
+docker-compose down -v
+
+# Recriar containers após mudanças
+docker-compose up -d --build
+
+# Executar comandos dentro do container
+docker-compose exec api bash
+docker-compose exec api python scripts/create_admin.py
+
+# Ver status dos containers
+docker-compose ps
+
+# Reiniciar um serviço específico
+docker-compose restart api
+```
+
+#### Estrutura de Serviços Docker
+
+O `docker-compose.yml` define 5 serviços:
+
+1. **postgres** - PostgreSQL 15 Alpine
+   - Volume persistente para dados
+   - Health check configurado
+   - Porta: 5432
+
+2. **redis** - Redis 7 Alpine
+   - Volume persistente para dados
+   - Autenticação com senha
+   - Porta: 6379
+
+3. **api** - FastAPI Application
+   - Build multi-stage otimizado
+   - Múltiplos workers em produção
+   - Auto-reload em desenvolvimento
+   - Health check em `/health`
+   - Porta: 8000
+
+4. **celery-worker** - Worker Assíncrono
+   - Processa tasks em background
+   - 4 workers concorrentes (configurável)
+   - Conectado ao Redis e PostgreSQL
+
+5. **celery-beat** - Agendador de Tarefas
+   - Executa cron jobs periódicos
+   - 9 jobs configurados (rankings, backups, etc)
+
+#### Volumes Persistentes
+
+Os dados são persistidos mesmo após parar os containers:
+
+- `postgres_data` - Dados do PostgreSQL
+- `redis_data` - Dados do Redis
+- `./logs` - Logs da aplicação (montado como volume)
+- `./backups` - Backups do banco (montado como volume)
+
+#### Multi-Stage Build
+
+O Dockerfile utiliza multi-stage build para otimização:
+
+**Stage 1 (builder):**
+- Instala todas as dependências em um virtual environment
+- Compila pacotes Python
+
+**Stage 2 (runtime):**
+- Imagem mínima com apenas runtime
+- Copia virtual environment do builder
+- Usuário non-root (appuser) para segurança
+- Health check configurado
+- Tamanho final: ~350MB
+
+### Opção 2: Instalação Manual (Desenvolvimento)
+
+Para desenvolvimento local sem Docker.
+
+#### Pré-requisitos
 
 - Python 3.11 ou superior
 - PostgreSQL 14 ou superior
+- Redis 7 ou superior
 - pip (gerenciador de pacotes Python)
 
-### Passo a Passo
+#### Passo a Passo
 
 1. **Clone o repositório**
 
@@ -104,56 +334,132 @@ cd hsgrowth-sistema/backend
 pip install -r requirements.txt
 ```
 
-3. **Configure as variáveis de ambiente**
+3. **Instale e inicie PostgreSQL e Redis**
 
-Crie um arquivo `.env` na raiz do backend:
+**PostgreSQL:**
+```bash
+# Ubuntu/Debian
+sudo apt install postgresql postgresql-contrib
+sudo systemctl start postgresql
+
+# macOS
+brew install postgresql
+brew services start postgresql
+
+# Criar banco de dados
+psql -U postgres
+CREATE DATABASE hsgrowth_crm;
+CREATE USER hsgrowth WITH PASSWORD 'sua_senha';
+GRANT ALL PRIVILEGES ON DATABASE hsgrowth_crm TO hsgrowth;
+\q
+```
+
+**Redis:**
+```bash
+# Ubuntu/Debian
+sudo apt install redis-server
+sudo systemctl start redis
+
+# macOS
+brew install redis
+brew services start redis
+```
+
+4. **Configure as variáveis de ambiente**
+
+Copie e edite o arquivo `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Configure no mínimo:
 
 ```env
 # Database
-DATABASE_URL=postgresql://usuario:senha@localhost:5432/hsgrowth
+DATABASE_URL=postgresql://hsgrowth:sua_senha@localhost:5432/hsgrowth_crm
 
-# JWT
+# JWT (OBRIGATÓRIO: gere uma chave forte)
 JWT_SECRET=sua-chave-secreta-super-segura
 JWT_ALGORITHM=HS256
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=480
 JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=  # deixe vazio se não configurou senha
+
+# Celery
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+
+# Email (Microsoft 365)
+SMTP_HOST=smtp.office365.com
+SMTP_PORT=587
+SMTP_USER=seu_email@empresa.com
+SMTP_PASSWORD=sua_senha
+SMTP_FROM=seu_email@empresa.com
+
 # Application
 PROJECT_NAME="HSGrowth CRM API"
 VERSION=1.0.0
 DEBUG=True
+ENVIRONMENT=development
 
-# CORS (opcional)
-BACKEND_CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
-
-# Transferências (opcional)
-TRANSFER_APPROVAL_REQUIRED=False
+# CORS
+FRONTEND_URL=http://localhost:5173
+CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
 ```
 
-4. **Execute as migrations**
+5. **Execute as migrations**
 
 ```bash
 alembic upgrade head
 ```
 
-5. **Popule o banco com dados iniciais (opcional)**
+6. **Popule o banco com dados iniciais (opcional)**
 
 ```bash
 python scripts/seed_database.py
 ```
 
 Isso criará:
-- Conta padrão: HSGrowth
-- Usuário admin: `admin@hsgrowth.com` / `admin123`
-- Roles: admin, manager, salesperson
+- Conta padrão: Demo HSGrowth
+- Admin: `admin@demo.com` / `admin123`
+- Manager: `carlos@demo.com` / `manager123`
+- Vendedores: `ana@demo.com`, `bruno@demo.com`, `carla@demo.com` / `sales123`
 
-6. **Inicie o servidor**
+7. **Inicie os serviços**
 
+Você precisará de 3 terminais:
+
+**Terminal 1 - API:**
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Terminal 2 - Celery Worker:**
+```bash
+celery -A app.workers.celery_app worker --loglevel=info --concurrency=4
+```
+
+**Terminal 3 - Celery Beat (Agendador):**
+```bash
+celery -A app.workers.celery_app beat --loglevel=info
 ```
 
 A API estará disponível em `http://localhost:8000`
+
+**Dica:** Para facilitar o desenvolvimento, você pode usar o Docker apenas para PostgreSQL e Redis, e rodar a API localmente:
+
+```bash
+# Apenas banco de dados
+docker-compose up -d postgres redis
+
+# API local
+uvicorn app.main:app --reload
+```
 
 ## 📚 Documentação da API
 
@@ -162,6 +468,134 @@ Após iniciar o servidor, acesse:
 - **Swagger UI (interativo):** http://localhost:8000/docs
 - **ReDoc:** http://localhost:8000/redoc
 - **OpenAPI JSON:** http://localhost:8000/openapi.json
+
+## 🧪 Testes
+
+O projeto possui uma suite completa de testes automatizados com pytest.
+
+### Estrutura de Testes
+
+```
+tests/
+├── conftest.py              # Fixtures compartilhadas
+├── unit/                    # Testes unitários
+│   ├── test_auth.py        # 50+ testes de autenticação
+│   ├── test_users.py       # 30+ testes de usuários
+│   ├── test_cards.py       # 35+ testes de cards
+│   └── test_gamification.py # 25+ testes de gamificação
+└── integration/             # Testes de integração
+    └── test_api_flows.py   # Fluxos completos end-to-end
+```
+
+### Rodando os Testes
+
+**Rodar todos os testes:**
+```bash
+pytest
+```
+
+**Rodar apenas testes unitários:**
+```bash
+pytest tests/unit/
+```
+
+**Rodar apenas testes de integração:**
+```bash
+pytest tests/integration/
+```
+
+**Rodar testes de um módulo específico:**
+```bash
+pytest tests/unit/test_auth.py
+```
+
+**Rodar com cobertura de código:**
+```bash
+pytest --cov=app --cov-report=html
+```
+
+**Rodar testes com markers:**
+```bash
+pytest -m auth          # Apenas testes de autenticação
+pytest -m "not slow"    # Excluir testes lentos
+```
+
+### Cobertura de Testes
+
+A suite de testes cobre:
+- ✅ Autenticação (login, registro, tokens, recuperação de senha)
+- ✅ Gestão de usuários (CRUD, permissões, paginação)
+- ✅ Cards (CRUD, movimentação, atribuição, campos customizados)
+- ✅ Gamificação (pontos, badges, rankings)
+- ✅ Fluxos completos (registro → vendas → relatórios)
+
+**Total:** 140+ testes implementados
+
+### Mocks e Fixtures
+
+Os testes utilizam:
+- **SQLite em memória** para banco de dados de teste
+- **Mocks de Celery** para tasks assíncronas (execução síncrona)
+- **Mocks de APScheduler** (desabilitado durante testes)
+- **Mocks de SMTP** (emails não são enviados)
+- **Fixtures reutilizáveis** para usuários, boards, cards, etc
+
+## 🛠️ Scripts Utilitários
+
+O projeto inclui scripts úteis para desenvolvimento e manutenção.
+
+### Seed do Banco de Dados
+
+Popula o banco com dados de exemplo completos (5 usuários, 1 board, 6 listas, 11 cards, 5 badges, etc):
+
+```bash
+python scripts/seed_database.py
+```
+
+**Credenciais criadas:**
+- Admin: `admin@demo.com` / `admin123`
+- Manager: `carlos@demo.com` / `manager123`
+- Vendedores: `ana@demo.com`, `bruno@demo.com`, `carla@demo.com` / `sales123`
+
+### Criar Administrador
+
+Cria um novo usuário administrador interativamente:
+
+```bash
+python scripts/create_admin.py
+```
+
+Ou com argumentos:
+
+```bash
+python scripts/create_admin.py --email=admin@empresa.com --name="Admin" --account-id=1
+```
+
+### Importar do Pipedrive
+
+Importa usuários e deals do Pipedrive via API:
+
+```bash
+python scripts/import_pipedrive.py --api-key=<sua_api_key> --account-id=1
+```
+
+### Backup do Banco de Dados
+
+Faz backup completo do PostgreSQL usando pg_dump:
+
+```bash
+python scripts/backup_database.py
+python scripts/backup_database.py --output-dir=backups/custom --compress
+```
+
+### Limpeza de Logs
+
+Remove logs antigos baseado em dias de retenção:
+
+```bash
+python scripts/clean_logs.py --days=90
+python scripts/clean_logs.py --days=30 --dry-run  # Testa sem deletar
+```
 
 ## 🔐 Autenticação
 
@@ -266,6 +700,32 @@ curl -X GET "http://localhost:8000/api/v1/users/me" \
 - `POST /api/v1/transfers/approvals/{id}/decide` - Decidir aprovação
 - `GET /api/v1/transfers/statistics` - Estatísticas
 
+### Relatórios
+- `GET /api/v1/reports/dashboard` - Dashboard com KPIs principais
+- `POST /api/v1/reports/sales` - Relatório de vendas por período
+- `POST /api/v1/reports/conversion` - Relatório de conversão (funil)
+- `POST /api/v1/reports/transfers` - Relatório de transferências
+- `POST /api/v1/reports/export` - Exportar relatório (CSV/Excel/JSON)
+
+### Notificações
+- `GET /api/v1/notifications` - Listar notificações (paginado, com filtro unread_only)
+- `GET /api/v1/notifications/stats` - Estatísticas de notificações
+- `GET /api/v1/notifications/{id}` - Buscar notificação
+- `POST /api/v1/notifications` - Criar notificação
+- `POST /api/v1/notifications/bulk` - Criar em lote
+- `PUT /api/v1/notifications/{id}/read` - Marcar como lida
+- `PUT /api/v1/notifications/read-all` - Marcar todas como lidas
+- `DELETE /api/v1/notifications/{id}` - Deletar notificação
+
+### Admin (Requer Role: admin)
+- `GET /api/v1/admin/users` - Listar todos os usuários (paginado, com filtros)
+- `POST /api/v1/admin/users` - Criar usuário
+- `PUT /api/v1/admin/users/{id}/reset-password` - Resetar senha de usuário
+- `GET /api/v1/admin/logs` - Visualizar logs de auditoria (paginado, com filtros)
+- `POST /api/v1/admin/database/query` - Executar query SQL (apenas SELECT)
+- `GET /api/v1/admin/automations/monitor` - Monitorar automações (métricas e estatísticas)
+- `GET /api/v1/admin/stats` - Estatísticas gerais do sistema
+
 ## 🎯 Recursos Principais
 
 ### Multi-Tenancy
@@ -295,6 +755,27 @@ Transferência de cards entre vendedores:
 - Fluxo de aprovação opcional
 - Aprovações com prazo de expiração (72h)
 - Estatísticas e relatórios
+
+### Workers Assíncronos
+Sistema de processamento assíncrono e tarefas agendadas:
+
+**Celery Tasks (Processamento Assíncrono):**
+- `execute_automation_task` - Executa automações assincronamente
+- `send_notification_task` - Envia notificações para múltiplos usuários
+- `send_email_task` - Envia emails com retry automático
+- `generate_report_task` - Gera relatórios pesados em background
+- `cleanup_old_data_task` - Limpa dados antigos do sistema
+
+**APScheduler Cron Jobs (Tarefas Agendadas):**
+- **A cada 1 minuto:** Verificar e executar automações agendadas
+- **Diariamente 00:00:** Atualizar ranking de vendedores
+- **Diariamente 01:00:** Verificar e conceder badges automáticas
+- **Diariamente 08:00:** Notificar sobre cards vencidos
+- **Diariamente 09:00:** Enviar relatório de automações falhadas
+- **Diariamente 10:00:** Verificar transferências pendentes expiradas
+- **Diariamente 23:00:** Atualizar estatísticas de gamificação
+- **Semanalmente (Domingo 03:00):** Limpar notificações antigas
+- **Semanalmente (Domingo 04:00):** Backup de logs de auditoria
 
 ## 🏗️ Arquitetura
 

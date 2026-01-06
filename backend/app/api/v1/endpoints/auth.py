@@ -33,17 +33,66 @@ from app.schemas.user import UserResponse
 router = APIRouter()
 
 
-@router.post("/login", response_model=TokenResponse, summary="Login de usuário")
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    summary="Login de usuário",
+    description="""
+    Autentica um usuário no sistema usando email e senha.
+
+    **Retorna:**
+    - `access_token`: Token JWT para autenticação (válido por 8 horas)
+    - `refresh_token`: Token para renovar o access_token (válido por 7 dias)
+    - `token_type`: Sempre "bearer"
+    - `expires_in`: Tempo de expiração do access_token em segundos
+
+    **Validações:**
+    - Email deve existir no sistema
+    - Senha deve estar correta
+    - Usuário deve estar ativo
+    - Usuário não pode estar deletado
+
+    **Atualiza:**
+    - Campo `last_login_at` do usuário com timestamp atual
+    """,
+    responses={
+        200: {
+            "description": "Login realizado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "token_type": "bearer",
+                        "expires_in": 28800
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Email ou senha incorretos",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Email ou senha incorretos"}
+                }
+            }
+        },
+        403: {
+            "description": "Usuário inativo",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Usuário inativo. Entre em contato com o administrador."}
+                }
+            }
+        }
+    }
+)
 async def login(
     login_data: LoginRequest,
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Autentica um usuário com email e senha.
-    Retorna access_token e refresh_token.
-
-    - **email**: Email do usuário
-    - **password**: Senha do usuário
+    Endpoint de login.
     """
     # Busca o usuário por email
     user = db.query(User).filter(
@@ -82,15 +131,60 @@ async def login(
     )
 
 
-@router.post("/refresh", response_model=TokenResponse, summary="Renovar access token")
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    summary="Renovar access token",
+    description="""
+    Renova o access_token usando um refresh_token válido.
+
+    **Use este endpoint quando:**
+    - O access_token expirou (após 8 horas)
+    - Você quer renovar a sessão sem fazer login novamente
+
+    **Retorna:**
+    - Novo `access_token` e `refresh_token`
+    - Tokens antigos se tornam inválidos
+
+    **Validações:**
+    - Refresh token deve ser válido e não expirado
+    - Token deve ser do tipo "refresh" (não "access")
+    - Usuário deve existir e estar ativo
+    """,
+    responses={
+        200: {
+            "description": "Tokens renovados com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "token_type": "bearer",
+                        "expires_in": 28800
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Refresh token inválido ou expirado",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "expired": {"value": {"detail": "Refresh token inválido ou expirado"}},
+                        "wrong_type": {"value": {"detail": "Tipo de token inválido. Use um refresh token."}},
+                        "user_not_found": {"value": {"detail": "Usuário não encontrado ou inativo"}}
+                    }
+                }
+            }
+        }
+    }
+)
 async def refresh_token(
     refresh_data: RefreshTokenRequest,
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Renova o access_token usando um refresh_token válido.
-
-    - **refresh_token**: Refresh token válido
+    Endpoint de refresh token.
     """
     # Decodifica o refresh token
     payload = decode_token(refresh_data.refresh_token)
@@ -158,23 +252,71 @@ async def logout(
     }
 
 
-@router.post("/register", response_model=UserResponse, summary="Registrar novo usuário", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserResponse,
+    summary="Registrar novo usuário",
+    description="""
+    Registra um novo usuário no sistema HSGrowth CRM.
+
+    **Campos obrigatórios:**
+    - `email`: Email único (será usado para login)
+    - `username`: Nome de usuário único
+    - `password`: Senha forte (mínimo 6 caracteres)
+    - `full_name`: Nome completo do usuário
+
+    **Campos opcionais:**
+    - `account_id`: ID da conta (padrão: 1)
+    - `role_id`: ID do role (padrão: 2 - salesperson)
+
+    **Validações:**
+    - Email deve ser único no sistema
+    - Username deve ser único no sistema
+    - Senha deve ter no mínimo 6 caracteres
+    - Senha é criptografada com bcrypt antes de salvar
+
+    **Nota de Segurança:**
+    Este endpoint pode ser protegido para que apenas admins possam criar usuários.
+    Em ambientes com auto-registro, considere adicionar confirmação por email.
+    """,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {
+            "description": "Usuário criado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "email": "joao@exemplo.com",
+                        "username": "joao",
+                        "full_name": "João Silva",
+                        "account_id": 1,
+                        "role_id": 2,
+                        "is_active": True,
+                        "created_at": "2026-01-06T10:00:00"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Email ou username já cadastrado",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "email_exists": {"value": {"detail": "Email já cadastrado"}},
+                        "username_exists": {"value": {"detail": "Nome de usuário já cadastrado"}}
+                    }
+                }
+            }
+        }
+    }
+)
 async def register(
     user_data: RegisterRequest,
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Registra um novo usuário no sistema.
-
-    Nota: Este endpoint pode ser protegido para que apenas admins possam criar usuários.
-    Para auto-registro, considere adicionar lógica de criação automática de account.
-
-    - **email**: Email único do usuário
-    - **username**: Nome de usuário único
-    - **password**: Senha (mínimo 6 caracteres)
-    - **full_name**: Nome completo
-    - **account_id**: ID da conta (opcional, apenas para admins)
-    - **role_id**: ID do role (opcional, padrão: role básico)
+    Endpoint de registro de usuário.
     """
     # Verifica se email já existe
     existing_email = db.query(User).filter(
@@ -219,16 +361,47 @@ async def register(
     return new_user
 
 
-@router.post("/forgot-password", summary="Solicitar reset de senha")
+@router.post(
+    "/forgot-password",
+    summary="Solicitar reset de senha",
+    description="""
+    Inicia o processo de recuperação de senha enviando um token de reset para o email.
+
+    **Fluxo de recuperação:**
+    1. Usuário fornece seu email
+    2. Sistema gera um token de reset (válido por 30 minutos)
+    3. Email é enviado com link contendo o token
+    4. Usuário acessa o link e usa o endpoint `/reset-password`
+
+    **Segurança:**
+    - Sempre retorna sucesso, mesmo se o email não existir (não vaza informações)
+    - Token expira em 30 minutos
+    - Token é de uso único
+
+    **Nota de Desenvolvimento:**
+    O token é retornado na resposta apenas em desenvolvimento. Em produção,
+    o token deve ser enviado apenas por email.
+    """,
+    responses={
+        200: {
+            "description": "Requisição processada (não indica se email existe)",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Se o email existir, você receberá instruções para reset de senha.",
+                        "reset_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                }
+            }
+        }
+    }
+)
 async def forgot_password(
     request_data: ForgotPasswordRequest,
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Solicita reset de senha para um email.
-    Envia um email com token de reset (implementação futura).
-
-    - **email**: Email do usuário
+    Endpoint de solicitação de reset de senha.
     """
     # Busca o usuário por email
     user = db.query(User).filter(
@@ -254,16 +427,61 @@ async def forgot_password(
     }
 
 
-@router.post("/reset-password", summary="Resetar senha com token")
+@router.post(
+    "/reset-password",
+    summary="Resetar senha com token",
+    description="""
+    Completa o processo de recuperação de senha usando o token recebido por email.
+
+    **Campos obrigatórios:**
+    - `token`: Token de reset recebido por email (válido por 30 minutos)
+    - `new_password`: Nova senha (mínimo 6 caracteres)
+
+    **Validações:**
+    - Token deve ser válido e não expirado
+    - Nova senha deve ter no mínimo 6 caracteres
+    - Usuário deve existir e não estar deletado
+
+    **Após sucesso:**
+    - Senha é atualizada e criptografada com bcrypt
+    - Usuário deve fazer login novamente com a nova senha
+    - Token se torna inválido
+    """,
+    responses={
+        200: {
+            "description": "Senha alterada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Senha alterada com sucesso"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Token inválido ou expirado",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Token inválido ou expirado"}
+                }
+            }
+        },
+        404: {
+            "description": "Usuário não encontrado",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Usuário não encontrado"}
+                }
+            }
+        }
+    }
+)
 async def reset_password(
     reset_data: ResetPasswordRequest,
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Reseta a senha do usuário usando token enviado por email.
-
-    - **token**: Token de reset recebido por email
-    - **new_password**: Nova senha (mínimo 6 caracteres)
+    Endpoint de reset de senha.
     """
     # Verifica o token
     email = verify_password_reset_token(reset_data.token)
