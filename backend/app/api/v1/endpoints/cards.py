@@ -18,8 +18,41 @@ from app.schemas.card import (
 )
 from app.schemas.field import CardFieldValueCreate, CardFieldValueResponse
 from app.models.user import User
+from app.models.card import Card
 
 router = APIRouter()
+
+
+def card_to_response(
+    card: Card,
+    assigned_to_name: Optional[str] = None,
+    list_name: Optional[str] = None,
+    board_id: Optional[int] = None
+) -> CardResponse:
+    """
+    Converte um Card do modelo para CardResponse do schema.
+    Faz a conversão de is_won (Integer) para bool e usa as properties.
+    """
+    return CardResponse(
+        id=card.id,
+        title=card.title,
+        description=card.description,
+        list_id=card.list_id,
+        assigned_to_id=card.assigned_to_id,
+        value=card.value,
+        due_date=card.due_date,
+        contact_info=card.contact_info,
+        is_won=card.is_won == 1,  # Converte Integer para bool
+        is_lost=card.is_lost,  # Já é property que retorna bool
+        won_at=card.won_at,  # Property que retorna datetime ou None
+        lost_at=card.lost_at,  # Property que retorna datetime ou None
+        position=card.position,
+        created_at=card.created_at,
+        updated_at=card.updated_at,
+        assigned_to_name=assigned_to_name,
+        list_name=list_name,
+        board_id=board_id
+    )
 
 
 @router.get(
@@ -138,26 +171,7 @@ async def get_card(
     list_name = list_obj.name if list_obj else None
     board_id = list_obj.board_id if list_obj else None
 
-    return CardResponse(
-        id=card.id,
-        title=card.title,
-        description=card.description,
-        list_id=card.list_id,
-        assigned_to_id=card.assigned_to_id,
-        value=card.value,
-        due_date=card.due_date,
-        contact_info=card.contact_info,
-        is_won=card.is_won,
-        is_lost=card.is_lost,
-        won_at=card.won_at,
-        lost_at=card.lost_at,
-        position=card.position,
-        created_at=card.created_at,
-        updated_at=card.updated_at,
-        assigned_to_name=assigned_to_name,
-        list_name=list_name,
-        board_id=board_id
-    )
+    return card_to_response(card, assigned_to_name, list_name, board_id)
 
 
 @router.post(
@@ -241,23 +255,7 @@ async def create_card(
     service = CardService(db)
     card = service.create_card(card_data, current_user)
 
-    return CardResponse(
-        id=card.id,
-        title=card.title,
-        description=card.description,
-        list_id=card.list_id,
-        assigned_to_id=card.assigned_to_id,
-        value=card.value,
-        due_date=card.due_date,
-        contact_info=card.contact_info,
-        is_won=card.is_won,
-        is_lost=card.is_lost,
-        won_at=card.won_at,
-        lost_at=card.lost_at,
-        position=card.position,
-        created_at=card.created_at,
-        updated_at=card.updated_at
-    )
+    return card_to_response(card)
 
 
 @router.put("/{card_id}", response_model=CardResponse, summary="Atualizar card")
@@ -276,23 +274,7 @@ async def update_card(
     service = CardService(db)
     card = service.update_card(card_id, card_data, current_user)
 
-    return CardResponse(
-        id=card.id,
-        title=card.title,
-        description=card.description,
-        list_id=card.list_id,
-        assigned_to_id=card.assigned_to_id,
-        value=card.value,
-        due_date=card.due_date,
-        contact_info=card.contact_info,
-        is_won=card.is_won,
-        is_lost=card.is_lost,
-        won_at=card.won_at,
-        lost_at=card.lost_at,
-        position=card.position,
-        created_at=card.created_at,
-        updated_at=card.updated_at
-    )
+    return card_to_response(card)
 
 
 @router.delete("/{card_id}", summary="Deletar card")
@@ -334,23 +316,7 @@ async def move_card(
         current_user=current_user
     )
 
-    return CardResponse(
-        id=card.id,
-        title=card.title,
-        description=card.description,
-        list_id=card.list_id,
-        assigned_to_id=card.assigned_to_id,
-        value=card.value,
-        due_date=card.due_date,
-        contact_info=card.contact_info,
-        is_won=card.is_won,
-        is_lost=card.is_lost,
-        won_at=card.won_at,
-        lost_at=card.lost_at,
-        position=card.position,
-        created_at=card.created_at,
-        updated_at=card.updated_at
-    )
+    return card_to_response(card)
 
 
 @router.put("/{card_id}/assign", response_model=CardResponse, summary="Atribuir card a usuário")
@@ -373,23 +339,7 @@ async def assign_card(
         current_user=current_user
     )
 
-    return CardResponse(
-        id=card.id,
-        title=card.title,
-        description=card.description,
-        list_id=card.list_id,
-        assigned_to_id=card.assigned_to_id,
-        value=card.value,
-        due_date=card.due_date,
-        contact_info=card.contact_info,
-        is_won=card.is_won,
-        is_lost=card.is_lost,
-        won_at=card.won_at,
-        lost_at=card.lost_at,
-        position=card.position,
-        created_at=card.created_at,
-        updated_at=card.updated_at
-    )
+    return card_to_response(card)
 
 
 # ========== ENDPOINTS DE CAMPOS CUSTOMIZADOS ==========

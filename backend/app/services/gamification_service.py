@@ -42,7 +42,7 @@ class GamificationService:
     def award_points(
         self,
         user_id: int,
-        action_type: str,
+        reason: str,
         description: Optional[str] = None,
         custom_points: Optional[int] = None
     ) -> GamificationPointResponse:
@@ -51,7 +51,7 @@ class GamificationService:
 
         Args:
             user_id: ID do usuário
-            action_type: Tipo de ação
+            reason: Tipo de ação
             description: Descrição da ação
             custom_points: Pontos customizados (sobrescreve padrão)
 
@@ -59,19 +59,19 @@ class GamificationService:
             GamificationPointResponse
         """
         # Determina quantidade de pontos
-        points = custom_points if custom_points is not None else ACTION_POINTS.get(action_type, 0)
+        points = custom_points if custom_points is not None else ACTION_POINTS.get(reason, 0)
 
         if points == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Tipo de ação '{action_type}' não configurado ou sem pontos"
+                detail=f"Tipo de ação '{reason}' não configurado ou sem pontos"
             )
 
         # Cria registro de pontos
         point_data = GamificationPointCreate(
             user_id=user_id,
             points=points,
-            action_type=action_type,
+            reason=reason,
             description=description
         )
         point = self.repository.create_point(point_data)
@@ -83,7 +83,7 @@ class GamificationService:
             id=point.id,
             user_id=point.user_id,
             points=point.points,
-            action_type=point.action_type,
+            reason=point.reason,
             description=point.description,
             created_at=point.created_at
         )
@@ -127,9 +127,9 @@ class GamificationService:
             account_id=badge.account_id,
             name=badge.name,
             description=badge.description,
-            icon=badge.icon,
+            icon_url=badge.icon_url,
+            criteria_type=badge.criteria_type,
             criteria=badge.criteria,
-            points_required=badge.points_required,
             created_at=badge.created_at
         )
 
@@ -154,9 +154,9 @@ class GamificationService:
                 account_id=badge.account_id,
                 name=badge.name,
                 description=badge.description,
-                icon=badge.icon,
+                icon_url=badge.icon_url,
+                criteria_type=badge.criteria_type,
                 criteria=badge.criteria,
-                points_required=badge.points_required,
                 created_at=badge.created_at
             )
             for badge in badges
@@ -226,7 +226,7 @@ class GamificationService:
             awarded_by_id=user_badge.awarded_by_id,
             badge_name=badge.name,
             badge_description=badge.description,
-            badge_icon=badge.icon
+            badge_icon=badge.icon_url
         )
 
     def _check_and_award_point_badges(self, user_id: int) -> None:
@@ -244,15 +244,23 @@ class GamificationService:
         if not user:
             return
 
-        # Busca badges da conta que tem requisito de pontos
+        # Busca badges automáticos da conta
         badges = self.repository.list_badges_by_account(user.account_id, skip=0, limit=1000)
 
         for badge in badges:
-            if badge.points_required and total_points >= badge.points_required:
-                # Verifica se o usuário já tem o badge
-                if not self.repository.user_has_badge(user_id, badge.id):
-                    # Atribui automaticamente
-                    self.repository.award_badge(user_id, badge.id, awarded_by_id=None)
+            # TODO: Implementar lógica de avaliação de critérios JSON
+            # Por enquanto, apenas badges manuais são suportados
+            if badge.criteria_type == "automatic" and badge.criteria:
+                # Verifica se é um badge baseado em pontos
+                if badge.criteria.get("field") == "total_points":
+                    required_points = badge.criteria.get("value", 0)
+                    operator = badge.criteria.get("operator", ">=")
+
+                    if operator == ">=" and total_points >= required_points:
+                        # Verifica se o usuário já tem o badge
+                        if not self.repository.user_has_badge(user_id, badge.id):
+                            # Atribui automaticamente
+                            self.repository.award_badge(user_id, badge.id, awarded_by_id=None)
 
     def get_user_badges(self, user_id: int, account_id: int) -> List[UserBadgeResponse]:
         """
@@ -287,7 +295,7 @@ class GamificationService:
                     awarded_by_id=ub.awarded_by_id,
                     badge_name=badge.name if badge else None,
                     badge_description=badge.description if badge else None,
-                    badge_icon=badge.icon if badge else None
+                    badge_icon=badge.icon_url if badge else None
                 )
             )
 

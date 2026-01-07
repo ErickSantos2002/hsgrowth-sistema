@@ -27,9 +27,12 @@ async def lifespan(app: FastAPI):
     logger.info(f"Ambiente: {settings.ENVIRONMENT}")
     logger.info(f"Debug: {settings.DEBUG}")
 
-    # Inicializar scheduler (APScheduler)
-    await start_scheduler()
-    logger.success("Scheduler iniciado")
+    # Inicializar scheduler (APScheduler) - exceto durante testes
+    if settings.ENVIRONMENT != "testing":
+        await start_scheduler()
+        logger.success("Scheduler iniciado")
+    else:
+        logger.info("Scheduler desabilitado durante testes")
 
     # TODO: Verificar conexão com banco de dados
 
@@ -38,9 +41,10 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Encerrando HSGrowth CRM API...")
 
-    # Finalizar scheduler
-    await stop_scheduler()
-    logger.success("Scheduler finalizado")
+    # Finalizar scheduler - exceto durante testes
+    if settings.ENVIRONMENT != "testing":
+        await stop_scheduler()
+        logger.success("Scheduler finalizado")
 
     # TODO: Fechar conexões
 

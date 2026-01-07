@@ -6,7 +6,7 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, Query, Path, Body
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_active_user, require_role
 from app.services.gamification_service import GamificationService
 from app.schemas.gamification import (
     GamificationPointResponse,
@@ -65,7 +65,7 @@ async def get_user_gamification(
 @router.post("/points", response_model=GamificationPointResponse, summary="Atribuir pontos", status_code=201)
 async def award_points(
     user_id: int = Body(..., description="ID do usuário"),
-    action_type: str = Body(..., description="Tipo de ação"),
+    reason: str = Body(..., description="Tipo de ação"),
     description: str = Body(None, description="Descrição da ação"),
     custom_points: int = Body(None, description="Pontos customizados"),
     current_user: User = Depends(get_current_active_user),
@@ -75,12 +75,12 @@ async def award_points(
     Atribui pontos a um usuário por uma ação.
 
     - **user_id**: ID do usuário que receberá os pontos
-    - **action_type**: Tipo de ação (card_created, card_won, etc.)
+    - **reason**: Tipo de ação (card_created, card_won, etc.)
     - **description**: Descrição da ação (opcional)
     - **custom_points**: Pontos customizados (opcional, sobrescreve padrão)
     """
     service = GamificationService(db)
-    return service.award_points(user_id, action_type, description, custom_points)
+    return service.award_points(user_id, reason, description, custom_points)
 
 
 # ========== BADGES ==========
@@ -105,7 +105,7 @@ async def list_badges(
 @router.post("/badges", response_model=BadgeResponse, summary="Criar badge", status_code=201)
 async def create_badge(
     badge_data: BadgeCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -121,10 +121,10 @@ async def create_badge(
     return service.create_badge(badge_data, current_user)
 
 
-@router.post("/badges/{badge_id}/award", response_model=UserBadgeResponse, summary="Atribuir badge a usuário", status_code=201)
+@router.post("/badges/{badge_id}/award", response_model=UserBadgeResponse, summary="Atribuir badge a usuário", status_code=200)
 async def award_badge(
     badge_id: int = Path(..., description="ID do badge"),
-    user_id: int = Body(..., description="ID do usuário"),
+    user_id: int = Body(..., embed=True, description="ID do usuário"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
@@ -190,8 +190,8 @@ async def get_rankings(
 
 @router.post("/rankings/calculate", response_model=RankingListResponse, summary="Recalcular rankings")
 async def calculate_rankings(
-    period_type: str = Body(..., description="Tipo de período: weekly, monthly, quarterly, annual"),
-    current_user: User = Depends(get_current_active_user),
+    period_type: str = Body(..., embed=True, description="Tipo de período: weekly, monthly, quarterly, annual"),
+    current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """

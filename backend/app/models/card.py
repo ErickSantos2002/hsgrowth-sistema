@@ -2,7 +2,7 @@
 Modelo de Card (Cartão).
 Representa um cartão (lead, oportunidade, tarefa) no sistema.
 """
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime, Numeric
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime, Numeric, JSON
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -42,6 +42,9 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     # Status
     is_won = Column(Integer, default=0, nullable=False)  # 0=aberto, 1=ganho, -1=perdido
 
+    # Informações de contato (JSON)
+    contact_info = Column(JSON, nullable=True)  # Dados de contato: nome, email, telefone, empresa, etc
+
     # Relacionamentos
     list = relationship("List", back_populates="cards")
     assigned_to = relationship("User", foreign_keys=[assigned_to_id], back_populates="assigned_cards")
@@ -66,3 +69,18 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
 
         from datetime import datetime
         return datetime.utcnow() > self.due_date
+
+    @property
+    def is_lost(self) -> bool:
+        """Retorna True se o card foi perdido"""
+        return self.is_won == -1
+
+    @property
+    def won_at(self):
+        """Retorna a data de fechamento se o card foi ganho"""
+        return self.closed_at if self.is_won == 1 else None
+
+    @property
+    def lost_at(self):
+        """Retorna a data de fechamento se o card foi perdido"""
+        return self.closed_at if self.is_won == -1 else None

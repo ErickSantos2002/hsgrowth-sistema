@@ -70,13 +70,15 @@ async def get_current_user(
         )
 
     # Extrai o user_id do payload
-    user_id: Optional[int] = payload.get("sub")
-    if user_id is None:
+    user_id_str = payload.get("sub")
+    if user_id_str is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    user_id: int = int(user_id_str)
 
     # Busca o usuário no banco
     user = db.query(User).filter(User.id == user_id, User.is_deleted == False).first()

@@ -293,12 +293,11 @@ class GamificationRepository:
         """
         ranking = GamificationRanking(
             user_id=user_id,
-            account_id=account_id,
             period_type=period_type,
             period_start=period_start,
             period_end=period_end,
-            total_points=total_points,
-            rank_position=rank_position
+            points=total_points,
+            rank=rank_position
         )
         self.db.add(ranking)
         self.db.commit()

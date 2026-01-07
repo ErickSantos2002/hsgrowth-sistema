@@ -21,9 +21,9 @@ class TestListUsers:
 
         assert response.status_code == 200
         data = response.json()
-        assert "items" in data
+        assert "users" in data
         assert "total" in data
-        assert len(data["items"]) >= 2  # Pelo menos admin e salesperson
+        assert len(data["users"]) >= 2  # Pelo menos admin e salesperson
 
     def test_list_users_pagination(self, client: TestClient, admin_headers, db, test_account, test_roles):
         """Testa paginação de usuários"""
@@ -50,7 +50,7 @@ class TestListUsers:
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 10
+        assert len(data["users"]) == 10
         assert data["page"] == 1
         assert data["total"] >= 15
 
@@ -64,7 +64,7 @@ class TestListUsers:
         assert response.status_code == 200
         data = response.json()
         # Todos devem ser salesperson
-        for user in data["items"]:
+        for user in data["users"]:
             assert user["role"] == "salesperson"
 
     def test_list_users_unauthorized(self, client: TestClient, salesperson_headers):
@@ -137,7 +137,7 @@ class TestGetUser:
 class TestCreateUser:
     """Testes de criação de usuário"""
 
-    def test_create_user_success(self, client: TestClient, admin_headers, test_account):
+    def test_create_user_success(self, client: TestClient, admin_headers, test_account, test_roles):
         """Testa criação de usuário com sucesso"""
         response = client.post(
             "/api/v1/users",
@@ -146,11 +146,15 @@ class TestCreateUser:
                 "name": "New User",
                 "email": "newuser@test.com",
                 "password": "newpass123",
-                "role": "salesperson",
+                "role_id": test_roles["salesperson"].id,
                 "account_id": test_account.id
             }
         )
 
+        if response.status_code != 200:
+            print(f'
+ERROR: Status {response.status_code}')
+            print(f'Response: {response.text}')
         assert response.status_code == 200
         data = response.json()
         assert data["email"] == "newuser@test.com"

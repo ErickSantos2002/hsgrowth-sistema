@@ -5,7 +5,7 @@ Testa CRUD de cards, movimentação, atribuição, campos customizados, etc.
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 
 from app.models.card import Card
 
@@ -13,46 +13,46 @@ from app.models.card import Card
 class TestListCards:
     """Testes de listagem de cards"""
 
-    def test_list_cards_success(self, client: TestClient, salesperson_headers, test_card):
+    def test_list_cards_success(self, client: TestClient, salesperson_headers, test_card, test_board):
         """Testa listagem de cards com sucesso"""
         response = client.get(
-            "/api/v1/cards",
+            f"/api/v1/cards?board_id={test_board.id}",
             headers=salesperson_headers
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert "items" in data
+        assert "cards" in data
         assert "total" in data
-        assert len(data["items"]) >= 1
+        assert len(data["cards"]) >= 1
 
-    def test_list_cards_filter_by_stage(self, client: TestClient, salesperson_headers, test_card):
-        """Testa filtro por stage"""
+    def test_list_cards_filter_by_list(self, client: TestClient, salesperson_headers, test_card, test_board):
+        """Testa filtro por list_id"""
         response = client.get(
-            "/api/v1/cards?stage=lead",
+            f"/api/v1/cards?board_id={test_board.id}&list_id={test_card.list_id}",
             headers=salesperson_headers
         )
 
         assert response.status_code == 200
         data = response.json()
-        for card in data["items"]:
-            assert card["stage"] == "lead"
+        for card in data["cards"]:
+            assert card["list_id"] == test_card.list_id
 
-    def test_list_cards_filter_by_assigned_to(self, client: TestClient, salesperson_headers, test_card, test_salesperson_user):
+    def test_list_cards_filter_by_assigned_to(self, client: TestClient, salesperson_headers, test_card, test_salesperson_user, test_board):
         """Testa filtro por responsável"""
         response = client.get(
-            f"/api/v1/cards?assigned_to_id={test_salesperson_user.id}",
+            f"/api/v1/cards?board_id={test_board.id}&assigned_to_id={test_salesperson_user.id}",
             headers=salesperson_headers
         )
 
         assert response.status_code == 200
         data = response.json()
-        for card in data["items"]:
+        for card in data["cards"]:
             assert card["assigned_to_id"] == test_salesperson_user.id
 
-    def test_list_cards_unauthorized(self, client: TestClient):
+    def test_list_cards_unauthorized(self, client: TestClient, test_board):
         """Testa listagem sem autenticação"""
-        response = client.get("/api/v1/cards")
+        response = client.get(f"/api/v1/cards?board_id={test_board.id}")
 
         assert response.status_code == 401
 
@@ -95,16 +95,15 @@ class TestCreateCard:
                 "description": "Card description",
                 "list_id": test_lists[0].id,
                 "assigned_to_id": test_salesperson_user.id,
-                "value": 5000.00,
-                "stage": "lead"
+                "value": 5000.00
             }
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
         assert data["title"] == "New Card"
         assert data["value"] == 5000.00
-        assert data["stage"] == "lead"
+        assert data["list_id"] == test_lists[0].id
 
     def test_create_card_minimal_data(self, client: TestClient, salesperson_headers, test_lists):
         """Testa criar card com dados mínimos"""
@@ -117,13 +116,13 @@ class TestCreateCard:
             }
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
         assert data["title"] == "Minimal Card"
 
     def test_create_card_with_due_date(self, client: TestClient, salesperson_headers, test_lists):
         """Testa criar card com data de vencimento"""
-        due_date = (date.today() + timedelta(days=7)).isoformat()
+        due_date = (datetime.now() + timedelta(days=7)).isoformat()
 
         response = client.post(
             "/api/v1/cards",
@@ -135,7 +134,7 @@ class TestCreateCard:
             }
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
         assert data["due_date"] == due_date
 
@@ -170,21 +169,21 @@ class TestUpdateCard:
         assert response.status_code == 200
         data = response.json()
         assert data["title"] == "Updated Title"
-        assert data["value"] == 2000.00
+        assert float(data["value"]) == 2000.00
 
-    def test_update_card_stage(self, client: TestClient, salesperson_headers, test_card):
-        """Testa atualizar stage do card"""
+    def test_update_card_description(self, client: TestClient, salesperson_headers, test_card):
+        """Testa atualizar descrição do card"""
         response = client.put(
             f"/api/v1/cards/{test_card.id}",
             headers=salesperson_headers,
             json={
-                "stage": "proposal"
+                "description": "Updated description"
             }
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["stage"] == "proposal"
+        assert data["description"] == "Updated description"
 
     def test_update_card_not_found(self, client: TestClient, salesperson_headers):
         """Testa atualizar card inexistente"""
@@ -206,7 +205,7 @@ class TestMoveCard:
             f"/api/v1/cards/{test_card.id}/move",
             headers=salesperson_headers,
             json={
-                "list_id": test_lists[1].id,  # Move para segunda lista
+                "target_list_id": test_lists[1].id,  # Move para segunda lista
                 "position": 0
             }
         )
@@ -225,14 +224,15 @@ class TestMoveCard:
             f"/api/v1/cards/{test_card.id}/move",
             headers=salesperson_headers,
             json={
-                "list_id": won_list.id,
+                "target_list_id": won_list.id,
                 "position": 0
             }
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["stage"] == "won"
+        assert data["list_id"] == won_list.id
+        assert data["is_won"] == True  # Card marcado como ganho (bool agora)
 
     def test_move_card_invalid_list(self, client: TestClient, salesperson_headers, test_card):
         """Testa mover card para lista inexistente"""
@@ -240,7 +240,7 @@ class TestMoveCard:
             f"/api/v1/cards/{test_card.id}/move",
             headers=salesperson_headers,
             json={
-                "list_id": 99999,
+                "target_list_id": 99999,
                 "position": 0
             }
         )
@@ -301,7 +301,6 @@ class TestDeleteCard:
         card_to_delete = Card(
             title="To Delete",
             list_id=test_lists[0].id,
-            stage="lead",
             position=1
         )
         db.add(card_to_delete)

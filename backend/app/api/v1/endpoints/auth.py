@@ -120,14 +120,28 @@ async def login(
     db.commit()
 
     # Cria os tokens
-    access_token = create_access_token(data={"sub": user.id})
-    refresh_token = create_refresh_token(data={"sub": user.id})
+    access_token = create_access_token(data={"sub": str(user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+    # Prepara dados do usuário para resposta
+    user_data = {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "username": user.username,
+        "account_id": user.account_id,
+        "role_id": user.role_id,
+        "is_active": user.is_active,
+        "avatar_url": user.avatar_url,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+    }
 
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
-        expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60  # Converte para segundos
+        expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Converte para segundos
+        user=user_data
     )
 
 
@@ -204,7 +218,15 @@ async def refresh_token(
         )
 
     # Extrai o user_id
-    user_id: int = payload.get("sub")
+    user_id_str = payload.get("sub")
+    if user_id_str is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id: int = int(user_id_str)
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -222,8 +244,8 @@ async def refresh_token(
         )
 
     # Cria novos tokens
-    new_access_token = create_access_token(data={"sub": user.id})
-    new_refresh_token = create_refresh_token(data={"sub": user.id})
+    new_access_token = create_access_token(data={"sub": str(user.id)})
+    new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
     return TokenResponse(
         access_token=new_access_token,
@@ -254,16 +276,16 @@ async def logout(
 
 @router.post(
     "/register",
-    response_model=UserResponse,
+    response_model=TokenResponse,
     summary="Registrar novo usuário",
     description="""
     Registra um novo usuário no sistema HSGrowth CRM.
 
     **Campos obrigatórios:**
     - `email`: Email único (será usado para login)
-    - `username`: Nome de usuário único
+    - `username`: Nome de usuário único (opcional)
     - `password`: Senha forte (mínimo 6 caracteres)
-    - `full_name`: Nome completo do usuário
+    - `name`: Nome completo do usuário
 
     **Campos opcionais:**
     - `account_id`: ID da conta (padrão: 1)
@@ -289,7 +311,7 @@ async def logout(
                         "id": 1,
                         "email": "joao@exemplo.com",
                         "username": "joao",
-                        "full_name": "João Silva",
+                        "name": "João Silva",
                         "account_id": 1,
                         "role_id": 2,
                         "is_active": True,
@@ -348,7 +370,7 @@ async def register(
         email=user_data.email,
         username=user_data.username,
         password_hash=password_hash,
-        full_name=user_data.full_name,
+        name=user_data.name,
         account_id=user_data.account_id or 1,  # TODO: Definir lógica de account padrão
         role_id=user_data.role_id or 2,  # TODO: Definir role padrão (ex: "salesperson")
         is_active=True
@@ -358,7 +380,30 @@ async def register(
     db.commit()
     db.refresh(new_user)
 
-    return new_user
+    # Cria os tokens
+    access_token = create_access_token(data={"sub": str(new_user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(new_user.id)})
+
+    # Prepara dados do usuário para resposta
+    user_data = {
+        "id": new_user.id,
+        "email": new_user.email,
+        "name": new_user.name,
+        "username": new_user.username,
+        "account_id": new_user.account_id,
+        "role_id": new_user.role_id,
+        "is_active": new_user.is_active,
+        "avatar_url": new_user.avatar_url,
+        "created_at": new_user.created_at.isoformat() if new_user.created_at else None,
+    }
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        user=user_data
+    )
 
 
 @router.post(
@@ -417,6 +462,11 @@ async def forgot_password(
 
     # Gera token de reset
     reset_token = create_password_reset_token(user.email)
+
+    # Salva o token no banco de dados
+    user.reset_token = reset_token
+    user.reset_token_expires_at = datetime.utcnow() + timedelta(minutes=30)
+    db.commit()
 
     # TODO: Enviar email com o token
     # Exemplo de URL: http://frontend.com/reset-password?token={reset_token}
@@ -503,8 +553,25 @@ async def reset_password(
             detail="Usuário não encontrado"
         )
 
-    # Atualiza a senha
+    # Verifica se o token no banco está expirado
+    if user.reset_token_expires_at and user.reset_token_expires_at < datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token expirado"
+        )
+
+    # Verifica se o token no banco corresponde ao fornecido
+    if user.reset_token != reset_data.token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token inválido"
+        )
+
+    # Atualiza a senha e limpa o token de reset
     user.password_hash = hash_password(reset_data.new_password)
+    user.reset_token = None
+    user.reset_token_expires_at = None
+    user.password_changed_at = datetime.utcnow()
     db.commit()
 
     return {

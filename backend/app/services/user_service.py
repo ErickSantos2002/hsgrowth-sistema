@@ -84,7 +84,7 @@ class UserService:
                 id=user.id,
                 email=user.email,
                 username=user.username,
-                full_name=user.name,
+                name=user.name,
                 avatar_url=user.avatar_url,
                 phone=getattr(user, 'phone', None),
                 account_id=user.account_id,
@@ -128,7 +128,7 @@ class UserService:
             )
 
         # Valida se username já existe
-        if self.repository.exists_username(user_data.username):
+        if user_data.username and self.repository.exists_username(user_data.username):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Nome de usuário já cadastrado"
@@ -161,9 +161,8 @@ class UserService:
         user = self.get_user_by_id(user_id)
 
         # Valida permissão (apenas admins ou o próprio usuário podem atualizar)
-        if current_user.id != user.id:
-            # TODO: Verificar se current_user é admin
-            # Por enquanto, permite apenas o próprio usuário atualizar
+        is_admin = current_user.role and current_user.role.name == "admin"
+        if current_user.id != user.id and not is_admin:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Você não tem permissão para atualizar este usuário"

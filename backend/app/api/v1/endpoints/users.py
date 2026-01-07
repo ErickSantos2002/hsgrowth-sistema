@@ -49,7 +49,7 @@ router = APIRouter()
                                 "id": 1,
                                 "email": "joao@exemplo.com",
                                 "username": "joao",
-                                "full_name": "João Silva",
+                                "name": "João Silva",
                                 "role_name": "Vendedor",
                                 "account_name": "HSGrowth",
                                 "is_active": True,
@@ -74,7 +74,7 @@ async def list_users(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
     is_active: Optional[bool] = Query(None, description="Filtrar por status ativo"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_role("manager")),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -120,7 +120,7 @@ async def list_users(
                         "id": 1,
                         "email": "joao@exemplo.com",
                         "username": "joao",
-                        "full_name": "João Silva",
+                        "name": "João Silva",
                         "avatar_url": "https://exemplo.com/avatar.jpg",
                         "phone": "+55 11 98765-4321",
                         "account_id": 1,
@@ -153,7 +153,7 @@ async def get_current_user_data(
         id=current_user.id,
         email=current_user.email,
         username=current_user.username,
-        full_name=current_user.name,
+        name=current_user.name,
         avatar_url=current_user.avatar_url,
         phone=getattr(current_user, 'phone', None),
         account_id=current_user.account_id,
@@ -186,7 +186,7 @@ async def get_user(
         id=user.id,
         email=user.email,
         username=user.username,
-        full_name=user.name,
+        name=user.name,
         avatar_url=user.avatar_url,
         phone=getattr(user, 'phone', None),
         account_id=user.account_id,
@@ -211,7 +211,7 @@ async def get_user(
     - `email`: Email único (formato válido)
     - `username`: Nome de usuário único (3-30 caracteres)
     - `password`: Senha forte (mínimo 6 caracteres)
-    - `full_name`: Nome completo do usuário
+    - `name`: Nome completo do usuário
 
     **Campos opcionais:**
     - `account_id`: ID da conta (usa conta do usuário logado se não fornecido)
@@ -243,7 +243,7 @@ async def get_user(
                         "id": 10,
                         "email": "maria@exemplo.com",
                         "username": "maria",
-                        "full_name": "Maria Santos",
+                        "name": "Maria Santos",
                         "account_id": 1,
                         "account_name": "HSGrowth",
                         "role_id": 2,
@@ -273,7 +273,7 @@ async def get_user(
 )
 async def create_user(
     user_data: UserCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -288,7 +288,7 @@ async def create_user(
         id=user.id,
         email=user.email,
         username=user.username,
-        full_name=user.name,
+        name=user.name,
         avatar_url=user.avatar_url,
         phone=getattr(user, 'phone', None),
         account_id=user.account_id,
@@ -321,7 +321,7 @@ async def update_user(
         id=user.id,
         email=user.email,
         username=user.username,
-        full_name=user.name,
+        name=user.name,
         avatar_url=user.avatar_url,
         phone=getattr(user, 'phone', None),
         account_id=user.account_id,
@@ -336,7 +336,7 @@ async def update_user(
 @router.delete("/{user_id}", summary="Deletar usuário")
 async def delete_user(
     user_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """

@@ -97,7 +97,7 @@ class CardAssignRequest(BaseModel):
     """
     Schema para atribuir card a um usuário.
     """
-    assigned_to_id: int = Field(..., description="ID do usuário responsável")
+    assigned_to_id: Optional[int] = Field(..., description="ID do usuário responsável (None para desatribuir)")
 
     model_config = {
         "json_schema_extra": {

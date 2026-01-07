@@ -127,7 +127,7 @@ class UserRepository:
         user = User(
             email=user_data.email,
             username=user_data.username,
-            name=user_data.full_name,
+            name=user_data.name,
             password_hash=password_hash,
             account_id=user_data.account_id,
             role_id=user_data.role_id,
@@ -160,10 +160,7 @@ class UserRepository:
         for field, value in update_data.items():
             if field == "password":
                 continue  # Senha é tratada separadamente
-            if field == "full_name":
-                setattr(user, "name", value)  # Mapeia full_name para name
-            else:
-                setattr(user, field, value)
+            setattr(user, field, value)
 
         # Atualiza senha se fornecida
         if password_hash:

@@ -13,7 +13,7 @@ from decimal import Decimal
 class GamificationPointBase(BaseModel):
     """Schema base para pontos de gamificação."""
     points: int = Field(..., description="Quantidade de pontos")
-    action_type: str = Field(..., description="Tipo de ação que gerou os pontos")
+    reason: str = Field(..., description="Tipo de ação que gerou os pontos")
     description: Optional[str] = Field(None, description="Descrição da ação")
 
 
@@ -38,9 +38,9 @@ class BadgeBase(BaseModel):
     """Schema base para badges."""
     name: str = Field(..., max_length=100, description="Nome do badge")
     description: Optional[str] = Field(None, description="Descrição do badge")
-    icon: Optional[str] = Field(None, description="Ícone ou imagem do badge")
-    criteria: str = Field(..., description="Critérios para conquistar o badge")
-    points_required: Optional[int] = Field(None, description="Pontos necessários para conquistar")
+    icon_url: Optional[str] = Field(None, description="URL do ícone ou imagem do badge")
+    criteria_type: str = Field(..., description="Tipo de critério (manual, automatic)")
+    criteria: Optional[dict] = Field(None, description="Critérios JSON para badges automáticos")
 
 
 class BadgeCreate(BadgeBase):
@@ -52,9 +52,9 @@ class BadgeUpdate(BaseModel):
     """Schema para atualizar badge."""
     name: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = None
-    icon: Optional[str] = None
-    criteria: Optional[str] = None
-    points_required: Optional[int] = None
+    icon_url: Optional[str] = None
+    criteria_type: Optional[str] = None
+    criteria: Optional[dict] = None
 
 
 class BadgeResponse(BadgeBase):

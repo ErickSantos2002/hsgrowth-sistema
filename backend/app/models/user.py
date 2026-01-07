@@ -37,6 +37,10 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     last_login_at = Column(DateTime, nullable=True)
     password_changed_at = Column(DateTime, nullable=True)
 
+    # Reset de senha
+    reset_token = Column(String(255), nullable=True)
+    reset_token_expires_at = Column(DateTime, nullable=True)
+
     # Avatar/Foto
     avatar_url = Column(String(500), nullable=True)
 

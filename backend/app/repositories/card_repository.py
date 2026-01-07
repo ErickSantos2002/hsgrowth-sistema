@@ -161,8 +161,7 @@ class CardRepository:
             due_date=card_data.due_date,
             contact_info=card_data.contact_info or {},
             position=position,
-            is_won=False,
-            is_lost=False
+            is_won=0  # 0 = aberto, 1 = ganho, -1 = perdido
         )
 
         self.db.add(card)
@@ -186,17 +185,15 @@ class CardRepository:
 
         for field, value in update_data.items():
             # Lógica especial para is_won e is_lost
+            # is_won: 0=aberto, 1=ganho, -1=perdido
             if field == "is_won" and value == True:
-                card.is_won = True
-                card.won_at = datetime.utcnow()
-                card.is_lost = False
-                card.lost_at = None
+                card.is_won = 1  # Marca como ganho
+                card.closed_at = datetime.utcnow()
             elif field == "is_lost" and value == True:
-                card.is_lost = True
-                card.lost_at = datetime.utcnow()
-                card.is_won = False
-                card.won_at = None
-            else:
+                card.is_won = -1  # Marca como perdido
+                card.closed_at = datetime.utcnow()
+            elif field not in ["is_won", "is_lost", "won_at", "lost_at"]:
+                # Não setar properties read-only diretamente
                 setattr(card, field, value)
 
         self.db.commit()

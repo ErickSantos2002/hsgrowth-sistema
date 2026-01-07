@@ -2,7 +2,7 @@
 Schemas Pydantic para Autenticação.
 Define os modelos de entrada/saída para endpoints de auth.
 """
-from typing import Optional
+from typing import Optional, Any
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -33,6 +33,7 @@ class TokenResponse(BaseModel):
     refresh_token: str = Field(..., description="Token JWT de refresh")
     token_type: str = Field(default="bearer", description="Tipo do token")
     expires_in: int = Field(..., description="Tempo de expiração do access_token em segundos")
+    user: Optional[Any] = Field(None, description="Informações do usuário logado")
 
     model_config = {
         "json_schema_extra": {
@@ -41,7 +42,12 @@ class TokenResponse(BaseModel):
                     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                     "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                     "token_type": "bearer",
-                    "expires_in": 28800
+                    "expires_in": 28800,
+                    "user": {
+                        "id": 1,
+                        "email": "usuario@example.com",
+                        "name": "Nome do Usuário"
+                    }
                 }
             ]
         }
@@ -60,9 +66,9 @@ class RegisterRequest(BaseModel):
     Request para registro de novo usuário.
     """
     email: EmailStr = Field(..., description="Email do usuário")
-    username: str = Field(..., min_length=3, max_length=50, description="Nome de usuário")
+    username: Optional[str] = Field(None, min_length=3, max_length=50, description="Nome de usuário")
     password: str = Field(..., min_length=6, description="Senha do usuário")
-    full_name: str = Field(..., min_length=3, max_length=255, description="Nome completo")
+    name: str = Field(..., min_length=3, max_length=255, description="Nome completo")
     account_id: Optional[int] = Field(None, description="ID da conta (account) - Admin only")
     role_id: Optional[int] = Field(None, description="ID do role - Admin only")
 
@@ -73,7 +79,7 @@ class RegisterRequest(BaseModel):
                     "email": "novousuario@example.com",
                     "username": "novousuario",
                     "password": "senha123",
-                    "full_name": "Novo Usuário da Silva"
+                    "name": "Novo Usuário da Silva"
                 }
             ]
         }

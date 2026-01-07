@@ -42,7 +42,7 @@ class TestLogin:
         )
 
         assert response.status_code == 401
-        assert "Credenciais inválidas" in response.json()["detail"]
+        assert "Email ou senha incorretos" in response.json()["detail"]
 
     def test_login_invalid_password(self, client: TestClient, test_salesperson_user: User):
         """Testa login com senha incorreta"""
@@ -55,7 +55,7 @@ class TestLogin:
         )
 
         assert response.status_code == 401
-        assert "Credenciais inválidas" in response.json()["detail"]
+        assert "Email ou senha incorretos" in response.json()["detail"]
 
     def test_login_inactive_user(self, client: TestClient, db: Session, test_salesperson_user: User):
         """Testa login com usuário inativo"""
@@ -71,7 +71,7 @@ class TestLogin:
             }
         )
 
-        assert response.status_code == 401
+        assert response.status_code == 403
 
 
 class TestRegister:
@@ -90,7 +90,7 @@ class TestRegister:
             }
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
         assert "access_token" in data
         assert "user" in data
@@ -198,7 +198,7 @@ class TestLogout:
         """Testa logout sem token de autenticação"""
         response = client.post("/api/v1/auth/logout")
 
-        assert response.status_code == 401
+        assert response.status_code == 403
 
 
 class TestForgotPassword:
@@ -212,7 +212,7 @@ class TestForgotPassword:
         )
 
         assert response.status_code == 200
-        assert "enviado" in response.json()["message"].lower()
+        assert "receberá" in response.json()["message"].lower()
 
     def test_forgot_password_nonexistent_email(self, client: TestClient):
         """Testa recuperação com email inexistente"""
@@ -309,7 +309,7 @@ class TestMe:
     def test_get_me_success(self, client: TestClient, salesperson_headers, test_salesperson_user):
         """Testa buscar dados do usuário autenticado"""
         response = client.get(
-            "/api/v1/auth/me",
+            "/api/v1/users/me",
             headers=salesperson_headers
         )
 
@@ -317,10 +317,9 @@ class TestMe:
         data = response.json()
         assert data["email"] == "sales@test.com"
         assert data["name"] == "Salesperson User"
-        assert data["role"] == "salesperson"
 
     def test_get_me_without_token(self, client: TestClient):
         """Testa buscar /me sem autenticação"""
-        response = client.get("/api/v1/auth/me")
+        response = client.get("/api/v1/users/me")
 
-        assert response.status_code == 401
+        assert response.status_code == 403

@@ -2,8 +2,9 @@
 Modelo de UserBadge (Badges conquistadas por usuários).
 Relação many-to-many entre User e GamificationBadge.
 """
-from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint, DateTime
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 from app.db.base import Base
 from app.models.mixins import TimestampMixin
@@ -25,6 +26,9 @@ class UserBadge(Base, TimestampMixin):
 
     # Quem concedeu a badge (para badges manuais)
     awarded_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    # Data em que a badge foi conquistada
+    awarded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Constraint: um usuário não pode ter a mesma badge múltiplas vezes
     __table_args__ = (

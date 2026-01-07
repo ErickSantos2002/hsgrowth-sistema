@@ -4,15 +4,19 @@ Define fixtures compartilhadas entre todos os testes.
 """
 import os
 import pytest
+import asyncio
 from typing import Generator
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
+# IMPORTANTE: Definir ambiente de teste ANTES de importar o app
+os.environ["ENVIRONMENT"] = "testing"
+
 from app.main import app
 from app.db.base import Base
-from app.db.session import get_db
+from app.api.deps import get_db  # IMPORTANTE: Importar do mesmo lugar que os endpoints!
 from app.core.security import hash_password, create_access_token
 from app.models.account import Account
 from app.models.user import User
@@ -35,6 +39,27 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 
 @pytest.fixture(scope="function")
+def event_loop():
+    """
+    Cria um novo event loop para cada teste.
+    Isso evita o erro "RuntimeError: Event loop is closed".
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    yield loop
+    # Limpa todas as tasks pendentes
+    try:
+        pending = asyncio.all_tasks(loop)
+        for task in pending:
+            task.cancel()
+        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+    except Exception:
+        pass
+    finally:
+        loop.close()
+
+
+@pytest.fixture(scope="function")
 def db() -> Generator[Session, None, None]:
     """
     Fixture que cria um banco de dados de teste limpo para cada teste.
@@ -47,9 +72,12 @@ def db() -> Generator[Session, None, None]:
     Base.metadata.create_all(bind=engine)
 
     db_session = TestingSessionLocal()
+    # IMPORTANTE: Desabilita autocommit e autoflush para controle manual
+    db_session.expire_on_commit = False
     try:
         yield db_session
     finally:
+        db_session.rollback()  # Garante que não há transações pendentes
         db_session.close()
         # Dropa todas as tabelas após o teste
         Base.metadata.drop_all(bind=engine)
@@ -70,13 +98,19 @@ def client(db: Session) -> Generator[TestClient, None, None]:
         try:
             yield db
         finally:
+            # Não fechar a sessão aqui, ela é gerenciada pela fixture db
             pass
 
+    # Limpa overrides anteriores
+    app.dependency_overrides.clear()
+
+    # Aplica o override
     app.dependency_overrides[get_db] = override_get_db
 
     with TestClient(app) as test_client:
         yield test_client
 
+    # Limpa overrides após o teste
     app.dependency_overrides.clear()
 
 
@@ -315,7 +349,6 @@ def test_card(db: Session, test_lists: list[List], test_salesperson_user: User) 
         description="Card de teste",
         list_id=test_lists[0].id,
         assigned_to_id=test_salesperson_user.id,
-        stage="lead",
         value=1000.00,
         position=0
     )

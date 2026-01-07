@@ -12,8 +12,8 @@ class UserBase(BaseModel):
     Schema base de usuário (campos comuns).
     """
     email: EmailStr = Field(..., description="Email do usuário")
-    username: str = Field(..., min_length=3, max_length=50, description="Nome de usuário")
-    full_name: str = Field(..., min_length=3, max_length=255, description="Nome completo")
+    username: Optional[str] = Field(None, min_length=3, max_length=50, description="Nome de usuário")
+    name: str = Field(..., min_length=3, max_length=255, description="Nome completo")
     avatar_url: Optional[str] = Field(None, max_length=500, description="URL do avatar")
     phone: Optional[str] = Field(None, max_length=20, description="Telefone")
 
@@ -32,7 +32,7 @@ class UserCreate(UserBase):
                 {
                     "email": "usuario@example.com",
                     "username": "usuario123",
-                    "full_name": "João da Silva",
+                    "name": "João da Silva",
                     "password": "senha123",
                     "account_id": 1,
                     "role_id": 2,
@@ -49,7 +49,7 @@ class UserUpdate(BaseModel):
     """
     email: Optional[EmailStr] = Field(None, description="Email do usuário")
     username: Optional[str] = Field(None, min_length=3, max_length=50, description="Nome de usuário")
-    full_name: Optional[str] = Field(None, min_length=3, max_length=255, description="Nome completo")
+    name: Optional[str] = Field(None, min_length=3, max_length=255, description="Nome completo")
     avatar_url: Optional[str] = Field(None, max_length=500, description="URL do avatar")
     phone: Optional[str] = Field(None, max_length=20, description="Telefone")
     password: Optional[str] = Field(None, min_length=6, description="Nova senha")
@@ -60,7 +60,7 @@ class UserUpdate(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "full_name": "João da Silva Atualizado",
+                    "name": "João da Silva Atualizado",
                     "phone": "(11) 98888-8888",
                     "avatar_url": "https://example.com/avatar.jpg"
                 }
@@ -93,7 +93,7 @@ class UserResponse(UserBase):
                     "id": 1,
                     "email": "usuario@example.com",
                     "username": "usuario123",
-                    "full_name": "João da Silva",
+                    "name": "João da Silva",
                     "avatar_url": "https://example.com/avatar.jpg",
                     "phone": "(11) 99999-9999",
                     "account_id": 1,
