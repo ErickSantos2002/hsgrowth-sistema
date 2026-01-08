@@ -16,7 +16,7 @@ import {
     Workflow,
 } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/logo.png";
 
 const menuItems = [
@@ -159,10 +159,14 @@ export default function MainLayout() {
                                 <UserCircle size={20} className="text-blue-400" />
                                 <div className="flex flex-col">
                                     <span className="text-sm text-white font-medium">
-                                        {user?.username || "Usuário"}
+                                        {user?.full_name || user?.username || "Usuário"}
                                     </span>
                                     <span className="text-xs text-slate-400">
-                                        {user?.role === "admin" ? "Administrador" : "Usuário"}
+                                        {user?.role === "admin"
+                                            ? "Administrador"
+                                            : user?.role === "manager"
+                                            ? "Gerente"
+                                            : "Usuário"}
                                     </span>
                                 </div>
                             </div>

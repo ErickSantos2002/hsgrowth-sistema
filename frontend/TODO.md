@@ -1,0 +1,1210 @@
+# TODO - Frontend HSGrowth CRM
+
+**Status Geral:** ✅ Base implementada | ⏳ Páginas em desenvolvimento
+
+---
+
+## ✅ FASE 0 - BASE (CONCLUÍDA)
+
+**Status:** ✅ 100% Completo
+
+- [x] Configurar projeto Vite + React + TypeScript
+- [x] Instalar e configurar Tailwind CSS
+- [x] Criar estrutura de diretórios
+- [x] Configurar React Router
+- [x] Criar todos os types TypeScript
+- [x] Implementar serviços de API (axios + interceptors)
+- [x] Criar AuthContext e useAuth hook
+- [x] Implementar MainLayout (sidebar + topbar)
+- [x] Criar página de Login funcional
+- [x] Implementar ProtectedRoute
+- [x] Configurar variáveis de ambiente
+- [x] Integrar com backend em produção
+- [x] Criar README.md completo
+
+---
+
+## 📊 FASE 1 - DASHBOARD (KPIs e Métricas)
+
+**Prioridade:** 🔴 Alta
+**Estimativa:** ~1-2 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 1.1 - Estrutura da Página
+- [ ] Criar componente `Dashboard.tsx` completo (substituir placeholder)
+- [ ] Criar layout com grid responsivo (cards + gráficos)
+- [ ] Adicionar header com título "Dashboard" e filtros de período
+- [ ] Implementar loading skeleton para carregamento
+
+#### 1.2 - Serviço de Dashboard
+- [ ] Criar `reportService.ts` com função `getDashboardKPIs()`
+- [ ] Implementar tipos `DashboardKPIs` (já existe em types)
+- [ ] Adicionar tratamento de erros
+
+#### 1.3 - Cards de KPIs Principais
+- [ ] Card: Total de Cards (abertos/ganhos/perdidos)
+- [ ] Card: Valor Total em Pipeline
+- [ ] Card: Valor Ganho no Período
+- [ ] Card: Taxa de Conversão
+- [ ] Card: Ticket Médio
+- [ ] Adicionar ícones com Lucide React
+- [ ] Implementar animação de contagem (count-up)
+
+#### 1.4 - Gráfico: Cards por Estágio
+- [ ] Criar gráfico de barras com Recharts
+- [ ] Mostrar quantidade de cards por lista/estágio
+- [ ] Adicionar tooltip com detalhes
+- [ ] Implementar cores dinâmicas
+
+#### 1.5 - Gráfico: Evolução de Vendas
+- [ ] Criar gráfico de linha com Recharts
+- [ ] Mostrar evolução mensal de vendas ganhas
+- [ ] Adicionar legenda
+- [ ] Implementar zoom/pan (opcional)
+
+#### 1.6 - Top Performers
+- [ ] Criar lista/tabela com top 5 vendedores
+- [ ] Mostrar avatar, nome, deals ganhos, valor total
+- [ ] Adicionar ordenação
+- [ ] Implementar badges de posição (1º, 2º, 3º)
+
+#### 1.7 - Filtros
+- [ ] Select de período: Hoje, Esta Semana, Este Mês, Últimos 3 Meses, Este Ano
+- [ ] Botão de refresh manual
+- [ ] Mostrar última atualização
+- [ ] Aplicar filtros e recarregar dados
+
+#### 1.8 - Exportação
+- [ ] Botão "Exportar PDF" (usar jsPDF)
+- [ ] Botão "Exportar Excel" (usar XLSX)
+- [ ] Implementar funções de exportação com dados do dashboard
+
+#### 1.9 - Responsividade
+- [ ] Testar em mobile (<640px)
+- [ ] Testar em tablet (640px-1024px)
+- [ ] Testar em desktop (>1024px)
+- [ ] Ajustar grid e gráficos
+
+---
+
+## 📋 FASE 2 - BOARDS (Listagem e Gestão)
+
+**Prioridade:** 🔴 Alta
+**Estimativa:** ~1 dia
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 2.1 - Estrutura da Página
+- [ ] Criar componente `Boards.tsx`
+- [ ] Layout com header + grid de cards
+- [ ] Botão "Novo Board" no header
+- [ ] Implementar loading skeleton
+
+#### 2.2 - Listagem de Boards
+- [ ] Chamar `boardService.list()` ao carregar
+- [ ] Renderizar cards dos boards em grid
+- [ ] Mostrar: nome, descrição, status (ativo/inativo)
+- [ ] Adicionar badge de status
+- [ ] Implementar paginação (se necessário)
+
+#### 2.3 - Card de Board
+- [ ] Criar componente `BoardCard.tsx`
+- [ ] Design com glassmorphism
+- [ ] Mostrar nome, descrição (truncada), data de criação
+- [ ] Botões de ação: Visualizar, Editar, Duplicar, Arquivar
+- [ ] Adicionar hover effects
+
+#### 2.4 - Modal: Criar/Editar Board
+- [ ] Criar componente `BoardModal.tsx`
+- [ ] Formulário: nome (required), descrição, status
+- [ ] Validação de campos
+- [ ] Integrar com `boardService.create()` e `boardService.update()`
+- [ ] Feedback com toast (sucesso/erro)
+
+#### 2.5 - Ações
+- [ ] Duplicar board: modal de confirmação + `boardService.duplicate()`
+- [ ] Arquivar/Ativar board: toggle de status
+- [ ] Deletar board: modal de confirmação + `boardService.delete()`
+- [ ] Feedback com toasts
+
+#### 2.6 - Filtros e Busca
+- [ ] Campo de busca por nome
+- [ ] Filtro por status (Todos, Ativos, Arquivados)
+- [ ] Implementar debounce na busca
+
+#### 2.7 - Estado Vazio
+- [ ] Componente `EmptyState` quando não há boards
+- [ ] Mensagem motivacional + botão "Criar Primeiro Board"
+
+---
+
+## 🎯 FASE 3 - KANBAN BOARD (Visualização com Drag & Drop)
+
+**Prioridade:** 🔴 Alta
+**Estimativa:** ~2-3 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 3.1 - Estrutura da Página
+- [ ] Criar componente `KanbanBoard.tsx`
+- [ ] Rota dinâmica: `/boards/:boardId`
+- [ ] Header com nome do board e ações
+- [ ] Layout horizontal com scroll
+
+#### 3.2 - Carregar Dados
+- [ ] Buscar board: `boardService.getById(boardId)`
+- [ ] Buscar listas: `listService.list({ board_id })`
+- [ ] Buscar cards: `cardService.list({ board_id })`
+- [ ] Organizar cards por lista
+
+#### 3.3 - Renderizar Listas
+- [ ] Criar componente `KanbanList.tsx`
+- [ ] Container vertical para cada lista
+- [ ] Header: nome da lista, contador de cards, menu de ações
+- [ ] Área de drop para cards
+
+#### 3.4 - Renderizar Cards
+- [ ] Criar componente `KanbanCard.tsx`
+- [ ] Design compacto: título, valor, cliente, responsável
+- [ ] Avatar do responsável (inicial do nome)
+- [ ] Badge de status (aberto/ganho/perdido)
+- [ ] Badge de vencimento (atrasado em vermelho)
+- [ ] Click abre modal de detalhes
+
+#### 3.5 - Drag & Drop
+- [ ] Instalar `@dnd-kit/core` e `@dnd-kit/sortable`
+- [ ] Implementar drag de cards entre listas
+- [ ] Animações suaves
+- [ ] Chamar `cardService.move()` ao soltar
+- [ ] Atualizar state local otimisticamente
+
+#### 3.6 - Ações nas Listas
+- [ ] Botão "Nova Lista"
+- [ ] Editar nome da lista
+- [ ] Arquivar/Deletar lista
+- [ ] Reordenar listas (opcional)
+
+#### 3.7 - Ações nos Cards
+- [ ] Botão "Novo Card" em cada lista
+- [ ] Editar card (abre modal)
+- [ ] Marcar como ganho/perdido (quick action)
+- [ ] Deletar card
+- [ ] Atribuir a usuário (quick action)
+
+#### 3.8 - Filtros e Busca
+- [ ] Campo de busca global de cards
+- [ ] Filtro por responsável
+- [ ] Filtro por cliente
+- [ ] Filtro por status
+- [ ] Filtro por vencimento
+- [ ] Botão "Limpar Filtros"
+
+#### 3.9 - Menu de Opções do Board
+- [ ] Editar board
+- [ ] Duplicar board
+- [ ] Arquivar board
+- [ ] Configurações (campos customizados)
+- [ ] Exportar cards (Excel/PDF)
+
+---
+
+## 🎴 FASE 4 - CARD DETAILS (Modal de Detalhes)
+
+**Prioridade:** 🔴 Alta
+**Estimativa:** ~1-2 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 4.1 - Estrutura do Modal
+- [ ] Criar componente `CardDetailsModal.tsx`
+- [ ] Modal grande (full-screen em mobile)
+- [ ] Layout: coluna principal (detalhes) + sidebar (ações)
+- [ ] Fechar com X ou ESC
+
+#### 4.2 - Header do Card
+- [ ] Título editável inline
+- [ ] Badge de status (aberto/ganho/perdido)
+- [ ] Menu de ações (•••)
+- [ ] Botão de fechar (X)
+
+#### 4.3 - Informações Principais
+- [ ] Cliente: nome + link para página do cliente
+- [ ] Valor: moeda + valor (editável)
+- [ ] Responsável: avatar + nome (editável com select)
+- [ ] Data de vencimento: datepicker
+- [ ] Lista atual: select para mover
+
+#### 4.4 - Descrição
+- [ ] Textarea editável
+- [ ] Markdown support (opcional)
+- [ ] Botão "Salvar" / auto-save
+
+#### 4.5 - Campos Customizados
+- [ ] Renderizar campos definidos no board
+- [ ] Inputs dinâmicos por tipo (text, number, date, select, etc)
+- [ ] Salvar valores em `CardFieldValue`
+
+#### 4.6 - Timeline/Atividades
+- [ ] Listar atividades do card (chronological)
+- [ ] Tipos: criado, movido, atribuído, ganho, perdido, comentário
+- [ ] Avatar + nome do usuário + data/hora
+- [ ] Scroll infinito (opcional)
+
+#### 4.7 - Comentários
+- [ ] Textarea para novo comentário
+- [ ] Botão "Adicionar Comentário"
+- [ ] Listar comentários existentes
+- [ ] Editar/Deletar próprios comentários
+
+#### 4.8 - Sidebar de Ações
+- [ ] Botão: Marcar como Ganho
+- [ ] Botão: Marcar como Perdido
+- [ ] Botão: Atribuir a Alguém
+- [ ] Botão: Mover para Lista
+- [ ] Botão: Transferir (abre modal)
+- [ ] Botão: Duplicar
+- [ ] Botão: Deletar (confirmação)
+
+#### 4.9 - Informações Extras
+- [ ] Data de criação
+- [ ] Última atualização
+- [ ] Criado por
+- [ ] ID do card (#123)
+
+#### 4.10 - Navegação
+- [ ] Botão "Próximo Card" (se houver)
+- [ ] Botão "Card Anterior" (se houver)
+- [ ] Atalhos de teclado (setas)
+
+---
+
+## 👥 FASE 5 - CLIENTES (CRUD Completo)
+
+**Prioridade:** 🟡 Média
+**Estimativa:** ~1 dia
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 5.1 - Estrutura da Página
+- [ ] Criar componente `Clients.tsx`
+- [ ] Layout: header + tabela/lista
+- [ ] Botão "Novo Cliente"
+- [ ] Loading skeleton
+
+#### 5.2 - Listagem de Clientes
+- [ ] Chamar `clientService.list()` com paginação
+- [ ] Renderizar tabela responsiva
+- [ ] Colunas: Nome, Empresa, Email, Telefone, Cidade, Status, Ações
+- [ ] Implementar paginação (controles de página)
+
+#### 5.3 - Busca e Filtros
+- [ ] Campo de busca (nome, empresa, email)
+- [ ] Filtro por status (Ativo/Inativo)
+- [ ] Filtro por estado (dropdown com UFs)
+- [ ] Filtro por tipo (Pessoa Física / Jurídica)
+
+#### 5.4 - Modal: Criar/Editar Cliente
+- [ ] Criar componente `ClientModal.tsx`
+- [ ] Formulário completo:
+  - Nome (required)
+  - Email
+  - Telefone (máscara brasileira)
+  - Empresa/Razão Social
+  - CPF/CNPJ (máscara + validação)
+  - Endereço
+  - Cidade
+  - Estado (select com UFs)
+  - País (default: Brasil)
+  - Website
+  - Observações (textarea)
+  - Status (checkbox: ativo)
+- [ ] Validação de campos
+- [ ] Integrar com `clientService.create()` e `clientService.update()`
+
+#### 5.5 - Ações
+- [ ] Ver detalhes (abre modal ou página)
+- [ ] Editar cliente
+- [ ] Desativar/Ativar cliente
+- [ ] Deletar cliente (confirmação)
+
+#### 5.6 - Detalhes do Cliente
+- [ ] Criar página/modal `ClientDetails.tsx`
+- [ ] Informações completas
+- [ ] Lista de cards associados ao cliente
+- [ ] Histórico de atividades
+- [ ] Botão "Criar Card" para este cliente
+
+#### 5.7 - Importação
+- [ ] Botão "Importar Clientes"
+- [ ] Modal com upload de CSV/Excel
+- [ ] Preview dos dados
+- [ ] Mapeamento de colunas
+- [ ] Validação e importação em lote
+
+#### 5.8 - Exportação
+- [ ] Botão "Exportar"
+- [ ] Opções: Excel, CSV, PDF
+- [ ] Aplicar filtros ativos na exportação
+
+---
+
+## 📇 FASE 6 - CARDS (Listagem e Gestão)
+
+**Prioridade:** 🟡 Média
+**Estimativa:** ~1 dia
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 6.1 - Estrutura da Página
+- [ ] Criar componente `Cards.tsx`
+- [ ] Layout: header + tabela/cards
+- [ ] Botão "Novo Card"
+- [ ] Toggle: visualização lista/grid
+
+#### 6.2 - Listagem de Cards
+- [ ] Chamar `cardService.list()` com filtros e paginação
+- [ ] Renderizar tabela responsiva
+- [ ] Colunas: Título, Cliente, Valor, Responsável, Lista, Status, Vencimento, Ações
+- [ ] Highlight cards atrasados (vermelho)
+
+#### 6.3 - Filtros Avançados
+- [ ] Campo de busca (título, cliente)
+- [ ] Filtro por board
+- [ ] Filtro por lista
+- [ ] Filtro por responsável
+- [ ] Filtro por cliente
+- [ ] Filtro por status (aberto/ganho/perdido)
+- [ ] Filtro por data de vencimento (range)
+- [ ] Ordenação: data criação, valor, vencimento
+
+#### 6.4 - Modal: Criar/Editar Card
+- [ ] Criar componente `CardModal.tsx`
+- [ ] Formulário:
+  - Board (select - required)
+  - Lista (select - required)
+  - Título (required)
+  - Descrição (textarea)
+  - Cliente (select com busca)
+  - Responsável (select)
+  - Valor (number + moeda)
+  - Data de vencimento
+- [ ] Validação
+- [ ] Integrar com `cardService.create()` e `cardService.update()`
+
+#### 6.5 - Ações Rápidas
+- [ ] Ver detalhes (abre modal de detalhes)
+- [ ] Editar
+- [ ] Marcar como ganho/perdido
+- [ ] Atribuir a usuário
+- [ ] Mover para lista
+- [ ] Deletar
+
+#### 6.6 - Ações em Lote
+- [ ] Checkbox para selecionar múltiplos cards
+- [ ] Barra de ações: Mover, Atribuir, Deletar
+- [ ] Confirmar ações em lote
+
+#### 6.7 - Visualização Grid
+- [ ] Renderizar cards como cards visuais
+- [ ] Similar ao Kanban mas em grid
+- [ ] Filtros mantidos
+
+#### 6.8 - Exportação
+- [ ] Botão "Exportar Cards"
+- [ ] Opções: Excel, CSV, PDF
+- [ ] Aplicar filtros na exportação
+
+---
+
+## 👤 FASE 7 - USUÁRIOS (CRUD - Admin Only)
+
+**Prioridade:** 🟡 Média
+**Estimativa:** ~1 dia
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 7.1 - Estrutura da Página
+- [ ] Criar componente `Users.tsx`
+- [ ] Verificar permissão: apenas admin pode acessar
+- [ ] Layout: header + tabela
+- [ ] Botão "Novo Usuário"
+
+#### 7.2 - Listagem de Usuários
+- [ ] Chamar `userService.list()` com paginação
+- [ ] Renderizar tabela
+- [ ] Colunas: Avatar, Nome, Email, Username, Role, Status, Ações
+- [ ] Badge de role (Admin, Manager, User)
+- [ ] Status: Ativo/Inativo
+
+#### 7.3 - Busca e Filtros
+- [ ] Campo de busca (nome, email, username)
+- [ ] Filtro por role
+- [ ] Filtro por status (ativo/inativo)
+
+#### 7.4 - Modal: Criar/Editar Usuário
+- [ ] Criar componente `UserModal.tsx`
+- [ ] Formulário:
+  - Username (required)
+  - Email (required, validação)
+  - Nome Completo
+  - Senha (required na criação, opcional na edição)
+  - Confirmar Senha
+  - Role (select: Admin, Manager, User)
+  - Status (checkbox: ativo)
+- [ ] Validação de campos
+- [ ] Validação de senha forte (8+ chars, maiúscula, número)
+- [ ] Integrar com `userService.create()` e `userService.update()`
+
+#### 7.5 - Ações
+- [ ] Ver perfil/detalhes
+- [ ] Editar usuário
+- [ ] Reset de senha (admin pode forçar)
+- [ ] Desativar/Ativar usuário
+- [ ] Deletar usuário (confirmação)
+
+#### 7.6 - Perfil do Usuário
+- [ ] Criar página `UserProfile.tsx`
+- [ ] Informações completas
+- [ ] Estatísticas: cards ganhos, valor total, badges
+- [ ] Histórico de atividades
+- [ ] Botão "Ver Dashboard de Gamificação"
+
+#### 7.7 - Avatar
+- [ ] Upload de imagem de avatar (opcional)
+- [ ] Fallback: inicial do nome
+- [ ] Preview antes de salvar
+
+---
+
+## 🏆 FASE 8 - GAMIFICAÇÃO (Pontos, Badges e Rankings)
+
+**Prioridade:** 🟢 Baixa
+**Estimativa:** ~2 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 8.1 - Estrutura da Página
+- [ ] Criar componente `Gamification.tsx`
+- [ ] Layout com tabs: Meu Perfil, Rankings, Badges
+- [ ] Design motivacional e colorido
+
+#### 8.2 - Serviço de Gamificação
+- [ ] Criar `gamificationService.ts`
+- [ ] Funções: getMySummary(), getUserSummary(id), getRankings(), getBadges()
+
+#### 8.3 - Tab: Meu Perfil
+- [ ] Header com avatar e nome
+- [ ] Card: Total de Pontos (grande e destacado)
+- [ ] Barra de progresso para próximo nível
+- [ ] Card: Badges Conquistados (quantidade)
+- [ ] Galeria de badges recentes (últimos 5)
+- [ ] Card: Posição no Ranking (semanal/mensal)
+
+#### 8.4 - Tab: Rankings
+- [ ] Subtabs: Semanal, Mensal, Trimestral, Anual
+- [ ] Renderizar leaderboard (top 10 ou mais)
+- [ ] Posição, Avatar, Nome, Pontos
+- [ ] Highlight na posição do usuário logado
+- [ ] Medals/badges para top 3 (ouro, prata, bronze)
+
+#### 8.5 - Tab: Badges
+- [ ] Listar todos os badges disponíveis
+- [ ] Grid com imagem, nome, descrição
+- [ ] Estado: Conquistado (colorido) ou Bloqueado (cinza)
+- [ ] Data de conquista (se conquistado)
+- [ ] Critérios para desbloquear (se bloqueado)
+
+#### 8.6 - Histórico de Pontos
+- [ ] Criar modal `PointsHistoryModal.tsx`
+- [ ] Listar últimas atividades que geraram pontos
+- [ ] Data, Razão (ex: "Card ganho"), Pontos (+50)
+- [ ] Link para o card relacionado (se houver)
+
+#### 8.7 - Notificações de Conquistas
+- [ ] Toast especial quando ganhar um badge
+- [ ] Animação celebratória
+- [ ] Exibir badge conquistado
+
+#### 8.8 - Admin: Gerenciar Pontos
+- [ ] (Opcional) Página admin para atribuir pontos manualmente
+- [ ] (Opcional) Criar/editar badges customizados
+
+---
+
+## 🔄 FASE 9 - TRANSFERÊNCIAS (Solicitação e Aprovação)
+
+**Prioridade:** 🟢 Baixa
+**Estimativa:** ~1 dia
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 9.1 - Estrutura da Página
+- [ ] Criar componente `Transfers.tsx`
+- [ ] Layout com tabs: Minhas Solicitações, Recebidas, Histórico
+- [ ] Botão "Nova Transferência"
+
+#### 9.2 - Serviço de Transferências
+- [ ] Criar `transferService.ts`
+- [ ] Funções: create(), list(), approve(), reject(), getBatch()
+
+#### 9.3 - Modal: Nova Transferência
+- [ ] Criar componente `TransferModal.tsx`
+- [ ] Selecionar card(s) para transferir
+- [ ] Selecionar usuário destino
+- [ ] Razão da transferência (textarea)
+- [ ] Preview dos cards selecionados
+- [ ] Botão "Solicitar Transferência"
+
+#### 9.4 - Tab: Minhas Solicitações
+- [ ] Listar transferências criadas pelo usuário
+- [ ] Status: Pendente, Aprovada, Rejeitada
+- [ ] Informações: Card, Para Quem, Data, Status
+- [ ] Botão "Cancelar" (se pendente)
+
+#### 9.5 - Tab: Recebidas
+- [ ] Listar transferências onde usuário é o destino
+- [ ] Filtrar por status (Pendente, Todas)
+- [ ] Card expandido com detalhes
+- [ ] Botões: Aprovar / Rejeitar (se pendente)
+
+#### 9.6 - Aprovar/Rejeitar
+- [ ] Modal de confirmação para aprovar
+- [ ] Modal para rejeitar com campo de motivo
+- [ ] Chamar `transferService.approve()` ou `reject()`
+- [ ] Atualizar lista após ação
+- [ ] Toast de sucesso
+
+#### 9.7 - Tab: Histórico
+- [ ] Listar todas as transferências (enviadas + recebidas)
+- [ ] Filtros: Tipo (enviadas/recebidas), Status, Período
+- [ ] Informações completas
+- [ ] Expandir para ver detalhes
+
+#### 9.8 - Notificações
+- [ ] Notificação quando receber solicitação
+- [ ] Notificação quando solicitação for aprovada/rejeitada
+
+---
+
+## 📊 FASE 10 - RELATÓRIOS (Vendas e Conversão)
+
+**Prioridade:** 🟡 Média
+**Estimativa:** ~2 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 10.1 - Estrutura da Página
+- [ ] Criar componente `Reports.tsx`
+- [ ] Layout com tabs: Vendas, Conversão, Transferências
+- [ ] Filtros globais: período, board, usuário
+
+#### 10.2 - Serviço de Relatórios
+- [ ] Criar `reportService.ts` (se não existir)
+- [ ] Funções: getSalesReport(), getConversionReport(), getTransfersReport()
+
+#### 10.3 - Tab: Relatório de Vendas
+- [ ] Formulário de filtros: período (data início/fim), board, usuário
+- [ ] Botão "Gerar Relatório"
+- [ ] Exibir resultados:
+  - Total de deals
+  - Deals ganhos/perdidos
+  - Valor total ganho
+  - Taxa de conversão
+  - Ticket médio
+- [ ] Tabela: Vendas por Usuário (nome, deals ganhos, valor)
+- [ ] Gráfico: Evolução mensal de vendas (Recharts)
+- [ ] Botão "Exportar" (PDF/Excel)
+
+#### 10.4 - Tab: Relatório de Conversão (Funil)
+- [ ] Filtros: período, board
+- [ ] Gráfico de funil (Recharts)
+- [ ] Mostrar cada estágio (lista) com:
+  - Quantidade de cards
+  - Taxa de conversão
+  - Tempo médio no estágio
+- [ ] Métrica: taxa de conversão geral
+- [ ] Métrica: ciclo médio de vendas
+- [ ] Exportar relatório
+
+#### 10.5 - Tab: Relatório de Transferências
+- [ ] Filtros: período
+- [ ] Total de transferências
+- [ ] Status: Aprovadas, Rejeitadas, Pendentes
+- [ ] Tabela: Transferências por Usuário
+- [ ] Gráfico: Evolução de transferências no tempo
+- [ ] Exportar relatório
+
+#### 10.6 - Exportação PDF
+- [ ] Usar jsPDF para gerar PDF
+- [ ] Layout profissional com logo
+- [ ] Incluir gráficos como imagens
+- [ ] Tabelas formatadas
+- [ ] Download automático
+
+#### 10.7 - Exportação Excel
+- [ ] Usar XLSX para gerar Excel
+- [ ] Múltiplas abas (se necessário)
+- [ ] Formatação de células
+- [ ] Download automático
+
+---
+
+## ⚙️ FASE 11 - AUTOMAÇÕES (Criar e Gerenciar)
+
+**Prioridade:** 🟢 Baixa
+**Estimativa:** ~2 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 11.1 - Estrutura da Página
+- [ ] Criar componente `Automations.tsx`
+- [ ] Layout: header + lista de automações
+- [ ] Botão "Nova Automação"
+- [ ] Filtro por board
+
+#### 11.2 - Serviço de Automações
+- [ ] Criar `automationService.ts`
+- [ ] Funções: list(), getById(), create(), update(), delete(), getExecutions()
+
+#### 11.3 - Listagem de Automações
+- [ ] Chamar `automationService.list({ board_id })`
+- [ ] Renderizar cards/lista
+- [ ] Informações: Nome, Tipo (Trigger/Scheduled), Status (Ativa/Inativa), Board
+- [ ] Toggle para ativar/desativar
+- [ ] Botões: Editar, Ver Execuções, Deletar
+
+#### 11.4 - Modal: Criar/Editar Automação - Passo 1 (Info Básica)
+- [ ] Criar componente `AutomationModal.tsx` com wizard
+- [ ] Nome da automação (required)
+- [ ] Descrição
+- [ ] Board (select - required)
+- [ ] Tipo: Trigger ou Scheduled
+- [ ] Botão "Próximo"
+
+#### 11.5 - Modal: Passo 2 (Trigger/Schedule)
+- [ ] Se Trigger:
+  - [ ] Select: Evento (card_created, card_moved, card_won, card_lost, etc)
+  - [ ] Condições: campo, operador, valor (ex: valor > 1000)
+- [ ] Se Scheduled:
+  - [ ] Select: Tipo de agendamento (daily, weekly, monthly)
+  - [ ] Inputs específicos (hora, dia da semana, dia do mês)
+- [ ] Botão "Próximo"
+
+#### 11.6 - Modal: Passo 3 (Ações)
+- [ ] Adicionar múltiplas ações (botão "+ Adicionar Ação")
+- [ ] Tipos de ação:
+  - [ ] Enviar email
+  - [ ] Mover card para lista
+  - [ ] Atribuir card a usuário
+  - [ ] Alterar campo customizado
+  - [ ] Criar notificação
+- [ ] Configurações específicas por tipo de ação
+- [ ] Remover ação
+- [ ] Botão "Salvar Automação"
+
+#### 11.7 - Preview/Teste
+- [ ] (Opcional) Botão "Testar Automação"
+- [ ] Simular execução e mostrar resultados
+
+#### 11.8 - Histórico de Execuções
+- [ ] Modal `AutomationExecutionsModal.tsx`
+- [ ] Listar últimas execuções
+- [ ] Data, Status (Sucesso/Erro), Tempo de execução
+- [ ] Expandir para ver detalhes/logs
+
+#### 11.9 - Templates de Automações
+- [ ] (Opcional) Galeria de templates pré-configurados
+- [ ] Ex: "Enviar email quando card ganho", "Mover card atrasado"
+- [ ] Duplicar template e customizar
+
+---
+
+## 🔔 FASE 12 - NOTIFICAÇÕES (Bell Icon e Listagem)
+
+**Prioridade:** 🟡 Média
+**Estimativa:** ~1 dia
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 12.1 - Serviço de Notificações
+- [ ] Criar `notificationService.ts`
+- [ ] Funções: list(), getStats(), markAsRead(), delete()
+
+#### 12.2 - Bell Icon no Header
+- [ ] Adicionar ícone de sino no MainLayout (topbar)
+- [ ] Badge com contador de não lidas
+- [ ] Atualizar contador periodicamente (polling ou websocket)
+
+#### 12.3 - Dropdown de Notificações
+- [ ] Criar componente `NotificationsDropdown.tsx`
+- [ ] Click no bell abre dropdown
+- [ ] Header: "Notificações" + botão "Marcar todas como lidas"
+- [ ] Listar últimas 10 notificações
+- [ ] Scroll dentro do dropdown
+- [ ] Link "Ver todas" (vai para página)
+
+#### 12.4 - Item de Notificação
+- [ ] Criar componente `NotificationItem.tsx`
+- [ ] Ícone por tipo
+- [ ] Título + mensagem (truncada)
+- [ ] Tempo relativo (ex: "há 2 horas")
+- [ ] Estado: lida (opacidade) ou não lida (destaque)
+- [ ] Click marca como lida e navega (se houver link)
+
+#### 12.5 - Página de Notificações
+- [ ] Criar componente `Notifications.tsx`
+- [ ] Layout: header + lista completa
+- [ ] Tabs: Todas, Não Lidas
+- [ ] Filtros: Tipo de notificação, Período
+- [ ] Paginação
+
+#### 12.6 - Tipos de Notificações
+- [ ] Card atribuído a mim
+- [ ] Transferência recebida
+- [ ] Transferência aprovada/rejeitada
+- [ ] Card ganho pela equipe
+- [ ] Badge conquistado
+- [ ] Automação falhou
+- [ ] Outros...
+
+#### 12.7 - Marcar como Lida
+- [ ] Click no item marca como lida
+- [ ] Botão "Marcar como lida" individual
+- [ ] Botão "Marcar todas como lidas"
+- [ ] Atualizar contador
+
+#### 12.8 - Deletar Notificações
+- [ ] Botão para deletar notificação individual
+- [ ] Botão "Limpar todas" (confirmação)
+
+#### 12.9 - Real-time (Opcional)
+- [ ] Implementar WebSocket para notificações em tempo real
+- [ ] Fallback: polling a cada 30 segundos
+
+---
+
+## ⚙️ FASE 13 - CONFIGURAÇÕES / PERFIL
+
+**Prioridade:** 🟢 Baixa
+**Estimativa:** ~1 dia
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 13.1 - Estrutura da Página
+- [ ] Criar componente `Settings.tsx`
+- [ ] Layout com tabs: Perfil, Senha, Preferências
+
+#### 13.2 - Tab: Perfil
+- [ ] Avatar editável (upload)
+- [ ] Nome completo (editável)
+- [ ] Username (editável)
+- [ ] Email (editável)
+- [ ] Role (read-only)
+- [ ] Botão "Salvar Alterações"
+- [ ] Integrar com `userService.update()`
+
+#### 13.3 - Tab: Alterar Senha
+- [ ] Formulário:
+  - Senha atual (required)
+  - Nova senha (required)
+  - Confirmar nova senha (required)
+- [ ] Validação: senhas coincidem, senha forte
+- [ ] Integrar com `authService.changePassword()`
+- [ ] Toast de sucesso/erro
+
+#### 13.4 - Tab: Preferências
+- [ ] (Opcional) Idioma (PT-BR, EN, ES)
+- [ ] (Opcional) Timezone
+- [ ] Notificações: Email, Push, In-app (checkboxes)
+- [ ] Tema: Escuro/Claro (toggle)
+- [ ] Botão "Salvar Preferências"
+
+#### 13.5 - Segurança
+- [ ] (Opcional) Two-Factor Authentication (2FA)
+- [ ] (Opcional) Sessões ativas (listar dispositivos)
+- [ ] (Opcional) Encerrar outras sessões
+
+---
+
+## 🏷️ FASE 14 - FIELD DEFINITIONS (Campos Customizados)
+
+**Prioridade:** 🟢 Baixa
+**Estimativa:** ~1-2 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 14.1 - Estrutura da Página
+- [ ] Criar componente `FieldDefinitions.tsx` (ou integrar em Settings do Board)
+- [ ] Layout: header + lista de campos
+- [ ] Botão "Novo Campo"
+- [ ] Arrastar para reordenar (drag and drop)
+
+#### 14.2 - Serviço de Field Definitions
+- [ ] Criar `fieldDefinitionService.ts`
+- [ ] Funções: list(), getById(), create(), update(), delete(), reorder()
+
+#### 14.3 - Listagem de Campos
+- [ ] Chamar `fieldDefinitionService.list({ board_id })`
+- [ ] Renderizar lista/tabela
+- [ ] Colunas: Posição, Nome, Tipo, Obrigatório, Ações
+- [ ] Drag handle para reordenar
+
+#### 14.4 - Modal: Criar/Editar Campo
+- [ ] Criar componente `FieldDefinitionModal.tsx`
+- [ ] Formulário:
+  - Nome do campo (required)
+  - Tipo: text, number, date, select, multiselect, boolean, url, email, phone
+  - Opções (se select/multiselect): lista editável
+  - Obrigatório (checkbox)
+  - Posição (auto ou manual)
+- [ ] Validação
+- [ ] Integrar com service
+
+#### 14.5 - Tipos de Campo
+- [ ] Renderizar input apropriado no CardDetailsModal por tipo
+- [ ] Text: input text
+- [ ] Number: input number
+- [ ] Date: datepicker
+- [ ] Select: select dropdown
+- [ ] Multiselect: multi-select dropdown
+- [ ] Boolean: checkbox
+- [ ] URL: input url com validação
+- [ ] Email: input email com validação
+- [ ] Phone: input tel com máscara
+
+#### 14.6 - Validação
+- [ ] Validar campos required ao salvar card
+- [ ] Validar formato (email, url, phone)
+
+#### 14.7 - Ações
+- [ ] Editar campo
+- [ ] Deletar campo (confirmação, aviso sobre valores existentes)
+- [ ] Reordenar campos
+
+---
+
+## 🔍 FASE 15 - BUSCA GLOBAL (Quick Search)
+
+**Prioridade:** 🟢 Baixa
+**Estimativa:** ~1 dia
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 15.1 - Input de Busca no Header
+- [ ] Adicionar campo de busca no MainLayout (topbar)
+- [ ] Placeholder: "Buscar cards, clientes, usuários..."
+- [ ] Ícone de lupa
+- [ ] Atalho de teclado: Ctrl+K ou Cmd+K
+
+#### 15.2 - Serviço de Busca
+- [ ] Criar `searchService.ts`
+- [ ] Função: globalSearch(query) retorna cards, clientes, usuários
+
+#### 15.3 - Dropdown de Resultados
+- [ ] Criar componente `SearchDropdown.tsx`
+- [ ] Aparece ao digitar (debounce 300ms)
+- [ ] Seções: Cards, Clientes, Usuários
+- [ ] Limitado a 5 resultados por seção
+- [ ] Link "Ver todos os resultados" (vai para página)
+
+#### 15.4 - Item de Resultado
+- [ ] Criar componente `SearchResultItem.tsx`
+- [ ] Ícone por tipo
+- [ ] Título + informação secundária
+- [ ] Highlight do termo buscado
+- [ ] Click navega para o item
+
+#### 15.5 - Página de Resultados
+- [ ] Criar componente `SearchResults.tsx` (opcional)
+- [ ] Exibir todos os resultados
+- [ ] Filtros: Tipo (Cards, Clientes, Usuários)
+- [ ] Paginação
+
+#### 15.6 - Navegação por Teclado
+- [ ] Setas para navegar entre resultados
+- [ ] Enter para selecionar
+- [ ] ESC para fechar
+
+---
+
+## 📱 FASE 16 - RESPONSIVIDADE E MOBILE
+
+**Prioridade:** 🟡 Média
+**Estimativa:** ~2 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 16.1 - Testar Todas as Páginas
+- [ ] Dashboard
+- [ ] Boards
+- [ ] Kanban Board
+- [ ] Cards
+- [ ] Clientes
+- [ ] Usuários
+- [ ] Gamificação
+- [ ] Transferências
+- [ ] Relatórios
+- [ ] Automações
+- [ ] Notificações
+- [ ] Settings
+
+#### 16.2 - Breakpoints
+- [ ] Mobile (<640px): layout vertical, menu drawer
+- [ ] Tablet (640px-1024px): layout adaptado
+- [ ] Desktop (>1024px): layout completo
+
+#### 16.3 - Sidebar
+- [ ] Mobile: drawer/menu hamburguer
+- [ ] Tablet: sidebar mini (ícones)
+- [ ] Desktop: sidebar completa
+
+#### 16.4 - Tabelas
+- [ ] Mobile: cards empilhados (não tabela)
+- [ ] Tablet: tabela compacta
+- [ ] Desktop: tabela completa
+
+#### 16.5 - Modals
+- [ ] Mobile: full-screen
+- [ ] Desktop: modal centralizado
+
+#### 16.6 - Kanban Board
+- [ ] Mobile: scroll horizontal, uma lista por vez
+- [ ] Desktop: múltiplas listas visíveis
+
+#### 16.7 - Touch Gestures
+- [ ] Swipe para abrir sidebar (mobile)
+- [ ] Swipe para fechar modals (mobile)
+- [ ] Pull-to-refresh (opcional)
+
+---
+
+## 🎨 FASE 17 - MELHORIAS DE UX/UI
+
+**Prioridade:** 🟢 Baixa
+**Estimativa:** ~2 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 17.1 - Loading States
+- [ ] Skeleton loaders para todas as páginas
+- [ ] Spinners em botões durante ações
+- [ ] Progress bar em uploads
+
+#### 17.2 - Empty States
+- [ ] Componente `EmptyState` genérico
+- [ ] Ilustrações ou ícones grandes
+- [ ] Mensagem motivacional
+- [ ] CTA (ex: "Criar Primeiro Board")
+- [ ] Aplicar em todas as listas vazias
+
+#### 17.3 - Confirmações
+- [ ] Modal de confirmação para ações destrutivas
+- [ ] Deletar card/board/cliente/usuário/etc
+- [ ] Texto explicativo do que será perdido
+
+#### 17.4 - Toasts e Feedback
+- [ ] Toast de sucesso (verde)
+- [ ] Toast de erro (vermelho)
+- [ ] Toast de aviso (amarelo)
+- [ ] Toast de info (azul)
+- [ ] Posição consistente (top-right)
+- [ ] Auto-dismiss (4 segundos)
+
+#### 17.5 - Animações
+- [ ] Fade in ao carregar listas
+- [ ] Slide in para modals
+- [ ] Smooth scroll
+- [ ] Hover effects nos botões/cards
+- [ ] Loading animations (spinners, skeletons)
+
+#### 17.6 - Acessibilidade
+- [ ] Labels em todos os inputs
+- [ ] ARIA attributes
+- [ ] Contraste de cores adequado
+- [ ] Navegação por teclado (Tab)
+- [ ] Focus visível
+
+#### 17.7 - Tooltips
+- [ ] Adicionar tooltips em ícones sem texto
+- [ ] Tooltips em badges (ex: explicar o que é "Admin")
+- [ ] Delay adequado (500ms)
+
+#### 17.8 - Atalhos de Teclado
+- [ ] Criar/Editar: Ctrl+Enter para salvar
+- [ ] Busca: Ctrl+K
+- [ ] Navegação: setas em dropdowns
+- [ ] ESC para fechar modals
+- [ ] (Opcional) Página de atalhos: ?
+
+---
+
+## ⚡ FASE 18 - OTIMIZAÇÕES E PERFORMANCE
+
+**Prioridade:** 🟢 Baixa
+**Estimativa:** ~1-2 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 18.1 - Code Splitting
+- [ ] Lazy loading de páginas (React.lazy)
+- [ ] Suspense com loading fallback
+- [ ] Split por rota
+
+#### 18.2 - Imagens
+- [ ] Lazy loading de imagens
+- [ ] Otimizar tamanho de avatares/logos
+- [ ] Usar WebP quando possível
+
+#### 18.3 - Memoização
+- [ ] React.memo em componentes pesados
+- [ ] useMemo para computações custosas
+- [ ] useCallback para funções em props
+
+#### 18.4 - Virtualização
+- [ ] (Opcional) React Virtual para listas longas
+- [ ] Aplicar em listagens com 100+ items
+
+#### 18.5 - Debounce e Throttle
+- [ ] Debounce em campos de busca (300ms)
+- [ ] Throttle em scroll infinito
+
+#### 18.6 - Caching
+- [ ] Cache de dados no sessionStorage/localStorage (quando faz sentido)
+- [ ] Invalidar cache ao atualizar dados
+
+#### 18.7 - Bundle Size
+- [ ] Analisar bundle (npm run build + vite-bundle-visualizer)
+- [ ] Remover dependências não usadas
+- [ ] Tree shaking
+
+#### 18.8 - Lighthouse Audit
+- [ ] Rodar Lighthouse no Chrome DevTools
+- [ ] Corrigir issues de performance
+- [ ] Atingir score 90+ (se possível)
+
+---
+
+## ✅ FASE 19 - TESTES E REFINAMENTOS FINAIS
+
+**Prioridade:** 🔴 Alta (Final)
+**Estimativa:** ~2-3 dias
+**Status:** ⏳ Pendente
+
+### Tarefas:
+
+#### 19.1 - Testes Manuais
+- [ ] Testar fluxo completo de usuário:
+  - Login → Dashboard → Criar Board → Criar Lista → Criar Card → Mover Card → Ganhar Card
+- [ ] Testar CRUD de clientes
+- [ ] Testar CRUD de usuários
+- [ ] Testar transferências
+- [ ] Testar automações (criar e executar)
+- [ ] Testar relatórios
+- [ ] Testar gamificação
+
+#### 19.2 - Testes de Regressão
+- [ ] Testar em navegadores: Chrome, Firefox, Safari, Edge
+- [ ] Testar em dispositivos: Desktop, Tablet, Mobile
+- [ ] Testar em diferentes resoluções
+
+#### 19.3 - Correção de Bugs
+- [ ] Listar bugs encontrados
+- [ ] Priorizar bugs críticos
+- [ ] Corrigir todos os bugs
+
+#### 19.4 - Validações
+- [ ] Revisar todas as validações de formulário
+- [ ] Garantir mensagens de erro claras
+- [ ] Validação client-side e server-side
+
+#### 19.5 - Tratamento de Erros
+- [ ] Capturar erros globalmente
+- [ ] Exibir mensagens amigáveis
+- [ ] Log de erros (Sentry, LogRocket - opcional)
+
+#### 19.6 - SEO (Básico)
+- [ ] Títulos de página (<title>)
+- [ ] Meta descriptions
+- [ ] OpenGraph tags (opcional)
+
+#### 19.7 - Documentação de Uso
+- [ ] (Opcional) Criar guia de uso para usuários finais
+- [ ] Screenshots das principais telas
+- [ ] Vídeo tutorial (opcional)
+
+#### 19.8 - Deploy em Produção
+- [ ] Build de produção: `npm run build`
+- [ ] Testar build localmente: `npm run preview`
+- [ ] Deploy no servidor (Vercel, Netlify, ou servidor próprio)
+- [ ] Configurar variáveis de ambiente de produção
+- [ ] Testar em produção
+
+#### 19.9 - Monitoramento
+- [ ] (Opcional) Configurar analytics (Google Analytics, Plausible)
+- [ ] (Opcional) Configurar error tracking (Sentry)
+- [ ] (Opcional) Configurar performance monitoring
+
+#### 19.10 - Documentação Técnica Final
+- [ ] Atualizar README.md com status final
+- [ ] Atualizar TODO.md marcando tudo como concluído
+- [ ] Documentar decisões arquiteturais importantes
+- [ ] Documentar configurações de produção
+
+---
+
+## 📝 Resumo de Prioridades
+
+### 🔴 Alta Prioridade (MVP)
+1. ✅ Fase 0 - Base (Concluída)
+2. ⏳ Fase 1 - Dashboard
+3. ⏳ Fase 2 - Boards
+4. ⏳ Fase 3 - Kanban Board
+5. ⏳ Fase 4 - Card Details
+6. ⏳ Fase 19 - Testes e Deploy
+
+### 🟡 Média Prioridade (Importante)
+7. ⏳ Fase 5 - Clientes
+8. ⏳ Fase 6 - Cards (Listagem)
+9. ⏳ Fase 7 - Usuários
+10. ⏳ Fase 10 - Relatórios
+11. ⏳ Fase 12 - Notificações
+12. ⏳ Fase 16 - Responsividade
+
+### 🟢 Baixa Prioridade (Nice to Have)
+13. ⏳ Fase 8 - Gamificação
+14. ⏳ Fase 9 - Transferências
+15. ⏳ Fase 11 - Automações
+16. ⏳ Fase 13 - Configurações
+17. ⏳ Fase 14 - Field Definitions
+18. ⏳ Fase 15 - Busca Global
+19. ⏳ Fase 17 - Melhorias UX/UI
+20. ⏳ Fase 18 - Otimizações
+
+---
+
+## 🎯 Meta Final
+
+Construir um **CRM completo e funcional** com todas as funcionalidades planejadas, interface moderna e responsiva, integrando perfeitamente com o backend 100% pronto.
+
+**Estimativa Total:** ~25-35 dias de desenvolvimento (considerando 1 desenvolvedor)
+
+**Última atualização:** 08/01/2026
