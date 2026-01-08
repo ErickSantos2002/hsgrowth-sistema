@@ -5,7 +5,7 @@ Funções reutilizáveis como dependencies em rotas.
 from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import SessionLocal
 from app.core.security import decode_token, verify_token_type
@@ -13,7 +13,8 @@ from app.models.user import User
 from app.models.role import Role
 
 # Security scheme para JWT (Bearer token)
-security = HTTPBearer()
+# auto_error=False para permitir tratamento manual e retornar 401 ao invés de 403
+security = HTTPBearer(auto_error=False)
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -49,6 +50,14 @@ async def get_current_user(
     Raises:
         HTTPException: Se o token for inválido ou o usuário não for encontrado
     """
+    # Verifica se credentials foram fornecidas
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Não autenticado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     # Extrai o token
     token = credentials.credentials
 
@@ -80,8 +89,8 @@ async def get_current_user(
 
     user_id: int = int(user_id_str)
 
-    # Busca o usuário no banco
-    user = db.query(User).filter(User.id == user_id, User.is_deleted == False).first()
+    # Busca o usuário no banco com eager loading do role
+    user = db.query(User).options(joinedload(User.role)).filter(User.id == user_id, User.is_deleted == False).first()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -132,16 +141,13 @@ def require_role(required_role: str):
             ...
     """
     async def role_checker(
-        current_user: User = Depends(get_current_active_user),
-        db: Session = Depends(get_db)
+        current_user: User = Depends(get_current_active_user)
     ) -> User:
         """
         Verifica se o usuário tem o role necessário.
         """
-        # Busca o role do usuário (eager loading)
-        role = db.query(Role).filter(Role.id == current_user.role_id).first()
-
-        if role is None or role.name != required_role:
+        # Acessa o role que já foi carregado via eager loading em get_current_user
+        if not current_user.role or current_user.role.name != required_role:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Acesso negado. Role necessário: {required_role}"

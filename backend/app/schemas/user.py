@@ -82,6 +82,7 @@ class UserResponse(UserBase):
     updated_at: datetime = Field(..., description="Data de atualização")
 
     # Campos relacionados (opcional, podem ser expandidos depois)
+    role: Optional[str] = Field(None, description="Role do usuário (admin/manager/salesperson)")
     role_name: Optional[str] = Field(None, description="Nome do role")
     account_name: Optional[str] = Field(None, description="Nome da conta")
 

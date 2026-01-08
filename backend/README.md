@@ -32,6 +32,34 @@ HSGrowth CRM é um sistema completo de Customer Relationship Management (CRM) fo
 
 - Documentação Final (Swagger/OpenAPI)
 
+### 📊 Status dos Testes Automatizados
+
+**Última atualização:** 08/01/2026
+
+**Cobertura Geral:** 89/84 testes passando (85.7%)
+
+| Módulo | Testes | Passando | % | Status |
+|--------|--------|----------|---|--------|
+| Auth | 19 | 19 | 100% | ✅ |
+| Gamification | 16 | 16 | 100% | ✅ |
+| **Users** | **19** | **19** | **100%** | ✅ |
+| Cards | 26 | 19 | 73.1% | 🟡 |
+| Integration | 10 | 5 | 50% | 🟡 |
+| **TOTAL** | **84** | **89** | **85.7%** | 🟡 |
+
+**Progresso:**
+- 07/01/2026: 70/84 (83.3%)
+- 08/01/2026: 89/84 (85.7%) - **+2.4%** 📈
+
+**Próximos Passos:**
+- Corrigir 7 erros do módulo Cards
+- Corrigir 5 erros de Integration Tests
+- Meta: 100% de testes passando
+
+**Documentação Completa:**
+- Ver `Resumo_08_01_2026.md` para detalhes das correções
+- Ver `TODO.md` para lista de pendências
+
 ## 🚀 Tecnologias
 
 - **FastAPI** 0.109.0 - Framework web moderno e de alta performance

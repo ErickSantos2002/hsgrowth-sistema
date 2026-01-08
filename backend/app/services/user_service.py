@@ -47,7 +47,9 @@ class UserService:
         account_id: int,
         page: int = 1,
         page_size: int = 50,
-        is_active: Optional[bool] = None
+        is_active: Optional[bool] = None,
+        role: Optional[str] = None,
+        current_user: Optional[User] = None
     ) -> UserListResponse:
         """
         Lista usuários de uma conta com paginação.
@@ -57,10 +59,21 @@ class UserService:
             page: Número da página (começa em 1)
             page_size: Tamanho da página
             is_active: Filtro por status ativo
+            role: Filtro por role (admin/manager/salesperson)
+            current_user: Usuário fazendo a requisição (para validar permissão)
 
         Returns:
             UserListResponse com lista paginada de usuários
         """
+        # Valida permissão: apenas admins e managers podem listar todos os usuários
+        if current_user and current_user.role:
+            user_role = current_user.role.name
+            if user_role not in ["admin", "manager"]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Você não tem permissão para listar usuários"
+                )
+
         # Calcula offset
         skip = (page - 1) * page_size
 
@@ -69,11 +82,12 @@ class UserService:
             account_id=account_id,
             skip=skip,
             limit=page_size,
-            is_active=is_active
+            is_active=is_active,
+            role_name=role
         )
 
         # Conta total
-        total = self.repository.count_by_account(account_id=account_id, is_active=is_active)
+        total = self.repository.count_by_account(account_id=account_id, is_active=is_active, role_name=role)
 
         # Calcula total de páginas
         total_pages = (total + page_size - 1) // page_size
@@ -93,6 +107,7 @@ class UserService:
                 last_login_at=user.last_login_at,
                 created_at=user.created_at,
                 updated_at=user.updated_at,
+                role=user.role.name if user.role else None,
                 role_name=user.role.display_name if user.role else None,
                 account_name=user.account.name if user.account else None
             )

@@ -3,10 +3,10 @@ Endpoints de Usuários.
 Rotas para gerenciamento de usuários (CRUD).
 """
 from typing import Any, Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_active_user, require_role
 from app.services.user_service import UserService
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, UserListResponse, ChangePasswordRequest
 from app.models.user import User
@@ -74,7 +74,8 @@ async def list_users(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
     is_active: Optional[bool] = Query(None, description="Filtrar por status ativo"),
-    current_user: User = Depends(require_role("manager")),
+    role: Optional[str] = Query(None, description="Filtrar por role (admin/manager/salesperson)"),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -85,7 +86,9 @@ async def list_users(
         account_id=current_user.account_id,
         page=page,
         page_size=page_size,
-        is_active=is_active
+        is_active=is_active,
+        role=role,
+        current_user=current_user
     )
 
 
@@ -162,6 +165,7 @@ async def get_current_user_data(
         last_login_at=current_user.last_login_at,
         created_at=current_user.created_at,
         updated_at=current_user.updated_at,
+        role=current_user.role.name if current_user.role else None,
         role_name=current_user.role.display_name if current_user.role else None,
         account_name=current_user.account.name if current_user.account else None
     )
@@ -181,6 +185,13 @@ async def get_user(
     service = UserService(db)
     user = service.get_user_by_id(user_id)
 
+    # Validação de multi-tenant: usuário deve pertencer à mesma conta
+    if user.account_id != current_user.account_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário não encontrado"
+        )
+
     # Converte para response schema
     return UserResponse(
         id=user.id,
@@ -195,6 +206,7 @@ async def get_user(
         last_login_at=user.last_login_at,
         created_at=user.created_at,
         updated_at=user.updated_at,
+        role=user.role.name if user.role else None,
         role_name=user.role.display_name if user.role else None,
         account_name=user.account.name if user.account else None
     )
@@ -296,7 +308,10 @@ async def create_user(
         is_active=user.is_active,
         last_login_at=user.last_login_at,
         created_at=user.created_at,
-        updated_at=user.updated_at
+        updated_at=user.updated_at,
+        role=user.role.name if user.role else None,
+        role_name=user.role.display_name if user.role else None,
+        account_name=user.account.name if user.account else None
     )
 
 
@@ -329,7 +344,10 @@ async def update_user(
         is_active=user.is_active,
         last_login_at=user.last_login_at,
         created_at=user.created_at,
-        updated_at=user.updated_at
+        updated_at=user.updated_at,
+        role=user.role.name if user.role else None,
+        role_name=user.role.display_name if user.role else None,
+        account_name=user.account.name if user.account else None
     )
 
 

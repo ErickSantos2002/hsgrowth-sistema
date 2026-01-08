@@ -201,6 +201,8 @@ def test_admin_user(db: Session, test_account: Account, test_roles: dict) -> Use
     Returns:
         User: Usuário admin criado
     """
+    from sqlalchemy.orm import joinedload
+
     user = User(
         name="Admin User",
         email="admin@test.com",
@@ -212,7 +214,9 @@ def test_admin_user(db: Session, test_account: Account, test_roles: dict) -> Use
     )
     db.add(user)
     db.commit()
-    db.refresh(user)
+
+    # Recarrega o usuário com eager loading do role
+    user = db.query(User).options(joinedload(User.role)).filter(User.id == user.id).first()
     return user
 
 
@@ -229,6 +233,8 @@ def test_manager_user(db: Session, test_account: Account, test_roles: dict) -> U
     Returns:
         User: Usuário manager criado
     """
+    from sqlalchemy.orm import joinedload
+
     user = User(
         name="Manager User",
         email="manager@test.com",
@@ -240,7 +246,9 @@ def test_manager_user(db: Session, test_account: Account, test_roles: dict) -> U
     )
     db.add(user)
     db.commit()
-    db.refresh(user)
+
+    # Recarrega o usuário com eager loading do role
+    user = db.query(User).options(joinedload(User.role)).filter(User.id == user.id).first()
     return user
 
 
@@ -257,6 +265,8 @@ def test_salesperson_user(db: Session, test_account: Account, test_roles: dict) 
     Returns:
         User: Usuário vendedor criado
     """
+    from sqlalchemy.orm import joinedload
+
     user = User(
         name="Salesperson User",
         email="sales@test.com",
@@ -268,7 +278,9 @@ def test_salesperson_user(db: Session, test_account: Account, test_roles: dict) 
     )
     db.add(user)
     db.commit()
-    db.refresh(user)
+
+    # Recarrega o usuário com eager loading do role
+    user = db.query(User).options(joinedload(User.role)).filter(User.id == user.id).first()
     return user
 
 

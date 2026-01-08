@@ -44,6 +44,9 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     # Avatar/Foto
     avatar_url = Column(String(500), nullable=True)
 
+    # Telefone de contato
+    phone = Column(String(20), nullable=True)
+
     # Relacionamentos
     account = relationship("Account", back_populates="users")
     role = relationship("Role", back_populates="users")

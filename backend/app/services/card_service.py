@@ -248,7 +248,17 @@ class CardService:
         Args:
             card_id: ID do card
             current_user: Usuário autenticado
+
+        Raises:
+            HTTPException: Se não tiver permissão para deletar
         """
+        # Verifica permissão: apenas admins e managers podem deletar cards
+        if current_user.role and current_user.role.name not in ["admin", "manager"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você não tem permissão para deletar cards"
+            )
+
         # Busca e verifica acesso
         card = self.get_card_by_id(card_id, current_user.account_id)
 
@@ -268,6 +278,8 @@ class CardService:
         Returns:
             Card movido
         """
+        from datetime import datetime
+
         # Busca e verifica acesso ao card
         card = self.get_card_by_id(card_id, current_user.account_id)
 
@@ -285,6 +297,15 @@ class CardService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Você não pode mover cards para esta lista"
             )
+
+        # Verifica se a lista de destino é uma lista "won" ou "lost"
+        # e marca o card adequadamente
+        if target_list.is_done_stage:
+            card.is_won = True
+            card.won_at = datetime.now()
+        elif target_list.is_lost_stage:
+            card.is_lost = True
+            card.lost_at = datetime.now()
 
         # Move o card
         moved_card = self.card_repository.move_to_list(card, target_list_id, position)
@@ -339,21 +360,63 @@ class CardService:
 
         Args:
             card_id: ID do card
-            field_data: Dados do campo
+            field_data: Dados do campo (aceita dois formatos)
             current_user: Usuário autenticado
 
         Returns:
             CardFieldValueResponse
         """
+        from app.schemas.field import FieldDefinitionCreate
+
         # Verifica acesso ao card
         card = self.get_card_by_id(card_id, current_user.account_id)
 
-        # Verifica se a field_definition existe
-        field_def = self.field_repository.find_definition_by_id(field_data.field_definition_id)
-        if not field_def:
+        # Busca o board do card
+        list_obj = self.list_repository.find_by_id(card.list_id)
+        board_id = list_obj.board_id if list_obj else None
+
+        if not board_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Definição de campo não encontrada"
+                detail="Board não encontrado"
+            )
+
+        # Determina qual formato foi usado e obtém/cria a field_definition
+        field_def = None
+
+        if field_data.field_name and field_data.field_type is not None:
+            # Formato 2: Usando field_name (busca ou cria definição)
+            field_def = self.field_repository.find_definition_by_name_and_board(
+                field_data.field_name,
+                board_id
+            )
+
+            if not field_def:
+                # Cria nova definição
+                new_def = FieldDefinitionCreate(
+                    name=field_data.field_name,
+                    field_type=field_data.field_type,
+                    board_id=board_id,
+                    is_required=False
+                )
+                field_def = self.field_repository.create_definition(new_def)
+
+            # Converte para o formato esperado pelo repositório
+            field_data.field_definition_id = field_def.id
+            field_data.value = field_data.field_value
+
+        elif field_data.field_definition_id:
+            # Formato 1: Usando field_definition_id
+            field_def = self.field_repository.find_definition_by_id(field_data.field_definition_id)
+            if not field_def:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Definição de campo não encontrada"
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Você deve fornecer field_definition_id ou (field_name + field_type)"
             )
 
         # Cria ou atualiza o valor

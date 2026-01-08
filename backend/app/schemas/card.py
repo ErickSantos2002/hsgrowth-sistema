@@ -4,7 +4,6 @@ Define os modelos de entrada/saída para operações com cards.
 """
 from typing import Optional, Dict, Any
 from datetime import datetime
-from decimal import Decimal
 from pydantic import BaseModel, Field
 
 
@@ -22,7 +21,7 @@ class CardCreate(CardBase):
     """
     list_id: int = Field(..., description="ID da lista onde o card será criado")
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
-    value: Optional[Decimal] = Field(None, ge=0, description="Valor monetário do card")
+    value: Optional[float] = Field(None, ge=0, description="Valor monetário do card")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     contact_info: Optional[Dict[str, Any]] = Field(None, description="Informações de contato (JSON)")
 
@@ -55,7 +54,7 @@ class CardUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=500, description="Título do card")
     description: Optional[str] = Field(None, description="Descrição detalhada")
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
-    value: Optional[Decimal] = Field(None, ge=0, description="Valor monetário do card")
+    value: Optional[float] = Field(None, ge=0, description="Valor monetário do card")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     contact_info: Optional[Dict[str, Any]] = Field(None, description="Informações de contato (JSON)")
     is_won: Optional[bool] = Field(None, description="Card ganho (venda fechada)")
@@ -97,7 +96,7 @@ class CardAssignRequest(BaseModel):
     """
     Schema para atribuir card a um usuário.
     """
-    assigned_to_id: Optional[int] = Field(..., description="ID do usuário responsável (None para desatribuir)")
+    assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável (None para desatribuir)")
 
     model_config = {
         "json_schema_extra": {
@@ -117,7 +116,7 @@ class CardResponse(CardBase):
     id: int = Field(..., description="ID do card")
     list_id: int = Field(..., description="ID da lista")
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
-    value: Optional[Decimal] = Field(None, description="Valor monetário")
+    value: Optional[float] = Field(None, description="Valor monetário")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     contact_info: Optional[Dict[str, Any]] = Field(None, description="Informações de contato")
     is_won: bool = Field(..., description="Card ganho")
@@ -132,6 +131,7 @@ class CardResponse(CardBase):
     assigned_to_name: Optional[str] = Field(None, description="Nome do responsável")
     list_name: Optional[str] = Field(None, description="Nome da lista")
     board_id: Optional[int] = Field(None, description="ID do board")
+    custom_fields: Optional[list] = Field(None, description="Campos customizados do card")
 
     model_config = {
         "from_attributes": True,

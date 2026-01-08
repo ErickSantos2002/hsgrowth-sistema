@@ -359,7 +359,7 @@ async def get_card_fields(
     return service.get_card_field_values(card_id, current_user)
 
 
-@router.post("/{card_id}/fields", response_model=CardFieldValueResponse, summary="Adicionar/atualizar campo customizado", status_code=201)
+@router.post("/{card_id}/fields", response_model=CardResponse, summary="Adicionar/atualizar campo customizado")
 async def add_or_update_field(
     card_id: int = Path(..., description="ID do card"),
     field_data: CardFieldValueCreate = ...,
@@ -370,8 +370,50 @@ async def add_or_update_field(
     Adiciona ou atualiza o valor de um campo customizado em um card.
 
     - **card_id**: ID do card
-    - **field_definition_id**: ID da definição do campo
-    - **value**: Valor do campo
+    - **field_definition_id**: ID da definição do campo (ou field_name + field_type)
+    - **value**: Valor do campo (ou field_value)
     """
     service = CardService(db)
-    return service.add_or_update_field_value(card_id, field_data, current_user)
+
+    # Adiciona ou atualiza o campo customizado
+    service.add_or_update_field_value(card_id, field_data, current_user)
+
+    # Busca o card atualizado com os custom_fields
+    card = service.get_card_by_id(card_id, current_user.account_id)
+    custom_fields = service.get_card_field_values(card_id, current_user)
+
+    # Busca informações relacionadas
+    assigned_to_name = None
+    if card.assigned_to_id:
+        from app.models.user import User as UserModel
+        assigned_user = db.query(UserModel).filter(UserModel.id == card.assigned_to_id).first()
+        if assigned_user:
+            assigned_to_name = assigned_user.name
+
+    from app.repositories.list_repository import ListRepository
+    list_repo = ListRepository(db)
+    list_obj = list_repo.find_by_id(card.list_id)
+    list_name = list_obj.name if list_obj else None
+    board_id = list_obj.board_id if list_obj else None
+
+    return CardResponse(
+        id=card.id,
+        title=card.title,
+        description=card.description,
+        list_id=card.list_id,
+        assigned_to_id=card.assigned_to_id,
+        value=card.value,
+        due_date=card.due_date,
+        contact_info=card.contact_info,
+        is_won=card.is_won,
+        is_lost=card.is_lost,
+        won_at=card.won_at,
+        lost_at=card.lost_at,
+        position=card.position,
+        created_at=card.created_at,
+        updated_at=card.updated_at,
+        assigned_to_name=assigned_to_name,
+        list_name=list_name,
+        board_id=board_id,
+        custom_fields=[cf.model_dump() for cf in custom_fields]
+    )

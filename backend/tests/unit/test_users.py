@@ -151,17 +151,13 @@ class TestCreateUser:
             }
         )
 
-        if response.status_code != 200:
-            print(f'
-ERROR: Status {response.status_code}')
-            print(f'Response: {response.text}')
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
         assert data["email"] == "newuser@test.com"
         assert data["name"] == "New User"
         assert "password" not in data  # Senha não deve ser retornada
 
-    def test_create_user_duplicate_email(self, client: TestClient, admin_headers, test_account, test_salesperson_user):
+    def test_create_user_duplicate_email(self, client: TestClient, admin_headers, test_account, test_roles, test_salesperson_user):
         """Testa criar usuário com email duplicado"""
         response = client.post(
             "/api/v1/users",
@@ -170,14 +166,14 @@ ERROR: Status {response.status_code}')
                 "name": "Duplicate",
                 "email": "sales@test.com",  # Email já existe
                 "password": "pass123",
-                "role": "salesperson",
+                "role_id": test_roles["salesperson"].id,
                 "account_id": test_account.id
             }
         )
 
         assert response.status_code == 400
 
-    def test_create_user_unauthorized(self, client: TestClient, salesperson_headers, test_account):
+    def test_create_user_unauthorized(self, client: TestClient, salesperson_headers, test_account, test_roles):
         """Testa criar usuário sem permissão"""
         response = client.post(
             "/api/v1/users",
@@ -186,7 +182,7 @@ ERROR: Status {response.status_code}')
                 "name": "New User",
                 "email": "new@test.com",
                 "password": "pass123",
-                "role": "salesperson",
+                "role_id": test_roles["salesperson"].id,
                 "account_id": test_account.id
             }
         )

@@ -34,6 +34,22 @@ class FieldRepository:
             FieldDefinition.id == field_definition_id
         ).first()
 
+    def find_definition_by_name_and_board(self, name: str, board_id: int) -> Optional[FieldDefinition]:
+        """
+        Busca uma definição de campo por nome e board.
+
+        Args:
+            name: Nome do campo
+            board_id: ID do board
+
+        Returns:
+            FieldDefinition ou None
+        """
+        return self.db.query(FieldDefinition).filter(
+            FieldDefinition.name == name,
+            FieldDefinition.board_id == board_id
+        ).first()
+
     def list_definitions_by_board(self, board_id: int) -> List[FieldDefinition]:
         """
         Lista todas as definições de campos de um board.

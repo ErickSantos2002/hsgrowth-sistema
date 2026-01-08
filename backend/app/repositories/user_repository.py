@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from app.models.user import User
+from app.models.role import Role
 from app.schemas.user import UserCreate, UserUpdate
 
 
@@ -68,7 +69,8 @@ class UserRepository:
         account_id: int,
         skip: int = 0,
         limit: int = 100,
-        is_active: Optional[bool] = None
+        is_active: Optional[bool] = None,
+        role_name: Optional[str] = None
     ) -> List[User]:
         """
         Lista usuários de uma conta específica.
@@ -78,6 +80,7 @@ class UserRepository:
             skip: Número de registros para pular (paginação)
             limit: Limite de registros a retornar
             is_active: Filtro por status ativo (opcional)
+            role_name: Filtro por role (opcional)
 
         Returns:
             Lista de usuários
@@ -90,15 +93,19 @@ class UserRepository:
         if is_active is not None:
             query = query.filter(User.is_active == is_active)
 
+        if role_name is not None:
+            query = query.join(User.role).filter(Role.name == role_name)
+
         return query.offset(skip).limit(limit).all()
 
-    def count_by_account(self, account_id: int, is_active: Optional[bool] = None) -> int:
+    def count_by_account(self, account_id: int, is_active: Optional[bool] = None, role_name: Optional[str] = None) -> int:
         """
         Conta usuários de uma conta específica.
 
         Args:
             account_id: ID da conta
             is_active: Filtro por status ativo (opcional)
+            role_name: Filtro por role (opcional)
 
         Returns:
             Número de usuários
@@ -110,6 +117,9 @@ class UserRepository:
 
         if is_active is not None:
             query = query.filter(User.is_active == is_active)
+
+        if role_name is not None:
+            query = query.join(User.role).filter(Role.name == role_name)
 
         return query.count()
 
