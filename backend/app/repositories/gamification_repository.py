@@ -293,6 +293,7 @@ class GamificationRepository:
         """
         ranking = GamificationRanking(
             user_id=user_id,
+            account_id=account_id,
             period_type=period_type,
             period_start=period_start,
             period_end=period_end,
@@ -360,7 +361,7 @@ class GamificationRepository:
                 GamificationRanking.period_start == period_start,
                 GamificationRanking.period_end == period_end
             )
-        ).order_by(GamificationRanking.rank_position.asc()).limit(limit).all()
+        ).order_by(GamificationRanking.rank.asc()).limit(limit).all()
 
     def get_user_rank_in_period(
         self,
@@ -384,7 +385,7 @@ class GamificationRepository:
         ranking = self.find_ranking_by_user_and_period(
             user_id, period_type, period_start, period_end
         )
-        return ranking.rank_position if ranking else None
+        return ranking.rank if ranking else None
 
     def delete_rankings_by_period(
         self,

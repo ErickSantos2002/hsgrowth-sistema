@@ -9,6 +9,7 @@ from app.db.base import Base
 from app.models.account import Account
 from app.models.role import Role
 from app.models.user import User
+from app.models.client import Client
 from app.models.board import Board
 from app.models.list import List
 from app.models.field_definition import FieldDefinition
@@ -42,6 +43,7 @@ __all__ = [
     "Account",
     "Role",
     "User",
+    "Client",
     "Board",
     "List",
     "FieldDefinition",

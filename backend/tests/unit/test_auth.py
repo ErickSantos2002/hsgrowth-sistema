@@ -198,7 +198,7 @@ class TestLogout:
         """Testa logout sem token de autenticação"""
         response = client.post("/api/v1/auth/logout")
 
-        assert response.status_code == 403
+        assert response.status_code == 401  # 401 Unauthorized (sem credenciais)
 
 
 class TestForgotPassword:
@@ -322,4 +322,4 @@ class TestMe:
         """Testa buscar /me sem autenticação"""
         response = client.get("/api/v1/users/me")
 
-        assert response.status_code == 403
+        assert response.status_code == 401  # 401 Unauthorized (sem credenciais)

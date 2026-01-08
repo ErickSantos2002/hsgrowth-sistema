@@ -1,506 +1,620 @@
 """
-Script para popular o banco de dados com dados de exemplo.
-Cria account, usuários, boards, listas, cards, badges, automações, etc.
+Script para popular o banco de dados com dados fictícios para desenvolvimento.
+Cria contas, usuários, boards, listas, cards e dados de gamificação realistas.
 
 Uso:
+    docker-compose exec api python scripts/seed_database.py
+
+    ou localmente:
     python scripts/seed_database.py
 """
 import sys
 from pathlib import Path
-from datetime import datetime, timedelta, date
-from random import randint, choice, random
+from datetime import datetime, timedelta
+from random import randint, choice, random, uniform
+from decimal import Decimal
 
 # Adiciona o diretório raiz ao path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
+from faker import Faker
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal
+from app.db.session import SessionLocal
 from app.models.account import Account
+from app.models.role import Role
 from app.models.user import User
+from app.models.client import Client
 from app.models.board import Board
 from app.models.list import List
 from app.models.card import Card
-from app.models.badge import Badge
-from app.models.gamification_stats import GamificationStats
-from app.models.automation import Automation
+from app.models.gamification_badge import GamificationBadge
+from app.models.user_badge import UserBadge
+from app.models.gamification_point import GamificationPoint
+from app.models.gamification_ranking import GamificationRanking
 from app.core.security import hash_password
-from loguru import logger
+
+# Inicializa Faker em português brasileiro
+fake = Faker('pt_BR')
 
 
-def create_account(db: Session) -> Account:
-    """Cria account de exemplo"""
-    existing = db.query(Account).filter(Account.subdomain == "demo").first()
-    if existing:
-        logger.info(f"Account 'demo' já existe (ID: {existing.id})")
-        return existing
+def create_roles(db: Session) -> dict:
+    """Cria roles padrão do sistema"""
+    print("📋 Criando roles...")
 
-    account = Account(
-        name="Demo HSGrowth CRM",
-        subdomain="demo",
-        is_active=True
-    )
-    db.add(account)
-    db.commit()
-    db.refresh(account)
-
-    logger.success(f"Account criado: {account.name} (ID: {account.id})")
-    return account
-
-
-def create_users(db: Session, account: Account) -> dict:
-    """Cria usuários de exemplo"""
-    users_data = [
+    roles_data = [
         {
-            "name": "Admin Sistema",
-            "email": "admin@demo.com",
-            "password": "admin123",
-            "role": "admin",
-            "phone": "+55 11 98765-4321"
+            "name": "admin",
+            "display_name": "Administrador",
+            "description": "Acesso total ao sistema",
+            "permissions": ["*"],
+            "is_system_role": True
         },
         {
-            "name": "Carlos Manager",
-            "email": "carlos@demo.com",
-            "password": "manager123",
-            "role": "manager",
-            "phone": "+55 11 98765-1111"
+            "name": "manager",
+            "display_name": "Gerente",
+            "description": "Gerencia equipes e visualiza relatórios",
+            "permissions": ["boards.*", "cards.*", "users.read", "reports.*"],
+            "is_system_role": True
         },
         {
-            "name": "Ana Vendedora",
-            "email": "ana@demo.com",
-            "password": "sales123",
-            "role": "salesperson",
-            "phone": "+55 11 98765-2222"
-        },
-        {
-            "name": "Bruno Vendedor",
-            "email": "bruno@demo.com",
-            "password": "sales123",
-            "role": "salesperson",
-            "phone": "+55 11 98765-3333"
-        },
-        {
-            "name": "Carla Vendedora",
-            "email": "carla@demo.com",
-            "password": "sales123",
-            "role": "salesperson",
-            "phone": "+55 11 98765-4444"
-        },
+            "name": "salesperson",
+            "display_name": "Vendedor",
+            "description": "Gerencia seus próprios cards",
+            "permissions": ["cards.read", "cards.create", "cards.update", "boards.read"],
+            "is_system_role": True
+        }
     ]
 
-    users = {}
-
-    for user_data in users_data:
-        # Verifica se já existe
-        existing = db.query(User).filter(User.email == user_data["email"]).first()
+    roles = {}
+    for role_data in roles_data:
+        existing = db.query(Role).filter(Role.name == role_data["name"]).first()
         if existing:
-            logger.info(f"Usuário '{existing.email}' já existe")
-            users[user_data["role"] + "_" + user_data["name"].split()[0].lower()] = existing
-            continue
-
-        user = User(
-            name=user_data["name"],
-            email=user_data["email"],
-            password=hash_password(user_data["password"]),
-            role=user_data["role"],
-            phone=user_data.get("phone"),
-            account_id=account.id,
-            is_active=True,
-            is_deleted=False
-        )
-        db.add(user)
-        users[user_data["role"] + "_" + user_data["name"].split()[0].lower()] = user
-
-        logger.success(f"Usuário criado: {user.email} (senha: {user_data['password']})")
+            roles[role_data["name"]] = existing
+            print(f"  ✓ Role '{role_data['name']}' já existe")
+        else:
+            role = Role(**role_data)
+            db.add(role)
+            roles[role_data["name"]] = role
+            print(f"  ✓ Role '{role_data['name']}' criada")
 
     db.commit()
+    for role in roles.values():
+        db.refresh(role)
 
-    # Refresh todos
-    for user in users.values():
+    return roles
+
+
+def create_accounts(db: Session, count=3) -> list[Account]:
+    """Cria contas de teste"""
+    print(f"\n🏢 Criando {count} contas...")
+
+    companies = ["Tech Solutions", "Marketing Pro", "Sales Masters"]
+    accounts = []
+
+    for i in range(count):
+        company_name = companies[i] if i < len(companies) else fake.company()
+        subdomain = company_name.lower().replace(" ", "")[:15]
+
+        existing = db.query(Account).filter(Account.subdomain == subdomain).first()
+        if existing:
+            accounts.append(existing)
+            print(f"  ✓ Conta '{company_name}' já existe")
+            continue
+
+        account = Account(
+            name=company_name,
+            subdomain=subdomain,
+            is_active=True
+        )
+        db.add(account)
+        accounts.append(account)
+        print(f"  ✓ Conta '{company_name}' criada")
+
+    db.commit()
+    for account in accounts:
+        db.refresh(account)
+
+    return accounts
+
+
+def create_users(db: Session, accounts: list[Account], roles: dict) -> list[User]:
+    """Cria usuários de teste"""
+    print(f"\n👥 Criando usuários...")
+
+    all_users = []
+
+    for account in accounts:
+        print(f"\n  Conta: {account.name}")
+
+        # 1 Admin
+        admin_email = f"admin@{account.subdomain}.com"
+        existing_admin = db.query(User).filter(User.email == admin_email).first()
+        if existing_admin:
+            all_users.append(existing_admin)
+            print(f"    ✓ Admin já existe: {admin_email}")
+        else:
+            admin = User(
+                name=f"Admin {account.name}",
+                email=admin_email,
+                password_hash=hash_password("admin123"),
+                role_id=roles["admin"].id,
+                account_id=account.id,
+                is_active=True,
+                is_deleted=False,
+                phone=fake.phone_number()
+            )
+            db.add(admin)
+            all_users.append(admin)
+            print(f"    ✓ Admin criado: {admin_email}")
+
+        # 2 Managers
+        for i in range(2):
+            manager_email = f"manager{i+1}@{account.subdomain}.com"
+            existing = db.query(User).filter(User.email == manager_email).first()
+            if existing:
+                all_users.append(existing)
+                print(f"    ✓ Manager já existe: {manager_email}")
+                continue
+
+            manager = User(
+                name=fake.name(),
+                email=manager_email,
+                password_hash=hash_password("manager123"),
+                role_id=roles["manager"].id,
+                account_id=account.id,
+                is_active=True,
+                is_deleted=False,
+                phone=fake.phone_number()
+            )
+            db.add(manager)
+            all_users.append(manager)
+            print(f"    ✓ Manager criado: {manager_email}")
+
+        # 5 Vendedores
+        for i in range(5):
+            sales_email = f"vendedor{i+1}@{account.subdomain}.com"
+            existing = db.query(User).filter(User.email == sales_email).first()
+            if existing:
+                all_users.append(existing)
+                print(f"    ✓ Vendedor já existe: {sales_email}")
+                continue
+
+            salesperson = User(
+                name=fake.name(),
+                email=sales_email,
+                password_hash=hash_password("vendedor123"),
+                role_id=roles["salesperson"].id,
+                account_id=account.id,
+                is_active=True,
+                is_deleted=False,
+                phone=fake.phone_number()
+            )
+            db.add(salesperson)
+            all_users.append(salesperson)
+            print(f"    ✓ Vendedor criado: {sales_email}")
+
+    db.commit()
+    for user in all_users:
         db.refresh(user)
 
-    return users
+    return all_users
 
 
-def create_board(db: Session, account: Account) -> Board:
-    """Cria board de exemplo"""
-    existing = db.query(Board).filter(
-        Board.name == "Pipeline de Vendas 2024",
-        Board.account_id == account.id
-    ).first()
+def create_clients(db: Session, accounts: list[Account]) -> list[Client]:
+    """Cria clientes de teste"""
+    print(f"\n👤 Criando clientes...")
 
-    if existing:
-        logger.info(f"Board 'Pipeline de Vendas 2024' já existe (ID: {existing.id})")
-        return existing
+    all_clients = []
 
-    board = Board(
-        name="Pipeline de Vendas 2024",
-        description="Pipeline principal de vendas da empresa",
-        account_id=account.id
-    )
-    db.add(board)
+    for account in accounts:
+        print(f"\n  Conta: {account.name}")
+
+        # Cria 15-25 clientes por conta
+        num_clients = randint(15, 25)
+
+        for _ in range(num_clients):
+            # 70% empresas, 30% pessoas físicas
+            is_company = random() < 0.7
+
+            if is_company:
+                company_name = fake.company()
+                contact_name = fake.name()
+                document = fake.cnpj()
+            else:
+                company_name = None
+                contact_name = fake.name()
+                document = fake.cpf()
+
+            # Verifica se já existe (evita duplicatas)
+            existing = db.query(Client).filter(
+                Client.account_id == account.id,
+                Client.email == fake.email()
+            ).first()
+            if existing:
+                all_clients.append(existing)
+                continue
+
+            client = Client(
+                account_id=account.id,
+                name=contact_name,
+                email=fake.email(),
+                phone=fake.phone_number(),
+                company_name=company_name,
+                document=document,
+                address=fake.street_address(),
+                city=fake.city(),
+                state=fake.estado_sigla(),
+                country="Brasil",
+                website=fake.url() if is_company else None,
+                notes=fake.text(max_nb_chars=200) if random() < 0.3 else None,
+                source="manual",
+                is_active=True,
+                is_deleted=False
+            )
+            db.add(client)
+            all_clients.append(client)
+
+        print(f"  ✓ {num_clients} clientes criados")
+
     db.commit()
-    db.refresh(board)
+    for client in all_clients:
+        db.refresh(client)
 
-    logger.success(f"Board criado: {board.name} (ID: {board.id})")
-    return board
+    return all_clients
 
 
-def create_lists(db: Session, board: Board) -> list[List]:
-    """Cria listas do board"""
-    lists_data = [
-        {"name": "Leads", "position": 0},
-        {"name": "Qualificação", "position": 1},
-        {"name": "Proposta", "position": 2},
-        {"name": "Negociação", "position": 3},
-        {"name": "Ganho", "position": 4},
-        {"name": "Perdido", "position": 5},
+def create_boards_and_lists(db: Session, accounts: list[Account]) -> tuple[list[Board], list[List]]:
+    """Cria boards e listas"""
+    print(f"\n📊 Criando boards e listas...")
+
+    all_boards = []
+    all_lists = []
+
+    board_templates = [
+        {
+            "name": "Pipeline de Vendas",
+            "description": "Funil principal de vendas",
+            "lists": [
+                {"name": "Novos Leads", "position": 0},
+                {"name": "Qualificação", "position": 1},
+                {"name": "Proposta Enviada", "position": 2},
+                {"name": "Negociação", "position": 3},
+                {"name": "Ganho", "position": 4, "is_done_stage": True},
+                {"name": "Perdido", "position": 5, "is_lost_stage": True}
+            ]
+        },
+        {
+            "name": "Atendimento ao Cliente",
+            "description": "Gestão de tickets de suporte",
+            "lists": [
+                {"name": "Novo Ticket", "position": 0},
+                {"name": "Em Andamento", "position": 1},
+                {"name": "Aguardando Cliente", "position": 2},
+                {"name": "Resolvido", "position": 3, "is_done_stage": True}
+            ]
+        }
     ]
 
-    lists = []
+    for account in accounts:
+        print(f"\n  Conta: {account.name}")
 
-    for list_data in lists_data:
-        # Verifica se já existe
-        existing = db.query(List).filter(
-            List.name == list_data["name"],
-            List.board_id == board.id
-        ).first()
+        for template in board_templates:
+            existing_board = db.query(Board).filter(
+                Board.name == template["name"],
+                Board.account_id == account.id
+            ).first()
 
-        if existing:
-            logger.info(f"Lista '{existing.name}' já existe")
-            lists.append(existing)
-            continue
+            if existing_board:
+                board = existing_board
+                all_boards.append(board)
+                print(f"    ✓ Board '{board.name}' já existe")
+            else:
+                board = Board(
+                    name=template["name"],
+                    description=template["description"],
+                    account_id=account.id
+                )
+                db.add(board)
+                db.commit()
+                db.refresh(board)
+                all_boards.append(board)
+                print(f"    ✓ Board '{board.name}' criado")
 
-        list_obj = List(
-            name=list_data["name"],
-            position=list_data["position"],
-            board_id=board.id
-        )
-        db.add(list_obj)
-        lists.append(list_obj)
+            # Cria listas
+            for list_data in template["lists"]:
+                existing_list = db.query(List).filter(
+                    List.name == list_data["name"],
+                    List.board_id == board.id
+                ).first()
 
-        logger.success(f"Lista criada: {list_obj.name}")
+                if existing_list:
+                    all_lists.append(existing_list)
+                    print(f"      • Lista '{list_data['name']}' já existe")
+                else:
+                    list_obj = List(
+                        name=list_data["name"],
+                        position=list_data["position"],
+                        board_id=board.id,
+                        is_done_stage=list_data.get("is_done_stage", False),
+                        is_lost_stage=list_data.get("is_lost_stage", False)
+                    )
+                    db.add(list_obj)
+                    all_lists.append(list_obj)
+                    print(f"      • Lista '{list_data['name']}' criada")
 
-    db.commit()
+            db.commit()
 
-    for list_obj in lists:
+    for list_obj in all_lists:
         db.refresh(list_obj)
 
-    return lists
+    return all_boards, all_lists
 
 
-def create_cards(db: Session, lists: list[List], users: dict) -> list[Card]:
-    """Cria cards de exemplo"""
-    # Pega vendedores
-    salespeople = [u for k, u in users.items() if u.role == "salesperson"]
+def create_cards(db: Session, accounts: list[Account], users: list[User], boards: list[Board], clients: list[Client]) -> list[Card]:
+    """Cria cards realistas"""
+    print(f"\n📇 Criando cards...")
 
-    cards_data = [
-        # Leads (lista 0)
-        {"title": "Empresa ABC Ltda", "value": 15000, "list_idx": 0, "stage": "lead"},
-        {"title": "Tech Solutions Inc", "value": 25000, "list_idx": 0, "stage": "lead"},
-        {"title": "Inovação Digital", "value": 8000, "list_idx": 0, "stage": "lead"},
+    all_cards = []
 
-        # Qualificação (lista 1)
-        {"title": "Consultoria XYZ", "value": 12000, "list_idx": 1, "stage": "qualification"},
-        {"title": "Varejo Premium", "value": 18000, "list_idx": 1, "stage": "qualification"},
+    for account in accounts:
+        print(f"\n  Conta: {account.name}")
 
-        # Proposta (lista 2)
-        {"title": "Indústria 4.0", "value": 35000, "list_idx": 2, "stage": "proposal"},
-        {"title": "E-commerce Plus", "value": 22000, "list_idx": 2, "stage": "proposal"},
+        account_boards = [b for b in boards if b.account_id == account.id]
+        account_salespeople = [u for u in users if u.account_id == account.id and u.role.name == "salesperson"]
+        account_clients = [c for c in clients if c.account_id == account.id]
 
-        # Negociação (lista 3)
-        {"title": "Startup Fintech", "value": 40000, "list_idx": 3, "stage": "negotiation"},
+        if not account_salespeople:
+            print(f"    ⚠ Nenhum vendedor encontrado")
+            continue
 
-        # Ganho (lista 4)
-        {"title": "Corporação Global", "value": 50000, "list_idx": 4, "stage": "won"},
-        {"title": "Empresa Tradicional", "value": 30000, "list_idx": 4, "stage": "won"},
+        if not account_clients:
+            print(f"    ⚠ Nenhum cliente encontrado")
+            continue
 
-        # Perdido (lista 5)
-        {"title": "Concorrente Ganhou", "value": 20000, "list_idx": 5, "stage": "lost"},
-    ]
+        for board in account_boards:
+            lists = db.query(List).filter(List.board_id == board.id).order_by(List.position).all()
 
-    cards = []
-    position_counters = {}
+            # 30-50 cards por board
+            num_cards = randint(30, 50)
+            print(f"    Board '{board.name}': criando {num_cards} cards")
 
-    for card_data in cards_data:
-        list_obj = lists[card_data["list_idx"]]
+            for i in range(num_cards):
+                list_obj = choice(lists)
+                assigned_user = choice(account_salespeople)
+                client = choice(account_clients)  # Seleciona um cliente aleatório
 
-        # Calcula position
-        if list_obj.id not in position_counters:
-            position_counters[list_obj.id] = 0
-        position = position_counters[list_obj.id]
-        position_counters[list_obj.id] += 1
+                value = round(uniform(1000, 50000), 2)
 
-        # Atribui vendedor aleatório
-        assigned_to = choice(salespeople)
+                # Status baseado na lista
+                is_won = 0
+                closed_at = None
 
-        # Define datas
-        created_days_ago = randint(1, 30)
-        created_at = datetime.utcnow() - timedelta(days=created_days_ago)
+                if list_obj.is_done_stage:
+                    is_won = 1
+                    closed_at = fake.date_time_between(start_date='-30d', end_date='now')
+                elif list_obj.is_lost_stage:
+                    is_won = -1
+                    closed_at = fake.date_time_between(start_date='-30d', end_date='now')
 
-        # Due date futuro aleatório
-        due_date = date.today() + timedelta(days=randint(5, 30))
+                card = Card(
+                    title=f"{client.display_name} - {fake.catch_phrase()}",
+                    description=f"Oportunidade com {client.name} da empresa {client.company_name or 'N/A'}.\n\n{fake.text(max_nb_chars=200)}",
+                    list_id=list_obj.id,
+                    client_id=client.id,  # Vincula ao cliente
+                    assigned_to_id=assigned_user.id,
+                    value=Decimal(str(value)),
+                    due_date=fake.date_time_between(start_date='now', end_date='+60d') if random() > 0.3 else None,
+                    contact_info={
+                        "name": client.name,
+                        "email": client.email,
+                        "phone": client.phone,
+                        "company": client.company_name
+                    },
+                    is_won=is_won,
+                    closed_at=closed_at,
+                    position=i
+                )
+                db.add(card)
+                all_cards.append(card)
 
-        card = Card(
-            title=card_data["title"],
-            description=f"Oportunidade de {card_data['value']:.2f}",
-            list_id=list_obj.id,
-            assigned_to_id=assigned_to.id,
-            stage=card_data["stage"],
-            value=card_data["value"],
-            position=position,
-            due_date=due_date,
-            created_at=created_at,
-            updated_at=created_at
-        )
-        db.add(card)
-        cards.append(card)
+            db.commit()
+            print(f"      ✓ {num_cards} cards criados")
 
-    db.commit()
-
-    for card in cards:
-        db.refresh(card)
-
-    logger.success(f"{len(cards)} cards criados")
-    return cards
+    return all_cards
 
 
-def create_badges(db: Session, account: Account) -> list[Badge]:
-    """Cria badges de exemplo"""
+def create_gamification_data(db: Session, accounts: list[Account], users: list[User]):
+    """Cria badges, pontos e rankings"""
+    print(f"\n🎮 Criando dados de gamificação...")
+
+    # Badges
+    print("\n  Criando badges...")
     badges_data = [
         {
-            "name": "Primeira Venda",
-            "description": "Realizou a primeira venda",
-            "icon": "trophy",
-            "color": "gold"
+            "name": "Primeiro Passo",
+            "description": "Ganhou seu primeiro card",
+            "criteria_type": "automatic",
+            "criteria": {"field": "cards_won", "operator": ">=", "value": 1},
+            "is_system_badge": True
         },
         {
-            "name": "10 Vendas",
-            "description": "Atingiu 10 vendas",
-            "icon": "star",
-            "color": "silver"
+            "name": "Vendedor Estrela",
+            "description": "Alcançou 1000 pontos",
+            "criteria_type": "automatic",
+            "criteria": {"field": "total_points", "operator": ">=", "value": 1000},
+            "is_system_badge": True
         },
         {
-            "name": "Vendedor do Mês",
-            "description": "Melhor vendedor do mês",
-            "icon": "medal",
-            "color": "blue"
+            "name": "Top Performer",
+            "description": "Ficou em 1º no ranking mensal",
+            "criteria_type": "manual",
+            "criteria": {},
+            "is_system_badge": True
         },
         {
-            "name": "Streak de 7 dias",
-            "description": "Ativo por 7 dias consecutivos",
-            "icon": "fire",
-            "color": "orange"
-        },
-        {
-            "name": "R$ 100k em Vendas",
-            "description": "Atingiu R$ 100.000 em vendas",
-            "icon": "diamond",
-            "color": "purple"
-        },
+            "name": "Persistente",
+            "description": "Ganhou 10 cards",
+            "criteria_type": "automatic",
+            "criteria": {"field": "cards_won", "operator": ">=", "value": 10},
+            "is_system_badge": True
+        }
     ]
 
-    badges = []
+    all_badges = []
+    for account in accounts:
+        for badge_data in badges_data:
+            existing = db.query(GamificationBadge).filter(
+                GamificationBadge.name == badge_data["name"],
+                GamificationBadge.account_id == account.id
+            ).first()
 
-    for badge_data in badges_data:
-        # Verifica se já existe
-        existing = db.query(Badge).filter(
-            Badge.name == badge_data["name"],
-            Badge.account_id == account.id
-        ).first()
-
-        if existing:
-            logger.info(f"Badge '{existing.name}' já existe")
-            badges.append(existing)
-            continue
-
-        badge = Badge(
-            name=badge_data["name"],
-            description=badge_data["description"],
-            icon=badge_data["icon"],
-            color=badge_data["color"],
-            account_id=account.id
-        )
-        db.add(badge)
-        badges.append(badge)
+            if existing:
+                all_badges.append(existing)
+            else:
+                badge = GamificationBadge(**badge_data, account_id=account.id)
+                db.add(badge)
+                all_badges.append(badge)
 
     db.commit()
-
-    for badge in badges:
+    for badge in all_badges:
         db.refresh(badge)
+    print(f"    ✓ {len(all_badges)} badges criados")
 
-    logger.success(f"{len(badges)} badges criados")
-    return badges
+    # Pontos e rankings
+    print("\n  Criando pontos e rankings...")
 
+    for account in accounts:
+        account_salespeople = [u for u in users if u.account_id == account.id and u.role.name == "salesperson"]
+        account_badges = [b for b in all_badges if b.account_id == account.id]
 
-def create_gamification_stats(db: Session, users: dict):
-    """Cria estatísticas de gamificação para os vendedores"""
-    salespeople = [u for k, u in users.items() if u.role == "salesperson"]
+        for user in account_salespeople:
+            # Histórico de pontos (últimos 90 dias)
+            num_events = randint(10, 30)
 
-    for user in salespeople:
-        # Verifica se já existe
-        existing = db.query(GamificationStats).filter(
-            GamificationStats.user_id == user.id
-        ).first()
+            for _ in range(num_events):
+                points = choice([10, 25, 50, 100])
+                event_type = choice(["card_won", "card_created", "card_moved"])
 
-        if existing:
-            logger.info(f"Stats de gamificação para '{user.name}' já existem")
-            continue
+                point = GamificationPoint(
+                    user_id=user.id,
+                    points=points,
+                    reason=event_type,
+                    description=f"Pontos por {event_type.replace('_', ' ')}"
+                )
+                db.add(point)
 
-        stats = GamificationStats(
-            user_id=user.id,
-            total_points=randint(50, 500),
-            monthly_points=randint(20, 200),
-            weekly_points=randint(10, 100),
-            current_streak=randint(0, 10),
-            longest_streak=randint(5, 20)
-        )
-        db.add(stats)
+        db.commit()
 
-    db.commit()
-    logger.success(f"Stats de gamificação criados para {len(salespeople)} vendedores")
+        # Rankings semanal e mensal
+        # Semanal
+        week_start = datetime.now() - timedelta(days=datetime.now().weekday())
+        week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
+        users_points = [(u, randint(100, 500)) for u in account_salespeople]
+        users_points.sort(key=lambda x: x[1], reverse=True)
 
-def create_automations(db: Session, board: Board) -> list[Automation]:
-    """Cria automações de exemplo"""
-    automations_data = [
-        {
-            "name": "Notificar ao criar card",
-            "automation_type": "trigger",
-            "trigger_event": "card_created",
-            "is_active": True,
-            "actions": [
-                {
-                    "action_type": "notify_user",
-                    "config": {"message": "Novo card criado!"}
-                }
-            ]
-        },
-        {
-            "name": "Atualizar ranking diário",
-            "automation_type": "scheduled",
-            "schedule_type": "recurrent",
-            "recurrence_pattern": "daily",
-            "is_active": True,
-            "actions": [
-                {
-                    "action_type": "update_ranking",
-                    "config": {}
-                }
-            ]
-        },
-    ]
+        for rank, (user, points) in enumerate(users_points, 1):
+            existing = db.query(GamificationRanking).filter(
+                GamificationRanking.user_id == user.id,
+                GamificationRanking.period_type == "weekly",
+                GamificationRanking.period_start == week_start
+            ).first()
 
-    automations = []
+            if not existing:
+                ranking = GamificationRanking(
+                    user_id=user.id,
+                    account_id=account.id,
+                    period_type="weekly",
+                    period_start=week_start,
+                    period_end=week_end,
+                    rank=rank,
+                    points=points,
+                    cards_won=points // 50
+                )
+                db.add(ranking)
 
-    for auto_data in automations_data:
-        # Verifica se já existe
-        existing = db.query(Automation).filter(
-            Automation.name == auto_data["name"],
-            Automation.board_id == board.id
-        ).first()
+        # Mensal
+        month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if month_start.month == 12:
+            month_end = month_start.replace(year=month_start.year + 1, month=1) - timedelta(seconds=1)
+        else:
+            month_end = month_start.replace(month=month_start.month + 1) - timedelta(seconds=1)
 
-        if existing:
-            logger.info(f"Automação '{existing.name}' já existe")
-            automations.append(existing)
-            continue
+        for rank, (user, points) in enumerate(users_points, 1):
+            existing = db.query(GamificationRanking).filter(
+                GamificationRanking.user_id == user.id,
+                GamificationRanking.period_type == "monthly",
+                GamificationRanking.period_start == month_start
+            ).first()
 
-        automation = Automation(
-            name=auto_data["name"],
-            automation_type=auto_data["automation_type"],
-            trigger_event=auto_data.get("trigger_event"),
-            schedule_type=auto_data.get("schedule_type"),
-            recurrence_pattern=auto_data.get("recurrence_pattern"),
-            is_active=auto_data["is_active"],
-            actions=auto_data["actions"],
-            board_id=board.id,
-            account_id=board.account_id
-        )
-        db.add(automation)
-        automations.append(automation)
+            if not existing:
+                ranking = GamificationRanking(
+                    user_id=user.id,
+                    account_id=account.id,
+                    period_type="monthly",
+                    period_start=month_start,
+                    period_end=month_end,
+                    rank=rank,
+                    points=points * 4,
+                    cards_won=(points * 4) // 50
+                )
+                db.add(ranking)
 
-    db.commit()
-
-    for automation in automations:
-        db.refresh(automation)
-
-    logger.success(f"{len(automations)} automações criadas")
-    return automations
+        db.commit()
+        print(f"    ✓ Gamificação criada para {account.name}")
 
 
-def seed_database():
-    """Função principal para popular o banco"""
-    logger.info("=" * 60)
-    logger.info("INICIANDO SEED DO BANCO DE DADOS")
-    logger.info("=" * 60)
+def main():
+    """Função principal"""
+    print("\n" + "="*60)
+    print("  🌱 SEED DATABASE - Dados Fictícios")
+    print("="*60 + "\n")
 
     db = SessionLocal()
 
     try:
-        # 1. Account
-        logger.info("\n[1/8] Criando Account...")
-        account = create_account(db)
+        roles = create_roles(db)
+        accounts = create_accounts(db, count=3)
+        users = create_users(db, accounts, roles)
+        clients = create_clients(db, accounts)
+        boards, lists = create_boards_and_lists(db, accounts)
+        cards = create_cards(db, accounts, users, boards, clients)
+        create_gamification_data(db, accounts, users)
 
-        # 2. Users
-        logger.info("\n[2/8] Criando Usuários...")
-        users = create_users(db, account)
+        print("\n" + "="*60)
+        print("  ✅ Banco de dados populado com sucesso!")
+        print("="*60)
 
-        # 3. Board
-        logger.info("\n[3/8] Criando Board...")
-        board = create_board(db, account)
+        print("\n📊 Resumo:")
+        print(f"  • Contas: {len(accounts)}")
+        print(f"  • Usuários: {len(users)}")
+        print(f"  • Clientes: {len(clients)}")
+        print(f"  • Boards: {len(boards)}")
+        print(f"  • Listas: {len(lists)}")
+        print(f"  • Cards: {len(cards)}")
 
-        # 4. Lists
-        logger.info("\n[4/8] Criando Listas...")
-        lists = create_lists(db, board)
+        print("\n🔐 Credenciais de teste:")
+        for account in accounts:
+            print(f"\n  {account.name}:")
+            print(f"    Admin: admin@{account.subdomain}.com / admin123")
+            print(f"    Manager: manager1@{account.subdomain}.com / manager123")
+            print(f"    Vendedor: vendedor1@{account.subdomain}.com / vendedor123")
 
-        # 5. Cards
-        logger.info("\n[5/8] Criando Cards...")
-        cards = create_cards(db, lists, users)
+        print("\n")
 
-        # 6. Badges
-        logger.info("\n[6/8] Criando Badges...")
-        badges = create_badges(db, account)
-
-        # 7. Gamification Stats
-        logger.info("\n[7/8] Criando Estatísticas de Gamificação...")
-        create_gamification_stats(db, users)
-
-        # 8. Automations
-        logger.info("\n[8/8] Criando Automações...")
-        automations = create_automations(db, board)
-
-        # Resumo final
-        logger.info("\n" + "=" * 60)
-        logger.success("SEED CONCLUÍDO COM SUCESSO!")
-        logger.info("=" * 60)
-        logger.info("\n📊 RESUMO:")
-        logger.info(f"  ✓ Account: {account.name}")
-        logger.info(f"  ✓ Usuários: {len(users)}")
-        logger.info(f"  ✓ Board: {board.name}")
-        logger.info(f"  ✓ Listas: {len(lists)}")
-        logger.info(f"  ✓ Cards: {len(cards)}")
-        logger.info(f"  ✓ Badges: {len(badges)}")
-        logger.info(f"  ✓ Automações: {len(automations)}")
-
-        logger.info("\n🔑 CREDENCIAIS DE ACESSO:")
-        logger.info("  Admin:     admin@demo.com / admin123")
-        logger.info("  Manager:   carlos@demo.com / manager123")
-        logger.info("  Vendedor:  ana@demo.com / sales123")
-        logger.info("  Vendedor:  bruno@demo.com / sales123")
-        logger.info("  Vendedor:  carla@demo.com / sales123")
-
-        logger.info("\n⚠️  IMPORTANTE: Altere as senhas após o primeiro login!")
-        logger.info("=" * 60)
+        # Commit final para garantir que tudo foi persistido
+        db.commit()
 
     except Exception as e:
-        logger.error(f"\n❌ Erro ao fazer seed do banco: {e}")
+        print(f"\n❌ Erro: {e}")
         import traceback
-        logger.error(traceback.format_exc())
+        traceback.print_exc()
         db.rollback()
-        raise
     finally:
         db.close()
 
 
 if __name__ == "__main__":
-    seed_database()
+    main()

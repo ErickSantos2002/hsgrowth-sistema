@@ -320,10 +320,10 @@ def test_lists(db: Session, test_board: Board) -> list[List]:
         list[List]: Lista de listas criadas
     """
     lists_data = [
-        {"name": "Leads", "position": 0},
-        {"name": "Em Contato", "position": 1},
-        {"name": "Proposta", "position": 2},
-        {"name": "Ganho", "position": 3},
+        {"name": "Leads", "position": 0, "is_done_stage": False, "is_lost_stage": False},
+        {"name": "Em Contato", "position": 1, "is_done_stage": False, "is_lost_stage": False},
+        {"name": "Proposta", "position": 2, "is_done_stage": False, "is_lost_stage": False},
+        {"name": "Ganho", "position": 3, "is_done_stage": True, "is_lost_stage": False},
     ]
 
     lists = []
@@ -331,7 +331,9 @@ def test_lists(db: Session, test_board: Board) -> list[List]:
         list_obj = List(
             name=list_data["name"],
             position=list_data["position"],
-            board_id=test_board.id
+            board_id=test_board.id,
+            is_done_stage=list_data["is_done_stage"],
+            is_lost_stage=list_data["is_lost_stage"]
         )
         db.add(list_obj)
         lists.append(list_obj)

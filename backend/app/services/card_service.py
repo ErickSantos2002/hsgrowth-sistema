@@ -301,24 +301,24 @@ class CardService:
         # Verifica se a lista de destino é uma lista "won" ou "lost"
         # e marca o card adequadamente
         if target_list.is_done_stage:
-            card.is_won = True
-            card.won_at = datetime.now()
+            card.is_won = 1  # 1 = ganho (Integer no banco)
+            card.closed_at = datetime.now()  # won_at é uma property que usa closed_at
         elif target_list.is_lost_stage:
-            card.is_lost = True
-            card.lost_at = datetime.now()
+            card.is_won = -1  # -1 = perdido (Integer no banco)
+            card.closed_at = datetime.now()  # lost_at é uma property que usa closed_at
 
         # Move o card
         moved_card = self.card_repository.move_to_list(card, target_list_id, position)
 
         return moved_card
 
-    def assign_card(self, card_id: int, user_id: int, current_user: User) -> Card:
+    def assign_card(self, card_id: int, user_id: Optional[int], current_user: User) -> Card:
         """
-        Atribui um card a um usuário.
+        Atribui um card a um usuário ou desatribui se user_id for None.
 
         Args:
             card_id: ID do card
-            user_id: ID do usuário
+            user_id: ID do usuário (None para desatribuir)
             current_user: Usuário autenticado
 
         Returns:
@@ -326,6 +326,11 @@ class CardService:
         """
         # Busca e verifica acesso ao card
         card = self.get_card_by_id(card_id, current_user.account_id)
+
+        # Se user_id é None, desatribui o card
+        if user_id is None:
+            assigned_card = self.card_repository.assign_to_user(card, None)
+            return assigned_card
 
         # Verifica se o usuário existe e pertence à mesma conta
         from app.models.user import User

@@ -4,7 +4,8 @@ Define os modelos de entrada/saída para operações com cards.
 """
 from typing import Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from decimal import Decimal
+from pydantic import BaseModel, Field, field_validator
 
 
 class CardBase(BaseModel):
@@ -132,6 +133,22 @@ class CardResponse(CardBase):
     list_name: Optional[str] = Field(None, description="Nome da lista")
     board_id: Optional[int] = Field(None, description="ID do board")
     custom_fields: Optional[list] = Field(None, description="Campos customizados do card")
+
+    @field_validator('value', mode='before')
+    @classmethod
+    def convert_decimal_to_float(cls, v):
+        """Converte Decimal para float"""
+        if isinstance(v, Decimal):
+            return float(v)
+        return v
+
+    @field_validator('is_won', 'is_lost', mode='before')
+    @classmethod
+    def convert_int_to_bool(cls, v):
+        """Converte Integer para Boolean (0/1 -> False/True)"""
+        if isinstance(v, int):
+            return v == 1
+        return v
 
     model_config = {
         "from_attributes": True,

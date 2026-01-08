@@ -21,6 +21,9 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     # Relacionamento com List (cada cartão pertence a uma lista)
     list_id = Column(Integer, ForeignKey("lists.id", ondelete="CASCADE"), nullable=False, index=True)
 
+    # Relacionamento com Client (cliente/empresa)
+    client_id = Column(Integer, ForeignKey("clients.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # Relacionamento com User (responsável)
     assigned_to_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
@@ -47,6 +50,7 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
 
     # Relacionamentos
     list = relationship("List", back_populates="cards")
+    client = relationship("Client", back_populates="cards")
     assigned_to = relationship("User", foreign_keys=[assigned_to_id], back_populates="assigned_cards")
 
     # Valores dos campos customizados

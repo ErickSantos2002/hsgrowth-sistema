@@ -412,8 +412,8 @@ class GamificationService:
                     period_type=ranking.period_type,
                     period_start=ranking.period_start,
                     period_end=ranking.period_end,
-                    total_points=ranking.total_points,
-                    rank_position=ranking.rank_position,
+                    total_points=ranking.points,
+                    rank_position=ranking.rank,
                     user_name=user_name
                 )
             )
@@ -460,8 +460,8 @@ class GamificationService:
                     period_type=ranking.period_type,
                     period_start=ranking.period_start,
                     period_end=ranking.period_end,
-                    total_points=ranking.total_points,
-                    rank_position=ranking.rank_position,
+                    total_points=ranking.points,
+                    rank_position=ranking.rank,
                     user_name=user.name if user else None
                 )
             )

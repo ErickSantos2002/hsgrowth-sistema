@@ -24,9 +24,6 @@ class Account(Base, TimestampMixin):
     # Configurações da conta (JSON)
     settings = Column(JSON, default={}, nullable=False)
 
-    # Plan/Subscription (caso necessite no futuro)
-    plan = Column(String(50), default="standard", nullable=False)  # free, standard, premium
-
     # Relacionamentos
     users = relationship("User", back_populates="account", lazy="dynamic")
     boards = relationship("Board", back_populates="account", lazy="dynamic")

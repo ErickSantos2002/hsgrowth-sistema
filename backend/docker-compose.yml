@@ -51,8 +51,6 @@ services:
     container_name: hsgrowth-api
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
@@ -63,13 +61,13 @@ services:
       PORT: ${PORT:-8000}
       WORKERS: ${WORKERS:-4}
 
-      # Database
-      DATABASE_URL: postgresql://${DB_USER:-hsgrowth}:${DB_PASSWORD:-hsgrowth123}@postgres:5432/${DB_NAME:-hsgrowth_crm}
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-hsgrowth}
-      DB_PASSWORD: ${DB_PASSWORD:-hsgrowth123}
-      DB_NAME: ${DB_NAME:-hsgrowth_crm}
+      # Database - usa banco remoto
+      DATABASE_URL: ${DATABASE_URL}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
 
       # JWT
       JWT_SECRET: ${JWT_SECRET}
@@ -107,6 +105,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./backups:/app/backups
+      - ./scripts:/app/scripts
     ports:
       - "${API_PORT:-8000}:8000"
     healthcheck:
@@ -129,8 +128,6 @@ services:
     restart: unless-stopped
     command: celery -A app.workers.celery_app worker --loglevel=${LOG_LEVEL:-info} --concurrency=${CELERY_WORKERS:-4}
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
@@ -138,13 +135,13 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-production}
       DEBUG: ${DEBUG:-False}
 
-      # Database
-      DATABASE_URL: postgresql://${DB_USER:-hsgrowth}:${DB_PASSWORD:-hsgrowth123}@postgres:5432/${DB_NAME:-hsgrowth_crm}
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-hsgrowth}
-      DB_PASSWORD: ${DB_PASSWORD:-hsgrowth123}
-      DB_NAME: ${DB_NAME:-hsgrowth_crm}
+      # Database - usa banco remoto
+      DATABASE_URL: ${DATABASE_URL}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
 
       # JWT
       JWT_SECRET: ${JWT_SECRET}
@@ -186,8 +183,6 @@ services:
     restart: unless-stopped
     command: celery -A app.workers.celery_app beat --loglevel=${LOG_LEVEL:-info}
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
@@ -195,13 +190,13 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-production}
       DEBUG: ${DEBUG:-False}
 
-      # Database
-      DATABASE_URL: postgresql://${DB_USER:-hsgrowth}:${DB_PASSWORD:-hsgrowth123}@postgres:5432/${DB_NAME:-hsgrowth_crm}
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-hsgrowth}
-      DB_PASSWORD: ${DB_PASSWORD:-hsgrowth123}
-      DB_NAME: ${DB_NAME:-hsgrowth_crm}
+      # Database - usa banco remoto
+      DATABASE_URL: ${DATABASE_URL}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
 
       # JWT
       JWT_SECRET: ${JWT_SECRET}
