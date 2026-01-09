@@ -2,7 +2,6 @@
 
 export interface User {
   id: number;
-  account_id: number;
   username: string;
   email: string;
   full_name: string | null;
@@ -12,15 +11,6 @@ export interface User {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-}
-
-export interface Account {
-  id: number;
-  name: string;
-  is_active: boolean;
-  is_deleted: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface LoginRequest {
@@ -43,7 +33,6 @@ export interface RefreshTokenRequest {
 
 export interface Board {
   id: number;
-  account_id: number;
   name: string;
   description: string | null;
   is_active: boolean;
@@ -54,7 +43,6 @@ export interface Board {
 
 export interface List {
   id: number;
-  account_id: number;
   board_id: number;
   name: string;
   position: number;
@@ -68,7 +56,6 @@ export interface List {
 
 export interface Card {
   id: number;
-  account_id?: number;
   list_id: number;
   client_id: number | null;
   assigned_to_id: number | null;
@@ -95,7 +82,6 @@ export interface Card {
 
 export interface Client {
   id: number;
-  account_id: number;
   name: string;
   email: string | null;
   phone: string | null;
@@ -118,7 +104,6 @@ export interface Client {
 
 export interface FieldDefinition {
   id: number;
-  account_id: number;
   board_id: number;
   name: string;
   field_type: "text" | "number" | "date" | "select" | "multiselect" | "boolean" | "url" | "email" | "phone";
@@ -146,7 +131,6 @@ export interface CardFieldValue {
 
 export interface Activity {
   id: number;
-  account_id: number;
   card_id: number;
   user_id: number;
   action_type: string;
@@ -161,7 +145,6 @@ export interface Activity {
 
 export interface AuditLog {
   id: number;
-  account_id: number;
   user_id: number | null;
   entity_type: string;
   entity_id: number;
@@ -180,7 +163,6 @@ export interface AuditLog {
 
 export interface GamificationPoint {
   id: number;
-  account_id: number;
   user_id: number;
   points: number;
   reason: string;
@@ -194,7 +176,6 @@ export interface GamificationPoint {
 
 export interface GamificationBadge {
   id: number;
-  account_id: number | null;
   name: string;
   description: string;
   image_url: string | null;
@@ -218,7 +199,6 @@ export interface UserBadge {
 
 export interface GamificationRanking {
   id: number;
-  account_id: number;
   user_id: number;
   period_type: "weekly" | "monthly" | "quarterly" | "yearly";
   period_start: string;
@@ -251,7 +231,6 @@ export interface GamificationSummary {
 
 export interface Automation {
   id: number;
-  account_id: number;
   board_id: number;
   name: string;
   description: string | null;
@@ -283,7 +262,6 @@ export interface AutomationExecution {
 
 export interface CardTransfer {
   id: number;
-  account_id: number;
   card_id: number;
   from_user_id: number;
   to_user_id: number;
@@ -315,7 +293,6 @@ export interface TransferApproval {
 
 export interface Notification {
   id: number;
-  account_id: number;
   user_id: number;
   notification_type: string;
   title: string;

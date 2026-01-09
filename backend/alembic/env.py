@@ -16,7 +16,7 @@ from app.db.base import Base
 
 # Importar todos os models aqui para que o Alembic os reconheça
 from app.models import (
-    Account, Role, User, Board, List, FieldDefinition, Card, CardFieldValue,
+    Role, User, Board, List, FieldDefinition, Card, CardFieldValue,
     Activity, AuditLog, GamificationPoint, GamificationBadge, UserBadge,
     GamificationRanking, Automation, AutomationExecution, CardTransfer,
     TransferApproval, Notification

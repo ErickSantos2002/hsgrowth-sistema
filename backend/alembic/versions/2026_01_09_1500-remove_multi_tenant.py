@@ -1,7 +1,7 @@
 """remove_multi_tenant
 
 Revision ID: a9c7d4e5f6b8
-Revises: 458ea44424e8
+Revises: 1b01c98096da
 Create Date: 2026-01-09 15:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'a9c7d4e5f6b8'
-down_revision = '458ea44424e8'
+down_revision = '1b01c98096da'
 branch_labels = None
 depends_on = None
 
