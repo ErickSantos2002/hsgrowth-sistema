@@ -335,23 +335,41 @@ export interface NotificationStats {
 // ==================== REPORTS ====================
 
 export interface DashboardKPIs {
+  // Cards
   total_cards: number;
-  open_cards: number;
-  won_cards: number;
-  lost_cards: number;
+  new_cards_today: number;
+  new_cards_this_week: number;
+  new_cards_this_month: number;
+
+  // Cards ganhos/perdidos
+  won_cards_today: number;
+  won_cards_this_week: number;
+  won_cards_this_month: number;
+  lost_cards_today: number;
+  lost_cards_this_week: number;
+  lost_cards_this_month: number;
+
+  // Cards vencidos
+  overdue_cards: number;
+  due_today: number;
+  due_this_week: number;
+
+  // Valores monetários
   total_value: number;
-  won_value: number;
-  conversion_rate: number;
-  average_deal_size: number;
-  cards_by_stage: Array<{
-    list_name: string;
-    count: number;
+  won_value_this_month: number;
+  pipeline_value: number;
+
+  // Taxas
+  conversion_rate_this_month: number;
+
+  // Tempo médio
+  avg_time_to_win_days: number | null;
+
+  // Top vendedores
+  top_sellers_this_month: Array<{
+    name: string;
+    cards_won: number;
     total_value: number;
-  }>;
-  top_performers: Array<{
-    user: User;
-    won_cards: number;
-    won_value: number;
   }>;
 }
 

@@ -8,3 +8,4 @@ export { default as userService } from "./userService";
 export { default as boardService } from "./boardService";
 export { default as cardService } from "./cardService";
 export { default as clientService } from "./clientService";
+export { default as reportService } from "./reportService";

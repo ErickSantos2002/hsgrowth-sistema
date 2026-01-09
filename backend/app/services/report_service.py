@@ -183,24 +183,24 @@ class ReportService:
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_won == True,
-            func.date(Card.won_at) == today
+            Card.is_won == 1,
+            func.date(Card.closed_at) == today
         ).scalar() or 0
 
         won_cards_this_week = self.db.query(func.count(Card.id)).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_won == True,
-            func.date(Card.won_at) >= start_of_week
+            Card.is_won == 1,
+            func.date(Card.closed_at) >= start_of_week
         ).scalar() or 0
 
         won_cards_this_month = self.db.query(func.count(Card.id)).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_won == True,
-            func.date(Card.won_at) >= start_of_month
+            Card.is_won == 1,
+            func.date(Card.closed_at) >= start_of_month
         ).scalar() or 0
 
         # Cards perdidos
@@ -208,24 +208,24 @@ class ReportService:
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_lost == True,
-            func.date(Card.lost_at) == today
+            Card.is_won == -1,
+            func.date(Card.closed_at) == today
         ).scalar() or 0
 
         lost_cards_this_week = self.db.query(func.count(Card.id)).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_lost == True,
-            func.date(Card.lost_at) >= start_of_week
+            Card.is_won == -1,
+            func.date(Card.closed_at) >= start_of_week
         ).scalar() or 0
 
         lost_cards_this_month = self.db.query(func.count(Card.id)).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_lost == True,
-            func.date(Card.lost_at) >= start_of_month
+            Card.is_won == -1,
+            func.date(Card.closed_at) >= start_of_month
         ).scalar() or 0
 
         # Cards vencidos
@@ -234,8 +234,7 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.due_date < datetime.now(),
-            Card.is_won == False,
-            Card.is_lost == False
+            Card.is_won == 0
         ).scalar() or 0
 
         due_today = self.db.query(func.count(Card.id)).join(
@@ -243,8 +242,7 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             func.date(Card.due_date) == today,
-            Card.is_won == False,
-            Card.is_lost == False
+            Card.is_won == 0
         ).scalar() or 0
 
         end_of_week = start_of_week + timedelta(days=6)
@@ -254,8 +252,7 @@ class ReportService:
             BoardList.board_id.in_(board_ids),
             func.date(Card.due_date) >= today,
             func.date(Card.due_date) <= end_of_week,
-            Card.is_won == False,
-            Card.is_lost == False
+            Card.is_won == 0
         ).scalar() or 0
 
         # Valores monetários
@@ -267,16 +264,15 @@ class ReportService:
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_won == True,
-            func.date(Card.won_at) >= start_of_month
+            Card.is_won == 1,
+            func.date(Card.closed_at) >= start_of_month
         ).scalar() or Decimal(0)
 
         pipeline_value = self.db.query(func.sum(Card.value)).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_won == False,
-            Card.is_lost == False
+            Card.is_won == 0
         ).scalar() or Decimal(0)
 
         # Taxa de conversão do mês
@@ -289,14 +285,14 @@ class ReportService:
         # Tempo médio para ganhar (em dias)
         avg_time_result = self.db.query(
             func.avg(
-                func.extract('epoch', Card.won_at - Card.created_at) / 86400
+                func.extract('epoch', Card.closed_at - Card.created_at) / 86400
             )
         ).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_won == True,
-            Card.won_at.isnot(None)
+            Card.is_won == 1,
+            Card.closed_at.isnot(None)
         ).scalar()
 
         avg_time_to_win_days = round(float(avg_time_result), 2) if avg_time_result else None
@@ -312,8 +308,8 @@ class ReportService:
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_won == True,
-            func.date(Card.won_at) >= start_of_month
+            Card.is_won == 1,
+            func.date(Card.closed_at) >= start_of_month
         ).group_by(
             User.id, User.name
         ).order_by(
