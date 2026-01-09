@@ -58,7 +58,7 @@ class AutomationService:
         Returns:
             AutomationResponse
         """
-        # Verifica se o board existe e pertence à conta
+        # Verifica se o board existe
         board = self.board_repository.find_by_id(automation_data.board_id)
         if not board:
             raise HTTPException(
@@ -66,25 +66,11 @@ class AutomationService:
                 detail="Board não encontrado"
             )
 
-        if board.account_id != current_user.account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Board pertence a outra conta"
-            )
-
-        # Verifica limite de automações por conta
-        total_automations = self.repository.count_by_account(current_user.account_id)
-        if total_automations >= self.MAX_AUTOMATIONS_PER_ACCOUNT:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Limite de {self.MAX_AUTOMATIONS_PER_ACCOUNT} automações atingido"
-            )
-
         # Valida configuração baseada no tipo
         self._validate_automation_config(automation_data)
 
         # Cria a automação
-        automation = self.repository.create(automation_data, current_user.account_id)
+        automation = self.repository.create(automation_data)
 
         # Calcula próxima execução se for scheduled
         if automation.automation_type == "scheduled":
@@ -94,13 +80,12 @@ class AutomationService:
 
         return self._to_response(automation)
 
-    def get_automation(self, automation_id: int, account_id: int) -> AutomationResponse:
+    def get_automation(self, automation_id: int) -> AutomationResponse:
         """
         Busca uma automação por ID.
 
         Args:
             automation_id: ID da automação
-            account_id: ID da conta
 
         Returns:
             AutomationResponse
@@ -113,18 +98,11 @@ class AutomationService:
                 detail="Automação não encontrada"
             )
 
-        if automation.account_id != account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado"
-            )
-
         return self._to_response(automation)
 
     def list_automations(
         self,
         board_id: int,
-        account_id: int,
         page: int = 1,
         page_size: int = 50,
         is_active: Optional[bool] = None,
@@ -135,7 +113,6 @@ class AutomationService:
 
         Args:
             board_id: ID do board
-            account_id: ID da conta
             page: Número da página
             page_size: Tamanho da página
             is_active: Filtrar por status ativo
@@ -144,12 +121,12 @@ class AutomationService:
         Returns:
             AutomationListResponse
         """
-        # Verifica se o board pertence à conta
+        # Verifica se o board existe
         board = self.board_repository.find_by_id(board_id)
-        if not board or board.account_id != account_id:
+        if not board:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado ao board"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Board não encontrado"
             )
 
         skip = (page - 1) * page_size
@@ -194,12 +171,6 @@ class AutomationService:
                 detail="Automação não encontrada"
             )
 
-        if automation.account_id != current_user.account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado"
-            )
-
         # Atualiza
         updated_automation = self.repository.update(automation, automation_data)
 
@@ -226,12 +197,6 @@ class AutomationService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Automação não encontrada"
-            )
-
-        if automation.account_id != current_user.account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado"
             )
 
         self.repository.delete(automation)
@@ -347,7 +312,6 @@ class AutomationService:
     def list_executions(
         self,
         automation_id: int,
-        account_id: int,
         page: int = 1,
         page_size: int = 50,
         status: Optional[str] = None
@@ -357,7 +321,6 @@ class AutomationService:
 
         Args:
             automation_id: ID da automação
-            account_id: ID da conta
             page: Número da página
             page_size: Tamanho da página
             status: Filtrar por status
@@ -365,12 +328,12 @@ class AutomationService:
         Returns:
             AutomationExecutionListResponse
         """
-        # Verifica acesso
+        # Verifica se a automação existe
         automation = self.repository.find_by_id(automation_id)
-        if not automation or automation.account_id != account_id:
+        if not automation:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Automação não encontrada"
             )
 
         skip = (page - 1) * page_size
@@ -525,7 +488,6 @@ class AutomationService:
         return AutomationResponse(
             id=automation.id,
             board_id=automation.board_id,
-            account_id=automation.account_id,
             name=automation.name,
             description=automation.description,
             automation_type=automation.automation_type,

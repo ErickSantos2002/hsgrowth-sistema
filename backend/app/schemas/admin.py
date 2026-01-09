@@ -136,7 +136,6 @@ class SystemStatsResponse(BaseModel):
     """
     Estatísticas gerais do sistema.
     """
-    total_accounts: int = Field(..., description="Total de contas")
     total_users: int = Field(..., description="Total de usuários")
     active_users: int = Field(..., description="Usuários ativos")
     total_boards: int = Field(..., description="Total de boards")

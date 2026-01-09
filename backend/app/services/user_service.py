@@ -44,7 +44,6 @@ class UserService:
 
     def list_users(
         self,
-        account_id: int,
         page: int = 1,
         page_size: int = 50,
         is_active: Optional[bool] = None,
@@ -52,10 +51,9 @@ class UserService:
         current_user: Optional[User] = None
     ) -> UserListResponse:
         """
-        Lista usuários de uma conta com paginação.
+        Lista usuários do sistema com paginação.
 
         Args:
-            account_id: ID da conta
             page: Número da página (começa em 1)
             page_size: Tamanho da página
             is_active: Filtro por status ativo
@@ -78,8 +76,7 @@ class UserService:
         skip = (page - 1) * page_size
 
         # Busca usuários
-        users = self.repository.list_by_account(
-            account_id=account_id,
+        users = self.repository.list_all(
             skip=skip,
             limit=page_size,
             is_active=is_active,
@@ -87,7 +84,7 @@ class UserService:
         )
 
         # Conta total
-        total = self.repository.count_by_account(account_id=account_id, is_active=is_active, role_name=role)
+        total = self.repository.count_all(is_active=is_active, role_name=role)
 
         # Calcula total de páginas
         total_pages = (total + page_size - 1) // page_size
@@ -101,15 +98,13 @@ class UserService:
                 name=user.name,
                 avatar_url=user.avatar_url,
                 phone=getattr(user, 'phone', None),
-                account_id=user.account_id,
                 role_id=user.role_id,
                 is_active=user.is_active,
                 last_login_at=user.last_login_at,
                 created_at=user.created_at,
                 updated_at=user.updated_at,
                 role=user.role.name if user.role else None,
-                role_name=user.role.display_name if user.role else None,
-                account_name=user.account.name if user.account else None
+                role_name=user.role.display_name if user.role else None
             )
             for user in users
         ]

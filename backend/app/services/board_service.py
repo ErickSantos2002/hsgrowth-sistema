@@ -23,19 +23,18 @@ class BoardService:
         self.board_repository = BoardRepository(db)
         self.list_repository = ListRepository(db)
 
-    def get_board_by_id(self, board_id: int, account_id: int) -> Board:
+    def get_board_by_id(self, board_id: int) -> Board:
         """
-        Busca um board por ID com verificação de account.
+        Busca um board por ID.
 
         Args:
             board_id: ID do board
-            account_id: ID da conta (multi-tenant)
 
         Returns:
             Board
 
         Raises:
-            HTTPException: Se o board não for encontrado ou não pertencer à conta
+            HTTPException: Se o board não for encontrado
         """
         board = self.board_repository.find_by_id(board_id)
 
@@ -45,27 +44,18 @@ class BoardService:
                 detail="Board não encontrado"
             )
 
-        # Verifica se o board pertence à conta
-        if board.account_id != account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado a este board"
-            )
-
         return board
 
     def list_boards(
         self,
-        account_id: int,
         page: int = 1,
         page_size: int = 50,
         is_archived: Optional[bool] = None
     ) -> BoardListResponse:
         """
-        Lista boards de uma conta com paginação.
+        Lista todos os boards do sistema com paginação.
 
         Args:
-            account_id: ID da conta
             page: Número da página
             page_size: Tamanho da página
             is_archived: Filtro por status arquivado
@@ -77,16 +67,14 @@ class BoardService:
         skip = (page - 1) * page_size
 
         # Busca boards
-        boards = self.board_repository.list_by_account(
-            account_id=account_id,
+        boards = self.board_repository.list_all(
             skip=skip,
             limit=page_size,
             is_archived=is_archived
         )
 
         # Conta total
-        total = self.board_repository.count_by_account(
-            account_id=account_id,
+        total = self.board_repository.count_all(
             is_archived=is_archived
         )
 
@@ -108,7 +96,6 @@ class BoardService:
                     description=board.description,
                     color=board.color,
                     icon=board.icon,
-                    account_id=board.account_id,
                     is_archived=board.is_archived,
                     created_at=board.created_at,
                     updated_at=board.updated_at,
@@ -135,17 +122,7 @@ class BoardService:
 
         Returns:
             Board criado
-
-        Raises:
-            HTTPException: Se validação falhar
         """
-        # Valida se o board_data.account_id é o mesmo do usuário
-        if board_data.account_id != current_user.account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não pode criar boards em outra conta"
-            )
-
         # Cria o board
         board = self.board_repository.create(board_data)
 
@@ -167,7 +144,7 @@ class BoardService:
             HTTPException: Se validação falhar
         """
         # Busca o board com validação de account
-        board = self.get_board_by_id(board_id, current_user.account_id)
+        board = self.get_board_by_id(board_id)
 
         # Atualiza o board
         updated_board = self.board_repository.update(board, board_data)
@@ -186,7 +163,7 @@ class BoardService:
             HTTPException: Se validação falhar
         """
         # Busca o board com validação de account
-        board = self.get_board_by_id(board_id, current_user.account_id)
+        board = self.get_board_by_id(board_id)
 
         # TODO: Verificar se o usuário tem permissão de admin
         # Por enquanto, permite qualquer usuário da conta deletar
@@ -219,7 +196,7 @@ class BoardService:
             HTTPException: Se validação falhar
         """
         # Busca o board original com validação de account
-        source_board = self.get_board_by_id(board_id, current_user.account_id)
+        source_board = self.get_board_by_id(board_id)
 
         # Duplica o board
         new_board = self.board_repository.duplicate(source_board, new_name)

@@ -18,9 +18,6 @@ class Automation(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Relacionamento com Account
-    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-
     # Relacionamento com Board (automações são por quadro)
     board_id = Column(Integer, ForeignKey("boards.id", ondelete="CASCADE"), nullable=False, index=True)
 
@@ -78,7 +75,6 @@ class Automation(Base, TimestampMixin):
     auto_disable_on_failures = Column(Integer, default=5, nullable=False)
 
     # Relacionamentos
-    account = relationship("Account")
     board = relationship("Board")
     executions = relationship("AutomationExecution", back_populates="automation", lazy="dynamic", cascade="all, delete-orphan")
 

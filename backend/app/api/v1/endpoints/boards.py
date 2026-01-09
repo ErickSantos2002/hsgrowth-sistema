@@ -38,7 +38,7 @@ async def list_boards(
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Lista todos os boards da conta do usuário autenticado.
+    Lista todos os boards do sistema.
 
     - **page**: Número da página (padrão: 1)
     - **page_size**: Tamanho da página (padrão: 50, máx: 100)
@@ -46,7 +46,6 @@ async def list_boards(
     """
     service = BoardService(db)
     return service.list_boards(
-        account_id=current_user.account_id,
         page=page,
         page_size=page_size,
         is_archived=is_archived
@@ -65,11 +64,11 @@ async def get_board(
     - **board_id**: ID do board
     """
     service = BoardService(db)
-    board = service.get_board_by_id(board_id, current_user.account_id)
+    board = service.get_board_by_id(board_id)
 
     # Conta listas e cards
     list_service = ListService(db)
-    lists = list_service.list_by_board(board_id, current_user.account_id)
+    lists = list_service.list_by_board(board_id)
     lists_count = len(lists)
     cards_count = 0  # TODO: Contar cards quando módulo estiver pronto
 
@@ -79,7 +78,6 @@ async def get_board(
         description=board.description,
         color=board.color,
         icon=board.icon,
-        account_id=board.account_id,
         is_archived=board.is_archived,
         created_at=board.created_at,
         updated_at=board.updated_at,
@@ -101,7 +99,6 @@ async def create_board(
     - **description**: Descrição (opcional)
     - **color**: Cor em hexadecimal (opcional)
     - **icon**: Ícone (opcional)
-    - **account_id**: ID da conta
     """
     service = BoardService(db)
     board = service.create_board(board_data, current_user)
@@ -112,7 +109,6 @@ async def create_board(
         description=board.description,
         color=board.color,
         icon=board.icon,
-        account_id=board.account_id,
         is_archived=board.is_archived,
         created_at=board.created_at,
         updated_at=board.updated_at
@@ -141,7 +137,6 @@ async def update_board(
         description=board.description,
         color=board.color,
         icon=board.icon,
-        account_id=board.account_id,
         is_archived=board.is_archived,
         created_at=board.created_at,
         updated_at=board.updated_at
@@ -195,7 +190,6 @@ async def duplicate_board(
         description=board.description,
         color=board.color,
         icon=board.icon,
-        account_id=board.account_id,
         is_archived=board.is_archived,
         created_at=board.created_at,
         updated_at=board.updated_at
@@ -216,7 +210,7 @@ async def list_board_lists(
     - **board_id**: ID do board
     """
     service = ListService(db)
-    return service.list_by_board(board_id, current_user.account_id)
+    return service.list_by_board(board_id)
 
 
 @router.post("/{board_id}/lists", response_model=ListResponse, summary="Criar lista", status_code=201)

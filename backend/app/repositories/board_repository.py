@@ -32,18 +32,16 @@ class BoardRepository:
             Board.id == board_id
         ).first()
 
-    def list_by_account(
+    def list_all(
         self,
-        account_id: int,
         skip: int = 0,
         limit: int = 100,
         is_archived: Optional[bool] = None
     ) -> List[Board]:
         """
-        Lista boards de uma conta específica.
+        Lista todos os boards do sistema.
 
         Args:
-            account_id: ID da conta
             skip: Número de registros para pular (paginação)
             limit: Limite de registros a retornar
             is_archived: Filtro por status arquivado (opcional)
@@ -51,29 +49,24 @@ class BoardRepository:
         Returns:
             Lista de boards
         """
-        query = self.db.query(Board).filter(
-            Board.account_id == account_id
-        )
+        query = self.db.query(Board)
 
         if is_archived is not None:
             query = query.filter(Board.is_archived == is_archived)
 
         return query.offset(skip).limit(limit).all()
 
-    def count_by_account(self, account_id: int, is_archived: Optional[bool] = None) -> int:
+    def count_all(self, is_archived: Optional[bool] = None) -> int:
         """
-        Conta boards de uma conta específica.
+        Conta todos os boards do sistema.
 
         Args:
-            account_id: ID da conta
             is_archived: Filtro por status arquivado (opcional)
 
         Returns:
             Número de boards
         """
-        query = self.db.query(Board).filter(
-            Board.account_id == account_id
-        )
+        query = self.db.query(Board)
 
         if is_archived is not None:
             query = query.filter(Board.is_archived == is_archived)
@@ -95,7 +88,6 @@ class BoardRepository:
             description=board_data.description,
             color=board_data.color,
             icon=board_data.icon,
-            account_id=board_data.account_id,
             is_archived=False
         )
 
@@ -153,7 +145,6 @@ class BoardRepository:
             description=board.description,
             color=board.color,
             icon=board.icon,
-            account_id=board.account_id,
             is_archived=False
         )
 

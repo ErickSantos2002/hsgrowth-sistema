@@ -28,13 +28,12 @@ class CardService:
         self.board_repository = BoardRepository(db)
         self.field_repository = FieldRepository(db)
 
-    def _verify_card_access(self, card: Card, account_id: int) -> None:
+    def _verify_card_access(self, card: Card) -> None:
         """
-        Verifica se um card pertence à conta do usuário (multi-tenant).
+        Verifica se o card existe e é válido.
 
         Args:
             card: Card a verificar
-            account_id: ID da conta do usuário
 
         Raises:
             HTTPException: Se não tiver acesso
@@ -49,25 +48,24 @@ class CardService:
 
         # Busca o board da lista
         board = self.board_repository.find_by_id(list_obj.board_id)
-        if not board or board.account_id != account_id:
+        if not board:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado a este card"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Board não encontrado"
             )
 
-    def get_card_by_id(self, card_id: int, account_id: int) -> Card:
+    def get_card_by_id(self, card_id: int) -> Card:
         """
-        Busca um card por ID com verificação de acesso.
+        Busca um card por ID.
 
         Args:
             card_id: ID do card
-            account_id: ID da conta
 
         Returns:
             Card
 
         Raises:
-            HTTPException: Se não encontrado ou sem acesso
+            HTTPException: Se não encontrado
         """
         card = self.card_repository.find_by_id(card_id)
 
@@ -77,15 +75,14 @@ class CardService:
                 detail="Card não encontrado"
             )
 
-        # Verifica acesso multi-tenant
-        self._verify_card_access(card, account_id)
+        # Verifica acesso
+        self._verify_card_access(card)
 
         return card
 
     def list_cards(
         self,
         board_id: int,
-        account_id: int,
         page: int = 1,
         page_size: int = 50,
         assigned_to_id: Optional[int] = None,
@@ -97,7 +94,6 @@ class CardService:
 
         Args:
             board_id: ID do board
-            account_id: ID da conta
             page: Número da página
             page_size: Tamanho da página
             assigned_to_id: Filtro por responsável
@@ -107,18 +103,12 @@ class CardService:
         Returns:
             CardListResponse
         """
-        # Verifica se o board existe e pertence à conta
+        # Verifica se o board existe
         board = self.board_repository.find_by_id(board_id)
         if not board:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Board não encontrado"
-            )
-
-        if board.account_id != account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado a este board"
             )
 
         # Calcula offset
@@ -201,7 +191,7 @@ class CardService:
         Returns:
             Card criado
         """
-        # Verifica se a lista existe e pertence à conta do usuário
+        # Verifica se a lista existe
         list_obj = self.list_repository.find_by_id(card_data.list_id)
         if not list_obj:
             raise HTTPException(
@@ -210,10 +200,10 @@ class CardService:
             )
 
         board = self.board_repository.find_by_id(list_obj.board_id)
-        if not board or board.account_id != current_user.account_id:
+        if not board:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não pode criar cards nesta lista"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Board não encontrado"
             )
 
         # Cria o card
@@ -234,7 +224,7 @@ class CardService:
             Card atualizado
         """
         # Busca e verifica acesso
-        card = self.get_card_by_id(card_id, current_user.account_id)
+        card = self.get_card_by_id(card_id)
 
         # Atualiza o card
         updated_card = self.card_repository.update(card, card_data)
@@ -260,7 +250,7 @@ class CardService:
             )
 
         # Busca e verifica acesso
-        card = self.get_card_by_id(card_id, current_user.account_id)
+        card = self.get_card_by_id(card_id)
 
         # Deleta o card
         self.card_repository.delete(card)
@@ -281,7 +271,7 @@ class CardService:
         from datetime import datetime
 
         # Busca e verifica acesso ao card
-        card = self.get_card_by_id(card_id, current_user.account_id)
+        card = self.get_card_by_id(card_id)
 
         # Verifica se a lista de destino existe e pertence à mesma conta
         target_list = self.list_repository.find_by_id(target_list_id)
@@ -292,10 +282,10 @@ class CardService:
             )
 
         target_board = self.board_repository.find_by_id(target_list.board_id)
-        if not target_board or target_board.account_id != current_user.account_id:
+        if not target_board:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não pode mover cards para esta lista"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Board não encontrado"
             )
 
         # Verifica se a lista de destino é uma lista "won" ou "lost"
@@ -325,26 +315,20 @@ class CardService:
             Card atualizado
         """
         # Busca e verifica acesso ao card
-        card = self.get_card_by_id(card_id, current_user.account_id)
+        card = self.get_card_by_id(card_id)
 
         # Se user_id é None, desatribui o card
         if user_id is None:
             assigned_card = self.card_repository.assign_to_user(card, None)
             return assigned_card
 
-        # Verifica se o usuário existe e pertence à mesma conta
+        # Verifica se o usuário existe
         from app.models.user import User
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Usuário não encontrado"
-            )
-
-        if user.account_id != current_user.account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não pode atribuir cards a usuários de outra conta"
             )
 
         # Atribui o card
@@ -374,7 +358,7 @@ class CardService:
         from app.schemas.field import FieldDefinitionCreate
 
         # Verifica acesso ao card
-        card = self.get_card_by_id(card_id, current_user.account_id)
+        card = self.get_card_by_id(card_id)
 
         # Busca o board do card
         list_obj = self.list_repository.find_by_id(card.list_id)
@@ -450,7 +434,7 @@ class CardService:
             Lista de CardFieldValueResponse
         """
         # Verifica acesso ao card
-        card = self.get_card_by_id(card_id, current_user.account_id)
+        card = self.get_card_by_id(card_id)
 
         # Busca valores
         field_values = self.field_repository.list_values_by_card(card_id)

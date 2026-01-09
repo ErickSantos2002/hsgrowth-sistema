@@ -64,19 +64,17 @@ class UserRepository:
             User.is_deleted == False
         ).first()
 
-    def list_by_account(
+    def list_all(
         self,
-        account_id: int,
         skip: int = 0,
         limit: int = 100,
         is_active: Optional[bool] = None,
         role_name: Optional[str] = None
     ) -> List[User]:
         """
-        Lista usuários de uma conta específica.
+        Lista todos os usuários do sistema.
 
         Args:
-            account_id: ID da conta
             skip: Número de registros para pular (paginação)
             limit: Limite de registros a retornar
             is_active: Filtro por status ativo (opcional)
@@ -86,7 +84,6 @@ class UserRepository:
             Lista de usuários
         """
         query = self.db.query(User).filter(
-            User.account_id == account_id,
             User.is_deleted == False
         )
 
@@ -98,12 +95,11 @@ class UserRepository:
 
         return query.offset(skip).limit(limit).all()
 
-    def count_by_account(self, account_id: int, is_active: Optional[bool] = None, role_name: Optional[str] = None) -> int:
+    def count_all(self, is_active: Optional[bool] = None, role_name: Optional[str] = None) -> int:
         """
-        Conta usuários de uma conta específica.
+        Conta todos os usuários do sistema.
 
         Args:
-            account_id: ID da conta
             is_active: Filtro por status ativo (opcional)
             role_name: Filtro por role (opcional)
 
@@ -111,7 +107,6 @@ class UserRepository:
             Número de usuários
         """
         query = self.db.query(User).filter(
-            User.account_id == account_id,
             User.is_deleted == False
         )
 
@@ -139,7 +134,6 @@ class UserRepository:
             username=user_data.username,
             name=user_data.name,
             password_hash=password_hash,
-            account_id=user_data.account_id,
             role_id=user_data.role_id,
             phone=user_data.phone,
             avatar_url=user_data.avatar_url,

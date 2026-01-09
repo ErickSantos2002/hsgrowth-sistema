@@ -247,7 +247,6 @@ def send_email_task(
 
 @celery_app.task(name="generate_report_task")
 def generate_report_task(
-    account_id: int,
     report_type: str,
     period: str,
     filters: Optional[Dict[str, Any]] = None
@@ -256,7 +255,6 @@ def generate_report_task(
     Gera um relatório assincronamente.
 
     Args:
-        account_id: ID da conta
         report_type: Tipo do relatório (sales, conversion, transfers)
         period: Período (today, this_week, this_month, etc)
         filters: Filtros adicionais (opcional)
@@ -266,7 +264,7 @@ def generate_report_task(
     """
     db = SessionLocal()
     try:
-        logger.info(f"Gerando relatório '{report_type}' para conta {account_id}")
+        logger.info(f"Gerando relatório '{report_type}'")
 
         service = ReportService(db)
 
@@ -274,7 +272,6 @@ def generate_report_task(
         if report_type == "sales":
             from app.schemas.report import SalesReportRequest
             request = SalesReportRequest(
-                account_id=account_id,
                 period=period,
                 **(filters or {})
             )
@@ -283,7 +280,6 @@ def generate_report_task(
         elif report_type == "conversion":
             from app.schemas.report import ConversionReportRequest
             request = ConversionReportRequest(
-                account_id=account_id,
                 period=period,
                 **(filters or {})
             )
@@ -292,7 +288,6 @@ def generate_report_task(
         elif report_type == "transfers":
             from app.schemas.report import TransferReportRequest
             request = TransferReportRequest(
-                account_id=account_id,
                 period=period,
                 **(filters or {})
             )
@@ -301,7 +296,7 @@ def generate_report_task(
         else:
             raise ValueError(f"Tipo de relatório desconhecido: {report_type}")
 
-        logger.success(f"Relatório '{report_type}' gerado para conta {account_id}")
+        logger.success(f"Relatório '{report_type}' gerado com sucesso")
         return {
             "success": True,
             "report_type": report_type,

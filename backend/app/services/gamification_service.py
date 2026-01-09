@@ -113,18 +113,10 @@ class GamificationService:
         Returns:
             BadgeResponse
         """
-        # Verifica se é do mesmo account
-        if badge_data.account_id != current_user.account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não pode criar badges para outra conta"
-            )
-
         badge = self.repository.create_badge(badge_data)
 
         return BadgeResponse(
             id=badge.id,
-            account_id=badge.account_id,
             name=badge.name,
             description=badge.description,
             icon_url=badge.icon_url,
@@ -133,12 +125,11 @@ class GamificationService:
             created_at=badge.created_at
         )
 
-    def list_badges(self, account_id: int, page: int = 1, page_size: int = 50) -> List[BadgeResponse]:
+    def list_badges(self, page: int = 1, page_size: int = 50) -> List[BadgeResponse]:
         """
-        Lista badges de uma conta.
+        Lista badges do sistema.
 
         Args:
-            account_id: ID da conta
             page: Número da página
             page_size: Tamanho da página
 
@@ -146,12 +137,11 @@ class GamificationService:
             Lista de BadgeResponse
         """
         skip = (page - 1) * page_size
-        badges = self.repository.list_badges_by_account(account_id, skip, page_size)
+        badges = self.repository.list_all_badges(skip, page_size)
 
         return [
             BadgeResponse(
                 id=badge.id,
-                account_id=badge.account_id,
                 name=badge.name,
                 description=badge.description,
                 icon_url=badge.icon_url,
@@ -187,25 +177,12 @@ class GamificationService:
                 detail="Badge não encontrado"
             )
 
-        # Verifica se o badge pertence à mesma conta
-        if badge.account_id != current_user.account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Badge pertence a outra conta"
-            )
-
-        # Verifica se o usuário existe e pertence à mesma conta
+        # Verifica se o usuário existe
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Usuário não encontrado"
-            )
-
-        if user.account_id != current_user.account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Usuário pertence a outra conta"
             )
 
         # Verifica se o usuário já tem o badge
@@ -239,13 +216,13 @@ class GamificationService:
         # Obtém total de pontos do usuário
         total_points = self.repository.get_user_total_points(user_id)
 
-        # Busca usuário para pegar account_id
+        # Busca usuário
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
             return
 
-        # Busca badges automáticos da conta
-        badges = self.repository.list_badges_by_account(user.account_id, skip=0, limit=1000)
+        # Busca badges automáticos do sistema
+        badges = self.repository.list_all_badges(skip=0, limit=1000)
 
         for badge in badges:
             # TODO: Implementar lógica de avaliação de critérios JSON
@@ -262,23 +239,22 @@ class GamificationService:
                             # Atribui automaticamente
                             self.repository.award_badge(user_id, badge.id, awarded_by_id=None)
 
-    def get_user_badges(self, user_id: int, account_id: int) -> List[UserBadgeResponse]:
+    def get_user_badges(self, user_id: int) -> List[UserBadgeResponse]:
         """
         Lista badges de um usuário.
 
         Args:
             user_id: ID do usuário
-            account_id: ID da conta
 
         Returns:
             Lista de UserBadgeResponse
         """
-        # Verifica se o usuário pertence à conta
+        # Verifica se o usuário existe
         user = self.db.query(User).filter(User.id == user_id).first()
-        if not user or user.account_id != account_id:
+        if not user:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado"
             )
 
         user_badges = self.repository.list_user_badges(user_id)
@@ -357,12 +333,11 @@ class GamificationService:
 
         return start, end
 
-    def calculate_rankings(self, account_id: int, period_type: str) -> RankingListResponse:
+    def calculate_rankings(self, period_type: str) -> RankingListResponse:
         """
         Calcula rankings para um período.
 
         Args:
-            account_id: ID da conta
             period_type: Tipo de período (weekly, monthly, quarterly, annual)
 
         Returns:
@@ -371,11 +346,10 @@ class GamificationService:
         period_start, period_end = self._get_period_dates(period_type)
 
         # Deleta rankings antigos deste período
-        self.repository.delete_rankings_by_period(account_id, period_type, period_start, period_end)
+        self.repository.delete_rankings_by_period(period_type, period_start, period_end)
 
-        # Busca todos os usuários da conta
+        # Busca todos os usuários do sistema
         users = self.db.query(User).filter(
-            User.account_id == account_id,
             User.is_deleted == False
         ).all()
 
@@ -396,7 +370,6 @@ class GamificationService:
         for position, (user_id, points, user_name) in enumerate(user_points, start=1):
             ranking = self.repository.create_ranking(
                 user_id=user_id,
-                account_id=account_id,
                 period_type=period_type,
                 period_start=period_start,
                 period_end=period_end,
@@ -408,7 +381,6 @@ class GamificationService:
                 RankingResponse(
                     id=ranking.id,
                     user_id=ranking.user_id,
-                    account_id=ranking.account_id,
                     period_type=ranking.period_type,
                     period_start=ranking.period_start,
                     period_end=ranking.period_end,
@@ -425,12 +397,11 @@ class GamificationService:
             period_end=period_end
         )
 
-    def get_rankings(self, account_id: int, period_type: str, limit: int = 100) -> RankingListResponse:
+    def get_rankings(self, period_type: str, limit: int = 100) -> RankingListResponse:
         """
         Obtém rankings de um período (calcula se não existir).
 
         Args:
-            account_id: ID da conta
             period_type: Tipo de período
             limit: Limite de resultados
 
@@ -441,12 +412,12 @@ class GamificationService:
 
         # Busca rankings existentes
         rankings = self.repository.list_rankings_by_period(
-            account_id, period_type, period_start, period_end, limit
+            period_type, period_start, period_end, limit
         )
 
         # Se não existir, calcula
         if not rankings:
-            return self.calculate_rankings(account_id, period_type)
+            return self.calculate_rankings(period_type)
 
         # Converte para response
         rankings_response = []
@@ -456,7 +427,6 @@ class GamificationService:
                 RankingResponse(
                     id=ranking.id,
                     user_id=ranking.user_id,
-                    account_id=ranking.account_id,
                     period_type=ranking.period_type,
                     period_start=ranking.period_start,
                     period_end=ranking.period_end,
@@ -475,30 +445,29 @@ class GamificationService:
 
     # ========== RESUMO DO USUÁRIO ==========
 
-    def get_user_summary(self, user_id: int, account_id: int) -> UserGamificationSummary:
+    def get_user_summary(self, user_id: int) -> UserGamificationSummary:
         """
         Obtém resumo completo de gamificação do usuário.
 
         Args:
             user_id: ID do usuário
-            account_id: ID da conta
 
         Returns:
             UserGamificationSummary
         """
-        # Verifica acesso
+        # Verifica se o usuário existe
         user = self.db.query(User).filter(User.id == user_id).first()
-        if not user or user.account_id != account_id:
+        if not user:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado"
             )
 
         # Total de pontos
         total_points = self.repository.get_user_total_points(user_id)
 
         # Badges
-        badges = self.get_user_badges(user_id, account_id)
+        badges = self.get_user_badges(user_id)
 
         # Pontos da semana atual
         week_start, week_end = self._get_period_dates("weekly")

@@ -119,14 +119,13 @@ class TestPoints:
 class TestBadges:
     """Testes de badges"""
 
-    def test_list_badges(self, client: TestClient, salesperson_headers, db, test_account):
+    def test_list_badges(self, client: TestClient, salesperson_headers, db):
         """Testa listar badges disponíveis"""
         # Cria alguns badges
         badge1 = GamificationBadge(
             name="Primeira Venda",
             description="Realizou a primeira venda",
             icon_url="trophy.png",
-            account_id=test_account.id,
             criteria_type="manual",
             is_active=True
         )
@@ -134,7 +133,6 @@ class TestBadges:
             name="10 Vendas",
             description="Realizou 10 vendas",
             icon_url="star.png",
-            account_id=test_account.id,
             criteria_type="automatic",
             criteria={"field": "total_sales", "operator": ">=", "value": 10},
             is_active=True
@@ -152,7 +150,7 @@ class TestBadges:
         assert isinstance(data, list)
         assert len(data) >= 2
 
-    def test_create_badge_success(self, client: TestClient, admin_headers, test_account):
+    def test_create_badge_success(self, client: TestClient, admin_headers):
         """Testa criar badge (apenas admin)"""
         response = client.post(
             "/api/v1/gamification/badges",
@@ -161,8 +159,7 @@ class TestBadges:
                 "name": "Badge Teste",
                 "description": "Badge de teste",
                 "icon_url": "medal.png",
-                "criteria_type": "manual",
-                "account_id": test_account.id
+                "criteria_type": "manual"
             }
         )
 
@@ -170,7 +167,7 @@ class TestBadges:
         data = response.json()
         assert data["name"] == "Badge Teste"
 
-    def test_create_badge_unauthorized(self, client: TestClient, salesperson_headers, test_account):
+    def test_create_badge_unauthorized(self, client: TestClient, salesperson_headers):
         """Testa criar badge sem permissão"""
         response = client.post(
             "/api/v1/gamification/badges",
@@ -179,22 +176,20 @@ class TestBadges:
                 "name": "Badge Ilegal",
                 "description": "Não deveria criar",
                 "icon_url": "medal.png",
-                "criteria_type": "manual",
-                "account_id": test_account.id
+                "criteria_type": "manual"
             }
         )
 
         # Vendedores não podem criar badges
         assert response.status_code == 403
 
-    def test_award_badge_success(self, client: TestClient, manager_headers, db, test_salesperson_user, test_account):
+    def test_award_badge_success(self, client: TestClient, manager_headers, db, test_salesperson_user):
         """Testa atribuir badge a um usuário"""
         # Cria badge
         badge = GamificationBadge(
             name="Badge para Atribuir",
             description="Teste",
             icon_url="star.png",
-            account_id=test_account.id,
             criteria_type="manual",
             is_active=True
         )
@@ -212,14 +207,13 @@ class TestBadges:
 
         assert response.status_code == 200
 
-    def test_get_my_badges(self, client: TestClient, salesperson_headers, db, test_salesperson_user, test_account):
+    def test_get_my_badges(self, client: TestClient, salesperson_headers, db, test_salesperson_user):
         """Testa listar badges do usuário autenticado"""
         # Cria badge e atribui ao usuário
         badge = GamificationBadge(
             name="Meu Badge",
             description="Badge pessoal",
             icon_url="trophy.png",
-            account_id=test_account.id,
             criteria_type="manual",
             is_active=True
         )
@@ -247,7 +241,7 @@ class TestBadges:
 class TestRankings:
     """Testes de rankings"""
 
-    def test_get_rankings_weekly(self, client: TestClient, salesperson_headers, db, test_account):
+    def test_get_rankings_weekly(self, client: TestClient, salesperson_headers, db):
         """Testa buscar ranking semanal"""
         # Cria alguns usuários com pontos diferentes
         from app.models.user import User
@@ -262,7 +256,6 @@ class TestRankings:
             email="user1@test.com",
             password_hash=hash_password("pass123"),
             role_id=salesperson_role.id,
-            account_id=test_account.id,
             is_active=True,
             is_deleted=False
         )
@@ -271,7 +264,6 @@ class TestRankings:
             email="user2@test.com",
             password_hash=hash_password("pass123"),
             role_id=salesperson_role.id,
-            account_id=test_account.id,
             is_active=True,
             is_deleted=False
         )

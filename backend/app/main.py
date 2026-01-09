@@ -118,7 +118,6 @@ focado em vendas B2B com recursos avançados de **gamificação**, **automaçõe
 - **Automações**: Triggers e agendamentos para ações automáticas
 - **Transferências**: Gestão de passagem de leads entre vendedores
 - **Relatórios**: Dashboard com KPIs e relatórios exportáveis
-- **Multi-tenant**: Isolamento completo por conta (account_id)
 - **RBAC**: Controle de acesso baseado em roles (admin, manager, salesperson)
 
 ### 🔐 Autenticação
@@ -136,12 +135,12 @@ Endpoints de listagem suportam paginação padrão:
 - `page`: Número da página (padrão: 1)
 - `page_size`: Itens por página (padrão: 50, máximo: 100)
 
-### 🏢 Multi-Tenancy
+### 🏢 Sistema Único
 
-Todos os dados são isolados por `account_id`:
-- Cada conta tem usuários, boards, cards e configurações próprias
-- Isolamento automático nas queries
-- Usuários só acessam dados da própria conta
+Sistema interno da HSGrowth com controle de acesso baseado em roles:
+- Todos os dados são compartilhados entre todos os usuários do sistema
+- Controle de acesso via permissões de role (admin, manager, salesperson)
+- Isolamento de dados por permissões, não por conta
 
 ### 🚀 Workers Assíncronos
 

@@ -45,7 +45,7 @@ class BadgeBase(BaseModel):
 
 class BadgeCreate(BadgeBase):
     """Schema para criar badge."""
-    account_id: int = Field(..., description="ID da conta")
+    pass
 
 
 class BadgeUpdate(BaseModel):
@@ -60,7 +60,6 @@ class BadgeUpdate(BaseModel):
 class BadgeResponse(BadgeBase):
     """Schema de resposta para badge."""
     id: int
-    account_id: int
     created_at: datetime
 
     class Config:
@@ -108,7 +107,6 @@ class RankingResponse(RankingBase):
     """Schema de resposta para ranking."""
     id: int
     user_id: int
-    account_id: int
     total_points: int
     rank_position: int
     user_name: Optional[str] = None

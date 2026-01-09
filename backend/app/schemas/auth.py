@@ -69,7 +69,6 @@ class RegisterRequest(BaseModel):
     username: Optional[str] = Field(None, min_length=3, max_length=50, description="Nome de usuário")
     password: str = Field(..., min_length=6, description="Senha do usuário")
     name: str = Field(..., min_length=3, max_length=255, description="Nome completo")
-    account_id: Optional[int] = Field(None, description="ID da conta (account) - Admin only")
     role_id: Optional[int] = Field(None, description="ID do role - Admin only")
 
     model_config = {

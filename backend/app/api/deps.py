@@ -201,39 +201,3 @@ def require_permission(required_permission: str):
         return current_user
 
     return permission_checker
-
-
-def require_account_access(account_id: int):
-    """
-    Factory de dependency para verificar se o usuário pertence a uma conta específica.
-    Garante isolamento multi-tenant.
-
-    Args:
-        account_id: ID da conta que deve ser verificada
-
-    Returns:
-        Dependency function que verifica o acesso à conta
-
-    Example:
-        @app.get("/accounts/{account_id}/users")
-        async def list_account_users(
-            account_id: int,
-            _: User = Depends(require_account_access(account_id))
-        ):
-            ...
-    """
-    async def account_checker(
-        current_user: User = Depends(get_current_active_user)
-    ) -> User:
-        """
-        Verifica se o usuário pertence à conta especificada.
-        """
-        if current_user.account_id != account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado. Você não pertence a esta conta."
-            )
-
-        return current_user
-
-    return account_checker

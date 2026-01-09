@@ -6,7 +6,6 @@ Alembic possa detectá-los no autogenerate.
 from app.db.base import Base
 
 # Modelos base
-from app.models.account import Account
 from app.models.role import Role
 from app.models.user import User
 from app.models.client import Client
@@ -40,7 +39,6 @@ from app.models.notification import Notification
 # Lista de todos os modelos (útil para imports)
 __all__ = [
     "Base",
-    "Account",
     "Role",
     "User",
     "Client",

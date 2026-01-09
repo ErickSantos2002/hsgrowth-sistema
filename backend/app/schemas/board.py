@@ -21,8 +21,6 @@ class BoardCreate(BoardBase):
     """
     Schema para criação de board.
     """
-    account_id: int = Field(..., description="ID da conta (multi-tenant)")
-
     model_config = {
         "json_schema_extra": {
             "examples": [
@@ -30,8 +28,7 @@ class BoardCreate(BoardBase):
                     "name": "Leads de Vendas",
                     "description": "Quadro para gerenciar leads do funil de vendas",
                     "color": "#3b82f6",
-                    "icon": "funnel",
-                    "account_id": 1
+                    "icon": "funnel"
                 }
             ]
         }
@@ -66,7 +63,6 @@ class BoardResponse(BoardBase):
     Schema de resposta de board.
     """
     id: int = Field(..., description="ID do board")
-    account_id: int = Field(..., description="ID da conta")
     is_archived: bool = Field(..., description="Board arquivado")
     created_at: datetime = Field(..., description="Data de criação")
     updated_at: datetime = Field(..., description="Data de atualização")
@@ -85,7 +81,6 @@ class BoardResponse(BoardBase):
                     "description": "Quadro para gerenciar leads do funil de vendas",
                     "color": "#3b82f6",
                     "icon": "funnel",
-                    "account_id": 1,
                     "is_archived": False,
                     "created_at": "2026-01-05T10:00:00",
                     "updated_at": "2026-01-05T10:00:00",

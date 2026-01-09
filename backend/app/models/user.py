@@ -17,9 +17,6 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Relacionamento com Account (multi-tenant)
-    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-
     # Relacionamento com Role
     role_id = Column(Integer, ForeignKey("roles.id", ondelete="RESTRICT"), nullable=False, index=True)
 
@@ -48,7 +45,6 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     phone = Column(String(20), nullable=True)
 
     # Relacionamentos
-    account = relationship("Account", back_populates="users")
     role = relationship("Role", back_populates="users")
 
     # Cartões atribuídos a este usuário

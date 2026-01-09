@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # ==================== Redis Cache & Queue LOCAL ====================
+  redis:
+    image: redis:7-alpine
+    container_name: hsgrowth-redis-local
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redis123
+    volumes:
+      - redis_data_local:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hsgrowth-network-local
+
+  # ==================== FastAPI Application LOCAL ====================
+  # Usa banco de dados REMOTO (produção)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: development
+    container_name: hsgrowth-api-local
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env.local
+    volumes:
+      - ./app:/app/app  # Hot reload
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+      - ./scripts:/app/scripts
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - hsgrowth-network-local
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# ==================== Networks ====================
+networks:
+  hsgrowth-network-local:
+    driver: bridge
+
+# ==================== Volumes ====================
+volumes:
+  redis_data_local:
+    driver: local

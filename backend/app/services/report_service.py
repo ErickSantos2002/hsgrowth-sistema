@@ -133,12 +133,9 @@ class ReportService:
                 detail=f"Período inválido: {period}"
             )
 
-    def get_dashboard_kpis(self, account_id: int) -> DashboardKPIsResponse:
+    def get_dashboard_kpis(self) -> DashboardKPIsResponse:
         """
         Retorna os KPIs principais para o dashboard.
-
-        Args:
-            account_id: ID da conta
 
         Returns:
             DashboardKPIsResponse
@@ -147,8 +144,8 @@ class ReportService:
         start_of_week, _ = self._get_date_range(PeriodEnum.THIS_WEEK)
         start_of_month, _ = self._get_date_range(PeriodEnum.THIS_MONTH)
 
-        # Busca todos os boards da conta
-        boards = self.db.query(Board).filter(Board.account_id == account_id).all()
+        # Busca todos os boards do sistema
+        boards = self.db.query(Board).all()
         board_ids = [b.id for b in boards]
 
         # Total de cards
@@ -349,14 +346,12 @@ class ReportService:
 
     def get_sales_report(
         self,
-        account_id: int,
         request: SalesReportRequest
     ) -> SalesReportResponse:
         """
         Gera relatório de vendas por período.
 
         Args:
-            account_id: ID da conta
             request: Parâmetros do relatório
 
         Returns:
@@ -369,11 +364,11 @@ class ReportService:
         )
 
         # Filtra boards
-        query_filter = [Board.account_id == account_id]
+        query_filter = []
         if request.board_id:
             query_filter.append(Board.id == request.board_id)
 
-        boards = self.db.query(Board).filter(*query_filter).all()
+        boards = self.db.query(Board).filter(*query_filter).all() if query_filter else self.db.query(Board).all()
         board_ids = [b.id for b in boards]
 
         # Filtro adicional de usuário
@@ -464,22 +459,20 @@ class ReportService:
 
     def get_conversion_report(
         self,
-        account_id: int,
         request: ConversionReportRequest
     ) -> ConversionReportResponse:
         """
         Gera relatório de conversão (funil de vendas).
 
         Args:
-            account_id: ID da conta
             request: Parâmetros do relatório
 
         Returns:
             ConversionReportResponse
         """
-        # Verifica acesso ao board
+        # Verifica se o board existe
         board = self.board_repository.find_by_id(request.board_id)
-        if not board or board.account_id != account_id:
+        if not board:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Board não encontrado"
@@ -565,14 +558,12 @@ class ReportService:
 
     def get_transfer_report(
         self,
-        account_id: int,
         request: TransferReportRequest
     ) -> TransferReportResponse:
         """
         Gera relatório de transferências.
 
         Args:
-            account_id: ID da conta
             request: Parâmetros do relatório
 
         Returns:

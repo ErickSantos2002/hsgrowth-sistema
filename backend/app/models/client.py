@@ -18,9 +18,6 @@ class Client(Base, TimestampMixin, SoftDeleteMixin):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Relacionamento com Account (multi-tenant)
-    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-
     # Informações básicas
     name = Column(String(255), nullable=False, index=True)  # Nome do contato
     email = Column(String(255), nullable=True, index=True)
@@ -47,7 +44,6 @@ class Client(Base, TimestampMixin, SoftDeleteMixin):
     is_active = Column(Boolean, default=True, nullable=False)
 
     # Relacionamentos
-    account = relationship("Account")
     cards = relationship("Card", back_populates="client", lazy="dynamic")
 
     def __repr__(self):

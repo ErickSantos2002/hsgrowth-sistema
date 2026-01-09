@@ -18,9 +18,6 @@ class Board(Base, TimestampMixin, SoftDeleteMixin):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Relacionamento com Account (multi-tenant)
-    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-
     # Informações básicas
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
@@ -30,7 +27,6 @@ class Board(Base, TimestampMixin, SoftDeleteMixin):
     settings = Column(JSON, default={}, nullable=False)
 
     # Relacionamentos
-    account = relationship("Account", back_populates="boards")
     lists = relationship("List", back_populates="board", lazy="dynamic", order_by="List.position", cascade="all, delete-orphan")
     field_definitions = relationship("FieldDefinition", back_populates="board", lazy="dynamic", cascade="all, delete-orphan")
 

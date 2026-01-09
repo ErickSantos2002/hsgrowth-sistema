@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 class TestCompleteUserFlow:
     """Testa fluxo completo de usuário"""
 
-    def test_full_user_registration_and_login_flow(self, client: TestClient, test_account):
+    def test_full_user_registration_and_login_flow(self, client: TestClient):
         """
         Testa fluxo completo:
         1. Registrar usuário
@@ -24,7 +24,6 @@ class TestCompleteUserFlow:
                 "name": "Integration Test User",
                 "email": "integration@test.com",
                 "password": "integration123",
-                "account_id": test_account.id,
                 "role": "salesperson"
             }
         )
@@ -151,7 +150,6 @@ class TestBoardAndCardsFlow:
         self,
         client: TestClient,
         manager_headers,
-        test_account,
         test_salesperson_user
     ):
         """
@@ -167,8 +165,7 @@ class TestBoardAndCardsFlow:
             headers=manager_headers,
             json={
                 "name": "Pipeline de Vendas 2024",
-                "description": "Board para vendas",
-                "account_id": test_account.id
+                "description": "Board para vendas"
             }
         )
 
@@ -337,8 +334,7 @@ class TestReportsFlow:
     def test_generate_sales_report(
         self,
         client: TestClient,
-        manager_headers,
-        test_account
+        manager_headers
     ):
         """
         Testa geração de relatórios:
@@ -363,7 +359,6 @@ class TestReportsFlow:
             "/api/v1/reports/sales",
             headers=manager_headers,
             json={
-                "account_id": test_account.id,
                 "period": "this_month"
             }
         )
@@ -375,7 +370,6 @@ class TestReportsFlow:
             "/api/v1/reports/conversion",
             headers=manager_headers,
             json={
-                "account_id": test_account.id,
                 "period": "this_month"
             }
         )

@@ -134,7 +134,6 @@ class AutomationResponse(AutomationBase):
     """Schema de resposta para automação."""
     id: int
     board_id: int
-    account_id: int
 
     # Trigger fields
     trigger_event: Optional[str] = None

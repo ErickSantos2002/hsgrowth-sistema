@@ -18,9 +18,6 @@ class GamificationRanking(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Relacionamento com Account (multi-tenancy)
-    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-
     # Relacionamento com User
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
@@ -36,7 +33,7 @@ class GamificationRanking(Base, TimestampMixin):
 
     # Constraint: um usuário não pode ter múltiplos registros para o mesmo período
     __table_args__ = (
-        UniqueConstraint('account_id', 'user_id', 'period_type', 'period_start', name='unique_user_ranking_period'),
+        UniqueConstraint('user_id', 'period_type', 'period_start', name='unique_user_ranking_period'),
     )
 
     # Relacionamentos

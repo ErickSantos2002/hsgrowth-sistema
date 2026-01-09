@@ -102,7 +102,6 @@ async def list_sent_transfers(
     service = TransferService(db)
     return service.list_transfers(
         user_id=current_user.id,
-        account_id=current_user.account_id,
         page=page,
         page_size=page_size,
         status=status,
@@ -128,7 +127,6 @@ async def list_received_transfers(
     service = TransferService(db)
     return service.list_transfers(
         user_id=current_user.id,
-        account_id=current_user.account_id,
         page=page,
         page_size=page_size,
         status=status,
@@ -156,7 +154,6 @@ async def list_pending_approvals(
     service = TransferService(db)
     return service.list_pending_approvals(
         approver_id=current_user.id,
-        account_id=current_user.account_id,
         page=page,
         page_size=page_size
     )
@@ -191,7 +188,7 @@ async def get_statistics(
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Obtém estatísticas de transferências da conta.
+    Obtém estatísticas de transferências do sistema.
 
     Retorna:
     - **total_transfers**: Total de transferências
@@ -204,4 +201,4 @@ async def get_statistics(
     - **top_senders**: Usuários que mais enviaram transferências
     """
     service = TransferService(db)
-    return service.get_statistics(current_user.account_id)
+    return service.get_statistics()

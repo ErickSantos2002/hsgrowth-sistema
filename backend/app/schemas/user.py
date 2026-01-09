@@ -23,7 +23,6 @@ class UserCreate(UserBase):
     Schema para criação de usuário.
     """
     password: str = Field(..., min_length=6, description="Senha do usuário")
-    account_id: int = Field(..., description="ID da conta (multi-tenant)")
     role_id: int = Field(..., description="ID do role/função")
 
     model_config = {
@@ -34,7 +33,6 @@ class UserCreate(UserBase):
                     "username": "usuario123",
                     "name": "João da Silva",
                     "password": "senha123",
-                    "account_id": 1,
                     "role_id": 2,
                     "phone": "(11) 99999-9999"
                 }
@@ -74,7 +72,6 @@ class UserResponse(UserBase):
     Schema de resposta de usuário (sem senha).
     """
     id: int = Field(..., description="ID do usuário")
-    account_id: int = Field(..., description="ID da conta")
     role_id: int = Field(..., description="ID do role")
     is_active: bool = Field(..., description="Status ativo/inativo")
     last_login_at: Optional[datetime] = Field(None, description="Último login")
@@ -84,7 +81,6 @@ class UserResponse(UserBase):
     # Campos relacionados (opcional, podem ser expandidos depois)
     role: Optional[str] = Field(None, description="Role do usuário (admin/manager/salesperson)")
     role_name: Optional[str] = Field(None, description="Nome do role")
-    account_name: Optional[str] = Field(None, description="Nome da conta")
 
     model_config = {
         "from_attributes": True,  # Permite criar a partir de modelos SQLAlchemy
@@ -97,14 +93,12 @@ class UserResponse(UserBase):
                     "name": "João da Silva",
                     "avatar_url": "https://example.com/avatar.jpg",
                     "phone": "(11) 99999-9999",
-                    "account_id": 1,
                     "role_id": 2,
                     "is_active": True,
                     "last_login_at": "2026-01-05T10:30:00",
                     "created_at": "2026-01-01T08:00:00",
                     "updated_at": "2026-01-05T10:30:00",
-                    "role_name": "Vendedor",
-                    "account_name": "Empresa XYZ"
+                    "role_name": "Vendedor"
                 }
             ]
         }

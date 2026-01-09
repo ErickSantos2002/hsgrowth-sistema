@@ -77,7 +77,7 @@ class TestLogin:
 class TestRegister:
     """Testes de registro de usuário"""
 
-    def test_register_success(self, client: TestClient, test_account):
+    def test_register_success(self, client: TestClient):
         """Testa registro de novo usuário com sucesso"""
         response = client.post(
             "/api/v1/auth/register",
@@ -85,7 +85,6 @@ class TestRegister:
                 "name": "New User",
                 "email": "newuser@test.com",
                 "password": "newpass123",
-                "account_id": test_account.id,
                 "role": "salesperson"
             }
         )
@@ -97,7 +96,7 @@ class TestRegister:
         assert data["user"]["email"] == "newuser@test.com"
         assert data["user"]["name"] == "New User"
 
-    def test_register_duplicate_email(self, client: TestClient, test_account, test_salesperson_user):
+    def test_register_duplicate_email(self, client: TestClient, test_salesperson_user):
         """Testa registro com email já existente"""
         response = client.post(
             "/api/v1/auth/register",
@@ -105,7 +104,6 @@ class TestRegister:
                 "name": "Another User",
                 "email": "sales@test.com",  # Email já existe
                 "password": "pass123",
-                "account_id": test_account.id,
                 "role": "salesperson"
             }
         )
@@ -113,7 +111,7 @@ class TestRegister:
         assert response.status_code == 400
         assert "Email já cadastrado" in response.json()["detail"]
 
-    def test_register_invalid_email(self, client: TestClient, test_account):
+    def test_register_invalid_email(self, client: TestClient):
         """Testa registro com email inválido"""
         response = client.post(
             "/api/v1/auth/register",
@@ -121,14 +119,13 @@ class TestRegister:
                 "name": "Invalid Email User",
                 "email": "emailinvalido",  # Sem @
                 "password": "pass123",
-                "account_id": test_account.id,
                 "role": "salesperson"
             }
         )
 
         assert response.status_code == 422  # Validation error
 
-    def test_register_weak_password(self, client: TestClient, test_account):
+    def test_register_weak_password(self, client: TestClient):
         """Testa registro com senha fraca"""
         response = client.post(
             "/api/v1/auth/register",
@@ -136,7 +133,6 @@ class TestRegister:
                 "name": "Weak Pass User",
                 "email": "weak@test.com",
                 "password": "123",  # Muito curta
-                "account_id": test_account.id,
                 "role": "salesperson"
             }
         )

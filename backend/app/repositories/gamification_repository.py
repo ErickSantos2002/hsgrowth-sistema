@@ -139,40 +139,46 @@ class GamificationRepository:
             GamificationBadge.id == badge_id
         ).first()
 
-    def list_badges_by_account(
+    def list_all_badges(
         self,
-        account_id: int,
         skip: int = 0,
-        limit: int = 100
+        limit: int = 100,
+        is_active: Optional[bool] = None
     ) -> List[GamificationBadge]:
         """
-        Lista badges de uma conta.
+        Lista todos os badges do sistema.
 
         Args:
-            account_id: ID da conta
             skip: Paginação - offset
             limit: Paginação - limite
+            is_active: Filtrar por badges ativos (opcional)
 
         Returns:
             Lista de GamificationBadge
         """
-        return self.db.query(GamificationBadge).filter(
-            GamificationBadge.account_id == account_id
-        ).offset(skip).limit(limit).all()
+        query = self.db.query(GamificationBadge)
 
-    def count_badges_by_account(self, account_id: int) -> int:
+        if is_active is not None:
+            query = query.filter(GamificationBadge.is_active == is_active)
+
+        return query.offset(skip).limit(limit).all()
+
+    def count_all_badges(self, is_active: Optional[bool] = None) -> int:
         """
-        Conta badges de uma conta.
+        Conta todos os badges do sistema.
 
         Args:
-            account_id: ID da conta
+            is_active: Filtrar por badges ativos (opcional)
 
         Returns:
             Total de badges
         """
-        return self.db.query(GamificationBadge).filter(
-            GamificationBadge.account_id == account_id
-        ).count()
+        query = self.db.query(GamificationBadge)
+
+        if is_active is not None:
+            query = query.filter(GamificationBadge.is_active == is_active)
+
+        return query.count()
 
     def update_badge(self, badge: GamificationBadge, badge_data: BadgeUpdate) -> GamificationBadge:
         """
@@ -269,7 +275,6 @@ class GamificationRepository:
     def create_ranking(
         self,
         user_id: int,
-        account_id: int,
         period_type: str,
         period_start: datetime,
         period_end: datetime,
@@ -281,7 +286,6 @@ class GamificationRepository:
 
         Args:
             user_id: ID do usuário
-            account_id: ID da conta
             period_type: Tipo de período (weekly, monthly, quarterly, annual)
             period_start: Início do período
             period_end: Fim do período
@@ -293,7 +297,6 @@ class GamificationRepository:
         """
         ranking = GamificationRanking(
             user_id=user_id,
-            account_id=account_id,
             period_type=period_type,
             period_start=period_start,
             period_end=period_end,
@@ -335,17 +338,15 @@ class GamificationRepository:
 
     def list_rankings_by_period(
         self,
-        account_id: int,
         period_type: str,
         period_start: datetime,
         period_end: datetime,
         limit: int = 100
     ) -> List[GamificationRanking]:
         """
-        Lista rankings de uma conta em um período.
+        Lista rankings globais em um período.
 
         Args:
-            account_id: ID da conta
             period_type: Tipo de período
             period_start: Início do período
             period_end: Fim do período
@@ -356,7 +357,6 @@ class GamificationRepository:
         """
         return self.db.query(GamificationRanking).filter(
             and_(
-                GamificationRanking.account_id == account_id,
                 GamificationRanking.period_type == period_type,
                 GamificationRanking.period_start == period_start,
                 GamificationRanking.period_end == period_end
@@ -389,7 +389,6 @@ class GamificationRepository:
 
     def delete_rankings_by_period(
         self,
-        account_id: int,
         period_type: str,
         period_start: datetime,
         period_end: datetime
@@ -398,14 +397,12 @@ class GamificationRepository:
         Deleta rankings de um período (usado para recalcular).
 
         Args:
-            account_id: ID da conta
             period_type: Tipo de período
             period_start: Início do período
             period_end: Fim do período
         """
         self.db.query(GamificationRanking).filter(
             and_(
-                GamificationRanking.account_id == account_id,
                 GamificationRanking.period_type == period_type,
                 GamificationRanking.period_start == period_start,
                 GamificationRanking.period_end == period_end

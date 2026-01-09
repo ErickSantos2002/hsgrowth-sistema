@@ -16,18 +16,8 @@ import {
   Award,
   Medal,
 } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+// Recharts (removido pois não está sendo usado no momento)
+// import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { reportService } from "../services";
 import { DashboardKPIs } from "../types";
 import toast from "react-hot-toast";
@@ -49,11 +39,35 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      // DEBUG: Testar endpoints básicos
+      console.log("🔍 Testando conexão com o banco...");
+
+      // Importar outros services para teste
+      const { boardService, cardService } = await import("../services");
+
+      // Testar boards
+      try {
+        const boards = await boardService.list();
+        console.log("✅ Boards encontrados:", boards);
+      } catch (err) {
+        console.error("❌ Erro ao buscar boards:", err);
+      }
+
+      // Testar cards
+      try {
+        const cards = await cardService.list({ page: 1, size: 10 });
+        console.log("✅ Cards encontrados:", cards);
+      } catch (err) {
+        console.error("❌ Erro ao buscar cards:", err);
+      }
+
+      // Buscar KPIs normalmente
       const data = await reportService.getDashboardKPIs(period);
+      console.log("📊 KPIs retornados:", data);
       setKpis(data);
       setLastUpdate(new Date());
     } catch (err: any) {
-      console.error("Erro ao buscar dados do dashboard:", err);
+      console.error("❌ Erro ao buscar dados do dashboard:", err);
       setError(err?.response?.data?.detail || "Erro ao carregar dashboard");
       toast.error("Erro ao carregar dados do dashboard");
     } finally {
@@ -107,13 +121,19 @@ const Dashboard: React.FC = () => {
 
       const kpisData = [
         ["Total de Cards", kpis.total_cards.toString()],
-        ["Cards Abertos", kpis.open_cards.toString()],
-        ["Cards Ganhos", kpis.won_cards.toString()],
-        ["Cards Perdidos", kpis.lost_cards.toString()],
-        ["Valor Total Pipeline", formatCurrency(kpis.total_value)],
-        ["Valor Ganho", formatCurrency(kpis.won_value)],
-        ["Taxa de Conversão", formatPercentage(kpis.conversion_rate)],
-        ["Ticket Médio", formatCurrency(kpis.average_deal_size)],
+        ["Novos Este Mês", kpis.new_cards_this_month.toString()],
+        ["Cards Ganhos Este Mês", kpis.won_cards_this_month.toString()],
+        ["Cards Perdidos Este Mês", kpis.lost_cards_this_month.toString()],
+        ["Cards Vencidos", kpis.overdue_cards.toString()],
+        ["Valor em Pipeline", formatCurrency(kpis.pipeline_value)],
+        ["Valor Ganho Este Mês", formatCurrency(kpis.won_value_this_month)],
+        ["Taxa de Conversão", formatPercentage(kpis.conversion_rate_this_month)],
+        ["Ticket Médio", formatCurrency(
+          kpis.won_cards_this_month > 0
+            ? kpis.won_value_this_month / kpis.won_cards_this_month
+            : 0
+        )],
+        ["Tempo Médio para Ganhar", kpis.avg_time_to_win_days ? `${kpis.avg_time_to_win_days.toFixed(1)} dias` : "N/A"],
       ];
 
       autoTable(doc, {
@@ -125,17 +145,17 @@ const Dashboard: React.FC = () => {
       });
 
       // Top Performers
-      if (kpis.top_performers && kpis.top_performers.length > 0) {
+      if (kpis.top_sellers_this_month && kpis.top_sellers_this_month.length > 0) {
         const finalY = (doc as any).lastAutoTable.finalY || 100;
 
         doc.setFontSize(14);
         doc.text("Top Performers", 14, finalY + 15);
 
-        const performersData = kpis.top_performers.slice(0, 5).map((p, idx) => [
+        const performersData = kpis.top_sellers_this_month.slice(0, 5).map((seller, idx) => [
           `${idx + 1}º`,
-          p.user.full_name || p.user.username,
-          p.won_cards.toString(),
-          formatCurrency(p.won_value),
+          seller.name,
+          seller.cards_won.toString(),
+          formatCurrency(seller.total_value),
         ]);
 
         autoTable(doc, {
@@ -180,41 +200,32 @@ const Dashboard: React.FC = () => {
       const kpisData = [
         ["Indicador", "Valor"],
         ["Total de Cards", kpis.total_cards],
-        ["Cards Abertos", kpis.open_cards],
-        ["Cards Ganhos", kpis.won_cards],
-        ["Cards Perdidos", kpis.lost_cards],
-        ["Valor Total Pipeline", kpis.total_value],
-        ["Valor Ganho", kpis.won_value],
-        ["Taxa de Conversão (%)", kpis.conversion_rate],
-        ["Ticket Médio", kpis.average_deal_size],
+        ["Novos Este Mês", kpis.new_cards_this_month],
+        ["Cards Ganhos Este Mês", kpis.won_cards_this_month],
+        ["Cards Perdidos Este Mês", kpis.lost_cards_this_month],
+        ["Cards Vencidos", kpis.overdue_cards],
+        ["Valor em Pipeline", kpis.pipeline_value],
+        ["Valor Ganho Este Mês", kpis.won_value_this_month],
+        ["Taxa de Conversão (%)", kpis.conversion_rate_this_month],
+        ["Ticket Médio", kpis.won_cards_this_month > 0 ? kpis.won_value_this_month / kpis.won_cards_this_month : 0],
+        ["Tempo Médio (dias)", kpis.avg_time_to_win_days || "N/A"],
       ];
       const wsKPIs = XLSX.utils.aoa_to_sheet(kpisData);
       XLSX.utils.book_append_sheet(wb, wsKPIs, "KPIs");
 
       // Aba 2: Top Performers
-      if (kpis.top_performers && kpis.top_performers.length > 0) {
+      if (kpis.top_sellers_this_month && kpis.top_sellers_this_month.length > 0) {
         const performersData = [
-          ["Posição", "Nome", "Email", "Deals Fechados", "Valor Total"],
-          ...kpis.top_performers.slice(0, 5).map((p, idx) => [
+          ["Posição", "Nome", "Deals Fechados", "Valor Total"],
+          ...kpis.top_sellers_this_month.slice(0, 5).map((seller, idx) => [
             idx + 1,
-            p.user.full_name || p.user.username,
-            p.user.email,
-            p.won_cards,
-            p.won_value,
+            seller.name,
+            seller.cards_won,
+            seller.total_value,
           ]),
         ];
         const wsPerformers = XLSX.utils.aoa_to_sheet(performersData);
         XLSX.utils.book_append_sheet(wb, wsPerformers, "Top Performers");
-      }
-
-      // Aba 3: Cards por Estágio
-      if (kpis.cards_by_stage && kpis.cards_by_stage.length > 0) {
-        const stagesData = [
-          ["Estágio", "Quantidade", "Valor Total"],
-          ...kpis.cards_by_stage.map((s) => [s.list_name, s.count, s.total_value]),
-        ];
-        const wsStages = XLSX.utils.aoa_to_sheet(stagesData);
-        XLSX.utils.book_append_sheet(wb, wsStages, "Cards por Estágio");
       }
 
       // Gera arquivo
@@ -375,11 +386,11 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-green-400">
-              {kpis?.open_cards || 0} abertos
+              {kpis?.won_cards_this_month || 0} ganhos
             </span>
             <span className="text-slate-500">•</span>
-            <span className="text-slate-400">
-              {kpis?.won_cards || 0} ganhos
+            <span className="text-red-400">
+              {kpis?.lost_cards_this_month || 0} perdidos
             </span>
           </div>
         </div>
@@ -391,15 +402,15 @@ const Dashboard: React.FC = () => {
               <DollarSign className="w-6 h-6 text-green-400" />
             </div>
             <div className="text-right">
-              <div className="text-sm text-slate-400">Valor Total</div>
+              <div className="text-sm text-slate-400">Valor em Pipeline</div>
               <div className="text-2xl font-bold text-white">
-                {formatCurrency(kpis?.total_value || 0)}
+                {formatCurrency(kpis?.pipeline_value || 0)}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-400">
             <TrendingUp className="w-4 h-4 text-green-400" />
-            Pipeline total
+            Cards ativos
           </div>
         </div>
 
@@ -410,15 +421,15 @@ const Dashboard: React.FC = () => {
               <TrendingUp className="w-6 h-6 text-purple-400" />
             </div>
             <div className="text-right">
-              <div className="text-sm text-slate-400">Valor Ganho</div>
+              <div className="text-sm text-slate-400">Ganho Este Mês</div>
               <div className="text-2xl font-bold text-white">
-                {formatCurrency(kpis?.won_value || 0)}
+                {formatCurrency(kpis?.won_value_this_month || 0)}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-400">
             <span className="text-green-400">
-              {kpis?.won_cards || 0} deals fechados
+              {kpis?.won_cards_this_month || 0} deals fechados
             </span>
           </div>
         </div>
@@ -432,80 +443,67 @@ const Dashboard: React.FC = () => {
             <div className="text-right">
               <div className="text-sm text-slate-400">Taxa de Conversão</div>
               <div className="text-3xl font-bold text-white">
-                {formatPercentage(kpis?.conversion_rate || 0)}
+                {formatPercentage(kpis?.conversion_rate_this_month || 0)}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-400">
-            Ticket médio: {formatCurrency(kpis?.average_deal_size || 0)}
+            Ticket médio: {formatCurrency(
+              kpis?.won_cards_this_month && kpis.won_cards_this_month > 0
+                ? kpis.won_value_this_month / kpis.won_cards_this_month
+                : 0
+            )}
           </div>
         </div>
       </div>
 
-      {/* Gráficos e Top Performers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Gráfico: Cards por Estágio */}
+      {/* Cards Ativos e Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Card: Novos Este Mês */}
         <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Cards por Estágio
-          </h3>
-          {kpis && kpis.cards_by_stage && kpis.cards_by_stage.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={kpis.cards_by_stage}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis
-                  dataKey="list_name"
-                  stroke="#94a3b8"
-                  fontSize={12}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis stroke="#94a3b8" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1e293b",
-                    border: "1px solid #475569",
-                    borderRadius: "8px",
-                    color: "#fff",
-                  }}
-                  formatter={(value: any, name: string) => {
-                    if (name === "count") return [value, "Cards"];
-                    if (name === "total_value") return [formatCurrency(value), "Valor"];
-                    return [value, name];
-                  }}
-                />
-                <Legend
-                  wrapperStyle={{ color: "#94a3b8" }}
-                  formatter={(value) => {
-                    if (value === "count") return "Quantidade";
-                    if (value === "total_value") return "Valor Total";
-                    return value;
-                  }}
-                />
-                <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-64 flex items-center justify-center text-slate-500">
-              Nenhum dado disponível
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-500/20 rounded-lg">
+              <Target className="w-5 h-5 text-blue-400" />
             </div>
-          )}
+            <h3 className="text-lg font-semibold text-white">Novos Este Mês</h3>
+          </div>
+          <div className="text-3xl font-bold text-white mb-2">
+            {kpis?.new_cards_this_month || 0}
+          </div>
+          <div className="text-sm text-slate-400">
+            {kpis?.new_cards_this_week || 0} esta semana • {kpis?.new_cards_today || 0} hoje
+          </div>
         </div>
 
-        {/* Gráfico: Evolução de Vendas */}
+        {/* Card: Cards Vencidos */}
         <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Evolução de Vendas Mensal
-          </h3>
-          <div className="h-64 flex flex-col items-center justify-center text-slate-500">
-            <TrendingUp className="w-12 h-12 mb-3 opacity-50" />
-            <p className="text-center">
-              Gráfico de evolução temporal em desenvolvimento
-            </p>
-            <p className="text-sm text-slate-600 mt-2">
-              Requer dados históricos mensais do backend
-            </p>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-red-500/20 rounded-lg">
+              <TrendingDown className="w-5 h-5 text-red-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Cards Vencidos</h3>
+          </div>
+          <div className="text-3xl font-bold text-red-400 mb-2">
+            {kpis?.overdue_cards || 0}
+          </div>
+          <div className="text-sm text-slate-400">
+            {kpis?.due_today || 0} vencem hoje • {kpis?.due_this_week || 0} esta semana
+          </div>
+        </div>
+
+        {/* Card: Tempo Médio */}
+        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-500/20 rounded-lg">
+              <Calendar className="w-5 h-5 text-purple-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Tempo Médio</h3>
+          </div>
+          <div className="text-3xl font-bold text-white mb-2">
+            {kpis?.avg_time_to_win_days ? `${kpis.avg_time_to_win_days.toFixed(1)} dias` : "N/A"}
+          </div>
+          <div className="text-sm text-slate-400">
+            Para ganhar um deal
           </div>
         </div>
       </div>
@@ -519,9 +517,9 @@ const Dashboard: React.FC = () => {
           <h3 className="text-lg font-semibold text-white">Top Performers</h3>
         </div>
 
-        {kpis && kpis.top_performers && kpis.top_performers.length > 0 ? (
+        {kpis && kpis.top_sellers_this_month && kpis.top_sellers_this_month.length > 0 ? (
           <div className="space-y-3">
-            {kpis.top_performers.slice(0, 5).map((performer, index) => {
+            {kpis.top_sellers_this_month.slice(0, 5).map((seller, index) => {
               // Define ícone e cor por posição
               let badgeIcon = null;
               let badgeColor = "";
@@ -541,7 +539,7 @@ const Dashboard: React.FC = () => {
 
               return (
                 <div
-                  key={performer.user.id}
+                  key={`seller-${index}`}
                   className="flex items-center justify-between p-4 bg-slate-700/30 border border-slate-600/30 rounded-lg hover:bg-slate-700/50 transition-all"
                 >
                   <div className="flex items-center gap-4">
@@ -552,13 +550,13 @@ const Dashboard: React.FC = () => {
                       {badgeIcon ? badgeIcon : <span className="font-bold">#{index + 1}</span>}
                     </div>
 
-                    {/* Avatar e Nome */}
+                    {/* Nome */}
                     <div>
                       <div className="text-white font-medium">
-                        {performer.user.full_name || performer.user.username}
+                        {seller.name || "Sem nome"}
                       </div>
                       <div className="text-slate-400 text-sm">
-                        {performer.won_cards} deals fechados
+                        {seller.cards_won} deals fechados
                       </div>
                     </div>
                   </div>
@@ -566,7 +564,7 @@ const Dashboard: React.FC = () => {
                   {/* Valor Ganho */}
                   <div className="text-right">
                     <div className="text-green-400 font-semibold">
-                      {formatCurrency(performer.won_value)}
+                      {formatCurrency(seller.total_value)}
                     </div>
                     <div className="text-slate-500 text-xs">Valor Total</div>
                   </div>

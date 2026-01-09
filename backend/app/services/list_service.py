@@ -23,19 +23,18 @@ class ListService:
         self.list_repository = ListRepository(db)
         self.board_repository = BoardRepository(db)
 
-    def get_list_by_id(self, list_id: int, account_id: int) -> List:
+    def get_list_by_id(self, list_id: int) -> List:
         """
-        Busca uma lista por ID com verificação de account.
+        Busca uma lista por ID.
 
         Args:
             list_id: ID da lista
-            account_id: ID da conta (multi-tenant)
 
         Returns:
             List
 
         Raises:
-            HTTPException: Se a lista não for encontrada ou não pertencer à conta
+            HTTPException: Se a lista não for encontrada
         """
         list_obj = self.list_repository.find_by_id(list_id)
 
@@ -45,42 +44,27 @@ class ListService:
                 detail="Lista não encontrada"
             )
 
-        # Verifica se a lista pertence a um board da conta
-        board = self.board_repository.find_by_id(list_obj.board_id)
-        if not board or board.account_id != account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado a esta lista"
-            )
-
         return list_obj
 
-    def list_by_board(self, board_id: int, account_id: int) -> ListType[ListResponse]:
+    def list_by_board(self, board_id: int) -> ListType[ListResponse]:
         """
         Lista todas as listas de um board.
 
         Args:
             board_id: ID do board
-            account_id: ID da conta
 
         Returns:
             Lista de listas ordenadas por posição
 
         Raises:
-            HTTPException: Se o board não for encontrado ou não pertencer à conta
+            HTTPException: Se o board não for encontrado
         """
-        # Verifica se o board existe e pertence à conta
+        # Verifica se o board existe
         board = self.board_repository.find_by_id(board_id)
         if not board:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Board não encontrado"
-            )
-
-        if board.account_id != account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado a este board"
             )
 
         # Busca listas
@@ -121,18 +105,12 @@ class ListService:
         Raises:
             HTTPException: Se validação falhar
         """
-        # Verifica se o board existe e pertence à conta do usuário
+        # Verifica se o board existe
         board = self.board_repository.find_by_id(list_data.board_id)
         if not board:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Board não encontrado"
-            )
-
-        if board.account_id != current_user.account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não pode criar listas neste board"
             )
 
         # Cria a lista
@@ -155,8 +133,8 @@ class ListService:
         Raises:
             HTTPException: Se validação falhar
         """
-        # Busca a lista com validação de account
-        list_obj = self.get_list_by_id(list_id, current_user.account_id)
+        # Busca a lista
+        list_obj = self.get_list_by_id(list_id)
 
         # Atualiza a lista
         updated_list = self.list_repository.update(list_obj, list_data)
@@ -174,8 +152,8 @@ class ListService:
         Raises:
             HTTPException: Se validação falhar
         """
-        # Busca a lista com validação de account
-        list_obj = self.get_list_by_id(list_id, current_user.account_id)
+        # Busca a lista
+        list_obj = self.get_list_by_id(list_id)
 
         # Deleta a lista (isso também deletará cards em cascade)
         self.list_repository.delete(list_obj)
@@ -195,8 +173,8 @@ class ListService:
         Raises:
             HTTPException: Se validação falhar
         """
-        # Busca a lista com validação de account
-        list_obj = self.get_list_by_id(list_id, current_user.account_id)
+        # Busca a lista
+        list_obj = self.get_list_by_id(list_id)
 
         # Reordena a lista
         reordered_list = self.list_repository.reorder(list_obj, new_position)

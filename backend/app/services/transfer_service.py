@@ -83,10 +83,10 @@ class TransferService:
             )
 
         board = self.board_repository.find_by_id(list_obj.board_id)
-        if not board or board.account_id != current_user.account_id:
+        if not board:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Card pertence a outra conta"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Board não encontrado"
             )
 
         # Valida usuário destino
@@ -95,12 +95,6 @@ class TransferService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Usuário destino não encontrado"
-            )
-
-        if to_user.account_id != current_user.account_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Usuário destino pertence a outra conta"
             )
 
         # Não pode transferir para si mesmo
@@ -123,12 +117,11 @@ class TransferService:
         # Se requer aprovação, cria registro de aprovação
         if self.approval_required:
             # Busca gerente (poderia vir de configuração ou do usuário)
-            # Por simplicidade, vamos usar o primeiro admin da conta
+            # Por simplicidade, vamos usar o primeiro admin do sistema
             from app.models.role import Role
             admin_role = self.db.query(Role).filter(Role.name == "admin").first()
             if admin_role:
                 admin_user = self.db.query(User).filter(
-                    User.account_id == current_user.account_id,
                     User.role_id == admin_role.id
                 ).first()
 
@@ -183,9 +176,9 @@ class TransferService:
                 list_obj = self.list_repository.find_by_id(card.list_id)
                 board = self.board_repository.find_by_id(list_obj.board_id) if list_obj else None
 
-                if not board or board.account_id != current_user.account_id:
+                if not board:
                     failed += 1
-                    errors.append({"card_id": card_id, "error": "Sem acesso ao card"})
+                    errors.append({"card_id": card_id, "error": "Board não encontrado"})
                     continue
 
                 # Cria transferência
@@ -221,7 +214,6 @@ class TransferService:
     def list_transfers(
         self,
         user_id: int,
-        account_id: int,
         page: int = 1,
         page_size: int = 50,
         status: Optional[str] = None,
@@ -232,7 +224,6 @@ class TransferService:
 
         Args:
             user_id: ID do usuário
-            account_id: ID da conta
             page: Número da página
             page_size: Tamanho da página
             status: Filtrar por status
@@ -241,17 +232,17 @@ class TransferService:
         Returns:
             CardTransferListResponse
         """
-        # Verifica acesso
+        # Verifica se o usuário existe
         user = self.db.query(User).filter(User.id == user_id).first()
-        if not user or user.account_id != account_id:
+        if not user:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado"
             )
 
         skip = (page - 1) * page_size
         transfers = self.repository.list_by_user(
-            user_id, account_id, skip, page_size, status, is_sender
+            user_id, skip, page_size, status, is_sender
         )
         total = self.repository.count_by_user(user_id, status, is_sender)
         total_pages = (total + page_size - 1) // page_size
@@ -271,7 +262,6 @@ class TransferService:
     def list_pending_approvals(
         self,
         approver_id: int,
-        account_id: int,
         page: int = 1,
         page_size: int = 50
     ) -> TransferApprovalListResponse:
@@ -280,19 +270,18 @@ class TransferService:
 
         Args:
             approver_id: ID do aprovador
-            account_id: ID da conta
             page: Número da página
             page_size: Tamanho da página
 
         Returns:
             TransferApprovalListResponse
         """
-        # Verifica acesso
+        # Verifica se o aprovador existe
         user = self.db.query(User).filter(User.id == approver_id).first()
-        if not user or user.account_id != account_id:
+        if not user:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso negado"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Aprovador não encontrado"
             )
 
         skip = (page - 1) * page_size
@@ -375,12 +364,9 @@ class TransferService:
 
     # ========== ESTATÍSTICAS ==========
 
-    def get_statistics(self, account_id: int) -> TransferStatistics:
+    def get_statistics(self) -> TransferStatistics:
         """
-        Obtém estatísticas de transferências.
-
-        Args:
-            account_id: ID da conta
+        Obtém estatísticas de transferências do sistema.
 
         Returns:
             TransferStatistics
@@ -392,7 +378,7 @@ class TransferService:
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         total_transfers = self.repository.count_by_period(
-            account_id, datetime(2000, 1, 1), now
+            datetime(2000, 1, 1), now
         )
 
         # Conta aprovações pendentes (simplificado)
@@ -401,20 +387,20 @@ class TransferService:
         ).count()
 
         completed_today = self.repository.count_by_period(
-            account_id, today_start, now, status="completed"
+            today_start, now, status="completed"
         )
 
         completed_this_week = self.repository.count_by_period(
-            account_id, week_start, now, status="completed"
+            week_start, now, status="completed"
         )
 
         completed_this_month = self.repository.count_by_period(
-            account_id, month_start, now, status="completed"
+            month_start, now, status="completed"
         )
 
-        by_reason = self.repository.count_by_reason(account_id)
-        top_receivers = self.repository.get_top_receivers(account_id, limit=5)
-        top_senders = self.repository.get_top_senders(account_id, limit=5)
+        by_reason = self.repository.count_by_reason()
+        top_receivers = self.repository.get_top_receivers(limit=5)
+        top_senders = self.repository.get_top_senders(limit=5)
 
         return TransferStatistics(
             total_transfers=total_transfers,

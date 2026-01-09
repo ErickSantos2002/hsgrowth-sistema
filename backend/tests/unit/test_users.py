@@ -12,7 +12,7 @@ from app.models.user import User
 class TestListUsers:
     """Testes de listagem de usuários"""
 
-    def test_list_users_success(self, client: TestClient, admin_headers, test_account, test_admin_user, test_salesperson_user):
+    def test_list_users_success(self, client: TestClient, admin_headers, test_admin_user, test_salesperson_user):
         """Testa listagem de usuários com sucesso"""
         response = client.get(
             "/api/v1/users",
@@ -25,7 +25,7 @@ class TestListUsers:
         assert "total" in data
         assert len(data["users"]) >= 2  # Pelo menos admin e salesperson
 
-    def test_list_users_pagination(self, client: TestClient, admin_headers, db, test_account, test_roles):
+    def test_list_users_pagination(self, client: TestClient, admin_headers, db, test_roles):
         """Testa paginação de usuários"""
         # Cria vários usuários
         from app.core.security import hash_password
@@ -35,7 +35,6 @@ class TestListUsers:
                 email=f"user{i}@test.com",
                 password_hash=hash_password("pass123"),
                 role_id=test_roles["salesperson"].id,
-                account_id=test_account.id,
                 is_active=True,
                 is_deleted=False
             )
@@ -102,42 +101,11 @@ class TestGetUser:
 
         assert response.status_code == 404
 
-    def test_get_user_from_other_account(self, client: TestClient, db, admin_headers, test_account, test_roles):
-        """Testa buscar usuário de outra conta (deve negar)"""
-        from app.models.account import Account
-        from app.core.security import hash_password
-
-        # Cria outra conta
-        other_account = Account(name="Other Account", subdomain="other", is_active=True)
-        db.add(other_account)
-        db.commit()
-
-        # Cria usuário na outra conta
-        other_user = User(
-            name="Other User",
-            email="other@test.com",
-            password_hash=hash_password("pass123"),
-            role_id=test_roles["salesperson"].id,
-            account_id=other_account.id,
-            is_active=True,
-            is_deleted=False
-        )
-        db.add(other_user)
-        db.commit()
-
-        # Tenta buscar usuário de outra conta
-        response = client.get(
-            f"/api/v1/users/{other_user.id}",
-            headers=admin_headers
-        )
-
-        assert response.status_code == 404  # Não encontra pois é de outra conta
-
 
 class TestCreateUser:
     """Testes de criação de usuário"""
 
-    def test_create_user_success(self, client: TestClient, admin_headers, test_account, test_roles):
+    def test_create_user_success(self, client: TestClient, admin_headers, test_roles):
         """Testa criação de usuário com sucesso"""
         response = client.post(
             "/api/v1/users",
@@ -146,8 +114,7 @@ class TestCreateUser:
                 "name": "New User",
                 "email": "newuser@test.com",
                 "password": "newpass123",
-                "role_id": test_roles["salesperson"].id,
-                "account_id": test_account.id
+                "role_id": test_roles["salesperson"].id
             }
         )
 
@@ -157,7 +124,7 @@ class TestCreateUser:
         assert data["name"] == "New User"
         assert "password" not in data  # Senha não deve ser retornada
 
-    def test_create_user_duplicate_email(self, client: TestClient, admin_headers, test_account, test_roles, test_salesperson_user):
+    def test_create_user_duplicate_email(self, client: TestClient, admin_headers, test_roles, test_salesperson_user):
         """Testa criar usuário com email duplicado"""
         response = client.post(
             "/api/v1/users",
@@ -166,15 +133,14 @@ class TestCreateUser:
                 "name": "Duplicate",
                 "email": "sales@test.com",  # Email já existe
                 "password": "pass123",
-                "role_id": test_roles["salesperson"].id,
-                "account_id": test_account.id
+                "role_id": test_roles["salesperson"].id
             }
         )
 
         # Aceita tanto 400 (erro do serviço) quanto 422 (erro de validação do Pydantic)
         assert response.status_code in [400, 422]
 
-    def test_create_user_unauthorized(self, client: TestClient, salesperson_headers, test_account, test_roles):
+    def test_create_user_unauthorized(self, client: TestClient, salesperson_headers, test_roles):
         """Testa criar usuário sem permissão"""
         response = client.post(
             "/api/v1/users",
@@ -183,8 +149,7 @@ class TestCreateUser:
                 "name": "New User",
                 "email": "new@test.com",
                 "password": "pass123",
-                "role_id": test_roles["salesperson"].id,
-                "account_id": test_account.id
+                "role_id": test_roles["salesperson"].id
             }
         )
 
@@ -236,7 +201,7 @@ class TestUpdateUser:
 class TestDeleteUser:
     """Testes de deleção de usuário"""
 
-    def test_delete_user_success(self, client: TestClient, admin_headers, db, test_account, test_roles):
+    def test_delete_user_success(self, client: TestClient, admin_headers, db, test_roles):
         """Testa deletar usuário com sucesso"""
         # Cria usuário para deletar
         from app.core.security import hash_password
@@ -245,7 +210,6 @@ class TestDeleteUser:
             email="delete@test.com",
             password_hash=hash_password("pass123"),
             role_id=test_roles["salesperson"].id,
-            account_id=test_account.id,
             is_active=True,
             is_deleted=False
         )

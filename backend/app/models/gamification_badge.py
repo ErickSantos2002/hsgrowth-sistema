@@ -18,9 +18,6 @@ class GamificationBadge(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Relacionamento com Account (badges customizadas são por conta)
-    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=True, index=True)
-
     # Informações básicas
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
@@ -39,7 +36,6 @@ class GamificationBadge(Base, TimestampMixin):
     is_active = Column(Boolean, default=True, nullable=False)
 
     # Relacionamentos
-    account = relationship("Account")
     user_badges = relationship("UserBadge", back_populates="badge", lazy="dynamic", cascade="all, delete-orphan")
 
     def __repr__(self):

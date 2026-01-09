@@ -42,7 +42,7 @@ async def get_my_gamification(
     - **annual_rank**: Posição no ranking anual
     """
     service = GamificationService(db)
-    return service.get_user_summary(current_user.id, current_user.account_id)
+    return service.get_user_summary(current_user.id)
 
 
 @router.get("/users/{user_id}", response_model=UserGamificationSummary, summary="Resumo de gamificação de um usuário")
@@ -57,7 +57,7 @@ async def get_user_gamification(
     - **user_id**: ID do usuário
     """
     service = GamificationService(db)
-    return service.get_user_summary(user_id, current_user.account_id)
+    return service.get_user_summary(user_id)
 
 
 # ========== PONTOS ==========
@@ -93,13 +93,13 @@ async def list_badges(
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Lista todos os badges disponíveis na conta.
+    Lista todos os badges disponíveis no sistema.
 
     - **page**: Número da página
     - **page_size**: Tamanho da página
     """
     service = GamificationService(db)
-    return service.list_badges(current_user.account_id, page, page_size)
+    return service.list_badges(page, page_size)
 
 
 @router.post("/badges", response_model=BadgeResponse, summary="Criar badge", status_code=201)
@@ -147,7 +147,7 @@ async def get_my_badges(
     Lista badges conquistados pelo usuário autenticado.
     """
     service = GamificationService(db)
-    return service.get_user_badges(current_user.id, current_user.account_id)
+    return service.get_user_badges(current_user.id)
 
 
 @router.get("/badges/users/{user_id}", response_model=List[UserBadgeResponse], summary="Badges de um usuário")
@@ -162,7 +162,7 @@ async def get_user_badges(
     - **user_id**: ID do usuário
     """
     service = GamificationService(db)
-    return service.get_user_badges(user_id, current_user.account_id)
+    return service.get_user_badges(user_id)
 
 
 # ========== RANKINGS ==========
@@ -175,7 +175,7 @@ async def get_rankings(
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Lista rankings da conta para um período específico.
+    Lista rankings do sistema para um período específico.
 
     - **period_type**: Tipo de período (weekly, monthly, quarterly, annual)
     - **limit**: Limite de resultados (padrão: 100, máx: 500)
@@ -185,7 +185,7 @@ async def get_rankings(
     - Informações do período (início e fim)
     """
     service = GamificationService(db)
-    return service.get_rankings(current_user.account_id, period_type, limit)
+    return service.get_rankings(period_type, limit)
 
 
 @router.post("/rankings/calculate", response_model=RankingListResponse, summary="Recalcular rankings")
@@ -202,4 +202,4 @@ async def calculate_rankings(
     Útil para atualizar rankings em tempo real.
     """
     service = GamificationService(db)
-    return service.calculate_rankings(current_user.account_id, period_type)
+    return service.calculate_rankings(period_type)

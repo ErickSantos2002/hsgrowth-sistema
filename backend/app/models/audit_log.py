@@ -21,9 +21,6 @@ class AuditLog(Base):
     # Relacionamento com User (quem executou)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
-    # Relacionamento com Account
-    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-
     # Informações da ação
     action = Column(String(50), nullable=False, index=True)  # CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
     entity_type = Column(String(100), nullable=False, index=True)  # User, Card, Board, etc.
@@ -46,7 +43,6 @@ class AuditLog(Base):
 
     # Relacionamentos
     user = relationship("User")
-    account = relationship("Account")
 
     def __repr__(self):
         return f"<AuditLog(id={self.id}, action='{self.action}', entity='{self.entity_type}:{self.entity_id}')>"

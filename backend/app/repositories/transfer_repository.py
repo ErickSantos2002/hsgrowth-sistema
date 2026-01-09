@@ -74,7 +74,6 @@ class TransferRepository:
     def list_by_user(
         self,
         user_id: int,
-        account_id: int,
         skip: int = 0,
         limit: int = 100,
         status: Optional[str] = None,
@@ -85,7 +84,6 @@ class TransferRepository:
 
         Args:
             user_id: ID do usuário
-            account_id: ID da conta
             skip: Paginação - offset
             limit: Paginação - limite
             status: Filtrar por status
@@ -167,7 +165,6 @@ class TransferRepository:
 
     def count_by_period(
         self,
-        account_id: int,
         start_date: datetime,
         end_date: datetime,
         status: Optional[str] = None
@@ -176,7 +173,6 @@ class TransferRepository:
         Conta transferências em um período.
 
         Args:
-            account_id: ID da conta
             start_date: Data inicial
             end_date: Data final
             status: Filtrar por status
@@ -184,8 +180,6 @@ class TransferRepository:
         Returns:
             Total de transferências
         """
-        # Precisamos verificar o account_id através do card e sua lista/board
-        # Por simplicidade, vamos fazer uma query direta
         query = self.db.query(CardTransfer).filter(
             and_(
                 CardTransfer.created_at >= start_date,
@@ -198,12 +192,9 @@ class TransferRepository:
 
         return query.count()
 
-    def count_by_reason(self, account_id: int) -> dict:
+    def count_by_reason(self) -> dict:
         """
         Conta transferências por motivo.
-
-        Args:
-            account_id: ID da conta
 
         Returns:
             Dicionário com contagem por motivo
@@ -215,12 +206,11 @@ class TransferRepository:
 
         return {reason: count for reason, count in results}
 
-    def get_top_receivers(self, account_id: int, limit: int = 10) -> List[dict]:
+    def get_top_receivers(self, limit: int = 10) -> List[dict]:
         """
         Lista usuários que mais receberam transferências.
 
         Args:
-            account_id: ID da conta
             limit: Limite de resultados
 
         Returns:
@@ -232,9 +222,9 @@ class TransferRepository:
             CardTransfer.to_user_id,
             User.name,
             func.count(CardTransfer.id).label('count')
-        ).join(User, CardTransfer.to_user_id == User.id).filter(
-            User.account_id == account_id
-        ).group_by(CardTransfer.to_user_id, User.name).order_by(
+        ).join(User, CardTransfer.to_user_id == User.id).group_by(
+            CardTransfer.to_user_id, User.name
+        ).order_by(
             func.count(CardTransfer.id).desc()
         ).limit(limit).all()
 
@@ -243,12 +233,11 @@ class TransferRepository:
             for user_id, name, count in results
         ]
 
-    def get_top_senders(self, account_id: int, limit: int = 10) -> List[dict]:
+    def get_top_senders(self, limit: int = 10) -> List[dict]:
         """
         Lista usuários que mais enviaram transferências.
 
         Args:
-            account_id: ID da conta
             limit: Limite de resultados
 
         Returns:
@@ -260,9 +249,9 @@ class TransferRepository:
             CardTransfer.from_user_id,
             User.name,
             func.count(CardTransfer.id).label('count')
-        ).join(User, CardTransfer.from_user_id == User.id).filter(
-            User.account_id == account_id
-        ).group_by(CardTransfer.from_user_id, User.name).order_by(
+        ).join(User, CardTransfer.from_user_id == User.id).group_by(
+            CardTransfer.from_user_id, User.name
+        ).order_by(
             func.count(CardTransfer.id).desc()
         ).limit(limit).all()
 

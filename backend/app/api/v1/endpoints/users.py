@@ -19,19 +19,15 @@ router = APIRouter()
     response_model=UserListResponse,
     summary="Listar usuários",
     description="""
-    Lista todos os usuários da conta do usuário autenticado com paginação.
+    Lista todos os usuários do sistema com paginação.
 
     **Filtros disponíveis:**
     - `page`: Número da página (padrão: 1, mínimo: 1)
     - `page_size`: Quantidade de usuários por página (padrão: 50, máximo: 100)
     - `is_active`: Filtrar por status ativo (true/false, opcional)
 
-    **Multi-tenancy:**
-    - Retorna apenas usuários da mesma conta do usuário autenticado
-    - Isolamento automático por `account_id`
-
     **Resposta:**
-    - Lista de usuários com dados básicos e relacionamentos (role, account)
+    - Lista de usuários com dados básicos e relacionamentos (role)
     - Metadados de paginação (total, páginas, página atual)
     - Usuários deletados (soft delete) não são retornados
 
@@ -51,7 +47,6 @@ router = APIRouter()
                                 "username": "joao",
                                 "name": "João Silva",
                                 "role_name": "Vendedor",
-                                "account_name": "HSGrowth",
                                 "is_active": True,
                                 "created_at": "2026-01-06T10:00:00"
                             }
@@ -83,7 +78,6 @@ async def list_users(
     """
     service = UserService(db)
     return service.list_users(
-        account_id=current_user.account_id,
         page=page,
         page_size=page_size,
         is_active=is_active,
@@ -106,7 +100,7 @@ async def list_users(
 
     **Dados retornados:**
     - Informações básicas (id, email, username, nome completo)
-    - Dados da conta e role (account_name, role_name)
+    - Dados de role (role_name)
     - Metadados (last_login_at, created_at, updated_at)
     - Avatar e telefone (se preenchidos)
 
@@ -126,8 +120,6 @@ async def list_users(
                         "name": "João Silva",
                         "avatar_url": "https://exemplo.com/avatar.jpg",
                         "phone": "+55 11 98765-4321",
-                        "account_id": 1,
-                        "account_name": "HSGrowth",
                         "role_id": 2,
                         "role_name": "Vendedor",
                         "is_active": True,
@@ -159,7 +151,6 @@ async def get_current_user_data(
         name=current_user.name,
         avatar_url=current_user.avatar_url,
         phone=getattr(current_user, 'phone', None),
-        account_id=current_user.account_id,
         role_id=current_user.role_id,
         is_active=current_user.is_active,
         last_login_at=current_user.last_login_at,
@@ -167,7 +158,6 @@ async def get_current_user_data(
         updated_at=current_user.updated_at,
         role=current_user.role.name if current_user.role else None,
         role_name=current_user.role.display_name if current_user.role else None,
-        account_name=current_user.account.name if current_user.account else None
     )
 
 
@@ -185,13 +175,6 @@ async def get_user(
     service = UserService(db)
     user = service.get_user_by_id(user_id)
 
-    # Validação de multi-tenant: usuário deve pertencer à mesma conta
-    if user.account_id != current_user.account_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuário não encontrado"
-        )
-
     # Converte para response schema
     return UserResponse(
         id=user.id,
@@ -200,7 +183,6 @@ async def get_user(
         name=user.name,
         avatar_url=user.avatar_url,
         phone=getattr(user, 'phone', None),
-        account_id=user.account_id,
         role_id=user.role_id,
         is_active=user.is_active,
         last_login_at=user.last_login_at,
@@ -208,7 +190,6 @@ async def get_user(
         updated_at=user.updated_at,
         role=user.role.name if user.role else None,
         role_name=user.role.display_name if user.role else None,
-        account_name=user.account.name if user.account else None
     )
 
 
@@ -226,7 +207,6 @@ async def get_user(
     - `name`: Nome completo do usuário
 
     **Campos opcionais:**
-    - `account_id`: ID da conta (usa conta do usuário logado se não fornecido)
     - `role_id`: ID do role (padrão: 2 - salesperson)
     - `avatar_url`: URL do avatar
     - `phone`: Telefone de contato
@@ -238,8 +218,7 @@ async def get_user(
     - Email deve ter formato válido
 
     **Permissões:**
-    - TODO: Apenas admins e managers devem poder criar usuários
-    - Usuários criados pertencem à mesma conta do criador
+    - Apenas admins podem criar usuários
 
     **Segurança:**
     - Senha nunca é retornada na resposta
@@ -256,8 +235,6 @@ async def get_user(
                         "email": "maria@exemplo.com",
                         "username": "maria",
                         "name": "Maria Santos",
-                        "account_id": 1,
-                        "account_name": "HSGrowth",
                         "role_id": 2,
                         "role_name": "Vendedor",
                         "is_active": True,
@@ -291,7 +268,6 @@ async def create_user(
     """
     Endpoint de criação de usuário.
     """
-    # TODO: Adicionar verificação de permissão (apenas admins)
     service = UserService(db)
     user = service.create_user(user_data)
 
@@ -303,7 +279,6 @@ async def create_user(
         name=user.name,
         avatar_url=user.avatar_url,
         phone=getattr(user, 'phone', None),
-        account_id=user.account_id,
         role_id=user.role_id,
         is_active=user.is_active,
         last_login_at=user.last_login_at,
@@ -311,7 +286,6 @@ async def create_user(
         updated_at=user.updated_at,
         role=user.role.name if user.role else None,
         role_name=user.role.display_name if user.role else None,
-        account_name=user.account.name if user.account else None
     )
 
 
@@ -339,7 +313,6 @@ async def update_user(
         name=user.name,
         avatar_url=user.avatar_url,
         phone=getattr(user, 'phone', None),
-        account_id=user.account_id,
         role_id=user.role_id,
         is_active=user.is_active,
         last_login_at=user.last_login_at,
@@ -347,7 +320,6 @@ async def update_user(
         updated_at=user.updated_at,
         role=user.role.name if user.role else None,
         role_name=user.role.display_name if user.role else None,
-        account_name=user.account.name if user.account else None
     )
 
 
@@ -362,7 +334,6 @@ async def delete_user(
 
     - **user_id**: ID do usuário
     """
-    # TODO: Adicionar verificação de permissão (apenas admins)
     service = UserService(db)
     service.delete_user(user_id, current_user)
 

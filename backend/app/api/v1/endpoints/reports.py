@@ -42,7 +42,7 @@ async def get_dashboard_kpis(
     - Top 5 vendedores do mês
     """
     service = ReportService(db)
-    return service.get_dashboard_kpis(account_id=current_user.account_id)
+    return service.get_dashboard_kpis()
 
 
 @router.post("/sales", response_model=SalesReportResponse, summary="Relatório de vendas")
@@ -67,10 +67,7 @@ async def get_sales_report(
     - Breakdown por vendedor com conversão individual
     """
     service = ReportService(db)
-    return service.get_sales_report(
-        account_id=current_user.account_id,
-        request=request
-    )
+    return service.get_sales_report(request=request)
 
 
 @router.post("/conversion", response_model=ConversionReportResponse, summary="Relatório de conversão (funil)")
@@ -95,10 +92,7 @@ async def get_conversion_report(
     - Tempo médio em cada etapa (dias)
     """
     service = ReportService(db)
-    return service.get_conversion_report(
-        account_id=current_user.account_id,
-        request=request
-    )
+    return service.get_conversion_report(request=request)
 
 
 @router.post("/transfers", response_model=TransferReportResponse, summary="Relatório de transferências")
@@ -124,10 +118,7 @@ async def get_transfer_report(
     - Média de dias para ganhar após transferência
     """
     service = ReportService(db)
-    return service.get_transfer_report(
-        account_id=current_user.account_id,
-        request=request
-    )
+    return service.get_transfer_report(request=request)
 
 
 @router.post("/export", response_model=ExportReportResponse, summary="Exportar relatório")

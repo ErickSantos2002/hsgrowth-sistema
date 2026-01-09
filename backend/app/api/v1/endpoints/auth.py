@@ -129,7 +129,6 @@ async def login(
         "email": user.email,
         "name": user.name,
         "username": user.username,
-        "account_id": user.account_id,
         "role_id": user.role_id,
         "is_active": user.is_active,
         "avatar_url": user.avatar_url,
@@ -288,7 +287,6 @@ async def logout(
     - `name`: Nome completo do usuário
 
     **Campos opcionais:**
-    - `account_id`: ID da conta (padrão: 1)
     - `role_id`: ID do role (padrão: 2 - salesperson)
 
     **Validações:**
@@ -312,7 +310,6 @@ async def logout(
                         "email": "joao@exemplo.com",
                         "username": "joao",
                         "name": "João Silva",
-                        "account_id": 1,
                         "role_id": 2,
                         "is_active": True,
                         "created_at": "2026-01-06T10:00:00"
@@ -371,8 +368,7 @@ async def register(
         username=user_data.username,
         password_hash=password_hash,
         name=user_data.name,
-        account_id=user_data.account_id or 1,  # TODO: Definir lógica de account padrão
-        role_id=user_data.role_id or 2,  # TODO: Definir role padrão (ex: "salesperson")
+        role_id=user_data.role_id or 2,  # Padrão: salesperson
         is_active=True
     )
 
@@ -390,7 +386,6 @@ async def register(
         "email": new_user.email,
         "name": new_user.name,
         "username": new_user.username,
-        "account_id": new_user.account_id,
         "role_id": new_user.role_id,
         "is_active": new_user.is_active,
         "avatar_url": new_user.avatar_url,

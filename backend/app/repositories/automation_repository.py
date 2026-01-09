@@ -22,13 +22,12 @@ class AutomationRepository:
 
     # ========== AUTOMATIONS ==========
 
-    def create(self, automation_data: AutomationCreate, account_id: int) -> Automation:
+    def create(self, automation_data: AutomationCreate) -> Automation:
         """
         Cria uma nova automação.
 
         Args:
             automation_data: Dados da automação
-            account_id: ID da conta
 
         Returns:
             Automation criada
@@ -38,7 +37,6 @@ class AutomationRepository:
                        for action in automation_data.actions]
 
         automation = Automation(
-            account_id=account_id,
             board_id=automation_data.board_id,
             name=automation_data.name,
             description=automation_data.description,
@@ -128,18 +126,6 @@ class AutomationRepository:
             query = query.filter(Automation.automation_type == automation_type)
 
         return query.count()
-
-    def count_by_account(self, account_id: int) -> int:
-        """
-        Conta total de automações de uma conta.
-
-        Args:
-            account_id: ID da conta
-
-        Returns:
-            Total de automações
-        """
-        return self.db.query(Automation).filter(Automation.account_id == account_id).count()
 
     def update(self, automation: Automation, automation_data: AutomationUpdate) -> Automation:
         """

@@ -23,7 +23,6 @@ from app.schemas.admin import (
 )
 from app.schemas.user import UserCreate, UserResponse
 from app.models.user import User
-from app.models.account import Account
 from app.models.board import Board
 from app.models.card import Card
 from app.models.automation import Automation
@@ -44,7 +43,6 @@ router = APIRouter()
 async def list_all_users(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
-    account_id: Optional[int] = Query(None, description="Filtrar por conta"),
     is_active: Optional[bool] = Query(None, description="Filtrar por status ativo"),
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
@@ -54,15 +52,11 @@ async def list_all_users(
 
     - **page**: Número da página (padrão: 1)
     - **page_size**: Tamanho da página (padrão: 50, máx: 100)
-    - **account_id**: Filtrar por conta específica (opcional)
     - **is_active**: Filtrar por status ativo (opcional)
 
     **Requer:** Role de admin
     """
     query = db.query(User).filter(User.is_deleted == False)
-
-    if account_id:
-        query = query.filter(User.account_id == account_id)
 
     if is_active is not None:
         query = query.filter(User.is_active == is_active)
@@ -388,13 +382,12 @@ async def get_system_stats(
     **[ADMIN ONLY]** Retorna estatísticas gerais do sistema.
 
     **Retorna:**
-    - Total de contas, usuários, boards, cards, etc
+    - Total de usuários, boards, cards, etc
     - Tamanho do banco de dados (se disponível)
 
     **Requer:** Role de admin
     """
     # Conta entidades
-    total_accounts = db.query(func.count(Account.id)).scalar() or 0
     total_users = db.query(func.count(User.id)).filter(User.is_deleted == False).scalar() or 0
     active_users = db.query(func.count(User.id)).filter(
         User.is_deleted == False,
@@ -416,7 +409,6 @@ async def get_system_stats(
         database_size_mb = None
 
     return SystemStatsResponse(
-        total_accounts=total_accounts,
         total_users=total_users,
         active_users=active_users,
         total_boards=total_boards,

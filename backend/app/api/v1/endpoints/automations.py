@@ -46,7 +46,6 @@ async def list_automations(
     service = AutomationService(db)
     return service.list_automations(
         board_id=board_id,
-        account_id=current_user.account_id,
         page=page,
         page_size=page_size,
         is_active=is_active,
@@ -66,7 +65,7 @@ async def get_automation(
     - **automation_id**: ID da automação
     """
     service = AutomationService(db)
-    return service.get_automation(automation_id, current_user.account_id)
+    return service.get_automation(automation_id)
 
 
 @router.post("", response_model=AutomationResponse, summary="Criar automação", status_code=201)
@@ -77,8 +76,6 @@ async def create_automation(
 ) -> Any:
     """
     Cria uma nova automação.
-
-    **Limite**: 50 automações por conta.
 
     **Automação Trigger:**
     - **automation_type**: "trigger"
@@ -159,7 +156,7 @@ async def trigger_automation(
     service = AutomationService(db)
 
     # Verifica acesso à automação
-    automation = service.get_automation(automation_id, current_user.account_id)
+    automation = service.get_automation(automation_id)
 
     return service.execute_automation(
         automation_id=automation_id,
@@ -191,7 +188,6 @@ async def list_executions(
     service = AutomationService(db)
     return service.list_executions(
         automation_id=automation_id,
-        account_id=current_user.account_id,
         page=page,
         page_size=page_size,
         status=status

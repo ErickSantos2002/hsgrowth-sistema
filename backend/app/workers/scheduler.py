@@ -223,30 +223,26 @@ def job_report_failed_automations():
             logger.info("[CRON] Nenhuma automação falhada nas últimas 24h")
             return
 
-        # Agrupa por conta e prepara relatório
-        failures_by_account = {}
+        # Prepara lista de falhas
+        failures = []
         for execution, automation in failed_executions:
-            account_id = automation.account_id
-            if account_id not in failures_by_account:
-                failures_by_account[account_id] = []
-
-            failures_by_account[account_id].append({
+            failures.append({
                 "automation_name": automation.name,
                 "automation_id": automation.id,
                 "error_message": execution.error_message or "Erro desconhecido",
                 "executed_at": execution.executed_at.isoformat()
             })
 
-        # Envia email para admins de cada conta
+        # Busca todos os admins do sistema
+        admins = db.query(User).filter(
+            User.role == "admin",
+            User.is_active == True,
+            User.is_deleted == False
+        ).all()
+
+        # Envia email para cada admin
         emails_sent = 0
-        for account_id, failures in failures_by_account.items():
-            # Busca admins da conta
-            admins = db.query(User).filter(
-                User.account_id == account_id,
-                User.role == "admin",
-                User.is_active == True,
-                User.is_deleted == False
-            ).all()
+        if admins:
 
             for admin in admins:
                 try:

@@ -18,7 +18,6 @@ from app.main import app
 from app.db.base import Base
 from app.api.deps import get_db  # IMPORTANTE: Importar do mesmo lugar que os endpoints!
 from app.core.security import hash_password, create_access_token
-from app.models.account import Account
 from app.models.user import User
 from app.models.role import Role
 from app.models.board import Board
@@ -118,28 +117,6 @@ def client(db: Session) -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture
-def test_account(db: Session) -> Account:
-    """
-    Cria uma conta de teste.
-
-    Args:
-        db: Sessão de banco de dados
-
-    Returns:
-        Account: Conta criada
-    """
-    account = Account(
-        name="Test Account",
-        subdomain="test",
-        is_active=True
-    )
-    db.add(account)
-    db.commit()
-    db.refresh(account)
-    return account
-
-
-@pytest.fixture
 def test_roles(db: Session) -> dict:
     """
     Cria roles de teste no banco de dados.
@@ -189,13 +166,12 @@ def test_roles(db: Session) -> dict:
 
 
 @pytest.fixture
-def test_admin_user(db: Session, test_account: Account, test_roles: dict) -> User:
+def test_admin_user(db: Session, test_roles: dict) -> User:
     """
     Cria um usuário admin de teste.
 
     Args:
         db: Sessão de banco de dados
-        test_account: Conta de teste
         test_roles: Roles de teste
 
     Returns:
@@ -208,7 +184,6 @@ def test_admin_user(db: Session, test_account: Account, test_roles: dict) -> Use
         email="admin@test.com",
         password_hash=hash_password("admin123"),
         role_id=test_roles["admin"].id,
-        account_id=test_account.id,
         is_active=True,
         is_deleted=False
     )
@@ -221,13 +196,12 @@ def test_admin_user(db: Session, test_account: Account, test_roles: dict) -> Use
 
 
 @pytest.fixture
-def test_manager_user(db: Session, test_account: Account, test_roles: dict) -> User:
+def test_manager_user(db: Session, test_roles: dict) -> User:
     """
     Cria um usuário manager de teste.
 
     Args:
         db: Sessão de banco de dados
-        test_account: Conta de teste
         test_roles: Roles de teste
 
     Returns:
@@ -240,7 +214,6 @@ def test_manager_user(db: Session, test_account: Account, test_roles: dict) -> U
         email="manager@test.com",
         password_hash=hash_password("manager123"),
         role_id=test_roles["manager"].id,
-        account_id=test_account.id,
         is_active=True,
         is_deleted=False
     )
@@ -253,13 +226,12 @@ def test_manager_user(db: Session, test_account: Account, test_roles: dict) -> U
 
 
 @pytest.fixture
-def test_salesperson_user(db: Session, test_account: Account, test_roles: dict) -> User:
+def test_salesperson_user(db: Session, test_roles: dict) -> User:
     """
     Cria um usuário vendedor de teste.
 
     Args:
         db: Sessão de banco de dados
-        test_account: Conta de teste
         test_roles: Roles de teste
 
     Returns:
@@ -272,7 +244,6 @@ def test_salesperson_user(db: Session, test_account: Account, test_roles: dict) 
         email="sales@test.com",
         password_hash=hash_password("sales123"),
         role_id=test_roles["salesperson"].id,
-        account_id=test_account.id,
         is_active=True,
         is_deleted=False
     )
@@ -285,21 +256,19 @@ def test_salesperson_user(db: Session, test_account: Account, test_roles: dict) 
 
 
 @pytest.fixture
-def test_board(db: Session, test_account: Account) -> Board:
+def test_board(db: Session) -> Board:
     """
     Cria um board de teste.
 
     Args:
         db: Sessão de banco de dados
-        test_account: Conta de teste
 
     Returns:
         Board: Board criado
     """
     board = Board(
         name="Test Board",
-        description="Board de teste",
-        account_id=test_account.id
+        description="Board de teste"
     )
     db.add(board)
     db.commit()

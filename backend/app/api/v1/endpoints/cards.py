@@ -72,10 +72,6 @@ def card_to_response(
     - `is_won`: Filtrar apenas cards ganhos (true/false)
     - `is_lost`: Filtrar apenas cards perdidos (true/false)
 
-    **Multi-tenancy:**
-    - Retorna apenas cards da conta do usuário autenticado
-    - Isolamento automático por `account_id`
-
     **Resposta:**
     - Lista de cards com dados completos (valor, responsável, lista, datas)
     - Metadados de paginação (total, páginas)
@@ -134,7 +130,6 @@ async def list_cards(
     service = CardService(db)
     return service.list_cards(
         board_id=board_id,
-        account_id=current_user.account_id,
         page=page,
         page_size=page_size,
         assigned_to_id=assigned_to_id,
@@ -155,7 +150,7 @@ async def get_card(
     - **card_id**: ID do card
     """
     service = CardService(db)
-    card = service.get_card_by_id(card_id, current_user.account_id)
+    card = service.get_card_by_id(card_id)
 
     # Busca informações relacionadas
     assigned_to_name = None
@@ -202,8 +197,8 @@ async def get_card(
     - Position é calculada com base nos cards existentes
 
     **Validações:**
-    - Lista deve existir e pertencer à conta do usuário
-    - Assigned_to_id deve ser usuário da mesma conta
+    - Lista deve existir no sistema
+    - Assigned_to_id deve ser usuário válido
     - Value deve ser número positivo ou zero
 
     **Gamificação:**
@@ -379,7 +374,7 @@ async def add_or_update_field(
     service.add_or_update_field_value(card_id, field_data, current_user)
 
     # Busca o card atualizado com os custom_fields
-    card = service.get_card_by_id(card_id, current_user.account_id)
+    card = service.get_card_by_id(card_id)
     custom_fields = service.get_card_field_values(card_id, current_user)
 
     # Busca informações relacionadas
