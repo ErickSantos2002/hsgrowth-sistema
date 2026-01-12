@@ -348,6 +348,20 @@ export interface DashboardKPIs {
     cards_won: number;
     total_value: number;
   }>;
+
+  // Dados para gráficos
+  cards_by_stage: Array<{
+    stage_name: string;
+    card_count: number;
+    total_value: number;
+  }>;
+
+  sales_evolution: Array<{
+    period: string;
+    won_count: number;
+    won_value: number;
+    lost_count: number;
+  }>;
 }
 
 export interface SalesReport {

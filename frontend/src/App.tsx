@@ -2,10 +2,11 @@ import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import './styles/index.css';
 import AppRoutes from './router';
+import { DashboardProvider } from './context/DashboardContext';
 
 const App: React.FC = () => {
   return (
-    <>
+    <DashboardProvider>
       <AppRoutes />
       <Toaster
         position="top-right"
@@ -30,7 +31,7 @@ const App: React.FC = () => {
           },
         }}
       />
-    </>
+    </DashboardProvider>
   );
 };
 

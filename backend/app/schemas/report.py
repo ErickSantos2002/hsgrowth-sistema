@@ -77,6 +77,17 @@ class DashboardKPIsResponse(BaseModel):
         description="Top 5 vendedores do mês (nome, cards_won, total_value)"
     )
 
+    # Dados para gráficos
+    cards_by_stage: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Cards agrupados por estágio/lista (stage_name, card_count, total_value)"
+    )
+
+    sales_evolution: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Evolução de vendas (period, won_count, won_value, lost_count)"
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [

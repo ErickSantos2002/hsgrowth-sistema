@@ -1,54 +1,51 @@
-import React, { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
-
-// Lazy loading de páginas para melhor performance
-const Login = lazy(() => import('./pages/Login'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const NotFound = lazy(() => import('./pages/NotFound'));
-
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Loading Fallback Component
-const PageLoader: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
-      <p className="mt-4 text-slate-300">Carregando...</p>
-    </div>
-  </div>
-);
+// Importação direta (sem lazy loading) para navegação instantânea
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Boards from './pages/Boards';
+import Cards from './pages/Cards';
+import Clients from './pages/Clients';
+import Gamification from './pages/Gamification';
+import Transfers from './pages/Transfers';
+import Reports from './pages/Reports';
+import Automations from './pages/Automations';
+import Notifications from './pages/Notifications';
+import Settings from './pages/Settings';
+import Users from './pages/Users';
+import NotFound from './pages/NotFound';
 
 const AppRoutes: React.FC = () => (
-  <Suspense fallback={<PageLoader />}>
-    <Routes>
-      <Route path="/login" element={<Login />} />
+  <Routes>
+    <Route path="/login" element={<Login />} />
 
-      {/* Rotas protegidas com MainLayout */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <MainLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/boards" element={<Dashboard />} />
-        <Route path="/cards" element={<Dashboard />} />
-        <Route path="/clients" element={<Dashboard />} />
-        <Route path="/gamification" element={<Dashboard />} />
-        <Route path="/transfers" element={<Dashboard />} />
-        <Route path="/reports" element={<Dashboard />} />
-        <Route path="/automations" element={<Dashboard />} />
-        <Route path="/notifications" element={<Dashboard />} />
-        <Route path="/settings" element={<Dashboard />} />
-        <Route path="/users" element={<Dashboard />} />
-      </Route>
+    {/* Rotas protegidas com MainLayout */}
+    <Route
+      element={
+        <ProtectedRoute>
+          <MainLayout />
+        </ProtectedRoute>
+      }
+    >
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/boards" element={<Boards />} />
+      <Route path="/cards" element={<Cards />} />
+      <Route path="/clients" element={<Clients />} />
+      <Route path="/gamification" element={<Gamification />} />
+      <Route path="/transfers" element={<Transfers />} />
+      <Route path="/reports" element={<Reports />} />
+      <Route path="/automations" element={<Automations />} />
+      <Route path="/notifications" element={<Notifications />} />
+      <Route path="/settings" element={<Settings />} />
+      <Route path="/users" element={<Users />} />
+    </Route>
 
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  </Suspense>
+    <Route path="*" element={<NotFound />} />
+  </Routes>
 );
 
 export default AppRoutes;

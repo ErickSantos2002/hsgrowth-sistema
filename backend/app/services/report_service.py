@@ -322,6 +322,81 @@ class ReportService:
             for name, cards_won, total_value in top_sellers_query
         ]
 
+        # Cards por estágio/lista (para gráfico de barras)
+        cards_by_stage_query = self.db.query(
+            BoardList.name.label('stage_name'),
+            func.count(Card.id).label('card_count'),
+            func.sum(Card.value).label('total_value')
+        ).join(
+            Card, Card.list_id == BoardList.id
+        ).filter(
+            BoardList.board_id.in_(board_ids),
+            Card.is_won == 0  # Apenas cards ativos
+        ).group_by(
+            BoardList.id, BoardList.name, BoardList.position
+        ).order_by(
+            BoardList.position
+        ).all()
+
+        cards_by_stage = [
+            {
+                "stage_name": stage_name,
+                "card_count": card_count,
+                "total_value": float(total_value or 0)
+            }
+            for stage_name, card_count, total_value in cards_by_stage_query
+        ]
+
+        # Evolução de vendas (últimos 6 meses para gráfico de linha)
+        sales_evolution = []
+        for i in range(5, -1, -1):  # 6 meses atrás até hoje
+            # Calcula o primeiro e último dia do mês
+            target_date = today - timedelta(days=30 * i)
+            month_start = target_date.replace(day=1)
+
+            # Último dia do mês
+            if month_start.month == 12:
+                next_month = month_start.replace(year=month_start.year + 1, month=1, day=1)
+            else:
+                next_month = month_start.replace(month=month_start.month + 1, day=1)
+            month_end = next_month - timedelta(days=1)
+
+            # Cards ganhos no mês
+            won_count = self.db.query(func.count(Card.id)).join(
+                BoardList, Card.list_id == BoardList.id
+            ).filter(
+                BoardList.board_id.in_(board_ids),
+                Card.is_won == 1,
+                func.date(Card.closed_at) >= month_start,
+                func.date(Card.closed_at) <= month_end
+            ).scalar() or 0
+
+            won_value = self.db.query(func.sum(Card.value)).join(
+                BoardList, Card.list_id == BoardList.id
+            ).filter(
+                BoardList.board_id.in_(board_ids),
+                Card.is_won == 1,
+                func.date(Card.closed_at) >= month_start,
+                func.date(Card.closed_at) <= month_end
+            ).scalar() or Decimal(0)
+
+            # Cards perdidos no mês
+            lost_count = self.db.query(func.count(Card.id)).join(
+                BoardList, Card.list_id == BoardList.id
+            ).filter(
+                BoardList.board_id.in_(board_ids),
+                Card.is_won == -1,
+                func.date(Card.closed_at) >= month_start,
+                func.date(Card.closed_at) <= month_end
+            ).scalar() or 0
+
+            sales_evolution.append({
+                "period": month_start.strftime("%b/%y"),  # Ex: "Jan/26"
+                "won_count": won_count,
+                "won_value": float(won_value),
+                "lost_count": lost_count
+            })
+
         return DashboardKPIsResponse(
             total_cards=total_cards,
             new_cards_today=new_cards_today,
@@ -341,7 +416,9 @@ class ReportService:
             pipeline_value=pipeline_value,
             conversion_rate_this_month=conversion_rate_this_month,
             avg_time_to_win_days=avg_time_to_win_days,
-            top_sellers_this_month=top_sellers_this_month
+            top_sellers_this_month=top_sellers_this_month,
+            cards_by_stage=cards_by_stage,
+            sales_evolution=sales_evolution
         )
 
     def get_sales_report(

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -16,75 +16,22 @@ import {
   Award,
   Medal,
 } from "lucide-react";
-// Recharts (removido pois não está sendo usado no momento)
-// import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { reportService } from "../services";
-import { DashboardKPIs } from "../types";
+// Recharts para gráficos
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Brush } from "recharts";
+import CountUp from "react-countup";
 import toast from "react-hot-toast";
-
-// Tipo para o período selecionado
-type PeriodType = "today" | "week" | "month" | "quarter" | "year";
+import { useDashboard, PeriodType } from "../context/DashboardContext";
 
 const Dashboard: React.FC = () => {
-  // Estados
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
-  const [period, setPeriod] = useState<PeriodType>("month");
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  // Usa o contexto do Dashboard
+  const { kpis, loading, error, period, lastUpdate, fetchDashboardData, handleRefresh, setPeriod } = useDashboard();
 
-  // Busca os dados do dashboard
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // DEBUG: Testar endpoints básicos
-      console.log("🔍 Testando conexão com o banco...");
-
-      // Importar outros services para teste
-      const { boardService, cardService } = await import("../services");
-
-      // Testar boards
-      try {
-        const boards = await boardService.list();
-        console.log("✅ Boards encontrados:", boards);
-      } catch (err) {
-        console.error("❌ Erro ao buscar boards:", err);
-      }
-
-      // Testar cards
-      try {
-        const cards = await cardService.list({ page: 1, size: 10 });
-        console.log("✅ Cards encontrados:", cards);
-      } catch (err) {
-        console.error("❌ Erro ao buscar cards:", err);
-      }
-
-      // Buscar KPIs normalmente
-      const data = await reportService.getDashboardKPIs(period);
-      console.log("📊 KPIs retornados:", data);
-      setKpis(data);
-      setLastUpdate(new Date());
-    } catch (err: any) {
-      console.error("❌ Erro ao buscar dados do dashboard:", err);
-      setError(err?.response?.data?.detail || "Erro ao carregar dashboard");
-      toast.error("Erro ao carregar dados do dashboard");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Carrega dados ao montar e quando o período muda
+  // Carrega dados apenas na primeira vez que monta o componente (se não tiver em cache)
   useEffect(() => {
-    fetchDashboardData();
-  }, [period]);
-
-  // Handler para refresh manual
-  const handleRefresh = () => {
-    toast.success("Atualizando dados...");
-    fetchDashboardData();
-  };
+    if (!kpis) {
+      fetchDashboardData();
+    }
+  }, []);
 
   // Handler para exportar PDF
   const handleExportPDF = () => {
@@ -313,7 +260,7 @@ const Dashboard: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
           <p className="text-slate-400 text-sm">
-            Última atualização: {lastUpdate.toLocaleTimeString("pt-BR")}
+            Última atualização: {lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR") : "Carregando..."}
           </p>
         </div>
 
@@ -380,7 +327,7 @@ const Dashboard: React.FC = () => {
             <div className="text-right">
               <div className="text-sm text-slate-400">Total de Cards</div>
               <div className="text-3xl font-bold text-white">
-                {kpis?.total_cards || 0}
+                <CountUp end={kpis?.total_cards || 0} duration={1.5} separator="." />
               </div>
             </div>
           </div>
@@ -404,7 +351,14 @@ const Dashboard: React.FC = () => {
             <div className="text-right">
               <div className="text-sm text-slate-400">Valor em Pipeline</div>
               <div className="text-2xl font-bold text-white">
-                {formatCurrency(kpis?.pipeline_value || 0)}
+                <CountUp
+                  end={kpis?.pipeline_value || 0}
+                  duration={1.5}
+                  decimals={2}
+                  decimal=","
+                  separator="."
+                  prefix="R$ "
+                />
               </div>
             </div>
           </div>
@@ -423,7 +377,14 @@ const Dashboard: React.FC = () => {
             <div className="text-right">
               <div className="text-sm text-slate-400">Ganho Este Mês</div>
               <div className="text-2xl font-bold text-white">
-                {formatCurrency(kpis?.won_value_this_month || 0)}
+                <CountUp
+                  end={kpis?.won_value_this_month || 0}
+                  duration={1.5}
+                  decimals={2}
+                  decimal=","
+                  separator="."
+                  prefix="R$ "
+                />
               </div>
             </div>
           </div>
@@ -443,7 +404,13 @@ const Dashboard: React.FC = () => {
             <div className="text-right">
               <div className="text-sm text-slate-400">Taxa de Conversão</div>
               <div className="text-3xl font-bold text-white">
-                {formatPercentage(kpis?.conversion_rate_this_month || 0)}
+                <CountUp
+                  end={kpis?.conversion_rate_this_month || 0}
+                  duration={1.5}
+                  decimals={1}
+                  decimal=","
+                  suffix="%"
+                />
               </div>
             </div>
           </div>
@@ -468,7 +435,7 @@ const Dashboard: React.FC = () => {
             <h3 className="text-lg font-semibold text-white">Novos Este Mês</h3>
           </div>
           <div className="text-3xl font-bold text-white mb-2">
-            {kpis?.new_cards_this_month || 0}
+            <CountUp end={kpis?.new_cards_this_month || 0} duration={1.5} separator="." />
           </div>
           <div className="text-sm text-slate-400">
             {kpis?.new_cards_this_week || 0} esta semana • {kpis?.new_cards_today || 0} hoje
@@ -484,7 +451,7 @@ const Dashboard: React.FC = () => {
             <h3 className="text-lg font-semibold text-white">Cards Vencidos</h3>
           </div>
           <div className="text-3xl font-bold text-red-400 mb-2">
-            {kpis?.overdue_cards || 0}
+            <CountUp end={kpis?.overdue_cards || 0} duration={1.5} separator="." />
           </div>
           <div className="text-sm text-slate-400">
             {kpis?.due_today || 0} vencem hoje • {kpis?.due_this_week || 0} esta semana
@@ -500,7 +467,19 @@ const Dashboard: React.FC = () => {
             <h3 className="text-lg font-semibold text-white">Tempo Médio</h3>
           </div>
           <div className="text-3xl font-bold text-white mb-2">
-            {kpis?.avg_time_to_win_days ? `${kpis.avg_time_to_win_days.toFixed(1)} dias` : "N/A"}
+            {kpis?.avg_time_to_win_days ? (
+              <>
+                <CountUp
+                  end={kpis.avg_time_to_win_days}
+                  duration={1.5}
+                  decimals={1}
+                  decimal=","
+                />{" "}
+                dias
+              </>
+            ) : (
+              "N/A"
+            )}
           </div>
           <div className="text-sm text-slate-400">
             Para ganhar um deal
@@ -578,6 +557,152 @@ const Dashboard: React.FC = () => {
             <p>Nenhum dado de performance disponível</p>
           </div>
         )}
+      </div>
+
+      {/* Gráficos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Gráfico: Cards por Estágio */}
+        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-blue-500/20 rounded-lg">
+              <Target className="w-6 h-6 text-blue-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Cards por Estágio</h3>
+          </div>
+
+          {kpis && kpis.cards_by_stage && kpis.cards_by_stage.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={kpis.cards_by_stage}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis
+                  dataKey="stage_name"
+                  stroke="#94a3b8"
+                  tick={{ fill: "#94a3b8" }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis stroke="#94a3b8" tick={{ fill: "#94a3b8" }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1e293b",
+                    border: "1px solid #475569",
+                    borderRadius: "0.5rem"
+                  }}
+                  labelStyle={{ color: "#f1f5f9" }}
+                  itemStyle={{ color: "#3b82f6" }}
+                  formatter={(value: any, name: string) => {
+                    if (name === "card_count") return [value, "Cards"];
+                    if (name === "total_value") return [formatCurrency(value), "Valor Total"];
+                    return [value, name];
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{ paddingTop: "20px" }}
+                  iconType="circle"
+                  formatter={(value: string) => {
+                    if (value === "card_count") return "Quantidade de Cards";
+                    if (value === "total_value") return "Valor Total";
+                    return value;
+                  }}
+                />
+                <Bar dataKey="card_count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                {/* Brush para zoom/pan - só aparece se houver muitos estágios */}
+                {kpis.cards_by_stage.length > 4 && (
+                  <Brush
+                    dataKey="stage_name"
+                    height={30}
+                    stroke="#3b82f6"
+                    fill="#1e293b"
+                    travellerWidth={10}
+                  />
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-80 flex flex-col items-center justify-center text-slate-500">
+              <Target className="w-12 h-12 mb-3 opacity-50" />
+              <p>Nenhum dado de cards por estágio disponível</p>
+            </div>
+          )}
+        </div>
+
+        {/* Gráfico: Evolução de Vendas */}
+        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-green-500/20 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-green-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Evolução de Vendas (Últimos 6 Meses)</h3>
+          </div>
+
+          {kpis && kpis.sales_evolution && kpis.sales_evolution.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={kpis.sales_evolution}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis
+                  dataKey="period"
+                  stroke="#94a3b8"
+                  tick={{ fill: "#94a3b8" }}
+                />
+                <YAxis stroke="#94a3b8" tick={{ fill: "#94a3b8" }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1e293b",
+                    border: "1px solid #475569",
+                    borderRadius: "0.5rem"
+                  }}
+                  labelStyle={{ color: "#f1f5f9" }}
+                  formatter={(value: any, name: string) => {
+                    if (name === "won_count") return [value, "Cards Ganhos"];
+                    if (name === "won_value") return [formatCurrency(value), "Valor Ganho"];
+                    if (name === "lost_count") return [value, "Cards Perdidos"];
+                    return [value, name];
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{ paddingTop: "20px" }}
+                  iconType="circle"
+                  formatter={(value: string) => {
+                    if (value === "won_count") return "Cards Ganhos";
+                    if (value === "won_value") return "Valor Ganho (R$)";
+                    if (value === "lost_count") return "Cards Perdidos";
+                    return value;
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="won_count"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ fill: "#10b981", r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="lost_count"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  dot={{ fill: "#ef4444", r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                {/* Brush para zoom/pan - permite navegar pela timeline */}
+                <Brush
+                  dataKey="period"
+                  height={30}
+                  stroke="#10b981"
+                  fill="#1e293b"
+                  travellerWidth={10}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-80 flex flex-col items-center justify-center text-slate-500">
+              <TrendingUp className="w-12 h-12 mb-3 opacity-50" />
+              <p>Nenhum dado de evolução de vendas disponível</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

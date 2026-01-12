@@ -15,7 +15,7 @@ import {
     Repeat,
     Workflow,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/logo.png";
 
@@ -28,7 +28,6 @@ const menuItems = [
     { path: "/transfers", icon: Repeat, label: "Transferências", adminOnly: false },
     { path: "/reports", icon: FileText, label: "Relatórios", adminOnly: false },
     { path: "/automations", icon: Workflow, label: "Automações", adminOnly: false },
-    { path: "/notifications", icon: Bell, label: "Notificações", adminOnly: false },
     { path: "/settings", icon: Settings, label: "Configurações", adminOnly: false },
     { path: "/users", icon: UserCircle, label: "Usuários", adminOnly: true },
 ];
@@ -37,7 +36,27 @@ export default function MainLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+    // Define estado inicial da sidebar baseado no tamanho da tela
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setSidebarOpen(true); // Desktop: aberta
+            } else {
+                setSidebarOpen(false); // Mobile: fechada
+            }
+        };
+
+        // Executa na primeira renderização
+        handleResize();
+
+        // Adiciona listener de resize
+        window.addEventListener("resize", handleResize);
+
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     const handleLogout = () => {
         logout();
@@ -46,6 +65,14 @@ export default function MainLayout() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+            {/* Overlay para mobile quando sidebar está aberta */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
             <aside
                 className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 bg-gradient-to-b from-slate-900/95 to-slate-950/95 backdrop-blur-xl border-r border-slate-700/50 ${
@@ -102,6 +129,12 @@ export default function MainLayout() {
                                 <li key={item.path}>
                                     <Link
                                         to={item.path}
+                                        onClick={() => {
+                                            // Fecha sidebar no mobile ao clicar em um item
+                                            if (window.innerWidth < 1024) {
+                                                setSidebarOpen(false);
+                                            }
+                                        }}
                                         className={`flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
                                             isActive
                                                 ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/20"
@@ -116,6 +149,7 @@ export default function MainLayout() {
                                         {sidebarOpen && (
                                             <>
                                                 <span>{item.label}</span>
+                                                {/* Badge de Admin */}
                                                 {item.adminOnly && (
                                                     <span className="ml-auto text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
                                                         Admin
@@ -139,6 +173,20 @@ export default function MainLayout() {
                             );
                         })}
                     </ul>
+
+                    {/* Rodapé da Sidebar */}
+                    {sidebarOpen && (
+                        <div className="mt-auto px-3 py-4 border-t border-slate-700/50">
+                            <div className="text-center space-y-1">
+                                <p className="text-xs text-slate-500 font-medium">
+                                    HSGrowth CRM v1.0.0
+                                </p>
+                                <p className="text-[10px] text-slate-600">
+                                    © 2026 Health & Safety Tech
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </aside>
 
@@ -154,12 +202,27 @@ export default function MainLayout() {
                             <Menu size={24} />
                         </button>
 
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                                <UserCircle size={20} className="text-blue-400" />
-                                <div className="flex flex-col">
+                        <div className="flex items-center gap-3">
+                            {/* Avatar + Info do Usuário */}
+                            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:bg-slate-800/70 transition-all">
+                                {/* Avatar com inicial do nome */}
+                                <div className="relative">
+                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg">
+                                        {(user?.name || user?.username || "U")
+                                            .split(" ")
+                                            .map((n) => n[0])
+                                            .slice(0, 2)
+                                            .join("")
+                                            .toUpperCase()}
+                                    </div>
+                                    {/* Indicador online */}
+                                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-slate-900 rounded-full"></div>
+                                </div>
+
+                                {/* Nome e Role */}
+                                <div className="hidden md:flex flex-col">
                                     <span className="text-sm text-white font-medium">
-                                        {user?.full_name || user?.username || "Usuário"}
+                                        {user?.name || user?.username || "Usuário"}
                                     </span>
                                     <span className="text-xs text-slate-400">
                                         {user?.role === "admin"
@@ -170,17 +233,127 @@ export default function MainLayout() {
                                     </span>
                                 </div>
                             </div>
+
+                            {/* Botão Notificações (Sino) */}
+                            <button
+                                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                                className="relative p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:bg-slate-800/70 hover:text-white hover:border-slate-600/50 transition-all"
+                                title="Notificações"
+                            >
+                                <Bell size={22} />
+                                {/* Badge contador */}
+                                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white border-2 border-slate-900 animate-pulse">
+                                    3
+                                </span>
+                            </button>
+
+                            {/* Botão Sair (só ícone) */}
                             <button
                                 onClick={handleLogout}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/30 transition-all"
+                                className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/30 transition-all"
                                 title="Sair"
                             >
-                                <LogOut size={18} />
-                                <span className="text-sm font-medium">Sair</span>
+                                <LogOut size={22} />
                             </button>
                         </div>
                     </div>
                 </nav>
+
+                {/* Modal de Notificações */}
+                {notificationsOpen && (
+                    <>
+                        {/* Overlay */}
+                        <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setNotificationsOpen(false)}
+                        />
+
+                        {/* Dropdown de Notificações */}
+                        <div className="fixed top-20 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl animate-in slide-in-from-top-5 duration-200">
+                            {/* Header da Modal */}
+                            <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
+                                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                    <Bell size={20} className="text-blue-400" />
+                                    Notificações
+                                </h3>
+                                <button
+                                    onClick={() => setNotificationsOpen(false)}
+                                    className="p-1 text-slate-400 hover:text-white transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Lista de Notificações */}
+                            <div className="max-h-[400px] overflow-y-auto">
+                                {/* Notificação 1 */}
+                                <div className="p-4 border-b border-slate-700/30 hover:bg-slate-700/30 transition-colors cursor-pointer">
+                                    <div className="flex gap-3">
+                                        <div className="w-2 h-2 mt-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+                                        <div className="flex-1">
+                                            <p className="text-sm text-white font-medium mb-1">
+                                                Novo card atribuído a você
+                                            </p>
+                                            <p className="text-xs text-slate-400">
+                                                Card "Proposta Cliente XYZ" foi atribuído a você por João Silva
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-2">
+                                                há 5 minutos
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Notificação 2 */}
+                                <div className="p-4 border-b border-slate-700/30 hover:bg-slate-700/30 transition-colors cursor-pointer">
+                                    <div className="flex gap-3">
+                                        <div className="w-2 h-2 mt-2 rounded-full bg-green-500 flex-shrink-0"></div>
+                                        <div className="flex-1">
+                                            <p className="text-sm text-white font-medium mb-1">
+                                                Card ganho!
+                                            </p>
+                                            <p className="text-xs text-slate-400">
+                                                Parabéns! O card "Renovação Contrato ABC" foi ganho
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-2">
+                                                há 1 hora
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Notificação 3 */}
+                                <div className="p-4 hover:bg-slate-700/30 transition-colors cursor-pointer">
+                                    <div className="flex gap-3">
+                                        <div className="w-2 h-2 mt-2 rounded-full bg-yellow-500 flex-shrink-0"></div>
+                                        <div className="flex-1">
+                                            <p className="text-sm text-white font-medium mb-1">
+                                                Card próximo do vencimento
+                                            </p>
+                                            <p className="text-xs text-slate-400">
+                                                O card "Followup Lead 123" vence em 2 dias
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-2">
+                                                há 3 horas
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Rodapé da Modal */}
+                            <div className="p-3 border-t border-slate-700/50 text-center">
+                                <Link
+                                    to="/notifications"
+                                    onClick={() => setNotificationsOpen(false)}
+                                    className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                                >
+                                    Ver todas as notificações
+                                </Link>
+                            </div>
+                        </div>
+                    </>
+                )}
 
                 {/* Page Content */}
                 <main>
