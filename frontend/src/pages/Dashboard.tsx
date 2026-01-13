@@ -256,15 +256,15 @@ const Dashboard: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="text-center sm:text-left">
           <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
           <p className="text-slate-400 text-sm">
             Última atualização: {lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR") : "Carregando..."}
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 w-full sm:w-auto justify-center sm:justify-start">
           {/* Filtro de Período */}
           <div className="relative">
             <select
@@ -293,7 +293,7 @@ const Dashboard: React.FC = () => {
           {/* Botão Exportar */}
           <div className="relative group">
             <button className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-400 rounded-lg transition-all">
-              <Download className="w-4 h-4" />
+              <Download className="w-6 h-6 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Exportar</span>
             </button>
 
@@ -317,7 +317,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
         {/* Card: Total de Cards */}
         <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-xl border border-blue-500/20 rounded-xl p-6 hover:border-blue-500/40 transition-all">
           <div className="flex items-center justify-between mb-3">
@@ -571,8 +571,15 @@ const Dashboard: React.FC = () => {
           </div>
 
           {kpis && kpis.cards_by_stage && kpis.cards_by_stage.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={kpis.cards_by_stage}>
+            <>
+              <p className="text-xs text-slate-500 mb-3">
+                Ajuste a visualizacao arrastando a barra para os lados.
+              </p>
+              <ResponsiveContainer width="100%" height={380}>
+                <BarChart
+                  data={kpis.cards_by_stage}
+                  margin={{ top: 50, right: 10, left: 0, bottom: 40 }}
+                >
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis
                   dataKey="stage_name"
@@ -611,14 +618,18 @@ const Dashboard: React.FC = () => {
                 {kpis.cards_by_stage.length > 4 && (
                   <Brush
                     dataKey="stage_name"
-                    height={30}
+                    height={24}
+                    y={0}
                     stroke="#3b82f6"
                     fill="#1e293b"
                     travellerWidth={10}
+                    tick={false}
+                    tickFormatter={() => ""}
                   />
                 )}
-              </BarChart>
-            </ResponsiveContainer>
+                </BarChart>
+              </ResponsiveContainer>
+            </>
           ) : (
             <div className="h-80 flex flex-col items-center justify-center text-slate-500">
               <Target className="w-12 h-12 mb-3 opacity-50" />
@@ -637,8 +648,15 @@ const Dashboard: React.FC = () => {
           </div>
 
           {kpis && kpis.sales_evolution && kpis.sales_evolution.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={kpis.sales_evolution}>
+            <>
+              <p className="text-xs text-slate-500 mb-3">
+                Ajuste a visualizacao arrastando a barra para os lados.
+              </p>
+              <ResponsiveContainer width="100%" height={380}>
+                <LineChart
+                  data={kpis.sales_evolution}
+                  margin={{ top: 50, right: 10, left: 0, bottom: 40 }}
+                >
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis
                   dataKey="period"
@@ -689,13 +707,17 @@ const Dashboard: React.FC = () => {
                 {/* Brush para zoom/pan - permite navegar pela timeline */}
                 <Brush
                   dataKey="period"
-                  height={30}
+                  height={24}
+                  y={0}
                   stroke="#10b981"
                   fill="#1e293b"
                   travellerWidth={10}
+                  tick={false}
+                  tickFormatter={() => ""}
                 />
-              </LineChart>
-            </ResponsiveContainer>
+                </LineChart>
+              </ResponsiveContainer>
+            </>
           ) : (
             <div className="h-80 flex flex-col items-center justify-center text-slate-500">
               <TrendingUp className="w-12 h-12 mb-3 opacity-50" />

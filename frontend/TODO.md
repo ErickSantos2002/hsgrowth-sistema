@@ -84,7 +84,7 @@
 
 **Prioridade:** 🔴 Alta
 **Estimativa:** ~1-2 dias
-**Status:** ✅ COMPLETO (95% - falta apenas testes de responsividade)
+**Status:** ✅ COMPLETO (95% - falta apenas testes de responsividade) 
 **Data de conclusão:** 12/01/2026
 
 ### Tarefas:
