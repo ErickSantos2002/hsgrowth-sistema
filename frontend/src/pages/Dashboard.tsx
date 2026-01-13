@@ -623,7 +623,6 @@ const Dashboard: React.FC = () => {
                     stroke="#3b82f6"
                     fill="#1e293b"
                     travellerWidth={10}
-                    tick={false}
                     tickFormatter={() => ""}
                   />
                 )}
@@ -712,7 +711,6 @@ const Dashboard: React.FC = () => {
                   stroke="#10b981"
                   fill="#1e293b"
                   travellerWidth={10}
-                  tick={false}
                   tickFormatter={() => ""}
                 />
                 </LineChart>
