@@ -13,8 +13,6 @@ class BoardBase(BaseModel):
     """
     name: str = Field(..., min_length=1, max_length=255, description="Nome do board")
     description: Optional[str] = Field(None, max_length=1000, description="Descrição do board")
-    color: Optional[str] = Field(None, max_length=7, description="Cor do board (hex)")
-    icon: Optional[str] = Field(None, max_length=50, description="Ícone do board")
 
 
 class BoardCreate(BoardBase):
@@ -26,9 +24,7 @@ class BoardCreate(BoardBase):
             "examples": [
                 {
                     "name": "Leads de Vendas",
-                    "description": "Quadro para gerenciar leads do funil de vendas",
-                    "color": "#3b82f6",
-                    "icon": "funnel"
+                    "description": "Quadro para gerenciar leads do funil de vendas"
                 }
             ]
         }
@@ -41,8 +37,6 @@ class BoardUpdate(BaseModel):
     """
     name: Optional[str] = Field(None, min_length=1, max_length=255, description="Nome do board")
     description: Optional[str] = Field(None, max_length=1000, description="Descrição do board")
-    color: Optional[str] = Field(None, max_length=7, description="Cor do board (hex)")
-    icon: Optional[str] = Field(None, max_length=50, description="Ícone do board")
     is_archived: Optional[bool] = Field(None, description="Board arquivado")
 
     model_config = {
@@ -50,8 +44,7 @@ class BoardUpdate(BaseModel):
             "examples": [
                 {
                     "name": "Leads de Vendas Q1 2026",
-                    "description": "Quadro atualizado para Q1",
-                    "color": "#10b981"
+                    "description": "Quadro atualizado para Q1"
                 }
             ]
         }
@@ -79,8 +72,6 @@ class BoardResponse(BoardBase):
                     "id": 1,
                     "name": "Leads de Vendas",
                     "description": "Quadro para gerenciar leads do funil de vendas",
-                    "color": "#3b82f6",
-                    "icon": "funnel",
                     "is_archived": False,
                     "created_at": "2026-01-05T10:00:00",
                     "updated_at": "2026-01-05T10:00:00",

@@ -1,7 +1,7 @@
 import api from "./api";
 import {
   Board,
-  PaginatedResponse,
+  BoardListResponse,
   BoardFilters,
   CreateBoardRequest,
   UpdateBoardRequest,
@@ -15,8 +15,8 @@ class BoardService {
   /**
    * Lista boards com paginação e filtros
    */
-  async list(filters?: BoardFilters): Promise<PaginatedResponse<Board>> {
-    const response = await api.get<PaginatedResponse<Board>>("/api/v1/boards", {
+  async list(filters?: BoardFilters): Promise<BoardListResponse> {
+    const response = await api.get<BoardListResponse>("/api/v1/boards", {
       params: filters,
     });
 
@@ -57,8 +57,17 @@ class BoardService {
   /**
    * Duplica um board
    */
-  async duplicate(id: number): Promise<Board> {
-    const response = await api.post<Board>(`/api/v1/boards/${id}/duplicate`);
+  async duplicate(
+    id: number,
+    newName?: string,
+    copyLists = true,
+    copyCards = false
+  ): Promise<Board> {
+    const response = await api.post<Board>(`/api/v1/boards/${id}/duplicate`, {
+      new_name: newName || `Board ${id} - Cópia`,
+      copy_lists: copyLists,
+      copy_cards: copyCards,
+    });
     return response.data;
   }
 }

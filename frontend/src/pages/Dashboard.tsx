@@ -59,7 +59,7 @@ const Dashboard: React.FC = () => {
         quarter: "Este Trimestre",
         year: "Este Ano",
       }[period];
-      doc.text(`Período: ${periodLabel} | Gerado em: ${lastUpdate.toLocaleString("pt-BR")}`, pageWidth / 2, 28, { align: "center" });
+      doc.text(`Período: ${periodLabel} | Gerado em: ${lastUpdate ? lastUpdate.toLocaleString("pt-BR") : new Date().toLocaleString("pt-BR")}`, pageWidth / 2, 28, { align: "center" });
 
       // KPIs principais
       doc.setFontSize(14);

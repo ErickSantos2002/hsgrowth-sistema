@@ -35,10 +35,19 @@ export interface Board {
   id: number;
   name: string;
   description: string | null;
-  is_active: boolean;
-  is_deleted: boolean;
+  is_archived: boolean;
   created_at: string;
   updated_at: string;
+  lists_count?: number;
+  cards_count?: number;
+}
+
+export interface BoardListResponse {
+  boards: Board[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
 
 export interface List {
@@ -445,7 +454,7 @@ export interface UserFilters extends PaginationParams {
 }
 
 export interface BoardFilters extends PaginationParams {
-  is_active?: boolean;
+  is_archived?: boolean;
   search?: string;
 }
 
@@ -476,13 +485,12 @@ export interface ChangePasswordRequest {
 export interface CreateBoardRequest {
   name: string;
   description?: string;
-  is_active?: boolean;
 }
 
 export interface UpdateBoardRequest {
   name?: string;
   description?: string;
-  is_active?: boolean;
+  is_archived?: boolean;
 }
 
 export interface CreateListRequest {

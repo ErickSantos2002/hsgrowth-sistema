@@ -76,8 +76,6 @@ async def get_board(
         id=board.id,
         name=board.name,
         description=board.description,
-        color=board.color,
-        icon=board.icon,
         is_archived=board.is_archived,
         created_at=board.created_at,
         updated_at=board.updated_at,
@@ -107,8 +105,6 @@ async def create_board(
         id=board.id,
         name=board.name,
         description=board.description,
-        color=board.color,
-        icon=board.icon,
         is_archived=board.is_archived,
         created_at=board.created_at,
         updated_at=board.updated_at
@@ -135,8 +131,6 @@ async def update_board(
         id=board.id,
         name=board.name,
         description=board.description,
-        color=board.color,
-        icon=board.icon,
         is_archived=board.is_archived,
         created_at=board.created_at,
         updated_at=board.updated_at
@@ -188,8 +182,6 @@ async def duplicate_board(
         id=board.id,
         name=board.name,
         description=board.description,
-        color=board.color,
-        icon=board.icon,
         is_archived=board.is_archived,
         created_at=board.created_at,
         updated_at=board.updated_at
