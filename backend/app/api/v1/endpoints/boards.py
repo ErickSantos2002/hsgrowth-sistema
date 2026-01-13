@@ -33,7 +33,7 @@ router = APIRouter()
 async def list_boards(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
-    is_archived: Optional[bool] = Query(None, description="Filtrar por status arquivado"),
+    is_deleted: Optional[bool] = Query(None, description="Filtrar por status arquivado"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
@@ -42,13 +42,13 @@ async def list_boards(
 
     - **page**: Número da página (padrão: 1)
     - **page_size**: Tamanho da página (padrão: 50, máx: 100)
-    - **is_archived**: Filtrar por boards arquivados (opcional)
+    - **is_deleted**: Filtrar por boards arquivados (opcional)
     """
     service = BoardService(db)
     return service.list_boards(
         page=page,
         page_size=page_size,
-        is_archived=is_archived
+        is_deleted=is_deleted
     )
 
 
@@ -76,7 +76,9 @@ async def get_board(
         id=board.id,
         name=board.name,
         description=board.description,
-        is_archived=board.is_archived,
+        color=board.color,
+        icon=board.icon,
+        is_deleted=board.is_deleted,
         created_at=board.created_at,
         updated_at=board.updated_at,
         lists_count=lists_count,
@@ -105,7 +107,9 @@ async def create_board(
         id=board.id,
         name=board.name,
         description=board.description,
-        is_archived=board.is_archived,
+        color=board.color,
+        icon=board.icon,
+        is_deleted=board.is_deleted,
         created_at=board.created_at,
         updated_at=board.updated_at
     )
@@ -131,7 +135,9 @@ async def update_board(
         id=board.id,
         name=board.name,
         description=board.description,
-        is_archived=board.is_archived,
+        color=board.color,
+        icon=board.icon,
+        is_deleted=board.is_deleted,
         created_at=board.created_at,
         updated_at=board.updated_at
     )
@@ -182,7 +188,9 @@ async def duplicate_board(
         id=board.id,
         name=board.name,
         description=board.description,
-        is_archived=board.is_archived,
+        color=board.color,
+        icon=board.icon,
+        is_deleted=board.is_deleted,
         created_at=board.created_at,
         updated_at=board.updated_at
     )

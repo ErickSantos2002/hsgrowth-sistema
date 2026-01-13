@@ -31,9 +31,9 @@ const Boards: React.FC = () => {
 
       // Aplicar filtro de status
       if (filterStatus === "active") {
-        filters.is_archived = false;
+        filters.is_deleted = false;
       } else if (filterStatus === "archived") {
-        filters.is_archived = true;
+        filters.is_deleted = true;
       }
 
       const response = await boardService.list(filters);
@@ -66,7 +66,8 @@ const Boards: React.FC = () => {
    */
   const handleDuplicateBoard = async (board: Board) => {
     try {
-      await boardService.duplicate(board.id);
+      // Usa o nome original do board + " - Cópia"
+      await boardService.duplicate(board.id, `${board.name} - Cópia`);
       loadBoards();
       // TODO: Adicionar toast de sucesso
       alert("Board duplicado com sucesso!");
@@ -83,11 +84,11 @@ const Boards: React.FC = () => {
   const handleToggleArchive = async (board: Board) => {
     try {
       await boardService.update(board.id, {
-        is_archived: !board.is_archived,
+        is_deleted: !board.is_deleted,
       });
       loadBoards();
       // TODO: Adicionar toast de sucesso
-      const action = board.is_archived ? "restaurado" : "arquivado";
+      const action = board.is_deleted ? "restaurado" : "arquivado";
       alert(`Board ${action} com sucesso!`);
     } catch (error) {
       console.error("Erro ao arquivar/ativar board:", error);

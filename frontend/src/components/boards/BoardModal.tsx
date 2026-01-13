@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import {
+  X,
+  Grid3x3,
+  Target,
+  TrendingUp,
+  Users,
+  Briefcase,
+  FolderKanban,
+  Lightbulb,
+  Rocket,
+  Star,
+  Heart,
+} from "lucide-react";
 import { Board, CreateBoardRequest, UpdateBoardRequest } from "../../types";
 import boardService from "../../services/boardService";
 
@@ -16,6 +28,8 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    color: "#3B82F6",
+    icon: "grid",
   });
 
   // Estado de loading e erros
@@ -28,6 +42,8 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
       setFormData({
         name: board.name,
         description: board.description || "",
+        color: board.color || "#3B82F6",
+        icon: board.icon || "grid",
       });
     }
   }, [board]);
@@ -84,6 +100,8 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
         const updateData: UpdateBoardRequest = {
           name: formData.name.trim(),
           description: formData.description.trim() || undefined,
+          color: formData.color,
+          icon: formData.icon,
         };
 
         await boardService.update(board.id, updateData);
@@ -93,6 +111,8 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
         const createData: CreateBoardRequest = {
           name: formData.name.trim(),
           description: formData.description.trim() || undefined,
+          color: formData.color,
+          icon: formData.icon,
         };
 
         await boardService.create(createData);
@@ -180,6 +200,61 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                 className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"
                 disabled={loading}
               />
+            </div>
+
+            {/* Personalização */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Cor */}
+              <div>
+                <label htmlFor="color" className="block text-sm font-medium text-gray-300 mb-2">
+                  Cor
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id="color"
+                    name="color"
+                    value={formData.color}
+                    onChange={handleChange}
+                    className="w-12 h-10 bg-gray-900/50 border border-gray-700 rounded-lg cursor-pointer"
+                    disabled={loading}
+                  />
+                  <input
+                    type="text"
+                    value={formData.color}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, color: e.target.value }))}
+                    placeholder="#3B82F6"
+                    className="flex-1 px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              {/* Ícone */}
+              <div>
+                <label htmlFor="icon" className="block text-sm font-medium text-gray-300 mb-2">
+                  Ícone
+                </label>
+                <select
+                  id="icon"
+                  name="icon"
+                  value={formData.icon}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  disabled={loading}
+                >
+                  <option value="grid">Grade (Grid)</option>
+                  <option value="target">Alvo (Target)</option>
+                  <option value="trending-up">Crescimento (Trending Up)</option>
+                  <option value="users">Usuários (Users)</option>
+                  <option value="briefcase">Maleta (Briefcase)</option>
+                  <option value="folder-kanban">Kanban (Folder)</option>
+                  <option value="lightbulb">Ideia (Lightbulb)</option>
+                  <option value="rocket">Foguete (Rocket)</option>
+                  <option value="star">Estrela (Star)</option>
+                  <option value="heart">Coração (Heart)</option>
+                </select>
+              </div>
             </div>
 
             {/* Botões */}

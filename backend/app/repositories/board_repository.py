@@ -36,7 +36,7 @@ class BoardRepository:
         self,
         skip: int = 0,
         limit: int = 100,
-        is_archived: Optional[bool] = None
+        is_deleted: Optional[bool] = None
     ) -> List[Board]:
         """
         Lista todos os boards do sistema.
@@ -44,32 +44,32 @@ class BoardRepository:
         Args:
             skip: Número de registros para pular (paginação)
             limit: Limite de registros a retornar
-            is_archived: Filtro por status arquivado (opcional)
+            is_deleted: Filtro por status arquivado (opcional)
 
         Returns:
             Lista de boards
         """
         query = self.db.query(Board)
 
-        if is_archived is not None:
-            query = query.filter(Board.is_archived == is_archived)
+        if is_deleted is not None:
+            query = query.filter(Board.is_deleted == is_deleted)
 
         return query.offset(skip).limit(limit).all()
 
-    def count_all(self, is_archived: Optional[bool] = None) -> int:
+    def count_all(self, is_deleted: Optional[bool] = None) -> int:
         """
         Conta todos os boards do sistema.
 
         Args:
-            is_archived: Filtro por status arquivado (opcional)
+            is_deleted: Filtro por status arquivado (opcional)
 
         Returns:
             Número de boards
         """
         query = self.db.query(Board)
 
-        if is_archived is not None:
-            query = query.filter(Board.is_archived == is_archived)
+        if is_deleted is not None:
+            query = query.filter(Board.is_deleted == is_deleted)
 
         return query.count()
 
@@ -87,8 +87,7 @@ class BoardRepository:
             name=board_data.name,
             description=board_data.description,
             color=board_data.color,
-            icon=board_data.icon,
-            is_archived=False
+            icon=board_data.icon
         )
 
         self.db.add(board)
@@ -145,7 +144,7 @@ class BoardRepository:
             description=board.description,
             color=board.color,
             icon=board.icon,
-            is_archived=False
+            is_deleted=False
         )
 
         self.db.add(new_board)

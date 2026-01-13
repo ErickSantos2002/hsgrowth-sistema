@@ -13,6 +13,8 @@ class BoardBase(BaseModel):
     """
     name: str = Field(..., min_length=1, max_length=255, description="Nome do board")
     description: Optional[str] = Field(None, max_length=1000, description="Descrição do board")
+    color: Optional[str] = Field("#3B82F6", max_length=50, description="Cor do board (hexadecimal)")
+    icon: Optional[str] = Field("grid", max_length=50, description="Ícone do board (Lucide)")
 
 
 class BoardCreate(BoardBase):
@@ -37,7 +39,9 @@ class BoardUpdate(BaseModel):
     """
     name: Optional[str] = Field(None, min_length=1, max_length=255, description="Nome do board")
     description: Optional[str] = Field(None, max_length=1000, description="Descrição do board")
-    is_archived: Optional[bool] = Field(None, description="Board arquivado")
+    color: Optional[str] = Field(None, max_length=50, description="Cor do board (hexadecimal)")
+    icon: Optional[str] = Field(None, max_length=50, description="Ícone do board (Lucide)")
+    is_deleted: Optional[bool] = Field(None, description="Board arquivado (soft delete)")
 
     model_config = {
         "json_schema_extra": {
@@ -56,7 +60,7 @@ class BoardResponse(BoardBase):
     Schema de resposta de board.
     """
     id: int = Field(..., description="ID do board")
-    is_archived: bool = Field(..., description="Board arquivado")
+    is_deleted: bool = Field(..., description="Board arquivado (soft delete)")
     created_at: datetime = Field(..., description="Data de criação")
     updated_at: datetime = Field(..., description="Data de atualização")
 

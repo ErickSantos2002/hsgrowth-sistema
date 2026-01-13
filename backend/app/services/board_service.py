@@ -50,7 +50,7 @@ class BoardService:
         self,
         page: int = 1,
         page_size: int = 50,
-        is_archived: Optional[bool] = None
+        is_deleted: Optional[bool] = None
     ) -> BoardListResponse:
         """
         Lista todos os boards do sistema com paginação.
@@ -58,7 +58,7 @@ class BoardService:
         Args:
             page: Número da página
             page_size: Tamanho da página
-            is_archived: Filtro por status arquivado
+            is_deleted: Filtro por status arquivado
 
         Returns:
             BoardListResponse com lista paginada de boards
@@ -70,12 +70,12 @@ class BoardService:
         boards = self.board_repository.list_all(
             skip=skip,
             limit=page_size,
-            is_archived=is_archived
+            is_deleted=is_deleted
         )
 
         # Conta total
         total = self.board_repository.count_all(
-            is_archived=is_archived
+            is_deleted=is_deleted
         )
 
         # Calcula total de páginas
@@ -94,9 +94,9 @@ class BoardService:
                     id=board.id,
                     name=board.name,
                     description=board.description,
-                    color=getattr(board, 'color', None),
-                    icon=getattr(board, 'icon', None),
-                    is_archived=getattr(board, 'is_archived', False),
+                    color=board.color,
+                    icon=board.icon,
+                    is_deleted=board.is_deleted,
                     created_at=board.created_at,
                     updated_at=board.updated_at,
                     lists_count=lists_count,

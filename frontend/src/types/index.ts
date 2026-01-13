@@ -35,7 +35,9 @@ export interface Board {
   id: number;
   name: string;
   description: string | null;
-  is_archived: boolean;
+  color: string;
+  icon: string;
+  is_deleted: boolean;
   created_at: string;
   updated_at: string;
   lists_count?: number;
@@ -454,7 +456,7 @@ export interface UserFilters extends PaginationParams {
 }
 
 export interface BoardFilters extends PaginationParams {
-  is_archived?: boolean;
+  is_deleted?: boolean;
   search?: string;
 }
 
@@ -485,12 +487,16 @@ export interface ChangePasswordRequest {
 export interface CreateBoardRequest {
   name: string;
   description?: string;
+  color?: string;
+  icon?: string;
 }
 
 export interface UpdateBoardRequest {
   name?: string;
   description?: string;
-  is_archived?: boolean;
+  color?: string;
+  icon?: string;
+  is_deleted?: boolean;
 }
 
 export interface CreateListRequest {

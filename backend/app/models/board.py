@@ -22,6 +22,10 @@ class Board(Base, TimestampMixin, SoftDeleteMixin):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
 
+    # Personalização visual
+    color = Column(String(50), nullable=True, default="#3B82F6")  # Cor hexadecimal
+    icon = Column(String(50), nullable=True, default="grid")  # Nome do ícone Lucide
+
     # Configurações do quadro (JSON)
     # Exemplo: {"view_mode": "kanban", "columns_visible": [...], etc}
     settings = Column(JSON, default={}, nullable=False)

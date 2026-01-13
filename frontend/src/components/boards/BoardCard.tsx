@@ -8,6 +8,17 @@ import {
   Trash2,
   MoreVertical,
   Calendar,
+  Grid3x3,
+  Target,
+  TrendingUp,
+  Users,
+  Briefcase,
+  FolderKanban,
+  Lightbulb,
+  Rocket,
+  Star,
+  Heart,
+  LucideIcon,
 } from "lucide-react";
 import { Board } from "../../types";
 import { useNavigate } from "react-router-dom";
@@ -31,6 +42,28 @@ const BoardCard: React.FC<BoardCardProps> = ({
   const [showMenu, setShowMenu] = useState(false);
 
   /**
+   * Mapeia o nome do ícone para o componente Lucide
+   */
+  const getIconComponent = (iconName: string): LucideIcon => {
+    const iconMap: Record<string, LucideIcon> = {
+      grid: Grid3x3,
+      target: Target,
+      "trending-up": TrendingUp,
+      users: Users,
+      briefcase: Briefcase,
+      "folder-kanban": FolderKanban,
+      lightbulb: Lightbulb,
+      rocket: Rocket,
+      star: Star,
+      heart: Heart,
+    };
+
+    return iconMap[iconName] || Grid3x3;
+  };
+
+  const IconComponent = getIconComponent(board.icon || "grid");
+
+  /**
    * Navega para a página de visualização do board (Kanban)
    */
   const handleViewBoard = () => {
@@ -51,11 +84,15 @@ const BoardCard: React.FC<BoardCardProps> = ({
 
   return (
     <div
-      className="group relative bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 hover:border-blue-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
+      className="group relative bg-gray-800/40 backdrop-blur-sm border-2 rounded-xl p-6 transition-all duration-300 hover:shadow-xl"
+      style={{
+        borderColor: board.color || "#3B82F6",
+        boxShadow: `0 0 20px ${board.color || "#3B82F6"}10`,
+      }}
     >
       {/* Badge de status */}
       <div className="absolute top-4 right-4">
-        {!board.is_archived ? (
+        {!board.is_deleted ? (
           <span className="px-2 py-1 text-xs font-medium bg-green-500/20 text-green-400 rounded-full">
             Ativo
           </span>
@@ -68,10 +105,21 @@ const BoardCard: React.FC<BoardCardProps> = ({
 
       {/* Conteúdo principal */}
       <div className="space-y-4">
-        {/* Título */}
-        <div className="pr-20">
+        {/* Título com ícone */}
+        <div className="pr-20 flex items-center gap-3">
+          <div
+            className="p-2 rounded-lg"
+            style={{
+              backgroundColor: `${board.color || "#3B82F6"}20`,
+            }}
+          >
+            <IconComponent
+              size={24}
+              style={{ color: board.color || "#3B82F6" }}
+            />
+          </div>
           <h3
-            className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors cursor-pointer"
+            className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors cursor-pointer flex-1"
             onClick={handleViewBoard}
           >
             {board.name}
@@ -152,7 +200,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
                     }}
                     className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
                   >
-                    {!board.is_archived ? (
+                    {!board.is_deleted ? (
                       <>
                         <Archive size={16} />
                         Arquivar
