@@ -208,7 +208,7 @@ export default function MainLayout() {
                                 {/* Avatar com inicial do nome */}
                                 <div className="relative">
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg">
-                                        {(user?.name || user?.username || "U")
+                                        {(user?.full_name || user?.username || "U")
                                             .split(" ")
                                             .map((n) => n[0])
                                             .slice(0, 2)
@@ -222,7 +222,7 @@ export default function MainLayout() {
                                 {/* Nome e Role */}
                                 <div className="hidden md:flex flex-col">
                                     <span className="text-sm text-white font-medium">
-                                        {user?.name || user?.username || "Usuário"}
+                                        {user?.full_name || user?.username || "Usuário"}
                                     </span>
                                     <span className="text-xs text-slate-400">
                                         {user?.role === "admin"
