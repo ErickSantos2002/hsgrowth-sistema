@@ -84,14 +84,14 @@ export default function MainLayout() {
                 <div className="h-full px-3 py-4 overflow-y-auto">
                     {/* Logo */}
                     <div className={`flex items-center mb-8 px-3 ${sidebarOpen ? "justify-between" : "justify-center"}`}>
-                        <div className={`flex items-center gap-3 ${sidebarOpen ? "" : "flex-col"}`}>
-                            <div className="relative">
+                        <div className={`flex items-center ${sidebarOpen ? "gap-3" : ""}`}>
+                            <div className="relative w-12 h-12 flex items-center justify-center">
                                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-300 rounded-full blur-sm"></div>
-                                <div className="relative bg-gradient-to-br from-cyan-300 to-blue-200 rounded-full p-1">
+                                <div className="relative bg-gradient-to-br from-cyan-300 to-blue-200 rounded-full p-1 overflow-hidden">
                                     <img
                                         src={logo}
                                         alt="HSGrowth CRM"
-                                        className="h-10 w-10 object-contain relative z-10"
+                                        className="h-8 w-8 object-contain relative z-10"
                                     />
                                 </div>
                             </div>
