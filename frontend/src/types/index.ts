@@ -57,8 +57,9 @@ export interface List {
   board_id: number;
   name: string;
   position: number;
-  color: string;
-  is_deleted: boolean;
+  color: string | null;
+  is_done_stage: boolean;
+  is_lost_stage: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -68,27 +69,37 @@ export interface List {
 export interface Card {
   id: number;
   list_id: number;
-  client_id: number | null;
   assigned_to_id: number | null;
   title: string;
   description: string | null;
   position: number;
   value: number | null;
-  currency: string;
   due_date: string | null;
-  closed_at: string | null;
-  is_won: number; // 0 = aberto, 1 = ganho, -1 = perdido
   contact_info: Record<string, any> | null;
-  is_deleted: boolean;
+  is_won: boolean;
+  is_lost: boolean;
+  won_at: string | null;
+  lost_at: string | null;
   created_at: string;
   updated_at: string;
-  deleted_at: string | null;
+
+  // Campos relacionados (retornados pelo backend)
+  assigned_to_name: string | null;
+  list_name: string | null;
+  board_id: number | null;
 
   // Relacionamentos opcionais (quando expandido)
   list?: List;
-  client?: Client;
   assigned_to?: User;
   field_values?: CardFieldValue[];
+}
+
+export interface CardListResponse {
+  cards: Card[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
 
 export interface Client {

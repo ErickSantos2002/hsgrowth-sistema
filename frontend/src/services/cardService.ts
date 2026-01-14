@@ -1,7 +1,7 @@
 import api from "./api";
 import {
   Card,
-  PaginatedResponse,
+  CardListResponse,
   CardFilters,
   CreateCardRequest,
   UpdateCardRequest,
@@ -16,8 +16,8 @@ class CardService {
   /**
    * Lista cards com paginação e filtros
    */
-  async list(filters?: CardFilters): Promise<PaginatedResponse<Card>> {
-    const response = await api.get<PaginatedResponse<Card>>("/api/v1/cards", {
+  async list(filters?: CardFilters): Promise<CardListResponse> {
+    const response = await api.get<CardListResponse>("/api/v1/cards", {
       params: filters,
     });
 
@@ -59,7 +59,7 @@ class CardService {
    * Move um card entre listas
    */
   async move(id: number, data: MoveCardRequest): Promise<Card> {
-    const response = await api.post<Card>(`/api/v1/cards/${id}/move`, data);
+    const response = await api.put<Card>(`/api/v1/cards/${id}/move`, data);
     return response.data;
   }
 

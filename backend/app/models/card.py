@@ -32,7 +32,7 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     description = Column(Text, nullable=True)  # Descrição detalhada
 
     # Posição no kanban
-    position = Column(Integer, default=0, nullable=False)
+    position = Column(Numeric(12, 2), default=0, nullable=False)  # Posição fracionária para ordenação
 
     # Valor monetário (opcional)
     value = Column(Numeric(12, 2), nullable=True)  # Valor do negócio

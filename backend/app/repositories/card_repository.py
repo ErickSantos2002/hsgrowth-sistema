@@ -85,7 +85,7 @@ class CardRepository:
         if is_lost is not None:
             query = query.filter(Card.is_lost == is_lost)
 
-        return query.order_by(Card.created_at.desc()).offset(skip).limit(limit).all()
+        return query.order_by(Card.list_id, Card.position).offset(skip).limit(limit).all()
 
     def count_by_board(
         self,

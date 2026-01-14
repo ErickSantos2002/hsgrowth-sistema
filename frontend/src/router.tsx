@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Boards from './pages/Boards';
+import KanbanBoard from './pages/KanbanBoard';
 import Cards from './pages/Cards';
 import Clients from './pages/Clients';
 import Gamification from './pages/Gamification';
@@ -33,6 +34,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/" element={<Dashboard />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/boards" element={<Boards />} />
+      <Route path="/boards/:boardId" element={<KanbanBoard />} />
       <Route path="/cards" element={<Cards />} />
       <Route path="/clients" element={<Clients />} />
       <Route path="/gamification" element={<Gamification />} />
