@@ -82,7 +82,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=True
+        case_sensitive=True,
+        extra="ignore"  # Ignora campos extras do .env que não estão definidos
     )
 
     @field_validator("CORS_ORIGINS", mode="before")
