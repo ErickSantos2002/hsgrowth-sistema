@@ -10,6 +10,7 @@ import {
   Copy,
   Archive,
   Download,
+  X,
 } from "lucide-react";
 import {
   DndContext,
@@ -312,12 +313,30 @@ const KanbanBoard: React.FC = () => {
    */
   const handleSaveCard = async (data: CardFormData) => {
     try {
+      // Preparar dados para o backend
+      const cardData: any = {
+        list_id: data.list_id,
+        title: data.title,
+        description: data.description || undefined,
+        value: data.value || undefined,
+        contact_info: data.contact_info || undefined,
+      };
+
+      // Converter due_date de YYYY-MM-DD para datetime ISO
+      if (data.due_date) {
+        // Adicionar horário padrão (meio-dia) se vier apenas data
+        const dateStr = data.due_date.includes('T')
+          ? data.due_date
+          : `${data.due_date}T12:00:00`;
+        cardData.due_date = dateStr;
+      }
+
       if (editingCard) {
         // Editar card existente
-        await cardService.update(editingCard.id, data);
+        await cardService.update(editingCard.id, cardData);
       } else {
         // Criar novo card
-        await cardService.create(data);
+        await cardService.create(cardData);
       }
       await loadBoardData();
     } catch (error) {
@@ -542,7 +561,7 @@ const KanbanBoard: React.FC = () => {
     >
       <div className="h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
         {/* Header fixo */}
-      <div className="flex-shrink-0 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 px-6 py-4">
+      <div className="flex-shrink-0 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 px-6 py-4 relative z-50">
         <div className="flex items-center justify-between">
           {/* Lado esquerdo: Voltar + Nome do Board */}
           <div className="flex items-center gap-4">
@@ -707,7 +726,7 @@ const KanbanBoard: React.FC = () => {
 
       {/* Painel de Filtros (expansível) */}
       {showFilters && (
-        <div className="flex-shrink-0 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 px-6 py-3">
+        <div className="flex-shrink-0 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 px-6 py-3 relative z-40">
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-gray-300">Filtros:</span>
 

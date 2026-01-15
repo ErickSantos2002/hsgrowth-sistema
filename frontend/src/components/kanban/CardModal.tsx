@@ -51,12 +51,19 @@ const CardModal: React.FC<CardModalProps> = ({
 
   useEffect(() => {
     if (card) {
+      // Converter datetime ISO para formato YYYY-MM-DD para o input type="date"
+      let dueDateFormatted = "";
+      if (card.due_date) {
+        const date = new Date(card.due_date);
+        dueDateFormatted = date.toISOString().split("T")[0];
+      }
+
       setFormData({
         list_id: card.list_id,
         title: card.title,
         description: card.description || "",
         value: card.value || undefined,
-        due_date: card.due_date || "",
+        due_date: dueDateFormatted,
         contact_info: {
           name: card.contact_info?.name || "",
           email: card.contact_info?.email || "",
