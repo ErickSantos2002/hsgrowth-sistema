@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { DollarSign, Calendar, User, Mail, Phone, Building } from "lucide-react";
 import { Card, List } from "../../types";
 import { BaseModal, FormField, Input, Select, Textarea, Button, Alert } from "../common";
+import userService from "../../services/userService";
+import { User as UserType } from "../../types";
 
 interface CardModalProps {
   isOpen: boolean;
@@ -19,6 +21,7 @@ export interface CardFormData {
   description?: string;
   value?: number;
   due_date?: string;
+  assigned_to_id?: number;
   contact_info?: {
     name?: string;
     email?: string;
@@ -46,6 +49,7 @@ const CardModal: React.FC<CardModalProps> = ({
     description: "",
     value: undefined,
     due_date: "",
+    assigned_to_id: undefined,
     contact_info: {
       name: "",
       email: "",
@@ -54,10 +58,23 @@ const CardModal: React.FC<CardModalProps> = ({
     },
   });
   const [errors, setErrors] = useState<{ title?: string }>({});
+  const [users, setUsers] = useState<UserType[]>([]);
+
+  // Carregar usuários ativos
+  const loadUsers = async () => {
+    try {
+      const activeUsers = await userService.listActive();
+      setUsers(activeUsers);
+    } catch (error) {
+      console.error("Erro ao carregar usuários:", error);
+    }
+  };
 
   // Resetar form quando abrir/fechar modal ou trocar card
   useEffect(() => {
     if (isOpen) {
+      loadUsers(); // Carrega lista de usuários
+
       if (card) {
         // Converter datetime ISO para formato YYYY-MM-DD para o input type="date"
         let dueDateFormatted = "";
@@ -72,6 +89,7 @@ const CardModal: React.FC<CardModalProps> = ({
           description: card.description || "",
           value: card.value || undefined,
           due_date: dueDateFormatted,
+          assigned_to_id: card.assigned_to_id || undefined,
           contact_info: {
             name: card.contact_info?.name || "",
             email: card.contact_info?.email || "",
@@ -86,6 +104,7 @@ const CardModal: React.FC<CardModalProps> = ({
           description: "",
           value: undefined,
           due_date: "",
+          assigned_to_id: undefined,
           contact_info: {
             name: "",
             email: "",
@@ -210,8 +229,8 @@ const CardModal: React.FC<CardModalProps> = ({
           />
         </FormField>
 
-        {/* Valor e Data de vencimento */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Valor, Data e Responsável */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             label={
               <span className="flex items-center gap-1">
@@ -250,6 +269,33 @@ const CardModal: React.FC<CardModalProps> = ({
               value={formData.due_date}
               onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
             />
+          </FormField>
+
+          <FormField
+            label={
+              <span className="flex items-center gap-1">
+                <User size={14} />
+                Responsável
+              </span>
+            }
+            hint="Quem é o responsável por este card"
+          >
+            <Select
+              value={formData.assigned_to_id || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  assigned_to_id: e.target.value ? Number(e.target.value) : undefined,
+                })
+              }
+            >
+              <option value="">Sem responsável</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </Select>
           </FormField>
         </div>
 

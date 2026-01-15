@@ -73,6 +73,19 @@ class UserService {
     );
     return response.data;
   }
+
+  /**
+   * Lista apenas usuários ativos (útil para selects de responsáveis)
+   */
+  async listActive(): Promise<User[]> {
+    const response = await api.get<PaginatedResponse<User>>("/api/v1/users", {
+      params: {
+        is_active: true,
+        page_size: 100,
+      },
+    });
+    return response.data.users;
+  }
 }
 
 export default new UserService();

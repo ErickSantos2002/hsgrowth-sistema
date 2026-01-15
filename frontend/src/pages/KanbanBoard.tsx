@@ -34,6 +34,7 @@ import ListModal from "../components/kanban/ListModal";
 import ConfirmModal from "../components/kanban/ConfirmModal";
 import CardModal, { CardFormData } from "../components/kanban/CardModal";
 import BoardModal from "../components/kanban/BoardModal";
+import CardDetailModal from "../components/kanban/CardDetailModal";
 
 const KanbanBoard: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -58,6 +59,7 @@ const KanbanBoard: React.FC = () => {
   const [showCardModal, setShowCardModal] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [selectedListId, setSelectedListId] = useState<number | null>(null);
+  const [viewingCard, setViewingCard] = useState<Card | null>(null); // Card sendo visualizado (detail modal)
 
   // Estados de busca e filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -319,6 +321,7 @@ const KanbanBoard: React.FC = () => {
         title: data.title,
         description: data.description || undefined,
         value: data.value || undefined,
+        assigned_to_id: data.assigned_to_id || undefined,
         contact_info: data.contact_info || undefined,
       };
 
@@ -342,6 +345,91 @@ const KanbanBoard: React.FC = () => {
     } catch (error) {
       console.error("Erro ao salvar card:", error);
       alert("Erro ao salvar card");
+    }
+  };
+
+  /**
+   * Abre o CardDetailModal ao clicar em um card
+   */
+  const handleViewCard = (card: Card) => {
+    setViewingCard(card);
+  };
+
+  /**
+   * Atualiza um card (do CardDetailModal)
+   */
+  const handleUpdateCard = async (cardId: number, data: Partial<Card>) => {
+    try {
+      await cardService.update(cardId, data);
+      await loadBoardData();
+
+      // Atualiza o card sendo visualizado com os novos dados
+      const updatedCard = cards.find((c) => c.id === cardId);
+      if (updatedCard) {
+        setViewingCard(updatedCard);
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar card:", error);
+      throw error; // Repassa o erro para o CardDetailModal tratar
+    }
+  };
+
+  /**
+   * Deleta um card
+   */
+  const handleDeleteCard = async (cardId: number) => {
+    try {
+      await cardService.delete(cardId);
+      await loadBoardData();
+      setViewingCard(null); // Fecha o modal
+    } catch (error) {
+      console.error("Erro ao deletar card:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Marca um card como ganho
+   */
+  const handleMarkAsWon = async (cardId: number) => {
+    try {
+      await cardService.update(cardId, { is_won: true, is_lost: false });
+      await loadBoardData();
+    } catch (error) {
+      console.error("Erro ao marcar card como ganho:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Marca um card como perdido
+   */
+  const handleMarkAsLost = async (cardId: number) => {
+    try {
+      await cardService.update(cardId, { is_won: false, is_lost: true });
+      await loadBoardData();
+    } catch (error) {
+      console.error("Erro ao marcar card como perdido:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Move um card para outra lista
+   */
+  const handleMoveCardToList = async (cardId: number, targetListId: number) => {
+    try {
+      await cardService.move(cardId, { target_list_id: targetListId });
+      await loadBoardData();
+
+      // Atualiza o card sendo visualizado
+      const updatedCard = cards.find((c) => c.id === cardId);
+      if (updatedCard) {
+        setViewingCard(updatedCard);
+      }
+    } catch (error) {
+      console.error("Erro ao mover card:", error);
+      throw error;
     }
   };
 
@@ -794,7 +882,7 @@ const KanbanBoard: React.FC = () => {
                   onEditList={() => handleEditList(list)}
                   onArchiveList={() => handleArchiveList(list)}
                   onDeleteList={() => handleDeleteListClick(list)}
-                  onCardClick={(card) => handleEditCard(card)}
+                  onCardClick={(card) => handleViewCard(card)}
                 />
               );
             })
@@ -865,6 +953,21 @@ const KanbanBoard: React.FC = () => {
         board={board}
         title="Editar Board"
       />
+
+      {/* Modal de visualização detalhada do card */}
+      {viewingCard && (
+        <CardDetailModal
+          isOpen={!!viewingCard}
+          onClose={() => setViewingCard(null)}
+          card={viewingCard}
+          lists={lists}
+          onUpdate={handleUpdateCard}
+          onDelete={handleDeleteCard}
+          onMarkAsWon={handleMarkAsWon}
+          onMarkAsLost={handleMarkAsLost}
+          onMove={handleMoveCardToList}
+        />
+      )}
     </DndContext>
   );
 };
