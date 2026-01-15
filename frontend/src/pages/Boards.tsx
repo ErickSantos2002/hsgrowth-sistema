@@ -1,5 +1,5 @@
   import React, { useState, useEffect } from "react";
-import { Plus, Search, Grid3x3, Archive, RefreshCw } from "lucide-react";
+import { Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle } from "lucide-react";
 import boardService from "../services/boardService";
 import { Board } from "../types";
 import BoardCard from "../components/boards/BoardCard";
@@ -161,8 +161,8 @@ const Boards: React.FC = () => {
           />
         </div>
 
-        {/* Filtro por status */}
-        <div className="flex gap-2">
+        {/* Filtro por status + atualizar */}
+        <div className="flex gap-2 items-center">
           <button
             onClick={() => setFilterStatus("all")}
             className={`px-4 py-2 rounded-lg transition-colors ${
@@ -182,6 +182,7 @@ const Boards: React.FC = () => {
                 : "bg-gray-800/50 text-gray-400 hover:bg-gray-700"
             }`}
           >
+            <CheckCircle size={20} className="inline mr-2" />
             Ativos
           </button>
           <button
@@ -195,17 +196,17 @@ const Boards: React.FC = () => {
             <Archive size={20} className="inline mr-2" />
             Arquivados
           </button>
-        </div>
 
-        {/* Botão de refresh */}
-        <button
-          onClick={loadBoards}
-          disabled={loading}
-          className="px-4 py-2 bg-gray-800/50 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
-          title="Atualizar lista"
-        >
-          <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
-        </button>
+          {/* Botão de refresh */}
+          <button
+            onClick={loadBoards}
+            disabled={loading}
+            className="px-4 py-2 bg-gray-800/50 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+            title="Atualizar lista"
+          >
+            <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
       </div>
 
       {/* Loading skeleton */}
