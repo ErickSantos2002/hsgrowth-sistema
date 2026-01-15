@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import Boards from './pages/Boards';
 import KanbanBoard from './pages/KanbanBoard';
 import Cards from './pages/Cards';
+import CardDetails from './pages/CardDetails';
 import Clients from './pages/Clients';
 import Gamification from './pages/Gamification';
 import Transfers from './pages/Transfers';
@@ -36,6 +37,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/boards" element={<Boards />} />
       <Route path="/boards/:boardId" element={<KanbanBoard />} />
       <Route path="/cards" element={<Cards />} />
+      <Route path="/cards/:cardId" element={<CardDetails />} />
       <Route path="/clients" element={<Clients />} />
       <Route path="/gamification" element={<Gamification />} />
       <Route path="/transfers" element={<Transfers />} />

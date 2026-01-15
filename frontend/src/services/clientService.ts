@@ -1,58 +1,118 @@
-import api from "./api";
-import {
-  Client,
-  PaginatedResponse,
-  PaginationParams,
-  CreateClientRequest,
-  UpdateClientRequest,
-} from "../types";
-
 /**
- * Serviço de clientes
- * Gerencia CRUD de clientes
+ * Client Service - Serviço para gerenciamento de clientes
+ * Responsável por todas as operações relacionadas a clientes
  */
-class ClientService {
-  /**
-   * Lista clientes com paginação e filtros
-   */
-  async list(filters?: PaginationParams & { search?: string }): Promise<PaginatedResponse<Client>> {
-    const response = await api.get<PaginatedResponse<Client>>("/api/v1/clients", {
-      params: filters,
-    });
+import api from "./api";
 
-    return response.data;
-  }
-
-  /**
-   * Busca um cliente por ID
-   */
-  async getById(id: number): Promise<Client> {
-    const response = await api.get<Client>(`/api/v1/clients/${id}`);
-    return response.data;
-  }
-
-  /**
-   * Cria um novo cliente
-   */
-  async create(data: CreateClientRequest): Promise<Client> {
-    const response = await api.post<Client>("/api/v1/clients", data);
-    return response.data;
-  }
-
-  /**
-   * Atualiza um cliente
-   */
-  async update(id: number, data: UpdateClientRequest): Promise<Client> {
-    const response = await api.put<Client>(`/api/v1/clients/${id}`, data);
-    return response.data;
-  }
-
-  /**
-   * Deleta um cliente (soft delete)
-   */
-  async delete(id: number): Promise<void> {
-    await api.delete(`/api/v1/clients/${id}`);
-  }
+export interface Client {
+  id: number;
+  name: string;
+  email?: string;
+  phone?: string;
+  company_name?: string;
+  document?: string; // CPF ou CNPJ
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  website?: string;
+  notes?: string;
+  source?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+  is_deleted: boolean;
 }
 
-export default new ClientService();
+export interface ClientListResponse {
+  clients: Client[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface CreateClientRequest {
+  name: string;
+  email?: string;
+  phone?: string;
+  company_name?: string;
+  document?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  website?: string;
+  notes?: string;
+  is_active?: boolean;
+}
+
+export interface UpdateClientRequest {
+  name?: string;
+  email?: string;
+  phone?: string;
+  company_name?: string;
+  document?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  website?: string;
+  notes?: string;
+  is_active?: boolean;
+}
+
+/**
+ * Lista todos os clientes com filtros e paginação
+ */
+const list = async (params?: {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  is_active?: boolean;
+  state?: string;
+}): Promise<ClientListResponse> => {
+  const response = await api.get("/clients", { params });
+  return response.data;
+};
+
+/**
+ * Busca um cliente por ID
+ */
+const getById = async (id: number): Promise<Client> => {
+  const response = await api.get(`/clients/${id}`);
+  return response.data;
+};
+
+/**
+ * Cria um novo cliente
+ */
+const create = async (data: CreateClientRequest): Promise<Client> => {
+  const response = await api.post("/clients", data);
+  return response.data;
+};
+
+/**
+ * Atualiza um cliente existente
+ */
+const update = async (id: number, data: UpdateClientRequest): Promise<Client> => {
+  const response = await api.put(`/clients/${id}`, data);
+  return response.data;
+};
+
+/**
+ * Deleta um cliente (soft delete)
+ */
+const remove = async (id: number): Promise<void> => {
+  await api.delete(`/clients/${id}`);
+};
+
+const clientService = {
+  list,
+  getById,
+  create,
+  update,
+  delete: remove,
+};
+
+export default clientService;
