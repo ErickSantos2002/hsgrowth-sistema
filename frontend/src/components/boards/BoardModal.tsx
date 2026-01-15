@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronDown } from "lucide-react";
+import {
+  ChevronDown,
+  Grid3x3,
+  Target,
+  TrendingUp,
+  Users,
+  Briefcase,
+  FolderKanban,
+  Lightbulb,
+  Rocket,
+  Star,
+  Heart,
+  LucideIcon,
+} from "lucide-react";
 import { Board, CreateBoardRequest, UpdateBoardRequest } from "../../types";
 import boardService from "../../services/boardService";
 import { BaseModal, FormField, Input, Textarea, Button, Alert } from "../common";
@@ -22,7 +35,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
     name: "",
     description: "",
     color: "#3B82F6",
-    icon: "⬜",
+    icon: "grid",
   });
 
   // Estado de loading e erros
@@ -32,6 +45,19 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
   const [isColorOpen, setIsColorOpen] = useState(false);
   const iconRef = useRef<HTMLDivElement | null>(null);
   const colorRef = useRef<HTMLDivElement | null>(null);
+  const allowedIcons = new Set([
+    "grid",
+    "target",
+    "trending-up",
+    "users",
+    "briefcase",
+    "folder-kanban",
+    "lightbulb",
+    "rocket",
+    "star",
+    "heart",
+  ]);
+  const normalizeIcon = (value?: string) => (value && allowedIcons.has(value) ? value : "grid");
 
   // Preencher formulário ao editar
   useEffect(() => {
@@ -40,7 +66,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
         name: board.name,
         description: board.description || "",
         color: board.color || "#3B82F6",
-        icon: board.icon || "⬜",
+        icon: normalizeIcon(board.icon),
       });
     } else {
       // Resetar ao criar novo
@@ -48,7 +74,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
         name: "",
         description: "",
         color: "#3B82F6",
-        icon: "⬜",
+        icon: "grid",
       });
     }
     setErrors({});
@@ -134,17 +160,17 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
   };
 
   // Opções de ícones disponíveis
-  const iconOptions = [
-    { value: "⬜", label: "Quadrado" },
-    { value: "📊", label: "Gráfico" },
-    { value: "🎯", label: "Alvo" },
-    { value: "💼", label: "Maleta" },
-    { value: "🚀", label: "Foguete" },
-    { value: "📈", label: "Crescimento" },
-    { value: "💡", label: "Ideia" },
-    { value: "🔥", label: "Fogo" },
-    { value: "⭐", label: "Estrela" },
-    { value: "❤️", label: "Coração" },
+  const iconOptions: { value: string; label: string; icon: LucideIcon }[] = [
+    { value: "grid", label: "Grid", icon: Grid3x3 },
+    { value: "target", label: "Alvo", icon: Target },
+    { value: "trending-up", label: "Crescimento", icon: TrendingUp },
+    { value: "users", label: "Usuarios", icon: Users },
+    { value: "briefcase", label: "Maleta", icon: Briefcase },
+    { value: "folder-kanban", label: "Kanban", icon: FolderKanban },
+    { value: "lightbulb", label: "Ideia", icon: Lightbulb },
+    { value: "rocket", label: "Foguete", icon: Rocket },
+    { value: "star", label: "Estrela", icon: Star },
+    { value: "heart", label: "Coracao", icon: Heart },
   ];
 
   // Opções de cores predefinidas
@@ -157,8 +183,9 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
     "#EC4899", // Rosa
     "#6B7280", // Cinza
   ];
-  const selectedIconLabel =
-    iconOptions.find((option) => option.value === formData.icon)?.label || "Ícone";
+  const selectedIconOption =
+    iconOptions.find((option) => option.value === formData.icon) || iconOptions[0];
+  const SelectedIcon = selectedIconOption.icon;
 
   return (
     <BaseModal
@@ -243,8 +270,10 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                 aria-expanded={isIconOpen}
               >
                 <span className="flex items-center gap-3">
-                  <span className="text-2xl">{formData.icon}</span>
-                  <span className="text-sm">{selectedIconLabel}</span>
+                  <span className="text-slate-200">
+                    <SelectedIcon size={20} />
+                  </span>
+                  <span className="text-sm">{selectedIconOption.label}</span>
                 </span>
                 <ChevronDown size={18} className="text-slate-400" />
               </button>
@@ -269,7 +298,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                         title={option.label}
                         aria-label={`Selecionar ícone ${option.label}`}
                       >
-                        {option.value}
+                        <option.icon size={22} className="text-slate-200" />
                       </button>
                     ))}
                   </div>
@@ -376,9 +405,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                 backgroundColor: `${formData.color}20`,
               }}
             >
-              <div className="w-8 h-8 text-2xl" style={{ color: formData.color }}>
-                {formData.icon}
-              </div>
+              <SelectedIcon size={28} style={{ color: formData.color }} />
             </div>
             <div className="flex-1">
               <h3 className="text-white font-bold text-lg">

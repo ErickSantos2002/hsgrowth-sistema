@@ -56,6 +56,16 @@ const BoardCard: React.FC<BoardCardProps> = ({
       rocket: Rocket,
       star: Star,
       heart: Heart,
+      "⬜": Grid3x3,
+      "📊": TrendingUp,
+      "🎯": Target,
+      "💼": Briefcase,
+      "🚀": Rocket,
+      "📈": TrendingUp,
+      "💡": Lightbulb,
+      "🔥": Rocket,
+      "⭐": Star,
+      "❤️": Heart,
     };
 
     return iconMap[iconName] || Grid3x3;
@@ -84,9 +94,10 @@ const BoardCard: React.FC<BoardCardProps> = ({
 
   return (
     <div
-      className="group relative bg-gray-800/40 backdrop-blur-sm border-2 rounded-xl p-6 transition-all duration-300 hover:shadow-xl"
+      className="group relative backdrop-blur-sm border-2 rounded-xl p-6 transition-all duration-300 hover:shadow-xl"
       style={{
         borderColor: board.color || "#3B82F6",
+        backgroundColor: `${board.color || "#3B82F6"}20`,
         boxShadow: `0 0 20px ${board.color || "#3B82F6"}10`,
       }}
     >
