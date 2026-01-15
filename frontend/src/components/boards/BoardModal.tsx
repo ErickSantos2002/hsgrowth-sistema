@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { ChevronDown } from "lucide-react";
 import { Board, CreateBoardRequest, UpdateBoardRequest } from "../../types";
 import boardService from "../../services/boardService";
-import { BaseModal, FormField, Input, Textarea, Select, Button, Alert } from "../common";
+import { BaseModal, FormField, Input, Textarea, Button, Alert } from "../common";
 
 interface BoardModalProps {
   board?: Board | null;
@@ -27,6 +28,10 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
   // Estado de loading e erros
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ name?: string }>({});
+  const [isIconOpen, setIsIconOpen] = useState(false);
+  const [isColorOpen, setIsColorOpen] = useState(false);
+  const iconRef = useRef<HTMLDivElement | null>(null);
+  const colorRef = useRef<HTMLDivElement | null>(null);
 
   // Preencher formulário ao editar
   useEffect(() => {
@@ -48,6 +53,20 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
     }
     setErrors({});
   }, [board]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (iconRef.current && !iconRef.current.contains(event.target as Node)) {
+        setIsIconOpen(false);
+      }
+      if (colorRef.current && !colorRef.current.contains(event.target as Node)) {
+        setIsColorOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   /**
    * Valida os campos do formulário
@@ -138,6 +157,8 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
     "#EC4899", // Rosa
     "#6B7280", // Cinza
   ];
+  const selectedIconLabel =
+    iconOptions.find((option) => option.value === formData.icon)?.label || "Ícone";
 
   return (
     <BaseModal
@@ -191,7 +212,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
         {/* Descrição */}
         <FormField
           label="Descrição"
-          hint="Breve descrição sobre o objetivo deste board (opcional)"
+          hint="Breve descrição sobre o objetivo deste board (opcional, até 200 caracteres)"
         >
           <Textarea
             value={formData.description}
@@ -199,94 +220,151 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
             placeholder="Ex: Board para gerenciar todas as oportunidades de vendas..."
             rows={3}
             disabled={loading}
+            maxLength={200}
           />
         </FormField>
 
-        {/* Ícone */}
-        <FormField
-          label="Ícone"
-          hint="Escolha um ícone para identificar visualmente o board"
-        >
-          <div className="grid grid-cols-10 gap-2">
-            {iconOptions.map((option) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Ícone */}
+          <FormField
+            label="Ícone"
+            hint="Clique para escolher um ícone do board"
+          >
+            <div ref={iconRef} className="relative">
               <button
-                key={option.value}
                 type="button"
-                onClick={() => setFormData({ ...formData, icon: option.value })}
+                onClick={() => {
+                  setIsIconOpen((open) => !open);
+                  setIsColorOpen(false);
+                }}
                 disabled={loading}
-                className={`aspect-square rounded-lg transition-all text-2xl flex items-center justify-center ${
-                  formData.icon === option.value
-                    ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110 bg-slate-700"
-                    : "hover:scale-105 bg-slate-800/50 hover:bg-slate-700"
-                }`}
-                title={option.label}
-                aria-label={`Selecionar ícone ${option.label}`}
+                className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-slate-700 bg-slate-800/50 text-slate-200 hover:bg-slate-700 transition-colors"
+                aria-haspopup="listbox"
+                aria-expanded={isIconOpen}
               >
-                {option.value}
+                <span className="flex items-center gap-3">
+                  <span className="text-2xl">{formData.icon}</span>
+                  <span className="text-sm">{selectedIconLabel}</span>
+                </span>
+                <ChevronDown size={18} className="text-slate-400" />
               </button>
-            ))}
-          </div>
-        </FormField>
 
-        {/* Cor */}
-        <FormField
-          label="Cor"
-          hint="Escolha uma cor principal para o board ou digite um código hex personalizado"
-        >
-          {/* Cores predefinidas */}
-          <div className="grid grid-cols-7 gap-3 mb-3">
-            {colorPresets.map((colorValue) => (
+              {isIconOpen && (
+                <div className="absolute z-20 mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
+                  <div className="grid grid-cols-5 gap-2">
+                    {iconOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, icon: option.value });
+                          setIsIconOpen(false);
+                        }}
+                        disabled={loading}
+                        className={`aspect-square rounded-lg transition-all text-2xl flex items-center justify-center ${
+                          formData.icon === option.value
+                            ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105 bg-slate-700"
+                            : "hover:scale-105 bg-slate-800/50 hover:bg-slate-700"
+                        }`}
+                        title={option.label}
+                        aria-label={`Selecionar ícone ${option.label}`}
+                      >
+                        {option.value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </FormField>
+
+          {/* Cor */}
+          <FormField
+            label="Cor"
+            hint="Clique para escolher uma cor predefinida"
+          >
+            <div ref={colorRef} className="relative">
               <button
-                key={colorValue}
                 type="button"
-                onClick={() => setFormData({ ...formData, color: colorValue })}
+                onClick={() => {
+                  setIsColorOpen((open) => !open);
+                  setIsIconOpen(false);
+                }}
                 disabled={loading}
-                className={`w-full aspect-square rounded-lg transition-all hover:scale-105 ${
-                  formData.color === colorValue
-                    ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110"
-                    : ""
-                }`}
-                style={{ backgroundColor: colorValue }}
-                aria-label={`Selecionar cor ${colorValue}`}
+                className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-slate-700 bg-slate-800/50 text-slate-200 hover:bg-slate-700 transition-colors"
+                aria-haspopup="listbox"
+                aria-expanded={isColorOpen}
               >
-                {formData.color === colorValue && (
-                  <svg
-                    className="w-full h-full p-2 text-white drop-shadow-md"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
+                <span className="flex items-center gap-3">
+                  <span
+                    className="w-6 h-6 rounded-md border border-slate-600"
+                    style={{ backgroundColor: formData.color }}
+                  />
+                  <span className="text-sm">{formData.color}</span>
+                </span>
+                <ChevronDown size={18} className="text-slate-400" />
+              </button>
+
+              {isColorOpen && (
+                <div className="absolute z-20 mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
+                  <div className="grid grid-cols-7 gap-2">
+                    {colorPresets.map((colorValue) => (
+                      <button
+                        key={colorValue}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, color: colorValue });
+                          setIsColorOpen(false);
+                        }}
+                        disabled={loading}
+                        className={`aspect-square rounded-lg transition-all hover:scale-105 ${
+                          formData.color === colorValue
+                            ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105"
+                            : ""
+                        }`}
+                        style={{ backgroundColor: colorValue }}
+                        aria-label={`Selecionar cor ${colorValue}`}
+                      >
+                        {formData.color === colorValue && (
+                          <svg
+                            className="w-full h-full p-2 text-white drop-shadow-md"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="color"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      disabled={loading}
+                      className="w-12 h-10 bg-slate-800 border border-slate-600 rounded-lg cursor-pointer"
                     />
-                  </svg>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Input de cor customizada */}
-          <div className="flex gap-2">
-            <input
-              type="color"
-              value={formData.color}
-              onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-              disabled={loading}
-              className="w-12 h-10 bg-slate-800 border border-slate-600 rounded-lg cursor-pointer"
-            />
-            <Input
-              type="text"
-              value={formData.color}
-              onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-              placeholder="#3B82F6"
-              disabled={loading}
-              className="flex-1"
-            />
-          </div>
-        </FormField>
+                    <Input
+                      type="text"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      placeholder="#3B82F6"
+                      disabled={loading}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </FormField>
+        </div>
 
         {/* Preview do board */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
@@ -308,7 +386,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
               </h3>
               {(formData.description.trim() || !board) && (
                 <p className="text-sm text-slate-400 mt-0.5">
-                  {formData.description.trim() || "Sem descrição"}
+                  {(formData.description.trim() || "Sem descrição").slice(0, 200)}
                 </p>
               )}
             </div>
