@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { X, DollarSign, Calendar, User, Mail, Phone, Building } from "lucide-react";
+import { DollarSign, Calendar, User, Mail, Phone, Building } from "lucide-react";
 import { Card, List } from "../../types";
+import { BaseModal, FormField, Input, Select, Textarea, Button, Alert } from "../common";
 
 interface CardModalProps {
   isOpen: boolean;
@@ -26,6 +27,10 @@ export interface CardFormData {
   };
 }
 
+/**
+ * Modal para criar ou editar cards (oportunidades/negócios)
+ * Permite definir todas as informações do card incluindo contato e valores
+ */
 const CardModal: React.FC<CardModalProps> = ({
   isOpen,
   onClose,
@@ -48,49 +53,74 @@ const CardModal: React.FC<CardModalProps> = ({
       company: "",
     },
   });
+  const [errors, setErrors] = useState<{ title?: string }>({});
 
+  // Resetar form quando abrir/fechar modal ou trocar card
   useEffect(() => {
-    if (card) {
-      // Converter datetime ISO para formato YYYY-MM-DD para o input type="date"
-      let dueDateFormatted = "";
-      if (card.due_date) {
-        const date = new Date(card.due_date);
-        dueDateFormatted = date.toISOString().split("T")[0];
-      }
+    if (isOpen) {
+      if (card) {
+        // Converter datetime ISO para formato YYYY-MM-DD para o input type="date"
+        let dueDateFormatted = "";
+        if (card.due_date) {
+          const date = new Date(card.due_date);
+          dueDateFormatted = date.toISOString().split("T")[0];
+        }
 
-      setFormData({
-        list_id: card.list_id,
-        title: card.title,
-        description: card.description || "",
-        value: card.value || undefined,
-        due_date: dueDateFormatted,
-        contact_info: {
-          name: card.contact_info?.name || "",
-          email: card.contact_info?.email || "",
-          phone: card.contact_info?.phone || "",
-          company: card.contact_info?.company || "",
-        },
-      });
-    } else {
-      setFormData({
-        list_id: currentListId,
-        title: "",
-        description: "",
-        value: undefined,
-        due_date: "",
-        contact_info: {
-          name: "",
-          email: "",
-          phone: "",
-          company: "",
-        },
-      });
+        setFormData({
+          list_id: card.list_id,
+          title: card.title,
+          description: card.description || "",
+          value: card.value || undefined,
+          due_date: dueDateFormatted,
+          contact_info: {
+            name: card.contact_info?.name || "",
+            email: card.contact_info?.email || "",
+            phone: card.contact_info?.phone || "",
+            company: card.contact_info?.company || "",
+          },
+        });
+      } else {
+        setFormData({
+          list_id: currentListId,
+          title: "",
+          description: "",
+          value: undefined,
+          due_date: "",
+          contact_info: {
+            name: "",
+            email: "",
+            phone: "",
+            company: "",
+          },
+        });
+      }
+      setErrors({});
     }
   }, [card, currentListId, isOpen]);
 
+  /**
+   * Valida o formulário antes de salvar
+   */
+  const validateForm = (): boolean => {
+    const newErrors: { title?: string } = {};
+
+    if (!formData.title.trim()) {
+      newErrors.title = "Título do card é obrigatório";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+   * Handler do submit do formulário
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) return;
+
+    if (!validateForm()) {
+      return;
+    }
 
     // Limpar campos vazios de contact_info
     const cleanedContactInfo = Object.fromEntries(
@@ -100,253 +130,277 @@ const CardModal: React.FC<CardModalProps> = ({
     onSave({
       ...formData,
       title: formData.title.trim(),
-      contact_info: Object.keys(cleanedContactInfo).length > 0 ? cleanedContactInfo : undefined,
+      contact_info:
+        Object.keys(cleanedContactInfo).length > 0 ? cleanedContactInfo : undefined,
     });
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 m-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6 sticky top-0 bg-gray-800 pb-4 border-b border-gray-700">
-          <h2 className="text-xl font-bold text-white">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      subtitle={
+        card
+          ? "Edite as informações do card"
+          : "Crie um novo card com todas as informações da oportunidade"
+      }
+      size="xl"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            disabled={!formData.title.trim()}
           >
-            <X size={20} className="text-gray-400" />
-          </button>
+            {card ? "Salvar Alterações" : "Criar Card"}
+          </Button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Alerta informativo */}
+        <Alert type="help">
+          <strong>Dica:</strong> Apenas o título é obrigatório. Você pode adicionar mais
+          informações posteriormente.
+        </Alert>
+
+        {/* Lista de destino */}
+        <FormField label="Lista" hint="Selecione em qual lista o card será criado">
+          <Select
+            value={formData.list_id}
+            onChange={(e) =>
+              setFormData({ ...formData, list_id: Number(e.target.value) })
+            }
+          >
+            {lists.map((list) => (
+              <option key={list.id} value={list.id}>
+                {list.name}
+              </option>
+            ))}
+          </Select>
+        </FormField>
+
+        {/* Título do card */}
+        <FormField label="Título do Card" required error={errors.title}>
+          <Input
+            type="text"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            placeholder="Ex: Proposta - Empresa XYZ, Reunião com Cliente..."
+            error={!!errors.title}
+            autoFocus
+          />
+        </FormField>
+
+        {/* Descrição */}
+        <FormField
+          label="Descrição"
+          hint="Detalhes sobre a oportunidade, histórico, observações..."
+        >
+          <Textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Ex: Cliente interessado em nosso serviço premium. Reunião agendada para próxima semana..."
+            rows={4}
+          />
+        </FormField>
+
+        {/* Valor e Data de vencimento */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label={
+              <span className="flex items-center gap-1">
+                <DollarSign size={14} />
+                Valor (R$)
+              </span>
+            }
+            hint="Valor estimado da oportunidade"
+          >
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.value || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  value: e.target.value ? Number(e.target.value) : undefined,
+                })
+              }
+              placeholder="0,00"
+            />
+          </FormField>
+
+          <FormField
+            label={
+              <span className="flex items-center gap-1">
+                <Calendar size={14} />
+                Data de Vencimento
+              </span>
+            }
+            hint="Quando esta oportunidade expira"
+          >
+            <Input
+              type="date"
+              value={formData.due_date}
+              onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+            />
+          </FormField>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Lista */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Lista
-            </label>
-            <select
-              value={formData.list_id}
-              onChange={(e) =>
-                setFormData({ ...formData, list_id: Number(e.target.value) })
+        {/* Seção de Informações de Contato */}
+        <div className="border-t border-slate-700 pt-6">
+          <h3 className="text-lg font-semibold text-white mb-1">
+            Informações de Contato
+          </h3>
+          <p className="text-sm text-slate-400 mb-4">
+            Dados do cliente ou pessoa de contato relacionada a este card
+          </p>
+
+          <div className="space-y-4">
+            {/* Nome do contato */}
+            <FormField
+              label={
+                <span className="flex items-center gap-1">
+                  <User size={14} />
+                  Nome do Contato
+                </span>
               }
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {lists.map((list) => (
-                <option key={list.id} value={list.id}>
-                  {list.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Título */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Título *
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              placeholder="Ex: Proposta - Empresa XYZ"
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoFocus
-            />
-          </div>
-
-          {/* Descrição */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Descrição
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              placeholder="Detalhes sobre a oportunidade..."
-              rows={4}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            />
-          </div>
-
-          {/* Valor e Data em linha */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Valor */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <DollarSign size={16} className="inline mr-1" />
-                Valor (R$)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.value || ""}
+              <Input
+                type="text"
+                value={formData.contact_info?.name || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    value: e.target.value ? Number(e.target.value) : undefined,
+                    contact_info: {
+                      ...formData.contact_info,
+                      name: e.target.value,
+                    },
                   })
                 }
-                placeholder="0,00"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="João Silva"
               />
-            </div>
+            </FormField>
 
-            {/* Data de vencimento */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <Calendar size={16} className="inline mr-1" />
-                Vencimento
-              </label>
-              <input
-                type="date"
-                value={formData.due_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, due_date: e.target.value })
-                }
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Informações de Contato */}
-          <div className="border-t border-gray-700 pt-6">
-            <h3 className="text-sm font-medium text-gray-300 mb-4">
-              Informações de Contato
-            </h3>
-
-            <div className="space-y-4">
-              {/* Nome do contato */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">
-                  <User size={14} className="inline mr-1" />
-                  Nome
-                </label>
-                <input
-                  type="text"
-                  value={formData.contact_info?.name || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      contact_info: {
-                        ...formData.contact_info,
-                        name: e.target.value,
-                      },
-                    })
-                  }
-                  placeholder="Nome do contato"
-                  className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Email */}
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">
-                    <Mail size={14} className="inline mr-1" />
+            {/* Email e Telefone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                label={
+                  <span className="flex items-center gap-1">
+                    <Mail size={14} />
                     Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.contact_info?.email || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_info: {
-                          ...formData.contact_info,
-                          email: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="email@exemplo.com"
-                    className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Telefone */}
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">
-                    <Phone size={14} className="inline mr-1" />
-                    Telefone
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.contact_info?.phone || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_info: {
-                          ...formData.contact_info,
-                          phone: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="(11) 98765-4321"
-                    className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Empresa */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">
-                  <Building size={14} className="inline mr-1" />
-                  Empresa
-                </label>
-                <input
-                  type="text"
-                  value={formData.contact_info?.company || ""}
+                  </span>
+                }
+              >
+                <Input
+                  type="email"
+                  value={formData.contact_info?.email || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
                       contact_info: {
                         ...formData.contact_info,
-                        company: e.target.value,
+                        email: e.target.value,
                       },
                     })
                   }
-                  placeholder="Nome da empresa"
-                  className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="joao@empresa.com"
                 />
+              </FormField>
+
+              <FormField
+                label={
+                  <span className="flex items-center gap-1">
+                    <Phone size={14} />
+                    Telefone
+                  </span>
+                }
+              >
+                <Input
+                  type="tel"
+                  value={formData.contact_info?.phone || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      contact_info: {
+                        ...formData.contact_info,
+                        phone: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="(11) 98765-4321"
+                />
+              </FormField>
+            </div>
+
+            {/* Empresa */}
+            <FormField
+              label={
+                <span className="flex items-center gap-1">
+                  <Building size={14} />
+                  Empresa
+                </span>
+              }
+            >
+              <Input
+                type="text"
+                value={formData.contact_info?.company || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    contact_info: {
+                      ...formData.contact_info,
+                      company: e.target.value,
+                    },
+                  })
+                }
+                placeholder="Empresa XYZ Ltda"
+              />
+            </FormField>
+          </div>
+        </div>
+
+        {/* Preview do card (apenas se tiver título) */}
+        {formData.title.trim() && (
+          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+            <p className="text-xs font-medium text-slate-400 mb-3">
+              Preview do Card:
+            </p>
+            <div className="bg-slate-700/30 backdrop-blur-sm border border-slate-600/30 p-3 rounded-lg">
+              <h4 className="text-white font-medium text-sm mb-2">
+                {formData.title}
+              </h4>
+              <div className="flex items-center gap-3 text-xs">
+                {formData.value && (
+                  <span className="text-green-400 font-semibold">
+                    R$ {formData.value.toLocaleString("pt-BR")}
+                  </span>
+                )}
+                {formData.contact_info?.name && (
+                  <span className="text-slate-400">
+                    👤 {formData.contact_info.name}
+                  </span>
+                )}
+                {formData.due_date && (
+                  <span className="text-slate-400">
+                    📅{" "}
+                    {new Date(formData.due_date + "T00:00:00").toLocaleDateString(
+                      "pt-BR"
+                    )}
+                  </span>
+                )}
               </div>
             </div>
           </div>
-
-          {/* Botões */}
-          <div className="flex gap-3 pt-4 sticky bottom-0 bg-gray-800 border-t border-gray-700 -mx-6 px-6 pb-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={!formData.title.trim()}
-              className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {card ? "Salvar" : "Criar Card"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        )}
+      </form>
+    </BaseModal>
   );
 };
 

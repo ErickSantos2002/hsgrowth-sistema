@@ -1,19 +1,7 @@
 import React, { useState, useEffect } from "react";
-import {
-  X,
-  Grid3x3,
-  Target,
-  TrendingUp,
-  Users,
-  Briefcase,
-  FolderKanban,
-  Lightbulb,
-  Rocket,
-  Star,
-  Heart,
-} from "lucide-react";
 import { Board, CreateBoardRequest, UpdateBoardRequest } from "../../types";
 import boardService from "../../services/boardService";
+import { BaseModal, FormField, Input, Textarea, Select, Button, Alert } from "../common";
 
 interface BoardModalProps {
   board?: Board | null;
@@ -21,6 +9,10 @@ interface BoardModalProps {
   onSuccess: () => void;
 }
 
+/**
+ * Modal para criar ou editar boards na página de listagem
+ * Gerencia a criação e edição de boards com validação
+ */
 const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) => {
   const isEditing = !!board;
 
@@ -29,12 +21,12 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
     name: "",
     description: "",
     color: "#3B82F6",
-    icon: "grid",
+    icon: "⬜",
   });
 
   // Estado de loading e erros
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState<{ name?: string }>({});
 
   // Preencher formulário ao editar
   useEffect(() => {
@@ -43,40 +35,29 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
         name: board.name,
         description: board.description || "",
         color: board.color || "#3B82F6",
-        icon: board.icon || "grid",
+        icon: board.icon || "⬜",
+      });
+    } else {
+      // Resetar ao criar novo
+      setFormData({
+        name: "",
+        description: "",
+        color: "#3B82F6",
+        icon: "⬜",
       });
     }
+    setErrors({});
   }, [board]);
-
-  /**
-   * Atualiza os campos do formulário
-   */
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-
-    // Limpar erro do campo ao digitar
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
 
   /**
    * Valida os campos do formulário
    */
   const validate = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: { name?: string } = {};
 
     if (!formData.name.trim()) {
       newErrors.name = "Nome é obrigatório";
-    } else if (formData.name.length < 3) {
+    } else if (formData.name.trim().length < 3) {
       newErrors.name = "Nome deve ter pelo menos 3 caracteres";
     }
 
@@ -105,7 +86,6 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
         };
 
         await boardService.update(board.id, updateData);
-        alert("Board atualizado com sucesso!"); // TODO: Adicionar toast
       } else {
         // Criar novo board
         const createData: CreateBoardRequest = {
@@ -116,10 +96,10 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
         };
 
         await boardService.create(createData);
-        alert("Board criado com sucesso!"); // TODO: Adicionar toast
       }
 
       onSuccess();
+      onClose();
     } catch (error: any) {
       console.error("Erro ao salvar board:", error);
 
@@ -134,151 +114,208 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
     }
   };
 
-  return (
-    <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-        onClick={onClose}
-      />
+  // Opções de ícones disponíveis
+  const iconOptions = [
+    { value: "⬜", label: "Quadrado" },
+    { value: "📊", label: "Gráfico" },
+    { value: "🎯", label: "Alvo" },
+    { value: "💼", label: "Maleta" },
+    { value: "🚀", label: "Foguete" },
+    { value: "📈", label: "Crescimento" },
+    { value: "💡", label: "Ideia" },
+    { value: "🔥", label: "Fogo" },
+    { value: "⭐", label: "Estrela" },
+    { value: "❤️", label: "Coração" },
+  ];
 
-      {/* Modal */}
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div
-          className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-md"
-          onClick={(e) => e.stopPropagation()}
+  // Opções de cores predefinidas
+  const colorPresets = [
+    "#3B82F6", // Azul
+    "#10B981", // Verde
+    "#F59E0B", // Amarelo
+    "#EF4444", // Vermelho
+    "#8B5CF6", // Roxo
+    "#EC4899", // Rosa
+    "#6B7280", // Cinza
+  ];
+
+  return (
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={isEditing ? "Editar Board" : "Criar Novo Board"}
+      subtitle={
+        isEditing
+          ? "Edite as informações do board"
+          : "Crie um novo board para organizar suas listas e cards"
+      }
+      size="lg"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <Button variant="secondary" onClick={onClose} disabled={loading}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            loading={loading}
+            disabled={!formData.name.trim()}
+          >
+            {isEditing ? "Salvar Alterações" : "Criar Board"}
+          </Button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Alerta de sucesso planejado */}
+        {!isEditing && (
+          <Alert type="help">
+            <strong>Dica:</strong> Após criar o board, você poderá adicionar listas e cards
+            para organizar seu trabalho.
+          </Alert>
+        )}
+
+        {/* Nome do board */}
+        <FormField label="Nome do Board" required error={errors.name}>
+          <Input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Ex: Pipeline de Vendas, Projetos 2024..."
+            error={!!errors.name}
+            disabled={loading}
+            autoFocus
+          />
+        </FormField>
+
+        {/* Descrição */}
+        <FormField
+          label="Descrição"
+          hint="Breve descrição sobre o objetivo deste board (opcional)"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-700">
-            <h2 className="text-2xl font-bold text-white">
-              {isEditing ? "Editar Board" : "Criar Novo Board"}
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <X size={20} className="text-gray-400" />
-            </button>
+          <Textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Ex: Board para gerenciar todas as oportunidades de vendas..."
+            rows={3}
+            disabled={loading}
+          />
+        </FormField>
+
+        {/* Ícone */}
+        <FormField
+          label="Ícone"
+          hint="Escolha um ícone para identificar visualmente o board"
+        >
+          <div className="grid grid-cols-10 gap-2">
+            {iconOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setFormData({ ...formData, icon: option.value })}
+                disabled={loading}
+                className={`aspect-square rounded-lg transition-all text-2xl flex items-center justify-center ${
+                  formData.icon === option.value
+                    ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110 bg-slate-700"
+                    : "hover:scale-105 bg-slate-800/50 hover:bg-slate-700"
+                }`}
+                title={option.label}
+                aria-label={`Selecionar ícone ${option.label}`}
+              >
+                {option.value}
+              </button>
+            ))}
+          </div>
+        </FormField>
+
+        {/* Cor */}
+        <FormField
+          label="Cor"
+          hint="Escolha uma cor principal para o board ou digite um código hex personalizado"
+        >
+          {/* Cores predefinidas */}
+          <div className="grid grid-cols-7 gap-3 mb-3">
+            {colorPresets.map((colorValue) => (
+              <button
+                key={colorValue}
+                type="button"
+                onClick={() => setFormData({ ...formData, color: colorValue })}
+                disabled={loading}
+                className={`w-full aspect-square rounded-lg transition-all hover:scale-105 ${
+                  formData.color === colorValue
+                    ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110"
+                    : ""
+                }`}
+                style={{ backgroundColor: colorValue }}
+                aria-label={`Selecionar cor ${colorValue}`}
+              >
+                {formData.color === colorValue && (
+                  <svg
+                    className="w-full h-full p-2 text-white drop-shadow-md"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </button>
+            ))}
           </div>
 
-          {/* Formulário */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* Nome */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                Nome do Board <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Ex: Pipeline de Vendas"
-                className={`w-full px-4 py-2 bg-gray-900/50 border ${
-                  errors.name ? "border-red-500" : "border-gray-700"
-                } rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors`}
-                disabled={loading}
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-400">{errors.name}</p>
+          {/* Input de cor customizada */}
+          <div className="flex gap-2">
+            <input
+              type="color"
+              value={formData.color}
+              onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+              disabled={loading}
+              className="w-12 h-10 bg-slate-800 border border-slate-600 rounded-lg cursor-pointer"
+            />
+            <Input
+              type="text"
+              value={formData.color}
+              onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+              placeholder="#3B82F6"
+              disabled={loading}
+              className="flex-1"
+            />
+          </div>
+        </FormField>
+
+        {/* Preview do board */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+          <p className="text-xs font-medium text-slate-400 mb-3">Preview:</p>
+          <div className="flex items-center gap-4">
+            <div
+              className="p-3 rounded-lg"
+              style={{
+                backgroundColor: `${formData.color}20`,
+              }}
+            >
+              <div className="w-8 h-8 text-2xl" style={{ color: formData.color }}>
+                {formData.icon}
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-white font-bold text-lg">
+                {formData.name.trim() || "Nome do Board"}
+              </h3>
+              {(formData.description.trim() || !board) && (
+                <p className="text-sm text-slate-400 mt-0.5">
+                  {formData.description.trim() || "Sem descrição"}
+                </p>
               )}
             </div>
-
-            {/* Descrição */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-2">
-                Descrição
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Descreva o propósito deste board..."
-                rows={3}
-                className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"
-                disabled={loading}
-              />
-            </div>
-
-            {/* Personalização */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Cor */}
-              <div>
-                <label htmlFor="color" className="block text-sm font-medium text-gray-300 mb-2">
-                  Cor
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    id="color"
-                    name="color"
-                    value={formData.color}
-                    onChange={handleChange}
-                    className="w-12 h-10 bg-gray-900/50 border border-gray-700 rounded-lg cursor-pointer"
-                    disabled={loading}
-                  />
-                  <input
-                    type="text"
-                    value={formData.color}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, color: e.target.value }))}
-                    placeholder="#3B82F6"
-                    className="flex-1 px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              {/* Ícone */}
-              <div>
-                <label htmlFor="icon" className="block text-sm font-medium text-gray-300 mb-2">
-                  Ícone
-                </label>
-                <select
-                  id="icon"
-                  name="icon"
-                  value={formData.icon}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-colors"
-                  disabled={loading}
-                >
-                  <option value="grid">Grade (Grid)</option>
-                  <option value="target">Alvo (Target)</option>
-                  <option value="trending-up">Crescimento (Trending Up)</option>
-                  <option value="users">Usuários (Users)</option>
-                  <option value="briefcase">Maleta (Briefcase)</option>
-                  <option value="folder-kanban">Kanban (Folder)</option>
-                  <option value="lightbulb">Ideia (Lightbulb)</option>
-                  <option value="rocket">Foguete (Rocket)</option>
-                  <option value="star">Estrela (Star)</option>
-                  <option value="heart">Coração (Heart)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Botões */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                disabled={loading}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
-              >
-                {loading ? "Salvando..." : isEditing ? "Salvar" : "Criar"}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
-      </div>
-    </>
+      </form>
+    </BaseModal>
   );
 };
 

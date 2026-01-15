@@ -1,15 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
 import { Board } from "../../types";
+import { BaseModal, FormField, Input, Textarea, Button } from "../common";
 
 interface BoardModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: { name: string; description?: string; color: string; icon: string }) => void;
+  onSave: (data: {
+    name: string;
+    description?: string;
+    color: string;
+    icon: string;
+  }) => void;
   board?: Board | null;
   title: string;
 }
 
+/**
+ * Modal para criar ou editar boards
+ * Permite definir nome, descrição, cor e ícone
+ */
 const BoardModal: React.FC<BoardModalProps> = ({
   isOpen,
   onClose,
@@ -21,36 +30,60 @@ const BoardModal: React.FC<BoardModalProps> = ({
   const [description, setDescription] = useState("");
   const [color, setColor] = useState("#3B82F6");
   const [icon, setIcon] = useState("⬜");
+  const [errors, setErrors] = useState<{ name?: string }>({});
 
+  // Resetar form quando abrir/fechar modal ou trocar board
   useEffect(() => {
-    if (board) {
-      setName(board.name);
-      setDescription(board.description || "");
-      setColor(board.color || "#3B82F6");
-      setIcon(board.icon || "⬜");
-    } else {
-      setName("");
-      setDescription("");
-      setColor("#3B82F6");
-      setIcon("⬜");
+    if (isOpen) {
+      if (board) {
+        setName(board.name);
+        setDescription(board.description || "");
+        setColor(board.color || "#3B82F6");
+        setIcon(board.icon || "⬜");
+      } else {
+        setName("");
+        setDescription("");
+        setColor("#3B82F6");
+        setIcon("⬜");
+      }
+      setErrors({});
     }
   }, [board, isOpen]);
 
+  /**
+   * Valida o formulário antes de salvar
+   */
+  const validateForm = (): boolean => {
+    const newErrors: { name?: string } = {};
+
+    if (!name.trim()) {
+      newErrors.name = "Nome do board é obrigatório";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+   * Handler do submit do formulário
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+
+    if (!validateForm()) {
+      return;
+    }
 
     onSave({
       name: name.trim(),
       description: description.trim() || undefined,
       color,
-      icon
+      icon,
     });
     onClose();
   };
 
-  if (!isOpen) return null;
-
+  // Opções de cores para o board
   const colorOptions = [
     { value: "#3B82F6", label: "Azul" },
     { value: "#10B981", label: "Verde" },
@@ -61,126 +94,154 @@ const BoardModal: React.FC<BoardModalProps> = ({
     { value: "#6B7280", label: "Cinza" },
   ];
 
+  // Opções de ícones para o board
   const iconOptions = ["⬜", "📊", "🎯", "💼", "🚀", "📈", "💡", "🔥"];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6 m-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      subtitle={
+        board
+          ? "Edite as informações do board"
+          : "Crie um novo board para organizar suas listas e cards"
+      }
+      size="lg"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            disabled={!name.trim()}
           >
-            <X size={20} className="text-gray-400" />
-          </button>
+            {board ? "Salvar Alterações" : "Criar Board"}
+          </Button>
         </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Nome do board */}
+        <FormField label="Nome do Board" required error={errors.name}>
+          <Input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ex: Pipeline de Vendas, Projetos 2024..."
+            error={!!errors.name}
+            autoFocus
+          />
+        </FormField>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nome do board */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Nome do Board
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Pipeline de Vendas, Projetos 2024..."
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoFocus
-            />
+        {/* Descrição */}
+        <FormField
+          label="Descrição"
+          hint="Breve descrição sobre o objetivo deste board (opcional)"
+        >
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Ex: Board para gerenciar todas as oportunidades de vendas..."
+            rows={3}
+          />
+        </FormField>
+
+        {/* Ícone */}
+        <FormField
+          label="Ícone"
+          hint="Escolha um ícone para identificar visualmente o board"
+        >
+          <div className="grid grid-cols-8 gap-3">
+            {iconOptions.map((iconOption) => (
+              <button
+                key={iconOption}
+                type="button"
+                onClick={() => setIcon(iconOption)}
+                className={`aspect-square rounded-lg transition-all text-2xl flex items-center justify-center ${
+                  icon === iconOption
+                    ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110 bg-slate-700"
+                    : "hover:scale-105 bg-slate-800/50 hover:bg-slate-700"
+                }`}
+                title={`Ícone ${iconOption}`}
+                aria-label={`Selecionar ícone ${iconOption}`}
+              >
+                {iconOption}
+              </button>
+            ))}
           </div>
+        </FormField>
 
-          {/* Descrição */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Descrição (opcional)
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Breve descrição do board..."
-              rows={3}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            />
+        {/* Cor */}
+        <FormField
+          label="Cor"
+          hint="Escolha uma cor principal para o board"
+        >
+          <div className="grid grid-cols-7 gap-3">
+            {colorOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setColor(option.value)}
+                className={`w-full aspect-square rounded-lg transition-all hover:scale-105 ${
+                  color === option.value
+                    ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110"
+                    : ""
+                }`}
+                style={{ backgroundColor: option.value }}
+                title={option.label}
+                aria-label={`Cor ${option.label}`}
+              >
+                {color === option.value && (
+                  <svg
+                    className="w-full h-full p-2 text-white drop-shadow-md"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </button>
+            ))}
           </div>
+        </FormField>
 
-          {/* Ícone */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Ícone
-            </label>
-            <div className="grid grid-cols-8 gap-2">
-              {iconOptions.map((iconOption) => (
-                <button
-                  key={iconOption}
-                  type="button"
-                  onClick={() => setIcon(iconOption)}
-                  className={`w-10 h-10 rounded-lg transition-all text-2xl flex items-center justify-center ${
-                    icon === iconOption
-                      ? "ring-2 ring-white ring-offset-2 ring-offset-gray-800 scale-110 bg-gray-700"
-                      : "hover:scale-105 bg-gray-700/50"
-                  }`}
-                >
-                  {iconOption}
-                </button>
-              ))}
+        {/* Preview do board */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+          <p className="text-xs font-medium text-slate-400 mb-3">Preview:</p>
+          <div className="flex items-center gap-4">
+            <div
+              className="p-3 rounded-lg"
+              style={{
+                backgroundColor: `${color}20`,
+              }}
+            >
+              <div className="w-8 h-8 text-2xl" style={{ color: color }}>
+                {icon}
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-white font-bold text-lg">
+                {name.trim() || "Nome do Board"}
+              </h3>
+              {(description.trim() || !board) && (
+                <p className="text-sm text-slate-400 mt-0.5">
+                  {description.trim() || "Sem descrição"}
+                </p>
+              )}
             </div>
           </div>
-
-          {/* Cor do board */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Cor
-            </label>
-            <div className="grid grid-cols-7 gap-2">
-              {colorOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setColor(option.value)}
-                  className={`w-10 h-10 rounded-lg transition-all ${
-                    color === option.value
-                      ? "ring-2 ring-white ring-offset-2 ring-offset-gray-800 scale-110"
-                      : "hover:scale-105"
-                  }`}
-                  style={{ backgroundColor: option.value }}
-                  title={option.label}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Botões */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={!name.trim()}
-              className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {board ? "Salvar" : "Criar Board"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
