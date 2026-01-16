@@ -23,6 +23,7 @@ class List(Base, TimestampMixin):
 
     # Informações básicas
     name = Column(String(255), nullable=False)
+    color = Column(String(7), nullable=True)  # Cor em hexadecimal (ex: #3b82f6)
     position = Column(Integer, default=0, nullable=False)  # Ordem de exibição
 
     # Configurações

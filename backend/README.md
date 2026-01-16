@@ -1,10 +1,46 @@
-# HSGrowth CRM - Backend API
+# 🚀 HSGrowth CRM - Backend API
 
-Backend completo do sistema HSGrowth CRM desenvolvido com FastAPI, oferecendo uma API REST robusta para gerenciamento de vendas, CRM, gamificação, automações e transferências.
+Backend do sistema HSGrowth CRM desenvolvido com FastAPI + PostgreSQL (remoto em nuvem) + Redis (local).
 
 ## 📋 Sobre o Projeto
 
 HSGrowth CRM é um sistema completo de Customer Relationship Management (CRM) focado em vendas, desenvolvido para uso interno da empresa. Possui recursos avançados de gamificação, automações e gestão de clientes e oportunidades.
+
+---
+
+## ⚡ Setup Rápido em Outro Computador
+
+### Método 1: Script Automático (Recomendado)
+
+```bash
+cd backend
+./setup.sh
+```
+
+O script faz tudo automaticamente em 1 comando!
+
+### Método 2: Manual
+
+```bash
+cd backend
+cp .env.example .env.local
+# Editar .env.local com suas credenciais
+docker-compose -f docker-compose.local.yml up -d
+```
+
+**Pronto!** API rodando em: http://localhost:8000
+
+---
+
+## 📦 O Que é Criado
+
+**Apenas 2 containers:**
+1. Redis (cache local) - Porta 6379
+2. API FastAPI - Porta 8000
+
+**PostgreSQL NÃO é criado** - conecta no banco remoto em nuvem.
+
+---
 
 ### 🎯 Status do Projeto
 
