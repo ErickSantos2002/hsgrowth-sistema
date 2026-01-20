@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Shield, UserCircle, Clock } from "lucide-react";
+import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Shield, UserCircle, Clock, Key } from "lucide-react";
 import userService from "../services/userService";
 import { User } from "../types";
 import { useAuth } from "../hooks/useAuth";
 import UserModal from "../components/users/UserModal";
+import AdminPasswordResetModal from "../components/users/AdminPasswordResetModal";
 
 const Users: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -19,6 +20,10 @@ const Users: React.FC = () => {
   // Estados do modal
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  // Estados do modal de reset de senha
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
 
   // Verifica se o usuário atual é admin
   const isAdmin = currentUser?.role === "admin";
@@ -108,6 +113,50 @@ const Users: React.FC = () => {
   const handleSave = async () => {
     await loadUsers();
     setShowModal(false);
+  };
+
+  /**
+   * Abre modal de reset de senha
+   */
+  const handleResetPassword = (user: User) => {
+    if (!isAdmin) {
+      alert("Apenas administradores podem resetar senhas");
+      return;
+    }
+    setResetPasswordUser(user);
+    setShowPasswordResetModal(true);
+  };
+
+  /**
+   * Processa o reset de senha
+   */
+  const handlePasswordResetSuccess = async (newPassword: string | null) => {
+    if (!resetPasswordUser) return;
+
+    try {
+      const response = await userService.adminResetPassword(
+        resetPasswordUser.id,
+        newPassword
+      );
+
+      // Se gerou senha temporária, exibe para o admin
+      if (response.temporary_password) {
+        alert(
+          `Senha resetada com sucesso!\n\nSenha temporária gerada:\n${response.temporary_password}\n\nCopie esta senha e envie para o usuário ${resetPasswordUser.name}.`
+        );
+      } else {
+        alert(`Senha de ${resetPasswordUser.name} foi resetada com sucesso!`);
+      }
+
+      setShowPasswordResetModal(false);
+      setResetPasswordUser(null);
+    } catch (error: any) {
+      console.error("Erro ao resetar senha:", error);
+      alert(
+        error.response?.data?.detail ||
+          "Erro ao resetar senha. Tente novamente."
+      );
+    }
   };
 
   /**
@@ -437,6 +486,13 @@ const Users: React.FC = () => {
                         >
                           <Edit size={16} />
                         </button>
+                        <button
+                          onClick={() => handleResetPassword(user)}
+                          className="p-2 hover:bg-blue-500/20 rounded-lg transition-colors text-slate-400 hover:text-blue-400"
+                          title="Trocar Senha"
+                        >
+                          <Key size={16} />
+                        </button>
                         {user.id !== currentUser?.id && (
                           <button
                             onClick={() => handleDelete(user)}
@@ -462,6 +518,17 @@ const Users: React.FC = () => {
         onClose={() => setShowModal(false)}
         onSave={handleSave}
         user={editingUser}
+      />
+
+      {/* Modal de Reset de Senha */}
+      <AdminPasswordResetModal
+        isOpen={showPasswordResetModal}
+        onClose={() => {
+          setShowPasswordResetModal(false);
+          setResetPasswordUser(null);
+        }}
+        onSuccess={handlePasswordResetSuccess}
+        user={resetPasswordUser}
       />
     </div>
   );

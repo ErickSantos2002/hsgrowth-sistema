@@ -76,15 +76,45 @@ class UserService {
 
   /**
    * Lista apenas usuários ativos (útil para selects de responsáveis)
+   * Usa o endpoint público /active que não requer permissão especial
    */
   async listActive(): Promise<User[]> {
-    const response = await api.get<PaginatedResponse<User>>("/api/v1/users", {
-      params: {
-        is_active: true,
-        page_size: 100,
-      },
-    });
-    return response.data.users;
+    const response = await api.get<User[]>("/api/v1/users/active");
+    return response.data;
+  }
+
+  /**
+   * [ADMIN ONLY] Reseta a senha de um usuário
+   * @param userId ID do usuário
+   * @param newPassword Nova senha (se null, gera senha temporária)
+   * @returns Mensagem de sucesso e senha temporária (se gerada)
+   */
+  async adminResetPassword(
+    userId: number,
+    newPassword: string | null
+  ): Promise<{
+    message: string;
+    user_id: number;
+    temporary_password: string | null;
+  }> {
+    if (newPassword === null) {
+      // Gera senha temporária automática
+      const response = await api.put(
+        `/api/v1/admin/users/${userId}/reset-password`,
+        null,
+        {
+          params: { generate_temp: true },
+        }
+      );
+      return response.data;
+    } else {
+      // Define senha manualmente
+      const response = await api.put(
+        `/api/v1/admin/users/${userId}/reset-password`,
+        { new_password: newPassword }
+      );
+      return response.data;
+    }
   }
 }
 

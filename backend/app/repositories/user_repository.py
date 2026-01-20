@@ -248,3 +248,18 @@ class UserRepository:
             query = query.filter(User.id != exclude_user_id)
 
         return query.first() is not None
+
+    def find_all_active(self) -> List[User]:
+        """
+        Busca todos os usuários ativos do sistema.
+
+        Usado principalmente para listagens públicas (ex: select de destinatários em transferências).
+        Retorna usuários ordenados alfabeticamente por nome.
+
+        Returns:
+            Lista de usuários ativos (is_active=True e is_deleted=False)
+        """
+        return self.db.query(User).filter(
+            User.is_active == True,
+            User.is_deleted == False
+        ).order_by(User.name.asc()).all()

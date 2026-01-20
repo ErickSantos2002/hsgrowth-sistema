@@ -139,7 +139,7 @@ async def admin_reset_user_password(
         temp_password = data.new_password
 
     # Atualiza senha
-    user.password = hash_password(temp_password)
+    user.password_hash = hash_password(temp_password)
     db.commit()
 
     logger.info(f"Admin {current_user.id} resetou senha do usuário {user_id}")

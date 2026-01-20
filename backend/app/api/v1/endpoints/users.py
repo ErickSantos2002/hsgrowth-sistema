@@ -2,7 +2,7 @@
 Endpoints de Usuários.
 Rotas para gerenciamento de usuários (CRUD).
 """
-from typing import Any, Optional
+from typing import Any, Optional, List
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -159,6 +159,97 @@ async def get_current_user_data(
         role=current_user.role.name if current_user.role else None,
         role_name=current_user.role.display_name if current_user.role else None,
     )
+
+
+@router.get(
+    "/active",
+    response_model=List[UserResponse],
+    summary="Listar usuários ativos",
+    description="""
+    Lista todos os usuários ativos do sistema.
+
+    **Disponível para:** Todos os usuários autenticados
+
+    Este endpoint foi criado para permitir que vendedores possam listar
+    outros usuários ao criar transferências de cards. Diferente do endpoint
+    principal de listagem, este não tem restrição de role.
+
+    **Retorna:**
+    - Lista de todos os usuários ativos (is_active=true, is_deleted=false)
+    - Ordenado por nome alfabeticamente
+    - Sem paginação (retorna todos de uma vez)
+
+    **Campos retornados:**
+    - Informações básicas do usuário (id, name, email, username)
+    - Role do usuário (role_name)
+    - Metadados (created_at, updated_at)
+    """,
+    responses={
+        200: {
+            "description": "Lista de usuários ativos retornada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "id": 1,
+                            "email": "joao@exemplo.com",
+                            "username": "joao",
+                            "name": "João Silva",
+                            "role_name": "Vendedor",
+                            "is_active": True,
+                            "created_at": "2026-01-06T10:00:00"
+                        },
+                        {
+                            "id": 2,
+                            "email": "maria@exemplo.com",
+                            "username": "maria",
+                            "name": "Maria Santos",
+                            "role_name": "Gerente",
+                            "is_active": True,
+                            "created_at": "2026-01-05T14:00:00"
+                        }
+                    ]
+                }
+            }
+        },
+        401: {
+            "description": "Não autenticado",
+            "content": {"application/json": {"example": {"detail": "Not authenticated"}}}
+        }
+    }
+)
+async def list_active_users(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Endpoint público (autenticado) para listar usuários ativos.
+    Usado principalmente para selects de transferência de cards.
+    """
+    from app.repositories.user_repository import UserRepository
+
+    user_repo = UserRepository(db)
+    users = user_repo.find_all_active()
+
+    # Converte para response schema
+    return [
+        UserResponse(
+            id=user.id,
+            email=user.email,
+            username=user.username,
+            name=user.name,
+            avatar_url=user.avatar_url,
+            phone=getattr(user, 'phone', None),
+            role_id=user.role_id,
+            is_active=user.is_active,
+            last_login_at=user.last_login_at,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+            role=user.role.name if user.role else None,
+            role_name=user.role.display_name if user.role else None,
+        )
+        for user in users
+    ]
 
 
 @router.get("/{user_id}", response_model=UserResponse, summary="Buscar usuário")

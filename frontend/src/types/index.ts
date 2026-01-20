@@ -285,15 +285,42 @@ export interface AutomationExecution {
 
 // ==================== TRANSFERS ====================
 
+// Enums para Transfer
+export type TransferReason =
+  | "reassignment"
+  | "workload_balance"
+  | "expertise"
+  | "vacation"
+  | "other";
+
+export type TransferStatus =
+  | "completed"
+  | "pending_approval"
+  | "rejected";
+
+export type ApprovalStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "expired";
+
+// Interface principal de Transfer
 export interface CardTransfer {
   id: number;
   card_id: number;
   from_user_id: number;
   to_user_id: number;
-  reason: string | null;
-  status: "pending" | "approved" | "rejected";
+  reason: TransferReason;
+  notes: string | null;
+  status: TransferStatus;
+  requires_approval: boolean;
   created_at: string;
   updated_at: string;
+
+  // Campos calculados/relacionados
+  from_user_name?: string;
+  to_user_name?: string;
+  card_title?: string;
 
   // Relacionamentos opcionais
   card?: Card;
@@ -302,16 +329,94 @@ export interface CardTransfer {
   approval?: TransferApproval;
 }
 
+// Interface de Aprovação de Transfer
 export interface TransferApproval {
   id: number;
   transfer_id: number;
-  approved_by_id: number;
-  approved_at: string;
-  rejection_reason: string | null;
+  approver_id: number | null;
+  status: ApprovalStatus;
+  decision_notes: string | null;
+  decided_at: string | null;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+
+  // Campos relacionados
+  approver_name?: string;
 
   // Relacionamentos opcionais
-  approved_by?: User;
+  approver?: User;
   transfer?: CardTransfer;
+}
+
+// Request: Criar transfer simples
+export interface CardTransferCreate {
+  card_id: number;
+  to_user_id: number;
+  reason: TransferReason;
+  notes?: string;
+}
+
+// Request: Criar transfer em lote (batch)
+export interface BatchTransferCreate {
+  card_ids: number[]; // Máximo 50 cards
+  to_user_id: number;
+  reason: TransferReason;
+  notes?: string;
+}
+
+// Response: Transfer criado
+export interface CardTransferResponse {
+  transfer: CardTransfer;
+  message: string;
+}
+
+// Response: Batch transfer criado
+export interface BatchTransferResponse {
+  transfers: CardTransfer[];
+  total_transferred: number;
+  message: string;
+}
+
+// Request: Decisão de aprovação
+export interface TransferApprovalDecision {
+  decision: "approve" | "reject";
+  notes?: string;
+}
+
+// Response: Aprovação decidida
+export interface TransferApprovalResponse {
+  approval: TransferApproval;
+  transfer: CardTransfer;
+  message: string;
+}
+
+// Response: Lista de transfers
+export interface CardTransferListResponse {
+  transfers: CardTransfer[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+// Response: Lista de aprovações pendentes
+export interface TransferApprovalListResponse {
+  approvals: TransferApproval[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+// Estatísticas de Transfers
+export interface TransferStatistics {
+  total_sent: number;
+  total_received: number;
+  pending_approvals: number;
+  approved_count: number;
+  rejected_count: number;
+  expired_count: number;
 }
 
 // ==================== NOTIFICATIONS ====================
