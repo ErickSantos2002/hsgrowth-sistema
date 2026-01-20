@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -11,6 +11,17 @@ import {
   Archive,
   Download,
   X,
+  Grid3x3,
+  Target,
+  TrendingUp,
+  Users,
+  Briefcase,
+  FolderKanban,
+  Lightbulb,
+  Rocket,
+  Star,
+  Heart,
+  LucideIcon,
 } from "lucide-react";
 import {
   DndContext,
@@ -63,6 +74,9 @@ const KanbanBoard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const boardScrollRef = useRef<HTMLDivElement | null>(null);
+  const [isDraggingBoard, setIsDraggingBoard] = useState(false);
+  const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
 
   // Configuração do sensor de drag (apenas pointer, mais responsivo)
   const sensors = useSensors(
@@ -81,6 +95,70 @@ const KanbanBoard: React.FC = () => {
       loadBoardData();
     }
   }, [boardId]);
+
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
+
+  const handleBoardMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!boardScrollRef.current) return;
+    if (event.button !== 0) return;
+
+    const target = event.target as HTMLElement;
+    if (target.closest("[data-kanban-card]")) return;
+    if (target.closest("button, a, input, textarea, select")) return;
+
+    setIsDraggingBoard(true);
+    dragStateRef.current = {
+      startX: event.pageX,
+      scrollLeft: boardScrollRef.current.scrollLeft,
+    };
+  };
+
+  const handleBoardMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!boardScrollRef.current || !isDraggingBoard) return;
+    const delta = event.pageX - dragStateRef.current.startX;
+    boardScrollRef.current.scrollLeft = dragStateRef.current.scrollLeft - delta;
+  };
+
+  const handleBoardMouseUp = () => {
+    setIsDraggingBoard(false);
+  };
+
+  const getIconComponent = (iconName: string): LucideIcon => {
+    const iconMap: Record<string, LucideIcon> = {
+      grid: Grid3x3,
+      target: Target,
+      "trending-up": TrendingUp,
+      users: Users,
+      briefcase: Briefcase,
+      "folder-kanban": FolderKanban,
+      lightbulb: Lightbulb,
+      rocket: Rocket,
+      star: Star,
+      heart: Heart,
+      "ƒªo": Grid3x3,
+      "ÐY\"S": TrendingUp,
+      "ÐYZî": Target,
+      "ÐY'¬": Briefcase,
+      "ÐYs?": Rocket,
+      "ÐY\"^": TrendingUp,
+      "ÐY'­": Lightbulb,
+      "ÐY\"¾": Rocket,
+      "ƒð?": Star,
+      "ƒ?Ï‹÷?": Heart,
+    };
+
+    return iconMap[iconName] || Grid3x3;
+  };
 
   /**
    * Carrega os dados do board, listas e cards
@@ -537,7 +615,7 @@ const KanbanBoard: React.FC = () => {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Carregando board...</p>
+          <p className="text-slate-400">Carregando board...</p>
         </div>
       </div>
     );
@@ -548,7 +626,7 @@ const KanbanBoard: React.FC = () => {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-400 text-lg mb-4">Board não encontrado</p>
+          <p className="text-slate-400 text-lg mb-4">Board não encontrado</p>
           <button
             onClick={handleBack}
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
@@ -560,6 +638,8 @@ const KanbanBoard: React.FC = () => {
     );
   }
 
+  const IconComponent = getIconComponent(board.icon || "grid");
+
   return (
     <DndContext
       sensors={sensors}
@@ -568,18 +648,18 @@ const KanbanBoard: React.FC = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="h-[calc(100vh-72px)] min-h-0 overflow-hidden flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
         {/* Header fixo */}
-      <div className="flex-shrink-0 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 px-6 py-4 relative z-50">
+      <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50 px-6 py-4 relative z-50">
         <div className="flex items-center justify-between">
           {/* Lado esquerdo: Voltar + Nome do Board */}
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
-              className="p-2 hover:bg-gray-700/50 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-800/50 rounded-lg transition-colors"
               title="Voltar para Boards"
             >
-              <ArrowLeft size={20} className="text-gray-400" />
+              <ArrowLeft size={20} className="text-slate-400" />
             </button>
 
             <div className="flex items-center gap-3">
@@ -590,19 +670,16 @@ const KanbanBoard: React.FC = () => {
                   backgroundColor: `${board.color || "#3B82F6"}20`,
                 }}
               >
-                <div
-                  className="w-6 h-6"
+                <IconComponent
+                  size={24}
                   style={{ color: board.color || "#3B82F6" }}
-                >
-                  {/* TODO: Renderizar ícone dinamicamente */}
-                  ⬜
-                </div>
+                />
               </div>
 
               <div>
                 <h1 className="text-2xl font-bold text-white">{board.name}</h1>
                 {board.description && (
-                  <p className="text-sm text-gray-400">{board.description}</p>
+                  <p className="text-sm text-slate-400">{board.description}</p>
                 )}
               </div>
             </div>
@@ -612,14 +689,14 @@ const KanbanBoard: React.FC = () => {
           <div className="flex items-center gap-3">
             {/* Barra de busca (expansível) */}
             {showSearchBar ? (
-              <div className="flex items-center gap-2 bg-gray-700/50 rounded-lg px-3 py-2 animate-fadeIn">
-                <Search size={18} className="text-gray-400" />
+              <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-3 py-2 animate-fadeIn">
+                <Search size={18} className="text-slate-400" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar cards..."
-                  className="bg-transparent text-white placeholder-gray-400 outline-none w-64"
+                  className="bg-transparent text-white placeholder-slate-400 outline-none w-64"
                   autoFocus
                   onBlur={() => {
                     // Fechar se não houver termo de busca
@@ -632,7 +709,7 @@ const KanbanBoard: React.FC = () => {
                       setSearchTerm("");
                       setShowSearchBar(false);
                     }}
-                    className="text-gray-400 hover:text-white"
+                    className="text-slate-400 hover:text-white"
                   >
                     <X size={16} />
                   </button>
@@ -641,24 +718,24 @@ const KanbanBoard: React.FC = () => {
             ) : (
               <button
                 onClick={() => setShowSearchBar(true)}
-                className={`p-2 hover:bg-gray-700/50 rounded-lg transition-colors ${
+                className={`p-2 hover:bg-slate-800/50 rounded-lg transition-colors ${
                   searchTerm ? "bg-blue-500/20 text-blue-400" : ""
                 }`}
                 title="Buscar cards"
               >
-                <Search size={20} className={searchTerm ? "text-blue-400" : "text-gray-400"} />
+                <Search size={20} className={searchTerm ? "text-blue-400" : "text-slate-400"} />
               </button>
             )}
 
             {/* Botão de filtros */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`p-2 hover:bg-gray-700/50 rounded-lg transition-colors ${
+              className={`p-2 hover:bg-slate-800/50 rounded-lg transition-colors ${
                 showFilters ? "bg-blue-500/20" : ""
               }`}
               title="Filtrar cards"
             >
-              <Filter size={20} className={showFilters ? "text-blue-400" : "text-gray-400"} />
+              <Filter size={20} className={showFilters ? "text-blue-400" : "text-slate-400"} />
             </button>
 
             {/* Botão Nova Lista */}
@@ -675,10 +752,10 @@ const KanbanBoard: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setShowBoardMenu(!showBoardMenu)}
-                className="p-2 hover:bg-gray-700/50 rounded-lg transition-colors"
+                className="p-2 hover:bg-slate-800/50 rounded-lg transition-colors"
                 title="Opções do board"
               >
-                <MoreVertical size={20} className="text-gray-400" />
+                <MoreVertical size={20} className="text-slate-400" />
               </button>
 
               {/* Dropdown menu */}
@@ -691,10 +768,10 @@ const KanbanBoard: React.FC = () => {
                   />
 
                   {/* Menu */}
-                  <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-[110] overflow-hidden">
+                  <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700/50 rounded-lg shadow-xl z-[110] overflow-hidden">
                     <button
                       onClick={handleEditBoard}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors"
                     >
                       <Edit size={16} />
                       Editar Board
@@ -702,7 +779,7 @@ const KanbanBoard: React.FC = () => {
 
                     <button
                       onClick={handleDuplicateBoard}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors"
                     >
                       <Copy size={16} />
                       Duplicar Board
@@ -710,17 +787,17 @@ const KanbanBoard: React.FC = () => {
 
                     <button
                       onClick={handleArchiveBoard}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors"
                     >
                       <Archive size={16} />
                       Arquivar Board
                     </button>
 
-                    <div className="border-t border-gray-700"></div>
+                    <div className="border-t border-slate-700/50"></div>
 
                     <button
                       onClick={handleExportCards}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors"
                     >
                       <Download size={16} />
                       Exportar Cards
@@ -735,13 +812,13 @@ const KanbanBoard: React.FC = () => {
 
       {/* Painel de Filtros (expansível) */}
       {showFilters && (
-        <div className="flex-shrink-0 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 px-6 py-3 relative z-40">
+        <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50 px-6 py-3 relative z-40">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-300">Filtros:</span>
+            <span className="text-sm font-medium text-slate-300">Filtros:</span>
 
             {/* Filtro por lista */}
             <select
-              className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Todas as listas</option>
               {lists.map((list) => (
@@ -753,7 +830,7 @@ const KanbanBoard: React.FC = () => {
 
             {/* Filtro por valor */}
             <select
-              className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Qualquer valor</option>
               <option value="0-1000">R$ 0 - R$ 1.000</option>
@@ -764,7 +841,7 @@ const KanbanBoard: React.FC = () => {
 
             {/* Filtro por data de vencimento */}
             <select
-              className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Qualquer data</option>
               <option value="overdue">Atrasados</option>
@@ -776,7 +853,7 @@ const KanbanBoard: React.FC = () => {
             {/* Limpar filtros */}
             <button
               onClick={() => setShowFilters(false)}
-              className="ml-auto px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+              className="ml-auto px-3 py-1.5 text-sm text-slate-400 hover:text-white transition-colors"
             >
               Fechar
             </button>
@@ -785,8 +862,17 @@ const KanbanBoard: React.FC = () => {
       )}
 
       {/* Área do Kanban com scroll horizontal */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
-        <div className="flex gap-4 h-full">
+      <div
+        ref={boardScrollRef}
+        onMouseDown={handleBoardMouseDown}
+        onMouseMove={handleBoardMouseMove}
+        onMouseUp={handleBoardMouseUp}
+        onMouseLeave={handleBoardMouseUp}
+        className={`flex-1 overflow-x-auto overflow-y-hidden p-6 scrollbar-hidden ${
+          isDraggingBoard ? "cursor-grabbing select-none" : "cursor-grab"
+        }`}
+      >
+        <div className="flex gap-4 h-full pr-6">
           {/* Renderizar listas */}
           {lists.length > 0 ? (
             lists.map((list) => {
@@ -808,8 +894,8 @@ const KanbanBoard: React.FC = () => {
               );
             })
           ) : (
-            <div className="flex-shrink-0 w-80 bg-gray-800/30 backdrop-blur-sm rounded-xl p-4">
-              <div className="text-center text-gray-400 py-8">
+            <div className="flex-shrink-0 w-80 bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4">
+              <div className="text-center text-slate-400 py-8">
                 <p className="text-lg font-medium mb-2">Nenhuma lista encontrada</p>
                 <p className="text-sm mb-4">Crie sua primeira lista para começar</p>
                 <button

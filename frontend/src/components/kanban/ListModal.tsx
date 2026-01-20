@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { ChevronDown } from "lucide-react";
 import { List } from "../../types";
 import { BaseModal, FormField, Input, Button } from "../common";
 
@@ -24,6 +25,8 @@ const ListModal: React.FC<ListModalProps> = ({
   const [name, setName] = useState("");
   const [color, setColor] = useState("#3B82F6");
   const [errors, setErrors] = useState<{ name?: string }>({});
+  const [isColorOpen, setIsColorOpen] = useState(false);
+  const colorRef = useRef<HTMLDivElement | null>(null);
 
   // Resetar form quando abrir/fechar modal ou trocar lista
   useEffect(() => {
@@ -38,6 +41,17 @@ const ListModal: React.FC<ListModalProps> = ({
       setErrors({});
     }
   }, [list, isOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (colorRef.current && !colorRef.current.contains(event.target as Node)) {
+        setIsColorOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   /**
    * Valida o formulário antes de salvar
@@ -77,6 +91,7 @@ const ListModal: React.FC<ListModalProps> = ({
     { value: "#EC4899", label: "Rosa" },
     { value: "#6B7280", label: "Cinza" },
   ];
+  const colorPresets = colorOptions.map((option) => option.value);
 
   return (
     <BaseModal
@@ -84,7 +99,7 @@ const ListModal: React.FC<ListModalProps> = ({
       onClose={onClose}
       title={title}
       subtitle={list ? "Edite as informações da lista" : "Crie uma nova lista para organizar seus cards"}
-      size="md"
+      size="lg"
       footer={
         <div className="flex gap-3 justify-end">
           <Button variant="secondary" onClick={onClose}>
@@ -116,57 +131,108 @@ const ListModal: React.FC<ListModalProps> = ({
         {/* Cor da lista */}
         <FormField
           label="Cor da Lista"
-          hint="Escolha uma cor para identificar visualmente a lista"
+          hint="Clique para escolher uma cor predefinida"
         >
-          <div className="grid grid-cols-7 gap-3">
-            {colorOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setColor(option.value)}
-                className={`w-full aspect-square rounded-lg transition-all hover:scale-105 ${
-                  color === option.value
-                    ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110"
-                    : ""
-                }`}
-                style={{ backgroundColor: option.value }}
-                title={option.label}
-                aria-label={`Cor ${option.label}`}
-              >
-                {color === option.value && (
-                  <svg
-                    className="w-full h-full p-2 text-white drop-shadow-md"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </button>
-            ))}
+          <div ref={colorRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsColorOpen((open) => !open)}
+              className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-slate-700 bg-slate-800/50 text-slate-200 hover:bg-slate-700 transition-colors"
+              aria-haspopup="listbox"
+              aria-expanded={isColorOpen}
+            >
+              <span className="flex items-center gap-3">
+                <span
+                  className="w-6 h-6 rounded-md border border-slate-600"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="text-sm">{color}</span>
+              </span>
+              <ChevronDown size={18} className="text-slate-400" />
+            </button>
+
+            {isColorOpen && (
+              <div className="absolute z-20 mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
+                <div className="grid grid-cols-7 gap-2">
+                  {colorPresets.map((colorValue) => (
+                    <button
+                      key={colorValue}
+                      type="button"
+                      onClick={() => {
+                        setColor(colorValue);
+                        setIsColorOpen(false);
+                      }}
+                      className={`aspect-square rounded-lg transition-all hover:scale-105 ${
+                        color === colorValue
+                          ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105"
+                          : ""
+                      }`}
+                      style={{ backgroundColor: colorValue }}
+                      aria-label={`Selecionar cor ${colorValue}`}
+                    >
+                      {color === colorValue && (
+                        <svg
+                          className="w-full h-full p-2 text-white drop-shadow-md"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="w-12 h-10 bg-slate-800 border border-slate-600 rounded-lg cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    placeholder="#3B82F6"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </FormField>
 
-        {/* Preview da cor selecionada */}
+        {/* Preview da lista */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-          <p className="text-xs font-medium text-slate-400 mb-2">Preview:</p>
-          <div className="flex items-center gap-3">
-            <div
-              className="w-1 h-8 rounded-full"
-              style={{ backgroundColor: color }}
-            />
-            <span className="text-white font-medium">
-              {name.trim() || "Nome da Lista"}
-            </span>
-            <span className="ml-auto px-2 py-0.5 bg-slate-700/50 text-slate-400 text-xs rounded-full">
-              0 cards
-            </span>
+          <p className="text-xs font-medium text-slate-400 mb-3">Preview:</p>
+          <div
+            className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-4"
+            style={{
+              borderColor: `${color}50`,
+              backgroundColor: `${color}14`,
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-1 h-8 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+              <div className="flex-1">
+                <h4 className="text-white font-semibold">
+                  {name.trim() || "Nome da Lista"}
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">Lista de cards</p>
+              </div>
+              <span className="px-2 py-0.5 bg-slate-800/70 text-slate-400 text-xs rounded-full">
+                0 cards
+              </span>
+            </div>
           </div>
         </div>
       </form>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { Plus, MoreVertical, Edit, Archive, Trash2 } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -25,6 +25,8 @@ const KanbanList: React.FC<KanbanListProps> = ({
   onCardClick,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [listMaxHeight, setListMaxHeight] = useState<number | undefined>(undefined);
+  const cardsContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Tornar a lista droppable
   const { setNodeRef } = useDroppable({
@@ -34,23 +36,44 @@ const KanbanList: React.FC<KanbanListProps> = ({
   // IDs dos cards para o SortableContext
   const cardIds = cards.map((card) => card.id);
 
+  useLayoutEffect(() => {
+    if (!cardsContainerRef.current) return;
+    const firstCard = cardsContainerRef.current.querySelector<HTMLElement>("[data-kanban-card]");
+    if (!firstCard) {
+      setListMaxHeight(undefined);
+      return;
+    }
+
+    const cardHeight = Math.ceil(firstCard.getBoundingClientRect().height);
+    const gap = 12;
+    setListMaxHeight(cardHeight * 3 + gap * 2);
+  }, [cards.length, list.id]);
+
+  const listSurfaceStyle = list.color
+    ? {
+        backgroundColor: `${list.color}14`,
+        borderColor: `${list.color}50`,
+      }
+    : undefined;
+
   return (
-    <div className="flex-shrink-0 w-80 bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 flex flex-col">
+    <div
+      className="flex-shrink-0 w-80 self-start bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 flex flex-col"
+      style={listSurfaceStyle}
+    >
       {/* Header da lista */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 flex-1">
-          {/* Indicador de cor da lista (opcional) */}
-          {list.color && (
-            <div
-              className="w-1 h-6 rounded-full"
-              style={{ backgroundColor: list.color }}
-            />
-          )}
+          {/* Indicador de cor da lista */}
+          <div
+            className="w-1 h-6 rounded-full"
+            style={{ backgroundColor: list.color || "#94A3B8" }}
+          />
 
           <h3 className="font-semibold text-white truncate">{list.name}</h3>
 
           {/* Contador de cards */}
-          <span className="px-2 py-0.5 bg-gray-700/50 text-gray-400 text-xs rounded-full font-medium">
+          <span className="px-2 py-0.5 bg-slate-800/70 text-slate-400 text-xs rounded-full font-medium">
             {cards.length}
           </span>
         </div>
@@ -59,9 +82,9 @@ const KanbanList: React.FC<KanbanListProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-1 hover:bg-gray-700/50 rounded transition-colors"
+            className="p-1 hover:bg-slate-800/60 rounded transition-colors"
           >
-            <MoreVertical size={16} className="text-gray-400" />
+            <MoreVertical size={16} className="text-slate-400" />
           </button>
 
           {/* Dropdown menu */}
@@ -74,13 +97,13 @@ const KanbanList: React.FC<KanbanListProps> = ({
               />
 
               {/* Menu */}
-              <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700/50 rounded-lg shadow-xl z-20 overflow-hidden">
                 <button
                   onClick={() => {
                     setShowMenu(false);
                     onEditList?.();
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 transition-colors"
                 >
                   <Edit size={14} />
                   Editar lista
@@ -91,13 +114,13 @@ const KanbanList: React.FC<KanbanListProps> = ({
                     setShowMenu(false);
                     onArchiveList?.();
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 transition-colors"
                 >
                   <Archive size={14} />
                   Arquivar lista
                 </button>
 
-                <div className="border-t border-gray-700"></div>
+                <div className="border-t border-slate-700/50"></div>
 
                 <button
                   onClick={() => {
@@ -118,9 +141,12 @@ const KanbanList: React.FC<KanbanListProps> = ({
       {/* Cards da lista - com scroll vertical */}
       <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
         <div
-          ref={setNodeRef}
-          className="space-y-3 overflow-y-auto flex-1 pr-1"
-          style={{ maxHeight: "calc(100vh - 280px)" }}
+          ref={(node) => {
+            setNodeRef(node);
+            cardsContainerRef.current = node;
+          }}
+          className="space-y-3 overflow-y-auto pr-1 scrollbar-muted"
+          style={listMaxHeight ? { maxHeight: `${listMaxHeight}px` } : undefined}
         >
           {cards.length > 0 ? (
             cards.map((card) => (
@@ -131,7 +157,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
               />
             ))
           ) : (
-            <div className="text-center text-gray-500 text-sm py-8">
+            <div className="text-center text-slate-400 text-sm py-8">
               Nenhum card nesta lista
             </div>
           )}
@@ -141,7 +167,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
       {/* Botão adicionar card */}
       <button
         onClick={onAddCard}
-        className="w-full mt-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700/30 rounded-lg transition-colors flex items-center justify-center gap-2 group"
+        className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800/40 rounded-lg transition-colors flex items-center justify-center gap-2 group"
       >
         <Plus size={16} className="group-hover:scale-110 transition-transform" />
         <span>Adicionar card</span>

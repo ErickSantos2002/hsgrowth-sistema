@@ -67,8 +67,9 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
       style={style}
       {...attributes}
       {...listeners}
+      data-kanban-card
       onClick={onClick}
-      className="bg-gray-700/30 backdrop-blur-sm border border-gray-600/30 p-3 rounded-lg hover:bg-gray-700/50 hover:border-gray-500/50 transition-all cursor-move group touch-none"
+      className="bg-slate-800/70 backdrop-blur-sm border border-slate-700/50 p-3 rounded-lg hover:bg-slate-800/90 hover:border-slate-600/60 transition-all cursor-move group touch-none"
     >
       {/* Título */}
       <h4 className="text-white font-medium text-sm mb-2 line-clamp-2 group-hover:text-blue-400 transition-colors">
@@ -98,15 +99,15 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
       {/* Cliente (do contact_info) */}
       {card.contact_info?.name && (
         <div className="flex items-center gap-1 mb-2">
-          <User size={12} className="text-gray-400" />
-          <span className="text-gray-400 text-xs truncate">
+          <User size={12} className="text-slate-400" />
+          <span className="text-slate-400 text-xs truncate">
             {card.contact_info.name}
           </span>
         </div>
       )}
 
       {/* Footer: Data de vencimento e Responsável */}
-      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-600/30">
+      <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-700/50">
         {/* Data de vencimento */}
         {card.due_date && (
           <div className="flex items-center gap-1">
@@ -116,11 +117,11 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
                 <>
                   <Calendar
                     size={12}
-                    className={isOverdue ? "text-red-400" : "text-gray-400"}
+                    className={isOverdue ? "text-red-400" : "text-slate-400"}
                   />
                   <span
                     className={`text-xs ${
-                      isOverdue ? "text-red-400 font-semibold" : "text-gray-400"
+                      isOverdue ? "text-red-400 font-semibold" : "text-slate-400"
                     }`}
                   >
                     {text}
