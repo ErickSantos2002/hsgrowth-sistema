@@ -3,7 +3,6 @@ import {
     LayoutDashboard,
     Users,
     Trello,
-    Target,
     UserCircle,
     Settings,
     Menu,
@@ -22,7 +21,6 @@ import logo from "../assets/logo.png";
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false },
     { path: "/boards", icon: Trello, label: "Boards", adminOnly: false },
-    { path: "/cards", icon: Target, label: "Cards", adminOnly: false },
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false },
     { path: "/gamification", icon: Trophy, label: "Gamificação", adminOnly: false },
     { path: "/transfers", icon: Repeat, label: "Transferências", adminOnly: false },

@@ -2,15 +2,18 @@
 
 export interface User {
   id: number;
-  username: string;
   email: string;
-  full_name: string | null;
-  role: "admin" | "manager" | "user";
+  username: string | null;
+  name: string; // Nome completo do usuário
+  avatar_url: string | null;
+  phone: string | null;
+  role_id: number;
+  role: "admin" | "manager" | "salesperson"; // Role do usuário
+  role_name: string; // Nome formatado da role (Administrador, Gerente, Vendedor)
   is_active: boolean;
-  is_deleted: boolean;
+  last_login_at: string | null;
   created_at: string;
   updated_at: string;
-  deleted_at: string | null;
 }
 
 export interface LoginRequest {
@@ -461,7 +464,7 @@ export interface CardFilters extends PaginationParams {
 }
 
 export interface UserFilters extends PaginationParams {
-  role?: "admin" | "manager" | "user";
+  role?: "admin" | "manager" | "salesperson";
   is_active?: boolean;
   search?: string;
 }
@@ -474,19 +477,21 @@ export interface BoardFilters extends PaginationParams {
 // ==================== FORMS ====================
 
 export interface CreateUserRequest {
-  username: string;
   email: string;
   password: string;
-  full_name?: string;
-  role: "admin" | "manager" | "user";
+  name: string; // Nome completo (obrigatório)
+  username?: string;
+  phone?: string;
+  role_id: number; // 1=admin, 2=manager, 3=salesperson
   is_active?: boolean;
 }
 
 export interface UpdateUserRequest {
-  username?: string;
   email?: string;
-  full_name?: string;
-  role?: "admin" | "manager" | "user";
+  name?: string; // Nome completo
+  username?: string;
+  phone?: string;
+  role_id?: number; // 1=admin, 2=manager, 3=salesperson
   is_active?: boolean;
 }
 

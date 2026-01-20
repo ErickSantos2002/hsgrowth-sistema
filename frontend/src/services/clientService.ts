@@ -72,7 +72,7 @@ const list = async (params?: {
   is_active?: boolean;
   state?: string;
 }): Promise<ClientListResponse> => {
-  const response = await api.get("/clients", { params });
+  const response = await api.get("/api/v1/clients", { params });
   return response.data;
 };
 
@@ -80,7 +80,7 @@ const list = async (params?: {
  * Busca um cliente por ID
  */
 const getById = async (id: number): Promise<Client> => {
-  const response = await api.get(`/clients/${id}`);
+  const response = await api.get(`/api/v1/clients/${id}`);
   return response.data;
 };
 
@@ -88,7 +88,7 @@ const getById = async (id: number): Promise<Client> => {
  * Cria um novo cliente
  */
 const create = async (data: CreateClientRequest): Promise<Client> => {
-  const response = await api.post("/clients", data);
+  const response = await api.post("/api/v1/clients", data);
   return response.data;
 };
 
@@ -96,7 +96,7 @@ const create = async (data: CreateClientRequest): Promise<Client> => {
  * Atualiza um cliente existente
  */
 const update = async (id: number, data: UpdateClientRequest): Promise<Client> => {
-  const response = await api.put(`/clients/${id}`, data);
+  const response = await api.put(`/api/v1/clients/${id}`, data);
   return response.data;
 };
 
@@ -104,7 +104,7 @@ const update = async (id: number, data: UpdateClientRequest): Promise<Client> =>
  * Deleta um cliente (soft delete)
  */
 const remove = async (id: number): Promise<void> => {
-  await api.delete(`/clients/${id}`);
+  await api.delete(`/api/v1/clients/${id}`);
 };
 
 const clientService = {

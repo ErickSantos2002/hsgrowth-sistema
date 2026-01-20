@@ -322,17 +322,18 @@ class GamificationRepository:
             user_id: ID do usuário
             period_type: Tipo de período
             period_start: Início do período
-            period_end: Fim do período
+            period_end: Fim do período (não usado, mantido por compatibilidade)
 
         Returns:
             GamificationRanking ou None
         """
+        # Busca apenas por user_id, period_type e period_start
+        # ignorando period_end pois microsegundos causam inconsistências
         return self.db.query(GamificationRanking).filter(
             and_(
                 GamificationRanking.user_id == user_id,
                 GamificationRanking.period_type == period_type,
-                GamificationRanking.period_start == period_start,
-                GamificationRanking.period_end == period_end
+                GamificationRanking.period_start == period_start
             )
         ).first()
 
@@ -349,17 +350,18 @@ class GamificationRepository:
         Args:
             period_type: Tipo de período
             period_start: Início do período
-            period_end: Fim do período
+            period_end: Fim do período (não usado, mantido por compatibilidade)
             limit: Limite de resultados
 
         Returns:
             Lista de GamificationRanking ordenada por rank_position
         """
+        # Busca apenas por period_type e period_start
+        # ignorando period_end pois microsegundos causam inconsistências
         return self.db.query(GamificationRanking).filter(
             and_(
                 GamificationRanking.period_type == period_type,
-                GamificationRanking.period_start == period_start,
-                GamificationRanking.period_end == period_end
+                GamificationRanking.period_start == period_start
             )
         ).order_by(GamificationRanking.rank.asc()).limit(limit).all()
 
@@ -399,13 +401,14 @@ class GamificationRepository:
         Args:
             period_type: Tipo de período
             period_start: Início do período
-            period_end: Fim do período
+            period_end: Fim do período (não usado, mantido por compatibilidade)
         """
+        # Delete apenas por period_type e period_start, ignorando period_end
+        # pois microsegundos podem causar inconsistências
         self.db.query(GamificationRanking).filter(
             and_(
                 GamificationRanking.period_type == period_type,
-                GamificationRanking.period_start == period_start,
-                GamificationRanking.period_end == period_end
+                GamificationRanking.period_start == period_start
             )
         ).delete()
         self.db.commit()
