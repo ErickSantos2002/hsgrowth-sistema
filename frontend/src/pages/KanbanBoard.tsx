@@ -872,7 +872,7 @@ const KanbanBoard: React.FC = () => {
           isDraggingBoard ? "cursor-grabbing select-none" : "cursor-grab"
         }`}
       >
-        <div className="flex gap-4 h-full pr-6">
+        <div className="flex gap-4 h-full">
           {/* Renderizar listas */}
           {lists.length > 0 ? (
             lists.map((list) => {
@@ -908,6 +908,7 @@ const KanbanBoard: React.FC = () => {
               </div>
             </div>
           )}
+          <div className="flex-shrink-0 w-1" aria-hidden="true" />
         </div>
       </div>
       </div>
