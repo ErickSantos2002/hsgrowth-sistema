@@ -418,14 +418,14 @@ const Gamification: React.FC = () => {
                 {getInitials(summary.user_name)}
               </div>
               <div>
-                <h2 className="text-2xl font-bold">
-                  {summary.user_name}
-                  {isManagerOrAdmin && selectedUserId !== "team" && (
-                    <span className="ml-3 text-sm px-3 py-1 bg-white/20 rounded-full">
+                <h2 className="text-2xl font-bold">{summary.user_name}</h2>
+                {isManagerOrAdmin && selectedUserId !== "team" && (
+                  <div className="mt-2">
+                    <span className="text-sm px-3 py-1 bg-white/20 rounded-full">
                       Visualizando vendedor
                     </span>
-                  )}
-                </h2>
+                  </div>
+                )}
                 <p className="text-white/80">
                   {isManagerOrAdmin && selectedUserId !== "team"
                     ? "Desempenho individual do vendedor"
