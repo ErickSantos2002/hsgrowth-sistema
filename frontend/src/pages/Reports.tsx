@@ -8,14 +8,14 @@
  * 3. Testar com dados reais
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText,
   TrendingUp,
   ArrowRightLeft,
   Download,
   BarChart3,
-  Filter,
+  ChevronDown,
 } from 'lucide-react';
 import reportService, {
   PeriodType,
@@ -191,8 +191,7 @@ const Reports: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-6">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Relatórios</h1>
@@ -295,7 +294,74 @@ const Reports: React.FC = () => {
             onExport={handleExportExcel}
           />
         )}
-      </div>
+    </div>
+  );
+};
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || 'Selecione';
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span className={`truncate ${selectedOption ? '' : 'text-slate-400'}`}>{selectedLabel}</span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? 'bg-slate-800/70' : ''
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -338,67 +404,60 @@ const SalesTab: React.FC<SalesTabProps> = ({
   onGenerate,
   onExport,
 }) => {
+  const periodOptions: SelectOption[] = [
+    { value: 'today', label: 'Hoje' },
+    { value: 'yesterday', label: 'Ontem' },
+    { value: 'this_week', label: 'Esta Semana' },
+    { value: 'last_week', label: 'Semana Passada' },
+    { value: 'this_month', label: 'Este MÇ¦s' },
+    { value: 'last_month', label: 'MÇ¦s Passado' },
+    { value: 'this_quarter', label: 'Este Trimestre' },
+    { value: 'last_quarter', label: 'Trimestre Passado' },
+    { value: 'this_year', label: 'Este Ano' },
+    { value: 'last_year', label: 'Ano Passado' },
+    { value: 'custom', label: 'Personalizado' },
+  ];
+  const boardOptions: SelectOption[] = [
+    { value: '', label: 'Todos os boards' },
+    ...boards.map((board) => ({ value: String(board.id), label: board.name })),
+  ];
+  const userOptions: SelectOption[] = [
+    { value: '', label: 'Todos os vendedores' },
+    ...users.map((user) => ({ value: String(user.id), label: user.name })),
+  ];
+
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-lg p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter size={20} className="text-slate-400" />
-          <h2 className="text-lg font-semibold text-white">Filtros</h2>
-        </div>
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Filtros</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Período</label>
-            <select
+            <SelectMenu
               value={period}
-              onChange={(e) => setPeriod(e.target.value as PeriodType)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="today">Hoje</option>
-              <option value="yesterday">Ontem</option>
-              <option value="this_week">Esta Semana</option>
-              <option value="last_week">Semana Passada</option>
-              <option value="this_month">Este Mês</option>
-              <option value="last_month">Mês Passado</option>
-              <option value="this_quarter">Este Trimestre</option>
-              <option value="last_quarter">Trimestre Passado</option>
-              <option value="this_year">Este Ano</option>
-              <option value="last_year">Ano Passado</option>
-              <option value="custom">Personalizado</option>
-            </select>
+              options={periodOptions}
+              onChange={(value) => setPeriod(value as PeriodType)}
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Board (Opcional)</label>
-            <select
+            <SelectMenu
               value={boardId}
-              onChange={(e) => setBoardId(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="">Todos os boards</option>
-              {boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.name}
-                </option>
-              ))}
-            </select>
+              options={boardOptions}
+              onChange={setBoardId}
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Vendedor (Opcional)</label>
-            <select
+            <SelectMenu
               value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="">Todos os vendedores</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+              options={userOptions}
+              onChange={setUserId}
+            />
           </div>
 
           {period === 'custom' && (
@@ -409,7 +468,7 @@ const SalesTab: React.FC<SalesTabProps> = ({
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               <div>
@@ -418,7 +477,7 @@ const SalesTab: React.FC<SalesTabProps> = ({
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </>
@@ -579,53 +638,49 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
   onGenerate,
   onExport,
 }) => {
+  const periodOptions: SelectOption[] = [
+    { value: 'today', label: 'Hoje' },
+    { value: 'yesterday', label: 'Ontem' },
+    { value: 'this_week', label: 'Esta Semana' },
+    { value: 'last_week', label: 'Semana Passada' },
+    { value: 'this_month', label: 'Este MÇ¦s' },
+    { value: 'last_month', label: 'MÇ¦s Passado' },
+    { value: 'this_quarter', label: 'Este Trimestre' },
+    { value: 'last_quarter', label: 'Trimestre Passado' },
+    { value: 'this_year', label: 'Este Ano' },
+    { value: 'last_year', label: 'Ano Passado' },
+    { value: 'custom', label: 'Personalizado' },
+  ];
+  const boardOptions: SelectOption[] = [
+    { value: '', label: 'Selecione um board' },
+    ...boards.map((board) => ({ value: String(board.id), label: board.name })),
+  ];
+
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-lg p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter size={20} className="text-slate-400" />
-          <h2 className="text-lg font-semibold text-white">Filtros</h2>
-        </div>
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Filtros</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Board <span className="text-red-400">*</span>
             </label>
-            <select
+            <SelectMenu
               value={boardId}
-              onChange={(e) => setBoardId(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="">Selecione um board</option>
-              {boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.name}
-                </option>
-              ))}
-            </select>
+              options={boardOptions}
+              onChange={setBoardId}
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Período</label>
-            <select
+            <SelectMenu
               value={period}
-              onChange={(e) => setPeriod(e.target.value as PeriodType)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="today">Hoje</option>
-              <option value="yesterday">Ontem</option>
-              <option value="this_week">Esta Semana</option>
-              <option value="last_week">Semana Passada</option>
-              <option value="this_month">Este Mês</option>
-              <option value="last_month">Mês Passado</option>
-              <option value="this_quarter">Este Trimestre</option>
-              <option value="last_quarter">Trimestre Passado</option>
-              <option value="this_year">Este Ano</option>
-              <option value="last_year">Ano Passado</option>
-              <option value="custom">Personalizado</option>
-            </select>
+              options={periodOptions}
+              onChange={(value) => setPeriod(value as PeriodType)}
+            />
           </div>
 
           {period === 'custom' && (
@@ -636,7 +691,7 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               <div>
@@ -645,7 +700,7 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </>
@@ -788,67 +843,60 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
   onGenerate,
   onExport,
 }) => {
+  const periodOptions: SelectOption[] = [
+    { value: 'today', label: 'Hoje' },
+    { value: 'yesterday', label: 'Ontem' },
+    { value: 'this_week', label: 'Esta Semana' },
+    { value: 'last_week', label: 'Semana Passada' },
+    { value: 'this_month', label: 'Este MÇ¦s' },
+    { value: 'last_month', label: 'MÇ¦s Passado' },
+    { value: 'this_quarter', label: 'Este Trimestre' },
+    { value: 'last_quarter', label: 'Trimestre Passado' },
+    { value: 'this_year', label: 'Este Ano' },
+    { value: 'last_year', label: 'Ano Passado' },
+    { value: 'custom', label: 'Personalizado' },
+  ];
+  const fromUserOptions: SelectOption[] = [
+    { value: '', label: 'Qualquer usuÇ­rio' },
+    ...users.map((user) => ({ value: String(user.id), label: user.name })),
+  ];
+  const toUserOptions: SelectOption[] = [
+    { value: '', label: 'Qualquer usuÇ­rio' },
+    ...users.map((user) => ({ value: String(user.id), label: user.name })),
+  ];
+
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-lg p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter size={20} className="text-slate-400" />
-          <h2 className="text-lg font-semibold text-white">Filtros</h2>
-        </div>
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Filtros</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Período</label>
-            <select
+            <SelectMenu
               value={period}
-              onChange={(e) => setPeriod(e.target.value as PeriodType)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="today">Hoje</option>
-              <option value="yesterday">Ontem</option>
-              <option value="this_week">Esta Semana</option>
-              <option value="last_week">Semana Passada</option>
-              <option value="this_month">Este Mês</option>
-              <option value="last_month">Mês Passado</option>
-              <option value="this_quarter">Este Trimestre</option>
-              <option value="last_quarter">Trimestre Passado</option>
-              <option value="this_year">Este Ano</option>
-              <option value="last_year">Ano Passado</option>
-              <option value="custom">Personalizado</option>
-            </select>
+              options={periodOptions}
+              onChange={(value) => setPeriod(value as PeriodType)}
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">De (Opcional)</label>
-            <select
+            <SelectMenu
               value={fromUserId}
-              onChange={(e) => setFromUserId(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="">Qualquer usuário</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+              options={fromUserOptions}
+              onChange={setFromUserId}
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Para (Opcional)</label>
-            <select
+            <SelectMenu
               value={toUserId}
-              onChange={(e) => setToUserId(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="">Qualquer usuário</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+              options={toUserOptions}
+              onChange={setToUserId}
+            />
           </div>
 
           {period === 'custom' && (
@@ -859,7 +907,7 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               <div>
@@ -868,7 +916,7 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </>
