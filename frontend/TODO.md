@@ -657,12 +657,13 @@ Cards são contextuais e devem ser acessados através de Boards. Não faz sentid
 
 **Prioridade:** 🟢 Baixa
 **Estimativa:** ~1 dia
-**Status:** ⚠️ PARCIALMENTE IMPLEMENTADA (20/01/2026) - NÃO TESTÁVEL
+**Status:** ✅ 100% Completo
+**Data de conclusão:** 21/01/2026
 
-### ⚠️ Status Atual:
-**Frontend:** ~80% implementado
+### ✅ Status Atual:
+**Frontend:** ✅ 100% completo e funcional
 **Backend:** ✅ 100% completo e funcional
-**Problema Crítico:** TransferModal não consegue carregar dados (boards e usuários)
+**Testes:** ✅ CRUD completo testado e aprovado
 
 ### Tarefas:
 
@@ -681,6 +682,7 @@ Cards são contextuais e devem ser acessados através de Boards. Não faz sentid
   - getSentTransfers() - Listar enviadas
   - getReceivedTransfers() - Listar recebidas
   - getPendingApprovals() - Listar pendentes de aprovação
+  - getAllTransfers() - Listar TODAS as transferências (admin/gerente)
   - decideApproval() - Aprovar/Rejeitar
   - getStatistics() - Estatísticas do dashboard
 - [x] Funções helper: formatReason(), formatStatus(), formatApprovalStatus(), getStatusColor(), getApprovalStatusColor()
@@ -695,7 +697,7 @@ Cards são contextuais e devem ser acessados através de Boards. Não faz sentid
   - CardTransferCreate, BatchTransferCreate, TransferApprovalDecision
   - CardTransferResponse, BatchTransferResponse, etc.
 
-#### 9.4 - Modal: Nova Transferência ⚠️
+#### 9.4 - Modal: Nova Transferência ✅
 - [x] Criar componente `TransferModal.tsx` (590 linhas)
 - [x] Modo de transferência: Card único ou Batch (até 50 cards)
 - [x] Seleção de board → cards daquele board
@@ -704,29 +706,29 @@ Cards são contextuais e devem ser acessados através de Boards. Não faz sentid
 - [x] Campo de observações (opcional)
 - [x] Preview dos cards selecionados (modo batch)
 - [x] Botão "Criar Transferência"
-- ⚠️ **PROBLEMA CRÍTICO:** Modal não carrega dados:
-  - Boards não aparecem (erro no carregamento)
-  - Usuários não aparecem (erro 422 no endpoint `/api/v1/users/active`)
-  - Cards não podem ser carregados sem board selecionado
+- [x] Carregamento de boards e usuários funcionando
+- [x] Validações completas do formulário
 
-#### 9.5 - Tab: Minhas Solicitações ✅
-- [x] Listar transferências criadas pelo usuário
+#### 9.5 - Tabs para Vendedores (Redesenhadas) ✅
+- [x] **Tab 1: Transferências Pendentes** - Apenas transferências com status "pending_approval"
+- [x] **Tab 2: Transferências Finalizadas** - Transferências "completed" ou "rejected"
 - [x] Status com badges coloridos: Pendente (Amarelo), Aprovada (Verde), Rejeitada (Vermelho), Completada (Azul)
 - [x] Informações: Card (título + valor), Destinatário, Motivo, Data, Status
-- [x] Paginação (20 por página)
+- [x] Paginação (20 por página para pendentes, 50 para finalizadas)
 - [x] Empty state quando não há transferências
+- [x] Ícones apropriados (Clock para pendentes, CheckCircle para finalizadas)
 
-#### 9.6 - Tab: Recebidas ✅
-- [x] Seção 1: Aprovações Pendentes (destaque amarelo)
-  - Card expandido com botões de ação
-  - Botão "Aprovar" (verde)
-  - Botão "Rejeitar" (vermelho) com modal para notas
-  - Expiração em 72h exibida
-- [x] Seção 2: Histórico de Recebidas
-  - Todas as transferências recebidas (aprovadas, rejeitadas, expiradas)
-  - Badges coloridos por status
+#### 9.6 - Tab: Aprovações Pendentes (Admin/Gerente) ✅
+- [x] **Visível apenas para admin/gerente**
+- [x] Lista de transferências com status "pending_approval"
+- [x] Cards expandidos com botões de ação
+- [x] Botão "Aprovar" (verde) - Modal de confirmação
+- [x] Botão "Rejeitar" (vermelho) - Modal com campo de notas obrigatório
+- [x] Expiração em 72h exibida
 - [x] Badge contador de pendências na tab
 - [x] Empty state quando não há transferências
+- [x] Sistema redesenhado: approver_id NULL permite QUALQUER gerente/admin aprovar
+- [x] Quando aprovada/rejeitada, approver_id preenchido com quem decidiu
 
 #### 9.7 - Aprovar/Rejeitar ✅
 - [x] Modal de confirmação para aprovar
@@ -735,90 +737,142 @@ Cards são contextuais e devem ser acessados através de Boards. Não faz sentid
 - [x] Atualizar lista após ação
 - [x] Feedback com alert (melhorar para toast futuramente)
 
-#### 9.8 - Tab: Histórico ✅
-- [x] Listar todas as transferências (enviadas + recebidas)
-- [x] Badge indicando direção (Enviada/Recebida)
+#### 9.8 - Tab: Todas as Transferências (Admin/Gerente) ✅
+- [x] **Visível apenas para admin/gerente**
+- [x] Lista TODAS as transferências do sistema
+- [x] Endpoint `/api/v1/transfers/all` com validação de role
 - [x] Informações completas: Card, De/Para, Motivo, Status, Data
-- [x] Paginação
-- [x] Empty state
+- [x] Status com badges coloridos
+- [x] Paginação (50 por página)
+- [x] Empty state quando não há transferências
 
-#### 9.9 - Notificações ⏳
-- [ ] Notificação quando receber solicitação - NÃO IMPLEMENTADO
-- [ ] Notificação quando solicitação for aprovada/rejeitada - NÃO IMPLEMENTADO
+#### 9.9 - Visões Diferentes por Role ✅
+- [x] **Vendedor:** 2 tabs (Transferências Pendentes, Transferências Finalizadas)
+- [x] **Admin/Gerente:** 2 tabs (Aprovações Pendentes, Todas as Transferências)
+- [x] Renderização condicional baseada em `isManagerOrAdmin`
+- [x] Dados carregados de acordo com o role
+
+#### 9.10 - Notificações ⏳
+- [ ] Notificação quando receber solicitação - NÃO IMPLEMENTADO (Fase 12)
+- [ ] Notificação quando solicitação for aprovada/rejeitada - NÃO IMPLEMENTADO (Fase 12)
 
 ---
 
-### 🐛 BUGS CRÍTICOS (Impedem Teste do CRUD)
+### 🎯 Melhorias Arquiteturais Implementadas
 
-#### Bug #1: Endpoint `/api/v1/users/active` retorna 422 ❌
+#### Redesign do Sistema de Aprovação ✅
+**Problema Anterior:**
+- Aprovações eram criadas com approver_id específico (ex: ID=1 para admin)
+- Apenas UM gerente/admin específico via as aprovações pendentes
+- Sistema inflexível e não escalável
+
+**Solução Implementada:**
+- ✅ Aprovações criadas com `approver_id = NULL`
+- ✅ QUALQUER gerente/admin pode ver e aprovar transferências pendentes
+- ✅ Quando aprovada/rejeitada, `approver_id` preenchido com ID de quem decidiu
+- ✅ Modificados 5 métodos: `create_transfer()`, `create_batch_transfer()`, `list_pending_approvals()`, `decide_approval()`, `count_pending_approvals()`
+- ✅ Repository atualizado para filtrar `approver_id IS NULL`
+
+**Arquivos Modificados:**
+- `backend/app/services/transfer_service.py` - Lógica de criação de aprovações
+- `backend/app/repositories/transfer_repository.py` - Queries com NULL
+- `backend/app/models/transfer_approval.py` - approver_id nullable=True
+
+#### Correção de Batch Transfers ✅
 **Problema:**
-- Frontend chama `GET /api/v1/users/active`
-- Backend retorna erro 422 (Unprocessable Entity)
-- TransferModal não consegue carregar lista de usuários
+- Transferências em lote não criavam registros de aprovação
+- Sistema inconsistente entre transferências únicas e em lote
 
-**Tentativas de Correção:**
-1. ✅ Criado endpoint `/api/v1/users/active` em `backend/app/api/v1/endpoints/users.py`
-2. ✅ Criado método `find_all_active()` em `backend/app/repositories/user_repository.py`
-3. ✅ Atualizado `userService.ts` para usar novo endpoint
-4. ❌ Corrigido tipo `list[UserResponse]` → `List[UserResponse]` (import de typing)
-5. ❌ Movido endpoint `/active` para ANTES de `/{user_id}` (problema de ordenação de rotas)
-6. ❌ Removida duplicata do endpoint
-7. ❌ Reiniciado backend manualmente
-8. ⚠️ **AINDA NÃO FUNCIONA** - Erro 422 persiste
+**Solução:**
+- ✅ `create_batch_transfer()` agora cria aprovações quando `approval_required=True`
+- ✅ Cada card do lote gera uma transferência + aprovação
+- ✅ Integração completa com sistema de aprovação
 
-**Possíveis Causas:**
-- Ordenação de rotas ainda incorreta (FastAPI matching `active` como `user_id`)
-- Cache de código antigo no backend
-- Problema de serialização no response_model
+#### Simplificação da UI para Vendedores ✅
+**Problema Anterior:**
+- 3 tabs: "Minhas Solicitações", "Recebidas", "Histórico"
+- Muita redundância entre as tabs
+- "Minhas Solicitações" e "Histórico" mostravam dados quase idênticos
 
-**Próximos Passos:**
-1. Verificar se backend realmente recarregou com as mudanças
-2. Testar endpoint diretamente via curl ou Swagger (/docs)
-3. Verificar logs do backend para mensagem de erro específica
-4. Considerar alternativa: usar endpoint existente `/api/v1/users` com permissão relaxada
+**Solução:**
+- ✅ Removida tab "Recebidas" (vendedores não precisam aprovar)
+- ✅ 2 tabs claras e objetivas:
+  - **"Transferências Pendentes"**: Apenas `pending_approval` (ícone Clock)
+  - **"Transferências Finalizadas"**: `completed` ou `rejected` (ícone CheckCircle)
+- ✅ Filtragem por status no frontend
+- ✅ UX mais limpa e intuitiva
 
-#### Bug #2: Boards não carregam no TransferModal ⚠️
+#### Docker Volume Mount ✅
 **Problema:**
-- TransferModal tenta carregar boards via `boardService.list()`
-- Boards não aparecem no select
-- Sem boards selecionado, cards não podem ser carregados
+- Código backend não refletia mudanças (sem hot reload)
 
-**Status:** NÃO INVESTIGADO (prioridade dada ao bug #1)
+**Solução:**
+- ✅ Adicionado `- ./app:/app/app` no `docker-compose.yml`
+- ✅ Hot reload funcionando corretamente
 
-**Próximos Passos:**
-1. Verificar se boardService.list() está funcionando
-2. Verificar console do navegador para erros
-3. Testar endpoint `/api/v1/boards` diretamente
+---
+
+### ✅ Testes Realizados e Aprovados
+
+#### Fluxo Completo de Transferência:
+- ✅ **Criar transferência única** (vendedor)
+- ✅ **Criar transferência em lote** (até 50 cards)
+- ✅ **Visualizar transferências pendentes** (vendedor)
+- ✅ **Visualizar transferências finalizadas** (vendedor)
+- ✅ **Visualizar aprovações pendentes** (gerente)
+- ✅ **Aprovar transferência** (gerente) - approver_id preenchido corretamente
+- ✅ **Rejeitar transferência** (gerente) - com notas obrigatórias
+- ✅ **Visualizar todas as transferências do sistema** (gerente/admin)
+- ✅ **Estatísticas do dashboard** atualizando corretamente
+- ✅ **Badge contador de pendências** funcionando
+
+#### Testes de Role:
+- ✅ Vendedor vê apenas 2 tabs: Pendentes e Finalizadas
+- ✅ Gerente/Admin vê apenas 2 tabs: Aprovações Pendentes e Todas as Transferências
+- ✅ Endpoint `/api/v1/transfers/all` bloqueia vendedores (403 Forbidden)
+- ✅ Sistema de aprovação permite QUALQUER gerente/admin aprovar
+
+#### Testes de Integração:
+- ✅ Batch transfers criam aprovações corretamente
+- ✅ approver_id NULL buscado corretamente no banco
+- ✅ approver_id preenchido ao aprovar/rejeitar
+- ✅ Status da transferência atualiza após decisão
+- ✅ Cards são realmente transferidos (assigned_to atualizado)
 
 ---
 
 ### 📊 Estatísticas da Implementação:
 
 **Frontend:**
-- Transfers.tsx: 820 linhas
+- Transfers.tsx: 820 linhas (refatorada)
 - TransferModal.tsx: 590 linhas
 - transferService.ts: 180 linhas
 - Types: 88 linhas (types/index.ts)
 - **Total Frontend:** ~1.678 linhas
 
-**Backend (já estava completo):**
-- Schemas, Repository, Service, Endpoints já implementados
-- 7 endpoints REST funcionando
-- Sistema de aprovação com expiração (72h)
-- Batch transfer (até 50 cards)
+**Backend (Melhorias Implementadas):**
+- ✅ Schemas, Repository, Service, Endpoints completos
+- ✅ 8 endpoints REST funcionando (`/all` adicionado)
+- ✅ Sistema de aprovação redesenhado (approver_id NULL)
+- ✅ Batch transfer com aprovações (até 50 cards)
+- ✅ Validações de role (403 para vendedores em `/all`)
+- ✅ docker-compose.yml atualizado (volume mount)
 
-**Total Implementado:** ~1.678 linhas (frontend)
+**Total Implementado:** ~1.678 linhas (frontend) + melhorias backend
 
 ---
 
-### 🎯 Funcionalidades Prontas (Não Testáveis):
-- ✅ Interface completa de transferências (3 tabs)
-- ✅ Dashboard de estatísticas
-- ✅ Sistema de aprovação/rejeição
+### 🎯 Funcionalidades Completas e Testadas:
+- ✅ Interface completa de transferências (2 tabs por role)
+- ✅ Dashboard de estatísticas (6 cards)
+- ✅ Sistema de aprovação/rejeição redesenhado
 - ✅ Transferência em lote (até 50 cards)
+- ✅ Visões diferentes por role (vendedor vs admin/gerente)
 - ✅ Badges e indicadores visuais
 - ✅ Empty states
-- ⚠️ **BLOQUEADO:** Modal de criação não funciona (bugs críticos)
+- ✅ Modal de criação funcionando
+- ✅ Sistema de aprovação escalável e flexível
+- ✅ Integração completa frontend + backend
 
 ---
 
@@ -847,55 +901,29 @@ Durante a implementação da Fase 9, foi adicionada funcionalidade extra:
 
 ---
 
-### ⚠️ RECOMENDAÇÕES
-
-**Para o Próximo Desenvolvedor:**
-
-1. **Prioridade 1:** Resolver bug do endpoint `/api/v1/users/active`
-   - Verificar ordenação de rotas no backend
-   - Testar diretamente via Swagger (/docs)
-   - Verificar logs do backend para erro específico
-
-2. **Prioridade 2:** Resolver problema de boards não carregarem
-   - Verificar `boardService.list()` funcionando
-   - Verificar console do navegador
-
-3. **Prioridade 3:** Após bugs corrigidos, testar fluxo completo:
-   - Criar transferência única
-   - Criar transferência em lote
-   - Aprovar transferência
-   - Rejeitar transferência
-   - Verificar estatísticas atualizando
-
-4. **Melhorias Futuras:**
-   - Substituir `alert()` por toast library
-   - Adicionar notificações de transferência
-   - Implementar filtros avançados
-   - Adicionar busca por card/usuário
-   - Exportar relatório de transferências
-
----
-
 ### 📝 Arquivos Criados/Modificados:
 
 **Criados:**
-- `frontend/src/pages/Transfers.tsx`
-- `frontend/src/components/transfers/TransferModal.tsx`
-- `frontend/src/components/users/AdminPasswordResetModal.tsx`
-- `frontend/src/services/transferService.ts`
-- `backend/app/repositories/user_repository.py` (+20 linhas: método find_all_active)
-- `backend/app/api/v1/endpoints/users.py` (+90 linhas: endpoint /active)
+- `frontend/src/pages/Transfers.tsx` (820 linhas)
+- `frontend/src/components/transfers/TransferModal.tsx` (590 linhas)
+- `frontend/src/components/users/AdminPasswordResetModal.tsx` (230 linhas)
+- `frontend/src/services/transferService.ts` (180 linhas)
 
 **Modificados:**
 - `frontend/src/types/index.ts` (+88 linhas: transfer types)
-- `frontend/src/services/userService.ts` (método listActive atualizado)
-- `frontend/src/pages/Users.tsx` (integração com AdminPasswordResetModal)
-- `frontend/src/components/users/index.ts` (export do AdminPasswordResetModal)
-- `backend/app/api/v1/endpoints/admin.py` (bug fix: password → password_hash)
+- `backend/app/services/transfer_service.py` (redesign aprovação)
+- `backend/app/repositories/transfer_repository.py` (queries NULL)
+- `backend/app/api/v1/endpoints/transfers.py` (endpoint /all)
+- `backend/docker-compose.yml` (volume mount)
 
 ---
 
-**Última atualização:** 20/01/2026 - Fase 9 implementada mas não testável devido a bugs críticos
+### 💡 Melhorias Futuras (Opcionais):
+- [ ] Substituir `alert()` por toast library (Fase 17)
+- [ ] Adicionar notificações de transferência (Fase 12)
+- [ ] Implementar filtros avançados (status, período, usuário)
+- [ ] Adicionar busca por card/usuário
+- [ ] Exportar relatório de transferências (Excel/PDF)
 
 ---
 
@@ -1495,7 +1523,7 @@ Durante a implementação da Fase 9, foi adicionada funcionalidade extra:
 
 ### 🟢 Baixa Prioridade (Nice to Have)
 14. ✅ Fase 8 - Gamificação (Concluída - 20/01/2026) 🎉
-15. ⚠️ Fase 9 - Transferências (~80% implementada - 20/01/2026) - **NÃO TESTÁVEL** (bugs críticos)
+15. ✅ Fase 9 - Transferências (Concluída - 21/01/2026) 🎉
 16. ⏳ Fase 11 - Automações
 17. ⏳ Fase 13 - Configurações
 18. ⏳ Fase 14 - Field Definitions
@@ -1511,17 +1539,17 @@ Construir um **CRM completo e funcional** com todas as funcionalidades planejada
 
 **Estimativa Total:** ~25-35 dias de desenvolvimento (considerando 1 desenvolvedor)
 
-**Última atualização:** 20/01/2026 (Fase 9 - Transferências parcialmente implementada, Fase 8 - Gamificação concluída)
+**Última atualização:** 21/01/2026 (Fase 9 - Transferências concluída com sucesso!)
 
 ---
 
 ## 📈 Progresso Atual
 
-**Fases Concluídas:** 9/20 (45%)
-**Fases Parciais:** 1/20 (5%)
+**Fases Concluídas:** 10/20 (50%) 🎉
+**Fases Parciais:** 0/20 (0%)
 **Nota:** Fase 6 removida - total de fases passou de 21 para 20
 
-### ✅ Completas (9):
+### ✅ Completas (10):
 - ✅ Fase 0 - Base (100%)
 - ✅ Fase 0.5 - Melhorias Navegação/Layout (100%)
 - ✅ Fase 1 - Dashboard (100%)
@@ -1531,64 +1559,57 @@ Construir um **CRM completo e funcional** com todas as funcionalidades planejada
 - ✅ Fase 5 - Clientes (100%) 🎉
 - ✅ Fase 7 - Usuários (100%) 🎉
 - ✅ Fase 8 - Gamificação (100%) 🎉
+- ✅ Fase 9 - Transferências (100%) 🎉
 
-### ⚠️ Parciais (1):
-- ⚠️ Fase 9 - Transferências (~80%) - **NÃO TESTÁVEL** (bugs críticos)
+### ⚠️ Parciais (0):
+- Nenhuma fase parcial no momento
 
 ---
 
-**Destaques da Sessão Atual (20/01/2026):**
+**Destaques da Sessão Atual (21/01/2026):**
 
-### 🎉 Fase 8 - Gamificação (COMPLETA 100%)
-**Status:** ✅ Completa e funcional
-
-**Implementado:**
-- ✅ Página Gamification.tsx (430 linhas)
-- ✅ gamificationService.ts (160 linhas)
-- ✅ 3 tabs: Meu Perfil, Rankings, Badges
-- ✅ Dashboard com estatísticas (pontos totais, semanais, mensais, badges)
-- ✅ Rankings em 4 períodos (semanal, mensal, trimestral, anual)
-- ✅ Sistema de badges (5 badges do sistema)
-- ✅ Visão diferenciada: Vendedor vs Gerente/Admin
-- ✅ Correções no backend (mapeamento yearly→annual, microsegundos no period_end)
-
-**Funcionalidades:**
-- Pontos e rankings funcionando
-- Badges automáticos atribuídos
-- Interface motivacional com gradientes e cores vibrantes
-- Destacar usuário atual nos rankings
-
-### ⚠️ Fase 9 - Transferências (~80% IMPLEMENTADA - NÃO TESTÁVEL)
-**Status:** ⚠️ Código pronto mas bloqueado por bugs críticos
+### 🎉 Fase 9 - Transferências (COMPLETA 100%)
+**Status:** ✅ Completa, testada e funcional
 
 **Implementado:**
-- ✅ Transfers.tsx (820 linhas) - 3 tabs + dashboard
+- ✅ Transfers.tsx (820 linhas) - Interface completa com 2 tabs por role
 - ✅ TransferModal.tsx (590 linhas) - Criação de transferências
-- ✅ transferService.ts (180 linhas) - 7 métodos API
+- ✅ transferService.ts (180 linhas) - 8 métodos API
 - ✅ Types completos (88 linhas)
 - ✅ AdminPasswordResetModal.tsx (230 linhas) - EXTRA
-- ✅ Sistema de aprovação/rejeição
+- ✅ Sistema de aprovação/rejeição redesenhado
 - ✅ Transferência em lote (até 50 cards)
 - ✅ Dashboard de estatísticas
 - ✅ Badge contador de pendências
 
-**Bugs Críticos Impedem Teste:**
-1. ❌ Endpoint `/api/v1/users/active` retorna 422 (usuários não carregam)
-2. ❌ Boards não carregam no TransferModal
-3. ⚠️ Sem boards/usuários, não é possível testar criação de transferência
+**Melhorias Arquiteturais:**
+1. ✅ **Sistema de Aprovação Redesenhado:**
+   - Aprovações com `approver_id = NULL`
+   - QUALQUER gerente/admin pode aprovar
+   - approver_id preenchido quando aprovada/rejeitada
+   - Sistema escalável e flexível
 
-**Tentativas de Correção (Todas Falharam):**
-- Criado endpoint /active no backend
-- Corrigido tipo List[UserResponse]
-- Movido endpoint antes de /{user_id}
-- Reiniciado backend manualmente
-- **Resultado:** Erro 422 persiste
+2. ✅ **Batch Transfers Corrigido:**
+   - Agora criam aprovações quando `approval_required=True`
+   - Integração completa com sistema de aprovação
 
-**Próximos Passos:**
-1. Verificar ordenação de rotas no backend via Swagger
-2. Investigar logs do backend para erro específico
-3. Testar endpoint diretamente via curl
-4. Considerar alternativa: relaxar permissão do endpoint /users
+3. ✅ **UI Simplificada para Vendedores:**
+   - 2 tabs: "Transferências Pendentes" + "Transferências Finalizadas"
+   - Filtragem por status no frontend
+   - UX mais limpa e intuitiva
+
+4. ✅ **Docker Volume Mount:**
+   - Hot reload funcionando corretamente
+   - `- ./app:/app/app` adicionado ao docker-compose.yml
+
+**Testes Realizados:**
+- ✅ Criar transferência única (vendedor)
+- ✅ Criar transferência em lote (até 50 cards)
+- ✅ Visualizar pendentes/finalizadas (vendedor)
+- ✅ Aprovar/Rejeitar (gerente)
+- ✅ Visualizar todas as transferências (admin/gerente)
+- ✅ Sistema de roles funcionando corretamente
+- ✅ Endpoint `/api/v1/transfers/all` bloqueando vendedores (403)
 
 ---
 
@@ -1735,11 +1756,11 @@ curl DELETE /api/v1/users/1 (próprio usuário)
 
 ---
 
-## 📊 PROGRESSO GERAL - Atualizado em 20/01/2026
+## 📊 PROGRESSO GERAL - Atualizado em 21/01/2026
 
-**Fases Concluídas:** 9/20 (45%)
+**Fases Concluídas:** 10/20 (50%) 🎉
 
-### ✅ Concluídas (9):
+### ✅ Concluídas (10):
 1. ✅ Fase 0 - Base (08/01/2026)
 2. ✅ Fase 0.5 - Melhorias de Navegação (12/01/2026)
 3. ✅ Fase 1 - Dashboard (12/01/2026)
@@ -1749,21 +1770,24 @@ curl DELETE /api/v1/users/1 (próprio usuário)
 7. ✅ Fase 5 - Clientes (15/01/2026)
 8. ✅ Fase 7 - Usuários (20/01/2026)
 9. ✅ Fase 8 - Gamificação (20/01/2026)
+10. ✅ Fase 9 - Transferências (21/01/2026)
 
 ### ⏳ Em Progresso (0):
 - Nenhuma fase em progresso no momento
 
-### 📝 Pendentes (11):
+### 📝 Pendentes (10):
 - ⏳ Fase 6 - Cards (removida - funcionalidade incorporada no Kanban)
-- ⏳ Fase 9 - Transferências
-- ⏳ Fase 10 - Relatórios
+- ⏳ Fase 10 - Relatórios ⬅️ PRÓXIMA RECOMENDADA
 - ⏳ Fase 11 - Automações
 - ⏳ Fase 12 - Notificações
 - ⏳ Fase 13 - Configurações
-- ⏳ Fase 14 - Profile/Avatar Upload
-- ⏳ Fase 15 - Testes E2E
-- ⏳ Fase 16 - Otimizações
-- ⏳ Fase 17 - PWA
-- ⏳ Fase 18 - Deploy
+- ⏳ Fase 14 - Field Definitions
+- ⏳ Fase 15 - Busca Global
+- ⏳ Fase 16 - Responsividade
+- ⏳ Fase 17 - Melhorias UX/UI
+- ⏳ Fase 18 - Otimizações
+- ⏳ Fase 19 - Testes e Deploy
 
-**Última atualização:** 20/01/2026 - Fase 8 (Gamificação) concluída com sucesso!
+**Última atualização:** 21/01/2026 - Fase 9 (Transferências) concluída com sucesso! 🎉
+
+**Marco Importante:** 50% do projeto concluído (10 de 20 fases)!

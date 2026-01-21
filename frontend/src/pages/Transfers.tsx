@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   ArrowRightLeft,
-  Send,
   Inbox,
-  History,
   Plus,
   CheckCircle,
   XCircle,
@@ -122,10 +120,14 @@ const Transfers: React.FC = () => {
     try {
       setLoading(true);
       const response = await transferService.getAllTransfers(allTransfersPage, 50);
-      setAllTransfers(response.transfers);
+      // Filtra apenas completed e rejected (transferências finalizadas)
+      const completed = response.transfers.filter(
+        t => t.status === "completed" || t.status === "rejected"
+      );
+      setAllTransfers(completed);
       setTotalPages(response.total_pages);
     } catch (error) {
-      console.error("Erro ao carregar todas as transferências:", error);
+      console.error("Erro ao carregar transferências finalizadas:", error);
     } finally {
       setLoading(false);
     }
@@ -334,8 +336,8 @@ const Transfers: React.FC = () => {
               }`}
             >
               <div className="flex items-center gap-2">
-                <History size={18} />
-                <span>Todas as Transferências</span>
+                <CheckCircle size={18} />
+                <span>Transferências Finalizadas</span>
               </div>
             </button>
           </>
@@ -531,75 +533,61 @@ const Transfers: React.FC = () => {
           </div>
         )}
 
-        {/* Tab: Todas as Transferências (Admin/Gerente) */}
+        {/* Tab: Transferências Finalizadas (Admin/Gerente) */}
         {activeTab === "all" && (
-          <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Transferências Finalizadas</h2>
+            <p className="text-slate-400 mb-4">Todas as transferências aprovadas ou rejeitadas do sistema</p>
             {allTransfers.length === 0 ? (
               <div className="text-center py-12">
-                <History size={48} className="mx-auto text-slate-600 mb-3" />
-                <p className="text-slate-400">Nenhuma transferência encontrada no sistema</p>
+                <CheckCircle size={48} className="mx-auto text-slate-600 mb-3" />
+                <p className="text-slate-400">Nenhuma transferência finalizada ainda</p>
               </div>
             ) : (
+              <div className="space-y-3">{
               allTransfers.map((transfer) => (
                 <div
                   key={transfer.id}
-                  className="bg-slate-800/50 border border-slate-700 rounded-xl p-5"
+                  className="bg-slate-900/50 border border-slate-700 rounded-lg p-4"
                 >
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-1">
-                        {transfer.card_title || `Card #${transfer.card_id}`}
-                      </h3>
-                      <div className="flex items-center gap-3 text-sm text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <Send size={14} />
-                          De: {transfer.from_user_name || "Desconhecido"}
-                        </span>
-                        <span>→</span>
-                        <span className="flex items-center gap-1">
-                          <Inbox size={14} />
-                          Para: {transfer.to_user_name || "Desconhecido"}
+                      <div className="flex items-center gap-2 mb-2">
+                        {getStatusIcon(transfer.status)}
+                        <h4 className="font-semibold text-white">
+                          {transfer.card_title || `Card #${transfer.card_id}`}
+                        </h4>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${transferService.getStatusColor(
+                            transfer.status
+                          )}`}
+                        >
+                          {transferService.formatStatus(transfer.status)}
                         </span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(transfer.status)}
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          transfer.status === "completed"
-                            ? "bg-green-500/20 text-green-400"
-                            : transfer.status === "rejected"
-                            ? "bg-red-500/20 text-red-400"
-                            : "bg-yellow-500/20 text-yellow-400"
-                        }`}
-                      >
-                        {transferService.formatStatus(transfer.status)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-slate-400">Motivo:</span>
-                      <span className="ml-2 text-white">
-                        {transferService.formatReason(transfer.reason)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">Data:</span>
-                      <span className="ml-2 text-white">
-                        {formatDate(transfer.created_at)}
-                      </span>
+                      <div className="text-sm text-slate-400 space-y-1">
+                        <p>
+                          <span className="font-medium">De:</span> {transfer.from_user_name || "Desconhecido"} →{" "}
+                          <span className="font-medium">Para:</span> {transfer.to_user_name || "Desconhecido"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Motivo:</span>{" "}
+                          {transferService.formatReason(transfer.reason)}
+                        </p>
+                        {transfer.notes && (
+                          <p>
+                            <span className="font-medium">Observações:</span> {transfer.notes}
+                          </p>
+                        )}
+                        <p className="text-xs text-slate-500">
+                          {formatDate(transfer.created_at)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-
-                  {transfer.notes && (
-                    <div className="mt-3 pt-3 border-t border-slate-700">
-                      <p className="text-sm text-slate-300">{transfer.notes}</p>
-                    </div>
-                  )}
                 </div>
-              ))
+              ))}
+              </div>
             )}
           </div>
         )}
