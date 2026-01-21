@@ -11,6 +11,7 @@ const Clients: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterActive, setFilterActive] = useState<string>("all"); // all, active, inactive
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Estados do modal
   const [showModal, setShowModal] = useState(false);
@@ -109,6 +110,33 @@ const Clients: React.FC = () => {
 
     return matchesSearch && matchesStatus;
   });
+
+  const itemsPerPage = 7;
+  const totalItems = filteredClients.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedClients = filteredClients.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterActive, clients.length]);
+
+  const getPageNumbers = () => {
+    const maxButtons = 5;
+    let start = Math.max(1, safePage - Math.floor(maxButtons / 2));
+    let end = start + maxButtons - 1;
+
+    if (end > totalPages) {
+      end = totalPages;
+      start = Math.max(1, end - maxButtons + 1);
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  };
+
+  const pageNumbers = getPageNumbers();
 
   // Formata data
   const formatDate = (date: string) => {
@@ -249,7 +277,7 @@ const Clients: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {filteredClients.map((client) => (
+                {paginatedClients.map((client) => (
                   <tr
                     key={client.id}
                     className="hover:bg-slate-700/30 transition-colors"
@@ -338,6 +366,83 @@ const Clients: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="flex flex-col gap-4 border-t border-slate-700/60 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+            <div className="text-sm text-slate-400">
+              Mostrando {totalItems === 0 ? 0 : startIndex + 1} a {endIndex} de {totalItems}{" "}
+              registros
+            </div>
+            <div className="flex items-center justify-center gap-3 sm:justify-end">
+              <div className="flex items-center gap-2 sm:hidden">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={safePage === 1}
+                  className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                    safePage === 1
+                      ? "border-slate-700 text-slate-600"
+                      : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                  }`}
+                >
+                  {"<"}
+                </button>
+                <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
+                  {safePage}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={safePage === totalPages}
+                  className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                    safePage === totalPages
+                      ? "border-slate-700 text-slate-600"
+                      : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                  }`}
+                >
+                  {">"}
+                </button>
+              </div>
+              <div className="hidden items-center gap-2 sm:flex">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={safePage === 1}
+                  className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                    safePage === 1
+                      ? "border-slate-700 text-slate-600"
+                      : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                  }`}
+                >
+                  Anterior
+                </button>
+                {pageNumbers.map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
+                      page === safePage
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={safePage === totalPages}
+                  className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                    safePage === totalPages
+                      ? "border-slate-700 text-slate-600"
+                      : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                  }`}
+                >
+                  Proxima
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
