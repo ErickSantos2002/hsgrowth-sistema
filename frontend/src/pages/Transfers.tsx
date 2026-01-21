@@ -25,7 +25,7 @@ const Transfers: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showTransferModal, setShowTransferModal] = useState(false);
 
-  // Dados de transferências
+  // Dados de transferncias
   const [pendingTransfers, setPendingTransfers] = useState<CardTransfer[]>([]);
   const [completedTransfers, setCompletedTransfers] = useState<CardTransfer[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<TransferApproval[]>([]);
@@ -34,11 +34,24 @@ const Transfers: React.FC = () => {
   // Estados para admin/gerente
   const [allTransfers, setAllTransfers] = useState<CardTransfer[]>([]);
 
-  // Paginação
+  // Paginao
   const [pendingPage, setPendingPage] = useState(1);
   const [completedPage, setCompletedPage] = useState(1);
   const [allTransfersPage, setAllTransfersPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [pendingTotalPages, setPendingTotalPages] = useState(1);
+  const [completedTotalPages, setCompletedTotalPages] = useState(1);
+  const [pendingTotal, setPendingTotal] = useState(0);
+  const [completedTotal, setCompletedTotal] = useState(0);
+  const [pendingPageSize, setPendingPageSize] = useState(7);
+  const [completedPageSize, setCompletedPageSize] = useState(7);
+  const [allTransfersTotalPages, setAllTransfersTotalPages] = useState(1);
+  const [allTransfersTotal, setAllTransfersTotal] = useState(0);
+  const [allTransfersPageSize, setAllTransfersPageSize] = useState(7);
+  const [pendingApprovalsPage, setPendingApprovalsPage] = useState(1);
+  const [pendingApprovalsTotalPages, setPendingApprovalsTotalPages] = useState(1);
+  const [pendingApprovalsTotal, setPendingApprovalsTotal] = useState(0);
+  const [pendingApprovalsPageSize, setPendingApprovalsPageSize] = useState(7);
 
   useEffect(() => {
     loadInitialData();
@@ -55,7 +68,13 @@ const Transfers: React.FC = () => {
     } else if (activeTab === "all") {
       loadAllTransfers();
     }
-  }, [activeTab, pendingPage, completedPage, allTransfersPage]);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "received") {
+      loadPendingApprovals();
+    }
+  }, [pendingApprovalsPage]);
 
   const loadInitialData = async () => {
     try {
@@ -72,66 +91,110 @@ const Transfers: React.FC = () => {
         await loadPendingTransfers();
       }
     } catch (error) {
-      console.error("Erro ao carregar dados de transferências:", error);
+      console.error("Erro ao carregar dados de transferncias:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  
   const loadPendingTransfers = async () => {
     try {
-      const response = await transferService.getSentTransfers(pendingPage, 20);
+      const response = await transferService.getSentTransfers(1, 50);
+      const allTransfers = [...response.transfers];
+      for (let page = 2; page <= response.total_pages; page += 1) {
+        const nextResponse = await transferService.getSentTransfers(page, 50);
+        allTransfers.push(...nextResponse.transfers);
+      }
+
       // Filtra apenas pendentes
-      const pending = response.transfers.filter(t => t.status === "pending_approval");
+      const pending = allTransfers.filter(t => t.status === "pending_approval");
+      const nextTotal = pending.length;
+      const nextTotalPages = Math.max(1, Math.ceil(nextTotal / pendingPageSize));
+
       setPendingTransfers(pending);
-      setTotalPages(response.total_pages);
+      setPendingTotal(nextTotal);
+      setPendingTotalPages(nextTotalPages);
+      setPendingPage((page) => Math.min(page, nextTotalPages));
     } catch (error) {
-      console.error("Erro ao carregar transferências pendentes:", error);
+      console.error("Erro ao carregar transfer?ncias pendentes:", error);
       setPendingTransfers([]);
     }
   };
 
+
+  
   const loadCompletedTransfers = async () => {
     try {
-      const response = await transferService.getSentTransfers(completedPage, 50);
+      const response = await transferService.getSentTransfers(1, 50);
+      const allTransfers = [...response.transfers];
+      for (let page = 2; page <= response.total_pages; page += 1) {
+        const nextResponse = await transferService.getSentTransfers(page, 50);
+        allTransfers.push(...nextResponse.transfers);
+      }
+
       // Filtra apenas completed e rejected
-      const completed = response.transfers.filter(
+      const completed = allTransfers.filter(
         t => t.status === "completed" || t.status === "rejected"
       );
+      const nextTotal = completed.length;
+      const nextTotalPages = Math.max(1, Math.ceil(nextTotal / completedPageSize));
+
       setCompletedTransfers(completed);
-      setTotalPages(response.total_pages);
+      setCompletedTotal(nextTotal);
+      setCompletedTotalPages(nextTotalPages);
+      setCompletedPage((page) => Math.min(page, nextTotalPages));
     } catch (error) {
-      console.error("Erro ao carregar transferências finalizadas:", error);
+      console.error("Erro ao carregar transfer?ncias finalizadas:", error);
       setCompletedTransfers([]);
     }
   };
 
+
+  
   const loadPendingApprovals = async () => {
     try {
-      const approvalsResponse = await transferService.getPendingApprovals(1, 50);
+      const approvalsResponse = await transferService.getPendingApprovals(pendingApprovalsPage, 7);
       setPendingApprovals(approvalsResponse.approvals);
+      setPendingApprovalsTotal(approvalsResponse.total);
+      setPendingApprovalsTotalPages(approvalsResponse.total_pages);
+      setPendingApprovalsPageSize(approvalsResponse.page_size);
     } catch (error) {
-      console.error("Erro ao carregar aprovações pendentes:", error);
+      console.error("Erro ao carregar aprova????es pendentes:", error);
       setPendingApprovals([]);
     }
   };
 
+
+  
   const loadAllTransfers = async () => {
     try {
       setLoading(true);
-      const response = await transferService.getAllTransfers(allTransfersPage, 50);
-      // Filtra apenas completed e rejected (transferências finalizadas)
-      const completed = response.transfers.filter(
+      const response = await transferService.getAllTransfers(1, 50);
+      const allTransfers = [...response.transfers];
+      for (let page = 2; page <= response.total_pages; page += 1) {
+        const nextResponse = await transferService.getAllTransfers(page, 50);
+        allTransfers.push(...nextResponse.transfers);
+      }
+
+      // Filtra apenas completed e rejected (transfer?ncias finalizadas)
+      const completed = allTransfers.filter(
         t => t.status === "completed" || t.status === "rejected"
       );
+      const nextTotal = completed.length;
+      const nextTotalPages = Math.max(1, Math.ceil(nextTotal / allTransfersPageSize));
+
       setAllTransfers(completed);
-      setTotalPages(response.total_pages);
+      setAllTransfersTotal(nextTotal);
+      setAllTransfersTotalPages(nextTotalPages);
+      setAllTransfersPage((page) => Math.min(page, nextTotalPages));
     } catch (error) {
-      console.error("Erro ao carregar transferências finalizadas:", error);
+      console.error("Erro ao carregar transfer?ncias finalizadas:", error);
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleApprove = async (approvalId: number) => {
     try {
@@ -143,10 +206,10 @@ const Transfers: React.FC = () => {
       await loadPendingApprovals();
       await loadInitialData();
 
-      alert("Transferência aprovada com sucesso!");
+      alert("Transferncia aprovada com sucesso!");
     } catch (error) {
-      console.error("Erro ao aprovar transferência:", error);
-      alert("Erro ao aprovar transferência");
+      console.error("Erro ao aprovar transferncia:", error);
+      alert("Erro ao aprovar transferncia");
     }
   };
 
@@ -161,10 +224,10 @@ const Transfers: React.FC = () => {
       await loadPendingApprovals();
       await loadInitialData();
 
-      alert("Transferência rejeitada com sucesso!");
+      alert("Transferncia rejeitada com sucesso!");
     } catch (error) {
-      console.error("Erro ao rejeitar transferência:", error);
-      alert("Erro ao rejeitar transferência");
+      console.error("Erro ao rejeitar transferncia:", error);
+      alert("Erro ao rejeitar transferncia");
     }
   };
 
@@ -191,12 +254,136 @@ const Transfers: React.FC = () => {
     }
   };
 
+  const getPageNumbers = (currentPage: number, total: number) => {
+    const maxButtons = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+    let end = start + maxButtons - 1;
+
+    if (end > total) {
+      end = total;
+      start = Math.max(1, end - maxButtons + 1);
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  };
+
+  const renderPagination = (
+    currentPage: number,
+    total: number,
+    totalItems: number,
+    pageSize: number,
+    onPageChange: (page: number) => void
+  ) => {
+    if (totalItems === 0 || total <= 1) return null;
+
+    const safePage = Math.min(currentPage, total);
+    const safePageSize = pageSize > 0 ? pageSize : 1;
+    const startIndex = (safePage - 1) * safePageSize + 1;
+    const endIndex = Math.min(safePage * safePageSize, totalItems);
+    const pageNumbers = getPageNumbers(safePage, total);
+
+    return (
+      <div className="flex flex-col gap-4 border-t border-slate-700/60 pt-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+        <div className="text-sm text-slate-400">
+          Mostrando {startIndex} a {endIndex} de {totalItems} registros
+        </div>
+        <div className="flex items-center justify-center gap-3 sm:justify-end">
+          <div className="flex items-center gap-2 sm:hidden">
+            <button
+              type="button"
+              onClick={() => onPageChange(Math.max(1, safePage - 1))}
+              disabled={safePage === 1}
+              className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                safePage === 1
+                  ? "border-slate-700 text-slate-600"
+                  : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+              }`}
+            >
+              {"<"}
+            </button>
+            <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
+              {safePage}
+            </div>
+            <button
+              type="button"
+              onClick={() => onPageChange(Math.min(total, safePage + 1))}
+              disabled={safePage === total}
+              className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                safePage === total
+                  ? "border-slate-700 text-slate-600"
+                  : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+              }`}
+            >
+              {">"}
+            </button>
+          </div>
+          <div className="hidden items-center gap-2 sm:flex">
+            <button
+              type="button"
+              onClick={() => onPageChange(Math.max(1, safePage - 1))}
+              disabled={safePage === 1}
+              className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                safePage === 1
+                  ? "border-slate-700 text-slate-600"
+                  : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+              }`}
+            >
+              Anterior
+            </button>
+            {pageNumbers.map((page) => (
+              <button
+                key={page}
+                type="button"
+                onClick={() => onPageChange(page)}
+                className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
+                  page === safePage
+                    ? "border-emerald-500 bg-emerald-500 text-white"
+                    : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => onPageChange(Math.min(total, safePage + 1))}
+              disabled={safePage === total}
+              className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                safePage === total
+                  ? "border-slate-700 text-slate-600"
+                  : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+              }`}
+            >
+              Proxima
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const pendingStartIndex = (pendingPage - 1) * pendingPageSize;
+  const completedStartIndex = (completedPage - 1) * completedPageSize;
+  const allTransfersStartIndex = (allTransfersPage - 1) * allTransfersPageSize;
+  const paginatedPendingTransfers = pendingTransfers.slice(
+    pendingStartIndex,
+    pendingStartIndex + pendingPageSize
+  );
+  const paginatedCompletedTransfers = completedTransfers.slice(
+    completedStartIndex,
+    completedStartIndex + completedPageSize
+  );
+  const paginatedAllTransfers = allTransfers.slice(
+    allTransfersStartIndex,
+    allTransfersStartIndex + allTransfersPageSize
+  );
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-          <p className="text-slate-400">Carregando transferências...</p>
+          <p className="text-slate-400">Carregando transferncias...</p>
         </div>
       </div>
     );
@@ -209,10 +396,10 @@ const Transfers: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
             <ArrowRightLeft className="text-emerald-400" size={32} />
-            Transferências de Cards
+            Transferncias de Cards
           </h1>
           <p className="text-slate-400 mt-1">
-            Gerencie solicitações de transferência de cards entre usuários
+            Gerencie solicitaes de transferncia de cards entre usurios
           </p>
         </div>
         <button
@@ -220,11 +407,11 @@ const Transfers: React.FC = () => {
           className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
         >
           <Plus size={20} />
-          Nova Transferência
+          Nova Transferncia
         </button>
       </div>
 
-      {/* Estatísticas */}
+      {/* Estatsticas */}
       {statistics && (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
           <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-xl border border-blue-500/20 rounded-xl p-6 hover:border-blue-500/40 transition-all">
@@ -258,7 +445,7 @@ const Transfers: React.FC = () => {
           <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 backdrop-blur-xl border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-500/40 transition-all">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle size={16} className="text-cyan-400" />
-              <span className="text-xs text-slate-400">Este Mês</span>
+              <span className="text-xs text-slate-400">Este Ms</span>
             </div>
             <div className="text-2xl font-bold text-white">{statistics.completed_this_month}</div>
           </div>
@@ -280,7 +467,7 @@ const Transfers: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <Clock size={18} />
-                <span>Transferências Pendentes</span>
+                <span>Transferncias Pendentes</span>
                 {pendingTransfers.length > 0 && (
                   <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full">
                     {pendingTransfers.length}
@@ -299,7 +486,7 @@ const Transfers: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <CheckCircle size={18} />
-                <span>Transferências Finalizadas</span>
+                <span>Transferncias Finalizadas</span>
               </div>
             </button>
           </>
@@ -318,10 +505,10 @@ const Transfers: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <Inbox size={18} />
-                <span>Aprovações Pendentes</span>
+                <span>Aprovaes Pendentes</span>
                 {pendingApprovals.length > 0 && (
                   <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full">
-                    {pendingApprovals.length}
+                    {pendingApprovalsTotal}
                   </span>
                 )}
               </div>
@@ -337,40 +524,46 @@ const Transfers: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <CheckCircle size={18} />
-                <span>Transferências Finalizadas</span>
+                <span>Transferncias Finalizadas</span>
               </div>
             </button>
           </>
         )}
       </div>
 
-      {/* Conteúdo das Tabs */}
+      {/* Contedo das Tabs */}
       <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-6">
-        {/* Tab: Transferências Pendentes (Vendedor) */}
+        {/* Tab: Transferncias Pendentes (Vendedor) */}
         {activeTab === "pending" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferências Pendentes</h2>
-            <p className="text-slate-400 mb-4">Aguardando aprovação do gerente</p>
+            <h2 className="text-xl font-semibold text-white mb-4">Transferncias Pendentes</h2>
+            <p className="text-slate-400 mb-4">Aguardando aprovao do gerente</p>
             {pendingTransfers.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">Nenhuma transferência pendente.</p>
+              <p className="text-slate-400 text-center py-8">Nenhuma transferncia pendente.</p>
             ) : (
               <div className="space-y-3">
-                {pendingTransfers.map((transfer) => (
+                {paginatedPendingTransfers.map((transfer) => (
                   <div
                     key={transfer.id}
                     className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          {getStatusIcon(transfer.status)}
-                          <h3 className="font-semibold text-white">
-                            {transfer.card_title || `Card #${transfer.card_id}`}
-                          </h3>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(transfer.status)}
+                            <h3 className="font-semibold text-white">
+                              {transfer.card_title || `Card #${transfer.card_id}`}
+                            </h3>
+                          </div>
                           <span
-                            className={`text-xs px-2 py-1 rounded-full ${transferService.getStatusColor(
-                              transfer.status
-                            )}`}
+                            className={`text-xs px-2 py-1 rounded-full ${
+                              transfer.status === "pending_approval"
+                                ? "bg-yellow-500 text-slate-900"
+                                : transfer.status === "completed"
+                                ? "bg-green-500 text-white"
+                                : "bg-red-500 text-white"
+                            }`}
                           >
                             {transferService.formatStatus(transfer.status)}
                           </span>
@@ -385,7 +578,7 @@ const Transfers: React.FC = () => {
                           </p>
                           {transfer.notes && (
                             <p>
-                              <span className="font-medium">Observações:</span> {transfer.notes}
+                              <span className="font-medium">Observaes:</span> {transfer.notes}
                             </p>
                           )}
                           <p className="text-xs text-slate-500">
@@ -398,22 +591,30 @@ const Transfers: React.FC = () => {
                 ))}
               </div>
             )}
+            {renderPagination(
+              pendingPage,
+              pendingTotalPages,
+              pendingTotal,
+              pendingPageSize,
+              setPendingPage
+            )}
           </div>
         )}
 
-        {/* Tab: Aprovações Pendentes (Admin/Gerente) */}
+        {/* Tab: Aprovaes Pendentes (Admin/Gerente) */}
         {activeTab === "received" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Aprovações Pendentes</h2>
-            <p className="text-slate-400 mb-4">Transferências aguardando sua decisão</p>
+            <h2 className="text-xl font-semibold text-white mb-4">Aprovaes Pendentes</h2>
+            <p className="text-slate-400 mb-4">Transferncias aguardando sua deciso</p>
 
             {pendingApprovals.length === 0 ? (
-              <p className="text-slate-400 text-center py-12">Nenhuma aprovação pendente.</p>
+              <p className="text-slate-400 text-center py-12">Nenhuma aprovao pendente.</p>
             ) : (
               <div>
                 <h3 className="text-lg font-medium text-yellow-400 mb-3 flex items-center gap-2">
                   <Clock size={20} />
-                  {pendingApprovals.length} transferência{pendingApprovals.length > 1 ? 's' : ''} aguardando
+                  {pendingApprovalsTotal} {"transfer\u00EAncias"}
+                  {pendingApprovalsTotal > 1 ? "s" : ""} aguardando
                 </h3>
                 <div className="space-y-3">
                   {pendingApprovals.map((approval) => {
@@ -440,7 +641,7 @@ const Transfers: React.FC = () => {
                               </p>
                               {transfer.notes && (
                                 <p>
-                                  <span className="font-medium">Observações:</span> {transfer.notes}
+                                  <span className="font-medium">Observaes:</span> {transfer.notes}
                                 </p>
                               )}
                               <p className="text-xs text-slate-400">
@@ -459,7 +660,7 @@ const Transfers: React.FC = () => {
                           </button>
                           <button
                             onClick={() => {
-                              const notes = prompt("Motivo da rejeição (opcional):");
+                              const notes = prompt("Motivo da rejeio (opcional):");
                               handleReject(approval.id, notes || undefined);
                             }}
                             className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
@@ -474,41 +675,54 @@ const Transfers: React.FC = () => {
                 </div>
               </div>
             )}
+            {renderPagination(
+              pendingApprovalsPage,
+              pendingApprovalsTotalPages,
+              pendingApprovalsTotal,
+              pendingApprovalsPageSize,
+              setPendingApprovalsPage
+            )}
           </div>
         )}
 
-        {/* Tab: Transferências Finalizadas (Vendedor) */}
+        {/* Tab: Transferncias Finalizadas (Vendedor) */}
         {activeTab === "completed" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferências Finalizadas</h2>
-            <p className="text-slate-400 mb-4">Transferências aprovadas ou rejeitadas</p>
+            <h2 className="text-xl font-semibold text-white mb-4">Transferncias Finalizadas</h2>
+            <p className="text-slate-400 mb-4">Transferncias aprovadas ou rejeitadas</p>
             {completedTransfers.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">Nenhuma transferência finalizada ainda.</p>
+              <p className="text-slate-400 text-center py-8">Nenhuma transferncia finalizada ainda.</p>
             ) : (
               <div className="space-y-3">
-                {completedTransfers.map((transfer) => (
+                {paginatedCompletedTransfers.map((transfer) => (
                   <div
                     key={transfer.id}
                     className="bg-slate-900/50 border border-slate-700 rounded-lg p-4"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          {getStatusIcon(transfer.status)}
-                          <h4 className="font-semibold text-white">
-                            {transfer.card_title || `Card #${transfer.card_id}`}
-                          </h4>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(transfer.status)}
+                            <h4 className="font-semibold text-white">
+                              {transfer.card_title || `Card #${transfer.card_id}`}
+                            </h4>
+                          </div>
                           <span
-                            className={`text-xs px-2 py-1 rounded-full ${transferService.getStatusColor(
-                              transfer.status
-                            )}`}
+                            className={`text-xs px-2 py-1 rounded-full ${
+                              transfer.status === "completed"
+                                ? "bg-green-500 text-white"
+                                : transfer.status === "rejected"
+                                ? "bg-red-500 text-white"
+                                : "bg-yellow-500 text-slate-900"
+                            }`}
                           >
                             {transferService.formatStatus(transfer.status)}
                           </span>
                         </div>
                         <div className="text-sm text-slate-400 space-y-1">
                           <p>
-                            <span className="font-medium">De:</span> {transfer.from_user_name} →{" "}
+                            <span className="font-medium">De:</span> {transfer.from_user_name} {" "}
                             <span className="font-medium">Para:</span> {transfer.to_user_name}
                           </p>
                           <p>
@@ -517,7 +731,7 @@ const Transfers: React.FC = () => {
                           </p>
                           {transfer.notes && (
                             <p>
-                              <span className="font-medium">Observações:</span> {transfer.notes}
+                              <span className="font-medium">Observaes:</span> {transfer.notes}
                             </p>
                           )}
                           <p className="text-xs text-slate-500">
@@ -530,44 +744,57 @@ const Transfers: React.FC = () => {
                 ))}
               </div>
             )}
+            {renderPagination(
+              completedPage,
+              completedTotalPages,
+              completedTotal,
+              completedPageSize,
+              setCompletedPage
+            )}
           </div>
         )}
 
-        {/* Tab: Transferências Finalizadas (Admin/Gerente) */}
+        {/* Tab: Transferncias Finalizadas (Admin/Gerente) */}
         {activeTab === "all" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferências Finalizadas</h2>
-            <p className="text-slate-400 mb-4">Todas as transferências aprovadas ou rejeitadas do sistema</p>
+            <h2 className="text-xl font-semibold text-white mb-4">Transferncias Finalizadas</h2>
+            <p className="text-slate-400 mb-4">Todas as transferncias aprovadas ou rejeitadas do sistema</p>
             {allTransfers.length === 0 ? (
               <div className="text-center py-12">
                 <CheckCircle size={48} className="mx-auto text-slate-600 mb-3" />
-                <p className="text-slate-400">Nenhuma transferência finalizada ainda</p>
+                <p className="text-slate-400">Nenhuma transferncia finalizada ainda</p>
               </div>
             ) : (
               <div className="space-y-3">{
-              allTransfers.map((transfer) => (
+              paginatedAllTransfers.map((transfer) => (
                 <div
                   key={transfer.id}
                   className="bg-slate-900/50 border border-slate-700 rounded-lg p-4"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        {getStatusIcon(transfer.status)}
-                        <h4 className="font-semibold text-white">
-                          {transfer.card_title || `Card #${transfer.card_id}`}
-                        </h4>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(transfer.status)}
+                          <h4 className="font-semibold text-white">
+                            {transfer.card_title || `Card #${transfer.card_id}`}
+                          </h4>
+                        </div>
                         <span
-                          className={`text-xs px-2 py-1 rounded-full ${transferService.getStatusColor(
-                            transfer.status
-                          )}`}
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            transfer.status === "completed"
+                              ? "bg-green-500 text-white"
+                              : transfer.status === "rejected"
+                              ? "bg-red-500 text-white"
+                              : "bg-yellow-500 text-slate-900"
+                          }`}
                         >
                           {transferService.formatStatus(transfer.status)}
                         </span>
                       </div>
                       <div className="text-sm text-slate-400 space-y-1">
                         <p>
-                          <span className="font-medium">De:</span> {transfer.from_user_name || "Desconhecido"} →{" "}
+                          <span className="font-medium">De:</span> {transfer.from_user_name || "Desconhecido"} {" "}
                           <span className="font-medium">Para:</span> {transfer.to_user_name || "Desconhecido"}
                         </p>
                         <p>
@@ -576,7 +803,7 @@ const Transfers: React.FC = () => {
                         </p>
                         {transfer.notes && (
                           <p>
-                            <span className="font-medium">Observações:</span> {transfer.notes}
+                            <span className="font-medium">Observaes:</span> {transfer.notes}
                           </p>
                         )}
                         <p className="text-xs text-slate-500">
@@ -589,16 +816,23 @@ const Transfers: React.FC = () => {
               ))}
               </div>
             )}
+            {renderPagination(
+              allTransfersPage,
+              allTransfersTotalPages,
+              allTransfersTotal,
+              allTransfersPageSize,
+              setAllTransfersPage
+            )}
           </div>
         )}
       </div>
 
-      {/* Modal de nova transferência */}
+      {/* Modal de nova transferncia */}
       <TransferModal
         isOpen={showTransferModal}
         onClose={() => setShowTransferModal(false)}
         onSuccess={() => {
-          // Recarrega dados após criar transferência
+          // Recarrega dados aps criar transferncia
           loadInitialData();
           if (activeTab === "pending") {
             loadPendingTransfers();
