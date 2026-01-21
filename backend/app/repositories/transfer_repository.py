@@ -309,7 +309,7 @@ class TransferRepository:
     def create_approval(
         self,
         transfer_id: int,
-        approver_id: int,
+        approver_id: Optional[int],
         expires_at: datetime
     ) -> TransferApproval:
         """
@@ -317,7 +317,7 @@ class TransferRepository:
 
         Args:
             transfer_id: ID da transferência
-            approver_id: ID do aprovador
+            approver_id: ID do aprovador (None = qualquer gerente/admin pode aprovar)
             expires_at: Data de expiração
 
         Returns:
@@ -325,7 +325,7 @@ class TransferRepository:
         """
         approval = TransferApproval(
             transfer_id=transfer_id,
-            approver_id=approver_id,
+            approver_id=approver_id,  # Pode ser None
             status="pending",
             expires_at=expires_at
         )
@@ -365,49 +365,63 @@ class TransferRepository:
 
     def list_pending_approvals(
         self,
-        approver_id: int,
+        approver_id: Optional[int] = None,
         skip: int = 0,
         limit: int = 100
     ) -> List[TransferApproval]:
         """
-        Lista aprovações pendentes de um aprovador.
+        Lista aprovações pendentes.
+        Se approver_id for None, lista TODAS as aprovações pendentes (para gerentes/admins).
+        Se approver_id for especificado, lista apenas as aprovações daquele aprovador.
 
         Args:
-            approver_id: ID do aprovador
+            approver_id: ID do aprovador (None = todas as pendentes com approver_id NULL)
             skip: Paginação - offset
             limit: Paginação - limite
 
         Returns:
             Lista de TransferApproval
         """
-        return self.db.query(TransferApproval).filter(
-            and_(
-                TransferApproval.approver_id == approver_id,
-                TransferApproval.status == "pending"
-            )
-        ).order_by(TransferApproval.created_at.asc()).offset(skip).limit(limit).all()
+        query = self.db.query(TransferApproval).filter(
+            TransferApproval.status == "pending"
+        )
 
-    def count_pending_approvals(self, approver_id: int) -> int:
+        # Se approver_id for None, busca aprovações que qualquer gerente/admin pode aprovar
+        if approver_id is None:
+            query = query.filter(TransferApproval.approver_id.is_(None))
+        else:
+            query = query.filter(TransferApproval.approver_id == approver_id)
+
+        return query.order_by(TransferApproval.created_at.asc()).offset(skip).limit(limit).all()
+
+    def count_pending_approvals(self, approver_id: Optional[int] = None) -> int:
         """
-        Conta aprovações pendentes de um aprovador.
+        Conta aprovações pendentes.
+        Se approver_id for None, conta TODAS as aprovações pendentes (para gerentes/admins).
 
         Args:
-            approver_id: ID do aprovador
+            approver_id: ID do aprovador (None = todas as pendentes com approver_id NULL)
 
         Returns:
             Total de aprovações pendentes
         """
-        return self.db.query(TransferApproval).filter(
-            and_(
-                TransferApproval.approver_id == approver_id,
-                TransferApproval.status == "pending"
-            )
-        ).count()
+        query = self.db.query(TransferApproval).filter(
+            TransferApproval.status == "pending"
+        )
+
+        # Se approver_id for None, conta aprovações que qualquer gerente/admin pode aprovar
+        if approver_id is None:
+            query = query.filter(TransferApproval.approver_id.is_(None))
+        else:
+            query = query.filter(TransferApproval.approver_id == approver_id)
+
+        return query.count()
 
     def update_approval_decision(
         self,
         approval: TransferApproval,
         decision: str,
+        approver_id: int,
         comments: Optional[str] = None
     ) -> TransferApproval:
         """
@@ -416,12 +430,14 @@ class TransferRepository:
         Args:
             approval: Aprovação
             decision: Decisão (approved ou rejected)
+            approver_id: ID de quem está aprovando/rejeitando
             comments: Comentários
 
         Returns:
             TransferApproval atualizada
         """
         approval.status = decision
+        approval.approver_id = approver_id  # Preenche quem aprovou/rejeitou
         approval.decided_at = datetime.utcnow()
         if comments:
             approval.comments = comments

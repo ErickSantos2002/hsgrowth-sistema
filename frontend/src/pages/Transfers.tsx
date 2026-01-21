@@ -19,17 +19,17 @@ const Transfers: React.FC = () => {
   const { user } = useAuth();
   const isManagerOrAdmin = user?.role === "manager" || user?.role === "admin";
 
-  // Vendedor: "sent" | "received" | "history"
+  // Vendedor: "pending" | "completed"
   // Admin/Gerente: "received" | "all"
-  const [activeTab, setActiveTab] = useState<"sent" | "received" | "history" | "all">(
-    isManagerOrAdmin ? "received" : "sent"
+  const [activeTab, setActiveTab] = useState<"pending" | "completed" | "received" | "all">(
+    isManagerOrAdmin ? "received" : "pending"
   );
   const [loading, setLoading] = useState(true);
   const [showTransferModal, setShowTransferModal] = useState(false);
 
   // Dados de transferências
-  const [sentTransfers, setSentTransfers] = useState<CardTransfer[]>([]);
-  const [receivedTransfers, setReceivedTransfers] = useState<CardTransfer[]>([]);
+  const [pendingTransfers, setPendingTransfers] = useState<CardTransfer[]>([]);
+  const [completedTransfers, setCompletedTransfers] = useState<CardTransfer[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<TransferApproval[]>([]);
   const [statistics, setStatistics] = useState<TransferStatistics | null>(null);
 
@@ -37,8 +37,8 @@ const Transfers: React.FC = () => {
   const [allTransfers, setAllTransfers] = useState<CardTransfer[]>([]);
 
   // Paginação
-  const [sentPage, setSentPage] = useState(1);
-  const [receivedPage, setReceivedPage] = useState(1);
+  const [pendingPage, setPendingPage] = useState(1);
+  const [completedPage, setCompletedPage] = useState(1);
   const [allTransfersPage, setAllTransfersPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -48,16 +48,16 @@ const Transfers: React.FC = () => {
 
   useEffect(() => {
     // Recarrega dados quando a tab ativa muda
-    if (activeTab === "sent") {
-      loadSentTransfers();
+    if (activeTab === "pending") {
+      loadPendingTransfers();
+    } else if (activeTab === "completed") {
+      loadCompletedTransfers();
     } else if (activeTab === "received") {
-      loadReceivedTransfers();
-    } else if (activeTab === "history") {
-      loadHistory();
+      loadPendingApprovals();
     } else if (activeTab === "all") {
-      loadAllTransfers(); // Nova tab para admin/gerente
+      loadAllTransfers();
     }
-  }, [activeTab, sentPage, receivedPage, allTransfersPage]);
+  }, [activeTab, pendingPage, completedPage, allTransfersPage]);
 
   const loadInitialData = async () => {
     try {
@@ -67,8 +67,12 @@ const Transfers: React.FC = () => {
       ]);
       setStatistics(stats);
 
-      // Carrega dados da tab ativa
-      await loadSentTransfers();
+      // Carrega dados da tab ativa inicial
+      if (isManagerOrAdmin) {
+        await loadPendingApprovals();
+      } else {
+        await loadPendingTransfers();
+      }
     } catch (error) {
       console.error("Erro ao carregar dados de transferências:", error);
     } finally {
@@ -76,50 +80,41 @@ const Transfers: React.FC = () => {
     }
   };
 
-  const loadSentTransfers = async () => {
+  const loadPendingTransfers = async () => {
     try {
-      const response = await transferService.getSentTransfers(sentPage, 20);
-      setSentTransfers(response.transfers);
+      const response = await transferService.getSentTransfers(pendingPage, 20);
+      // Filtra apenas pendentes
+      const pending = response.transfers.filter(t => t.status === "pending_approval");
+      setPendingTransfers(pending);
       setTotalPages(response.total_pages);
     } catch (error) {
-      console.error("Erro ao carregar transferências enviadas:", error);
-      setSentTransfers([]);
+      console.error("Erro ao carregar transferências pendentes:", error);
+      setPendingTransfers([]);
     }
   };
 
-  const loadReceivedTransfers = async () => {
+  const loadCompletedTransfers = async () => {
     try {
-      const [receivedResponse, approvalsResponse] = await Promise.all([
-        transferService.getReceivedTransfers(receivedPage, 20),
-        transferService.getPendingApprovals(1, 50),
-      ]);
-      setReceivedTransfers(receivedResponse.transfers);
+      const response = await transferService.getSentTransfers(completedPage, 50);
+      // Filtra apenas completed e rejected
+      const completed = response.transfers.filter(
+        t => t.status === "completed" || t.status === "rejected"
+      );
+      setCompletedTransfers(completed);
+      setTotalPages(response.total_pages);
+    } catch (error) {
+      console.error("Erro ao carregar transferências finalizadas:", error);
+      setCompletedTransfers([]);
+    }
+  };
+
+  const loadPendingApprovals = async () => {
+    try {
+      const approvalsResponse = await transferService.getPendingApprovals(1, 50);
       setPendingApprovals(approvalsResponse.approvals);
-      setTotalPages(receivedResponse.total_pages);
     } catch (error) {
-      console.error("Erro ao carregar transferências recebidas:", error);
-      setReceivedTransfers([]);
+      console.error("Erro ao carregar aprovações pendentes:", error);
       setPendingApprovals([]);
-    }
-  };
-
-  const loadHistory = async () => {
-    try {
-      // Carrega tanto enviadas quanto recebidas para histórico completo
-      const [sentResponse, receivedResponse] = await Promise.all([
-        transferService.getSentTransfers(1, 50),
-        transferService.getReceivedTransfers(1, 50),
-      ]);
-
-      // Combina e ordena por data (mais recentes primeiro)
-      const allTransfers = [...sentResponse.transfers, ...receivedResponse.transfers];
-      allTransfers.sort((a, b) => {
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-
-      setSentTransfers(allTransfers);
-    } catch (error) {
-      console.error("Erro ao carregar histórico:", error);
     }
   };
 
@@ -143,7 +138,7 @@ const Transfers: React.FC = () => {
       });
 
       // Recarrega dados
-      await loadReceivedTransfers();
+      await loadPendingApprovals();
       await loadInitialData();
 
       alert("Transferência aprovada com sucesso!");
@@ -161,7 +156,7 @@ const Transfers: React.FC = () => {
       });
 
       // Recarrega dados
-      await loadReceivedTransfers();
+      await loadPendingApprovals();
       await loadInitialData();
 
       alert("Transferência rejeitada com sucesso!");
@@ -274,49 +269,35 @@ const Transfers: React.FC = () => {
         {!isManagerOrAdmin && (
           <>
             <button
-              onClick={() => setActiveTab("sent")}
+              onClick={() => setActiveTab("pending")}
               className={`px-4 py-3 font-medium transition-colors relative ${
-                activeTab === "sent"
+                activeTab === "pending"
                   ? "text-blue-400 border-b-2 border-blue-400"
                   : "text-slate-400 hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2">
-                <Send size={18} />
-                <span>Minhas Solicitações</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("received")}
-              className={`px-4 py-3 font-medium transition-colors relative ${
-                activeTab === "received"
-                  ? "text-blue-400 border-b-2 border-blue-400"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Inbox size={18} />
-                <span>Recebidas</span>
-                {pendingApprovals.length > 0 && (
+                <Clock size={18} />
+                <span>Transferências Pendentes</span>
+                {pendingTransfers.length > 0 && (
                   <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full">
-                    {pendingApprovals.length}
+                    {pendingTransfers.length}
                   </span>
                 )}
               </div>
             </button>
 
             <button
-              onClick={() => setActiveTab("history")}
+              onClick={() => setActiveTab("completed")}
               className={`px-4 py-3 font-medium transition-colors relative ${
-                activeTab === "history"
+                activeTab === "completed"
                   ? "text-blue-400 border-b-2 border-blue-400"
                   : "text-slate-400 hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2">
-                <History size={18} />
-                <span>Histórico</span>
+                <CheckCircle size={18} />
+                <span>Transferências Finalizadas</span>
               </div>
             </button>
           </>
@@ -363,14 +344,16 @@ const Transfers: React.FC = () => {
 
       {/* Conteúdo das Tabs */}
       <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-6">
-        {activeTab === "sent" && (
+        {/* Tab: Transferências Pendentes (Vendedor) */}
+        {activeTab === "pending" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferências Enviadas</h2>
-            {sentTransfers.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">Nenhuma transferência enviada ainda.</p>
+            <h2 className="text-xl font-semibold text-white mb-4">Transferências Pendentes</h2>
+            <p className="text-slate-400 mb-4">Aguardando aprovação do gerente</p>
+            {pendingTransfers.length === 0 ? (
+              <p className="text-slate-400 text-center py-8">Nenhuma transferência pendente.</p>
             ) : (
               <div className="space-y-3">
-                {sentTransfers.map((transfer) => (
+                {pendingTransfers.map((transfer) => (
                   <div
                     key={transfer.id}
                     className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors"
@@ -416,16 +399,19 @@ const Transfers: React.FC = () => {
           </div>
         )}
 
+        {/* Tab: Aprovações Pendentes (Admin/Gerente) */}
         {activeTab === "received" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferências Recebidas</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">Aprovações Pendentes</h2>
+            <p className="text-slate-400 mb-4">Transferências aguardando sua decisão</p>
 
-            {/* Aprovações Pendentes */}
-            {pendingApprovals.length > 0 && (
-              <div className="mb-6">
+            {pendingApprovals.length === 0 ? (
+              <p className="text-slate-400 text-center py-12">Nenhuma aprovação pendente.</p>
+            ) : (
+              <div>
                 <h3 className="text-lg font-medium text-yellow-400 mb-3 flex items-center gap-2">
                   <Clock size={20} />
-                  Aguardando sua aprovação ({pendingApprovals.length})
+                  {pendingApprovals.length} transferência{pendingApprovals.length > 1 ? 's' : ''} aguardando
                 </h3>
                 <div className="space-y-3">
                   {pendingApprovals.map((approval) => {
@@ -486,69 +472,19 @@ const Transfers: React.FC = () => {
                 </div>
               </div>
             )}
-
-            {/* Todas as transferências recebidas */}
-            {receivedTransfers.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">Nenhuma transferência recebida ainda.</p>
-            ) : (
-              <div>
-                <h3 className="text-lg font-medium text-white mb-3">Todas as transferências recebidas</h3>
-                <div className="space-y-3">
-                  {receivedTransfers.map((transfer) => (
-                    <div
-                      key={transfer.id}
-                      className="bg-slate-900/50 border border-slate-700 rounded-lg p-4"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            {getStatusIcon(transfer.status)}
-                            <h4 className="font-semibold text-white">
-                              {transfer.card_title || `Card #${transfer.card_id}`}
-                            </h4>
-                            <span
-                              className={`text-xs px-2 py-1 rounded-full ${transferService.getStatusColor(
-                                transfer.status
-                              )}`}
-                            >
-                              {transferService.formatStatus(transfer.status)}
-                            </span>
-                          </div>
-                          <div className="text-sm text-slate-400 space-y-1">
-                            <p>
-                              <span className="font-medium">De:</span> {transfer.from_user_name}
-                            </p>
-                            <p>
-                              <span className="font-medium">Motivo:</span>{" "}
-                              {transferService.formatReason(transfer.reason)}
-                            </p>
-                            {transfer.notes && (
-                              <p>
-                                <span className="font-medium">Observações:</span> {transfer.notes}
-                              </p>
-                            )}
-                            <p className="text-xs text-slate-500">
-                              Criada em {formatDate(transfer.created_at)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
-        {activeTab === "history" && (
+        {/* Tab: Transferências Finalizadas (Vendedor) */}
+        {activeTab === "completed" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Histórico Completo</h2>
-            {sentTransfers.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">Nenhuma transferência no histórico.</p>
+            <h2 className="text-xl font-semibold text-white mb-4">Transferências Finalizadas</h2>
+            <p className="text-slate-400 mb-4">Transferências aprovadas ou rejeitadas</p>
+            {completedTransfers.length === 0 ? (
+              <p className="text-slate-400 text-center py-8">Nenhuma transferência finalizada ainda.</p>
             ) : (
               <div className="space-y-3">
-                {sentTransfers.map((transfer) => (
+                {completedTransfers.map((transfer) => (
                   <div
                     key={transfer.id}
                     className="bg-slate-900/50 border border-slate-700 rounded-lg p-4"
@@ -676,8 +612,10 @@ const Transfers: React.FC = () => {
         onSuccess={() => {
           // Recarrega dados após criar transferência
           loadInitialData();
-          if (activeTab === "sent") {
-            loadSentTransfers();
+          if (activeTab === "pending") {
+            loadPendingTransfers();
+          } else if (activeTab === "completed") {
+            loadCompletedTransfers();
           }
         }}
       />

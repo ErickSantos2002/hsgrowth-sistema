@@ -49,39 +49,6 @@ class TransferService:
         self.board_repository = BoardRepository(db)
         self.approval_required = approval_required
 
-    def _get_approvers(self) -> List[User]:
-        """
-        Busca TODOS os gerentes e admins ativos que podem aprovar transferências.
-
-        Returns:
-            Lista de usuários aprovadores (gerentes + admins)
-        """
-        from app.models.role import Role
-
-        approvers = []
-
-        # Busca TODOS os gerentes ativos
-        manager_role = self.db.query(Role).filter(Role.name == "manager").first()
-        if manager_role:
-            managers = self.db.query(User).filter(
-                User.role_id == manager_role.id,
-                User.is_active == True,
-                User.is_deleted == False
-            ).all()  # .all() ao invés de .first()
-            approvers.extend(managers)
-
-        # Busca TODOS os admins ativos
-        admin_role = self.db.query(Role).filter(Role.name == "admin").first()
-        if admin_role:
-            admins = self.db.query(User).filter(
-                User.role_id == admin_role.id,
-                User.is_active == True,
-                User.is_deleted == False
-            ).all()  # .all() ao invés de .first()
-            approvers.extend(admins)
-
-        return approvers
-
     # ========== TRANSFERÊNCIAS ==========
 
     def create_transfer(
@@ -147,15 +114,11 @@ class TransferService:
             status=transfer_status
         )
 
-        # Se requer aprovação, cria registros de aprovação para TODOS os gerentes/admins
+        # Se requer aprovação, cria 1 aprovação com approver_id = None
+        # Qualquer gerente/admin pode aprovar, e approver_id será preenchido quando aprovar
         if self.approval_required:
-            approvers = self._get_approvers()
-
-            if approvers:
-                expires_at = datetime.utcnow() + timedelta(hours=APPROVAL_EXPIRATION_HOURS)
-                # Cria uma aprovação para cada gerente/admin
-                for approver in approvers:
-                    self.repository.create_approval(transfer.id, approver.id, expires_at)
+            expires_at = datetime.utcnow() + timedelta(hours=APPROVAL_EXPIRATION_HOURS)
+            self.repository.create_approval(transfer.id, approver_id=None, expires_at=expires_at)
 
         # Se não requer aprovação, executa transferência
         if not self.approval_required:
@@ -183,11 +146,6 @@ class TransferService:
         failed = 0
         transfers = []
         errors = []
-
-        # Busca TODOS os aprovadores uma vez só (se requer aprovação)
-        approvers = []
-        if self.approval_required:
-            approvers = self._get_approvers()
 
         for card_id in batch_data.card_ids:
             try:
@@ -224,11 +182,10 @@ class TransferService:
                     batch_id=batch_id
                 )
 
-                # Se requer aprovação, cria aprovações para TODOS os gerentes/admins
-                if self.approval_required and approvers:
+                # Se requer aprovação, cria 1 aprovação com approver_id = None
+                if self.approval_required:
                     expires_at = datetime.utcnow() + timedelta(hours=APPROVAL_EXPIRATION_HOURS)
-                    for approver in approvers:
-                        self.repository.create_approval(transfer.id, approver.id, expires_at)
+                    self.repository.create_approval(transfer.id, approver_id=None, expires_at=expires_at)
 
                 # Executa se não requer aprovação
                 if not self.approval_required:
@@ -337,27 +294,21 @@ class TransferService:
         page_size: int = 50
     ) -> TransferApprovalListResponse:
         """
-        Lista aprovações pendentes de um aprovador.
+        Lista aprovações pendentes para gerentes/admins.
+        Busca aprovações com approver_id = None (qualquer gerente/admin pode aprovar).
 
         Args:
-            approver_id: ID do aprovador
+            approver_id: ID do usuário (não usado, mantido por compatibilidade)
             page: Número da página
             page_size: Tamanho da página
 
         Returns:
             TransferApprovalListResponse
         """
-        # Verifica se o aprovador existe
-        user = self.db.query(User).filter(User.id == approver_id).first()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Aprovador não encontrado"
-            )
-
         skip = (page - 1) * page_size
-        approvals = self.repository.list_pending_approvals(approver_id, skip, page_size)
-        total = self.repository.count_pending_approvals(approver_id)
+        # Passa None para buscar aprovações sem aprovador atribuído
+        approvals = self.repository.list_pending_approvals(approver_id=None, skip=skip, limit=page_size)
+        total = self.repository.count_pending_approvals(approver_id=None)
         total_pages = (total + page_size - 1) // page_size
 
         approvals_response = [self._to_approval_response(a) for a in approvals]
@@ -378,11 +329,12 @@ class TransferService:
     ) -> TransferApprovalResponse:
         """
         Decide sobre uma aprovação.
+        Qualquer gerente ou admin pode aprovar/rejeitar.
 
         Args:
             approval_id: ID da aprovação
             decision_data: Decisão
-            current_user: Usuário autenticado
+            current_user: Usuário autenticado (deve ser gerente ou admin)
 
         Returns:
             TransferApprovalResponse
@@ -394,11 +346,11 @@ class TransferService:
                 detail="Aprovação não encontrada"
             )
 
-        # Verifica se é o aprovador
-        if approval.approver_id != current_user.id:
+        # Verifica se o usuário é gerente ou admin
+        if current_user.role.name not in ["admin", "manager"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Apenas o aprovador pode decidir"
+                detail="Apenas gerentes e administradores podem aprovar transferências"
             )
 
         # Verifica se ainda está pendente
@@ -415,10 +367,11 @@ class TransferService:
                 detail="Aprovação expirada"
             )
 
-        # Atualiza aprovação
+        # Atualiza aprovação (preenche approver_id com quem está decidindo)
         approval = self.repository.update_approval_decision(
             approval,
             decision_data.decision,
+            current_user.id,  # Preenche quem aprovou/rejeitou
             decision_data.comments
         )
 
