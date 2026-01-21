@@ -225,35 +225,35 @@ const Transfers: React.FC = () => {
       {/* Estatísticas */}
       {statistics && (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+          <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-xl border border-blue-500/20 rounded-xl p-6 hover:border-blue-500/40 transition-all">
             <div className="flex items-center gap-2 mb-1">
               <ArrowRightLeft size={16} className="text-blue-400" />
               <span className="text-xs text-slate-400">Total</span>
             </div>
             <div className="text-2xl font-bold text-white">{statistics.total_transfers}</div>
           </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+          <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 backdrop-blur-xl border border-yellow-500/20 rounded-xl p-6 hover:border-yellow-500/40 transition-all">
             <div className="flex items-center gap-2 mb-1">
               <Clock size={16} className="text-yellow-400" />
               <span className="text-xs text-slate-400">Pendentes</span>
             </div>
             <div className="text-2xl font-bold text-white">{statistics.pending_approvals}</div>
           </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+          <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-xl border border-green-500/20 rounded-xl p-6 hover:border-green-500/40 transition-all">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle size={16} className="text-green-400" />
               <span className="text-xs text-slate-400">Hoje</span>
             </div>
             <div className="text-2xl font-bold text-white">{statistics.completed_today}</div>
           </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+          <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 backdrop-blur-xl border border-emerald-500/20 rounded-xl p-6 hover:border-emerald-500/40 transition-all">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle size={16} className="text-emerald-400" />
               <span className="text-xs text-slate-400">Esta Semana</span>
             </div>
             <div className="text-2xl font-bold text-white">{statistics.completed_this_week}</div>
           </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+          <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 backdrop-blur-xl border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-500/40 transition-all">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle size={16} className="text-cyan-400" />
               <span className="text-xs text-slate-400">Este Mês</span>
