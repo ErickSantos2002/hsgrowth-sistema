@@ -411,12 +411,22 @@ export interface TransferApprovalListResponse {
 
 // Estatísticas de Transfers
 export interface TransferStatistics {
-  total_sent: number;
-  total_received: number;
+  total_transfers: number;
   pending_approvals: number;
-  approved_count: number;
-  rejected_count: number;
-  expired_count: number;
+  completed_today: number;
+  completed_this_week: number;
+  completed_this_month: number;
+  by_reason: Record<string, number>;
+  top_receivers: Array<{
+    user_id: number;
+    user_name: string;
+    count: number;
+  }>;
+  top_senders: Array<{
+    user_id: number;
+    user_name: string;
+    count: number;
+  }>;
 }
 
 // ==================== NOTIFICATIONS ====================

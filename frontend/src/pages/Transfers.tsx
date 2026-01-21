@@ -101,9 +101,9 @@ const Transfers: React.FC = () => {
 
       // Combina e ordena por data (mais recentes primeiro)
       const allTransfers = [...sentResponse.transfers, ...receivedResponse.transfers];
-      allTransfers.sort((a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      allTransfers.sort((a, b) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
 
       setSentTransfers(allTransfers);
     } catch (error) {
@@ -204,20 +204,13 @@ const Transfers: React.FC = () => {
 
       {/* Estatísticas */}
       {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
-              <Send size={16} className="text-blue-400" />
-              <span className="text-xs text-slate-400">Enviadas</span>
+              <ArrowRightLeft size={16} className="text-blue-400" />
+              <span className="text-xs text-slate-400">Total</span>
             </div>
-            <div className="text-2xl font-bold text-white">{statistics.total_sent}</div>
-          </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Inbox size={16} className="text-purple-400" />
-              <span className="text-xs text-slate-400">Recebidas</span>
-            </div>
-            <div className="text-2xl font-bold text-white">{statistics.total_received}</div>
+            <div className="text-2xl font-bold text-white">{statistics.total_transfers}</div>
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
@@ -229,23 +222,23 @@ const Transfers: React.FC = () => {
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle size={16} className="text-green-400" />
-              <span className="text-xs text-slate-400">Aprovadas</span>
+              <span className="text-xs text-slate-400">Hoje</span>
             </div>
-            <div className="text-2xl font-bold text-white">{statistics.approved_count}</div>
+            <div className="text-2xl font-bold text-white">{statistics.completed_today}</div>
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
-              <XCircle size={16} className="text-red-400" />
-              <span className="text-xs text-slate-400">Rejeitadas</span>
+              <CheckCircle size={16} className="text-emerald-400" />
+              <span className="text-xs text-slate-400">Esta Semana</span>
             </div>
-            <div className="text-2xl font-bold text-white">{statistics.rejected_count}</div>
+            <div className="text-2xl font-bold text-white">{statistics.completed_this_week}</div>
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
-              <AlertCircle size={16} className="text-gray-400" />
-              <span className="text-xs text-slate-400">Expiradas</span>
+              <CheckCircle size={16} className="text-cyan-400" />
+              <span className="text-xs text-slate-400">Este Mês</span>
             </div>
-            <div className="text-2xl font-bold text-white">{statistics.expired_count}</div>
+            <div className="text-2xl font-bold text-white">{statistics.completed_this_month}</div>
           </div>
         </div>
       )}

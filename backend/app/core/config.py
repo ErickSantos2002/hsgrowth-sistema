@@ -65,7 +65,7 @@ class Settings(BaseSettings):
 
     # Transfers
     TRANSFER_LIMIT_PER_MONTH: int = 10
-    TRANSFER_APPROVAL_REQUIRED: bool = False
+    TRANSFER_APPROVAL_REQUIRED: bool = True
     TRANSFER_APPROVAL_EXPIRATION_HOURS: int = 72
     TRANSFER_MAX_BATCH_SIZE: int = 50
 

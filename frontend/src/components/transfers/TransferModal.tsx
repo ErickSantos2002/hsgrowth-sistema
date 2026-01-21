@@ -372,7 +372,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
         {!selectedBoardId && (
           <div className="bg-blue-900/20 border border-blue-500/50 rounded-lg p-4">
             <p className="text-blue-300 text-sm text-center">
-              👆 Selecione um board acima para visualizar os cards disponíveis
+              Selecione um board acima para visualizar os cards disponíveis
             </p>
           </div>
         )}
