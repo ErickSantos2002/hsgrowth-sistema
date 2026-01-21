@@ -136,7 +136,7 @@ const Transfers: React.FC = () => {
   const handleApprove = async (approvalId: number) => {
     try {
       await transferService.decideApproval(approvalId, {
-        decision: "approved",
+        decision: "approve",
       });
 
       // Recarrega dados
@@ -153,7 +153,7 @@ const Transfers: React.FC = () => {
   const handleReject = async (approvalId: number, notes?: string) => {
     try {
       await transferService.decideApproval(approvalId, {
-        decision: "rejected",
+        decision: "reject",
         notes,
       });
 
