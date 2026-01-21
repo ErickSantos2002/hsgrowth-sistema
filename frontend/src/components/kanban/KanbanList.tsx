@@ -1,5 +1,5 @@
-import React, { useLayoutEffect, useRef, useState } from "react";
-import { Plus, MoreVertical, Edit, Archive, Trash2 } from "lucide-react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Plus, MoreVertical, Edit, Archive, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { List, Card } from "../../types";
@@ -26,6 +26,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [listMaxHeight, setListMaxHeight] = useState<number | undefined>(undefined);
+  const [cardLimit, setCardLimit] = useState(3);
   const cardsContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Tornar a lista droppable
@@ -35,6 +36,16 @@ const KanbanList: React.FC<KanbanListProps> = ({
 
   // IDs dos cards para o SortableContext
   const cardIds = cards.map((card) => card.id);
+
+  useEffect(() => {
+    const updateCardLimit = () => {
+      setCardLimit(window.innerWidth < 640 ? 2 : 3);
+    };
+
+    updateCardLimit();
+    window.addEventListener("resize", updateCardLimit);
+    return () => window.removeEventListener("resize", updateCardLimit);
+  }, []);
 
   useLayoutEffect(() => {
     if (!cardsContainerRef.current) return;
@@ -46,8 +57,15 @@ const KanbanList: React.FC<KanbanListProps> = ({
 
     const cardHeight = Math.ceil(firstCard.getBoundingClientRect().height);
     const gap = 12;
-    setListMaxHeight(cardHeight * 3 + gap * 2);
-  }, [cards.length, list.id]);
+    setListMaxHeight(cardHeight * cardLimit + gap * (cardLimit - 1));
+  }, [cards.length, list.id, cardLimit]);
+
+  const scrollCards = (direction: "up" | "down") => {
+    if (!cardsContainerRef.current) return;
+    const delta = direction === "up" ? -200 : 200;
+    cardsContainerRef.current.scrollBy({ top: delta, behavior: "smooth" });
+  };
+
 
   const listSurfaceStyle = list.color
     ? {
@@ -58,7 +76,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
 
   return (
     <div
-      className="flex-shrink-0 w-80 self-start bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 flex flex-col"
+      className="flex-shrink-0 w-80 sm:w-80 self-start overflow-visible bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 flex flex-col"
       style={listSurfaceStyle}
     >
       {/* Header da lista */}
@@ -140,14 +158,19 @@ const KanbanList: React.FC<KanbanListProps> = ({
 
       {/* Cards da lista - com scroll vertical */}
       <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-        <div
-          ref={(node) => {
-            setNodeRef(node);
-            cardsContainerRef.current = node;
-          }}
-          className="space-y-3 overflow-y-auto pr-1 scrollbar-muted"
-          style={listMaxHeight ? { maxHeight: `${listMaxHeight}px` } : undefined}
-        >
+        <div className="relative">
+          <div
+            ref={(node) => {
+              setNodeRef(node);
+              cardsContainerRef.current = node;
+            }}
+            className="space-y-3 overflow-y-auto pr-10 sm:pr-1 scrollbar-hidden overscroll-contain touch-pan-y"
+            style={
+              listMaxHeight
+                ? { maxHeight: `${listMaxHeight}px`, WebkitOverflowScrolling: "touch" }
+                : { WebkitOverflowScrolling: "touch" }
+            }
+          >
           {cards.length > 0 ? (
             cards.map((card) => (
               <KanbanCard
@@ -159,6 +182,29 @@ const KanbanList: React.FC<KanbanListProps> = ({
           ) : (
             <div className="text-center text-slate-400 text-sm py-8">
               Nenhum card nesta lista
+            </div>
+          )}
+
+          </div>
+
+          {cards.length > cardLimit && (
+            <div className="sm:hidden absolute right-0 top-2 bottom-2 w-7 flex flex-col justify-between pointer-events-none">
+              <button
+                type="button"
+                onClick={() => scrollCards("up")}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-200 hover:bg-slate-700/80 transition-colors pointer-events-auto"
+                aria-label="Subir lista"
+              >
+                <ChevronUp size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollCards("down")}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-200 hover:bg-slate-700/80 transition-colors pointer-events-auto"
+                aria-label="Descer lista"
+              >
+                <ChevronDown size={16} />
+              </button>
             </div>
           )}
         </div>

@@ -96,18 +96,6 @@ const KanbanBoard: React.FC = () => {
     }
   }, [boardId]);
 
-  useEffect(() => {
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-    };
-  }, []);
-
   const handleBoardMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!boardScrollRef.current) return;
     if (event.button !== 0) return;
@@ -648,12 +636,12 @@ const KanbanBoard: React.FC = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="h-[calc(100vh-72px)] min-h-0 overflow-hidden flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="min-h-[calc(100vh-72px)] overflow-y-auto overflow-x-hidden flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
         {/* Header fixo */}
       <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50 px-6 py-4 relative z-50">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
           {/* Lado esquerdo: Voltar + Nome do Board */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 w-full sm:w-auto">
             <button
               onClick={handleBack}
               className="p-2 hover:bg-slate-800/50 rounded-lg transition-colors"
@@ -686,7 +674,7 @@ const KanbanBoard: React.FC = () => {
           </div>
 
           {/* Lado direito: Ações */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end mt-1 sm:mt-0">
             {/* Barra de busca (expansível) */}
             {showSearchBar ? (
               <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-3 py-2 animate-fadeIn">
@@ -741,11 +729,12 @@ const KanbanBoard: React.FC = () => {
             {/* Botão Nova Lista */}
             <button
               onClick={handleCreateList}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
+              className="flex items-center justify-center gap-2 w-10 h-10 sm:w-auto sm:h-auto px-0 sm:px-4 py-0 sm:py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
               title="Adicionar nova lista"
+              aria-label="Adicionar nova lista"
             >
               <Plus size={20} />
-              Nova Lista
+              <span className="hidden sm:inline">Nova Lista</span>
             </button>
 
             {/* Menu do board */}
@@ -813,12 +802,12 @@ const KanbanBoard: React.FC = () => {
       {/* Painel de Filtros (expansível) */}
       {showFilters && (
         <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50 px-6 py-3 relative z-40">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <span className="text-sm font-medium text-slate-300">Filtros:</span>
 
             {/* Filtro por lista */}
             <select
-              className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-auto px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Todas as listas</option>
               {lists.map((list) => (
@@ -830,7 +819,7 @@ const KanbanBoard: React.FC = () => {
 
             {/* Filtro por valor */}
             <select
-              className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-auto px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Qualquer valor</option>
               <option value="0-1000">R$ 0 - R$ 1.000</option>
@@ -841,7 +830,7 @@ const KanbanBoard: React.FC = () => {
 
             {/* Filtro por data de vencimento */}
             <select
-              className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-auto px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Qualquer data</option>
               <option value="overdue">Atrasados</option>
@@ -853,7 +842,7 @@ const KanbanBoard: React.FC = () => {
             {/* Limpar filtros */}
             <button
               onClick={() => setShowFilters(false)}
-              className="ml-auto px-3 py-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+              className="sm:ml-auto px-3 py-1.5 text-sm text-slate-400 hover:text-white transition-colors"
             >
               Fechar
             </button>
