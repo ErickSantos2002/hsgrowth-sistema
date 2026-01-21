@@ -66,6 +66,19 @@ class TransferService {
   }
 
   /**
+   * Lista TODAS as transferências do sistema (Admin/Gerente apenas)
+   * @param page Número da página (default: 1)
+   * @param pageSize Tamanho da página (default: 50)
+   * @returns Lista paginada de todas as transferências
+   */
+  async getAllTransfers(page: number = 1, pageSize: number = 50): Promise<CardTransferListResponse> {
+    const response = await api.get<CardTransferListResponse>("/api/v1/transfers/all", {
+      params: { page, page_size: pageSize },
+    });
+    return response.data;
+  }
+
+  /**
    * Lista aprovações pendentes do usuário logado
    * Retorna transferências que estão aguardando aprovação
    * @param page Número da página (default: 1)

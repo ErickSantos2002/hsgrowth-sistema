@@ -49,6 +49,39 @@ class TransferService:
         self.board_repository = BoardRepository(db)
         self.approval_required = approval_required
 
+    def _get_approvers(self) -> List[User]:
+        """
+        Busca TODOS os gerentes e admins ativos que podem aprovar transferências.
+
+        Returns:
+            Lista de usuários aprovadores (gerentes + admins)
+        """
+        from app.models.role import Role
+
+        approvers = []
+
+        # Busca TODOS os gerentes ativos
+        manager_role = self.db.query(Role).filter(Role.name == "manager").first()
+        if manager_role:
+            managers = self.db.query(User).filter(
+                User.role_id == manager_role.id,
+                User.is_active == True,
+                User.is_deleted == False
+            ).all()  # .all() ao invés de .first()
+            approvers.extend(managers)
+
+        # Busca TODOS os admins ativos
+        admin_role = self.db.query(Role).filter(Role.name == "admin").first()
+        if admin_role:
+            admins = self.db.query(User).filter(
+                User.role_id == admin_role.id,
+                User.is_active == True,
+                User.is_deleted == False
+            ).all()  # .all() ao invés de .first()
+            approvers.extend(admins)
+
+        return approvers
+
     # ========== TRANSFERÊNCIAS ==========
 
     def create_transfer(
@@ -114,20 +147,15 @@ class TransferService:
             status=transfer_status
         )
 
-        # Se requer aprovação, cria registro de aprovação
+        # Se requer aprovação, cria registros de aprovação para TODOS os gerentes/admins
         if self.approval_required:
-            # Busca gerente (poderia vir de configuração ou do usuário)
-            # Por simplicidade, vamos usar o primeiro admin do sistema
-            from app.models.role import Role
-            admin_role = self.db.query(Role).filter(Role.name == "admin").first()
-            if admin_role:
-                admin_user = self.db.query(User).filter(
-                    User.role_id == admin_role.id
-                ).first()
+            approvers = self._get_approvers()
 
-                if admin_user:
-                    expires_at = datetime.utcnow() + timedelta(hours=APPROVAL_EXPIRATION_HOURS)
-                    self.repository.create_approval(transfer.id, admin_user.id, expires_at)
+            if approvers:
+                expires_at = datetime.utcnow() + timedelta(hours=APPROVAL_EXPIRATION_HOURS)
+                # Cria uma aprovação para cada gerente/admin
+                for approver in approvers:
+                    self.repository.create_approval(transfer.id, approver.id, expires_at)
 
         # Se não requer aprovação, executa transferência
         if not self.approval_required:
@@ -155,6 +183,11 @@ class TransferService:
         failed = 0
         transfers = []
         errors = []
+
+        # Busca TODOS os aprovadores uma vez só (se requer aprovação)
+        approvers = []
+        if self.approval_required:
+            approvers = self._get_approvers()
 
         for card_id in batch_data.card_ids:
             try:
@@ -190,6 +223,12 @@ class TransferService:
                     is_batch=True,
                     batch_id=batch_id
                 )
+
+                # Se requer aprovação, cria aprovações para TODOS os gerentes/admins
+                if self.approval_required and approvers:
+                    expires_at = datetime.utcnow() + timedelta(hours=APPROVAL_EXPIRATION_HOURS)
+                    for approver in approvers:
+                        self.repository.create_approval(transfer.id, approver.id, expires_at)
 
                 # Executa se não requer aprovação
                 if not self.approval_required:
@@ -245,6 +284,38 @@ class TransferService:
             user_id, skip, page_size, status, is_sender
         )
         total = self.repository.count_by_user(user_id, status, is_sender)
+        total_pages = (total + page_size - 1) // page_size
+
+        transfers_response = [self._to_response(t) for t in transfers]
+
+        return CardTransferListResponse(
+            transfers=transfers_response,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages
+        )
+
+    def list_all_transfers(
+        self,
+        page: int = 1,
+        page_size: int = 50,
+        status: Optional[str] = None
+    ) -> CardTransferListResponse:
+        """
+        Lista TODAS as transferências do sistema (para admin/gerente).
+
+        Args:
+            page: Número da página
+            page_size: Tamanho da página
+            status: Filtrar por status
+
+        Returns:
+            CardTransferListResponse
+        """
+        skip = (page - 1) * page_size
+        transfers = self.repository.list_all(skip, page_size, status)
+        total = self.repository.count_all(status)
         total_pages = (total + page_size - 1) // page_size
 
         transfers_response = [self._to_response(t) for t in transfers]

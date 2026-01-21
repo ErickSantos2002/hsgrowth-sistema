@@ -3,7 +3,8 @@ Endpoints de Transferências.
 Rotas para transferências de cards entre usuários.
 """
 from typing import Any, Optional
-from fastapi import APIRouter, Depends, Query, Path
+from fastapi import APIRouter, Depends, Query, Path, HTTPException
+from fastapi import status as http_status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user
@@ -82,6 +83,38 @@ async def create_batch_transfer(
     """
     service = TransferService(db, approval_required=APPROVAL_REQUIRED)
     return service.create_batch_transfer(batch_data, current_user)
+
+
+@router.get("/all", response_model=CardTransferListResponse, summary="Listar todas as transferências (Admin/Gerente)")
+async def list_all_transfers(
+    page: int = Query(1, ge=1, description="Número da página"),
+    page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
+    status: Optional[str] = Query(None, description="Filtrar por status"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Lista TODAS as transferências do sistema (apenas Admin/Gerente).
+
+    - **page**: Número da página (padrão: 1)
+    - **page_size**: Tamanho da página (padrão: 50, máx: 100)
+    - **status**: Filtrar por status - completed, pending_approval, rejected (opcional)
+
+    Requer role: admin ou manager
+    """
+    # Verifica se é admin ou manager
+    if current_user.role.name not in ["admin", "manager"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores e gerentes podem listar todas as transferências"
+        )
+
+    service = TransferService(db)
+    return service.list_all_transfers(
+        page=page,
+        page_size=page_size,
+        status=status
+    )
 
 
 @router.get("/sent", response_model=CardTransferListResponse, summary="Listar transferências enviadas")

@@ -17,7 +17,13 @@ import TransferModal from "../components/transfers/TransferModal";
 
 const Transfers: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"sent" | "received" | "history">("sent");
+  const isManagerOrAdmin = user?.role === "manager" || user?.role === "admin";
+
+  // Vendedor: "sent" | "received" | "history"
+  // Admin/Gerente: "received" | "all"
+  const [activeTab, setActiveTab] = useState<"sent" | "received" | "history" | "all">(
+    isManagerOrAdmin ? "received" : "sent"
+  );
   const [loading, setLoading] = useState(true);
   const [showTransferModal, setShowTransferModal] = useState(false);
 
@@ -27,9 +33,13 @@ const Transfers: React.FC = () => {
   const [pendingApprovals, setPendingApprovals] = useState<TransferApproval[]>([]);
   const [statistics, setStatistics] = useState<TransferStatistics | null>(null);
 
+  // Estados para admin/gerente
+  const [allTransfers, setAllTransfers] = useState<CardTransfer[]>([]);
+
   // Paginação
   const [sentPage, setSentPage] = useState(1);
   const [receivedPage, setReceivedPage] = useState(1);
+  const [allTransfersPage, setAllTransfersPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
@@ -44,8 +54,10 @@ const Transfers: React.FC = () => {
       loadReceivedTransfers();
     } else if (activeTab === "history") {
       loadHistory();
+    } else if (activeTab === "all") {
+      loadAllTransfers(); // Nova tab para admin/gerente
     }
-  }, [activeTab, sentPage, receivedPage]);
+  }, [activeTab, sentPage, receivedPage, allTransfersPage]);
 
   const loadInitialData = async () => {
     try {
@@ -111,10 +123,23 @@ const Transfers: React.FC = () => {
     }
   };
 
+  const loadAllTransfers = async () => {
+    try {
+      setLoading(true);
+      const response = await transferService.getAllTransfers(allTransfersPage, 50);
+      setAllTransfers(response.transfers);
+      setTotalPages(response.total_pages);
+    } catch (error) {
+      console.error("Erro ao carregar todas as transferências:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleApprove = async (approvalId: number) => {
     try {
       await transferService.decideApproval(approvalId, {
-        decision: "approve",
+        decision: "approved",
       });
 
       // Recarrega dados
@@ -131,7 +156,7 @@ const Transfers: React.FC = () => {
   const handleReject = async (approvalId: number, notes?: string) => {
     try {
       await transferService.decideApproval(approvalId, {
-        decision: "reject",
+        decision: "rejected",
         notes,
       });
 
@@ -245,50 +270,95 @@ const Transfers: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b border-slate-700">
-        <button
-          onClick={() => setActiveTab("sent")}
-          className={`px-4 py-2 font-medium transition-colors border-b-2 ${
-            activeTab === "sent"
-              ? "text-emerald-400 border-emerald-400"
-              : "text-slate-400 border-transparent hover:text-white"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Send size={16} />
-            Minhas Solicitações
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab("received")}
-          className={`px-4 py-2 font-medium transition-colors border-b-2 ${
-            activeTab === "received"
-              ? "text-emerald-400 border-emerald-400"
-              : "text-slate-400 border-transparent hover:text-white"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Inbox size={16} />
-            Recebidas
-            {pendingApprovals.length > 0 && (
-              <span className="bg-yellow-500 text-black text-xs px-2 py-0.5 rounded-full font-bold">
-                {pendingApprovals.length}
-              </span>
-            )}
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab("history")}
-          className={`px-4 py-2 font-medium transition-colors border-b-2 ${
-            activeTab === "history"
-              ? "text-emerald-400 border-emerald-400"
-              : "text-slate-400 border-transparent hover:text-white"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <History size={16} />
-            Histórico
-          </div>
-        </button>
+        {/* Tabs para VENDEDORES */}
+        {!isManagerOrAdmin && (
+          <>
+            <button
+              onClick={() => setActiveTab("sent")}
+              className={`px-4 py-3 font-medium transition-colors relative ${
+                activeTab === "sent"
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Send size={18} />
+                <span>Minhas Solicitações</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("received")}
+              className={`px-4 py-3 font-medium transition-colors relative ${
+                activeTab === "received"
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Inbox size={18} />
+                <span>Recebidas</span>
+                {pendingApprovals.length > 0 && (
+                  <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full">
+                    {pendingApprovals.length}
+                  </span>
+                )}
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("history")}
+              className={`px-4 py-3 font-medium transition-colors relative ${
+                activeTab === "history"
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <History size={18} />
+                <span>Histórico</span>
+              </div>
+            </button>
+          </>
+        )}
+
+        {/* Tabs para ADMIN/GERENTE */}
+        {isManagerOrAdmin && (
+          <>
+            <button
+              onClick={() => setActiveTab("received")}
+              className={`px-4 py-3 font-medium transition-colors relative ${
+                activeTab === "received"
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Inbox size={18} />
+                <span>Aprovações Pendentes</span>
+                {pendingApprovals.length > 0 && (
+                  <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full">
+                    {pendingApprovals.length}
+                  </span>
+                )}
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`px-4 py-3 font-medium transition-colors relative ${
+                activeTab === "all"
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <History size={18} />
+                <span>Todas as Transferências</span>
+              </div>
+            </button>
+          </>
+        )}
       </div>
 
       {/* Conteúdo das Tabs */}
@@ -521,6 +591,79 @@ const Transfers: React.FC = () => {
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Todas as Transferências (Admin/Gerente) */}
+        {activeTab === "all" && (
+          <div className="space-y-4">
+            {allTransfers.length === 0 ? (
+              <div className="text-center py-12">
+                <History size={48} className="mx-auto text-slate-600 mb-3" />
+                <p className="text-slate-400">Nenhuma transferência encontrada no sistema</p>
+              </div>
+            ) : (
+              allTransfers.map((transfer) => (
+                <div
+                  key={transfer.id}
+                  className="bg-slate-800/50 border border-slate-700 rounded-xl p-5"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white mb-1">
+                        {transfer.card_title || `Card #${transfer.card_id}`}
+                      </h3>
+                      <div className="flex items-center gap-3 text-sm text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <Send size={14} />
+                          De: {transfer.from_user_name || "Desconhecido"}
+                        </span>
+                        <span>→</span>
+                        <span className="flex items-center gap-1">
+                          <Inbox size={14} />
+                          Para: {transfer.to_user_name || "Desconhecido"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(transfer.status)}
+                      <span
+                        className={`px-3 py-1 text-xs font-medium rounded-full ${
+                          transfer.status === "completed"
+                            ? "bg-green-500/20 text-green-400"
+                            : transfer.status === "rejected"
+                            ? "bg-red-500/20 text-red-400"
+                            : "bg-yellow-500/20 text-yellow-400"
+                        }`}
+                      >
+                        {transferService.formatStatus(transfer.status)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-slate-400">Motivo:</span>
+                      <span className="ml-2 text-white">
+                        {transferService.formatReason(transfer.reason)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Data:</span>
+                      <span className="ml-2 text-white">
+                        {formatDate(transfer.created_at)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {transfer.notes && (
+                    <div className="mt-3 pt-3 border-t border-slate-700">
+                      <p className="text-sm text-slate-300">{transfer.notes}</p>
+                    </div>
+                  )}
+                </div>
+              ))
             )}
           </div>
         )}

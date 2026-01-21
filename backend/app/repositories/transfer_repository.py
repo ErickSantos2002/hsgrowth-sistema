@@ -133,6 +133,50 @@ class TransferRepository:
 
         return query.count()
 
+    def list_all(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None
+    ) -> List[CardTransfer]:
+        """
+        Lista TODAS as transferências do sistema (para admin/gerente).
+
+        Args:
+            skip: Paginação - offset
+            limit: Paginação - limite
+            status: Filtrar por status
+
+        Returns:
+            Lista de CardTransfer
+        """
+        query = self.db.query(CardTransfer)
+
+        if status:
+            query = query.filter(CardTransfer.status == status)
+
+        return query.order_by(CardTransfer.created_at.desc()).offset(skip).limit(limit).all()
+
+    def count_all(
+        self,
+        status: Optional[str] = None
+    ) -> int:
+        """
+        Conta TODAS as transferências do sistema (para admin/gerente).
+
+        Args:
+            status: Filtrar por status
+
+        Returns:
+            Total de transferências
+        """
+        query = self.db.query(CardTransfer)
+
+        if status:
+            query = query.filter(CardTransfer.status == status)
+
+        return query.count()
+
     def list_by_card(self, card_id: int) -> List[CardTransfer]:
         """
         Lista transferências de um card.
