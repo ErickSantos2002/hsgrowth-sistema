@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Trophy, Medal, Award, Star, TrendingUp, Crown, Target, Zap, Users as UsersIcon } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Trophy, Medal, Award, Star, TrendingUp, Crown, Target, Zap, Users as UsersIcon, ChevronDown } from "lucide-react";
 import gamificationService, { GamificationSummary, Badge, UserBadge, Ranking } from "../services/gamificationService";
 import { useAuth } from "../hooks/useAuth";
 import userService from "../services/userService";
@@ -14,6 +14,13 @@ const Gamification: React.FC = () => {
   const isManagerOrAdmin = user?.role === "manager" || user?.role === "admin";
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | "team" | null>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const teamIconUrl = "https://img.icons8.com/?size=100&id=9542&format=png&color=ffffff";
+  const userIconUrl = "https://img.icons8.com/?size=100&id=98957&format=png&color=000000";
+  const userIconStyle: React.CSSProperties = {
+    filter: "invert(39%) sepia(72%) saturate(2249%) hue-rotate(260deg) brightness(92%) contrast(90%)",
+  };
 
   // Dados
   const [summary, setSummary] = useState<GamificationSummary | null>(null);
@@ -39,6 +46,18 @@ const Gamification: React.FC = () => {
       loadRankings();
     }
   }, [activeTab, rankingPeriod]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!userMenuRef.current) return;
+      if (!userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Carrega dados quando o usuário selecionado muda (para gerente/admin)
   useEffect(() => {
@@ -154,9 +173,9 @@ const Gamification: React.FC = () => {
   };
 
   const getRankMedal = (position: number) => {
-    if (position === 1) return { icon: <Crown size={24} />, color: "text-yellow-400", bg: "bg-yellow-500/20" };
-    if (position === 2) return { icon: <Medal size={24} />, color: "text-slate-300", bg: "bg-slate-500/20" };
-    if (position === 3) return { icon: <Award size={24} />, color: "text-orange-400", bg: "bg-orange-500/20" };
+    if (position === 1) return { icon: <Crown className="h-5 w-5 sm:h-6 sm:w-6" />, color: "text-yellow-400", bg: "bg-yellow-500/20" };
+    if (position === 2) return { icon: <Medal className="h-5 w-5 sm:h-6 sm:w-6" />, color: "text-slate-300", bg: "bg-slate-500/20" };
+    if (position === 3) return { icon: <Award className="h-5 w-5 sm:h-6 sm:w-6" />, color: "text-orange-400", bg: "bg-orange-500/20" };
     return null;
   };
 
@@ -169,6 +188,11 @@ const Gamification: React.FC = () => {
     };
     return map[period] || period;
   };
+
+  const selectedUser =
+    typeof selectedUserId === "number" ? availableUsers.find((u) => u.id === selectedUserId) : null;
+  const selectedLabel = selectedUser ? selectedUser.name : "Visão Geral da Equipe";
+  const selectedIcon = selectedUser ? userIconUrl : teamIconUrl;
 
   if (loading) {
     return (
@@ -202,23 +226,59 @@ const Gamification: React.FC = () => {
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Visualizar dados de:
           </label>
-          <select
-            value={selectedUserId || ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSelectedUserId(value === "team" ? "team" : Number(value));
-            }}
-            className="w-full md:w-auto px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="team">📊 Visão Geral da Equipe</option>
-            <optgroup label="Vendedores">
-              {availableUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  👤 {u.name}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+          <div ref={userMenuRef} className="relative w-full md:w-80">
+            <button
+              type="button"
+              onClick={() => setIsUserMenuOpen((open) => !open)}
+              className="w-full md:w-auto flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <span className="flex items-center gap-2">
+                <img
+                  src={selectedIcon}
+                  alt=""
+                  className="h-5 w-5"
+                  style={selectedUser ? userIconStyle : undefined}
+                />
+                <span className="truncate">{selectedLabel}</span>
+              </span>
+              <ChevronDown
+                size={16}
+                className={`text-slate-400 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            {isUserMenuOpen && (
+              <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedUserId("team");
+                    setIsUserMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${selectedUserId === "team" || selectedUserId === null ? "bg-slate-800/70" : ""}`}
+                >
+                  <img src={teamIconUrl} alt="" className="h-5 w-5" />
+                  <span>Visão Geral da Equipe</span>
+                </button>
+                <div className="px-4 py-2 text-xs uppercase tracking-wide text-slate-500">
+                  Vendedores
+                </div>
+                {availableUsers.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedUserId(u.id);
+                      setIsUserMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${selectedUserId === u.id ? "bg-slate-800/70" : ""}`}
+                  >
+                    <img src={userIconUrl} alt="" className="h-5 w-5" style={userIconStyle} />
+                    <span className="truncate">{u.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -481,12 +541,12 @@ const Gamification: React.FC = () => {
       {activeTab === "rankings" && (
         <div className="space-y-6">
           {/* Filtro de período */}
-          <div className="flex gap-2">
+          <div className="flex justify-center sm:justify-start gap-2">
             {(["weekly", "monthly", "quarterly", "annual"] as const).map((period) => (
               <button
                 key={period}
                 onClick={() => setRankingPeriod(period)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base rounded-lg font-medium transition-colors ${
                   rankingPeriod === period
                     ? "bg-emerald-600 text-white"
                     : "bg-slate-800 text-slate-300 hover:bg-slate-700"
@@ -512,13 +572,13 @@ const Gamification: React.FC = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-800/50 border-b border-slate-700">
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold text-slate-300 uppercase sm:px-6 sm:py-3 sm:text-xs">
                         Posição
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold text-slate-300 uppercase sm:px-6 sm:py-3 sm:text-xs">
                         Usuário
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-slate-300 uppercase">
+                      <th className="px-3 py-2 text-right text-[11px] font-semibold text-slate-300 uppercase sm:px-6 sm:py-3 sm:text-xs">
                         Pontos
                       </th>
                     </tr>
@@ -535,26 +595,26 @@ const Gamification: React.FC = () => {
                             isCurrentUser ? "bg-emerald-500/10" : "hover:bg-slate-700/30"
                           }`}
                         >
-                          <td className="px-6 py-4">
+                          <td className="px-3 py-2 sm:px-6 sm:py-4">
                             <div className="flex items-center gap-2">
                               {medal ? (
-                                <div className={`${medal.bg} ${medal.color} p-2 rounded-lg`}>
+                                <div className={`${medal.bg} ${medal.color} p-1.5 sm:p-2 rounded-lg`}>
                                   {medal.icon}
                                 </div>
                               ) : (
-                                <span className="text-2xl font-bold text-slate-400 w-10 text-center">
+                                <span className="text-lg sm:text-2xl font-bold text-slate-400 w-8 sm:w-10 text-center">
                                   {ranking.rank_position}
                                 </span>
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold">
+                          <td className="px-3 py-2 sm:px-6 sm:py-4">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-xs sm:text-sm text-white font-semibold">
                                 {getInitials(ranking.user_name)}
                               </div>
                               <div>
-                                <p className="font-medium text-white flex items-center gap-2">
+                                <p className="text-sm sm:text-base font-medium text-white flex items-center gap-2">
                                   {ranking.user_name}
                                   {isCurrentUser && (
                                     <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full">
@@ -565,8 +625,8 @@ const Gamification: React.FC = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-right">
-                            <span className="text-xl font-bold text-white">{ranking.total_points}</span>
+                          <td className="px-3 py-2 text-right sm:px-6 sm:py-4">
+                            <span className="text-lg sm:text-xl font-bold text-white">{ranking.total_points}</span>
                             <span className="text-slate-400 ml-1">pts</span>
                           </td>
                         </tr>
