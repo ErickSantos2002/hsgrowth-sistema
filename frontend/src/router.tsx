@@ -14,6 +14,7 @@ import Gamification from './pages/Gamification';
 import Transfers from './pages/Transfers';
 import Reports from './pages/Reports';
 import Automations from './pages/Automations';
+import AutomationEditor from './pages/AutomationEditor';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import Users from './pages/Users';
@@ -22,6 +23,24 @@ import NotFound from './pages/NotFound';
 const AppRoutes: React.FC = () => (
   <Routes>
     <Route path="/login" element={<Login />} />
+
+    {/* Editor de automações (fullscreen, sem MainLayout) */}
+    <Route
+      path="/automations/new"
+      element={
+        <ProtectedRoute>
+          <AutomationEditor />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/automations/:id/edit"
+      element={
+        <ProtectedRoute>
+          <AutomationEditor />
+        </ProtectedRoute>
+      }
+    />
 
     {/* Rotas protegidas com MainLayout */}
     <Route
