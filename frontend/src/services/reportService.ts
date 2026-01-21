@@ -57,64 +57,67 @@ export interface ExportReportRequest {
 /**
  * Interfaces de Response
  */
-export interface SalesReportItem {
-  label: string;
-  new_cards: number;
-  won_cards: number;
-  lost_cards: number;
-  won_value: number;
+export interface SalesReportDetail {
+  user_name?: string;
+  period?: string;
+  cards_created: number;
+  cards_won: number;
+  cards_lost: number;
+  value_won: number;
+  conversion_rate: number;
+}
+
+export interface SalesReportSummary {
+  total_cards_created: number;
+  total_cards_won: number;
+  total_cards_lost: number;
+  total_value_won: number;
   conversion_rate: number;
 }
 
 export interface SalesReportResponse {
-  period: string;
-  start_date: string;
-  end_date: string;
-  total_new_cards: number;
-  total_won_cards: number;
-  total_lost_cards: number;
-  total_won_value: number;
-  overall_conversion_rate: number;
-  items: SalesReportItem[];
+  summary: SalesReportSummary;
+  details: SalesReportDetail[];
 }
 
 export interface ConversionFunnelStage {
-  list_name: string;
-  list_id: number;
-  cards_count: number;
+  stage_name: string;
+  card_count: number;
   total_value: number;
   conversion_rate: number;
-  avg_time_in_stage_days: number | null;
+  avg_time_in_stage: number | null;
 }
 
-export interface ConversionReportResponse {
-  board_name: string;
-  period: string;
-  start_date: string;
-  end_date: string;
+export interface ConversionReportSummary {
   total_cards: number;
   total_value: number;
   overall_conversion_rate: number;
+}
+
+export interface ConversionReportResponse {
+  summary: ConversionReportSummary;
   stages: ConversionFunnelStage[];
 }
 
-export interface TransferReportItem {
+export interface TransferReportDetail {
   from_user_name: string;
   to_user_name: string;
-  transfers_count: number;
+  transfer_count: number;
   cards_won_count: number;
-  total_won_value: number;
-  avg_days_to_win: number | null;
+  total_value_won: number;
+  avg_days_to_won: number | null;
+}
+
+export interface TransferReportSummary {
+  total_transfers: number;
+  total_cards_won_after_transfer: number;
+  total_value_won_after_transfer: number;
+  avg_days_to_won: number;
 }
 
 export interface TransferReportResponse {
-  period: string;
-  start_date: string;
-  end_date: string;
-  total_transfers: number;
-  total_cards_won: number;
-  total_won_value: number;
-  items: TransferReportItem[];
+  summary: TransferReportSummary;
+  details: TransferReportDetail[];
 }
 
 export interface ExportReportResponse {

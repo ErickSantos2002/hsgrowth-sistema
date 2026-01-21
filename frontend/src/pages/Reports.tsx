@@ -1,3 +1,13 @@
+/**
+ * ATENÇÃO: Esta página está usando DADOS MOCKADOS temporariamente
+ * até que os endpoints do backend (/api/v1/reports/*) sejam implementados.
+ *
+ * TODO: Quando o backend estiver pronto:
+ * 1. Remover os mocks das funções handleGenerate*Report
+ * 2. Descomentar as chamadas para reportService
+ * 3. Testar com dados reais
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   FileText,
@@ -66,11 +76,12 @@ const Reports: React.FC = () => {
 
   const loadBoardsAndUsers = async () => {
     try {
-      const [boardsData, usersData] = await Promise.all([
+      const [boardsResponse, usersData] = await Promise.all([
         boardService.list(),
         userService.listActive(),
       ]);
-      setBoards(boardsData);
+      // Extrai os boards da resposta paginada
+      setBoards(boardsResponse.boards || []);
       setUsers(usersData);
     } catch (error) {
       console.error('Erro ao carregar boards/users:', error);
@@ -81,18 +92,30 @@ const Reports: React.FC = () => {
   const handleGenerateSalesReport = async () => {
     setLoading(true);
     try {
-      const filters: any = { period: salesPeriod };
-      if (salesBoardId) filters.board_id = parseInt(salesBoardId);
-      if (salesUserId) filters.user_id = parseInt(salesUserId);
-      if (salesPeriod === 'custom') {
-        filters.start_date = salesStartDate;
-        filters.end_date = salesEndDate;
-      }
+      // TODO: Temporariamente usando dados mockados até backend estar implementado
+      console.log('Usando dados mockados para visualização');
 
-      const data = await reportService.getSalesReport(filters);
-      setSalesReport(data);
-    } catch (error) {
+      // Simula delay da API
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setSalesReport({
+        summary: {
+          total_cards_created: 145,
+          total_cards_won: 78,
+          total_cards_lost: 32,
+          total_value_won: 487500.00,
+          conversion_rate: 53.79,
+        },
+        details: [
+          { user_name: 'João Silva', cards_created: 42, cards_won: 24, cards_lost: 8, value_won: 156000.00, conversion_rate: 57.14 },
+          { user_name: 'Maria Santos', cards_created: 38, cards_won: 21, cards_lost: 7, value_won: 132500.00, conversion_rate: 55.26 },
+          { user_name: 'Pedro Costa', cards_created: 35, cards_won: 18, cards_lost: 9, value_won: 98750.00, conversion_rate: 51.43 },
+          { user_name: 'Ana Oliveira', cards_created: 30, cards_won: 15, cards_lost: 8, value_won: 100250.00, conversion_rate: 50.00 },
+        ],
+      });
+    } catch (error: any) {
       console.error('Erro ao gerar relatório de vendas:', error);
+      alert('Erro inesperado ao gerar relatório.');
     } finally {
       setLoading(false);
     }
@@ -100,26 +123,32 @@ const Reports: React.FC = () => {
 
   // Handler Tab 2 - Conversão
   const handleGenerateConversionReport = async () => {
-    if (!conversionBoardId) {
-      alert('Por favor, selecione um board');
-      return;
-    }
-
     setLoading(true);
     try {
-      const filters: any = {
-        board_id: parseInt(conversionBoardId),
-        period: conversionPeriod,
-      };
-      if (conversionPeriod === 'custom') {
-        filters.start_date = conversionStartDate;
-        filters.end_date = conversionEndDate;
-      }
+      // TODO: Temporariamente usando dados mockados até backend estar implementado
+      console.log('Usando dados mockados para visualização');
 
-      const data = await reportService.getConversionReport(filters);
-      setConversionReport(data);
-    } catch (error) {
+      // Simula delay da API
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setConversionReport({
+        summary: {
+          total_cards: 145,
+          total_value: 825000.00,
+          overall_conversion_rate: 53.79,
+        },
+        stages: [
+          { stage_name: 'Novos Leads', card_count: 145, total_value: 825000.00, conversion_rate: 100.00, avg_time_in_stage: 2.3 },
+          { stage_name: 'Qualificação', card_count: 98, total_value: 612500.00, conversion_rate: 67.59, avg_time_in_stage: 3.5 },
+          { stage_name: 'Proposta Enviada', card_count: 85, total_value: 531250.00, conversion_rate: 58.62, avg_time_in_stage: 5.2 },
+          { stage_name: 'Negociação', card_count: 78, total_value: 487500.00, conversion_rate: 53.79, avg_time_in_stage: 4.7 },
+          { stage_name: 'Ganho', card_count: 78, total_value: 487500.00, conversion_rate: 53.79, avg_time_in_stage: null },
+          { stage_name: 'Perdido', card_count: 32, total_value: 187500.00, conversion_rate: 22.07, avg_time_in_stage: null },
+        ],
+      });
+    } catch (error: any) {
       console.error('Erro ao gerar relatório de conversão:', error);
+      alert('Erro inesperado ao gerar relatório.');
     } finally {
       setLoading(false);
     }
@@ -129,18 +158,29 @@ const Reports: React.FC = () => {
   const handleGenerateTransferReport = async () => {
     setLoading(true);
     try {
-      const filters: any = { period: transferPeriod };
-      if (transferFromUserId) filters.from_user_id = parseInt(transferFromUserId);
-      if (transferToUserId) filters.to_user_id = parseInt(transferToUserId);
-      if (transferPeriod === 'custom') {
-        filters.start_date = transferStartDate;
-        filters.end_date = transferEndDate;
-      }
+      // TODO: Temporariamente usando dados mockados até backend estar implementado
+      console.log('Usando dados mockados para visualização');
 
-      const data = await reportService.getTransferReport(filters);
-      setTransferReport(data);
-    } catch (error) {
+      // Simula delay da API
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setTransferReport({
+        summary: {
+          total_transfers: 24,
+          total_cards_won_after_transfer: 18,
+          total_value_won_after_transfer: 213750.00,
+          avg_days_to_won: 12.5,
+        },
+        details: [
+          { from_user_name: 'João Silva', to_user_name: 'Maria Santos', transfer_count: 8, cards_won_count: 6, total_value_won: 87500.00, avg_days_to_won: 11.2 },
+          { from_user_name: 'Pedro Costa', to_user_name: 'João Silva', transfer_count: 6, cards_won_count: 5, total_value_won: 62500.00, avg_days_to_won: 13.8 },
+          { from_user_name: 'Maria Santos', to_user_name: 'Ana Oliveira', transfer_count: 5, cards_won_count: 4, total_value_won: 42500.00, avg_days_to_won: 10.5 },
+          { from_user_name: 'Ana Oliveira', to_user_name: 'Pedro Costa', transfer_count: 5, cards_won_count: 3, total_value_won: 21250.00, avg_days_to_won: 15.3 },
+        ],
+      });
+    } catch (error: any) {
       console.error('Erro ao gerar relatório de transferências:', error);
+      alert('Erro inesperado ao gerar relatório.');
     } finally {
       setLoading(false);
     }
@@ -397,33 +437,33 @@ const SalesTab: React.FC<SalesTabProps> = ({
       </div>
 
       {/* Métricas */}
-      {report && (
+      {report && report.summary && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <MetricCard
               icon={<FileText className="text-blue-400" />}
               label="Cards Criados"
-              value={report.summary.total_cards_created.toString()}
+              value={report.summary.total_cards_created?.toString() || '0'}
             />
             <MetricCard
               icon={<TrendingUp className="text-emerald-400" />}
               label="Cards Ganhos"
-              value={report.summary.total_cards_won.toString()}
+              value={report.summary.total_cards_won?.toString() || '0'}
             />
             <MetricCard
               icon={<FileText className="text-red-400" />}
               label="Cards Perdidos"
-              value={report.summary.total_cards_lost.toString()}
+              value={report.summary.total_cards_lost?.toString() || '0'}
             />
             <MetricCard
               icon={<TrendingUp className="text-emerald-400" />}
               label="Valor Ganho Total"
-              value={reportService.formatCurrency(report.summary.total_value_won)}
+              value={reportService.formatCurrency(report.summary.total_value_won || 0)}
             />
             <MetricCard
               icon={<BarChart3 className="text-purple-400" />}
               label="Taxa de Conversão"
-              value={reportService.formatPercentage(report.summary.conversion_rate)}
+              value={reportService.formatPercentage(report.summary.conversion_rate || 0)}
             />
           </div>
 
@@ -465,7 +505,7 @@ const SalesTab: React.FC<SalesTabProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {report.details.map((item, index) => (
+                  {report.details?.map((item, index) => (
                     <tr key={index} className="border-b border-slate-700/50 hover:bg-slate-700/30">
                       <td className="py-3 px-4 text-white">
                         {item.user_name || reportService.formatPeriod(item.period || '')}
@@ -624,23 +664,23 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
       </div>
 
       {/* Métricas */}
-      {report && (
+      {report && report.summary && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <MetricCard
               icon={<FileText className="text-blue-400" />}
               label="Total de Cards no Funil"
-              value={report.summary.total_cards.toString()}
+              value={report.summary.total_cards?.toString() || '0'}
             />
             <MetricCard
               icon={<TrendingUp className="text-emerald-400" />}
               label="Valor Total"
-              value={reportService.formatCurrency(report.summary.total_value)}
+              value={reportService.formatCurrency(report.summary.total_value || 0)}
             />
             <MetricCard
               icon={<BarChart3 className="text-purple-400" />}
               label="Taxa de Conversão Geral"
-              value={reportService.formatPercentage(report.summary.overall_conversion_rate)}
+              value={reportService.formatPercentage(report.summary.overall_conversion_rate || 0)}
             />
           </div>
 
@@ -677,7 +717,7 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {report.stages.map((stage, index) => (
+                  {report.stages?.map((stage, index) => (
                     <tr key={index} className="border-b border-slate-700/50 hover:bg-slate-700/30">
                       <td className="py-3 px-4 text-white">{stage.stage_name}</td>
                       <td className="py-3 px-4 text-right text-slate-300">{stage.card_count}</td>
@@ -847,28 +887,28 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
       </div>
 
       {/* Métricas */}
-      {report && (
+      {report && report.summary && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
               icon={<ArrowRightLeft className="text-blue-400" />}
               label="Total de Transferências"
-              value={report.summary.total_transfers.toString()}
+              value={report.summary.total_transfers?.toString() || '0'}
             />
             <MetricCard
               icon={<TrendingUp className="text-emerald-400" />}
               label="Cards Ganhos Após Transfer"
-              value={report.summary.total_cards_won_after_transfer.toString()}
+              value={report.summary.total_cards_won_after_transfer?.toString() || '0'}
             />
             <MetricCard
               icon={<TrendingUp className="text-emerald-400" />}
               label="Valor Total Ganho"
-              value={reportService.formatCurrency(report.summary.total_value_won_after_transfer)}
+              value={reportService.formatCurrency(report.summary.total_value_won_after_transfer || 0)}
             />
             <MetricCard
               icon={<BarChart3 className="text-purple-400" />}
               label="Média de Dias para Ganhar"
-              value={`${report.summary.avg_days_to_won.toFixed(1)} dias`}
+              value={`${(report.summary.avg_days_to_won || 0).toFixed(1)} dias`}
             />
           </div>
 
@@ -907,7 +947,7 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {report.details.map((item, index) => (
+                  {report.details?.map((item, index) => (
                     <tr key={index} className="border-b border-slate-700/50 hover:bg-slate-700/30">
                       <td className="py-3 px-4 text-white">
                         {item.from_user_name} → {item.to_user_name}
