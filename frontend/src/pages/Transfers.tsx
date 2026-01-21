@@ -404,10 +404,10 @@ const Transfers: React.FC = () => {
         </div>
         <button
           onClick={() => setShowTransferModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
         >
           <Plus size={20} />
-          Nova Transferncia
+          <span className="hidden sm:inline">Nova Transferncia</span>
         </button>
       </div>
 
