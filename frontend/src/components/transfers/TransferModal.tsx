@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { ArrowRightLeft, AlertCircle } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { ArrowRightLeft, AlertCircle, ChevronDown } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import transferService from "../../services/transferService";
 import userService from "../../services/userService";
@@ -305,29 +305,43 @@ const TransferModal: React.FC<TransferModalProps> = ({
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Modo de Transferência
             </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="transferMode"
-                  value="single"
-                  checked={transferMode === "single"}
-                  onChange={(e) => setTransferMode(e.target.value as "single")}
-                  className="text-emerald-500 focus:ring-emerald-500"
+            <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Modo de Transferência">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={transferMode === "single"}
+                onClick={() => setTransferMode("single")}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                  transferMode === "single"
+                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
+                    : "border-slate-700 text-slate-200 hover:border-slate-500"
+                }`}
+              >
+                <span
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    transferMode === "single" ? "bg-emerald-400" : "bg-slate-600"
+                  }`}
                 />
-                <span className="text-white">Card Único</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="transferMode"
-                  value="batch"
-                  checked={transferMode === "batch"}
-                  onChange={(e) => setTransferMode(e.target.value as "batch")}
-                  className="text-emerald-500 focus:ring-emerald-500"
+                Card Único
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={transferMode === "batch"}
+                onClick={() => setTransferMode("batch")}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                  transferMode === "batch"
+                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
+                    : "border-slate-700 text-slate-200 hover:border-slate-500"
+                }`}
+              >
+                <span
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    transferMode === "batch" ? "bg-emerald-400" : "bg-slate-600"
+                  }`}
                 />
-                <span className="text-white">Transferência em Lote</span>
-              </label>
+                Transferência em Lote
+              </button>
             </div>
           </div>
         )}
@@ -337,24 +351,24 @@ const TransferModal: React.FC<TransferModalProps> = ({
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Board *
           </label>
-          <select
-            value={selectedBoardId}
-            onChange={(e) => {
-              setSelectedBoardId(Number(e.target.value));
+          <SelectMenu
+            value={String(selectedBoardId)}
+            options={[
+              { value: "0", label: "Selecione um board" },
+              ...boards.map((board) => ({
+                value: String(board.id),
+                label: board.name,
+              })),
+            ]}
+            onChange={(value) => {
+              const boardId = Number(value);
+              setSelectedBoardId(boardId);
               // Limpa seleções de cards quando muda o board
               setFormData({ ...formData, card_id: 0 });
               setBatchFormData({ ...batchFormData, card_ids: [] });
             }}
-            className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             disabled={loading}
-          >
-            <option value={0}>Selecione um board</option>
-            {boards.map((board) => (
-              <option key={board.id} value={board.id}>
-                {board.name}
-              </option>
-            ))}
-          </select>
+          />
           {!selectedBoardId && (
             <p className="text-slate-400 text-xs mt-1">
               Selecione um board para ver os cards disponíveis
@@ -492,30 +506,29 @@ const TransferModal: React.FC<TransferModalProps> = ({
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Transferir para *
           </label>
-          <select
-            value={
+          <SelectMenu
+            value={String(
               transferMode === "single"
                 ? formData.to_user_id
                 : batchFormData.to_user_id
-            }
-            onChange={(e) => {
-              const userId = Number(e.target.value);
+            )}
+            options={[
+              { value: "0", label: "Selecione um usuário" },
+              ...users.map((user) => ({
+                value: String(user.id),
+                label: `${user.name} (${user.email})`,
+              })),
+            ]}
+            onChange={(value) => {
+              const userId = Number(value);
               if (transferMode === "single") {
                 setFormData({ ...formData, to_user_id: userId });
               } else {
                 setBatchFormData({ ...batchFormData, to_user_id: userId });
               }
             }}
-            className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             disabled={loading}
-          >
-            <option value={0}>Selecione um usuário</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name} ({user.email})
-              </option>
-            ))}
-          </select>
+          />
           {errors.to_user_id && (
             <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
               <AlertCircle size={14} />
@@ -529,29 +542,22 @@ const TransferModal: React.FC<TransferModalProps> = ({
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Motivo da Transferência *
           </label>
-          <select
-            value={
-              transferMode === "single"
-                ? formData.reason
-                : batchFormData.reason
-            }
-            onChange={(e) => {
-              const reason = e.target.value as TransferReason;
+          <SelectMenu
+            value={transferMode === "single" ? formData.reason : batchFormData.reason}
+            options={reasonOptions.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+            onChange={(value) => {
+              const reason = value as TransferReason;
               if (transferMode === "single") {
                 setFormData({ ...formData, reason });
               } else {
                 setBatchFormData({ ...batchFormData, reason });
               }
             }}
-            className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             disabled={loading}
-          >
-            {reasonOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* Observações */}
@@ -587,6 +593,92 @@ const TransferModal: React.FC<TransferModalProps> = ({
         </div>
       </form>
     </BaseModal>
+  );
+};
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({
+  value,
+  options,
+  placeholder,
+  onChange,
+  disabled = false,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (disabled) {
+      setIsOpen(false);
+    }
+  }, [disabled]);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "opacity-60 cursor-not-allowed" : ""
+        }`}
+      >
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && !disabled && (
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
