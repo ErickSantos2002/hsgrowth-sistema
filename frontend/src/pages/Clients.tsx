@@ -159,11 +159,17 @@ const Clients: React.FC = () => {
               icon={<RefreshCw size={16} />}
               onClick={loadClients}
               disabled={loading}
-              className="py-2.5"
+              className="py-2.5 sm:py-2 sm:min-w-[140px]"
             >
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
-            <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={handleCreate}>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Plus size={16} />}
+              onClick={handleCreate}
+              className="sm:min-w-[140px]"
+            >
               Novo Cliente
             </Button>
           </div>

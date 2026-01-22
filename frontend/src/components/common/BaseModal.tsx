@@ -20,6 +20,7 @@ interface BaseModalProps {
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   className?: string;
+  titleClassName?: string;
 }
 
 /**
@@ -74,6 +75,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
   showCloseButton = true,
   closeOnOverlayClick = true,
   className = "",
+  titleClassName = "",
 }) => {
   if (!isOpen) return null;
 
@@ -94,7 +96,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
         {/* Header fixo */}
         <div className="flex items-center justify-between p-6 border-b border-slate-700 flex-shrink-0">
           <div>
-            <h2 className="text-2xl font-bold text-white">{title}</h2>
+            <h2 className={`text-2xl font-bold text-white ${titleClassName}`}>{title}</h2>
             {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
           </div>
           {showCloseButton && (

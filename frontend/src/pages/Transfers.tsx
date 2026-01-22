@@ -392,10 +392,10 @@ const Transfers: React.FC = () => {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <ArrowRightLeft className="text-emerald-400" size={32} />
+      <div className="mb-6 flex flex-col items-center text-center gap-3 sm:flex-row sm:items-center sm:justify-between sm:text-left">
+        <div className="flex flex-col items-center sm:items-start">
+          <h1 className="text-xl sm:text-3xl font-bold text-white flex items-center justify-center gap-3 sm:justify-start">
+            <ArrowRightLeft className="text-emerald-400" size={24} />
             Transferências de Cards
           </h1>
           <p className="text-slate-400 mt-1">
@@ -404,10 +404,10 @@ const Transfers: React.FC = () => {
         </div>
         <button
           onClick={() => setShowTransferModal(true)}
-          className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
         >
-          <Plus size={20} />
-          <span className="hidden sm:inline">Nova Transferncia</span>
+          <Plus className="w-7 h-7 sm:w-5 sm:h-5" />
+          Nova Transferência
         </button>
       </div>
 

@@ -265,6 +265,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Nova Transferência"
+      titleClassName="text-lg sm:text-2xl"
       subtitle="Transfira card(s) para outro usuário"
       size="lg"
       footer={
