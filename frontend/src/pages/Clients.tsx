@@ -159,8 +159,9 @@ const Clients: React.FC = () => {
               icon={<RefreshCw size={16} />}
               onClick={loadClients}
               disabled={loading}
+              className="py-2.5"
             >
-              Atualizar
+              <span className="hidden sm:inline">Atualizar</span>
             </Button>
             <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={handleCreate}>
               Novo Cliente
@@ -350,14 +351,14 @@ const Clients: React.FC = () => {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleEdit(client)}
-                          className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-white"
+                          className="p-2 hover:bg-yellow-500/20 rounded-lg transition-colors text-yellow-400 hover:text-yellow-300"
                           title="Editar"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(client)}
-                          className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-slate-400 hover:text-red-400"
+                          className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-400 hover:text-red-300"
                           title="Deletar"
                         >
                           <Trash2 size={16} />
