@@ -191,7 +191,7 @@ const Reports: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 overflow-x-hidden">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Relatórios</h1>
@@ -199,10 +199,10 @@ const Reports: React.FC = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4 mb-6 border-b border-slate-700">
+        <div className="flex w-full max-w-full gap-1 sm:gap-4 mb-6 border-b border-slate-700 justify-center sm:justify-start overflow-x-hidden">
           <button
             onClick={() => setActiveTab('sales')}
-            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+            className={`flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-2 px-2 sm:px-6 py-3 text-base sm:text-base font-medium transition-colors ${
               activeTab === 'sales'
                 ? 'text-emerald-400 border-b-2 border-emerald-400'
                 : 'text-slate-400 hover:text-slate-300'
@@ -213,7 +213,7 @@ const Reports: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('conversion')}
-            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+            className={`flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-2 px-2 sm:px-6 py-3 text-base sm:text-base font-medium transition-colors ${
               activeTab === 'conversion'
                 ? 'text-emerald-400 border-b-2 border-emerald-400'
                 : 'text-slate-400 hover:text-slate-300'
@@ -224,7 +224,7 @@ const Reports: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('transfers')}
-            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+            className={`flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-2 px-2 sm:px-6 py-3 text-base sm:text-base font-medium transition-colors ${
               activeTab === 'transfers'
                 ? 'text-emerald-400 border-b-2 border-emerald-400'
                 : 'text-slate-400 hover:text-slate-300'
@@ -344,7 +344,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -484,7 +484,7 @@ const SalesTab: React.FC<SalesTabProps> = ({
           )}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 flex justify-center sm:justify-start">
           <button
             onClick={onGenerate}
             disabled={loading}
@@ -707,7 +707,7 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
           )}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 flex justify-center sm:justify-start">
           <button
             onClick={onGenerate}
             disabled={loading}
@@ -923,7 +923,7 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
           )}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 flex justify-center sm:justify-start">
           <button
             onClick={onGenerate}
             disabled={loading}
