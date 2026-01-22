@@ -357,7 +357,7 @@
 
 ---
 
-## ✅ FASE 11: Módulo de Notificações (CONCLUÍDA)
+## ✅ FASE 11: Módulo de Notificações (CONCLUÍDA + CORREÇÕES 22/01/2026)
 
 ### 11.1 Schemas
 - [x] `app/schemas/notification.py`
@@ -365,6 +365,10 @@
   - [x] NotificationListResponse, NotificationStatsResponse
   - [x] BulkNotificationCreate, BulkNotificationResponse
   - [x] Enums: NotificationTypeEnum, NotificationIconEnum, NotificationColorEnum
+  - [x] **CORREÇÃO 22/01:** Adicionado `serialization_alias` para compatibilidade com frontend
+    - `notification_type` → serializado como `type`
+    - `notification_metadata` → serializado como `metadata`
+    - `items` → serializado como `notifications`
 
 ### 11.2 Repository
 - [x] `app/repositories/notification_repository.py`
@@ -395,6 +399,14 @@
   - [x] `PUT /notifications/read-all` - Marcar todas como lidas
   - [x] `DELETE /notifications/{id}` - Deletar notificação
   - [x] Helpers: `/notifications/helpers/*` (card-assigned, card-overdue, badge-earned)
+  - [x] **ADICIONADO 22/01:** `GET /notifications/unread-count` - Contador de não lidas (polling frontend)
+  - [x] **ADICIONADO 22/01:** `POST /notifications/mark-as-read` - Marcar múltiplas como lidas (body JSON)
+  - [x] **ADICIONADO 22/01:** `POST /notifications/mark-all-as-read` - Marcar todas via POST
+  - [x] **ADICIONADO 22/01:** `DELETE /notifications/delete-read` - Deletar todas lidas
+
+### 11.5 Scripts Utilitários
+- [x] **ADICIONADO 22/01:** `scripts/seed_notifications.py` - Popular 3 notificações para cada usuário
+- [x] **ADICIONADO 22/01:** `scripts/create_test_notification.py` - Criar notificação individual de teste
 
 ---
 

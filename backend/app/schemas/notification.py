@@ -106,12 +106,20 @@ class NotificationUpdate(BaseModel):
     is_read: Optional[bool] = Field(None, description="Marcar como lida/não lida")
 
 
-class NotificationResponse(NotificationBase):
+class NotificationResponse(BaseModel):
     """
     Schema de resposta de notificação.
     """
     id: int = Field(..., description="ID da notificação")
     user_id: int = Field(..., description="ID do usuário destinatário")
+    # Usa serialization_alias para mapear para nomes esperados pelo frontend
+    notification_type: str = Field(..., serialization_alias="type", description="Tipo da notificação")
+    title: str = Field(..., description="Título da notificação")
+    message: str = Field(..., description="Mensagem da notificação")
+    icon: Optional[str] = Field(None, description="Ícone da notificação")
+    color: Optional[str] = Field(None, description="Cor da notificação")
+    notification_metadata: Dict[str, Any] = Field(default_factory=dict, serialization_alias="metadata", description="Metadados")
+    link: Optional[str] = Field(None, description="Link relacionado à notificação (extraído de metadata.url)")
     is_read: bool = Field(..., description="Se foi lida")
     read_at: Optional[datetime] = Field(None, description="Data/hora de leitura")
     created_at: datetime = Field(..., description="Data/hora de criação")
@@ -119,21 +127,23 @@ class NotificationResponse(NotificationBase):
 
     model_config = {
         "from_attributes": True,
+        "populate_by_name": True,  # Permite usar tanto o nome quanto o alias
         "json_schema_extra": {
             "examples": [
                 {
                     "id": 1,
                     "user_id": 2,
-                    "notification_type": "card_assigned",
+                    "type": "card_assigned",
                     "title": "Novo card atribuído",
                     "message": "Você foi atribuído ao card 'Lead - Empresa XYZ'",
                     "icon": "bell",
                     "color": "info",
-                    "notification_metadata": {
+                    "metadata": {
                         "card_id": 123,
                         "board_id": 5,
                         "url": "/boards/5/cards/123"
                     },
+                    "link": "/boards/5/cards/123",
                     "is_read": False,
                     "read_at": None,
                     "created_at": "2026-01-06T10:30:00",
@@ -148,7 +158,8 @@ class NotificationListResponse(BaseModel):
     """
     Schema de resposta para lista de notificações (paginada).
     """
-    items: List[NotificationResponse] = Field(..., description="Lista de notificações")
+    # Usa serialization_alias para compatibilidade com frontend
+    items: List[NotificationResponse] = Field(..., serialization_alias="notifications", description="Lista de notificações")
     total: int = Field(..., description="Total de notificações")
     unread_count: int = Field(..., description="Total de notificações não lidas")
     page: int = Field(..., description="Página atual")
@@ -156,19 +167,20 @@ class NotificationListResponse(BaseModel):
     total_pages: int = Field(..., description="Total de páginas")
 
     model_config = {
+        "populate_by_name": True,
         "json_schema_extra": {
             "examples": [
                 {
-                    "items": [
+                    "notifications": [
                         {
                             "id": 1,
                             "user_id": 2,
-                            "notification_type": "card_assigned",
+                            "type": "card_assigned",
                             "title": "Novo card atribuído",
                             "message": "Você foi atribuído ao card 'Lead - Empresa XYZ'",
                             "icon": "bell",
                             "color": "info",
-                            "notification_metadata": {"card_id": 123},
+                            "metadata": {"card_id": 123},
                             "is_read": False,
                             "read_at": None,
                             "created_at": "2026-01-06T10:30:00",

@@ -700,3 +700,63 @@ export interface UpdateClientRequest {
   notes?: string;
   is_active?: boolean;
 }
+
+// ==================== NOTIFICATIONS ====================
+
+export type NotificationType =
+  | "card_assigned"           // Card atribuído a você
+  | "card_updated"            // Card atualizado
+  | "card_won"                // Card ganho
+  | "card_lost"               // Card perdido
+  | "transfer_received"       // Transferência recebida
+  | "transfer_approved"       // Transferência aprovada
+  | "transfer_rejected"       // Transferência rejeitada
+  | "badge_earned"            // Badge conquistado
+  | "level_up"                // Subiu de nível
+  | "automation_failed"       // Automação falhou
+  | "system"                  // Notificação do sistema
+  | "other";                  // Outros tipos
+
+export interface Notification {
+  id: number;
+  user_id: number;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link?: string | null;        // Link para o item relacionado
+  is_read: boolean;
+  created_at: string;
+  read_at?: string | null;
+  // Dados adicionais opcionais
+  metadata?: {
+    card_id?: number;
+    board_id?: number;
+    transfer_id?: number;
+    badge_id?: number;
+    from_user_name?: string;
+    to_user_name?: string;
+    [key: string]: any;
+  };
+}
+
+export interface NotificationListResponse {
+  notifications: Notification[];
+  total: number;
+  unread_count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface MarkAsReadRequest {
+  notification_ids: number[];
+}
+
+export interface CreateNotificationRequest {
+  user_id: number;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link?: string;
+  metadata?: Record<string, any>;
+}

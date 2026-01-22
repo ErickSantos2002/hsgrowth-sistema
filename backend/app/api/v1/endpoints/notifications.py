@@ -51,6 +51,28 @@ async def list_notifications(
     )
 
 
+@router.get("/unread-count", summary="Contador de notificações não lidas")
+async def get_unread_count(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Retorna apenas o contador de notificações não lidas.
+
+    **Retorna:**
+    - `unread_count`: Quantidade de notificações não lidas
+
+    **Nota:** Endpoint otimizado para polling frequente (usado no badge do header).
+    """
+    service = NotificationService(db)
+    from app.repositories.notification_repository import NotificationRepository
+
+    repo = NotificationRepository(db)
+    unread_count = repo.count_unread_by_user(current_user.id)
+
+    return {"unread_count": unread_count}
+
+
 @router.get("/stats", response_model=NotificationStatsResponse, summary="Estatísticas de notificações")
 async def get_notification_stats(
     current_user: User = Depends(get_current_active_user),
@@ -164,6 +186,89 @@ async def mark_all_notifications_as_read(
     """
     service = NotificationService(db)
     return service.mark_all_as_read(user_id=current_user.id)
+
+
+@router.post("/mark-as-read", summary="Marcar notificações como lidas (array)")
+async def mark_notifications_as_read_batch(
+    request_body: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Marca múltiplas notificações como lidas.
+
+    **Body:**
+    - `notification_ids`: Array de IDs das notificações
+
+    **Retorna:**
+    - Mensagem de sucesso
+
+    **Nota:** Endpoint compatível com frontend que envia array de IDs.
+    """
+    notification_ids = request_body.get("notification_ids", [])
+
+    service = NotificationService(db)
+    marked_count = 0
+
+    for notification_id in notification_ids:
+        try:
+            service.mark_as_read(notification_id=notification_id, user_id=current_user.id)
+            marked_count += 1
+        except Exception:
+            # Ignora erros individuais (notificação não encontrada, sem permissão, etc)
+            pass
+
+    return {"message": f"{marked_count} notificação(ões) marcada(s) como lida(s)"}
+
+
+@router.post("/mark-all-as-read", summary="Marcar todas como lidas (POST)")
+async def mark_all_notifications_as_read_post(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Marca todas as notificações do usuário como lidas (via POST).
+
+    **Retorna:**
+    - Quantidade de notificações marcadas como lidas
+
+    **Nota:** Endpoint compatível com frontend que usa POST.
+    """
+    service = NotificationService(db)
+    return service.mark_all_as_read(user_id=current_user.id)
+
+
+@router.delete("/delete-read", summary="Deletar todas notificações lidas")
+async def delete_all_read_notifications(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Deleta todas as notificações lidas do usuário.
+
+    **Útil para:** Limpar notificações já visualizadas.
+
+    **Retorna:**
+    - Mensagem de sucesso
+    """
+    from app.repositories.notification_repository import NotificationRepository
+
+    repo = NotificationRepository(db)
+    # Busca todas as notificações lidas do usuário
+    notifications = db.query(repo.model).filter(
+        repo.model.user_id == current_user.id,
+        repo.model.is_read == True
+    ).all()
+
+    count = len(notifications)
+
+    # Deleta todas
+    for notification in notifications:
+        db.delete(notification)
+
+    db.commit()
+
+    return {"message": f"{count} notificação(ões) deletada(s)"}
 
 
 @router.delete("/{notification_id}", summary="Deletar notificação")

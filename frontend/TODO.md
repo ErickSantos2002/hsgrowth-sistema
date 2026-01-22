@@ -1310,64 +1310,95 @@ Quando o backend de automações estiver implementado, basta conectar os endpoin
 
 **Prioridade:** 🟡 Média
 **Estimativa:** ~1 dia
-**Status:** ⏳ Pendente
+**Status:** ✅ Concluída (22/01/2026)
+
+### ✅ Implementado (22/01/2026):
+
+**Arquivos criados/modificados:**
+- `frontend/src/services/notificationService.ts` (199 linhas) - Serviço completo de notificações
+- `frontend/src/components/NotificationDropdown.tsx` (313 linhas) - Dropdown no header
+- `frontend/src/pages/Notifications.tsx` (409 linhas) - Página completa de notificações
+- `frontend/src/types/index.ts` - Tipos: Notification, NotificationListResponse, etc.
+- `frontend/src/layouts/MainLayout.tsx` - Integração do NotificationDropdown
+- `backend/app/api/v1/endpoints/notifications.py` - Endpoints adicionados: `/unread-count`, `/mark-as-read`, `/mark-all-as-read`, `/delete-read`
+- `backend/app/schemas/notification.py` - Schemas ajustados com serialization_alias para compatibilidade frontend
+- `backend/scripts/seed_notifications.py` - Script para popular notificações de teste
+- `backend/scripts/create_test_notification.py` - Script para criar notificação individual de teste
 
 ### Tarefas:
 
-#### 12.1 - Serviço de Notificações
-- [ ] Criar `notificationService.ts`
-- [ ] Funções: list(), getStats(), markAsRead(), delete()
+#### 12.1 - Serviço de Notificações ✅
+- [x] Criar `notificationService.ts`
+- [x] Funções: list(), getUnreadCount(), markAsRead(), markOneAsRead(), markAllAsRead(), delete(), deleteAllRead()
+- [x] Helpers: formatType(), getTypeIcon(), getTypeColor(), formatRelativeTime()
 
-#### 12.2 - Bell Icon no Header
-- [ ] Adicionar ícone de sino no MainLayout (topbar)
-- [ ] Badge com contador de não lidas
-- [ ] Atualizar contador periodicamente (polling ou websocket)
+#### 12.2 - Bell Icon no Header ✅
+- [x] Adicionar ícone de sino no MainLayout (topbar)
+- [x] Badge com contador de não lidas (badge vermelho com número)
+- [x] Atualizar contador periodicamente (polling a cada 30 segundos)
 
-#### 12.3 - Dropdown de Notificações
-- [ ] Criar componente `NotificationsDropdown.tsx`
-- [ ] Click no bell abre dropdown
-- [ ] Header: "Notificações" + botão "Marcar todas como lidas"
-- [ ] Listar últimas 10 notificações
-- [ ] Scroll dentro do dropdown
-- [ ] Link "Ver todas" (vai para página)
+#### 12.3 - Dropdown de Notificações ✅
+- [x] Criar componente `NotificationDropdown.tsx`
+- [x] Click no bell abre dropdown
+- [x] Header: "Notificações" + botão "Marcar todas como lidas"
+- [x] Listar últimas 10 notificações não lidas
+- [x] Scroll dentro do dropdown
+- [x] Link "Ver todas" (vai para página /notifications)
 
-#### 12.4 - Item de Notificação
-- [ ] Criar componente `NotificationItem.tsx`
-- [ ] Ícone por tipo
-- [ ] Título + mensagem (truncada)
-- [ ] Tempo relativo (ex: "há 2 horas")
-- [ ] Estado: lida (opacidade) ou não lida (destaque)
-- [ ] Click marca como lida e navega (se houver link)
+#### 12.4 - Item de Notificação ✅
+- [x] Ícone por tipo (12 tipos diferentes: card_assigned, badge_earned, transfer_approved, etc.)
+- [x] Título + mensagem (truncada)
+- [x] Tempo relativo (ex: "há 2 horas", "há 5 minutos", "Agora")
+- [x] Estado: lida (opacidade) ou não lida (destaque)
+- [x] Click marca como lida e navega (se houver link)
 
-#### 12.5 - Página de Notificações
-- [ ] Criar componente `Notifications.tsx`
-- [ ] Layout: header + lista completa
-- [ ] Tabs: Todas, Não Lidas
-- [ ] Filtros: Tipo de notificação, Período
-- [ ] Paginação
+#### 12.5 - Página de Notificações ✅
+- [x] Criar componente `Notifications.tsx`
+- [x] Layout: header + lista completa
+- [x] Filtro: Todas / Apenas não lidas (toggle)
+- [x] Paginação (20 por página)
+- [x] Botões: "Marcar todas como lidas", "Deletar lidas"
 
-#### 12.6 - Tipos de Notificações
-- [ ] Card atribuído a mim
-- [ ] Transferência recebida
-- [ ] Transferência aprovada/rejeitada
-- [ ] Card ganho pela equipe
-- [ ] Badge conquistado
-- [ ] Automação falhou
-- [ ] Outros...
+#### 12.6 - Tipos de Notificações ✅
+- [x] Card atribuído a mim (card_assigned)
+- [x] Transferência recebida (transfer_received)
+- [x] Transferência aprovada/rejeitada (transfer_approved / transfer_rejected)
+- [x] Card ganho (card_won) / perdido (card_lost)
+- [x] Card atualizado (card_updated)
+- [x] Badge conquistado (badge_earned)
+- [x] Subiu de nível (level_up)
+- [x] Automação falhou (automation_failed)
+- [x] Sistema (system) e Outros (other)
 
-#### 12.7 - Marcar como Lida
-- [ ] Click no item marca como lida
-- [ ] Botão "Marcar como lida" individual
-- [ ] Botão "Marcar todas como lidas"
-- [ ] Atualizar contador
+#### 12.7 - Marcar como Lida ✅
+- [x] Click no item marca como lida e remove do dropdown
+- [x] Botão "Marcar como lida" individual (ícone check)
+- [x] Botão "Marcar todas como lidas" (dropdown e página)
+- [x] Atualizar contador automaticamente
 
-#### 12.8 - Deletar Notificações
-- [ ] Botão para deletar notificação individual
-- [ ] Botão "Limpar todas" (confirmação)
+#### 12.8 - Deletar Notificações ✅
+- [x] Botão para deletar notificação individual
+- [x] Botão "Deletar lidas" na página (com confirmação)
 
-#### 12.9 - Real-time (Opcional)
-- [ ] Implementar WebSocket para notificações em tempo real
-- [ ] Fallback: polling a cada 30 segundos
+#### 12.9 - Atualização Automática ✅
+- [x] Polling a cada 30 segundos para contador
+- [x] Detecção automática de novas notificações (recarrega lista quando contador aumenta)
+- [x] Recarrega lista ao abrir dropdown
+- [x] Script para testar: `create_test_notification.py <user_id>`
+
+### 🔧 Correções Implementadas:
+
+**Backend:**
+- Adicionado endpoint `GET /unread-count` para compatibilidade com frontend
+- Ajustados schemas com `serialization_alias` (type, metadata, notifications)
+- Adicionados endpoints POST compatíveis: `/mark-as-read`, `/mark-all-as-read`, `/delete-read`
+- Suporte a body JSON com `notification_ids` array
+
+**Frontend:**
+- Dropdown mostra apenas notificações não lidas
+- Remove notificações da lista ao marcar como lida
+- Atualização automática quando contador aumenta
+- Badge vermelho com suporte a 99+
 
 ---
 

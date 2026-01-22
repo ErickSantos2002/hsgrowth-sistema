@@ -10,13 +10,13 @@ import {
     LogOut,
     Trophy,
     FileText,
-    Bell,
     Repeat,
     Workflow,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/logo.png";
+import NotificationDropdown from "../components/NotificationDropdown";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false },
@@ -35,7 +35,6 @@ export default function MainLayout() {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [notificationsOpen, setNotificationsOpen] = useState(false);
 
     // Define estado inicial da sidebar baseado no tamanho da tela
     useEffect(() => {
@@ -232,18 +231,8 @@ export default function MainLayout() {
                                 </div>
                             </div>
 
-                            {/* Botão Notificações (Sino) */}
-                            <button
-                                onClick={() => setNotificationsOpen(!notificationsOpen)}
-                                className="relative p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:bg-slate-800/70 hover:text-white hover:border-slate-600/50 transition-all"
-                                title="Notificações"
-                            >
-                                <Bell size={22} />
-                                {/* Badge contador */}
-                                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white border-2 border-slate-900 animate-pulse">
-                                    3
-                                </span>
-                            </button>
+                            {/* Notificações */}
+                            <NotificationDropdown />
 
                             {/* Botão Sair (só ícone) */}
                             <button
@@ -256,102 +245,6 @@ export default function MainLayout() {
                         </div>
                     </div>
                 </nav>
-
-                {/* Modal de Notificações */}
-                {notificationsOpen && (
-                    <>
-                        {/* Overlay */}
-                        <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setNotificationsOpen(false)}
-                        />
-
-                        {/* Dropdown de Notificações */}
-                        <div className="fixed top-20 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl animate-in slide-in-from-top-5 duration-200">
-                            {/* Header da Modal */}
-                            <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
-                                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                    <Bell size={20} className="text-blue-400" />
-                                    Notificações
-                                </h3>
-                                <button
-                                    onClick={() => setNotificationsOpen(false)}
-                                    className="p-1 text-slate-400 hover:text-white transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            {/* Lista de Notificações */}
-                            <div className="max-h-[400px] overflow-y-auto">
-                                {/* Notificação 1 */}
-                                <div className="p-4 border-b border-slate-700/30 hover:bg-slate-700/30 transition-colors cursor-pointer">
-                                    <div className="flex gap-3">
-                                        <div className="w-2 h-2 mt-2 rounded-full bg-blue-500 flex-shrink-0"></div>
-                                        <div className="flex-1">
-                                            <p className="text-sm text-white font-medium mb-1">
-                                                Novo card atribuído a você
-                                            </p>
-                                            <p className="text-xs text-slate-400">
-                                                Card "Proposta Cliente XYZ" foi atribuído a você por João Silva
-                                            </p>
-                                            <p className="text-xs text-slate-500 mt-2">
-                                                há 5 minutos
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Notificação 2 */}
-                                <div className="p-4 border-b border-slate-700/30 hover:bg-slate-700/30 transition-colors cursor-pointer">
-                                    <div className="flex gap-3">
-                                        <div className="w-2 h-2 mt-2 rounded-full bg-green-500 flex-shrink-0"></div>
-                                        <div className="flex-1">
-                                            <p className="text-sm text-white font-medium mb-1">
-                                                Card ganho!
-                                            </p>
-                                            <p className="text-xs text-slate-400">
-                                                Parabéns! O card "Renovação Contrato ABC" foi ganho
-                                            </p>
-                                            <p className="text-xs text-slate-500 mt-2">
-                                                há 1 hora
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Notificação 3 */}
-                                <div className="p-4 hover:bg-slate-700/30 transition-colors cursor-pointer">
-                                    <div className="flex gap-3">
-                                        <div className="w-2 h-2 mt-2 rounded-full bg-yellow-500 flex-shrink-0"></div>
-                                        <div className="flex-1">
-                                            <p className="text-sm text-white font-medium mb-1">
-                                                Card próximo do vencimento
-                                            </p>
-                                            <p className="text-xs text-slate-400">
-                                                O card "Followup Lead 123" vence em 2 dias
-                                            </p>
-                                            <p className="text-xs text-slate-500 mt-2">
-                                                há 3 horas
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Rodapé da Modal */}
-                            <div className="p-3 border-t border-slate-700/50 text-center">
-                                <Link
-                                    to="/notifications"
-                                    onClick={() => setNotificationsOpen(false)}
-                                    className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors"
-                                >
-                                    Ver todas as notificações
-                                </Link>
-                            </div>
-                        </div>
-                    </>
-                )}
 
                 {/* Page Content */}
                 <main>
