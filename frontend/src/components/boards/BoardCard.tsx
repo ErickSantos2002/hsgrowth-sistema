@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Eye,
   Edit,
@@ -40,6 +40,21 @@ const BoardCard: React.FC<BoardCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showMenu) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMenu]);
 
   /**
    * Mapeia o nome do ícone para o componente Lucide
@@ -94,7 +109,9 @@ const BoardCard: React.FC<BoardCardProps> = ({
 
   return (
     <div
-      className="group relative backdrop-blur-sm border-2 rounded-xl p-6 transition-all duration-300 hover:shadow-xl"
+      className={`group relative backdrop-blur-sm border-2 rounded-xl p-6 transition-all duration-300 hover:shadow-xl ${
+        showMenu ? "z-50" : "z-0"
+      }`}
       style={{
         borderColor: board.color || "#3B82F6",
         backgroundColor: `${board.color || "#3B82F6"}20`,
@@ -163,7 +180,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
           </button>
 
           {/* Menu de opções */}
-          <div className="relative">
+          <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
               className="p-2 hover:bg-gray-700/50 rounded-lg transition-colors"
@@ -174,14 +191,8 @@ const BoardCard: React.FC<BoardCardProps> = ({
             {/* Dropdown menu */}
             {showMenu && (
               <>
-                {/* Overlay para fechar o menu */}
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowMenu(false)}
-                />
-
                 {/* Menu */}
-                <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
+                <div className="absolute right-0 bottom-full mb-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
                   <button
                     onClick={() => {
                       setShowMenu(false);
