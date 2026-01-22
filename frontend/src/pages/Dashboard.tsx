@@ -204,7 +204,7 @@ const Dashboard: React.FC = () => {
   // Renderiza loading skeleton
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 overflow-x-hidden">
         {/* Header Skeleton */}
         <div className="flex justify-between items-center">
           <div className="h-8 w-48 bg-slate-700/50 rounded animate-pulse" />
@@ -236,7 +236,7 @@ const Dashboard: React.FC = () => {
   // Renderiza erro
   if (error) {
     return (
-      <div className="p-6">
+      <div className="p-6 overflow-x-hidden">
         <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6 text-center">
           <div className="text-red-400 text-lg font-semibold mb-2">
             Erro ao carregar dashboard
@@ -255,7 +255,7 @@ const Dashboard: React.FC = () => {
 
   // Renderiza dashboard com dados
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="text-center sm:text-left">
