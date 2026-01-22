@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Building, User } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Building, User, ChevronDown } from "lucide-react";
 import clientService, { Client } from "../services/clientService";
 import { Button, Alert } from "../components/common";
 import ClientModal from "../components/clients/ClientModal";
@@ -213,15 +213,17 @@ const Clients: React.FC = () => {
             <div className="flex flex-wrap gap-3">
               <div>
                 <label className="text-sm text-slate-400 block mb-2">Status</label>
-                <select
-                  value={filterActive}
-                  onChange={(e) => setFilterActive(e.target.value)}
-                  className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="all">Todos</option>
-                  <option value="active">Ativos</option>
-                  <option value="inactive">Inativos</option>
-                </select>
+                <div className="min-w-[170px]">
+                  <SelectMenu
+                    value={filterActive}
+                    options={[
+                      { value: "all", label: "Todos" },
+                      { value: "active", label: "Ativos" },
+                      { value: "inactive", label: "Inativos" },
+                    ]}
+                    onChange={setFilterActive}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -459,3 +461,78 @@ const Clients: React.FC = () => {
 };
 
 export default Clients;
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({
+  value,
+  options,
+  placeholder,
+  onChange,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};

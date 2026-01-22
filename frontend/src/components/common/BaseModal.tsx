@@ -89,7 +89,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
       onClick={handleOverlayClick}
     >
       <div
-        className={`bg-slate-900 border border-slate-700 rounded-2xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col ${className}`}
+        className={`bg-slate-900 border border-slate-700 rounded-2xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col overflow-hidden ${className}`}
       >
         {/* Header fixo */}
         <div className="flex items-center justify-between p-6 border-b border-slate-700 flex-shrink-0">
