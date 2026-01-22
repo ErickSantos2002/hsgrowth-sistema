@@ -8,6 +8,7 @@ type AuthContextType = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (updatedUser: User) => void;
   error: string | null;
 };
 
@@ -88,9 +89,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Função para atualizar os dados do usuário
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    // Atualiza também no localStorage
+    authService.setCurrentUser(updatedUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, error }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser, error }}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+// Hook customizado para usar o contexto
+export const useAuth = () => {
+  const context = React.useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth deve ser usado dentro de um AuthProvider");
+  }
+  return context;
 };

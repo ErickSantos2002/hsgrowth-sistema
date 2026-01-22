@@ -409,8 +409,8 @@ const SalesTab: React.FC<SalesTabProps> = ({
     { value: 'yesterday', label: 'Ontem' },
     { value: 'this_week', label: 'Esta Semana' },
     { value: 'last_week', label: 'Semana Passada' },
-    { value: 'this_month', label: 'Este MÇ¦s' },
-    { value: 'last_month', label: 'MÇ¦s Passado' },
+    { value: 'this_month', label: 'Este Mês' },
+    { value: 'last_month', label: 'Mês Passado' },
     { value: 'this_quarter', label: 'Este Trimestre' },
     { value: 'last_quarter', label: 'Trimestre Passado' },
     { value: 'this_year', label: 'Este Ano' },
@@ -567,7 +567,7 @@ const SalesTab: React.FC<SalesTabProps> = ({
                   {report.details?.map((item, index) => (
                     <tr key={index} className="border-b border-slate-700/50 hover:bg-slate-700/30">
                       <td className="py-3 px-4 text-white">
-                        {item.user_name || reportService.formatPeriod(item.period || '')}
+                        {item.user_name || (item.period ? reportService.formatPeriod(item.period as PeriodType) : '-')}
                       </td>
                       <td className="py-3 px-4 text-right text-slate-300">
                         {item.cards_created}
@@ -643,8 +643,8 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
     { value: 'yesterday', label: 'Ontem' },
     { value: 'this_week', label: 'Esta Semana' },
     { value: 'last_week', label: 'Semana Passada' },
-    { value: 'this_month', label: 'Este MÇ¦s' },
-    { value: 'last_month', label: 'MÇ¦s Passado' },
+    { value: 'this_month', label: 'Este Mês' },
+    { value: 'last_month', label: 'Mês Passado' },
     { value: 'this_quarter', label: 'Este Trimestre' },
     { value: 'last_quarter', label: 'Trimestre Passado' },
     { value: 'this_year', label: 'Este Ano' },
@@ -848,8 +848,8 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
     { value: 'yesterday', label: 'Ontem' },
     { value: 'this_week', label: 'Esta Semana' },
     { value: 'last_week', label: 'Semana Passada' },
-    { value: 'this_month', label: 'Este MÇ¦s' },
-    { value: 'last_month', label: 'MÇ¦s Passado' },
+    { value: 'this_month', label: 'Este Mês' },
+    { value: 'last_month', label: 'Mês Passado' },
     { value: 'this_quarter', label: 'Este Trimestre' },
     { value: 'last_quarter', label: 'Trimestre Passado' },
     { value: 'this_year', label: 'Este Ano' },
@@ -857,11 +857,11 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
     { value: 'custom', label: 'Personalizado' },
   ];
   const fromUserOptions: SelectOption[] = [
-    { value: '', label: 'Qualquer usuÇ­rio' },
+    { value: '', label: 'Qualquer usuário' },
     ...users.map((user) => ({ value: String(user.id), label: user.name })),
   ];
   const toUserOptions: SelectOption[] = [
-    { value: '', label: 'Qualquer usuÇ­rio' },
+    { value: '', label: 'Qualquer usuário' },
     ...users.map((user) => ({ value: String(user.id), label: user.name })),
   ];
 

@@ -25,7 +25,7 @@ const Transfers: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showTransferModal, setShowTransferModal] = useState(false);
 
-  // Dados de transferncias
+  // Dados de transferências
   const [pendingTransfers, setPendingTransfers] = useState<CardTransfer[]>([]);
   const [completedTransfers, setCompletedTransfers] = useState<CardTransfer[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<TransferApproval[]>([]);
@@ -91,7 +91,7 @@ const Transfers: React.FC = () => {
         await loadPendingTransfers();
       }
     } catch (error) {
-      console.error("Erro ao carregar dados de transferncias:", error);
+      console.error("Erro ao carregar dados de transferências:", error);
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,7 @@ const Transfers: React.FC = () => {
       setPendingTotalPages(nextTotalPages);
       setPendingPage((page) => Math.min(page, nextTotalPages));
     } catch (error) {
-      console.error("Erro ao carregar transfer?ncias pendentes:", error);
+      console.error("Erro ao carregar transferências pendentes:", error);
       setPendingTransfers([]);
     }
   };
@@ -145,7 +145,7 @@ const Transfers: React.FC = () => {
       setCompletedTotalPages(nextTotalPages);
       setCompletedPage((page) => Math.min(page, nextTotalPages));
     } catch (error) {
-      console.error("Erro ao carregar transfer?ncias finalizadas:", error);
+      console.error("Erro ao carregar transferências finalizadas:", error);
       setCompletedTransfers([]);
     }
   };
@@ -160,7 +160,7 @@ const Transfers: React.FC = () => {
       setPendingApprovalsTotalPages(approvalsResponse.total_pages);
       setPendingApprovalsPageSize(approvalsResponse.page_size);
     } catch (error) {
-      console.error("Erro ao carregar aprova????es pendentes:", error);
+      console.error("Erro ao carregar aprovações pendentes:", error);
       setPendingApprovals([]);
     }
   };
@@ -177,7 +177,7 @@ const Transfers: React.FC = () => {
         allTransfers.push(...nextResponse.transfers);
       }
 
-      // Filtra apenas completed e rejected (transfer?ncias finalizadas)
+      // Filtra apenas completed e rejected (transferências finalizadas)
       const completed = allTransfers.filter(
         t => t.status === "completed" || t.status === "rejected"
       );
@@ -189,7 +189,7 @@ const Transfers: React.FC = () => {
       setAllTransfersTotalPages(nextTotalPages);
       setAllTransfersPage((page) => Math.min(page, nextTotalPages));
     } catch (error) {
-      console.error("Erro ao carregar transfer?ncias finalizadas:", error);
+      console.error("Erro ao carregar transferências finalizadas:", error);
     } finally {
       setLoading(false);
     }
@@ -208,8 +208,8 @@ const Transfers: React.FC = () => {
 
       alert("Transferncia aprovada com sucesso!");
     } catch (error) {
-      console.error("Erro ao aprovar transferncia:", error);
-      alert("Erro ao aprovar transferncia");
+      console.error("Erro ao aprovar transferência:", error);
+      alert("Erro ao aprovar transferência");
     }
   };
 
@@ -226,8 +226,8 @@ const Transfers: React.FC = () => {
 
       alert("Transferncia rejeitada com sucesso!");
     } catch (error) {
-      console.error("Erro ao rejeitar transferncia:", error);
-      alert("Erro ao rejeitar transferncia");
+      console.error("Erro ao rejeitar transferência:", error);
+      alert("Erro ao rejeitar transferência");
     }
   };
 
@@ -383,7 +383,7 @@ const Transfers: React.FC = () => {
       <div className="p-6 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-          <p className="text-slate-400">Carregando transferncias...</p>
+          <p className="text-slate-400">Carregando transferências...</p>
         </div>
       </div>
     );
@@ -396,10 +396,10 @@ const Transfers: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
             <ArrowRightLeft className="text-emerald-400" size={32} />
-            Transferncias de Cards
+            Transferências de Cards
           </h1>
           <p className="text-slate-400 mt-1">
-            Gerencie solicitaes de transferncia de cards entre usurios
+            Gerencie solicitações de transferência de cards entre usuários
           </p>
         </div>
         <button
@@ -467,7 +467,7 @@ const Transfers: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <Clock size={18} />
-                <span>Transferncias Pendentes</span>
+                <span>Transferências Pendentes</span>
                 {pendingTransfers.length > 0 && (
                   <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full">
                     {pendingTransfers.length}
@@ -486,7 +486,7 @@ const Transfers: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <CheckCircle size={18} />
-                <span>Transferncias Finalizadas</span>
+                <span>Transferências Finalizadas</span>
               </div>
             </button>
           </>
@@ -505,7 +505,7 @@ const Transfers: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <Inbox size={18} />
-                <span>Aprovaes Pendentes</span>
+                <span>Aprovações Pendentes</span>
                 {pendingApprovals.length > 0 && (
                   <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full">
                     {pendingApprovalsTotal}
@@ -524,22 +524,22 @@ const Transfers: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <CheckCircle size={18} />
-                <span>Transferncias Finalizadas</span>
+                <span>Transferências Finalizadas</span>
               </div>
             </button>
           </>
         )}
       </div>
 
-      {/* Contedo das Tabs */}
+      {/* Conteúdo das Tabs */}
       <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-6">
-        {/* Tab: Transferncias Pendentes (Vendedor) */}
+        {/* Tab: Transferências Pendentes (Vendedor) */}
         {activeTab === "pending" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferncias Pendentes</h2>
-            <p className="text-slate-400 mb-4">Aguardando aprovao do gerente</p>
+            <h2 className="text-xl font-semibold text-white mb-4">Transferências Pendentes</h2>
+            <p className="text-slate-400 mb-4">Aguardando aprovação do gerente</p>
             {pendingTransfers.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">Nenhuma transferncia pendente.</p>
+              <p className="text-slate-400 text-center py-8">Nenhuma transferência pendente.</p>
             ) : (
               <div className="space-y-3">
                 {paginatedPendingTransfers.map((transfer) => (
@@ -578,7 +578,7 @@ const Transfers: React.FC = () => {
                           </p>
                           {transfer.notes && (
                             <p>
-                              <span className="font-medium">Observaes:</span> {transfer.notes}
+                              <span className="font-medium">Observações:</span> {transfer.notes}
                             </p>
                           )}
                           <p className="text-xs text-slate-500">
@@ -601,20 +601,19 @@ const Transfers: React.FC = () => {
           </div>
         )}
 
-        {/* Tab: Aprovaes Pendentes (Admin/Gerente) */}
+        {/* Tab: Aprovações Pendentes (Admin/Gerente) */}
         {activeTab === "received" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Aprovaes Pendentes</h2>
-            <p className="text-slate-400 mb-4">Transferncias aguardando sua deciso</p>
+            <h2 className="text-xl font-semibold text-white mb-4">Aprovações Pendentes</h2>
+            <p className="text-slate-400 mb-4">Transferências aguardando sua decisão</p>
 
             {pendingApprovals.length === 0 ? (
-              <p className="text-slate-400 text-center py-12">Nenhuma aprovao pendente.</p>
+              <p className="text-slate-400 text-center py-12">Nenhuma aprovação pendente.</p>
             ) : (
               <div>
                 <h3 className="text-lg font-medium text-yellow-400 mb-3 flex items-center gap-2">
                   <Clock size={20} />
-                  {pendingApprovalsTotal} {"transfer\u00EAncias"}
-                  {pendingApprovalsTotal > 1 ? "s" : ""} aguardando
+                  {pendingApprovalsTotal} transferência{pendingApprovalsTotal > 1 ? "s" : ""} aguardando
                 </h3>
                 <div className="space-y-3">
                   {pendingApprovals.map((approval) => {
@@ -641,7 +640,7 @@ const Transfers: React.FC = () => {
                               </p>
                               {transfer.notes && (
                                 <p>
-                                  <span className="font-medium">Observaes:</span> {transfer.notes}
+                                  <span className="font-medium">Observações:</span> {transfer.notes}
                                 </p>
                               )}
                               <p className="text-xs text-slate-400">
@@ -685,13 +684,13 @@ const Transfers: React.FC = () => {
           </div>
         )}
 
-        {/* Tab: Transferncias Finalizadas (Vendedor) */}
+        {/* Tab: Transferências Finalizadas (Vendedor) */}
         {activeTab === "completed" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferncias Finalizadas</h2>
-            <p className="text-slate-400 mb-4">Transferncias aprovadas ou rejeitadas</p>
+            <h2 className="text-xl font-semibold text-white mb-4">Transferências Finalizadas</h2>
+            <p className="text-slate-400 mb-4">Transferências aprovadas ou rejeitadas</p>
             {completedTransfers.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">Nenhuma transferncia finalizada ainda.</p>
+              <p className="text-slate-400 text-center py-8">Nenhuma transferência finalizada ainda.</p>
             ) : (
               <div className="space-y-3">
                 {paginatedCompletedTransfers.map((transfer) => (
@@ -731,7 +730,7 @@ const Transfers: React.FC = () => {
                           </p>
                           {transfer.notes && (
                             <p>
-                              <span className="font-medium">Observaes:</span> {transfer.notes}
+                              <span className="font-medium">Observações:</span> {transfer.notes}
                             </p>
                           )}
                           <p className="text-xs text-slate-500">
@@ -754,15 +753,15 @@ const Transfers: React.FC = () => {
           </div>
         )}
 
-        {/* Tab: Transferncias Finalizadas (Admin/Gerente) */}
+        {/* Tab: Transferências Finalizadas (Admin/Gerente) */}
         {activeTab === "all" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferncias Finalizadas</h2>
-            <p className="text-slate-400 mb-4">Todas as transferncias aprovadas ou rejeitadas do sistema</p>
+            <h2 className="text-xl font-semibold text-white mb-4">Transferências Finalizadas</h2>
+            <p className="text-slate-400 mb-4">Todas as transferências aprovadas ou rejeitadas do sistema</p>
             {allTransfers.length === 0 ? (
               <div className="text-center py-12">
                 <CheckCircle size={48} className="mx-auto text-slate-600 mb-3" />
-                <p className="text-slate-400">Nenhuma transferncia finalizada ainda</p>
+                <p className="text-slate-400">Nenhuma transferência finalizada ainda</p>
               </div>
             ) : (
               <div className="space-y-3">{
@@ -803,7 +802,7 @@ const Transfers: React.FC = () => {
                         </p>
                         {transfer.notes && (
                           <p>
-                            <span className="font-medium">Observaes:</span> {transfer.notes}
+                            <span className="font-medium">Observações:</span> {transfer.notes}
                           </p>
                         )}
                         <p className="text-xs text-slate-500">
@@ -827,12 +826,12 @@ const Transfers: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de nova transferncia */}
+      {/* Modal de nova transferência */}
       <TransferModal
         isOpen={showTransferModal}
         onClose={() => setShowTransferModal(false)}
         onSuccess={() => {
-          // Recarrega dados aps criar transferncia
+          // Recarrega dados após criar transferência
           loadInitialData();
           if (activeTab === "pending") {
             loadPendingTransfers();

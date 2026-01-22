@@ -1065,71 +1065,244 @@ Quando o backend de relatórios estiver implementado, basta remover o fallback d
 ## ⚙️ FASE 11 - AUTOMAÇÕES (Criar e Gerenciar)
 
 **Prioridade:** 🟢 Baixa
-**Estimativa:** ~2 dias
-**Status:** ⏳ Pendente
+**Estimativa:** ~2 dias (frontend) + ~3 dias (backend)
+**Status:** ⚠️ 50% Completo (Interface mockada - Backend pendente)
+**Data de conclusão:** 21/01/2026 (apenas frontend)
 
-### Tarefas:
+### ⚠️ IMPORTANTE - APENAS INTERFACE MOCKADA
+**Frontend 100% funcional com editor visual tipo n8n usando React Flow.**
+**Backend NÃO implementado - sistema não executa automações ainda.**
+Quando o backend de automações estiver implementado, basta conectar os endpoints. O sistema de drag-and-drop, validação e templates já estão prontos para uso.
 
-#### 11.1 - Estrutura da Página
-- [ ] Criar componente `Automations.tsx`
-- [ ] Layout: header + lista de automações
-- [ ] Botão "Nova Automação"
-- [ ] Filtro por board
+**Arquivos Implementados:**
+- `frontend/src/pages/Automations.tsx` (373 linhas)
+- `frontend/src/pages/AutomationEditor.tsx` (699 linhas)
+- `frontend/src/services/automationService.ts` (305 linhas)
+- `frontend/src/components/automations/TriggerNode.tsx`
+- `frontend/src/components/automations/ActionNode.tsx`
+- `frontend/src/components/automations/NodesSidebar.tsx`
+- `frontend/src/components/automations/NodeConfigPanel.tsx`
+- `frontend/src/components/automations/CustomEdge.tsx`
+- `frontend/src/components/automations/TemplatesModal.tsx`
 
-#### 11.2 - Serviço de Automações
-- [ ] Criar `automationService.ts`
-- [ ] Funções: list(), getById(), create(), update(), delete(), getExecutions()
+### Tarefas Concluídas:
 
-#### 11.3 - Listagem de Automações
-- [ ] Chamar `automationService.list({ board_id })`
-- [ ] Renderizar cards/lista
-- [ ] Informações: Nome, Tipo (Trigger/Scheduled), Status (Ativa/Inativa), Board
-- [ ] Toggle para ativar/desativar
-- [ ] Botões: Editar, Ver Execuções, Deletar
+#### 11.1 - Estrutura da Página ✅
+- [x] Criar componente `Automations.tsx` (373 linhas)
+- [x] Layout: header + grid de cards de automações
+- [x] Botão "Nova Automação" (navega para editor)
+- [x] Filtro por board (dropdown com boards reais da API)
+- [x] Campo de busca por nome/descrição
 
-#### 11.4 - Modal: Criar/Editar Automação - Passo 1 (Info Básica)
-- [ ] Criar componente `AutomationModal.tsx` com wizard
-- [ ] Nome da automação (required)
-- [ ] Descrição
-- [ ] Board (select - required)
-- [ ] Tipo: Trigger ou Scheduled
-- [ ] Botão "Próximo"
+#### 11.2 - Serviço de Automações ✅
+- [x] Criar `automationService.ts` (305 linhas)
+- [x] Funções implementadas:
+  - list(), getById(), create(), update(), delete()
+  - toggleActive(), getExecutions(), test(), getStats()
+  - formatTriggerType(), formatActionType()
+  - getTriggerIcon(), getTriggerColor()
+  - getActionIcon(), getActionColor()
+- [x] Types completos: Automation, AutomationExecution, AutomationStats
+- [x] Interfaces: TriggerConfig, ActionConfig, ConditionConfig
 
-#### 11.5 - Modal: Passo 2 (Trigger/Schedule)
-- [ ] Se Trigger:
-  - [ ] Select: Evento (card_created, card_moved, card_won, card_lost, etc)
-  - [ ] Condições: campo, operador, valor (ex: valor > 1000)
-- [ ] Se Scheduled:
-  - [ ] Select: Tipo de agendamento (daily, weekly, monthly)
-  - [ ] Inputs específicos (hora, dia da semana, dia do mês)
-- [ ] Botão "Próximo"
+#### 11.3 - Listagem de Automações ✅
+- [x] Dados mockados (4 automações de exemplo)
+- [x] Grid responsivo (2 colunas em desktop)
+- [x] Cards com glassmorphism
+- [x] Informações exibidas:
+  - Nome e descrição
+  - Board associado
+  - Status (Ativa/Inativa) com badge colorido
+  - Estatísticas: Execuções, Taxa de sucesso, Erros
+  - Última execução (data/hora)
+- [x] Toggle para ativar/desativar (local mock)
+- [x] Botões: Ativar/Pausar, Editar, Deletar
 
-#### 11.6 - Modal: Passo 3 (Ações)
-- [ ] Adicionar múltiplas ações (botão "+ Adicionar Ação")
-- [ ] Tipos de ação:
-  - [ ] Enviar email
-  - [ ] Mover card para lista
-  - [ ] Atribuir card a usuário
-  - [ ] Alterar campo customizado
-  - [ ] Criar notificação
-- [ ] Configurações específicas por tipo de ação
-- [ ] Remover ação
-- [ ] Botão "Salvar Automação"
+#### 11.4 - Editor Visual de Automações ✅
+- [x] **DECISÃO ESTRATÉGICA:** Substituído wizard por editor visual tipo n8n
+- [x] Componente `AutomationEditor.tsx` (699 linhas)
+- [x] Integração com React Flow (biblioteca de drag-and-drop)
+- [x] Canvas infinito com grid de fundo
+- [x] Header com nome editável inline
+- [x] Botões: Voltar, Templates, Limpar Tudo, Testar, Salvar
 
-#### 11.7 - Preview/Teste
-- [ ] (Opcional) Botão "Testar Automação"
-- [ ] Simular execução e mostrar resultados
+#### 11.5 - Editor: Nodes Customizados ✅
+- [x] **TriggerNode.tsx** - 6 tipos de gatilhos:
+  - Card Criado (card_created)
+  - Card Ganho (card_won)
+  - Card Perdido (card_lost)
+  - Card Movido (card_moved)
+  - Card Atrasado (card_overdue)
+  - Agendado (scheduled)
+- [x] **ActionNode.tsx** - 7 tipos de ações:
+  - Criar Card (create_card)
+  - Enviar Email (send_email)
+  - Criar Notificação (create_notification)
+  - Atribuir Usuário (assign_user)
+  - Adicionar Tag (add_tag)
+  - Mover para Lista (move_to_list)
+  - Atualizar Campo (update_field)
+- [x] Design profissional com ícones e cores específicas
+- [x] Handles de conexão (entrada/saída)
 
-#### 11.8 - Histórico de Execuções
-- [ ] Modal `AutomationExecutionsModal.tsx`
-- [ ] Listar últimas execuções
-- [ ] Data, Status (Sucesso/Erro), Tempo de execução
-- [ ] Expandir para ver detalhes/logs
+#### 11.6 - Editor: Sidebar de Nodes ✅
+- [x] Componente `NodesSidebar.tsx`
+- [x] Seções colapsáveis:
+  - Gatilhos (Triggers) - roxo
+  - Ações (Actions) - verde
+- [x] Drag-and-drop de nodes para o canvas
+- [x] Descrição de cada tipo de node
+- [x] Ícones visuais com Lucide React
 
-#### 11.9 - Templates de Automações
-- [ ] (Opcional) Galeria de templates pré-configurados
-- [ ] Ex: "Enviar email quando card ganho", "Mover card atrasado"
-- [ ] Duplicar template e customizar
+#### 11.7 - Editor: Painel de Configuração ✅
+- [x] Componente `NodeConfigPanel.tsx`
+- [x] Abre quando um node é selecionado
+- [x] Formulários específicos por tipo de node:
+  - **Triggers:** Board, Lista, Agendamento (dia/hora)
+  - **Actions:** Board destino, Lista, Usuário, Email, Campos
+- [x] Botão "Salvar Configuração"
+- [x] Botão "Fechar" (volta para sidebar)
+- [x] Validação de campos obrigatórios
+
+#### 11.8 - Editor: Funcionalidades Avançadas ✅
+- [x] **Drag & Drop:** Arrastar nodes da sidebar para o canvas
+- [x] **Conectar Nodes:** Criar edges entre triggers e actions
+- [x] **Seleção:** Click para selecionar, Shift para múltipla seleção
+- [x] **Copiar/Colar:** Ctrl+C / Ctrl+V (com offset visual)
+- [x] **Undo/Redo:** Ctrl+Z / Ctrl+Y (histórico com debounce)
+- [x] **Zoom Controls:**
+  - Ctrl++ / Ctrl+- (zoom in/out)
+  - Ctrl+0 (reset zoom)
+  - Ctrl+1 (fit view)
+  - Botões visuais na tela
+  - Indicador de zoom percentual
+- [x] **Pan Canvas:** Ctrl + arrastar (ou botão direito/middle)
+- [x] **Delete:** Tecla Delete remove nodes/edges selecionados
+- [x] **MiniMap:** Visão geral do canvas (canto inferior direito)
+- [x] **Background:** Grid de pontos para referência visual
+
+#### 11.9 - Validação de Automação ✅
+- [x] Função `validateAutomation()` completa
+- [x] Validações implementadas:
+  - Pelo menos 1 trigger e 1 action
+  - Pelo menos 1 conexão entre trigger e action
+  - Todos os nodes configurados
+  - Triggers conectados a actions
+- [x] Mensagens de erro amigáveis
+- [x] Impede salvar/testar se inválido
+
+#### 11.10 - Templates de Automações ✅
+- [x] Componente `TemplatesModal.tsx`
+- [x] Modal com galeria de templates pré-configurados
+- [x] Templates implementados:
+  - "Vendas → Pós-Venda" (card_won → create_card)
+  - "Notificar Gerente - Alto Valor" (card_created + condição → send_email)
+  - "Follow-up Automático" (scheduled → send_email)
+  - "Email Boas-Vindas" (card_created → send_email)
+- [x] Botão "Usar Template" carrega nodes/edges no canvas
+- [x] Fit view automático após carregar
+- [x] Design com preview visual de cada template
+
+#### 11.11 - Edges Customizados ✅
+- [x] Componente `CustomEdge.tsx`
+- [x] Animação suave (animated: true)
+- [x] Cor roxa (#8b5cf6) e stroke width 2px
+- [x] Botão de delete ao passar o mouse
+
+#### 11.12 - Estatísticas de Execução ✅
+- [x] Contador de execuções no card da automação
+- [x] Taxa de sucesso (%) calculada
+- [x] Contador de erros
+- [x] Última execução com timestamp formatado
+
+#### 11.13 - Empty States ✅
+- [x] Mensagem quando não há automações
+- [x] Botão "Criar Primeira Automação"
+- [x] Ajuste de mensagem com filtros ativos
+
+### 🎯 Funcionalidades Prontas e Testadas:
+- ✅ Interface completa de listagem (mockada)
+- ✅ Editor visual tipo n8n 100% funcional
+- ✅ Sistema de drag-and-drop profissional
+- ✅ 6 triggers + 7 actions implementados
+- ✅ Validação completa de automação
+- ✅ Templates prontos para uso
+- ✅ Atalhos de teclado (Ctrl+C/V/Z/Y/+/-/0/1)
+- ✅ Zoom controls com indicador visual
+- ✅ Seleção múltipla e copiar/colar
+- ✅ MiniMap e Background grid
+- ✅ Design glassmorphism consistente
+- ✅ Dados mockados realistas
+
+### 📊 Estatísticas:
+- **Frontend - Páginas:** 1.072 linhas (Automations.tsx + AutomationEditor.tsx)
+- **Frontend - Componentes:** ~600 linhas (6 componentes)
+- **Service:** 305 linhas (automationService.ts)
+- **Total:** ~1.977 linhas implementadas
+- **Dependências:** react-flow (já instalada)
+
+### ⏳ Pendente - Backend (Estimativa: ~3 dias):
+
+#### Backend: Modelos e Schemas
+- [ ] Criar modelo `Automation` no banco (tabela já existe)
+- [ ] Criar modelo `AutomationExecution` para histórico
+- [ ] Criar schemas Pydantic (AutomationCreate, AutomationUpdate, AutomationResponse)
+- [ ] Validar estrutura de nodes e edges (JSON)
+
+#### Backend: Repository
+- [ ] Criar `automation_repository.py`
+- [ ] Métodos: create, update, delete, list, get_by_id
+- [ ] Busca por board_id, is_active
+- [ ] Paginação e filtros
+
+#### Backend: Service (Lógica de Execução)
+- [ ] Criar `automation_service.py`
+- [ ] Sistema de triggers (escutar eventos: card_created, card_won, etc)
+- [ ] Sistema de execução de actions
+- [ ] Validação de nodes e edges
+- [ ] Logs de execução
+- [ ] Tratamento de erros
+
+#### Backend: Endpoints
+- [ ] `GET /api/v1/automations` - Listar
+- [ ] `GET /api/v1/automations/{id}` - Buscar
+- [ ] `POST /api/v1/automations` - Criar
+- [ ] `PUT /api/v1/automations/{id}` - Atualizar
+- [ ] `DELETE /api/v1/automations/{id}` - Deletar
+- [ ] `PATCH /api/v1/automations/{id}/toggle` - Ativar/Desativar
+- [ ] `GET /api/v1/automations/{id}/executions` - Histórico
+- [ ] `POST /api/v1/automations/{id}/test` - Testar execução
+
+#### Backend: Sistema de Triggers
+- [ ] Integrar triggers com eventos do sistema
+- [ ] card_created → disparar automações
+- [ ] card_won → disparar automações
+- [ ] card_lost → disparar automações
+- [ ] card_moved → disparar automações
+- [ ] card_overdue → job agendado (Celery)
+- [ ] scheduled → jobs agendados (Celery)
+
+#### Backend: Sistema de Actions
+- [ ] create_card → criar card no board destino
+- [ ] send_email → integrar com SMTP
+- [ ] create_notification → criar notificação interna
+- [ ] assign_user → atribuir card a usuário
+- [ ] add_tag → adicionar tag ao card
+- [ ] move_to_list → mover card para outra lista
+- [ ] update_field → atualizar campo customizado
+
+#### Backend: Testes
+- [ ] Testes unitários dos métodos
+- [ ] Testes de execução de automações
+- [ ] Testes de triggers
+- [ ] Testes de actions
+
+### 💡 Melhorias Futuras (Opcionais):
+- [ ] Implementar histórico de execuções (modal frontend)
+- [ ] Adicionar mais tipos de triggers/actions
+- [ ] Sistema de condições avançadas (if/else)
+- [ ] Testes E2E do editor visual
+- [ ] Webhooks externos como triggers
 
 ---
 
@@ -1202,43 +1375,97 @@ Quando o backend de relatórios estiver implementado, basta remover o fallback d
 
 **Prioridade:** 🟢 Baixa
 **Estimativa:** ~1 dia
-**Status:** ⏳ Pendente
+**Status:** ⚠️ 50% Completo - Frontend mockado, backend pendente
+
+### ✅ Implementado (22/01/2026):
+
+**Arquivo:** Settings.tsx (640 linhas)
+
+**Tabs Implementadas (3):**
+1. ✅ **Perfil** - Edição de dados do usuário com integração backend
+2. ✅ **Notificações** - Configurações de notificações (mockado)
+3. ✅ **Segurança** - Lista de usuários ativos no sistema (mockado)
 
 ### Tarefas:
 
 #### 13.1 - Estrutura da Página
-- [ ] Criar componente `Settings.tsx`
-- [ ] Layout com tabs: Perfil, Senha, Preferências
+- [x] Criar componente `Settings.tsx` (640 linhas)
+- [x] Layout com 3 tabs: Perfil, Notificações, Segurança
+- [x] Sistema de navegação entre tabs
+- [x] Design glassmorphism consistente com o sistema
 
-#### 13.2 - Tab: Perfil
-- [ ] Avatar editável (upload)
-- [ ] Nome completo (editável)
-- [ ] Username (editável)
-- [ ] Email (editável)
-- [ ] Role (read-only)
-- [ ] Botão "Salvar Alterações"
-- [ ] Integrar com `userService.update()`
+#### 13.2 - Tab: Perfil ✅
+- [x] Avatar com iniciais (gradiente azul/cyan)
+- [x] Placeholder para upload de avatar (futuro)
+- [x] Nome completo (editável)
+- [x] Username (editável)
+- [x] Email (editável)
+- [x] Telefone (editável)
+- [x] Role (read-only com badge colorido)
+- [x] Botão "Salvar Alterações" funcional
+- [x] Integrado com `userService.update()` ✅
+- [x] Atualiza AuthContext após salvar
 
-#### 13.3 - Tab: Alterar Senha
-- [ ] Formulário:
-  - Senha atual (required)
-  - Nova senha (required)
-  - Confirmar nova senha (required)
-- [ ] Validação: senhas coincidem, senha forte
-- [ ] Integrar com `authService.changePassword()`
-- [ ] Toast de sucesso/erro
+#### 13.3 - Tab: Alterar Senha ❌
+- [x] **REMOVIDO** - Decisão: usuários não devem trocar própria senha
+- Senha deve ser resetada apenas por admins
 
-#### 13.4 - Tab: Preferências
-- [ ] (Opcional) Idioma (PT-BR, EN, ES)
-- [ ] (Opcional) Timezone
-- [ ] Notificações: Email, Push, In-app (checkboxes)
-- [ ] Tema: Escuro/Claro (toggle)
-- [ ] Botão "Salvar Preferências"
+#### 13.4 - Tab: Notificações ✅ (Mockado)
+- [x] Canais de notificação:
+  - Notificações por Email
+  - Notificações Push (navegador)
+  - Notificações In-app
+- [x] Tipos de notificação (7 tipos):
+  - Card atribuído
+  - Transferência recebida
+  - Transferência aprovada/rejeitada
+  - Card ganho pela equipe
+  - Badge conquistado
+  - Automação falhou
+- [x] Modo "Não Perturbe" com horário início/fim
+- [x] Botão "Salvar Preferências"
+- [ ] **PENDENTE:** Integração backend (endpoint não existe)
 
-#### 13.5 - Segurança
-- [ ] (Opcional) Two-Factor Authentication (2FA)
-- [ ] (Opcional) Sessões ativas (listar dispositivos)
-- [ ] (Opcional) Encerrar outras sessões
+#### 13.5 - Tab: Segurança ✅ (Mockado - Redesenhada)
+- [x] **Redesenhado:** Lista de usuários ativos no sistema (controle admin)
+- [x] Exibe usuários online/ausentes
+- [x] Avatar com indicador de status (bolinha verde/amarela)
+- [x] Informações: nome, email, role, device, última atividade
+- [x] Badge "Você" no próprio usuário
+- [x] Contador de usuários online
+- [x] Card explicativo sobre funcionamento via Redis
+- [ ] **PENDENTE:** Implementação backend com Redis sessions
+- [ ] **PENDENTE:** Endpoint `/api/v1/users/active`
+- [x] **REMOVIDO:** Tema claro/escuro (não haverá tema claro)
+- [x] **REMOVIDO:** Tab Privacidade (sistema interno, não precisa)
+
+### 📋 Pendências Backend:
+
+#### Backend: Redis Session Management
+- [ ] Criar `SessionManager` class em `core/redis_sessions.py`
+- [ ] Método `create_session()` - Criar sessão no login
+- [ ] Método `update_activity()` - Atualizar timestamp em cada request
+- [ ] Método `get_active_users()` - Listar usuários ativos
+- [ ] Método `remove_session()` - Remover no logout
+- [ ] TTL de 30 minutos com auto-renovação
+- [ ] Status automático: online (<15 min), away (15-30 min)
+
+#### Backend: Endpoints
+- [ ] `POST /api/v1/auth/login` - Criar sessão Redis após login
+- [ ] `POST /api/v1/auth/logout` - Remover sessão Redis
+- [ ] `GET /api/v1/users/active` - Retornar usuários ativos (admin only)
+- [ ] Middleware para atualizar `last_activity` em cada request
+
+#### Backend: Notificações
+- [ ] `GET /api/v1/users/me/notification-settings` - Buscar preferências
+- [ ] `PUT /api/v1/users/me/notification-settings` - Atualizar preferências
+- [ ] Schema `NotificationSettings` com todos os campos
+
+### 📊 Estatísticas:
+- **Frontend:** 640 linhas (Settings.tsx)
+- **Mockups:** 4 usuários ativos de exemplo
+- **Integração real:** Tab Perfil funcionando 100%
+- **Integração mockada:** Notificações e Segurança aguardam backend
 
 ---
 
@@ -1595,8 +1822,8 @@ Quando o backend de relatórios estiver implementado, basta remover o fallback d
 ### 🟢 Baixa Prioridade (Nice to Have)
 14. ✅ Fase 8 - Gamificação (Concluída - 20/01/2026) 🎉
 15. ✅ Fase 9 - Transferências (Concluída - 21/01/2026) 🎉
-16. ⏳ Fase 11 - Automações
-17. ⏳ Fase 13 - Configurações
+16. ⚠️ Fase 11 - Automações (50% - Interface completa, backend pendente)
+17. ⚠️ Fase 13 - Configurações (50% - Interface completa, backend pendente)
 18. ⏳ Fase 14 - Field Definitions
 19. ⏳ Fase 15 - Busca Global
 20. ⏳ Fase 17 - Melhorias UX/UI
@@ -1610,17 +1837,17 @@ Construir um **CRM completo e funcional** com todas as funcionalidades planejada
 
 **Estimativa Total:** ~25-35 dias de desenvolvimento (considerando 1 desenvolvedor)
 
-**Última atualização:** 21/01/2026 (Fase 9 - Transferências concluída com sucesso!)
+**Última atualização:** 22/01/2026 (Fase 13 - Configurações interface completa, 3 tabs funcionais!)
 
 ---
 
 ## 📈 Progresso Atual
 
-**Fases Concluídas:** 11/20 (55%) 🎉
-**Fases Parciais:** 0/20 (0%)
+**Fases Concluídas:** 10/20 (50%) 🎉
+**Fases Parciais:** 3/20 (15%)
 **Nota:** Fase 6 removida - total de fases passou de 21 para 20
 
-### ✅ Completas (11):
+### ✅ Completas (10):
 - ✅ Fase 0 - Base (100%)
 - ✅ Fase 0.5 - Melhorias Navegação/Layout (100%)
 - ✅ Fase 1 - Dashboard (100%)
@@ -1631,14 +1858,42 @@ Construir um **CRM completo e funcional** com todas as funcionalidades planejada
 - ✅ Fase 7 - Usuários (100%) 🎉
 - ✅ Fase 8 - Gamificação (100%) 🎉
 - ✅ Fase 9 - Transferências (100%) 🎉
-- ✅ Fase 10 - Relatórios (75% - dados mockados) 🎉
 
-### ⚠️ Parciais (0):
-- Nenhuma fase parcial no momento
+### ⚠️ Parciais (3):
+- ⚠️ Fase 10 - Relatórios (75% - interface mockada, backend pendente)
+- ⚠️ Fase 11 - Automações (50% - interface mockada, backend pendente)
+- ⚠️ Fase 13 - Configurações (50% - interface mockada, backend pendente)
 
 ---
 
-**Destaques da Sessão Atual (21/01/2026):**
+**Destaques da Sessão Atual (22/01/2026):**
+
+### ⚙️ Fase 13 - Configurações (PARCIAL 50%)
+**Status:** ⚠️ Interface completa mockada, backend pendente
+
+**Implementado:**
+- ✅ Settings.tsx (640 linhas) - Interface completa com 3 tabs
+- ✅ Tab Perfil - Edição de dados com integração backend funcionando
+- ✅ Tab Notificações - 7 tipos de notificação + "Não Perturbe" (mockado)
+- ✅ Tab Segurança - Lista de usuários ativos no sistema (mockado)
+- ✅ Design consistente com glassmorphism
+- ✅ Avatares com iniciais e status indicators
+
+**Decisões de Design:**
+- ❌ **Removido:** Tab "Alterar Senha" - usuários não devem trocar própria senha
+- ❌ **Removido:** Tab "Privacidade" - sistema interno, não precisa controle de visibilidade
+- ❌ **Removido:** Tema claro - sistema terá apenas tema escuro
+- ✅ **Redesenhado:** Tab Segurança agora mostra usuários ativos (controle admin)
+
+**Pendências Backend:**
+- [ ] Redis Session Management (SessionManager class)
+- [ ] Endpoint `/api/v1/users/active` (admin only)
+- [ ] Endpoints de notification settings
+- [ ] Middleware para atualizar last_activity
+
+---
+
+**Destaques da Sessão Anterior (21/01/2026):**
 
 ### 🎉 Fase 9 - Transferências (COMPLETA 100%)
 **Status:** ✅ Completa, testada e funcional
@@ -1828,11 +2083,11 @@ curl DELETE /api/v1/users/1 (próprio usuário)
 
 ---
 
-## 📊 PROGRESSO GERAL - Atualizado em 21/01/2026
+## 📊 PROGRESSO GERAL - Atualizado em 22/01/2026
 
-**Fases Concluídas:** 11/20 (55%) 🎉
+**Fases Concluídas:** 10/20 (50%) + 3 parciais (Relatórios 75% + Automações 50% + Configurações 50%) 🎉
 
-### ✅ Concluídas (11):
+### ✅ Concluídas (10):
 1. ✅ Fase 0 - Base (08/01/2026)
 2. ✅ Fase 0.5 - Melhorias de Navegação (12/01/2026)
 3. ✅ Fase 1 - Dashboard (12/01/2026)
@@ -1843,17 +2098,21 @@ curl DELETE /api/v1/users/1 (próprio usuário)
 8. ✅ Fase 7 - Usuários (20/01/2026)
 9. ✅ Fase 8 - Gamificação (20/01/2026)
 10. ✅ Fase 9 - Transferências (21/01/2026)
-11. ✅ Fase 10 - Relatórios (21/01/2026) - 75% com dados mockados
+
+### ⚠️ Parcialmente Concluídas (3):
+- ⚠️ Fase 10 - Relatórios (75%) - Interface mockada, backend pendente
+- ⚠️ Fase 11 - Automações (50%) - Interface mockada com editor visual, backend pendente
+- ⚠️ Fase 13 - Configurações (50%) - Interface mockada, backend pendente
 
 ### ⏳ Em Progresso (0):
 - Nenhuma fase em progresso no momento
 
-### 📝 Pendentes (10):
+### 📝 Pendentes (8):
 - ⏳ Fase 6 - Cards (removida - funcionalidade incorporada no Kanban)
-- ⏳ Fase 10 - Relatórios ⬅️ PRÓXIMA RECOMENDADA
-- ⏳ Fase 11 - Automações
-- ⏳ Fase 12 - Notificações
-- ⏳ Fase 13 - Configurações
+- ⏳ Fase 10 - Relatórios (backend) - Implementar endpoints e queries
+- ⏳ Fase 11 - Automações (backend) - Sistema de execução + triggers + actions
+- ⏳ Fase 12 - Notificações ⬅️ PRÓXIMA RECOMENDADA
+- ⏳ Fase 13 - Configurações (backend) - Redis sessions + notification settings
 - ⏳ Fase 14 - Field Definitions
 - ⏳ Fase 15 - Busca Global
 - ⏳ Fase 16 - Responsividade
@@ -1861,13 +2120,108 @@ curl DELETE /api/v1/users/1 (próprio usuário)
 - ⏳ Fase 18 - Otimizações
 - ⏳ Fase 19 - Testes e Deploy
 
-**Última atualização:** 21/01/2026 - Fase 10 (Relatórios) concluída 75% com dados mockados! 🎉
+**Última atualização:** 22/01/2026 - Fase 13 (Configurações) interface completa com 3 tabs! Backend pendente. 🎉
 
-**Marco Importante:** 55% do projeto concluído (11 de 20 fases)!
+**Marco Importante:** 50% do projeto concluído (10 fases completas + 3 interfaces prontas aguardando backend)!
 
 ---
 
-## 🎉 DESTAQUES DA SESSÃO ATUAL (21/01/2026)
+## 🎉 DESTAQUES DA SESSÃO ATUAL (21-22/01/2026)
+
+### Fase 13 - Configurações (Interface Mockada) ⚠️
+**Status:** 50% Completo - Frontend mockado, backend NÃO implementado
+
+**Implementado:**
+- ✅ **Settings.tsx** (640 linhas) - Interface completa com 3 tabs
+- ✅ **Tab Perfil** - Edição de dados do usuário (integração backend OK)
+- ✅ **Tab Notificações** - 7 tipos de notificação + "Não Perturbe" (mockado)
+- ✅ **Tab Segurança** - Lista de usuários ativos no sistema (mockado)
+
+**Decisões Arquiteturais:**
+- ❌ Tab "Alterar Senha" removida - usuários não devem trocar própria senha
+- ❌ Tab "Privacidade" removida - sistema interno, sem necessidade
+- ❌ Tema claro removido - sistema terá apenas tema escuro
+- ✅ Tab Segurança redesenhada para mostrar usuários ativos (controle admin)
+
+**Funcionalidades:**
+- ✅ Avatar com iniciais e gradiente
+- ✅ Edição de perfil com validação
+- ✅ 7 tipos de notificação configuráveis
+- ✅ Modo "Não Perturbe" com horários
+- ✅ Lista de usuários ativos com status online/ausente
+- ✅ Badges de status e role coloridos
+- ✅ Device info e última atividade
+
+**Backend Pendente:**
+- [ ] Redis Session Manager (create, update, get_active, remove)
+- [ ] Endpoint `/api/v1/users/active` (admin only)
+- [ ] Endpoints de notification settings (GET/PUT)
+- [ ] Middleware para atualizar last_activity
+
+---
+
+### Fase 11 - Automações (Interface Mockada com Editor Visual) ⚠️
+**Status:** 50% Completo - Frontend 100% funcional, backend NÃO implementado
+
+**Implementado:**
+- ✅ **Automations.tsx** (373 linhas) - Página de listagem com dados mockados
+- ✅ **AutomationEditor.tsx** (699 linhas) - Editor visual drag-and-drop
+- ✅ **automationService.ts** (305 linhas) - Service completo com tipos
+- ✅ **6 Componentes de automação:**
+  - TriggerNode.tsx - 6 tipos de gatilhos
+  - ActionNode.tsx - 7 tipos de ações
+  - NodesSidebar.tsx - Sidebar com drag-and-drop
+  - NodeConfigPanel.tsx - Painel de configuração
+  - CustomEdge.tsx - Conexões personalizadas
+  - TemplatesModal.tsx - 4 templates prontos
+
+**Funcionalidades Avançadas:**
+- ✅ React Flow para drag-and-drop profissional
+- ✅ Copiar/Colar nodes (Ctrl+C/V)
+- ✅ Undo/Redo (Ctrl+Z/Y) com histórico
+- ✅ Zoom controls (Ctrl+/-, Ctrl+0, Ctrl+1)
+- ✅ Seleção múltipla (Shift)
+- ✅ Pan canvas (Ctrl + arrastar)
+- ✅ MiniMap e Background grid
+- ✅ Validação completa de automação
+- ✅ Templates pré-configurados
+- ✅ Estatísticas de execução
+
+**Triggers Implementados:**
+1. Card Criado
+2. Card Ganho
+3. Card Perdido
+4. Card Movido
+5. Card Atrasado
+6. Agendado
+
+**Actions Implementadas:**
+1. Criar Card
+2. Enviar Email
+3. Criar Notificação
+4. Atribuir Usuário
+5. Adicionar Tag
+6. Mover para Lista
+7. Atualizar Campo
+
+**Templates Prontos:**
+1. "Vendas → Pós-Venda" (card ganho → criar card)
+2. "Notificar Gerente - Alto Valor" (card criado → enviar email)
+3. "Follow-up Automático" (agendado → enviar email)
+4. "Email Boas-Vindas" (card criado → enviar email)
+
+**Total:** ~1.977 linhas implementadas (apenas frontend)
+
+**⚠️ PENDENTE:**
+- Backend completo de automações (~3 dias de trabalho)
+- Sistema de execução de triggers e actions
+- Integração com Celery para jobs agendados
+- Histórico de execuções
+- Testes do sistema de automação
+
+---
+
+## 🎉 DESTAQUES DA SESSÃO (21/01/2026)
 
 ### Fase 9 - Transferências (Ajustes) ✅
 **Correções implementadas:**

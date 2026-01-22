@@ -137,6 +137,13 @@ class AuthService {
   }
 
   /**
+   * Atualiza os dados do usuário no localStorage
+   */
+  setCurrentUser(user: User): void {
+    localStorage.setItem("user", JSON.stringify(user));
+  }
+
+  /**
    * Retorna o access token
    */
   getAccessToken(): string | null {
