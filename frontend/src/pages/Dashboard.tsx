@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Download,
   Calendar,
+  ChevronDown,
   Trophy,
   Award,
   Medal,
@@ -266,19 +267,19 @@ const Dashboard: React.FC = () => {
 
         <div className="flex flex-wrap gap-3 w-full sm:w-auto justify-center sm:justify-start">
           {/* Filtro de Período */}
-          <div className="relative">
-            <select
+          <div className="min-w-[180px]">
+            <SelectMenu
               value={period}
-              onChange={(e) => setPeriod(e.target.value as PeriodType)}
-              className="appearance-none bg-slate-800/80 border border-slate-700/50 text-white px-4 py-2 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
-            >
-              <option value="today">Hoje</option>
-              <option value="week">Esta Semana</option>
-              <option value="month">Este Mês</option>
-              <option value="quarter">Este Trimestre</option>
-              <option value="year">Este Ano</option>
-            </select>
-            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              options={[
+                { value: "today", label: "Hoje" },
+                { value: "week", label: "Esta Semana" },
+                { value: "month", label: "Este Mês" },
+                { value: "quarter", label: "Este Trimestre" },
+                { value: "year", label: "Este Ano" },
+              ]}
+              onChange={(value) => setPeriod(value as PeriodType)}
+              icon={<Calendar className="w-4 h-4 text-slate-400" />}
+            />
           </div>
 
           {/* Botão Refresh */}
@@ -724,6 +725,86 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+  icon?: React.ReactNode;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({
+  value,
+  options,
+  placeholder,
+  onChange,
+  icon,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span className="flex items-center gap-2 truncate">
+          {icon}
+          <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+            {selectedLabel}
+          </span>
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -21,6 +21,7 @@ import {
   Rocket,
   Star,
   Heart,
+  ChevronDown,
   LucideIcon,
 } from "lucide-react";
 import {
@@ -74,6 +75,9 @@ const KanbanBoard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [listFilter, setListFilter] = useState("");
+  const [valueFilter, setValueFilter] = useState("");
+  const [dueDateFilter, setDueDateFilter] = useState("");
   const boardScrollRef = useRef<HTMLDivElement | null>(null);
   const [isDraggingBoard, setIsDraggingBoard] = useState(false);
   const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
@@ -806,38 +810,49 @@ const KanbanBoard: React.FC = () => {
             <span className="text-sm font-medium text-slate-300">Filtros:</span>
 
             {/* Filtro por lista */}
-            <select
-              className="w-full sm:w-auto px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Todas as listas</option>
-              {lists.map((list) => (
-                <option key={list.id} value={list.id}>
-                  {list.name}
-                </option>
-              ))}
-            </select>
+            <div className="w-full sm:w-auto sm:min-w-[190px]">
+              <SelectMenu
+                value={listFilter}
+                options={[
+                  { value: "", label: "Todas as listas" },
+                  ...lists.map((list) => ({
+                    value: String(list.id),
+                    label: list.name,
+                  })),
+                ]}
+                onChange={setListFilter}
+              />
+            </div>
 
             {/* Filtro por valor */}
-            <select
-              className="w-full sm:w-auto px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Qualquer valor</option>
-              <option value="0-1000">R$ 0 - R$ 1.000</option>
-              <option value="1000-5000">R$ 1.000 - R$ 5.000</option>
-              <option value="5000-10000">R$ 5.000 - R$ 10.000</option>
-              <option value="10000+">R$ 10.000+</option>
-            </select>
+            <div className="w-full sm:w-auto sm:min-w-[180px]">
+              <SelectMenu
+                value={valueFilter}
+                options={[
+                  { value: "", label: "Qualquer valor" },
+                  { value: "0-1000", label: "R$ 0 - R$ 1.000" },
+                  { value: "1000-5000", label: "R$ 1.000 - R$ 5.000" },
+                  { value: "5000-10000", label: "R$ 5.000 - R$ 10.000" },
+                  { value: "10000+", label: "R$ 10.000+" },
+                ]}
+                onChange={setValueFilter}
+              />
+            </div>
 
             {/* Filtro por data de vencimento */}
-            <select
-              className="w-full sm:w-auto px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Qualquer data</option>
-              <option value="overdue">Atrasados</option>
-              <option value="today">Hoje</option>
-              <option value="week">Esta semana</option>
-              <option value="month">Este mês</option>
-            </select>
+            <div className="w-full sm:w-auto sm:min-w-[170px]">
+              <SelectMenu
+                value={dueDateFilter}
+                options={[
+                  { value: "", label: "Qualquer data" },
+                  { value: "overdue", label: "Atrasados" },
+                  { value: "today", label: "Hoje" },
+                  { value: "week", label: "Esta semana" },
+                  { value: "month", label: "Este mês" },
+                ]}
+                onChange={setDueDateFilter}
+              />
+            </div>
 
             {/* Limpar filtros */}
             <button
@@ -951,6 +966,81 @@ const KanbanBoard: React.FC = () => {
         title="Editar Board"
       />
     </DndContext>
+  );
+};
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({
+  value,
+  options,
+  placeholder,
+  onChange,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
