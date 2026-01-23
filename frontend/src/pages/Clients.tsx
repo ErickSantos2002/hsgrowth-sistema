@@ -155,7 +155,7 @@ const Clients: React.FC = () => {
             </h1>
             <p className="text-slate-400 mt-1">Gerencie sua base de clientes</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <Button
               variant="secondary"
               size="sm"
@@ -188,6 +188,27 @@ const Clients: React.FC = () => {
 
         {/* Busca e Filtros */}
         <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex gap-3 md:hidden">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RefreshCw size={16} />}
+              onClick={loadClients}
+              disabled={loading}
+              className="flex-1 py-2.5"
+            >
+              Atualizar
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Plus size={16} />}
+              onClick={handleCreate}
+              className="flex-1"
+            >
+              Novo Cliente
+            </Button>
+          </div>
           {/* Campo de busca */}
           <div className="flex-1 relative">
             <Search
