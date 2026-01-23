@@ -132,16 +132,15 @@ const Settings: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-            <SettingsIcon className="text-white" size={32} />
-            Configurações
-          </h1>
-          <p className="text-slate-400">Gerencie suas informações pessoais e preferências</p>
-        </div>
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+          <SettingsIcon className="text-white" size={32} />
+          Configurações
+        </h1>
+        <p className="text-slate-400">Gerencie suas informações pessoais e preferências</p>
+      </div>
 
         {/* Tabs */}
         <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl overflow-hidden">
@@ -154,7 +153,7 @@ const Settings: React.FC = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition-colors ${
                     activeTab === tab.id
-                      ? "bg-purple-600 text-white"
+                      ? "bg-emerald-600 text-white"
                       : "text-slate-400 hover:text-white hover:bg-slate-700/50"
                   }`}
                 >
@@ -178,7 +177,7 @@ const Settings: React.FC = () => {
                       {user?.name ? getInitials(user.name) : "?"}
                     </div>
                     <button
-                      className="absolute bottom-0 right-0 p-2 bg-purple-600 hover:bg-purple-700 rounded-full text-white transition-colors"
+                      className="absolute bottom-0 right-0 p-2 bg-emerald-600 hover:bg-emerald-700 rounded-full text-white transition-colors"
                       title="Upload de avatar (não implementado)"
                       onClick={() => alert("Upload de avatar será implementado no futuro")}
                     >
@@ -188,7 +187,7 @@ const Settings: React.FC = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-white">{user?.name}</h3>
                     <p className="text-slate-400">{user?.email}</p>
-                    <span className="inline-block mt-2 px-3 py-1 bg-purple-600/20 text-purple-400 text-sm font-medium rounded-full">
+                    <span className="inline-block mt-2 px-3 py-1 bg-emerald-600/20 text-emerald-400 text-sm font-medium rounded-full">
                       {user?.role_name || "Usuário"}
                     </span>
                   </div>
@@ -204,7 +203,7 @@ const Settings: React.FC = () => {
                       type="text"
                       value={profileData.name}
                       onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="Seu nome completo"
                     />
                   </div>
@@ -217,7 +216,7 @@ const Settings: React.FC = () => {
                       type="text"
                       value={profileData.username}
                       onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="Seu username"
                     />
                   </div>
@@ -230,7 +229,7 @@ const Settings: React.FC = () => {
                       type="email"
                       value={profileData.email}
                       onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="seu@email.com"
                     />
                   </div>
@@ -243,7 +242,7 @@ const Settings: React.FC = () => {
                       type="tel"
                       value={profileData.phone}
                       onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="(00) 00000-0000"
                     />
                   </div>
@@ -270,7 +269,7 @@ const Settings: React.FC = () => {
                   <button
                     onClick={handleSaveProfile}
                     disabled={loading}
-                    className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
                   >
                     <Save size={20} />
                     {loading ? "Salvando..." : "Salvar Alterações"}
@@ -304,7 +303,7 @@ const Settings: React.FC = () => {
                             emailNotifications: e.target.checked,
                           })
                         }
-                        className="w-5 h-5 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-purple-500"
+                        className="w-5 h-5 text-emerald-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-emerald-500"
                       />
                     </label>
 
@@ -324,7 +323,7 @@ const Settings: React.FC = () => {
                             pushNotifications: e.target.checked,
                           })
                         }
-                        className="w-5 h-5 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-purple-500"
+                        className="w-5 h-5 text-emerald-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-emerald-500"
                       />
                     </label>
 
@@ -344,7 +343,7 @@ const Settings: React.FC = () => {
                             inAppNotifications: e.target.checked,
                           })
                         }
-                        className="w-5 h-5 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-purple-500"
+                        className="w-5 h-5 text-emerald-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-emerald-500"
                       />
                     </label>
                   </div>
@@ -370,7 +369,7 @@ const Settings: React.FC = () => {
                             cardAssigned: e.target.checked,
                           })
                         }
-                        className="w-5 h-5 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-purple-500"
+                        className="w-5 h-5 text-emerald-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-emerald-500"
                       />
                     </label>
 
@@ -390,7 +389,7 @@ const Settings: React.FC = () => {
                             transferReceived: e.target.checked,
                           })
                         }
-                        className="w-5 h-5 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-purple-500"
+                        className="w-5 h-5 text-emerald-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-emerald-500"
                       />
                     </label>
 
@@ -410,7 +409,7 @@ const Settings: React.FC = () => {
                             transferApproved: e.target.checked,
                           })
                         }
-                        className="w-5 h-5 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-purple-500"
+                        className="w-5 h-5 text-emerald-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-emerald-500"
                       />
                     </label>
 
@@ -430,7 +429,7 @@ const Settings: React.FC = () => {
                             cardWon: e.target.checked,
                           })
                         }
-                        className="w-5 h-5 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-purple-500"
+                        className="w-5 h-5 text-emerald-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-emerald-500"
                       />
                     </label>
 
@@ -450,7 +449,7 @@ const Settings: React.FC = () => {
                             badgeEarned: e.target.checked,
                           })
                         }
-                        className="w-5 h-5 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-purple-500"
+                        className="w-5 h-5 text-emerald-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-emerald-500"
                       />
                     </label>
 
@@ -470,7 +469,7 @@ const Settings: React.FC = () => {
                             automationFailed: e.target.checked,
                           })
                         }
-                        className="w-5 h-5 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-purple-500"
+                        className="w-5 h-5 text-emerald-600 bg-slate-600 border-slate-500 rounded focus:ring-2 focus:ring-emerald-500"
                       />
                     </label>
                   </div>
@@ -496,7 +495,7 @@ const Settings: React.FC = () => {
                             doNotDisturbStart: e.target.value,
                           })
                         }
-                        className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       />
                     </div>
                     <div>
@@ -512,7 +511,7 @@ const Settings: React.FC = () => {
                             doNotDisturbEnd: e.target.value,
                           })
                         }
-                        className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       />
                     </div>
                   </div>
@@ -522,7 +521,7 @@ const Settings: React.FC = () => {
                 <div className="flex justify-end pt-4">
                   <button
                     onClick={handleSaveNotifications}
-                    className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
                   >
                     <Save size={20} />
                     Salvar Preferências
@@ -581,7 +580,7 @@ const Settings: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <p className="font-semibold text-white">{activeUser.name}</p>
                               {activeUser.id === user?.id && (
-                                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs font-medium rounded-full">
+                                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full">
                                   Você
                                 </span>
                               )}
@@ -638,7 +637,6 @@ const Settings: React.FC = () => {
 
           </div>
         </div>
-      </div>
     </div>
   );
 };
