@@ -143,7 +143,7 @@ const Boards: React.FC = () => {
         </div>
         <button
           onClick={handleCreateBoard}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl"
+          className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl"
         >
           <Plus size={20} />
           Novo Board
@@ -168,46 +168,46 @@ const Boards: React.FC = () => {
         </div>
 
         {/* Filtro por status + atualizar */}
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center w-full sm:w-auto">
           <button
             onClick={() => setFilterStatus("all")}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`h-11 px-4 py-2 rounded-lg transition-colors flex items-center justify-center flex-1 sm:flex-none ${
               filterStatus === "all"
                 ? "bg-blue-500 text-white"
                 : "bg-gray-800/50 text-gray-400 hover:bg-gray-700"
             }`}
           >
-            <Grid3x3 size={20} className="inline mr-2" />
-            Todos
+            <Grid3x3 size={20} className="inline sm:mr-2" />
+            <span className="hidden sm:inline">Todos</span>
           </button>
           <button
             onClick={() => setFilterStatus("active")}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`h-11 px-4 py-2 rounded-lg transition-colors flex items-center justify-center flex-1 sm:flex-none ${
               filterStatus === "active"
                 ? "bg-green-500 text-white"
                 : "bg-gray-800/50 text-gray-400 hover:bg-gray-700"
             }`}
           >
-            <CheckCircle size={20} className="inline mr-2" />
-            Ativos
+            <CheckCircle size={20} className="inline sm:mr-2" />
+            <span className="hidden sm:inline">Ativos</span>
           </button>
           <button
             onClick={() => setFilterStatus("archived")}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`h-11 px-4 py-2 rounded-lg transition-colors flex items-center justify-center flex-1 sm:flex-none ${
               filterStatus === "archived"
                 ? "bg-yellow-500 text-white"
                 : "bg-gray-800/50 text-gray-400 hover:bg-gray-700"
             }`}
           >
-            <Archive size={20} className="inline mr-2" />
-            Arquivados
+            <Archive size={20} className="inline sm:mr-2" />
+            <span className="hidden sm:inline">Arquivados</span>
           </button>
 
           {/* Botão de refresh */}
           <button
             onClick={loadBoards}
             disabled={loading}
-            className="px-4 py-2 bg-gray-800/50 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+            className="h-11 px-4 py-2 bg-gray-800/50 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
             title="Atualizar lista"
           >
             <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
