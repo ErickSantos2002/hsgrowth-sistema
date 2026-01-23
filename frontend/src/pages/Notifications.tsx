@@ -144,7 +144,7 @@ const Notifications: React.FC = () => {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-          <Bell className="text-blue-400" size={32} />
+          <Bell className="text-white" size={32} />
           Notificações
         </h1>
         <p className="text-slate-400">
@@ -156,24 +156,38 @@ const Notifications: React.FC = () => {
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Filtros */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setFilterUnread(!filterUnread)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterUnread
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-              }`}
-            >
-              <Filter size={16} />
-              {filterUnread ? "Apenas não lidas" : "Todas"}
-            </button>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
+            <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:gap-3">
+              <div className="flex w-full gap-3 md:w-auto">
+                <button
+                  onClick={() => setFilterUnread(!filterUnread)}
+                  className={`flex flex-1 md:flex-none items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    filterUnread
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                  }`}
+                >
+                  <Filter size={16} />
+                  {filterUnread ? "Apenas não lidas" : "Todas"}
+                </button>
 
-            {unreadCount > 0 && (
-              <span className="px-3 py-2 bg-red-500/20 text-red-400 text-sm font-medium rounded-lg border border-red-500/30">
-                {unreadCount} não lida{unreadCount > 1 ? "s" : ""}
-              </span>
-            )}
+                {notifications.some(n => n.is_read) && (
+                  <button
+                    onClick={handleDeleteAllRead}
+                    className="flex flex-1 md:hidden items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    <Trash2 size={16} />
+                    Deletar lidas
+                  </button>
+                )}
+              </div>
+
+              {unreadCount > 0 && (
+                <span className="px-3 py-2 bg-red-500/20 text-red-400 text-sm font-medium rounded-lg border border-red-500/30">
+                  {unreadCount} não lida{unreadCount > 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Ações */}
@@ -191,7 +205,7 @@ const Notifications: React.FC = () => {
             {notifications.some(n => n.is_read) && (
               <button
                 onClick={handleDeleteAllRead}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                className="hidden md:flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
               >
                 <Trash2 size={16} />
                 Deletar lidas
@@ -247,42 +261,43 @@ const Notifications: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-sm text-slate-400 mb-2">{notification.message}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs px-2 py-1 rounded bg-slate-700/50 text-slate-400">
-                        {notificationService.formatType(notification.type)}
-                      </span>
-                      {!notification.is_read && (
-                        <span className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400 font-medium">
-                          Nova
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs px-2 py-1 rounded bg-slate-700/50 text-slate-400">
+                          {notificationService.formatType(notification.type)}
                         </span>
-                      )}
-                    </div>
-                  </div>
+                        {!notification.is_read && (
+                          <span className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400 font-medium">
+                            Nova
+                          </span>
+                        )}
+                      </div>
 
-                  {/* Ações */}
-                  <div className="flex flex-shrink-0 gap-2">
-                    {!notification.is_read && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkAsRead(notification.id);
-                        }}
-                        className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 rounded-lg transition-colors"
-                        title="Marcar como lida"
-                      >
-                        <Check size={18} />
-                      </button>
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(notification.id);
-                      }}
-                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors"
-                      title="Deletar"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                      <div className="flex items-center gap-2">
+                        {!notification.is_read && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkAsRead(notification.id);
+                            }}
+                            className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 rounded-lg transition-colors"
+                            title="Marcar como lida"
+                          >
+                            <Check size={18} />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(notification.id);
+                          }}
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-slate-700 rounded-lg transition-colors"
+                          title="Deletar"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

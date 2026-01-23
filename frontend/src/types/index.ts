@@ -431,7 +431,7 @@ export interface TransferStatistics {
 
 // ==================== NOTIFICATIONS ====================
 
-export interface Notification {
+export interface NotificationLegacy {
   id: number;
   user_id: number;
   notification_type: string;
