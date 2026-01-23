@@ -33,11 +33,15 @@ const Notifications: React.FC = () => {
   const [selectedType, setSelectedType] = useState<NotificationType | "all">("all");
   const navigate = useNavigate();
 
-  const pageSize = 20;
+  const pageSize = 10;
 
   useEffect(() => {
     loadNotifications();
   }, [page, filterUnread]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterUnread, selectedType]);
 
   const loadNotifications = async () => {
     setLoading(true);
@@ -138,6 +142,24 @@ const Notifications: React.FC = () => {
   const filteredNotifications = selectedType === "all"
     ? notifications
     : notifications.filter(n => n.type === selectedType);
+
+  const totalItems = total;
+  const totalPagesSafe = Math.max(1, totalPages);
+
+  const getPageNumbers = () => {
+    const maxButtons = 5;
+    let start = Math.max(1, page - Math.floor(maxButtons / 2));
+    let end = start + maxButtons - 1;
+
+    if (end > totalPagesSafe) {
+      end = totalPagesSafe;
+      start = Math.max(1, end - maxButtons + 1);
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  };
+
+  const pageNumbers = getPageNumbers();
 
   return (
     <div className="p-6">
@@ -305,29 +327,82 @@ const Notifications: React.FC = () => {
           </div>
 
           {/* Paginação */}
-          {totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-xl p-4">
-              <p className="text-sm text-slate-400">
-                Página {page} de {totalPages} • Total: {total} notificações
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <span className="px-4 py-2 bg-slate-700 text-white rounded-lg font-medium">
-                  {page}
-                </span>
-                <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight size={20} />
-                </button>
+          {totalPagesSafe > 1 && (
+            <div className="mt-6 flex flex-col gap-4 border-t border-slate-700/60 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+              <div className="text-sm text-slate-400">
+                Mostrando {totalItems === 0 ? 0 : (page - 1) * pageSize + 1} a{" "}
+                {Math.min(page * pageSize, totalItems)} de {totalItems} registros
+              </div>
+              <div className="flex items-center justify-center gap-3 sm:justify-end">
+                <div className="flex items-center gap-2 sm:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                      page === 1
+                        ? "border-slate-700 text-slate-600"
+                        : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                    }`}
+                  >
+                    {"<"}
+                  </button>
+                  <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
+                    {page}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPagesSafe, p + 1))}
+                    disabled={page === totalPagesSafe}
+                    className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                      page === totalPagesSafe
+                        ? "border-slate-700 text-slate-600"
+                        : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                    }`}
+                  >
+                    {">"}
+                  </button>
+                </div>
+                <div className="hidden items-center gap-2 sm:flex">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      page === 1
+                        ? "border-slate-700 text-slate-600"
+                        : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                    }`}
+                  >
+                    Anterior
+                  </button>
+                  {pageNumbers.map((pageNumber) => (
+                    <button
+                      key={pageNumber}
+                      type="button"
+                      onClick={() => setPage(pageNumber)}
+                      className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
+                        pageNumber === page
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPagesSafe, p + 1))}
+                    disabled={page === totalPagesSafe}
+                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      page === totalPagesSafe
+                        ? "border-slate-700 text-slate-600"
+                        : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                    }`}
+                  >
+                    Próxima
+                  </button>
+                </div>
               </div>
             </div>
           )}
