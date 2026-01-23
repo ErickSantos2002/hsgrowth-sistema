@@ -395,7 +395,7 @@ const Transfers: React.FC = () => {
       <div className="mb-6 flex flex-col items-center text-center gap-3 sm:flex-row sm:items-center sm:justify-between sm:text-left">
         <div className="flex flex-col items-center sm:items-start">
           <h1 className="text-xl sm:text-3xl font-bold text-white flex items-center justify-center gap-3 sm:justify-start">
-            <ArrowRightLeft className="text-emerald-400" size={24} />
+            <ArrowRightLeft className="text-white" size={24} />
             Transferências de Cards
           </h1>
           <p className="text-slate-400 mt-1">

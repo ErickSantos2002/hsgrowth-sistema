@@ -253,7 +253,10 @@ const Users: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Usuários</h1>
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <UserCircle className="text-white" size={32} />
+              Usuários
+            </h1>
             <p className="text-slate-400 mt-1">Gerencie os usuários do sistema</p>
           </div>
           <div className="flex items-center gap-3">

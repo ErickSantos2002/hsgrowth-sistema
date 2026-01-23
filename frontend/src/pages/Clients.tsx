@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Building, User, ChevronDown } from "lucide-react";
+import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Building, User, Users, ChevronDown } from "lucide-react";
 import clientService, { Client } from "../services/clientService";
 import { Button, Alert } from "../components/common";
 import ClientModal from "../components/clients/ClientModal";
@@ -149,7 +149,10 @@ const Clients: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Clientes</h1>
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <Users className="text-white" size={32} />
+              Clientes
+            </h1>
             <p className="text-slate-400 mt-1">Gerencie sua base de clientes</p>
           </div>
           <div className="flex items-center gap-3">

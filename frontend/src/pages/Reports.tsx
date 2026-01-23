@@ -206,7 +206,10 @@ const Reports: React.FC = () => {
     <div className="p-6 overflow-x-hidden">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Relatórios</h1>
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+            <FileText className="text-white" size={32} />
+            Relatórios
+          </h1>
           <p className="text-slate-400">Análise detalhada de vendas, conversão e transferências</p>
         </div>
 

@@ -203,7 +203,7 @@ const Automations: React.FC = () => {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                <Zap className="text-emerald-400" size={32} />
+                <Zap className="text-white" size={32} />
                 Automações
               </h1>
               <p className="text-slate-400 mt-1">

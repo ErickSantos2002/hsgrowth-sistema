@@ -1,5 +1,5 @@
   import React, { useState, useEffect } from "react";
-import { Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle } from "lucide-react";
+import { Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle, Trello } from "lucide-react";
 import boardService from "../services/boardService";
 import { Board } from "../types";
 import BoardCard from "../components/boards/BoardCard";
@@ -133,7 +133,10 @@ const Boards: React.FC = () => {
       {/* Header com título e botões */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Boards</h1>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <Trello className="text-white" size={32} />
+            Boards
+          </h1>
           <p className="text-gray-400 mt-1">
             Gerencie seus quadros Kanban e organize seus projetos
           </p>

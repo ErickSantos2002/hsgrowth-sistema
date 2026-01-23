@@ -9,6 +9,7 @@ import {
   DollarSign,
   Target,
   Users,
+  LayoutDashboard,
   RefreshCw,
   Download,
   Calendar,
@@ -258,8 +259,11 @@ const Dashboard: React.FC = () => {
     <div className="p-6 space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="text-center sm:text-left">
-          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
+        <div className="text-left">
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+            <LayoutDashboard className="text-white" size={32} />
+            Dashboard
+          </h1>
           <p className="text-slate-400 text-sm">
             Última atualização: {lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR") : "Carregando..."}
           </p>

@@ -209,10 +209,10 @@ const Gamification: React.FC = () => {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-          <Trophy className="text-yellow-400" size={32} />
-          Gamificação
-        </h1>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <Trophy className="text-white" size={32} />
+            Gamificação
+          </h1>
         <p className="text-slate-400 mt-1">
           {isManagerOrAdmin
             ? "Visualize o desempenho da equipe e de vendedores individuais"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity } from "lucide-react";
+import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 
@@ -136,7 +136,10 @@ const Settings: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Configurações</h1>
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+            <SettingsIcon className="text-white" size={32} />
+            Configurações
+          </h1>
           <p className="text-slate-400">Gerencie suas informações pessoais e preferências</p>
         </div>
 
