@@ -78,7 +78,7 @@ export default function MainLayout() {
                         : "w-20 lg:translate-x-0 -translate-x-full"
                 }`}
             >
-                <div className="h-full px-3 py-4 overflow-y-auto">
+                <div className="h-full px-3 py-4 flex flex-col">
                     {/* Logo */}
                     <div className={`flex items-center mb-8 px-3 ${sidebarOpen ? "justify-between" : "justify-center"}`}>
                         <div className={`flex items-center ${sidebarOpen ? "gap-3" : ""}`}>
@@ -112,64 +112,66 @@ export default function MainLayout() {
                     </div>
 
                     {/* Menu Items */}
-                    <ul className="space-y-2 font-medium">
-                        {menuItems.map((item) => {
-                            // Ocultar itens de admin se o usuário não for admin
-                            if (item.adminOnly && user?.role !== "admin") {
-                                return null;
-                            }
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                        <ul className="space-y-2 font-medium">
+                            {menuItems.map((item) => {
+                                // Ocultar itens de admin se o usuário não for admin
+                                if (item.adminOnly && user?.role !== "admin") {
+                                    return null;
+                                }
 
-                            const Icon = item.icon;
-                            const isActive = location.pathname === item.path;
+                                const Icon = item.icon;
+                                const isActive = location.pathname === item.path;
 
-                            return (
-                                <li key={item.path}>
-                                    <Link
-                                        to={item.path}
-                                        onClick={() => {
-                                            // Fecha sidebar no mobile ao clicar em um item
-                                            if (window.innerWidth < 1024) {
-                                                setSidebarOpen(false);
-                                            }
-                                        }}
-                                        className={`flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
-                                            isActive
-                                                ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/20"
-                                                : "text-slate-300 hover:bg-slate-800/50 hover:text-white"
-                                        } ${sidebarOpen ? "" : "justify-center"}`}
-                                        title={!sidebarOpen ? item.label : ""}
-                                    >
-                                        <Icon
-                                            size={20}
-                                            className={`${sidebarOpen ? "mr-3" : ""} ${isActive ? "" : "group-hover:scale-110 transition-transform"}`}
-                                        />
-                                        {sidebarOpen && (
-                                            <>
-                                                <span>{item.label}</span>
-                                                {/* Badge de Admin */}
-                                                {item.adminOnly && (
-                                                    <span className="ml-auto text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                                                        Admin
-                                                    </span>
-                                                )}
-                                            </>
-                                        )}
-                                        {/* Tooltip para modo mini */}
-                                        {!sidebarOpen && (
-                                            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-slate-700">
-                                                {item.label}
-                                                {item.adminOnly && (
-                                                    <span className="ml-2 text-xs text-yellow-400">
-                                                        (Admin)
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
+                                return (
+                                    <li key={item.path}>
+                                        <Link
+                                            to={item.path}
+                                            onClick={() => {
+                                                // Fecha sidebar no mobile ao clicar em um item
+                                                if (window.innerWidth < 1024) {
+                                                    setSidebarOpen(false);
+                                                }
+                                            }}
+                                            className={`flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
+                                                isActive
+                                                    ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/20"
+                                                    : "text-slate-300 hover:bg-slate-800/50 hover:text-white"
+                                            } ${sidebarOpen ? "" : "justify-center"}`}
+                                            title={!sidebarOpen ? item.label : ""}
+                                        >
+                                            <Icon
+                                                size={20}
+                                                className={`${sidebarOpen ? "mr-3" : ""} ${isActive ? "" : "group-hover:scale-110 transition-transform"}`}
+                                            />
+                                            {sidebarOpen && (
+                                                <>
+                                                    <span>{item.label}</span>
+                                                    {/* Badge de Admin */}
+                                                    {item.adminOnly && (
+                                                        <span className="ml-auto text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                                                            Admin
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
+                                            {/* Tooltip para modo mini */}
+                                            {!sidebarOpen && (
+                                                <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-slate-700">
+                                                    {item.label}
+                                                    {item.adminOnly && (
+                                                        <span className="ml-2 text-xs text-yellow-400">
+                                                            (Admin)
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </Link>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
 
                     {/* Rodapé da Sidebar */}
                     {sidebarOpen && (
