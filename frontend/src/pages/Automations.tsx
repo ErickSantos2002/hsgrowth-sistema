@@ -200,7 +200,7 @@ const Automations: React.FC = () => {
     <div className="p-6">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-3">
                 <Zap className="text-emerald-400" size={32} />
@@ -212,7 +212,7 @@ const Automations: React.FC = () => {
             </div>
             <button
               onClick={() => navigate("/automations/new")}
-              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+              className="hidden md:flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
             >
               <Plus size={20} />
               Nova Automação
@@ -221,6 +221,13 @@ const Automations: React.FC = () => {
 
           {/* Filtros */}
           <div className="flex flex-col md:flex-row gap-3">
+            <button
+              onClick={() => navigate("/automations/new")}
+              className="md:hidden flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+            >
+              <Plus size={20} />
+              Nova Automação
+            </button>
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input
