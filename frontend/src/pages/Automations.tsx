@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -12,6 +12,7 @@ import {
   XCircle,
   Clock,
   Search,
+  ChevronDown,
 } from "lucide-react";
 import automationService, { Automation } from "../services/automationService";
 import boardService from "../services/boardService";
@@ -28,6 +29,7 @@ const Automations: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBoard, setSelectedBoard] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     loadData();
@@ -162,20 +164,46 @@ const Automations: React.FC = () => {
     return matchesSearch && matchesBoard;
   });
 
+  const itemsPerPage = 4;
+  const totalItems = filteredAutomations.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedAutomations = filteredAutomations.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedBoard, automations.length]);
+
+  const getPageNumbers = () => {
+    const maxButtons = 5;
+    let start = Math.max(1, safePage - Math.floor(maxButtons / 2));
+    let end = start + maxButtons - 1;
+
+    if (end > totalPages) {
+      end = totalPages;
+      start = Math.max(1, end - maxButtons + 1);
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  };
+
+  const pageNumbers = getPageNumbers();
+
   const successRate = (auto: Automation) => {
     if (auto.execution_count === 0) return 0;
     return ((auto.success_count / auto.execution_count) * 100).toFixed(1);
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-6">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                <Zap className="text-purple-400" size={32} />
+                <Zap className="text-emerald-400" size={32} />
                 Automações
               </h1>
               <p className="text-slate-400 mt-1">
@@ -184,7 +212,7 @@ const Automations: React.FC = () => {
             </div>
             <button
               onClick={() => navigate("/automations/new")}
-              className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-500/30"
+              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
             >
               <Plus size={20} />
               Nova Automação
@@ -192,7 +220,7 @@ const Automations: React.FC = () => {
           </div>
 
           {/* Filtros */}
-          <div className="flex gap-4">
+          <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input
@@ -200,28 +228,31 @@ const Automations: React.FC = () => {
                 placeholder="Buscar automações..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
-            <select
-              value={selectedBoard}
-              onChange={(e) => setSelectedBoard(e.target.value)}
-              className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="">Todos os boards</option>
-              {boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.name}
-                </option>
-              ))}
-            </select>
+            <div className="w-full md:w-64">
+              <SelectMenu
+                value={selectedBoard}
+                options={[
+                  { value: "", label: "Todos os boards" },
+                  ...boards.map((board) => ({ value: String(board.id), label: board.name })),
+                ]}
+                onChange={setSelectedBoard}
+              />
+            </div>
           </div>
+        </div>
+
+        <div className="mb-4 text-sm text-slate-400">
+          {filteredAutomations.length} automaç{filteredAutomations.length !== 1 ? "ões" : "ão"} encontrada
+          {filteredAutomations.length !== 1 ? "s" : ""}
         </div>
 
         {/* Loading */}
         {loading && (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
             <p className="text-slate-400 mt-4">Carregando automações...</p>
           </div>
         )}
@@ -241,7 +272,7 @@ const Automations: React.FC = () => {
             {!searchTerm && !selectedBoard && (
               <button
                 onClick={() => navigate("/automations/new")}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
               >
                 <Plus size={20} />
                 Criar Primeira Automação
@@ -251,12 +282,13 @@ const Automations: React.FC = () => {
         )}
 
         {!loading && filteredAutomations.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredAutomations.map((automation) => (
-              <div
-                key={automation.id}
-                className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6 hover:border-purple-500/50 transition-all"
-              >
+          <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 sm:p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {paginatedAutomations.map((automation) => (
+                <div
+                  key={automation.id}
+                  className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6 hover:border-emerald-500/40 transition-all"
+                >
                 {/* Header do Card */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -279,7 +311,7 @@ const Automations: React.FC = () => {
                     </p>
                     {automation.board_name && (
                       <div className="mt-2">
-                        <span className="text-xs text-purple-400">
+                        <span className="text-xs text-emerald-400">
                           Board: {automation.board_name}
                         </span>
                       </div>
@@ -347,7 +379,7 @@ const Automations: React.FC = () => {
                   </button>
                   <button
                     onClick={() => navigate(`/automations/${automation.id}/edit`)}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
                     title="Editar"
                   >
                     <Edit size={16} />
@@ -361,12 +393,158 @@ const Automations: React.FC = () => {
                   </button>
                 </div>
               </div>
-            ))}
+                ))}
+            </div>
+            <div className="mt-6 flex flex-col gap-4 border-t border-slate-700/60 pt-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+              <div className="text-sm text-slate-400">
+                Mostrando {totalItems === 0 ? 0 : startIndex + 1} a {endIndex} de {totalItems} registros
+              </div>
+              <div className="flex items-center justify-center gap-3 sm:justify-end">
+                <div className="flex items-center gap-2 sm:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    disabled={safePage === 1}
+                    className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                      safePage === 1
+                        ? "border-slate-700 text-slate-600"
+                        : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                    }`}
+                  >
+                    {"<"}
+                  </button>
+                  <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
+                    {safePage}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    disabled={safePage === totalPages}
+                    className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                      safePage === totalPages
+                        ? "border-slate-700 text-slate-600"
+                        : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                    }`}
+                  >
+                    {">"}
+                  </button>
+                </div>
+                <div className="hidden items-center gap-2 sm:flex">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    disabled={safePage === 1}
+                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      safePage === 1
+                        ? "border-slate-700 text-slate-600"
+                        : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                    }`}
+                  >
+                    Anterior
+                  </button>
+                  {pageNumbers.map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
+                        page === safePage
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    disabled={safePage === totalPages}
+                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      safePage === totalPages
+                        ? "border-slate-700 text-slate-600"
+                        : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                    }`}
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
-      </div>
     </div>
   );
 };
 
 export default Automations;
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};

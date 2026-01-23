@@ -17,6 +17,18 @@ import {
   BarChart3,
   ChevronDown,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  LineChart,
+  Line,
+} from 'recharts';
 import reportService, {
   PeriodType,
   SalesReportResponse,
@@ -526,6 +538,59 @@ const SalesTab: React.FC<SalesTabProps> = ({
             />
           </div>
 
+          {/* Graficos */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ChartCard title="Cards por vendedor">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={report.details || []}>
+                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
+                  <XAxis dataKey="user_name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    itemStyle={{ color: '#e2e8f0' }}
+                  />
+                  <Legend />
+                  <Bar dataKey="cards_created" name="Criados" fill="#60a5fa" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="cards_won" name="Ganhos" fill="#34d399" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="cards_lost" name="Perdidos" fill="#f87171" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Valor ganho por vendedor">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={report.details || []}>
+                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
+                  <XAxis dataKey="user_name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    itemStyle={{ color: '#e2e8f0' }}
+                    formatter={(value) => reportService.formatCurrency(Number(value))}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="value_won"
+                    name="Valor ganho"
+                    fill="#22c55e"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
           {/* Tabela */}
           <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
@@ -737,6 +802,57 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
               label="Taxa de Conversão Geral"
               value={reportService.formatPercentage(report.summary.overall_conversion_rate || 0)}
             />
+          </div>
+
+          {/* Graficos */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ChartCard title="Cards por etapa">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={report.stages || []}>
+                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
+                  <XAxis dataKey="stage_name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    itemStyle={{ color: '#e2e8f0' }}
+                  />
+                  <Legend />
+                  <Bar dataKey="card_count" name="Quantidade" fill="#60a5fa" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Valor total por etapa">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={report.stages || []}>
+                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
+                  <XAxis dataKey="stage_name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    itemStyle={{ color: '#e2e8f0' }}
+                    formatter={(value) => reportService.formatCurrency(Number(value))}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="total_value"
+                    name="Valor total"
+                    fill="#22c55e"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
           </div>
 
           {/* Tabela */}
@@ -960,6 +1076,69 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
             />
           </div>
 
+          {/* Graficos */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ChartCard title="Transferencias por usuario">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={(report.details || []).map((item) => ({
+                    ...item,
+                    pair_label: `${item.from_user_name} -> ${item.to_user_name}`,
+                  }))}
+                >
+                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
+                  <XAxis dataKey="pair_label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    itemStyle={{ color: '#e2e8f0' }}
+                  />
+                  <Legend />
+                  <Bar dataKey="transfer_count" name="Transferencias" fill="#60a5fa" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Tempo medio para ganhar">
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart
+                  data={(report.details || []).map((item) => ({
+                    ...item,
+                    pair_label: `${item.from_user_name} -> ${item.to_user_name}`,
+                  }))}
+                >
+                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
+                  <XAxis dataKey="pair_label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    itemStyle={{ color: '#e2e8f0' }}
+                    formatter={(value) => `${Number(value).toFixed(1)} dias`}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="avg_days_to_won"
+                    name="Dias"
+                    stroke="#a855f7"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
           {/* Tabela */}
           <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
@@ -1040,6 +1219,20 @@ interface MetricCardProps {
   label: string;
   value: string;
 }
+
+interface ChartCardProps {
+  title: string;
+  children: React.ReactNode;
+}
+
+const ChartCard: React.FC<ChartCardProps> = ({ title, children }) => {
+  return (
+    <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-lg p-4">
+      <h4 className="text-base font-semibold text-white mb-3">{title}</h4>
+      {children}
+    </div>
+  );
+};
 
 const MetricCard: React.FC<MetricCardProps> = ({ icon, label, value }) => {
   return (
