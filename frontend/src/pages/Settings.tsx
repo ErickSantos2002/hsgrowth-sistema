@@ -151,14 +151,14 @@ const Settings: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 font-medium transition-colors ${
                     activeTab === tab.id
                       ? "bg-emerald-600 text-white"
                       : "text-slate-400 hover:text-white hover:bg-slate-700/50"
                   }`}
                 >
                   <Icon size={20} />
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </button>
               );
             })}
@@ -533,7 +533,7 @@ const Settings: React.FC = () => {
             {/* Tab: Segurança */}
             {activeTab === "security" && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                   <div>
                     <h2 className="text-xl font-semibold text-white">Usuários Ativos</h2>
                     <p className="text-sm text-slate-400 mt-1">
@@ -555,7 +555,7 @@ const Settings: React.FC = () => {
                       key={activeUser.id}
                       className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:bg-slate-700/70 transition-colors"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-4">
                           {/* Avatar */}
                           <div className="relative">
@@ -576,33 +576,33 @@ const Settings: React.FC = () => {
                           </div>
 
                           {/* Info do Usuário */}
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-semibold text-white">{activeUser.name}</p>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-white truncate">{activeUser.name}</p>
                               {activeUser.id === user?.id && (
                                 <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full">
                                   Você
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-slate-400">{activeUser.email}</p>
-                            <div className="flex items-center gap-3 mt-1">
+                            <p className="text-sm text-slate-400 truncate">{activeUser.email}</p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
                               <span className="inline-flex items-center px-2 py-0.5 bg-slate-800 text-slate-300 text-xs font-medium rounded">
                                 {activeUser.role}
                               </span>
                               <div className="flex items-center gap-1 text-xs text-slate-500">
                                 <Monitor size={12} />
-                                <span>{activeUser.device}</span>
+                                <span className="truncate">{activeUser.device}</span>
                               </div>
                             </div>
                           </div>
                         </div>
 
                         {/* Status e Última Atividade */}
-                        <div className="text-right">
+                        <div className="text-left sm:text-right">
                           <div className="flex items-center gap-1.5 text-sm text-slate-400 mb-1">
                             <Clock size={14} />
-                            <span>{activeUser.lastActivity}</span>
+                            <span className="truncate">{activeUser.lastActivity}</span>
                           </div>
                           <span
                             className={`inline-block px-2 py-1 text-xs font-medium rounded ${
