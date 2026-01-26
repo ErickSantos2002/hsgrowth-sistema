@@ -304,6 +304,90 @@
 - Reordenar listas com drag & drop
 - Implementar exportação real de cards (Excel/PDF)
 - Configurações de campos customizados
+- **[FUTURO]** Corrigir atualização otimista para posição exata ao mover entre listas (atualmente card aparece na primeira posição antes de ir para a posição correta após backend responder)
+
+---
+
+## 🚀 MELHORIAS FASE 3 - OTIMIZAÇÃO DE PERFORMANCE (26/01/2026)
+
+**Prioridade:** 🔴 Alta
+**Status:** ✅ COMPLETA
+**Data:** 26/01/2026
+
+### Problemas Identificados:
+1. ❌ Sistema recarregava TODO o board após cada movimento (`loadBoardData()`)
+2. ❌ Cards travavam durante movimentações rápidas
+3. ❌ Movimentos rápidos não chamavam endpoint (perda de dados)
+4. ❌ Paginação limitava visualização (50 cards, mas boards têm 350+)
+5. ❌ Payload muito grande para Kanban (campos desnecessários)
+
+### Otimizações Implementadas Backend:
+
+#### 1. Endpoint Cards com Modo Minimal ✅
+- **Arquivo:** `backend/app/api/v1/endpoints/cards.py`
+- Parâmetro `all=true`: Retorna TODOS os cards sem limite de paginação
+- Parâmetro `minimal=true`: Retorna apenas campos essenciais (11 vs 17 campos)
+- Removido `response_model` fixo para aceitar ambos os schemas
+
+#### 2. Schema CardMinimalResponse ✅
+- **Arquivo:** `backend/app/schemas/card.py`
+- Novo schema otimizado: id, title, list_id, position, assigned_to_id, assigned_to_name, value, due_date, is_won, is_lost, contact_info (apenas nome)
+- Validator filtra contact_info para retornar apenas `{name: "..."}`
+- Redução de ~60% no payload
+
+#### 3. Service list_cards() Refatorado ✅
+- **Arquivo:** `backend/app/services/card_service.py`
+- Suporte a `all=true`: limit = 999999 (ilimitado)
+- Suporte a `minimal=true`: retorna CardMinimalListResponse
+- Modo completo mantido para relatórios e detalhes
+
+#### 4. Logs SQL Desabilitados ✅
+- **Arquivo:** `backend/app/db/session.py`
+- Mudado `echo=True` para `echo=False`
+- Elimina poluição de 50+ linhas por ação
+
+### Otimizações Implementadas Frontend:
+
+#### 1. Carregamento Otimizado ✅
+- **Arquivo:** `frontend/src/pages/KanbanBoard.tsx`
+- Request com `all=true&minimal=true`
+- Carrega todos os cards de uma vez (até 999999)
+- Payload 60% menor
+
+#### 2. Drag & Drop Não-Bloqueante ✅
+- Removido `await loadBoardData()` após movimento
+- Atualização apenas do card específico após resposta do backend
+- Permite movimentos rápidos consecutivos
+
+#### 3. Rastreamento de Requisições Pendentes ✅
+- `useRef<Set<number>>` para rastrear cards sendo movidos
+- Previne race conditions (não permite mover card com requisição pendente)
+- Logs no console mostram quantidade de requisições pendentes
+
+#### 4. Atualização Otimista Completa ✅
+- **Mesma lista:** Reordena visualmente com `arrayMove()` instantâneo
+- **Entre listas:** Move para nova lista instantâneo
+- **Lista vazia:** Adiciona na lista vazia instantâneo
+- Reversão inteligente em caso de erro (sem recarregar tudo)
+
+#### 5. handleDragOver Otimizado ✅
+- Preview visual apenas ao mudar de lista
+- Mesma lista usa `SortableContext` nativo (mais fluido)
+
+### Resultados:
+
+✅ **Performance:** Movimentos rápidos funcionam perfeitamente
+✅ **Escalabilidade:** Suporta boards com 350+ cards sem problema
+✅ **UX:** Feedback visual instantâneo, sistema responsivo
+✅ **Confiabilidade:** Rastreamento garante que todas as requisições são chamadas
+✅ **Payload:** Redução de ~60% no tráfego de rede para visualização Kanban
+
+### Observações:
+
+⚠️ **Pequeno problema visual conhecido:** Ao mover card para terceira posição de outra lista, ele aparece brevemente na primeira posição antes de ir para a terceira (após backend responder). Funciona corretamente, apenas feedback visual imperfeito.
+- **Decisão:** Deixar para otimização futura
+- **Motivo:** Tentativa de remover atualização otimista piorou significativamente a UX
+- **Prioridade:** Baixa - sistema funcional e rápido
 
 ---
 

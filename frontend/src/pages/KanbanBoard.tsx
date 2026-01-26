@@ -626,30 +626,17 @@ const KanbanBoard: React.FC = () => {
 
         // Atualizar state local otimisticamente
         setCards((currentCards) => {
-          // Remover o card ativo
           const withoutActive = currentCards.filter((c) => c.id !== activeId);
+          const result = [...withoutActive];
+          const insertIndex = result.findIndex((c) => c.id === overId);
 
-          // Pegar cards da lista de destino (já ordenados)
-          const targetCards = withoutActive
-            .filter((c) => c.list_id === targetListId)
-            .sort((a, b) => (a.position || 0) - (b.position || 0));
-
-          // Pegar cards de outras listas
-          const otherCards = withoutActive.filter((c) => c.list_id !== targetListId);
-
-          // Encontrar índice do overCard na lista de destino
-          const overIndexInTargetList = targetCards.findIndex((c) => c.id === overId);
-
-          // Inserir o card ativo na posição correta
-          if (overIndexInTargetList >= 0) {
-            targetCards.splice(overIndexInTargetList, 0, { ...activeCard, list_id: targetListId });
+          if (insertIndex >= 0) {
+            result.splice(insertIndex, 0, { ...activeCard, list_id: targetListId });
           } else {
-            // Se não encontrou, adiciona no final da lista
-            targetCards.push({ ...activeCard, list_id: targetListId });
+            result.push({ ...activeCard, list_id: targetListId });
           }
 
-          // Retorna todos os cards: outros + lista de destino atualizada
-          return [...otherCards, ...targetCards];
+          return result;
         });
       }
     }
@@ -661,7 +648,6 @@ const KanbanBoard: React.FC = () => {
 
       // Atualizar state local otimisticamente
       setCards((currentCards) => {
-        // Remover card da lista atual e adicionar na nova lista
         const withoutActive = currentCards.filter((c) => c.id !== activeId);
         return [...withoutActive, { ...activeCard, list_id: targetListId }];
       });
