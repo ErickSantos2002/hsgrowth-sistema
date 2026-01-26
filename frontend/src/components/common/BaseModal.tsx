@@ -1,4 +1,5 @@
 import React from "react";
+import ReactDOM from "react-dom";
 import { X } from "lucide-react";
 
 /**
@@ -85,7 +86,8 @@ const BaseModal: React.FC<BaseModalProps> = ({
     }
   };
 
-  return (
+  // Renderiza o modal usando Portal para garantir que fique acima de tudo
+  const modalContent = (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={handleOverlayClick}
@@ -122,6 +124,9 @@ const BaseModal: React.FC<BaseModalProps> = ({
       </div>
     </div>
   );
+
+  // Renderiza usando Portal direto no body
+  return ReactDOM.createPortal(modalContent, document.body);
 };
 
 export default BaseModal;
