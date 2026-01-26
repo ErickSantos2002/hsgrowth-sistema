@@ -506,8 +506,8 @@ const AutomationEditorContent: React.FC = () => {
     <div className="h-screen flex flex-col bg-slate-900">
       {/* Header */}
       <div className="bg-slate-800 border-b border-slate-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
             <button
               onClick={() => navigate("/automations")}
               className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
@@ -519,47 +519,47 @@ const AutomationEditorContent: React.FC = () => {
               type="text"
               value={automationName}
               onChange={(e) => setAutomationName(e.target.value)}
-              className="text-xl font-semibold text-white bg-transparent border-none focus:outline-none focus:ring-0"
+              className="text-xl font-semibold text-white bg-transparent border-none focus:outline-none focus:ring-0 flex-1 min-w-0 truncate"
               placeholder="Nome da automação"
             />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
             <button
               onClick={() => setShowTemplatesModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
             >
               <Sparkles size={16} />
-              Templates
+              <span className="hidden sm:inline">Templates</span>
             </button>
             <button
               onClick={handleClear}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
             >
               <Trash2 size={16} />
-              Limpar Tudo
+              <span className="hidden sm:inline">Limpar Tudo</span>
             </button>
             <button
               onClick={handleTest}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
             >
               <Play size={16} />
-              Testar
+              <span className="hidden sm:inline">Testar</span>
             </button>
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-500/30"
+              className="flex items-center gap-2 px-3 sm:px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-500/30"
             >
               <Save size={16} />
-              Salvar
+              <span className="hidden sm:inline">Salvar</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-auto sm:overflow-hidden">
         {/* Canvas */}
-        <div className="flex-1" ref={reactFlowWrapper}>
+        <div className="flex-1 min-w-[900px] min-h-[600px] sm:min-w-0 sm:min-h-0" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -608,15 +608,17 @@ const AutomationEditorContent: React.FC = () => {
         </div>
 
         {/* Sidebar - Alterna entre lista de nodes e painel de configuração */}
-        {selectedNode ? (
-          <NodeConfigPanel
-            node={selectedNode}
-            onClose={handleCloseConfigPanel}
-            onSave={handleSaveNodeConfig}
-          />
-        ) : (
-          <NodesSidebar onDragStart={onDragStart} />
-        )}
+        <div className="min-w-[280px] w-[320px] shrink-0">
+          {selectedNode ? (
+            <NodeConfigPanel
+              node={selectedNode}
+              onClose={handleCloseConfigPanel}
+              onSave={handleSaveNodeConfig}
+            />
+          ) : (
+            <NodesSidebar onDragStart={onDragStart} />
+          )}
+        </div>
       </div>
 
       {/* Modal de Templates */}
