@@ -82,6 +82,9 @@ const KanbanBoard: React.FC = () => {
   const [isDraggingBoard, setIsDraggingBoard] = useState(false);
   const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
 
+  // Ref para rastrear requisições pendentes de movimento
+  const pendingMovesRef = useRef<Set<number>>(new Set());
+
   // Configuração do sensor de drag (apenas pointer, mais responsivo)
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -565,6 +568,12 @@ const KanbanBoard: React.FC = () => {
     // Se dropou sobre ele mesmo, não faz nada
     if (activeId === overId) return;
 
+    // Se já tem uma requisição pendente para este card, aguarda (previne race condition)
+    if (pendingMovesRef.current.has(activeId)) {
+      console.warn(`Card ${activeId} já tem movimento pendente. Aguarde...`);
+      return;
+    }
+
     // Determinar a lista de destino e posição
     let targetListId: number;
     let targetPosition: number | undefined;
@@ -614,6 +623,34 @@ const KanbanBoard: React.FC = () => {
 
         // Inserir na posição do overCard
         targetPosition = overIndex >= 0 ? overIndex : 0;
+
+        // Atualizar state local otimisticamente
+        setCards((currentCards) => {
+          // Remover o card ativo
+          const withoutActive = currentCards.filter((c) => c.id !== activeId);
+
+          // Pegar cards da lista de destino (já ordenados)
+          const targetCards = withoutActive
+            .filter((c) => c.list_id === targetListId)
+            .sort((a, b) => (a.position || 0) - (b.position || 0));
+
+          // Pegar cards de outras listas
+          const otherCards = withoutActive.filter((c) => c.list_id !== targetListId);
+
+          // Encontrar índice do overCard na lista de destino
+          const overIndexInTargetList = targetCards.findIndex((c) => c.id === overId);
+
+          // Inserir o card ativo na posição correta
+          if (overIndexInTargetList >= 0) {
+            targetCards.splice(overIndexInTargetList, 0, { ...activeCard, list_id: targetListId });
+          } else {
+            // Se não encontrou, adiciona no final da lista
+            targetCards.push({ ...activeCard, list_id: targetListId });
+          }
+
+          // Retorna todos os cards: outros + lista de destino atualizada
+          return [...otherCards, ...targetCards];
+        });
       }
     }
     // Se dropou sobre uma lista vazia (droppable-list-{id})
@@ -621,24 +658,55 @@ const KanbanBoard: React.FC = () => {
       targetListId = Number(overId.replace("droppable-list-", ""));
       // Posição 0 (primeira posição na lista vazia)
       targetPosition = 0;
+
+      // Atualizar state local otimisticamente
+      setCards((currentCards) => {
+        // Remover card da lista atual e adicionar na nova lista
+        const withoutActive = currentCards.filter((c) => c.id !== activeId);
+        return [...withoutActive, { ...activeCard, list_id: targetListId }];
+      });
     } else {
       return;
     }
 
-    // Persistir a mudança no backend
+    // Persistir a mudança no backend (não bloqueante)
+    // Adiciona à lista de requisições pendentes
+    pendingMovesRef.current.add(activeId);
+
     try {
-      await cardService.move(activeId, {
+      const movedCard = await cardService.move(activeId, {
         target_list_id: targetListId,
         position: targetPosition,
       });
 
-      // Recarregar para sincronizar com backend
-      await loadBoardData();
+      // Remove da lista de pendentes
+      pendingMovesRef.current.delete(activeId);
+
+      // Atualizar apenas o card movido com dados do backend
+      setCards((currentCards) =>
+        currentCards.map((c) =>
+          c.id === activeId
+            ? { ...c, ...movedCard, list_id: targetListId }
+            : c
+        )
+      );
+
+      console.log(`Card ${activeId} movido com sucesso. Pendentes: ${pendingMovesRef.current.size}`);
     } catch (error) {
       console.error("Erro ao mover card:", error);
-      alert("Erro ao mover card. Verifique sua conexão.");
-      // Recarregar para reverter mudanças locais
-      await loadBoardData();
+
+      // Remove da lista de pendentes mesmo em erro
+      pendingMovesRef.current.delete(activeId);
+
+      // Reverter mudança localmente (voltar card para posição original)
+      setCards((currentCards) => {
+        const revertedCards = currentCards.map((c) =>
+          c.id === activeId ? { ...activeCard } : c
+        );
+        return revertedCards.sort((a, b) => (a.position || 0) - (b.position || 0));
+      });
+
+      alert("Erro ao mover card. A mudança foi revertida.");
     }
   };
 
