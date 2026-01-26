@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Plus, MoreVertical, Edit, Archive, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -25,7 +25,6 @@ const KanbanList: React.FC<KanbanListProps> = ({
   onCardClick,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const [listMaxHeight, setListMaxHeight] = useState<number | undefined>(undefined);
   const [cardLimit, setCardLimit] = useState(3);
   const cardsContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -47,19 +46,6 @@ const KanbanList: React.FC<KanbanListProps> = ({
     return () => window.removeEventListener("resize", updateCardLimit);
   }, []);
 
-  useLayoutEffect(() => {
-    if (!cardsContainerRef.current) return;
-    const firstCard = cardsContainerRef.current.querySelector<HTMLElement>("[data-kanban-card]");
-    if (!firstCard) {
-      setListMaxHeight(undefined);
-      return;
-    }
-
-    const cardHeight = Math.ceil(firstCard.getBoundingClientRect().height);
-    const gap = 12;
-    setListMaxHeight(cardHeight * cardLimit + gap * (cardLimit - 1));
-  }, [cards.length, list.id, cardLimit]);
-
   const scrollCards = (direction: "up" | "down") => {
     if (!cardsContainerRef.current) return;
     const delta = direction === "up" ? -200 : 200;
@@ -76,7 +62,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
 
   return (
     <div
-      className="flex-shrink-0 w-80 sm:w-80 self-start overflow-visible bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 flex flex-col"
+      className="flex-shrink-0 w-80 sm:w-80 h-full overflow-visible bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 flex flex-col"
       style={listSurfaceStyle}
     >
       {/* Header da lista */}
@@ -158,18 +144,14 @@ const KanbanList: React.FC<KanbanListProps> = ({
 
       {/* Cards da lista - com scroll vertical */}
       <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-        <div className="relative">
+        <div className="relative flex-1 min-h-0">
           <div
             ref={(node) => {
               setNodeRef(node);
               cardsContainerRef.current = node;
             }}
-            className="space-y-3 overflow-y-auto pr-10 sm:pr-1 scrollbar-hidden overscroll-contain touch-pan-y"
-            style={
-              listMaxHeight
-                ? { maxHeight: `${listMaxHeight}px`, WebkitOverflowScrolling: "touch" }
-                : { WebkitOverflowScrolling: "touch" }
-            }
+            className="space-y-3 overflow-y-auto pr-10 sm:pr-1 scrollbar-hidden overscroll-contain touch-pan-y h-full"
+            style={{ WebkitOverflowScrolling: "touch" }}
           >
           {cards.length > 0 ? (
             cards.map((card) => (
@@ -213,7 +195,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
       {/* Botão adicionar card */}
       <button
         onClick={onAddCard}
-        className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800/40 rounded-lg transition-colors flex items-center justify-center gap-2 group"
+        className="flex-shrink-0 w-full mt-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800/40 rounded-lg transition-colors flex items-center justify-center gap-2 group"
       >
         <Plus size={16} className="group-hover:scale-110 transition-transform" />
         <span>Adicionar card</span>

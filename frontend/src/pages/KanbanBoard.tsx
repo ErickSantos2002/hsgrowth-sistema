@@ -735,7 +735,7 @@ const KanbanBoard: React.FC = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="min-h-[calc(100vh-72px)] overflow-y-auto overflow-x-hidden flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="h-full flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
         {/* Header fixo */}
       <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50 px-6 py-4 relative z-50">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
@@ -967,11 +967,11 @@ const KanbanBoard: React.FC = () => {
         onMouseMove={handleBoardMouseMove}
         onMouseUp={handleBoardMouseUp}
         onMouseLeave={handleBoardMouseUp}
-        className={`flex-1 overflow-x-auto overflow-y-hidden p-6 scrollbar-hidden ${
+        className={`flex-1 overflow-x-auto overflow-y-hidden p-6 pb-20 scrollbar-hidden ${
           isDraggingBoard ? "cursor-grabbing select-none" : "cursor-grab"
         }`}
       >
-        <div className="flex gap-4 h-full">
+        <div className="flex gap-4 h-[calc(100%-20px)]">
           {/* Renderizar listas */}
           {lists.length > 0 ? (
             lists.map((list) => {

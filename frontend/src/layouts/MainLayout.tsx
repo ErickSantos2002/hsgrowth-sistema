@@ -61,7 +61,7 @@ export default function MainLayout() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
             {/* Overlay para mobile quando sidebar está aberta */}
             {sidebarOpen && (
                 <div
@@ -190,9 +190,9 @@ export default function MainLayout() {
             </aside>
 
             {/* Main Content */}
-            <div className={`${sidebarOpen ? "lg:ml-64" : "lg:ml-20"} transition-all duration-300`}>
+            <div className={`${sidebarOpen ? "lg:ml-64" : "lg:ml-20"} transition-all duration-300 h-screen flex flex-col`}>
                 {/* Top Navbar */}
-                <nav className="sticky top-0 z-30 bg-slate-900/50 backdrop-blur-xl border-b border-slate-700/50 px-6 py-4">
+                <nav className="flex-shrink-0 z-30 bg-slate-900/50 backdrop-blur-xl border-b border-slate-700/50 px-6 py-4">
                     <div className="flex items-center justify-between">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -249,7 +249,7 @@ export default function MainLayout() {
                 </nav>
 
                 {/* Page Content */}
-                <main>
+                <main className="flex-1 overflow-y-auto">
                     <Outlet />
                 </main>
             </div>
