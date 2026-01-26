@@ -85,10 +85,12 @@ class CardService:
         board_id: int,
         page: int = 1,
         page_size: int = 50,
+        all: bool = False,
+        minimal: bool = False,
         assigned_to_id: Optional[int] = None,
         is_won: Optional[bool] = None,
         is_lost: Optional[bool] = None
-    ) -> CardListResponse:
+    ):
         """
         Lista cards de um board com paginação e filtros.
 
@@ -96,13 +98,17 @@ class CardService:
             board_id: ID do board
             page: Número da página
             page_size: Tamanho da página
+            all: Se True, retorna TODOS os cards sem paginação
+            minimal: Se True, retorna apenas campos essenciais (otimizado)
             assigned_to_id: Filtro por responsável
             is_won: Filtro por cards ganhos
             is_lost: Filtro por cards perdidos
 
         Returns:
-            CardListResponse
+            CardListResponse ou CardMinimalListResponse
         """
+        from app.schemas.card import CardMinimalResponse, CardMinimalListResponse
+
         # Verifica se o board existe
         board = self.board_repository.find_by_id(board_id)
         if not board:
@@ -111,14 +117,19 @@ class CardService:
                 detail="Board não encontrado"
             )
 
-        # Calcula offset
-        skip = (page - 1) * page_size
+        # Se all=True, ignora paginação
+        if all:
+            skip = 0
+            limit = 999999  # Limite muito alto (todos os cards)
+        else:
+            skip = (page - 1) * page_size
+            limit = page_size
 
         # Busca cards
         cards = self.card_repository.list_by_board(
             board_id=board_id,
             skip=skip,
-            limit=page_size,
+            limit=limit,
             assigned_to_id=assigned_to_id,
             is_won=is_won,
             is_lost=is_lost
@@ -133,9 +144,48 @@ class CardService:
         )
 
         # Calcula total de páginas
-        total_pages = (total + page_size - 1) // page_size
+        if all:
+            total_pages = 1  # Se retornou todos, só tem 1 "página"
+        else:
+            total_pages = (total + page_size - 1) // page_size
 
-        # Converte para response schema
+        # Modo MINIMAL: Retorna apenas campos essenciais (otimizado para Kanban)
+        if minimal:
+            cards_response = []
+            for card in cards:
+                # Busca apenas o nome do responsável (mais leve)
+                assigned_to_name = None
+                if card.assigned_to_id:
+                    from app.models.user import User
+                    assigned_user = self.db.query(User).filter(User.id == card.assigned_to_id).first()
+                    if assigned_user:
+                        assigned_to_name = assigned_user.name
+
+                cards_response.append(
+                    CardMinimalResponse(
+                        id=card.id,
+                        title=card.title,
+                        list_id=card.list_id,
+                        position=card.position,
+                        assigned_to_id=card.assigned_to_id,
+                        assigned_to_name=assigned_to_name,
+                        value=card.value,
+                        due_date=card.due_date,
+                        is_won=card.is_won,
+                        is_lost=card.is_lost,
+                        contact_info=card.contact_info  # Será filtrado pelo validator
+                    )
+                )
+
+            return CardMinimalListResponse(
+                cards=cards_response,
+                total=total,
+                page=page,
+                page_size=page_size if not all else total,
+                total_pages=total_pages
+            )
+
+        # Modo COMPLETO: Retorna todos os campos
         cards_response = []
         for card in cards:
             # Busca informações relacionadas

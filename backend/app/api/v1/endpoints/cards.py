@@ -57,7 +57,6 @@ def card_to_response(
 
 @router.get(
     "",
-    response_model=CardListResponse,
     summary="Listar cards",
     description="""
     Lista todos os cards de um board específico com paginação e filtros avançados.
@@ -118,6 +117,8 @@ async def list_cards(
     board_id: int = Query(..., description="ID do board"),
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
+    all: bool = Query(False, description="Retornar TODOS os cards sem paginação (Kanban)"),
+    minimal: bool = Query(False, description="Retornar apenas campos essenciais (otimizado para Kanban)"),
     assigned_to_id: Optional[int] = Query(None, description="Filtrar por responsável"),
     is_won: Optional[bool] = Query(None, description="Filtrar por cards ganhos"),
     is_lost: Optional[bool] = Query(None, description="Filtrar por cards perdidos"),
@@ -126,12 +127,18 @@ async def list_cards(
 ) -> Any:
     """
     Endpoint de listagem de cards.
+
+    Parâmetros especiais para performance:
+    - all=true: Retorna TODOS os cards sem limite (para Kanban)
+    - minimal=true: Retorna apenas campos essenciais (reduz payload ~60%)
     """
     service = CardService(db)
     return service.list_cards(
         board_id=board_id,
         page=page,
         page_size=page_size,
+        all=all,
+        minimal=minimal,
         assigned_to_id=assigned_to_id,
         is_won=is_won,
         is_lost=is_lost

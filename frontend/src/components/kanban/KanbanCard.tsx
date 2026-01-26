@@ -69,73 +69,61 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
       {...listeners}
       data-kanban-card
       onClick={onClick}
-      className="bg-slate-800/70 backdrop-blur-sm border border-slate-700/50 p-3 rounded-lg hover:bg-slate-800/90 hover:border-slate-600/60 transition-all cursor-move group touch-none"
+      className="bg-white/5 hover:bg-white/10 border border-slate-700/30 hover:border-slate-600 p-2.5 rounded-lg transition-all cursor-pointer group shadow-sm hover:shadow-md"
     >
       {/* Título */}
-      <h4 className="text-white font-medium text-sm mb-2 line-clamp-2 group-hover:text-blue-400 transition-colors">
+      <h4 className="text-white text-sm mb-2 line-clamp-2 leading-snug">
         {card.title}
       </h4>
 
-      {/* Badges de status e prioridade */}
-      <div className="flex items-center gap-2 mb-2">
-        <span
-          className={`px-2 py-0.5 text-xs rounded-full font-medium ${getStatusColor()}`}
-        >
-          {getStatusText()}
-        </span>
-      </div>
-
-      {/* Valor */}
-      {card.value && (
-        <div className="flex items-center gap-1 mb-2">
-          <DollarSign size={12} className="text-green-400" />
-          <span className="text-green-400 text-xs font-semibold">
-            R${" "}
-            {card.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+      {/* Badges compactos no topo (só mostrar se relevante) */}
+      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+        {/* Badge de status (só se ganho ou perdido) */}
+        {(card.is_won || card.is_lost) && (
+          <span
+            className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${getStatusColor()}`}
+          >
+            {getStatusText()}
           </span>
-        </div>
-      )}
+        )}
 
-      {/* Cliente (do contact_info) */}
-      {card.contact_info?.name && (
-        <div className="flex items-center gap-1 mb-2">
-          <User size={12} className="text-slate-400" />
-          <span className="text-slate-400 text-xs truncate">
-            {card.contact_info.name}
-          </span>
-        </div>
-      )}
-
-      {/* Footer: Data de vencimento e Responsável */}
-      <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-700/50">
-        {/* Data de vencimento */}
+        {/* Data de vencimento compacta */}
         {card.due_date && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {(() => {
               const { text, isOverdue } = formatDueDate(card.due_date);
               return (
-                <>
-                  <Calendar
-                    size={12}
-                    className={isOverdue ? "text-red-400" : "text-slate-400"}
-                  />
-                  <span
-                    className={`text-xs ${
-                      isOverdue ? "text-red-400 font-semibold" : "text-slate-400"
-                    }`}
-                  >
-                    {text}
-                  </span>
-                </>
+                <span
+                  className={`px-1.5 py-0.5 text-[10px] rounded flex items-center gap-0.5 ${
+                    isOverdue
+                      ? "bg-red-500/20 text-red-400 font-medium"
+                      : "bg-slate-700/50 text-slate-400"
+                  }`}
+                >
+                  <Calendar size={10} />
+                  {text}
+                </span>
               );
             })()}
           </div>
         )}
+      </div>
 
-        {/* Responsável (Avatar com iniciais) */}
+      {/* Footer: Valor e Responsável */}
+      <div className="flex items-center justify-between text-xs">
+        {/* Valor compacto */}
+        {card.value ? (
+          <span className="text-green-400 font-medium">
+            R$ {card.value.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </span>
+        ) : (
+          <span></span>
+        )}
+
+        {/* Avatar do responsável (menor e mais discreto) */}
         {card.assigned_to_name && (
           <div
-            className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-xs font-semibold"
+            className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-[9px] font-semibold"
             title={card.assigned_to_name}
           >
             {card.assigned_to_name

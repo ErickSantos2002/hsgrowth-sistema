@@ -79,7 +79,7 @@ class CardMoveRequest(BaseModel):
     Schema para mover card entre listas.
     """
     target_list_id: int = Field(..., description="ID da lista de destino")
-    position: Optional[int] = Field(None, description="Posição na lista de destino")
+    position: Optional[float] = Field(None, description="Posição na lista de destino (índice 0-based)")
 
     model_config = {
         "json_schema_extra": {
@@ -124,7 +124,7 @@ class CardResponse(CardBase):
     is_lost: bool = Field(..., description="Card perdido")
     won_at: Optional[datetime] = Field(None, description="Data de vitória")
     lost_at: Optional[datetime] = Field(None, description="Data de perda")
-    position: int = Field(..., description="Posição na lista")
+    position: float = Field(..., description="Posição na lista (decimal)")
     created_at: datetime = Field(..., description="Data de criação")
     updated_at: datetime = Field(..., description="Data de atualização")
 
@@ -134,7 +134,7 @@ class CardResponse(CardBase):
     board_id: Optional[int] = Field(None, description="ID do board")
     custom_fields: Optional[list] = Field(None, description="Campos customizados do card")
 
-    @field_validator('value', mode='before')
+    @field_validator('value', 'position', mode='before')
     @classmethod
     def convert_decimal_to_float(cls, v):
         """Converte Decimal para float"""
@@ -181,11 +181,66 @@ class CardResponse(CardBase):
     }
 
 
+class CardMinimalResponse(BaseModel):
+    """
+    Schema minimalista de card para Kanban (otimizado para performance).
+    Retorna apenas campos essenciais para visualização em lista.
+    """
+    id: int = Field(..., description="ID do card")
+    title: str = Field(..., description="Título do card")
+    list_id: int = Field(..., description="ID da lista")
+    position: float = Field(..., description="Posição na lista")
+    assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
+    assigned_to_name: Optional[str] = Field(None, description="Nome do responsável")
+    value: Optional[float] = Field(None, description="Valor monetário")
+    due_date: Optional[datetime] = Field(None, description="Data de vencimento")
+    is_won: bool = Field(..., description="Card ganho")
+    is_lost: bool = Field(..., description="Card perdido")
+    contact_info: Optional[Dict[str, str]] = Field(None, description="Nome do contato apenas")
+
+    @field_validator('value', 'position', mode='before')
+    @classmethod
+    def convert_decimal_to_float(cls, v):
+        """Converte Decimal para float"""
+        if isinstance(v, Decimal):
+            return float(v)
+        return v
+
+    @field_validator('is_won', 'is_lost', mode='before')
+    @classmethod
+    def convert_int_to_bool(cls, v):
+        """Converte Integer para Boolean (0/1 -> False/True)"""
+        if isinstance(v, int):
+            return v == 1
+        return v
+
+    @field_validator('contact_info', mode='before')
+    @classmethod
+    def filter_contact_info(cls, v):
+        """Retorna apenas o nome do contato para otimizar payload"""
+        if v and isinstance(v, dict):
+            return {"name": v.get("name")}
+        return v
+
+    model_config = {"from_attributes": True}
+
+
 class CardListResponse(BaseModel):
     """
     Schema para listagem paginada de cards.
     """
     cards: list[CardResponse] = Field(..., description="Lista de cards")
+    total: int = Field(..., description="Total de cards")
+    page: int = Field(..., description="Página atual")
+    page_size: int = Field(..., description="Tamanho da página")
+    total_pages: int = Field(..., description="Total de páginas")
+
+
+class CardMinimalListResponse(BaseModel):
+    """
+    Schema para listagem de cards minimalista (otimizado para Kanban).
+    """
+    cards: list[CardMinimalResponse] = Field(..., description="Lista de cards (campos essenciais)")
     total: int = Field(..., description="Total de cards")
     page: int = Field(..., description="Página atual")
     page_size: int = Field(..., description="Tamanho da página")

@@ -73,7 +73,8 @@ class CardRepository:
         from app.models.list import List
 
         query = self.db.query(Card).join(List).filter(
-            List.board_id == board_id
+            List.board_id == board_id,
+            Card.deleted_at.is_(None)  # Filtrar apenas cards não deletados
         )
 
         if assigned_to_id is not None:
@@ -218,20 +219,51 @@ class CardRepository:
         Args:
             card: Card a ser movido
             target_list_id: ID da lista de destino
-            position: Posição na lista de destino (opcional)
+            position: Índice da posição na lista de destino (opcional, 0-based)
 
         Returns:
             Card movido
         """
         old_list_id = card.list_id
 
-        # Se não especificou posição, coloca no final
-        if position is None:
-            position = self.get_max_position(target_list_id) + 1
+        # Pegar todos os cards da lista de destino (exceto o card sendo movido) ordenados por position
+        target_cards = self.db.query(Card).filter(
+            Card.list_id == target_list_id,
+            Card.id != card.id,
+            Card.deleted_at.is_(None)
+        ).order_by(Card.position).all()
+
+        # Calcular a nova position baseado no índice desejado
+        # IMPORTANTE: Converter position para int antes de usar como índice
+        position_idx = int(position) if position is not None else None
+
+        if position_idx is None or position_idx >= len(target_cards):
+            # Posição não especificada ou além do final: coloca no final
+            if target_cards:
+                new_position = float(target_cards[-1].position) + 1000
+            else:
+                new_position = 1000
+        elif position_idx == 0:
+            # Primeira posição: coloca antes do primeiro card
+            if target_cards:
+                new_position = float(target_cards[0].position) - 1000
+            else:
+                new_position = 1000
+        else:
+            # Posição intermediária: calcula a média entre dois cards
+            prev_card = target_cards[position_idx - 1]
+            next_card = target_cards[position_idx] if position_idx < len(target_cards) else None
+
+            if next_card:
+                # Inserir entre prev_card e next_card
+                new_position = (float(prev_card.position) + float(next_card.position)) / 2
+            else:
+                # Inserir após prev_card (no final)
+                new_position = float(prev_card.position) + 1000
 
         # Move o card
         card.list_id = target_list_id
-        card.position = position
+        card.position = new_position
 
         self.db.commit()
         self.db.refresh(card)

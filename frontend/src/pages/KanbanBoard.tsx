@@ -168,9 +168,16 @@ const KanbanBoard: React.FC = () => {
       const sortedLists = listsData.sort((a, b) => a.position - b.position);
       setLists(sortedLists);
 
-      // Carregar cards do board
-      const cardsResponse = await cardService.list({ board_id: Number(boardId) });
-      setCards(cardsResponse.cards || []);
+      // Carregar cards do board e ordenar por position
+      // IMPORTANTE: all=true retorna TODOS os cards sem limite
+      // minimal=true retorna apenas campos essenciais (otimizado ~60% menor)
+      const cardsResponse = await cardService.list({
+        board_id: Number(boardId),
+        all: true,      // ✅ Sem limite de paginação
+        minimal: true   // ✅ Apenas campos essenciais para Kanban
+      });
+      const sortedCards = (cardsResponse.cards || []).sort((a, b) => (a.position || 0) - (b.position || 0));
+      setCards(sortedCards);
     } catch (error) {
       console.error("Erro ao carregar board:", error);
       alert("Erro ao carregar board");
@@ -438,6 +445,7 @@ const KanbanBoard: React.FC = () => {
 
   /**
    * Handler durante o drag (para feedback visual em tempo real)
+   * Necessário para preview entre listas diferentes
    */
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
@@ -458,26 +466,21 @@ const KanbanBoard: React.FC = () => {
       const overCard = cards.find((c) => c.id === overId);
       if (!overCard) return;
 
-      // Se mudou de lista, fazer o preview visual
+      // IMPORTANTE: Só fazer preview se mudou de lista
+      // Se é a mesma lista, deixa o SortableContext lidar (mais fluido)
       if (activeCard.list_id !== overCard.list_id) {
         setCards((currentCards) => {
           const activeIndex = currentCards.findIndex((c) => c.id === activeId);
           const overIndex = currentCards.findIndex((c) => c.id === overId);
 
-          // Criar nova lista de cards com o card movido
-          const newCards = [...currentCards];
-          newCards[activeIndex] = { ...activeCard, list_id: overCard.list_id };
+          // Criar nova array sem o card ativo
+          const withoutActive = currentCards.filter((c) => c.id !== activeId);
 
-          return newCards;
-        });
-      }
-      // Se é a mesma lista, reordenar
-      else {
-        setCards((currentCards) => {
-          const activeIndex = currentCards.findIndex((c) => c.id === activeId);
-          const overIndex = currentCards.findIndex((c) => c.id === overId);
+          // Inserir o card ativo na posição do overCard
+          const result = [...withoutActive];
+          result.splice(overIndex, 0, { ...activeCard, list_id: overCard.list_id });
 
-          return arrayMove(currentCards, activeIndex, overIndex);
+          return result;
         });
       }
     }
@@ -552,51 +555,89 @@ const KanbanBoard: React.FC = () => {
 
     if (!over) return;
 
-    const cardId = Number(active.id);
+    const activeId = Number(active.id);
     const overId = over.id;
 
     // Pegar informações do card que está sendo movido
-    const activeCard = cards.find((c) => c.id === cardId);
+    const activeCard = cards.find((c) => c.id === activeId);
     if (!activeCard) return;
 
     // Se dropou sobre ele mesmo, não faz nada
-    if (cardId === overId) return;
+    if (activeId === overId) return;
 
-    // Determinar a lista de destino
+    // Determinar a lista de destino e posição
     let targetListId: number;
+    let targetPosition: number | undefined;
 
     // Se dropou sobre outro card
-    if (typeof overId === "number" && cards.find((c) => c.id === overId)) {
+    if (typeof overId === "number") {
       const overCard = cards.find((c) => c.id === overId);
       if (!overCard) return;
+
       targetListId = overCard.list_id;
+
+      // Se está na mesma lista
+      if (activeCard.list_id === targetListId) {
+        // Calcular posição: pegar todos os cards da lista (incluindo o ativo)
+        const targetListCards = cards
+          .filter((c) => c.list_id === targetListId)
+          .sort((a, b) => (a.position || 0) - (b.position || 0));
+
+        const activeIndex = targetListCards.findIndex((c) => c.id === activeId);
+        const overIndex = targetListCards.findIndex((c) => c.id === overId);
+
+        // Se moveu dentro da mesma lista
+        if (activeIndex !== overIndex) {
+          // Reordenar localmente
+          const reordered = arrayMove(targetListCards, activeIndex, overIndex);
+
+          // Atualizar state local otimisticamente
+          setCards((currentCards) => {
+            const otherCards = currentCards.filter((c) => c.list_id !== targetListId);
+            return [...otherCards, ...reordered];
+          });
+
+          // Calcular nova posição (índice do card no destino)
+          targetPosition = overIndex;
+        } else {
+          // Mesma posição, não faz nada
+          return;
+        }
+      } else {
+        // Movendo para outra lista: pegar cards EXCLUINDO o ativo
+        const targetListCards = cards
+          .filter((c) => c.list_id === targetListId && c.id !== activeId)
+          .sort((a, b) => (a.position || 0) - (b.position || 0));
+
+        // Encontrar a posição do overCard na lista de destino
+        const overIndex = targetListCards.findIndex((c) => c.id === overId);
+
+        // Inserir na posição do overCard
+        targetPosition = overIndex >= 0 ? overIndex : 0;
+      }
     }
     // Se dropou sobre uma lista vazia (droppable-list-{id})
     else if (typeof overId === "string" && overId.startsWith("droppable-list-")) {
       targetListId = Number(overId.replace("droppable-list-", ""));
+      // Posição 0 (primeira posição na lista vazia)
+      targetPosition = 0;
     } else {
-      return;
-    }
-
-    // Por enquanto, só move entre listas diferentes
-    // TODO: Implementar reordenação dentro da mesma lista
-    if (activeCard.list_id === targetListId) {
-      // Recarregar para reverter o preview visual
-      await loadBoardData();
       return;
     }
 
     // Persistir a mudança no backend
     try {
-      await cardService.move(cardId, {
+      await cardService.move(activeId, {
         target_list_id: targetListId,
+        position: targetPosition,
       });
 
-      // Recarregar para sincronizar
+      // Recarregar para sincronizar com backend
       await loadBoardData();
     } catch (error) {
       console.error("Erro ao mover card:", error);
-      alert("Erro ao mover card");
+      alert("Erro ao mover card. Verifique sua conexão.");
+      // Recarregar para reverter mudanças locais
       await loadBoardData();
     }
   };
@@ -880,8 +921,10 @@ const KanbanBoard: React.FC = () => {
           {/* Renderizar listas */}
           {lists.length > 0 ? (
             lists.map((list) => {
-              // Filtrar cards da lista e aplicar busca
-              const listCards = cards.filter((card) => card.list_id === list.id);
+              // Filtrar cards da lista, ordenar por position e aplicar busca
+              const listCards = cards
+                .filter((card) => card.list_id === list.id)
+                .sort((a, b) => (a.position || 0) - (b.position || 0));
               const filteredCards = filterCards(listCards);
 
               return (

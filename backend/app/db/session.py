@@ -13,7 +13,7 @@ engine = create_engine(
     pool_pre_ping=True,  # Verifica conexão antes de usar
     pool_size=10,  # Tamanho do pool de conexões
     max_overflow=20,  # Conexões extras permitidas
-    echo=settings.DEBUG,  # Logar queries SQL no modo debug
+    echo=False,  # Logs SQL desativados para melhor performance
 )
 
 # Criar SessionLocal

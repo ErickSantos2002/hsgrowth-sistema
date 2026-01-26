@@ -565,6 +565,9 @@ export interface SuccessResponse {
 export interface PaginationParams {
   page?: number;
   size?: number;
+  page_size?: number;
+  all?: boolean;       // Retorna TODOS sem paginação
+  minimal?: boolean;   // Retorna apenas campos essenciais
 }
 
 export interface CardFilters extends PaginationParams {
