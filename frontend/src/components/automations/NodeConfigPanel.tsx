@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { X, Save, AlertCircle } from "lucide-react";
-import { Node } from "reactflow";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Save, AlertCircle, ChevronDown } from "lucide-react";
+import { Node as FlowNode } from "reactflow";
 
 interface NodeConfigPanelProps {
-  node: Node | null;
+  node: FlowNode | null;
   onClose: () => void;
   onSave: (nodeId: string, config: any) => void;
 }
@@ -45,16 +45,16 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Board
               </label>
-              <select
+              <SelectMenu
                 value={config.board_id || ""}
-                onChange={(e) => updateConfig("board_id", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Qualquer board</option>
-                <option value="1">Vendas</option>
-                <option value="2">Pós-Venda</option>
-                <option value="3">Suporte</option>
-              </select>
+                onChange={(value) => updateConfig("board_id", value)}
+                options={[
+                  { value: "", label: "Qualquer board" },
+                  { value: "1", label: "Vendas" },
+                  { value: "2", label: "Pós-Venda" },
+                  { value: "3", label: "Suporte" },
+                ]}
+              />
             </div>
 
             {nodeType === "card_moved" && (
@@ -62,19 +62,19 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Para a lista
                 </label>
-                <select
+                <SelectMenu
                   value={config.list_id || ""}
-                  onChange={(e) => updateConfig("list_id", e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="">Qualquer lista</option>
-                  <option value="1">Novo Lead</option>
-                  <option value="2">Contato Feito</option>
-                  <option value="3">Proposta Enviada</option>
-                  <option value="4">Negociação</option>
-                  <option value="5">Ganho</option>
-                  <option value="6">Perdido</option>
-                </select>
+                  onChange={(value) => updateConfig("list_id", value)}
+                  options={[
+                    { value: "", label: "Qualquer lista" },
+                    { value: "1", label: "Novo Lead" },
+                    { value: "2", label: "Contato Feito" },
+                    { value: "3", label: "Proposta Enviada" },
+                    { value: "4", label: "Negociação" },
+                    { value: "5", label: "Ganho" },
+                    { value: "6", label: "Perdido" },
+                  ]}
+                />
               </div>
             )}
 
@@ -82,30 +82,34 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Condição adicional (opcional)
               </label>
-              <select
-                value={config.condition_field || ""}
-                onChange={(e) => updateConfig("condition_field", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-2"
-              >
-                <option value="">Nenhuma condição</option>
-                <option value="value">Valor do card</option>
-                <option value="priority">Prioridade</option>
-                <option value="days_in_stage">Dias no estágio</option>
-              </select>
+              <div className="mb-2">
+                <SelectMenu
+                  value={config.condition_field || ""}
+                  onChange={(value) => updateConfig("condition_field", value)}
+                  options={[
+                    { value: "", label: "Nenhuma condição" },
+                    { value: "value", label: "Valor do card" },
+                    { value: "priority", label: "Prioridade" },
+                    { value: "days_in_stage", label: "Dias no estágio" },
+                  ]}
+                />
+              </div>
 
               {config.condition_field && (
                 <div className="flex gap-2">
-                  <select
-                    value={config.condition_operator || ""}
-                    onChange={(e) => updateConfig("condition_operator", e.target.value)}
-                    className="w-1/3 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  >
-                    <option value=">">&gt;</option>
-                    <option value="<">&lt;</option>
-                    <option value="=">=</option>
-                    <option value=">=">≥</option>
-                    <option value="<=">≤</option>
-                  </select>
+                  <div className="w-1/3">
+                    <SelectMenu
+                      value={config.condition_operator || ">"}
+                      onChange={(value) => updateConfig("condition_operator", value)}
+                      options={[
+                        { value: ">", label: ">" },
+                        { value: "<", label: "<" },
+                        { value: "=", label: "=" },
+                        { value: ">=", label: "≥" },
+                        { value: "<=", label: "≤" },
+                      ]}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={config.condition_value || ""}
@@ -126,16 +130,16 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Board
               </label>
-              <select
+              <SelectMenu
                 value={config.board_id || ""}
-                onChange={(e) => updateConfig("board_id", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Qualquer board</option>
-                <option value="1">Vendas</option>
-                <option value="2">Pós-Venda</option>
-                <option value="3">Suporte</option>
-              </select>
+                onChange={(value) => updateConfig("board_id", value)}
+                options={[
+                  { value: "", label: "Qualquer board" },
+                  { value: "1", label: "Vendas" },
+                  { value: "2", label: "Pós-Venda" },
+                  { value: "3", label: "Suporte" },
+                ]}
+              />
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -159,15 +163,15 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Frequência
               </label>
-              <select
+              <SelectMenu
                 value={config.frequency || "daily"}
-                onChange={(e) => updateConfig("frequency", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="daily">Diariamente</option>
-                <option value="weekly">Semanalmente</option>
-                <option value="monthly">Mensalmente</option>
-              </select>
+                onChange={(value) => updateConfig("frequency", value)}
+                options={[
+                  { value: "daily", label: "Diariamente" },
+                  { value: "weekly", label: "Semanalmente" },
+                  { value: "monthly", label: "Mensalmente" },
+                ]}
+              />
             </div>
 
             {config.frequency === "weekly" && (
@@ -175,19 +179,19 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Dia da semana
                 </label>
-                <select
+                <SelectMenu
                   value={config.day_of_week || "1"}
-                  onChange={(e) => updateConfig("day_of_week", e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="0">Domingo</option>
-                  <option value="1">Segunda</option>
-                  <option value="2">Terça</option>
-                  <option value="3">Quarta</option>
-                  <option value="4">Quinta</option>
-                  <option value="5">Sexta</option>
-                  <option value="6">Sábado</option>
-                </select>
+                  onChange={(value) => updateConfig("day_of_week", value)}
+                  options={[
+                    { value: "0", label: "Domingo" },
+                    { value: "1", label: "Segunda" },
+                    { value: "2", label: "Terça" },
+                    { value: "3", label: "Quarta" },
+                    { value: "4", label: "Quinta" },
+                    { value: "5", label: "Sexta" },
+                    { value: "6", label: "Sábado" },
+                  ]}
+                />
               </div>
             )}
 
@@ -236,31 +240,31 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Board de destino *
               </label>
-              <select
+              <SelectMenu
                 value={config.target_board_id || ""}
-                onChange={(e) => updateConfig("target_board_id", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="">Selecione o board</option>
-                <option value="1">Vendas</option>
-                <option value="2">Pós-Venda</option>
-                <option value="3">Suporte</option>
-              </select>
+                onChange={(value) => updateConfig("target_board_id", value)}
+                options={[
+                  { value: "", label: "Selecione o board" },
+                  { value: "1", label: "Vendas" },
+                  { value: "2", label: "Pós-Venda" },
+                  { value: "3", label: "Suporte" },
+                ]}
+              />
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Lista de destino *
               </label>
-              <select
+              <SelectMenu
                 value={config.target_list_id || ""}
-                onChange={(e) => updateConfig("target_list_id", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="">Selecione a lista</option>
-                <option value="1">Novo Lead</option>
-                <option value="2">Contato Feito</option>
-                <option value="3">Proposta Enviada</option>
-              </select>
+                onChange={(value) => updateConfig("target_list_id", value)}
+                options={[
+                  { value: "", label: "Selecione a lista" },
+                  { value: "1", label: "Novo Lead" },
+                  { value: "2", label: "Contato Feito" },
+                  { value: "3", label: "Proposta Enviada" },
+                ]}
+              />
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -344,33 +348,33 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Destinatário *
               </label>
-              <select
+              <SelectMenu
                 value={config.recipient_type || ""}
-                onChange={(e) => updateConfig("recipient_type", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="">Selecione</option>
-                <option value="assigned_user">Usuário responsável pelo card</option>
-                <option value="board_owner">Dono do board</option>
-                <option value="all_users">Todos os usuários</option>
-                <option value="specific_user">Usuário específico</option>
-              </select>
+                onChange={(value) => updateConfig("recipient_type", value)}
+                options={[
+                  { value: "", label: "Selecione" },
+                  { value: "assigned_user", label: "Usuário responsável pelo card" },
+                  { value: "board_owner", label: "Dono do board" },
+                  { value: "all_users", label: "Todos os usuários" },
+                  { value: "specific_user", label: "Usuário específico" },
+                ]}
+              />
             </div>
             {config.recipient_type === "specific_user" && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Usuário
                 </label>
-                <select
+                <SelectMenu
                   value={config.user_id || ""}
-                  onChange={(e) => updateConfig("user_id", e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                >
-                  <option value="">Selecione o usuário</option>
-                  <option value="1">João Silva</option>
-                  <option value="2">Maria Santos</option>
-                  <option value="3">Pedro Costa</option>
-                </select>
+                  onChange={(value) => updateConfig("user_id", value)}
+                  options={[
+                    { value: "", label: "Selecione o usuário" },
+                    { value: "1", label: "João Silva" },
+                    { value: "2", label: "Maria Santos" },
+                    { value: "3", label: "Pedro Costa" },
+                  ]}
+                />
               </div>
             )}
             <div className="mb-4">
@@ -395,17 +399,17 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Atribuir para *
               </label>
-              <select
+              <SelectMenu
                 value={config.user_id || ""}
-                onChange={(e) => updateConfig("user_id", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="">Selecione o usuário</option>
-                <option value="1">João Silva</option>
-                <option value="2">Maria Santos</option>
-                <option value="3">Pedro Costa</option>
-                <option value="4">Ana Oliveira</option>
-              </select>
+                onChange={(value) => updateConfig("user_id", value)}
+                options={[
+                  { value: "", label: "Selecione o usuário" },
+                  { value: "1", label: "João Silva" },
+                  { value: "2", label: "Maria Santos" },
+                  { value: "3", label: "Pedro Costa" },
+                  { value: "4", label: "Ana Oliveira" },
+                ]}
+              />
             </div>
             <div className="mb-4">
               <label className="flex items-center gap-2 text-slate-300">
@@ -440,18 +444,18 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Cor da tag
               </label>
-              <select
+              <SelectMenu
                 value={config.tag_color || "blue"}
-                onChange={(e) => updateConfig("tag_color", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="blue">Azul</option>
-                <option value="green">Verde</option>
-                <option value="red">Vermelho</option>
-                <option value="yellow">Amarelo</option>
-                <option value="purple">Roxo</option>
-                <option value="pink">Rosa</option>
-              </select>
+                onChange={(value) => updateConfig("tag_color", value)}
+                options={[
+                  { value: "blue", label: "Azul" },
+                  { value: "green", label: "Verde" },
+                  { value: "red", label: "Vermelho" },
+                  { value: "yellow", label: "Amarelo" },
+                  { value: "purple", label: "Roxo" },
+                  { value: "pink", label: "Rosa" },
+                ]}
+              />
             </div>
           </>
         );
@@ -463,35 +467,35 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Board de destino *
               </label>
-              <select
+              <SelectMenu
                 value={config.target_board_id || ""}
-                onChange={(e) => updateConfig("target_board_id", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="">Selecione o board</option>
-                <option value="same">Mesmo board</option>
-                <option value="1">Vendas</option>
-                <option value="2">Pós-Venda</option>
-                <option value="3">Suporte</option>
-              </select>
+                onChange={(value) => updateConfig("target_board_id", value)}
+                options={[
+                  { value: "", label: "Selecione o board" },
+                  { value: "same", label: "Mesmo board" },
+                  { value: "1", label: "Vendas" },
+                  { value: "2", label: "Pós-Venda" },
+                  { value: "3", label: "Suporte" },
+                ]}
+              />
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Lista de destino *
               </label>
-              <select
+              <SelectMenu
                 value={config.target_list_id || ""}
-                onChange={(e) => updateConfig("target_list_id", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="">Selecione a lista</option>
-                <option value="1">Novo Lead</option>
-                <option value="2">Contato Feito</option>
-                <option value="3">Proposta Enviada</option>
-                <option value="4">Negociação</option>
-                <option value="5">Ganho</option>
-                <option value="6">Perdido</option>
-              </select>
+                onChange={(value) => updateConfig("target_list_id", value)}
+                options={[
+                  { value: "", label: "Selecione a lista" },
+                  { value: "1", label: "Novo Lead" },
+                  { value: "2", label: "Contato Feito" },
+                  { value: "3", label: "Proposta Enviada" },
+                  { value: "4", label: "Negociação" },
+                  { value: "5", label: "Ganho" },
+                  { value: "6", label: "Perdido" },
+                ]}
+              />
             </div>
           </>
         );
@@ -503,17 +507,17 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Campo a atualizar *
               </label>
-              <select
+              <SelectMenu
                 value={config.field_name || ""}
-                onChange={(e) => updateConfig("field_name", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="">Selecione o campo</option>
-                <option value="priority">Prioridade</option>
-                <option value="value">Valor</option>
-                <option value="description">Descrição</option>
-                <option value="due_date">Data de vencimento</option>
-              </select>
+                onChange={(value) => updateConfig("field_name", value)}
+                options={[
+                  { value: "", label: "Selecione o campo" },
+                  { value: "priority", label: "Prioridade" },
+                  { value: "value", label: "Valor" },
+                  { value: "description", label: "Descrição" },
+                  { value: "due_date", label: "Data de vencimento" },
+                ]}
+              />
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -536,7 +540,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
   };
 
   return (
-    <div className="w-96 bg-slate-800 border-l border-slate-700 p-6 overflow-y-auto">
+    <div className="w-80 bg-slate-800/50 backdrop-blur border-l border-slate-700 p-4 overflow-y-auto overflow-x-hidden max-h-[85vh] sm:max-h-[calc(100vh-140px)]">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -583,6 +587,75 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
           Salvar
         </button>
       </div>
+    </div>
+  );
+};
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as globalThis.Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
