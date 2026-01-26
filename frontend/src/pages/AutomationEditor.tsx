@@ -523,7 +523,7 @@ const AutomationEditorContent: React.FC = () => {
               placeholder="Nome da automação"
             />
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 sm:justify-end">
             <button
               onClick={() => setShowTemplatesModal(true)}
               className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
