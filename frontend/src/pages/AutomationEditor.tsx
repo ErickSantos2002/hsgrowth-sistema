@@ -15,7 +15,7 @@ import ReactFlow, {
   SelectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { ArrowLeft, Save, Play, Trash2, ZoomIn, ZoomOut, Maximize2, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Play, Trash2, Sparkles } from "lucide-react";
 
 import TriggerNode from "../components/automations/TriggerNode";
 import ActionNode from "../components/automations/ActionNode";
@@ -58,7 +58,6 @@ const AutomationEditorContent: React.FC = () => {
   const [history, setHistory] = useState<{ nodes: Node[]; edges: Edge[] }[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isCtrlPressed, setIsCtrlPressed] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(100);
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
 
   // Conectar nodes
@@ -286,42 +285,28 @@ const AutomationEditorContent: React.FC = () => {
   const handleZoomIn = useCallback(() => {
     if (reactFlowInstance) {
       reactFlowInstance.zoomIn();
-      const viewport = reactFlowInstance.getViewport();
-      setZoomLevel(Math.round(viewport.zoom * 100));
     }
   }, [reactFlowInstance]);
 
   const handleZoomOut = useCallback(() => {
     if (reactFlowInstance) {
       reactFlowInstance.zoomOut();
-      const viewport = reactFlowInstance.getViewport();
-      setZoomLevel(Math.round(viewport.zoom * 100));
     }
   }, [reactFlowInstance]);
 
   const handleFitView = useCallback(() => {
     if (reactFlowInstance) {
       reactFlowInstance.fitView({ padding: 0.2 });
-      const viewport = reactFlowInstance.getViewport();
-      setZoomLevel(Math.round(viewport.zoom * 100));
     }
   }, [reactFlowInstance]);
 
   const handleResetZoom = useCallback(() => {
     if (reactFlowInstance) {
       reactFlowInstance.setViewport({ x: 0, y: 0, zoom: 1 });
-      setZoomLevel(100);
     }
   }, [reactFlowInstance]);
 
   // Atualiza o nível de zoom quando o viewport mudar
-  const onMoveEnd = useCallback(() => {
-    if (reactFlowInstance) {
-      const viewport = reactFlowInstance.getViewport();
-      setZoomLevel(Math.round(viewport.zoom * 100));
-    }
-  }, [reactFlowInstance]);
-
   // Carregar template no canvas
   const handleLoadTemplate = useCallback((templateNodes: Node[], templateEdges: Edge[]) => {
     setNodes(templateNodes);
@@ -539,15 +524,6 @@ const AutomationEditorContent: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-slate-400 text-xs">
-              <span>{selectedNodesCount > 0 ? `${selectedNodesCount} selecionado${selectedNodesCount > 1 ? 's' : ''} |` : 'Arraste para selecionar |'}</span>
-              <kbd className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs font-mono">Ctrl+C/V</kbd>
-              <span>Copiar/Colar |</span>
-              <kbd className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs font-mono">Ctrl+Z/Y</kbd>
-              <span>Undo/Redo |</span>
-              <kbd className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs font-mono">Ctrl</kbd>
-              <span>+ Arrastar = Mover canvas</span>
-            </div>
             <button
               onClick={() => setShowTemplatesModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
@@ -596,7 +572,6 @@ const AutomationEditorContent: React.FC = () => {
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            onMoveEnd={onMoveEnd}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
@@ -622,45 +597,13 @@ const AutomationEditorContent: React.FC = () => {
             <Controls className="!bg-slate-800 !border-slate-700" showInteractive={false} />
             <MiniMap
               className="!bg-slate-800 !border-slate-700"
+              style={{ bottom: 10, right: -5}}
               nodeColor={(node) => {
                 if (node.type === "triggerNode") return "#a855f7";
                 if (node.type === "actionNode") return "#10b981";
                 return "#6b7280";
               }}
             />
-
-            {/* Controles de Zoom Customizados */}
-            <div className="absolute bottom-6 right-6 flex flex-col gap-2 bg-slate-800 border border-slate-700 rounded-lg p-2 shadow-xl">
-              <button
-                onClick={handleZoomIn}
-                className="p-2 hover:bg-slate-700 rounded transition-colors"
-                title="Zoom In (Ctrl++)"
-              >
-                <ZoomIn size={18} className="text-slate-300" />
-              </button>
-
-              <div className="px-2 py-1 text-xs font-mono text-slate-400 text-center border-y border-slate-700">
-                {zoomLevel}%
-              </div>
-
-              <button
-                onClick={handleZoomOut}
-                className="p-2 hover:bg-slate-700 rounded transition-colors"
-                title="Zoom Out (Ctrl+-)"
-              >
-                <ZoomOut size={18} className="text-slate-300" />
-              </button>
-
-              <div className="h-px bg-slate-700 my-1" />
-
-              <button
-                onClick={handleFitView}
-                className="p-2 hover:bg-slate-700 rounded transition-colors"
-                title="Fit View (Ctrl+1)"
-              >
-                <Maximize2 size={18} className="text-slate-300" />
-              </button>
-            </div>
           </ReactFlow>
         </div>
 
