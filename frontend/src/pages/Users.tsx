@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Shield, UserCircle, Clock, Key } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Plus, Search, Edit, Trash2, RefreshCw, Shield, UserCircle, Clock, Key, ChevronDown } from "lucide-react";
 import userService from "../services/userService";
 import { User } from "../types";
 import { useAuth } from "../hooks/useAuth";
@@ -15,7 +15,6 @@ const Users: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all"); // all, admin, manager, salesperson
   const [filterActive, setFilterActive] = useState<string>("all"); // all, active, inactive
-  const [showFilters, setShowFilters] = useState(false);
 
   // Estados do modal
   const [showModal, setShowModal] = useState(false);
@@ -250,37 +249,34 @@ const Users: React.FC = () => {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <UserCircle className="text-white" size={32} />
-              Usuários
-            </h1>
-            <p className="text-slate-400 mt-1">Gerencie os usuários do sistema</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={loadUsers}
-              disabled={loading}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-white transition-colors flex items-center gap-2 disabled:opacity-50"
-            >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-              Atualizar
-            </button>
-            <button
-              onClick={handleCreate}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white transition-colors flex items-center gap-2"
-            >
-              <Plus size={16} />
-              Novo Usuário
-            </button>
-          </div>
+      <div className="mb-6 space-y-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <UserCircle className="text-white" size={32} />
+            Usuários
+          </h1>
+          <p className="text-slate-400 mt-1">Gerencie os usuários do sistema</p>
         </div>
 
-        {/* Busca e Filtros */}
+        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+          <button
+            onClick={loadUsers}
+            disabled={loading}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-white transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            Atualizar
+          </button>
+          <button
+            onClick={handleCreate}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white transition-colors flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Novo Usuário
+          </button>
+        </div>
+
         <div className="flex flex-col md:flex-row gap-3">
-          {/* Campo de busca */}
           <div className="flex-1 relative">
             <Search
               size={20}
@@ -295,52 +291,31 @@ const Users: React.FC = () => {
             />
           </div>
 
-          {/* Botão de filtros */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-              showFilters
-                ? "bg-emerald-600 border-emerald-600 text-white"
-                : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            <Filter size={16} />
-            Filtros
-          </button>
-        </div>
-
-        {/* Painel de filtros */}
-        {showFilters && (
-          <div className="mt-3 p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
-            <div className="flex flex-wrap gap-3">
-              <div>
-                <label className="text-sm text-slate-400 block mb-2">Role</label>
-                <select
-                  value={filterRole}
-                  onChange={(e) => setFilterRole(e.target.value)}
-                  className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="all">Todos</option>
-                  <option value="admin">Administrador</option>
-                  <option value="manager">Gerente</option>
-                  <option value="salesperson">Vendedor</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-2">Status</label>
-                <select
-                  value={filterActive}
-                  onChange={(e) => setFilterActive(e.target.value)}
-                  className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="all">Todos</option>
-                  <option value="active">Ativos</option>
-                  <option value="inactive">Inativos</option>
-                </select>
-              </div>
-            </div>
+          <div className="w-full md:w-56">
+            <SelectMenu
+              value={filterRole}
+              options={[
+                { value: "all", label: "Todos" },
+                { value: "admin", label: "Administrador" },
+                { value: "manager", label: "Gerente" },
+                { value: "salesperson", label: "Vendedor" },
+              ]}
+              onChange={setFilterRole}
+            />
           </div>
-        )}
+
+          <div className="w-full md:w-56">
+            <SelectMenu
+              value={filterActive}
+              options={[
+                { value: "all", label: "Todos" },
+                { value: "active", label: "Ativos" },
+                { value: "inactive", label: "Inativos" },
+              ]}
+              onChange={setFilterActive}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Contador */}
@@ -408,7 +383,7 @@ const Users: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold">
+                        <div className="w-10 h-10 min-w-10 min-h-10 rounded-full shrink-0 bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold">
                           {getInitials(user.name)}
                         </div>
                         <div>
@@ -484,14 +459,14 @@ const Users: React.FC = () => {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleEdit(user)}
-                          className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-white"
+                          className="p-2 hover:bg-yellow-500/20 rounded-lg transition-colors text-yellow-400 hover:text-yellow-300"
                           title="Editar"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleResetPassword(user)}
-                          className="p-2 hover:bg-blue-500/20 rounded-lg transition-colors text-slate-400 hover:text-blue-400"
+                          className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-white"
                           title="Trocar Senha"
                         >
                           <Key size={16} />
@@ -499,7 +474,7 @@ const Users: React.FC = () => {
                         {user.id !== currentUser?.id && (
                           <button
                             onClick={() => handleDelete(user)}
-                            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-slate-400 hover:text-red-400"
+                            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-400 hover:text-red-300"
                             title="Deletar"
                           >
                             <Trash2 size={16} />
@@ -533,6 +508,76 @@ const Users: React.FC = () => {
         onSuccess={handlePasswordResetSuccess}
         user={resetPasswordUser}
       />
+    </div>
+  );
+};
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
