@@ -149,7 +149,7 @@ export default function MainLayout() {
                                                     <span>{item.label}</span>
                                                     {/* Badge de Admin */}
                                                     {item.adminOnly && (
-                                                        <span className="ml-auto text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                                                        <span className="ml-auto text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">
                                                             Admin
                                                         </span>
                                                     )}
@@ -160,7 +160,7 @@ export default function MainLayout() {
                                                 <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-slate-700">
                                                     {item.label}
                                                     {item.adminOnly && (
-                                                        <span className="ml-2 text-xs text-yellow-400">
+                                                        <span className="ml-2 text-xs text-orange-400">
                                                             (Admin)
                                                         </span>
                                                     )}
