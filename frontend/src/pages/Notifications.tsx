@@ -256,8 +256,8 @@ const Notifications: React.FC = () => {
           </p>
         </div>
       ) : (
-        <>
-          <div className="space-y-3">
+        <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
+          <div className="space-y-3 p-4 sm:p-6">
             {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
@@ -327,86 +327,84 @@ const Notifications: React.FC = () => {
           </div>
 
           {/* Paginação */}
-          {totalPagesSafe > 1 && (
-            <div className="mt-6 flex flex-col gap-4 border-t border-slate-700/60 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-              <div className="text-sm text-slate-400">
-                Mostrando {totalItems === 0 ? 0 : (page - 1) * pageSize + 1} a{" "}
-                {Math.min(page * pageSize, totalItems)} de {totalItems} registros
+          <div className="flex flex-col gap-4 border-t border-slate-700/60 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+            <div className="text-sm text-slate-400">
+              Mostrando {totalItems === 0 ? 0 : (page - 1) * pageSize + 1} a{" "}
+              {Math.min(page * pageSize, totalItems)} de {totalItems} registros
+            </div>
+            <div className="flex items-center justify-center gap-3 sm:justify-end">
+              <div className="flex items-center gap-2 sm:hidden">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                    page === 1
+                      ? "border-slate-700 text-slate-600"
+                      : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                  }`}
+                >
+                  {"<"}
+                </button>
+                <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
+                  {page}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPagesSafe, p + 1))}
+                  disabled={page === totalPagesSafe}
+                  className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                    page === totalPagesSafe
+                      ? "border-slate-700 text-slate-600"
+                      : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                  }`}
+                >
+                  {">"}
+                </button>
               </div>
-              <div className="flex items-center justify-center gap-3 sm:justify-end">
-                <div className="flex items-center gap-2 sm:hidden">
+              <div className="hidden items-center gap-2 sm:flex">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                    page === 1
+                      ? "border-slate-700 text-slate-600"
+                      : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                  }`}
+                >
+                  Anterior
+                </button>
+                {pageNumbers.map((pageNumber) => (
                   <button
+                    key={pageNumber}
                     type="button"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
-                      page === 1
-                        ? "border-slate-700 text-slate-600"
-                        : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
-                    }`}
-                  >
-                    {"<"}
-                  </button>
-                  <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
-                    {page}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => Math.min(totalPagesSafe, p + 1))}
-                    disabled={page === totalPagesSafe}
-                    className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
-                      page === totalPagesSafe
-                        ? "border-slate-700 text-slate-600"
-                        : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
-                    }`}
-                  >
-                    {">"}
-                  </button>
-                </div>
-                <div className="hidden items-center gap-2 sm:flex">
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                      page === 1
-                        ? "border-slate-700 text-slate-600"
+                    onClick={() => setPage(pageNumber)}
+                    className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
+                      pageNumber === page
+                        ? "border-emerald-500 bg-emerald-500 text-white"
                         : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
                     }`}
                   >
-                    Anterior
+                    {pageNumber}
                   </button>
-                  {pageNumbers.map((pageNumber) => (
-                    <button
-                      key={pageNumber}
-                      type="button"
-                      onClick={() => setPage(pageNumber)}
-                      className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
-                        pageNumber === page
-                          ? "border-emerald-500 bg-emerald-500 text-white"
-                          : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
-                      }`}
-                    >
-                      {pageNumber}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => Math.min(totalPagesSafe, p + 1))}
-                    disabled={page === totalPagesSafe}
-                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                      page === totalPagesSafe
-                        ? "border-slate-700 text-slate-600"
-                        : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
-                    }`}
-                  >
-                    Próxima
-                  </button>
-                </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPagesSafe, p + 1))}
+                  disabled={page === totalPagesSafe}
+                  className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                    page === totalPagesSafe
+                      ? "border-slate-700 text-slate-600"
+                      : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                  }`}
+                >
+                  Próxima
+                </button>
               </div>
             </div>
-          )}
-        </>
+          </div>
+        </div>
       )}
     </div>
   );

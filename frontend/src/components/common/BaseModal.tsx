@@ -89,7 +89,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
   // Renderiza o modal usando Portal para garantir que fique acima de tudo
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[3000] p-4"
       onClick={handleOverlayClick}
     >
       <div

@@ -192,7 +192,7 @@ export default function MainLayout() {
             {/* Main Content */}
             <div className={`${sidebarOpen ? "lg:ml-64" : "lg:ml-20"} transition-all duration-300 h-screen flex flex-col`}>
                 {/* Top Navbar */}
-                <nav className="flex-shrink-0 z-30 bg-slate-900/50 backdrop-blur-xl border-b border-slate-700/50 px-6 py-4">
+                <nav className="flex-shrink-0 z-[2000] bg-slate-900/50 backdrop-blur-xl border-b border-slate-700/50 px-6 py-4">
                     <div className="flex items-center justify-between">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}

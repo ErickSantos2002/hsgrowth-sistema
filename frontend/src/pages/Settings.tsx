@@ -408,9 +408,11 @@ const Settings: React.FC = () => {
                       <Upload size={16} />
                     </button>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-lg font-semibold text-white">{user?.name}</h3>
-                    <p className="text-slate-400">{user?.email}</p>
+                    <p className="text-slate-400 text-sm sm:text-base max-w-[180px] sm:max-w-none truncate">
+                      {user?.email}
+                    </p>
                     <span className="inline-block mt-2 px-3 py-1 bg-emerald-600/20 text-emerald-400 text-sm font-medium rounded-full">
                       {user?.role_name || "Usuário"}
                     </span>

@@ -160,7 +160,7 @@ const NotificationDropdown: React.FC = () => {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="fixed left-4 right-4 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 max-h-[600px] flex flex-col">
+        <div className="fixed left-4 right-4 top-16 sm:left-auto sm:right-4 sm:w-96 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[1000] max-h-[600px] flex flex-col">
           {/* Header do Dropdown */}
           <div className="flex items-center justify-between p-4 border-b border-slate-700">
             <div>
