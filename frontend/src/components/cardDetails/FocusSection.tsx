@@ -20,6 +20,13 @@ import {
 } from "lucide-react";
 import StatusBadge, { type ActivityStatus } from "./StatusBadge";
 import cardTaskService from "../../services/cardTaskService";
+import {
+  formatBrazilDate,
+  extractBrazilDateForInput,
+  extractBrazilTimeForInput,
+  convertBrazilToUTC,
+  getActivityStatusBrazil,
+} from "../../utils/timezone";
 
 interface PendingTask {
   id: number;
@@ -59,33 +66,6 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
   const activities = tasks || [];
 
   /**
-   * Calcula o status da atividade (VENCIDO/HOJE/AMANHÃ)
-   */
-  const getActivityStatus = (dateStr: string): ActivityStatus => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const activityDate = new Date(dateStr);
-    activityDate.setHours(0, 0, 0, 0);
-
-    const diffTime = activityDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return "overdue";
-    if (diffDays === 0) return "today";
-    if (diffDays === 1) return "tomorrow";
-    return "future";
-  };
-
-  /**
-   * Formata data para exibição
-   */
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
-  };
-
-  /**
    * Retorna ícone do tipo de atividade
    */
   const getActivityIcon = (type: string) => {
@@ -99,6 +79,22 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
       other: <MoreHorizontal size={16} />,
     };
     return icons[type as keyof typeof icons] || icons.other;
+  };
+
+  /**
+   * Retorna nome legível do tipo de atividade
+   */
+  const getActivityTypeName = (type: string): string => {
+    const names = {
+      call: "Ligação",
+      meeting: "Reunião",
+      task: "Tarefa",
+      deadline: "Prazo",
+      email: "E-mail",
+      lunch: "Almoço",
+      other: "Outro",
+    };
+    return names[type as keyof typeof names] || "Outro";
   };
 
   /**
@@ -190,9 +186,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
   const handleOpenReschedule = (task: PendingTask) => {
     setRescheduleTaskId(task.id);
     if (task.due_date) {
-      const date = new Date(task.due_date);
-      setRescheduleDate(date.toISOString().split("T")[0]);
-      setRescheduleTime(date.toTimeString().slice(0, 5));
+      // Extrai data e hora no horário do Brasil
+      setRescheduleDate(extractBrazilDateForInput(task.due_date));
+      setRescheduleTime(extractBrazilTimeForInput(task.due_date));
     } else {
       setRescheduleDate("");
       setRescheduleTime("");
@@ -211,12 +207,11 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
     try {
       setLoadingTaskId(rescheduleTaskId);
 
-      const dueDateTime = rescheduleTime
-        ? `${rescheduleDate}T${rescheduleTime}:00`
-        : `${rescheduleDate}T12:00:00`;
+      // Converte a data/hora do Brasil para UTC antes de enviar ao backend
+      const dueDateTimeUTC = convertBrazilToUTC(rescheduleDate, rescheduleTime || "12:00");
 
       await cardTaskService.update(rescheduleTaskId, {
-        due_date: dueDateTime,
+        due_date: dueDateTimeUTC,
       });
 
       setRescheduleTaskId(null);
@@ -302,9 +297,8 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
         <div className="space-y-3">
           {pendingActivities.map((activity) => {
             const isExpanded = expandedActivities.includes(activity.id);
-            const status = activity.is_overdue ? "overdue" :
-                          activity.due_date && new Date(activity.due_date).toDateString() === new Date().toDateString() ? "today" :
-                          "future";
+            // Calcula o status usando o horário do Brasil
+            const status = activity.due_date ? getActivityStatusBrazil(activity.due_date) : "future";
 
             return (
               <div
@@ -322,10 +316,15 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
                         {getActivityIcon(activity.task_type)}
                       </span>
                       <div className="flex-1">
-                        <p className="font-medium text-white">{activity.title}</p>
-                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-400">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium text-white">{activity.title}</p>
+                          <span className="px-2 py-0.5 bg-slate-700/50 text-slate-300 text-xs rounded border border-slate-600">
+                            {getActivityTypeName(activity.task_type)}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
                           <StatusBadge status={status} />
-                          {activity.due_date && <span>{formatDate(activity.due_date)}</span>}
+                          {activity.due_date && <span>{formatBrazilDate(activity.due_date)}</span>}
                           {activity.assigned_to_name && (
                             <>
                               <span>•</span>

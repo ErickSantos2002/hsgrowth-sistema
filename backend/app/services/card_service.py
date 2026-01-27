@@ -11,6 +11,7 @@ from app.repositories.list_repository import ListRepository
 from app.repositories.board_repository import BoardRepository
 from app.repositories.field_repository import FieldRepository
 from app.repositories.notification_repository import NotificationRepository
+from app.repositories.activity_repository import ActivityRepository
 from app.schemas.card import CardCreate, CardUpdate, CardResponse, CardListResponse
 from app.schemas.field import CardFieldValueCreate, CardFieldValueResponse
 from app.models.card import Card
@@ -28,6 +29,7 @@ class CardService:
         self.list_repository = ListRepository(db)
         self.board_repository = BoardRepository(db)
         self.field_repository = FieldRepository(db)
+        self.activity_repository = ActivityRepository(db)
         self.notification_repository = NotificationRepository(db)
 
     def _verify_card_access(self, card: Card) -> None:
@@ -634,8 +636,19 @@ class CardService:
         card_products = product_repo.list_card_products(card_id)
         products_totals = product_repo.get_card_products_total(card_id)
 
-        # Atividades recentes (TODO: implementar quando ActivityRepository existir)
-        recent_activities = []
+        # Atividades recentes do histórico (últimas 50)
+        activities_list = self.activity_repository.get_by_card(card_id, limit=50)
+        recent_activities = [
+            {
+                "id": act.id,
+                "activity_type": act.activity_type,
+                "description": act.description,
+                "activity_metadata": act.activity_metadata or {},
+                "user": {"id": act.user.id, "name": act.user.name} if act.user else None,
+                "created_at": act.created_at.isoformat() if act.created_at else None
+            }
+            for act in activities_list
+        ]
 
         # Busca informações relacionadas
         list_obj = self.list_repository.find_by_id(card.list_id)
@@ -705,7 +718,7 @@ class CardService:
                 for cp in card_products
             ],
             "products_total": products_totals["total"],
-            "recent_activities": []  # TODO: implementar quando ActivityRepository existir
+            "recent_activities": recent_activities
         }
 
         return response_data

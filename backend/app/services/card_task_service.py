@@ -6,6 +6,7 @@ from typing import Optional, List
 from fastapi import HTTPException, status
 
 from app.repositories.card_task_repository import CardTaskRepository
+from app.repositories.activity_repository import ActivityRepository
 from app.models.card_task import CardTask
 from app.models.user import User
 from app.schemas.card_task import (
@@ -24,6 +25,33 @@ class CardTaskService:
     def __init__(self, db: Session):
         self.db = db
         self.repository = CardTaskRepository(db)
+        self.activity_repository = ActivityRepository(db)
+
+    def _log_activity(
+        self,
+        card_id: int,
+        user_id: int,
+        activity_type: str,
+        description: str,
+        metadata: dict = None
+    ):
+        """
+        Registra uma atividade no histórico do card
+
+        Args:
+            card_id: ID do card
+            user_id: ID do usuário que executou a ação
+            activity_type: Tipo da atividade
+            description: Descrição legível
+            metadata: Dados adicionais em JSON
+        """
+        self.activity_repository.create(
+            card_id=card_id,
+            user_id=user_id,
+            activity_type=activity_type,
+            description=description,
+            activity_metadata=metadata or {}
+        )
 
     def create_task(self, task_data: CardTaskCreate, current_user: User) -> CardTaskResponse:
         """Cria uma nova tarefa"""
@@ -35,7 +63,31 @@ class CardTaskService:
 
         task = self.repository.create(task_data)
 
-        # TODO: Criar evento de auditoria (Activity)
+        # Registra no histórico
+        task_type_names = {
+            "call": "Ligação",
+            "meeting": "Reunião",
+            "task": "Tarefa",
+            "deadline": "Prazo",
+            "email": "E-mail",
+            "lunch": "Almoço",
+            "other": "Outro"
+        }
+        task_type_label = task_type_names.get(task_data.task_type, "Atividade")
+
+        self._log_activity(
+            card_id=task_data.card_id,
+            user_id=current_user.id,
+            activity_type="task_created",
+            description=f"{task_type_label} criada: {task_data.title}",
+            metadata={
+                "task_id": task.id,
+                "task_type": task_data.task_type,
+                "task_title": task_data.title,
+                "due_date": str(task_data.due_date) if task_data.due_date else None
+            }
+        )
+
         # TODO: Enviar notificação se assigned_to_id != current_user.id
 
         return self._build_response(task)
@@ -90,7 +142,14 @@ class CardTaskService:
 
         updated_task = self.repository.update(task_id, task_data)
 
-        # TODO: Criar evento de auditoria
+        # Registra no histórico
+        self._log_activity(
+            card_id=task.card_id,
+            user_id=current_user.id,
+            activity_type="task_edited",
+            description=f"Tarefa editada: {task.title}",
+            metadata={"task_id": task.id, "task_title": task.title}
+        )
 
         return self._build_response(updated_task)
 
@@ -106,10 +165,43 @@ class CardTaskService:
 
         if is_completed:
             updated_task = self.repository.mark_as_completed(task_id)
-            # TODO: Criar evento de auditoria "activity_completed"
+
+            # Registra no histórico
+            task_type_names = {
+                "call": "Ligação",
+                "meeting": "Reunião",
+                "task": "Tarefa",
+                "deadline": "Prazo",
+                "email": "E-mail",
+                "lunch": "Almoço",
+                "other": "Outro"
+            }
+            task_type_label = task_type_names.get(task.task_type.value, "Atividade")
+
+            self._log_activity(
+                card_id=task.card_id,
+                user_id=current_user.id,
+                activity_type="task_completed",
+                description=f"{task_type_label} concluída: {task.title}",
+                metadata={
+                    "task_id": task.id,
+                    "task_type": task.task_type.value,
+                    "task_title": task.title
+                }
+            )
+
             # TODO: Dar pontos de gamificação
         else:
             updated_task = self.repository.mark_as_pending(task_id)
+
+            # Registra no histórico a reabertura
+            self._log_activity(
+                card_id=task.card_id,
+                user_id=current_user.id,
+                activity_type="task_reopened",
+                description=f"Tarefa reaberta: {task.title}",
+                metadata={"task_id": task.id, "task_title": task.title}
+            )
 
         return self._build_response(updated_task)
 
@@ -125,6 +217,10 @@ class CardTaskService:
 
         # TODO: Verificar permissões
 
+        # Salva informações antes de deletar para o histórico
+        card_id = task.card_id
+        task_title = task.title
+
         success = self.repository.delete(task_id)
 
         if not success:
@@ -133,7 +229,14 @@ class CardTaskService:
                 detail="Erro ao deletar tarefa"
             )
 
-        # TODO: Criar evento de auditoria
+        # Registra no histórico
+        self._log_activity(
+            card_id=card_id,
+            user_id=current_user.id,
+            activity_type="task_deleted",
+            description=f"Tarefa deletada: {task_title}",
+            metadata={"task_id": task_id, "task_title": task_title}
+        )
 
         return {"message": "Tarefa deletada com sucesso"}
 

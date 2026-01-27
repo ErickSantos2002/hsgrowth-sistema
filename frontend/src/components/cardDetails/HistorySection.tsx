@@ -24,6 +24,7 @@ import {
   Search,
   Filter,
 } from "lucide-react";
+import { convertUTCToBrazil } from "../../utils/timezone";
 
 interface HistorySectionProps {
   activities: any[];
@@ -77,13 +78,37 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Usa os dados que vem do backend
+  // Usa os dados que vem do backend e mapeia os tipos corretamente
+  const mapActivityType = (backendType: string): EventType => {
+    const typeMap: Record<string, EventType> = {
+      task_created: "activity_created",
+      task_completed: "activity_completed",
+      task_edited: "activity_edited",
+      task_deleted: "activity_deleted",
+      task_reopened: "activity_created",
+      note_added: "note_added",
+      file_attached: "file_attached",
+      value_changed: "value_changed",
+      product_added: "product_added",
+      product_removed: "product_removed",
+      stage_moved: "stage_moved",
+      assigned_changed: "assigned_changed",
+      organization_changed: "organization_changed",
+      due_date_changed: "due_date_changed",
+      tag_added: "tag_added",
+      tag_removed: "tag_removed",
+    };
+    return typeMap[backendType] || "activity_created";
+  };
+
   const historyEvents: HistoryEvent[] = (activities || []).map((act: any) => ({
     id: act.id,
-    type: "activity_completed" as EventType,
-    title: act.message || "Evento",
-    user_name: act.user_name || "Sistema",
+    type: mapActivityType(act.activity_type),
+    title: act.description || "Evento",
+    description: act.activity_metadata?.task_title || "",
+    user_name: act.user?.name || "Sistema",
     created_at: act.created_at,
+    metadata: act.activity_metadata || {},
   }));
 
   // Dados mockados removidos - comentados para referência
@@ -175,10 +200,11 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities }) => {
   };
 
   /**
-   * Formata data/hora relativa
+   * Formata data/hora relativa considerando o horário do Brasil
    */
   const formatRelativeTime = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Converte a data UTC do backend para o horário do Brasil
+    const date = convertUTCToBrazil(dateStr);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));

@@ -14,6 +14,7 @@ import {
   Save,
 } from "lucide-react";
 import cardTaskService from "../../services/cardTaskService";
+import { convertBrazilToUTC } from "../../utils/timezone";
 
 interface QuickActivityFormProps {
   cardId: number;
@@ -129,16 +130,14 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     }
 
     try {
-      // Combina data e hora para criar o datetime completo
-      const dueDateTime = formData.time
-        ? `${formData.date}T${formData.time}:00`
-        : `${formData.date}T12:00:00`;
+      // Converte a data/hora do Brasil para UTC antes de enviar ao backend
+      const dueDateTimeUTC = convertBrazilToUTC(formData.date, formData.time || "12:00");
 
       await cardTaskService.create({
         card_id: cardId,
         title: formData.title,
         task_type: formData.type,
-        due_date: dueDateTime,
+        due_date: dueDateTimeUTC,
         priority: formData.priority,
         description: formData.description || null,
         location: formData.location || null,
