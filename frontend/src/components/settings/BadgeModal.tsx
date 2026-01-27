@@ -37,12 +37,7 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
     { emoji: "🥈", label: "Medalha Prata" },
     { emoji: "🥉", label: "Medalha Bronze" },
     { emoji: "⭐", label: "Estrela" },
-    { emoji: "💎", label: "Diamante" },
-    { emoji: "🔥", label: "Fogo" },
-    { emoji: "⚡", label: "Raio" },
-    { emoji: "🎯", label: "Alvo" },
     { emoji: "👑", label: "Coroa" },
-    { emoji: "💯", label: "100" },
     { emoji: "🚀", label: "Foguete" },
   ];
 
@@ -128,7 +123,7 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[3000] p-4">
       <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-700">
@@ -208,52 +203,26 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
             <p className="text-slate-500 text-xs mt-1">{formData.description.length}/200 caracteres</p>
           </div>
 
-          {/* Ícone */}
+          {/* Ícones sugeridos */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Ícone (Emoji ou URL)</label>
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={formData.icon_url}
-                onChange={(e) => setFormData({ ...formData, icon_url: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                placeholder="Ex: 🏆 ou https://exemplo.com/icone.png"
-                disabled={loading}
-              />
-
-              {/* Ícones sugeridos */}
-              <div>
-                <p className="text-xs text-slate-400 mb-2">Ícones sugeridos:</p>
-                <div className="grid grid-cols-6 gap-2">
-                  {suggestedIcons.map((icon) => (
-                    <button
-                      key={icon.emoji}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, icon_url: icon.emoji })}
-                      className={`p-3 rounded-lg border transition-all ${
-                        formData.icon_url === icon.emoji
-                          ? "border-emerald-500 bg-emerald-600/20"
-                          : "border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-slate-600"
-                      }`}
-                      title={icon.label}
-                      disabled={loading}
-                    >
-                      <span className="text-2xl">{icon.emoji}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Preview */}
-              {formData.icon_url && (
-                <div className="flex items-center gap-3 p-3 bg-slate-900 border border-slate-700 rounded-lg">
-                  <span className="text-3xl">{formData.icon_url}</span>
-                  <div>
-                    <p className="text-sm text-slate-300 font-medium">Preview:</p>
-                    <p className="text-xs text-slate-400">{formData.name || "Nome da Badge"}</p>
-                  </div>
-                </div>
-              )}
+            <p className="text-sm font-medium text-slate-300 mb-2">Ícones sugeridos</p>
+            <div className="flex flex-wrap justify-center gap-2 md:grid md:grid-cols-7 md:justify-start">
+              {suggestedIcons.map((icon) => (
+                <button
+                  key={icon.emoji}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, icon_url: icon.emoji })}
+                  className={`p-3 rounded-lg border transition-all ${
+                    formData.icon_url === icon.emoji
+                      ? "border-emerald-500 bg-emerald-600/20"
+                      : "border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-slate-600"
+                  }`}
+                  title={icon.label}
+                  disabled={loading}
+                >
+                  <span className="text-xl">{icon.emoji}</span>
+                </button>
+              ))}
             </div>
           </div>
 

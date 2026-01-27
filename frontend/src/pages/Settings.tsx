@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 import gamificationService, { Badge, ActionPoints } from "../services/gamificationService";
@@ -865,14 +865,14 @@ const Settings: React.FC = () => {
             {activeTab === "badges" && isManagerOrAdmin && (
               <div className="space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
                     <h2 className="text-xl font-semibold text-white mb-2">Gerenciar Badges</h2>
                     <p className="text-slate-400 text-sm">
                       Crie e gerencie badges customizadas do sistema de gamificação
                     </p>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 md:justify-end">
                     <button
                       onClick={handleOpenAwardBadge}
                       className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -904,28 +904,25 @@ const Settings: React.FC = () => {
                     />
                   </div>
 
-                  {/* Filtro por Status */}
-                  <select
+                  {/* Filtro por Status */}                  <SelectMenu
                     value={badgeFilter}
-                    onChange={(e) => setBadgeFilter(e.target.value as any)}
-                    className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="all">Todos os Status</option>
-                    <option value="active">Apenas Ativas</option>
-                    <option value="inactive">Apenas Inativas</option>
-                  </select>
-
-                  {/* Filtro por Tipo */}
-                  <select
+                    options={[
+                      { value: "all", label: "Todos os Status" },
+                      { value: "active", label: "Apenas Ativas" },
+                      { value: "inactive", label: "Apenas Inativas" },
+                    ]}
+                    onChange={(value) => setBadgeFilter(value as any)}
+                  />
+{/* Filtro por Tipo */}                  <SelectMenu
                     value={badgeTypeFilter}
-                    onChange={(e) => setBadgeTypeFilter(e.target.value as any)}
-                    className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="all">Todos os Tipos</option>
-                    <option value="manual">Apenas Manuais</option>
-                    <option value="automatic">Apenas Automáticas</option>
-                  </select>
-                </div>
+                    options={[
+                      { value: "all", label: "Todos os Tipos" },
+                      { value: "manual", label: "Apenas Manuais" },
+                      { value: "automatic", label: "Apenas Autom?ticas" },
+                    ]}
+                    onChange={(value) => setBadgeTypeFilter(value as any)}
+                  />
+</div>
 
                 {/* Estatísticas */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1268,6 +1265,76 @@ const Settings: React.FC = () => {
           badges={badges.filter(b => b.criteria_type === "manual" && b.is_active)}
           users={salespeople}
         />
+    </div>
+  );
+};
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
