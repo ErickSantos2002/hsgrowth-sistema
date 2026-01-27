@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
 from app.repositories.gamification_repository import GamificationRepository
+from app.repositories.notification_repository import NotificationRepository
 from app.schemas.gamification import (
     GamificationPointCreate,
     GamificationPointResponse,
@@ -21,8 +22,12 @@ from app.schemas.gamification import (
     RankingListResponse,
     UserGamificationSummary,
     ActionType,
-    ACTION_POINTS
+    ACTION_POINTS,
+    ActionPointsCreate,
+    ActionPointsUpdate,
+    ActionPointsResponse
 )
+from app.schemas.notification import NotificationCreate
 from app.models.user import User
 from app.models.gamification_badge import GamificationBadge
 from app.models.user_badge import UserBadge
@@ -36,6 +41,42 @@ class GamificationService:
     def __init__(self, db: Session):
         self.db = db
         self.repository = GamificationRepository(db)
+        self.notification_repository = NotificationRepository(db)
+
+    # ========== MÉTODOS AUXILIARES ==========
+
+    def _create_gamification_notification(
+        self,
+        user_id: int,
+        notification_type: str,
+        title: str,
+        message: str,
+        metadata: Optional[dict] = None
+    ) -> None:
+        """
+        Cria uma notificação de gamificação para um usuário.
+
+        Args:
+            user_id: ID do usuário
+            notification_type: Tipo da notificação
+            title: Título da notificação
+            message: Mensagem da notificação
+            metadata: Metadados adicionais
+        """
+        try:
+            notification_data = {
+                "user_id": user_id,
+                "notification_type": notification_type,
+                "title": title,
+                "message": message,
+                "icon": "trophy",  # Ícone de troféu para gamificação
+                "color": "success",  # Verde para conquistas
+                "notification_metadata": metadata or {}
+            }
+            self.notification_repository.create(notification_data)
+        except Exception as e:
+            # Log do erro mas não quebra o fluxo principal
+            print(f"Erro ao criar notificação de gamificação: {e}")
 
     # ========== PONTOS ==========
 
@@ -75,6 +116,19 @@ class GamificationService:
             description=description
         )
         point = self.repository.create_point(point_data)
+
+        # Cria notificação de pontos ganhos
+        self._create_gamification_notification(
+            user_id=user_id,
+            notification_type="points_awarded",
+            title=f"+{points} pontos ganhos!",
+            message=f"Você ganhou {points} pontos por: {description or reason}",
+            metadata={
+                "points": points,
+                "reason": reason,
+                "total_points": self.repository.get_user_total_points(user_id)
+            }
+        )
 
         # Verifica se o usuário conquistou algum badge baseado em pontos
         self._check_and_award_point_badges(user_id)
@@ -122,6 +176,7 @@ class GamificationService:
             icon_url=badge.icon_url,
             criteria_type=badge.criteria_type,
             criteria=badge.criteria,
+            is_active=badge.is_active,
             created_at=badge.created_at
         )
 
@@ -147,10 +202,110 @@ class GamificationService:
                 icon_url=badge.icon_url,
                 criteria_type=badge.criteria_type,
                 criteria=badge.criteria,
+                is_active=badge.is_active,
                 created_at=badge.created_at
             )
             for badge in badges
         ]
+
+    def get_badge_by_id(self, badge_id: int) -> BadgeResponse:
+        """
+        Busca um badge por ID.
+
+        Args:
+            badge_id: ID do badge
+
+        Returns:
+            BadgeResponse
+
+        Raises:
+            HTTPException: Se o badge não for encontrado
+        """
+        badge = self.repository.find_badge_by_id(badge_id)
+        if not badge:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Badge não encontrado"
+            )
+
+        return BadgeResponse(
+            id=badge.id,
+            name=badge.name,
+            description=badge.description,
+            icon_url=badge.icon_url,
+            criteria_type=badge.criteria_type,
+            criteria=badge.criteria,
+            is_active=badge.is_active,
+            created_at=badge.created_at
+        )
+
+    def update_badge(
+        self,
+        badge_id: int,
+        badge_data: BadgeUpdate,
+        current_user: User
+    ) -> BadgeResponse:
+        """
+        Atualiza um badge existente (apenas admin).
+
+        Args:
+            badge_id: ID do badge
+            badge_data: Dados para atualizar
+            current_user: Usuário autenticado
+
+        Returns:
+            BadgeResponse
+
+        Raises:
+            HTTPException: Se o badge não for encontrado
+        """
+        # Busca o badge
+        badge = self.repository.find_badge_by_id(badge_id)
+        if not badge:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Badge não encontrado"
+            )
+
+        # Atualiza o badge
+        updated_badge = self.repository.update_badge(badge, badge_data)
+
+        return BadgeResponse(
+            id=updated_badge.id,
+            name=updated_badge.name,
+            description=updated_badge.description,
+            icon_url=updated_badge.icon_url,
+            criteria_type=updated_badge.criteria_type,
+            criteria=updated_badge.criteria,
+            created_at=updated_badge.created_at
+        )
+
+    def delete_badge(self, badge_id: int, current_user: User) -> dict:
+        """
+        Deleta um badge (soft delete - apenas admin).
+
+        Args:
+            badge_id: ID do badge
+            current_user: Usuário autenticado
+
+        Returns:
+            Mensagem de sucesso
+
+        Raises:
+            HTTPException: Se o badge não for encontrado
+        """
+        # Busca o badge
+        badge = self.repository.find_badge_by_id(badge_id)
+        if not badge:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Badge não encontrado"
+            )
+
+        # Deleta o badge (soft delete)
+        self.repository.delete_badge(badge)
+
+        return {"message": "Badge deletado com sucesso"}
 
     def award_badge_to_user(
         self,
@@ -195,6 +350,20 @@ class GamificationService:
         # Atribui o badge
         user_badge = self.repository.award_badge(user_id, badge_id, current_user.id)
 
+        # Cria notificação de badge conquistado
+        self._create_gamification_notification(
+            user_id=user_id,
+            notification_type="badge_earned",
+            title=f"🏆 Badge conquistado!",
+            message=f"Parabéns! Você conquistou o badge '{badge.name}'",
+            metadata={
+                "badge_id": badge_id,
+                "badge_name": badge.name,
+                "badge_description": badge.description,
+                "url": "/gamification"
+            }
+        )
+
         return UserBadgeResponse(
             id=user_badge.id,
             user_id=user_badge.user_id,
@@ -238,6 +407,20 @@ class GamificationService:
                         if not self.repository.user_has_badge(user_id, badge.id):
                             # Atribui automaticamente
                             self.repository.award_badge(user_id, badge.id, awarded_by_id=None)
+
+                            # Cria notificação de badge conquistado automaticamente
+                            self._create_gamification_notification(
+                                user_id=user_id,
+                                notification_type="badge_earned",
+                                title=f"🏆 Badge conquistado!",
+                                message=f"Parabéns! Você conquistou o badge '{badge.name}'",
+                                metadata={
+                                    "badge_id": badge.id,
+                                    "badge_name": badge.name,
+                                    "badge_description": badge.description,
+                                    "url": "/gamification"
+                                }
+                            )
 
     def get_user_badges(self, user_id: int) -> List[UserBadgeResponse]:
         """
@@ -499,3 +682,149 @@ class GamificationService:
             quarterly_rank=quarterly_rank,
             annual_rank=annual_rank
         )
+
+    # ========== ACTION POINTS CONFIGURATION ==========
+
+    def list_action_points(self) -> List[ActionPointsResponse]:
+        """
+        Lista todas as configurações de pontos.
+
+        Returns:
+            Lista de ActionPointsResponse
+        """
+        actions = self.repository.list_all_action_points()
+        return [
+            ActionPointsResponse(
+                id=action.id,
+                action_type=action.action_type,
+                points=action.points,
+                is_active=action.is_active,
+                description=action.description,
+                created_at=action.created_at,
+                updated_at=action.updated_at
+            )
+            for action in actions
+        ]
+
+    def get_action_points_by_type(self, action_type: str) -> Optional[ActionPointsResponse]:
+        """
+        Busca configuração de pontos por tipo.
+
+        Args:
+            action_type: Tipo de ação
+
+        Returns:
+            ActionPointsResponse ou None
+        """
+        action = self.repository.find_action_points_by_type(action_type)
+        if not action:
+            return None
+
+        return ActionPointsResponse(
+            id=action.id,
+            action_type=action.action_type,
+            points=action.points,
+            is_active=action.is_active,
+            description=action.description,
+            created_at=action.created_at,
+            updated_at=action.updated_at
+        )
+
+    def create_action_points(
+        self,
+        action_data: ActionPointsCreate,
+        current_user: User
+    ) -> ActionPointsResponse:
+        """
+        Cria nova configuração de pontos (admin only).
+
+        Args:
+            action_data: Dados da configuração
+            current_user: Usuário autenticado
+
+        Returns:
+            ActionPointsResponse
+        """
+        # Verifica se já existe
+        existing = self.repository.find_action_points_by_type(action_data.action_type)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Configuração para ação '{action_data.action_type}' já existe"
+            )
+
+        action = self.repository.create_action_points(action_data)
+
+        return ActionPointsResponse(
+            id=action.id,
+            action_type=action.action_type,
+            points=action.points,
+            is_active=action.is_active,
+            description=action.description,
+            created_at=action.created_at,
+            updated_at=action.updated_at
+        )
+
+    def update_action_points(
+        self,
+        action_type: str,
+        action_data: ActionPointsUpdate,
+        current_user: User
+    ) -> ActionPointsResponse:
+        """
+        Atualiza configuração de pontos (admin only).
+
+        Args:
+            action_type: Tipo de ação
+            action_data: Dados para atualizar
+            current_user: Usuário autenticado
+
+        Returns:
+            ActionPointsResponse
+        """
+        action = self.repository.find_action_points_by_type(action_type)
+        if not action:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Configuração para ação '{action_type}' não encontrada"
+            )
+
+        updated_action = self.repository.update_action_points(action, action_data)
+
+        return ActionPointsResponse(
+            id=updated_action.id,
+            action_type=updated_action.action_type,
+            points=updated_action.points,
+            is_active=updated_action.is_active,
+            description=updated_action.description,
+            created_at=updated_action.created_at,
+            updated_at=updated_action.updated_at
+        )
+
+    def initialize_default_action_points(self) -> None:
+        """
+        Inicializa configurações padrão de pontos se não existirem.
+        Chamado ao iniciar o sistema.
+        """
+        default_actions = [
+            ("card_created", 5, "Card criado", True),
+            ("card_won", 20, "Card ganho", True),
+            ("card_moved", 2, "Card movido", True),
+            ("card_lost", -5, "Card perdido", True),
+            ("board_created", 10, "Board criado", True),
+            ("user_invited", 15, "Usuário convidado", True),
+            ("task_completed", 10, "Tarefa completada", True),
+            ("first_login", 10, "Primeiro login", True),
+            ("daily_login", 3, "Login diário", True),
+        ]
+
+        for action_type, points, description, is_active in default_actions:
+            existing = self.repository.find_action_points_by_type(action_type)
+            if not existing:
+                action_data = ActionPointsCreate(
+                    action_type=action_type,
+                    points=points,
+                    description=description,
+                    is_active=is_active
+                )
+                self.repository.create_action_points(action_data)

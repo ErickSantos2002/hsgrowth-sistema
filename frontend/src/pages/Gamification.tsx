@@ -81,9 +81,10 @@ const Gamification: React.FC = () => {
         setSelectedUserId("team"); // Inicia com visão da equipe
       }
 
-      // Carrega badges disponíveis (comum para todos)
+      // Carrega badges disponíveis (comum para todos) - apenas ativas
       const badgesData = await gamificationService.getAllBadges();
-      setAllBadges(badgesData);
+      // Filtra apenas badges ativas para exibição aos usuários
+      setAllBadges(badgesData.filter(badge => badge.is_active));
 
       // Se for vendedor, carrega seus próprios dados
       if (!isManagerOrAdmin) {

@@ -11,11 +11,14 @@ from app.models.gamification_point import GamificationPoint
 from app.models.gamification_badge import GamificationBadge
 from app.models.user_badge import UserBadge
 from app.models.gamification_ranking import GamificationRanking
+from app.models.gamification_action_points import GamificationActionPoints
 from app.schemas.gamification import (
     GamificationPointCreate,
     BadgeCreate,
     BadgeUpdate,
-    UserBadgeCreate
+    UserBadgeCreate,
+    ActionPointsCreate,
+    ActionPointsUpdate
 )
 
 
@@ -412,3 +415,84 @@ class GamificationRepository:
             )
         ).delete()
         self.db.commit()
+
+    # ========== ACTION POINTS CONFIGURATION ==========
+
+    def list_all_action_points(self) -> List[GamificationActionPoints]:
+        """
+        Lista todas as configurações de pontos por ação.
+
+        Returns:
+            Lista de GamificationActionPoints
+        """
+        return self.db.query(GamificationActionPoints).order_by(
+            GamificationActionPoints.action_type
+        ).all()
+
+    def find_action_points_by_type(self, action_type: str) -> Optional[GamificationActionPoints]:
+        """
+        Busca configuração de pontos por tipo de ação.
+
+        Args:
+            action_type: Tipo de ação
+
+        Returns:
+            GamificationActionPoints ou None
+        """
+        return self.db.query(GamificationActionPoints).filter(
+            GamificationActionPoints.action_type == action_type
+        ).first()
+
+    def create_action_points(self, action_data: ActionPointsCreate) -> GamificationActionPoints:
+        """
+        Cria nova configuração de pontos.
+
+        Args:
+            action_data: Dados da configuração
+
+        Returns:
+            GamificationActionPoints criado
+        """
+        action_points = GamificationActionPoints(**action_data.model_dump())
+        self.db.add(action_points)
+        self.db.commit()
+        self.db.refresh(action_points)
+        return action_points
+
+    def update_action_points(
+        self,
+        action_points: GamificationActionPoints,
+        action_data: ActionPointsUpdate
+    ) -> GamificationActionPoints:
+        """
+        Atualiza configuração de pontos.
+
+        Args:
+            action_points: Registro existente
+            action_data: Dados para atualizar
+
+        Returns:
+            GamificationActionPoints atualizado
+        """
+        update_data = action_data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(action_points, field, value)
+
+        self.db.commit()
+        self.db.refresh(action_points)
+        return action_points
+
+    def get_points_for_action(self, action_type: str) -> int:
+        """
+        Retorna quantos pontos vale uma ação (usado pelo sistema).
+
+        Args:
+            action_type: Tipo de ação
+
+        Returns:
+            Quantidade de pontos (0 se não encontrado ou inativo)
+        """
+        action_config = self.find_action_points_by_type(action_type)
+        if action_config and action_config.is_active:
+            return action_config.points
+        return 0

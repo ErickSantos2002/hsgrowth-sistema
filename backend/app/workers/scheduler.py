@@ -107,38 +107,27 @@ def job_update_sales_ranking():
 
 def job_verify_badges():
     """
-    Job: Verifica e concede badges aos usuários.
-    Frequência: Diariamente às 01:00
+    Job: Verifica e concede badges automáticos aos usuários.
+    Frequência: Diariamente às 01:00 (ou a cada 30 minutos se configurado)
     """
     db = SessionLocal()
     try:
-        logger.info("[CRON] Verificando badges para usuários...")
+        logger.info("[CRON] Verificando badges automáticos para usuários...")
 
-        from app.services.gamification_service import GamificationService
+        from app.workers.badge_checker import check_and_award_automatic_badges
 
-        service = GamificationService(db)
+        # Executa verificação de badges
+        result = check_and_award_automatic_badges(db)
 
-        # Busca todos os usuários ativos
-        from app.models.user import User
-        users = db.query(User).filter(
-            User.is_deleted == False,
-            User.is_active == True
-        ).all()
-
-        badges_granted = 0
-        for user in users:
-            try:
-                # Verifica e concede badges (método do service)
-                if hasattr(service, 'verify_and_grant_badges'):
-                    granted = service.verify_and_grant_badges(user.id)
-                    badges_granted += len(granted)
-            except Exception as e:
-                logger.warning(f"[CRON] Erro ao verificar badges do usuário {user.id}: {e}")
-
-        logger.success(f"[CRON] {badges_granted} badges concedidos")
+        logger.success(
+            f"[CRON] Verificação completa: "
+            f"{result['total_badges_awarded']} badges atribuídos a "
+            f"{len(result['users_with_new_badges'])} usuários"
+        )
 
     except Exception as e:
         logger.error(f"[CRON] Erro ao verificar badges: {e}")
+        db.rollback()
     finally:
         db.close()
 

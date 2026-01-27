@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon } from "lucide-react";
+import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
+import gamificationService, { Badge, ActionPoints } from "../services/gamificationService";
+import BadgeModal, { BadgeFormData } from "../components/settings/BadgeModal";
+import AwardBadgeModal from "../components/settings/AwardBadgeModal";
 
-type Tab = "profile" | "notifications" | "security";
+type Tab = "profile" | "notifications" | "security" | "badges" | "points";
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -32,6 +35,24 @@ const Settings: React.FC = () => {
     doNotDisturbStart: "22:00",
     doNotDisturbEnd: "08:00",
   });
+
+  // Estados das Badges (Admin)
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [filteredBadges, setFilteredBadges] = useState<Badge[]>([]);
+  const [badgeSearch, setBadgeSearch] = useState("");
+  const [badgeFilter, setBadgeFilter] = useState<"all" | "active" | "inactive">("all");
+  const [badgeTypeFilter, setBadgeTypeFilter] = useState<"all" | "manual" | "automatic">("all");
+  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+  const [badgeModalMode, setBadgeModalMode] = useState<"create" | "edit">("create");
+  const [loadingBadges, setLoadingBadges] = useState(false);
+  const [isAwardBadgeModalOpen, setIsAwardBadgeModalOpen] = useState(false);
+  const [salespeople, setSalespeople] = useState<User[]>([]);
+
+  // Estados das Configurações de Pontos (Admin)
+  const [actionPoints, setActionPoints] = useState<ActionPoints[]>([]);
+  const [loadingPoints, setLoadingPoints] = useState(false);
+  const [editingPoints, setEditingPoints] = useState<Record<string, number>>({});
 
   // Mock de usuários ativos no sistema (online)
   const [activeUsers] = useState([
@@ -84,6 +105,50 @@ const Settings: React.FC = () => {
     }
   }, [user]);
 
+  // Carrega badges quando a tab badges é ativada (admin ou gerente)
+  useEffect(() => {
+    const isManagerOrAdmin = user?.role === "admin" || user?.role === "manager";
+    if (activeTab === "badges" && isManagerOrAdmin) {
+      loadBadges();
+    }
+  }, [activeTab, user]);
+
+  // Carrega pontos quando a tab points é ativada (apenas admin)
+  useEffect(() => {
+    if (activeTab === "points" && user?.role === "admin") {
+      loadActionPoints();
+    }
+  }, [activeTab, user]);
+
+  // Filtra badges quando mudam os filtros ou a busca
+  useEffect(() => {
+    let filtered = [...badges];
+
+    // Filtro por status
+    if (badgeFilter === "active") {
+      filtered = filtered.filter((b) => b.is_active);
+    } else if (badgeFilter === "inactive") {
+      filtered = filtered.filter((b) => !b.is_active);
+    }
+
+    // Filtro por tipo
+    if (badgeTypeFilter === "manual") {
+      filtered = filtered.filter((b) => b.criteria_type === "manual");
+    } else if (badgeTypeFilter === "automatic") {
+      filtered = filtered.filter((b) => b.criteria_type === "automatic");
+    }
+
+    // Busca por nome ou descrição
+    if (badgeSearch.trim()) {
+      const search = badgeSearch.toLowerCase();
+      filtered = filtered.filter(
+        (b) => b.name.toLowerCase().includes(search) || b.description.toLowerCase().includes(search)
+      );
+    }
+
+    setFilteredBadges(filtered);
+  }, [badges, badgeFilter, badgeTypeFilter, badgeSearch]);
+
   const handleSaveProfile = async () => {
     if (!user) return;
 
@@ -116,6 +181,153 @@ const Settings: React.FC = () => {
     console.log("Notificações:", notificationSettings);
   };
 
+  // Funções para gerenciar badges (Admin)
+  const loadBadges = async () => {
+    try {
+      setLoadingBadges(true);
+      const data = await gamificationService.getAllBadges();
+      setBadges(data);
+
+      // Carrega vendedores para o modal de atribuir badges
+      if (isManagerOrAdmin) {
+        const users = await userService.listActive();
+        setSalespeople(users.filter(u => u.role === "salesperson"));
+      }
+    } catch (error) {
+      console.error("Erro ao carregar badges:", error);
+      alert("Erro ao carregar badges");
+    } finally {
+      setLoadingBadges(false);
+    }
+  };
+
+  const handleCreateBadge = () => {
+    setBadgeModalMode("create");
+    setSelectedBadge(null);
+    setIsBadgeModalOpen(true);
+  };
+
+  const handleEditBadge = (badge: Badge) => {
+    setBadgeModalMode("edit");
+    setSelectedBadge(badge);
+    setIsBadgeModalOpen(true);
+  };
+
+  const handleSaveBadge = async (badgeData: BadgeFormData) => {
+    try {
+      if (badgeModalMode === "create") {
+        await gamificationService.createBadge(badgeData);
+        alert("Badge criada com sucesso!");
+      } else if (selectedBadge) {
+        await gamificationService.updateBadge(selectedBadge.id, badgeData);
+        alert("Badge atualizada com sucesso!");
+      }
+      await loadBadges();
+      setIsBadgeModalOpen(false);
+    } catch (error: any) {
+      console.error("Erro ao salvar badge:", error);
+      throw error; // Propaga erro para o modal tratar
+    }
+  };
+
+  const handleToggleBadgeStatus = async (badge: Badge) => {
+    try {
+      await gamificationService.updateBadge(badge.id, {
+        is_active: !badge.is_active,
+      });
+      alert(`Badge ${!badge.is_active ? "ativada" : "desativada"} com sucesso!`);
+      await loadBadges();
+    } catch (error) {
+      console.error("Erro ao alterar status da badge:", error);
+      alert("Erro ao alterar status da badge");
+    }
+  };
+
+  const handleDeleteBadge = async (badge: Badge) => {
+    if (!window.confirm(`Tem certeza que deseja deletar a badge "${badge.name}"?`)) {
+      return;
+    }
+
+    try {
+      await gamificationService.deleteBadge(badge.id);
+      alert("Badge deletada com sucesso!");
+      await loadBadges();
+    } catch (error) {
+      console.error("Erro ao deletar badge:", error);
+      alert("Erro ao deletar badge");
+    }
+  };
+
+  const handleOpenAwardBadge = () => {
+    setIsAwardBadgeModalOpen(true);
+  };
+
+  const handleAwardBadge = async (badgeId: number, userIds: number[]) => {
+    try {
+      // Atribui badge para cada usuário selecionado
+      const promises = userIds.map(userId =>
+        gamificationService.awardBadge(badgeId, userId)
+      );
+
+      await Promise.all(promises);
+
+      const badgeName = badges.find(b => b.id === badgeId)?.name || "Badge";
+      const usersCount = userIds.length;
+
+      alert(`Badge "${badgeName}" atribuída com sucesso a ${usersCount} vendedor(es)!`);
+    } catch (error: any) {
+      console.error("Erro ao atribuir badge:", error);
+      throw error; // Propaga erro para o modal tratar
+    }
+  };
+
+  // Funções para gerenciar pontos (Admin)
+  const loadActionPoints = async () => {
+    try {
+      setLoadingPoints(true);
+      const data = await gamificationService.listActionPoints();
+      setActionPoints(data);
+      // Inicializa valores de edição
+      const initialEditing: Record<string, number> = {};
+      data.forEach(action => {
+        initialEditing[action.action_type] = action.points;
+      });
+      setEditingPoints(initialEditing);
+    } catch (error) {
+      console.error("Erro ao carregar pontos:", error);
+      alert("Erro ao carregar configurações de pontos");
+    } finally {
+      setLoadingPoints(false);
+    }
+  };
+
+  const handleUpdatePoints = async (actionType: string) => {
+    try {
+      const newPoints = editingPoints[actionType];
+      if (newPoints === undefined) return;
+
+      await gamificationService.updateActionPoints(actionType, { points: newPoints });
+      alert("Pontos atualizados com sucesso!");
+      await loadActionPoints();
+    } catch (error) {
+      console.error("Erro ao atualizar pontos:", error);
+      alert("Erro ao atualizar pontos");
+    }
+  };
+
+  const handleToggleActionStatus = async (action: ActionPoints) => {
+    try {
+      await gamificationService.updateActionPoints(action.action_type, {
+        is_active: !action.is_active,
+      });
+      alert(`Ação ${!action.is_active ? "ativada" : "desativada"} com sucesso!`);
+      await loadActionPoints();
+    } catch (error) {
+      console.error("Erro ao alterar status da ação:", error);
+      alert("Erro ao alterar status da ação");
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -125,11 +337,23 @@ const Settings: React.FC = () => {
       .slice(0, 2);
   };
 
-  const tabs = [
+  // Tabs - adiciona "Badges" e "Pontos" para admin/gerente
+  const tabs: { id: Tab; label: string; icon: any }[] = [
     { id: "profile" as Tab, label: "Perfil", icon: User },
     { id: "notifications" as Tab, label: "Notificações", icon: Bell },
     { id: "security" as Tab, label: "Segurança", icon: Shield },
   ];
+
+  // Adiciona tab Badges para admin e gerente
+  const isManagerOrAdmin = user?.role === "admin" || user?.role === "manager";
+  if (isManagerOrAdmin) {
+    tabs.push({ id: "badges" as Tab, label: "Badges", icon: Award });
+  }
+
+  // Adiciona tab Pontos apenas para admin
+  if (user?.role === "admin") {
+    tabs.push({ id: "points" as Tab, label: "Pontos", icon: Coins });
+  }
 
   return (
     <div className="p-6">
@@ -635,8 +859,413 @@ const Settings: React.FC = () => {
               </div>
             )}
 
+            {/* Tab: Badges (Admin e Gerente) */}
+            {activeTab === "badges" && isManagerOrAdmin && (
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white mb-2">Gerenciar Badges</h2>
+                    <p className="text-slate-400 text-sm">
+                      Crie e gerencie badges customizadas do sistema de gamificação
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleOpenAwardBadge}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      <UserPlus size={20} />
+                      <span>Atribuir Badge</span>
+                    </button>
+                    <button
+                      onClick={handleCreateBadge}
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                    >
+                      <Plus size={20} />
+                      <span>Nova Badge</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filtros e Busca */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Busca */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                    <input
+                      type="text"
+                      value={badgeSearch}
+                      onChange={(e) => setBadgeSearch(e.target.value)}
+                      placeholder="Buscar por nome ou descrição..."
+                      className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  {/* Filtro por Status */}
+                  <select
+                    value={badgeFilter}
+                    onChange={(e) => setBadgeFilter(e.target.value as any)}
+                    className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="all">Todos os Status</option>
+                    <option value="active">Apenas Ativas</option>
+                    <option value="inactive">Apenas Inativas</option>
+                  </select>
+
+                  {/* Filtro por Tipo */}
+                  <select
+                    value={badgeTypeFilter}
+                    onChange={(e) => setBadgeTypeFilter(e.target.value as any)}
+                    className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="all">Todos os Tipos</option>
+                    <option value="manual">Apenas Manuais</option>
+                    <option value="automatic">Apenas Automáticas</option>
+                  </select>
+                </div>
+
+                {/* Estatísticas */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                    <p className="text-slate-400 text-sm mb-1">Total de Badges</p>
+                    <p className="text-2xl font-bold text-white">{badges.length}</p>
+                  </div>
+                  <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                    <p className="text-slate-400 text-sm mb-1">Ativas</p>
+                    <p className="text-2xl font-bold text-emerald-400">
+                      {badges.filter((b) => b.is_active).length}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                    <p className="text-slate-400 text-sm mb-1">Manuais</p>
+                    <p className="text-2xl font-bold text-blue-400">
+                      {badges.filter((b) => b.criteria_type === "manual").length}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                    <p className="text-slate-400 text-sm mb-1">Automáticas</p>
+                    <p className="text-2xl font-bold text-purple-400">
+                      {badges.filter((b) => b.criteria_type === "automatic").length}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Lista de Badges */}
+                {loadingBadges ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+                    <p className="text-slate-400 mt-4">Carregando badges...</p>
+                  </div>
+                ) : filteredBadges.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Award className="mx-auto text-slate-600 mb-4" size={64} />
+                    <p className="text-slate-400 text-lg font-medium mb-2">
+                      {badges.length === 0 ? "Nenhuma badge cadastrada" : "Nenhuma badge encontrada"}
+                    </p>
+                    <p className="text-slate-500 text-sm">
+                      {badges.length === 0
+                        ? "Clique em 'Nova Badge' para criar a primeira badge"
+                        : "Tente ajustar os filtros de busca"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredBadges.map((badge) => (
+                      <div
+                        key={badge.id}
+                        className={`p-5 bg-slate-900 border rounded-lg transition-all hover:border-emerald-500/50 ${
+                          badge.is_active ? "border-slate-700" : "border-slate-800 opacity-60"
+                        }`}
+                      >
+                        {/* Header do Card */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-4xl">{badge.icon_url || "🏆"}</span>
+                            <div>
+                              <h3 className="font-semibold text-white">{badge.name}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span
+                                  className={`px-2 py-0.5 text-xs font-medium rounded ${
+                                    badge.criteria_type === "manual"
+                                      ? "bg-blue-500/20 text-blue-400"
+                                      : "bg-purple-500/20 text-purple-400"
+                                  }`}
+                                >
+                                  {badge.criteria_type === "manual" ? "Manual" : "Automático"}
+                                </span>
+                                <span
+                                  className={`px-2 py-0.5 text-xs font-medium rounded ${
+                                    badge.is_active
+                                      ? "bg-emerald-500/20 text-emerald-400"
+                                      : "bg-slate-500/20 text-slate-400"
+                                  }`}
+                                >
+                                  {badge.is_active ? "Ativa" : "Inativa"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Descrição */}
+                        <p className="text-slate-400 text-sm mb-4 line-clamp-2">{badge.description}</p>
+
+                        {/* Critérios (se automático) */}
+                        {badge.criteria_type === "automatic" && badge.criteria && (
+                          <div className="mb-4 p-3 bg-slate-800 border border-slate-700 rounded-lg">
+                            <p className="text-xs text-slate-500 mb-1">Regra:</p>
+                            <p className="text-sm text-slate-300">
+                              {badge.criteria.field} {badge.criteria.operator} {badge.criteria.value}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Ações */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditBadge(badge)}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors text-sm"
+                            title="Editar badge"
+                          >
+                            <Edit2 size={16} />
+                            <span>Editar</span>
+                          </button>
+                          <button
+                            onClick={() => handleToggleBadgeStatus(badge)}
+                            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+                              badge.is_active
+                                ? "bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400"
+                                : "bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400"
+                            }`}
+                            title={badge.is_active ? "Desativar badge" : "Ativar badge"}
+                          >
+                            {badge.is_active ? <PowerOff size={16} /> : <Power size={16} />}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBadge(badge)}
+                            className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors text-sm"
+                            title="Deletar badge"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Informação */}
+                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
+                    <Award size={16} />
+                    Como funcionam as badges
+                  </h4>
+                  <ul className="text-sm text-slate-300 space-y-1">
+                    <li>
+                      • <strong>Manuais:</strong> Admin atribui manualmente a vendedores específicos
+                    </li>
+                    <li>
+                      • <strong>Automáticas:</strong> Sistema concede automaticamente quando critério é
+                      atingido
+                    </li>
+                    <li>• Badges desativadas não são concedidas, mas histórico é mantido</li>
+                    <li>• Cada vendedor pode conquistar uma badge apenas uma vez</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Pontos (Admin Only) */}
+            {activeTab === "points" && user?.role === "admin" && (
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white mb-2">Configurar Pontos</h2>
+                    <p className="text-slate-400 text-sm">
+                      Defina quantos pontos vale cada ação no sistema de gamificação
+                    </p>
+                  </div>
+                </div>
+
+                {/* Estatísticas */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                    <p className="text-slate-400 text-sm mb-1">Total de Ações</p>
+                    <p className="text-2xl font-bold text-white">{actionPoints.length}</p>
+                  </div>
+                  <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                    <p className="text-slate-400 text-sm mb-1">Ações Ativas</p>
+                    <p className="text-2xl font-bold text-emerald-400">
+                      {actionPoints.filter((a) => a.is_active).length}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                    <p className="text-slate-400 text-sm mb-1">Pontos Médios</p>
+                    <p className="text-2xl font-bold text-blue-400">
+                      {actionPoints.length > 0
+                        ? Math.round(
+                            actionPoints.reduce((sum, a) => sum + a.points, 0) / actionPoints.length
+                          )
+                        : 0}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Lista de Ações */}
+                {loadingPoints ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+                    <p className="text-slate-400 mt-4">Carregando configurações...</p>
+                  </div>
+                ) : actionPoints.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Coins className="mx-auto text-slate-600 mb-4" size={64} />
+                    <p className="text-slate-400 text-lg font-medium mb-2">Nenhuma configuração encontrada</p>
+                    <p className="text-slate-500 text-sm">
+                      As configurações padrão serão criadas automaticamente
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-slate-800">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                              Ação
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                              Descrição
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-slate-300 uppercase tracking-wider">
+                              Pontos
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-slate-300 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-slate-300 uppercase tracking-wider">
+                              Ações
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-700">
+                          {actionPoints.map((action) => (
+                            <tr key={action.id} className="hover:bg-slate-800/50 transition-colors">
+                              {/* Tipo de Ação */}
+                              <td className="px-6 py-4">
+                                <code className="text-sm text-cyan-400 bg-slate-800 px-2 py-1 rounded">
+                                  {action.action_type}
+                                </code>
+                              </td>
+
+                              {/* Descrição */}
+                              <td className="px-6 py-4">
+                                <p className="text-sm text-slate-300">{action.description || "-"}</p>
+                              </td>
+
+                              {/* Pontos (editável) */}
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <input
+                                    type="number"
+                                    value={editingPoints[action.action_type] || 0}
+                                    onChange={(e) =>
+                                      setEditingPoints({
+                                        ...editingPoints,
+                                        [action.action_type]: parseInt(e.target.value) || 0,
+                                      })
+                                    }
+                                    className="w-20 px-3 py-1 bg-slate-800 border border-slate-700 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                  />
+                                  {editingPoints[action.action_type] !== action.points && (
+                                    <button
+                                      onClick={() => handleUpdatePoints(action.action_type)}
+                                      className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
+                                      title="Salvar alteração"
+                                    >
+                                      <CheckCircle size={16} />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Status */}
+                              <td className="px-6 py-4 text-center">
+                                <span
+                                  className={`inline-block px-2 py-1 text-xs font-medium rounded ${
+                                    action.is_active
+                                      ? "bg-emerald-500/20 text-emerald-400"
+                                      : "bg-slate-500/20 text-slate-400"
+                                  }`}
+                                >
+                                  {action.is_active ? "Ativa" : "Inativa"}
+                                </span>
+                              </td>
+
+                              {/* Ações */}
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => handleToggleActionStatus(action)}
+                                    className={`p-2 rounded transition-colors ${
+                                      action.is_active
+                                        ? "bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400"
+                                        : "bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400"
+                                    }`}
+                                    title={action.is_active ? "Desativar ação" : "Ativar ação"}
+                                  >
+                                    {action.is_active ? <PowerOff size={16} /> : <Power size={16} />}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Informação */}
+                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
+                    <Coins size={16} />
+                    Como funciona
+                  </h4>
+                  <ul className="text-sm text-slate-300 space-y-1">
+                    <li>• Cada ação no sistema pode gerar pontos para o usuário</li>
+                    <li>• Valores negativos funcionam como penalidades (ex: card_lost = -5 pts)</li>
+                    <li>• Ações desativadas não geram pontos, mas ficam salvas no sistema</li>
+                    <li>
+                      • Alterações afetam apenas ações futuras (não são retroativas)
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
+
+        {/* Modal de Badge */}
+        <BadgeModal
+          isOpen={isBadgeModalOpen}
+          onClose={() => setIsBadgeModalOpen(false)}
+          onSave={handleSaveBadge}
+          badge={selectedBadge}
+          mode={badgeModalMode}
+        />
+
+        {/* Modal de Atribuir Badge */}
+        <AwardBadgeModal
+          isOpen={isAwardBadgeModalOpen}
+          onClose={() => setIsAwardBadgeModalOpen(false)}
+          onAward={handleAwardBadge}
+          badges={badges.filter(b => b.criteria_type === "manual" && b.is_active)}
+          users={salespeople}
+        />
     </div>
   );
 };

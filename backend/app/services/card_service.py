@@ -10,6 +10,7 @@ from app.repositories.card_repository import CardRepository
 from app.repositories.list_repository import ListRepository
 from app.repositories.board_repository import BoardRepository
 from app.repositories.field_repository import FieldRepository
+from app.repositories.notification_repository import NotificationRepository
 from app.schemas.card import CardCreate, CardUpdate, CardResponse, CardListResponse
 from app.schemas.field import CardFieldValueCreate, CardFieldValueResponse
 from app.models.card import Card
@@ -27,6 +28,7 @@ class CardService:
         self.list_repository = ListRepository(db)
         self.board_repository = BoardRepository(db)
         self.field_repository = FieldRepository(db)
+        self.notification_repository = NotificationRepository(db)
 
     def _verify_card_access(self, card: Card) -> None:
         """
@@ -338,19 +340,107 @@ class CardService:
                 detail="Board não encontrado"
             )
 
+        # Guarda lista de origem para parabenização
+        source_list = self.list_repository.find_by_id(card.list_id)
+        source_list_name = source_list.name if source_list else "Lista"
+
         # Verifica se a lista de destino é uma lista "won" ou "lost"
         # e marca o card adequadamente
+        points_awarded = 0
         if target_list.is_done_stage:
             card.is_won = 1  # 1 = ganho (Integer no banco)
             card.closed_at = datetime.now()  # won_at é uma property que usa closed_at
+            points_awarded = 20  # Pontos por ganhar card
         elif target_list.is_lost_stage:
             card.is_won = -1  # -1 = perdido (Integer no banco)
             card.closed_at = datetime.now()  # lost_at é uma property que usa closed_at
+        else:
+            points_awarded = 2  # Pontos por mover card
 
         # Move o card
         moved_card = self.card_repository.move_to_list(card, target_list_id, position)
 
+        # Atribui pontos e cria parabenização (se card tiver responsável)
+        if moved_card.assigned_to_id:
+            try:
+                # Import lazy para evitar importação circular
+                from app.services.gamification_service import GamificationService
+                gamification_service = GamificationService(self.db)
+
+                # Atribui pontos
+                reason = "card_won" if target_list.is_done_stage else "card_moved"
+                gamification_service.award_points(
+                    user_id=moved_card.assigned_to_id,
+                    reason=reason,
+                    description=f"Card '{moved_card.title}' movido de '{source_list_name}' para '{target_list.name}'",
+                    custom_points=points_awarded
+                )
+
+                # Cria notificação de parabenização
+                congratulation_message = self._generate_congratulation_message(
+                    card=moved_card,
+                    source_list_name=source_list_name,
+                    target_list_name=target_list.name,
+                    points_awarded=points_awarded,
+                    is_won=target_list.is_done_stage
+                )
+
+                notification_data = {
+                    "user_id": moved_card.assigned_to_id,
+                    "notification_type": "card_won" if target_list.is_done_stage else "card_moved",
+                    "title": "Parabéns! Card avançou",
+                    "message": congratulation_message,
+                    "icon": "trophy" if target_list.is_done_stage else "arrow-right",
+                    "color": "success",
+                    "notification_metadata": {
+                        "card_id": moved_card.id,
+                        "card_title": moved_card.title,
+                        "source_list": source_list_name,
+                        "target_list": target_list.name,
+                        "points_awarded": points_awarded,
+                        "url": f"/cards/{moved_card.id}"
+                    }
+                }
+                self.notification_repository.create(notification_data)
+
+            except Exception as e:
+                # Log erro mas não quebra o fluxo principal
+                print(f"Erro ao criar parabenização: {e}")
+
         return moved_card
+
+    def _generate_congratulation_message(
+        self,
+        card: Card,
+        source_list_name: str,
+        target_list_name: str,
+        points_awarded: int,
+        is_won: bool
+    ) -> str:
+        """
+        Gera mensagem de parabenização personalizada.
+
+        Args:
+            card: Card movido
+            source_list_name: Nome da lista de origem
+            target_list_name: Nome da lista de destino
+            points_awarded: Pontos ganhos
+            is_won: Se o card foi ganho
+
+        Returns:
+            Mensagem de parabenização
+        """
+        if is_won:
+            return (
+                f"🎉 Você ganhou o card '{card.title}'! "
+                f"Avançou de '{source_list_name}' para '{target_list_name}' "
+                f"e ganhou +{points_awarded} pontos!"
+            )
+        else:
+            return (
+                f"✨ Card '{card.title}' avançou de '{source_list_name}' para '{target_list_name}'! "
+                f"Continue assim e ganhe +{points_awarded} pontos!"
+            )
 
     def assign_card(self, card_id: int, user_id: Optional[int], current_user: User) -> Card:
         """

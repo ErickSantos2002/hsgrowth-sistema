@@ -25,6 +25,7 @@ export interface Badge {
   icon_url: string | null;
   criteria_type: "automatic" | "manual";
   criteria: Record<string, any>;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -58,6 +59,16 @@ export interface RankingListResponse {
   period_start: string;
   period_end: string;
   total: number;
+}
+
+export interface ActionPoints {
+  id: number;
+  action_type: string;
+  points: number;
+  is_active: boolean;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
@@ -157,6 +168,71 @@ class GamificationService {
     const response = await api.post<UserBadge>(`/api/v1/gamification/badges/${badgeId}/award`, {
       user_id: userId,
     });
+    return response.data;
+  }
+
+  /**
+   * Busca badge por ID
+   */
+  async getBadgeById(badgeId: number): Promise<Badge> {
+    const response = await api.get<Badge>(`/api/v1/gamification/badges/${badgeId}`);
+    return response.data;
+  }
+
+  /**
+   * Atualiza badge (admin only)
+   */
+  async updateBadge(
+    badgeId: number,
+    data: {
+      name?: string;
+      description?: string;
+      icon_url?: string;
+      criteria_type?: "automatic" | "manual";
+      criteria?: Record<string, any>;
+    }
+  ): Promise<Badge> {
+    const response = await api.put<Badge>(`/api/v1/gamification/badges/${badgeId}`, data);
+    return response.data;
+  }
+
+  /**
+   * Deleta badge (admin only)
+   */
+  async deleteBadge(badgeId: number): Promise<{ message: string }> {
+    const response = await api.delete<{ message: string }>(`/api/v1/gamification/badges/${badgeId}`);
+    return response.data;
+  }
+
+  /**
+   * Lista todas as configurações de pontos
+   */
+  async listActionPoints(): Promise<ActionPoints[]> {
+    const response = await api.get<ActionPoints[]>("/api/v1/gamification/action-points");
+    return response.data;
+  }
+
+  /**
+   * Busca configuração de pontos por tipo
+   */
+  async getActionPointsByType(actionType: string): Promise<ActionPoints> {
+    const response = await api.get<ActionPoints>(`/api/v1/gamification/action-points/${actionType}`);
+    return response.data;
+  }
+
+  /**
+   * Atualiza configuração de pontos (admin only)
+   */
+  async updateActionPoints(actionType: string, data: { points?: number; is_active?: boolean; description?: string }): Promise<ActionPoints> {
+    const response = await api.put<ActionPoints>(`/api/v1/gamification/action-points/${actionType}`, data);
+    return response.data;
+  }
+
+  /**
+   * Inicializa configurações padrão de pontos (admin only)
+   */
+  async initializeActionPoints(): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>("/api/v1/gamification/action-points/initialize");
     return response.data;
   }
 }

@@ -15,7 +15,10 @@ from app.schemas.gamification import (
     BadgeResponse,
     UserBadgeResponse,
     RankingListResponse,
-    UserGamificationSummary
+    UserGamificationSummary,
+    ActionPointsCreate,
+    ActionPointsUpdate,
+    ActionPointsResponse
 )
 from app.models.user import User
 
@@ -165,6 +168,53 @@ async def get_user_badges(
     return service.get_user_badges(user_id)
 
 
+@router.get("/badges/{badge_id}", response_model=BadgeResponse, summary="Buscar badge por ID")
+async def get_badge(
+    badge_id: int = Path(..., description="ID do badge"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Busca um badge específico por ID.
+
+    - **badge_id**: ID do badge
+    """
+    service = GamificationService(db)
+    return service.get_badge_by_id(badge_id)
+
+
+@router.put("/badges/{badge_id}", response_model=BadgeResponse, summary="Atualizar badge")
+async def update_badge(
+    badge_id: int = Path(..., description="ID do badge"),
+    badge_data: BadgeUpdate = Body(..., description="Dados para atualizar"),
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Atualiza um badge existente (apenas admin).
+
+    - **badge_id**: ID do badge
+    - **badge_data**: Campos a serem atualizados
+    """
+    service = GamificationService(db)
+    return service.update_badge(badge_id, badge_data, current_user)
+
+
+@router.delete("/badges/{badge_id}", summary="Deletar badge", status_code=200)
+async def delete_badge(
+    badge_id: int = Path(..., description="ID do badge"),
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Deleta um badge (soft delete - apenas admin).
+
+    - **badge_id**: ID do badge
+    """
+    service = GamificationService(db)
+    return service.delete_badge(badge_id, current_user)
+
+
 # ========== RANKINGS ==========
 
 @router.get("/rankings", response_model=RankingListResponse, summary="Listar rankings")
@@ -203,3 +253,92 @@ async def calculate_rankings(
     """
     service = GamificationService(db)
     return service.calculate_rankings(period_type)
+
+
+# ========== ACTION POINTS CONFIGURATION ==========
+
+@router.get("/action-points", response_model=List[ActionPointsResponse], summary="Listar configurações de pontos")
+async def list_action_points(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Lista todas as configurações de pontos por ação.
+
+    Retorna lista com action_type, points, is_active e description.
+    """
+    service = GamificationService(db)
+    return service.list_action_points()
+
+
+@router.get("/action-points/{action_type}", response_model=ActionPointsResponse, summary="Buscar configuração de pontos")
+async def get_action_points(
+    action_type: str = Path(..., description="Tipo de ação"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Busca configuração de pontos por tipo de ação.
+
+    - **action_type**: Tipo de ação (ex: card_created, card_won)
+    """
+    service = GamificationService(db)
+    action_points = service.get_action_points_by_type(action_type)
+    if not action_points:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Configuração para ação '{action_type}' não encontrada"
+        )
+    return action_points
+
+
+@router.post("/action-points", response_model=ActionPointsResponse, summary="Criar configuração de pontos", status_code=201)
+async def create_action_points(
+    action_data: ActionPointsCreate,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Cria nova configuração de pontos (apenas admin).
+
+    - **action_type**: Tipo de ação (único)
+    - **points**: Quantidade de pontos
+    - **is_active**: Se a ação está ativa
+    - **description**: Descrição da ação
+    """
+    service = GamificationService(db)
+    return service.create_action_points(action_data, current_user)
+
+
+@router.put("/action-points/{action_type}", response_model=ActionPointsResponse, summary="Atualizar configuração de pontos")
+async def update_action_points(
+    action_type: str = Path(..., description="Tipo de ação"),
+    action_data: ActionPointsUpdate = Body(..., description="Dados para atualizar"),
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Atualiza configuração de pontos (apenas admin).
+
+    - **action_type**: Tipo de ação
+    - **points**: Nova quantidade de pontos (opcional)
+    - **is_active**: Novo status (opcional)
+    - **description**: Nova descrição (opcional)
+    """
+    service = GamificationService(db)
+    return service.update_action_points(action_type, action_data, current_user)
+
+
+@router.post("/action-points/initialize", summary="Inicializar configurações padrão", status_code=200)
+async def initialize_action_points(
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Inicializa configurações padrão de pontos se não existirem (apenas admin).
+
+    Cria configurações para: card_created, card_won, card_moved, etc.
+    """
+    service = GamificationService(db)
+    service.initialize_default_action_points()
+    return {"message": "Configurações inicializadas com sucesso"}

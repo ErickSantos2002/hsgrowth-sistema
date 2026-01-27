@@ -55,11 +55,13 @@ class BadgeUpdate(BaseModel):
     icon_url: Optional[str] = None
     criteria_type: Optional[str] = None
     criteria: Optional[dict] = None
+    is_active: Optional[bool] = None
 
 
 class BadgeResponse(BadgeBase):
     """Schema de resposta para badge."""
     id: int
+    is_active: bool = Field(True, description="Se a badge está ativa")
     created_at: datetime
 
     class Config:
@@ -164,3 +166,35 @@ ACTION_POINTS = {
     ActionType.FIRST_LOGIN: 10,
     ActionType.DAILY_LOGIN: 3,
 }
+
+
+# ========== ACTION POINTS CONFIGURATION SCHEMAS ==========
+
+class ActionPointsBase(BaseModel):
+    """Schema base para configuração de pontos."""
+    action_type: str = Field(..., description="Tipo de ação")
+    points: int = Field(..., description="Quantidade de pontos (pode ser negativo para penalidades)")
+    is_active: bool = Field(True, description="Se a ação está ativa")
+    description: Optional[str] = Field(None, description="Descrição da ação")
+
+
+class ActionPointsCreate(ActionPointsBase):
+    """Schema para criar configuração de pontos."""
+    pass
+
+
+class ActionPointsUpdate(BaseModel):
+    """Schema para atualizar configuração de pontos."""
+    points: Optional[int] = Field(None, description="Pontos (pode ser negativo)")
+    is_active: Optional[bool] = None
+    description: Optional[str] = None
+
+
+class ActionPointsResponse(ActionPointsBase):
+    """Schema de resposta para configuração de pontos."""
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
