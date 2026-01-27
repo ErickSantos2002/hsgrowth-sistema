@@ -19,90 +19,31 @@ import {
 } from "lucide-react";
 import StatusBadge, { type ActivityStatus } from "./StatusBadge";
 
-interface FocusSectionProps {
-  cardId: number;
-  onUpdate: () => void;
-}
-
-/**
- * Interface mockada de Atividade
- */
-interface Activity {
+interface PendingTask {
   id: number;
   title: string;
-  type: "call" | "meeting" | "task" | "deadline" | "email" | "lunch" | "other";
-  date: string;
-  time?: string;
-  is_completed: boolean;
+  task_type: "call" | "meeting" | "task" | "deadline" | "email" | "lunch" | "other";
   priority: "normal" | "high" | "urgent";
-  assigned_to_name: string;
-  contact_name?: string;
-  description?: string;
-  location?: string;
-  video_link?: string;
-  notes?: string;
+  due_date?: string;
+  assigned_to_name?: string;
+  is_overdue?: boolean;
+}
+
+interface FocusSectionProps {
+  tasks: PendingTask[];
+  onUpdate: () => void;
 }
 
 /**
  * Seção "Foco" - Atividades pendentes do card
  * Exibida na aba "Atividade", logo abaixo do formulário de criação rápida
  */
-const FocusSection: React.FC<FocusSectionProps> = ({ cardId, onUpdate }) => {
+const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
   const [expandAll, setExpandAll] = useState(false);
   const [expandedActivities, setExpandedActivities] = useState<number[]>([]);
 
-  // Mock: Atividades pendentes (futuramente virá do backend)
-  const [activities, setActivities] = useState<Activity[]>([
-    {
-      id: 1,
-      title: "Ligar para apresentar proposta comercial",
-      type: "call",
-      date: "2026-01-25", // Vencido
-      time: "10:00",
-      is_completed: false,
-      priority: "high",
-      assigned_to_name: "João Silva",
-      contact_name: "Maria Santos",
-      description: "Apresentar proposta do Software de Gestão",
-      notes: "Cliente demonstrou interesse na última reunião",
-    },
-    {
-      id: 2,
-      title: "Reunião de alinhamento com equipe técnica",
-      type: "meeting",
-      date: "2026-01-27", // Hoje
-      time: "14:30",
-      is_completed: false,
-      priority: "urgent",
-      assigned_to_name: "João Silva",
-      contact_name: "Pedro Costa",
-      description: "Definir escopo do projeto e cronograma",
-      location: "Sala de reuniões - 3º andar",
-      video_link: "https://meet.google.com/abc-defg-hij",
-    },
-    {
-      id: 3,
-      title: "Enviar proposta comercial atualizada",
-      type: "email",
-      date: "2026-01-28", // Amanhã
-      time: "09:00",
-      is_completed: false,
-      priority: "normal",
-      assigned_to_name: "João Silva",
-      contact_name: "Maria Santos",
-      description: "Incluir desconto de 10% conforme negociado",
-    },
-    {
-      id: 4,
-      title: "Follow-up da proposta enviada",
-      type: "task",
-      date: "2026-01-30",
-      is_completed: false,
-      priority: "normal",
-      assigned_to_name: "João Silva",
-      contact_name: "Maria Santos",
-    },
-  ]);
+  // Usa os dados que vem do backend
+  const activities = tasks || [];
 
   /**
    * Calcula o status da atividade (VENCIDO/HOJE/AMANHÃ)
@@ -220,7 +161,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ cardId, onUpdate }) => {
         <div className="space-y-3">
           {pendingActivities.map((activity) => {
             const isExpanded = expandedActivities.includes(activity.id);
-            const status = getActivityStatus(activity.date);
+            const status = activity.is_overdue ? "overdue" :
+                          activity.due_date && new Date(activity.due_date).toDateString() === new Date().toDateString() ? "today" :
+                          "future";
 
             return (
               <div
@@ -231,32 +174,21 @@ const FocusSection: React.FC<FocusSectionProps> = ({ cardId, onUpdate }) => {
               >
                 {/* Header da atividade */}
                 <div className="p-3 flex items-start gap-3">
-                  {/* Checkbox */}
-                  <button
-                    onClick={() => handleToggleComplete(activity.id)}
-                    className="mt-0.5 w-5 h-5 rounded border-2 border-slate-600 hover:border-blue-500 flex items-center justify-center transition-colors"
-                  >
-                    {activity.is_completed && <Check size={14} className="text-blue-400" />}
-                  </button>
-
                   {/* Conteúdo */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2 mb-1">
                       <span className="text-slate-400 mt-0.5">
-                        {getActivityIcon(activity.type)}
+                        {getActivityIcon(activity.task_type)}
                       </span>
                       <div className="flex-1">
                         <p className="font-medium text-white">{activity.title}</p>
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-400">
                           <StatusBadge status={status} />
-                          <span>{formatDate(activity.date)}</span>
-                          {activity.time && <span>às {activity.time}</span>}
-                          <span>•</span>
-                          <span>{activity.assigned_to_name}</span>
-                          {activity.contact_name && (
+                          {activity.due_date && <span>{formatDate(activity.due_date)}</span>}
+                          {activity.assigned_to_name && (
                             <>
                               <span>•</span>
-                              <span>{activity.contact_name}</span>
+                              <span>{activity.assigned_to_name}</span>
                             </>
                           )}
                         </div>

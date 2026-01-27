@@ -597,3 +597,115 @@ class CardService:
             )
 
         return result
+
+    def get_card_expanded(self, card_id: int, current_user: User) -> dict:
+        """
+        Busca um card com todos os relacionamentos carregados.
+        Ideal para a página CardDetails.
+
+        Args:
+            card_id: ID do card
+            current_user: Usuário atual
+
+        Returns:
+            Dict com card e relacionamentos
+
+        Raises:
+            HTTPException: Se não encontrado
+        """
+        from app.repositories.card_task_repository import CardTaskRepository
+        from app.repositories.product_repository import ProductRepository
+
+        # Busca o card
+        card = self.get_card_by_id(card_id)
+
+        # Busca relacionamentos
+        card_task_repo = CardTaskRepository(self.db)
+        product_repo = ProductRepository(self.db)
+
+        # Custom field values
+        custom_field_values = self.get_card_field_values(card_id, current_user)
+
+        # Tarefas pendentes
+        pending_tasks = card_task_repo.get_pending_by_card(card_id, limit=None)
+        pending_tasks_count = len(pending_tasks)
+
+        # Produtos
+        card_products = product_repo.list_card_products(card_id)
+        products_totals = product_repo.get_card_products_total(card_id)
+
+        # Atividades recentes (TODO: implementar quando ActivityRepository existir)
+        recent_activities = []
+
+        # Busca informações relacionadas
+        list_obj = self.list_repository.find_by_id(card.list_id)
+        board = self.board_repository.find_by_id(list_obj.board_id) if list_obj else None
+
+        # Monta a resposta
+        response_data = {
+            # Dados básicos do card
+            "id": card.id,
+            "title": card.title,
+            "description": card.description,
+            "list_id": card.list_id,
+            "client_id": card.client_id,
+            "assigned_to_id": card.assigned_to_id,
+            "value": float(card.value) if card.value else None,
+            "due_date": card.due_date,
+            "contact_info": card.contact_info,
+            "is_won": card.is_won == 1,
+            "is_lost": card.is_lost,
+            "won_at": card.won_at,
+            "lost_at": card.lost_at,
+            "position": float(card.position),
+            "created_at": card.created_at,
+            "updated_at": card.updated_at,
+
+            # Informações relacionadas
+            "assigned_to_name": card.assigned_to.name if card.assigned_to else None,
+            "list_name": list_obj.name if list_obj else None,
+            "board_id": board.id if board else None,
+            "client_name": card.client.name if card.client else None,
+
+            # Relacionamentos expandidos
+            "custom_field_values": [
+                {
+                    "id": cfv.id,
+                    "field_definition_id": cfv.field_definition_id,
+                    "field_name": cfv.field_name,
+                    "field_type": cfv.field_type,
+                    "value": cfv.value
+                }
+                for cfv in custom_field_values
+            ],
+            "pending_tasks": [
+                {
+                    "id": task.id,
+                    "title": task.title,
+                    "task_type": task.task_type.value if hasattr(task.task_type, 'value') else task.task_type,
+                    "priority": task.priority.value if hasattr(task.priority, 'value') else task.priority,
+                    "due_date": task.due_date,
+                    "assigned_to_name": task.assigned_to.name if task.assigned_to else None,
+                    "is_overdue": task.is_overdue
+                }
+                for task in pending_tasks
+            ],
+            "pending_tasks_count": pending_tasks_count,
+            "products": [
+                {
+                    "id": cp.id,
+                    "product_id": cp.product_id,
+                    "product_name": cp.product.name if cp.product else None,
+                    "quantity": cp.quantity,
+                    "unit_price": float(cp.unit_price),
+                    "discount": float(cp.discount),
+                    "subtotal": cp.subtotal,
+                    "total": cp.total
+                }
+                for cp in card_products
+            ],
+            "products_total": products_totals["total"],
+            "recent_activities": []  # TODO: implementar quando ActivityRepository existir
+        }
+
+        return response_data

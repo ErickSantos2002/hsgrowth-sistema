@@ -14,7 +14,9 @@ import { Card } from "../types";
 import cardService from "../services/cardService";
 import userService from "../services/userService";
 import { User as UserType } from "../types";
+import { useAuth } from "../context/AuthContext";
 import { SummarySection, ClientSection, ContactSection, CustomFieldsSection, ProductSection, QuickActivityForm, FocusSection, HistorySection } from "../components/cardDetails";
+import PipelineStages from "../components/cardDetails/PipelineStages";
 
 /**
  * Página de detalhes do Card - Layout estilo Pipedrive com tema escuro
@@ -23,6 +25,7 @@ import { SummarySection, ClientSection, ContactSection, CustomFieldsSection, Pro
 const CardDetails: React.FC = () => {
   const { cardId } = useParams<{ cardId: string }>();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
 
   // Estados principais
   const [card, setCard] = useState<Card | null>(null);
@@ -30,6 +33,8 @@ const CardDetails: React.FC = () => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const [titleValue, setTitleValue] = useState("");
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+  const [isMovingCard, setIsMovingCard] = useState(false);
 
   // Estado das abas
   const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos">("atividade");
@@ -45,12 +50,12 @@ const CardDetails: React.FC = () => {
   }, [cardId]);
 
   /**
-   * Carrega os dados do card
+   * Carrega os dados do card com todos os relacionamentos
    */
   const loadCardData = async () => {
     try {
       setLoading(true);
-      const cardData = await cardService.getById(Number(cardId));
+      const cardData = await cardService.getExpanded(Number(cardId));
       setCard(cardData);
       setTitleValue(cardData.title);
     } catch (error) {
@@ -134,6 +139,49 @@ const CardDetails: React.FC = () => {
     }
   };
 
+  /**
+   * Atualiza o responsável do card
+   */
+  const handleChangeAssignee = async (userId: number) => {
+    if (!card) return;
+
+    try {
+      await cardService.update(card.id, { assigned_to_id: userId });
+      await loadCardData();
+      setShowAssigneeDropdown(false);
+    } catch (error) {
+      console.error("Erro ao atualizar responsável:", error);
+      alert("Erro ao atualizar responsável");
+    }
+  };
+
+  /**
+   * Move o card para outra lista
+   */
+  const handleMoveCard = async (newListId: number) => {
+    if (!card || isMovingCard) return;
+
+    try {
+      setIsMovingCard(true);
+
+      // Usa o endpoint /move com target_list_id
+      await cardService.move(card.id, {
+        target_list_id: newListId,
+        position: 0, // Adiciona no topo da nova lista
+      });
+
+      await loadCardData();
+    } catch (error) {
+      console.error("Erro ao mover card:", error);
+      alert("Erro ao mover card para nova lista");
+    } finally {
+      setIsMovingCard(false);
+    }
+  };
+
+  // Verifica se o usuário pode alterar o responsável
+  const canChangeAssignee = currentUser?.role === "admin" || currentUser?.role === "manager";
+
   // Encontra o responsável atual
   const assignedUser = users.find((u) => u.id === card?.assigned_to_id);
 
@@ -201,13 +249,73 @@ const CardDetails: React.FC = () => {
 
             {/* Lado Direito: Avatar + Botões de Ação */}
             <div className="flex items-center gap-3">
-              {/* Avatar do Responsável com Dropdown */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg hover:bg-slate-700/80 cursor-pointer transition-colors border border-slate-700/50">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-medium text-sm">
-                  {assignedUser?.name?.substring(0, 2).toUpperCase() || "?"}
-                </div>
-                <span className="text-sm font-medium text-white">{assignedUser?.name || "Não atribuído"}</span>
-                <ChevronDown size={16} className="text-slate-400" />
+              {/* Avatar do Responsável com Dropdown (apenas para admin/manager) */}
+              <div className="relative">
+                {canChangeAssignee ? (
+                  // Admin/Manager - com dropdown
+                  <>
+                    <button
+                      onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
+                      className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg hover:bg-slate-700/80 cursor-pointer transition-colors border border-slate-700/50"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-medium text-sm">
+                        {assignedUser?.name?.substring(0, 2).toUpperCase() || "?"}
+                      </div>
+                      <span className="text-sm font-medium text-white">{assignedUser?.name || "Não atribuído"}</span>
+                      <ChevronDown size={16} className="text-slate-400" />
+                    </button>
+
+                    {/* Dropdown de seleção de responsável */}
+                    {showAssigneeDropdown && (
+                      <>
+                        {/* Overlay para fechar ao clicar fora */}
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowAssigneeDropdown(false)}
+                        />
+
+                        {/* Menu dropdown */}
+                        <div className="absolute top-full right-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-20 max-h-80 overflow-y-auto">
+                          <div className="p-2">
+                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-2 py-1 mb-1">
+                              Selecionar responsável
+                            </p>
+                            {users.map((user) => (
+                              <button
+                                key={user.id}
+                                onClick={() => handleChangeAssignee(user.id)}
+                                className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-colors text-left ${
+                                  user.id === card?.assigned_to_id
+                                    ? "bg-blue-500/20 text-blue-400"
+                                    : "hover:bg-slate-700 text-slate-300"
+                                }`}
+                              >
+                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-medium text-xs">
+                                  {user.name.substring(0, 2).toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{user.name}</p>
+                                  <p className="text-xs text-slate-500 truncate">{user.role_name}</p>
+                                </div>
+                                {user.id === card?.assigned_to_id && (
+                                  <CheckCircle2 size={16} className="text-blue-400 flex-shrink-0" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  // Vendedor - apenas visualização (sem seta)
+                  <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg border border-slate-700/50">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-medium text-sm">
+                      {assignedUser?.name?.substring(0, 2).toUpperCase() || "?"}
+                    </div>
+                    <span className="text-sm font-medium text-white">{assignedUser?.name || "Não atribuído"}</span>
+                  </div>
+                )}
               </div>
 
               {/* Botão Ganho */}
@@ -248,16 +356,17 @@ const CardDetails: React.FC = () => {
             </div>
           </div>
 
-          {/* Breadcrumb Clicável */}
-          <div className="mt-2 flex items-center gap-2 text-sm text-slate-400">
-            <button className="hover:text-blue-400 transition-colors font-medium">
-              {card.board_id ? `Board #${card.board_id}` : "Board"}
-            </button>
-            <span>›</span>
-            <button className="hover:text-blue-400 transition-colors font-medium">
-              {card.list_name || "Lista"}
-            </button>
-          </div>
+          {/* Pipeline de Stages */}
+          {card.board_id && (
+            <div className="mt-3">
+              <PipelineStages
+                boardId={card.board_id}
+                currentListId={card.list_id}
+                onMoveCard={handleMoveCard}
+                isMoving={isMovingCard}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -378,10 +487,10 @@ const CardDetails: React.FC = () => {
             </div>
 
             {/* Seção Foco - Sempre Visível */}
-            <FocusSection cardId={card.id} onUpdate={loadCardData} />
+            <FocusSection tasks={card.pending_tasks || []} onUpdate={loadCardData} />
 
             {/* Seção Histórico - Sempre Visível */}
-            <HistorySection cardId={card.id} />
+            <HistorySection activities={card.recent_activities || []} />
           </div>
         </div>
       </div>

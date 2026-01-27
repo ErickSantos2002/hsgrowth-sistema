@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Package, Plus, Trash2, Search, CreditCard, Info } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
 import { Card } from "../../types";
+import productService from "../../services/productService";
 
 interface ProductSectionProps {
   card: Card;
@@ -27,31 +28,37 @@ interface ProductItem {
  * Quarta seção da coluna esquerda, expandida por padrão quando há produtos
  */
 const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
-  // Mock: Lista de produtos (futuramente virá do backend)
-  const [products, setProducts] = useState<ProductItem[]>([
-    // Exemplo mockado - remover quando integrar com backend
-    // {
-    //   id: 1,
-    //   product_id: 101,
-    //   name: "Produto Exemplo",
-    //   sku: "PROD-001",
-    //   quantity: 2,
-    //   unit_price: 500.00,
-    //   discount: 50.00,
-    //   discount_percentage: 5,
-    // }
-  ]);
+  // Produtos vindos do backend (card.products)
+  const products = (card as any).products || [];
+  const productsTotal = (card as any).products_total || 0;
 
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Mock: Lista de produtos disponíveis para adicionar
-  const availableProducts = [
-    { id: 101, name: "Software de Gestão - Licença Anual", sku: "SOFT-001", unit_price: 2400.00 },
-    { id: 102, name: "Consultoria em TI - Pacote Básico", sku: "CONS-001", unit_price: 5000.00 },
-    { id: 103, name: "Treinamento Online - 20 horas", sku: "TRAIN-001", unit_price: 1200.00 },
-    { id: 104, name: "Suporte Técnico - Mensal", sku: "SUP-001", unit_price: 800.00 },
-  ];
+  // Carrega produtos disponíveis quando abrir o modal
+  useEffect(() => {
+    if (showProductSearch) {
+      loadAvailableProducts();
+    }
+  }, [showProductSearch]);
+
+  /**
+   * Carrega lista de produtos disponíveis
+   */
+  const loadAvailableProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await productService.list({ page_size: 100, is_active: true });
+      setAvailableProducts(response.products);
+    } catch (error) {
+      console.error("Erro ao carregar produtos:", error);
+      alert("Erro ao carregar lista de produtos");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /**
    * Calcula valor total de um produto
@@ -85,67 +92,76 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
   /**
    * Adiciona produto
    */
-  const handleAddProduct = (productId: number) => {
+  const handleAddProduct = async (productId: number) => {
     const product = availableProducts.find(p => p.id === productId);
     if (!product) return;
 
-    const newProduct: ProductItem = {
-      id: Date.now(),
-      product_id: product.id,
-      name: product.name,
-      sku: product.sku,
-      quantity: 1,
-      unit_price: product.unit_price,
-      discount: 0,
-      discount_percentage: 0,
-    };
+    try {
+      setLoading(true);
+      await productService.addToCard(card.id, {
+        product_id: product.id,
+        quantity: 1,
+        unit_price: parseFloat(product.unit_price),
+        discount: 0,
+      });
 
-    setProducts([...products, newProduct]);
-    setShowProductSearch(false);
-    setSearchTerm("");
-
-    // TODO: Sincronizar com backend
-    // await cardService.update(card.id, { products: [...products, newProduct] });
-    // onUpdate();
+      setShowProductSearch(false);
+      setSearchTerm("");
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao adicionar produto:", error);
+      alert("Erro ao adicionar produto");
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
    * Remove produto
    */
-  const handleRemoveProduct = (productId: number) => {
+  const handleRemoveProduct = async (cardProductId: number) => {
     if (!confirm("Remover este produto?")) return;
 
-    setProducts(products.filter(p => p.id !== productId));
-
-    // TODO: Sincronizar com backend
-    // await cardService.update(card.id, { products: products.filter(...) });
-    // onUpdate();
+    try {
+      setLoading(true);
+      await productService.removeFromCard(cardProductId);
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao remover produto:", error);
+      alert("Erro ao remover produto");
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
    * Atualiza quantidade
    */
-  const handleUpdateQuantity = (productId: number, quantity: number) => {
+  const handleUpdateQuantity = async (cardProductId: number, quantity: number) => {
     if (quantity < 1) return;
 
-    setProducts(products.map(p =>
-      p.id === productId ? { ...p, quantity } : p
-    ));
-
-    // TODO: Sincronizar com backend
+    try {
+      await productService.updateCardProduct(cardProductId, { quantity });
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao atualizar quantidade:", error);
+      alert("Erro ao atualizar quantidade");
+    }
   };
 
   /**
    * Atualiza desconto
    */
-  const handleUpdateDiscount = (productId: number, discount: number) => {
+  const handleUpdateDiscount = async (cardProductId: number, discount: number) => {
     if (discount < 0) return;
 
-    setProducts(products.map(p =>
-      p.id === productId ? { ...p, discount } : p
-    ));
-
-    // TODO: Sincronizar com backend
+    try {
+      await productService.updateCardProduct(cardProductId, { discount });
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao atualizar desconto:", error);
+      alert("Erro ao atualizar desconto");
+    }
   };
 
   /**
@@ -353,14 +369,6 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
               >
                 Fechar
               </button>
-
-              {/* Aviso sobre dados mock */}
-              <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-xs text-yellow-300">
-                  <strong>Nota:</strong> Esta é uma versão mockada. Os produtos mostrados são exemplos.
-                  A integração com o backend será implementada posteriormente.
-                </p>
-              </div>
             </div>
           </div>
         )}

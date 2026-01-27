@@ -20,6 +20,10 @@ from app.models.activity import Activity
 from app.models.audit_log import AuditLog
 from app.models.card_task import CardTask
 
+# Modelos de produtos
+from app.models.product import Product
+from app.models.card_product import CardProduct
+
 # Modelos de gamificação
 from app.models.gamification_point import GamificationPoint
 from app.models.gamification_badge import GamificationBadge
@@ -51,6 +55,8 @@ __all__ = [
     "Activity",
     "AuditLog",
     "CardTask",
+    "Product",
+    "CardProduct",
     "GamificationPoint",
     "GamificationBadge",
     "UserBadge",

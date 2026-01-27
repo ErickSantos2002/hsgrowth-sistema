@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 interface HistorySectionProps {
-  cardId: number;
+  activities: any[];
 }
 
 /**
@@ -72,13 +72,22 @@ interface HistoryEvent {
  * Seção "Histórico" - Timeline completo de eventos do card
  * Exibida na aba "Atividade", abaixo da seção "Foco"
  */
-const HistorySection: React.FC<HistorySectionProps> = ({ cardId }) => {
+const HistorySection: React.FC<HistorySectionProps> = ({ activities }) => {
   const [activeTab, setActiveTab] = useState<HistoryTab>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Mock: Eventos do histórico (futuramente virá do backend)
-  const historyEvents: HistoryEvent[] = [
+  // Usa os dados que vem do backend
+  const historyEvents: HistoryEvent[] = (activities || []).map((act: any) => ({
+    id: act.id,
+    type: "activity_completed" as EventType,
+    title: act.message || "Evento",
+    user_name: act.user_name || "Sistema",
+    created_at: act.created_at,
+  }));
+
+  // Dados mockados removidos - comentados para referência
+  const _mockData: HistoryEvent[] = [
     {
       id: 1,
       type: "activity_completed",

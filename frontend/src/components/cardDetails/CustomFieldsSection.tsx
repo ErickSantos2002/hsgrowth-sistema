@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Settings, Check, X } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
 import { Card, FieldDefinition, CardFieldValue } from "../../types";
-import cardService from "../../services/cardService";
+import fieldService from "../../services/fieldService";
 
 interface CustomFieldsSectionProps {
   card: Card;
@@ -30,88 +30,11 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
    * Carrega as definições de campos personalizados do board
    */
   const loadFieldDefinitions = async () => {
+    if (!card.board_id) return;
+
     try {
-      // TODO: Criar endpoint no backend para buscar field_definitions por board_id
-      // const fields = await fieldDefinitionService.getByBoardId(card.board_id);
-      // setFieldDefinitions(fields);
-
-      // Mock: Campos personalizados de exemplo
-      const mockFields: FieldDefinition[] = [
-        {
-          id: 1,
-          board_id: card.board_id || 1,
-          name: "Segmento",
-          field_type: "select",
-          options: ["Tecnologia", "Saúde", "Educação", "Varejo", "Serviços"],
-          is_required: true,
-          position: 1,
-          is_deleted: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 2,
-          board_id: card.board_id || 1,
-          name: "Número de Funcionários",
-          field_type: "number",
-          options: null,
-          is_required: false,
-          position: 2,
-          is_deleted: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 3,
-          board_id: card.board_id || 1,
-          name: "Data de Primeira Reunião",
-          field_type: "date",
-          options: null,
-          is_required: false,
-          position: 3,
-          is_deleted: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 4,
-          board_id: card.board_id || 1,
-          name: "Website da Empresa",
-          field_type: "url",
-          options: null,
-          is_required: false,
-          position: 4,
-          is_deleted: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 5,
-          board_id: card.board_id || 1,
-          name: "Interesses",
-          field_type: "multiselect",
-          options: ["CRM", "ERP", "BI", "Automação", "Integração"],
-          is_required: false,
-          position: 5,
-          is_deleted: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 6,
-          board_id: card.board_id || 1,
-          name: "Contrato Assinado",
-          field_type: "boolean",
-          options: null,
-          is_required: false,
-          position: 6,
-          is_deleted: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ];
-
-      setFieldDefinitions(mockFields);
+      const fields = await fieldService.listDefinitionsByBoard(card.board_id);
+      setFieldDefinitions(fields);
     } catch (error) {
       console.error("Erro ao carregar campos personalizados:", error);
     }
@@ -121,18 +44,16 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
    * Carrega os valores dos campos para este card
    */
   const loadFieldValues = () => {
-    // TODO: Backend deve retornar field_values junto com o card
-    // Por enquanto, vamos usar valores mockados ou vazios
-    const mockValues: Record<number, any> = {
-      1: "Tecnologia",
-      2: 50,
-      3: "2026-01-20",
-      4: "https://www.empresa.com.br",
-      5: ["CRM", "BI"],
-      6: false,
-    };
+    // Usa custom_field_values que vem do backend no card expanded
+    const cardFieldValues = (card as any).custom_field_values || [];
 
-    setFieldValues(mockValues);
+    // Converte array de CardFieldValue para Record<field_definition_id, value>
+    const valuesMap: Record<number, any> = {};
+    cardFieldValues.forEach((cfv: any) => {
+      valuesMap[cfv.field_definition_id] = cfv.value;
+    });
+
+    setFieldValues(valuesMap);
   };
 
   /**
@@ -150,12 +71,11 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
     try {
       setLoading(true);
 
-      // TODO: Integrar com backend
-      // await cardFieldValueService.upsert({
-      //   card_id: card.id,
-      //   field_definition_id: fieldId,
-      //   value: editValue,
-      // });
+      // Salva no backend
+      await fieldService.setCardFieldValue(card.id, {
+        field_definition_id: fieldId,
+        value: editValue,
+      });
 
       // Atualiza localmente
       setFieldValues({ ...fieldValues, [fieldId]: editValue });
@@ -412,13 +332,6 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             {renderFieldInput(field)}
           </div>
         ))}
-
-        {/* Aviso sobre dados mockados */}
-        <div className="pt-3 border-t border-slate-700/50">
-          <p className="text-xs text-slate-500 italic">
-            Nota: Campos personalizados mockados. A integração com backend será implementada.
-          </p>
-        </div>
       </div>
     </ExpandableSection>
   );
