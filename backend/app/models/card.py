@@ -59,6 +59,9 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     # Atividades/Timeline
     activities = relationship("Activity", back_populates="card", lazy="dynamic", cascade="all, delete-orphan")
 
+    # Tarefas/Atividades dos usuários
+    tasks = relationship("CardTask", back_populates="card", lazy="dynamic", cascade="all, delete-orphan")
+
     # Transferências
     transfers = relationship("CardTransfer", back_populates="card", lazy="dynamic", cascade="all, delete-orphan")
 

@@ -15,9 +15,10 @@ from app.models.field_definition import FieldDefinition
 from app.models.card import Card
 from app.models.card_field_value import CardFieldValue
 
-# Modelos de auditoria
+# Modelos de auditoria e atividades
 from app.models.activity import Activity
 from app.models.audit_log import AuditLog
+from app.models.card_task import CardTask
 
 # Modelos de gamificação
 from app.models.gamification_point import GamificationPoint
@@ -49,6 +50,7 @@ __all__ = [
     "CardFieldValue",
     "Activity",
     "AuditLog",
+    "CardTask",
     "GamificationPoint",
     "GamificationBadge",
     "UserBadge",
