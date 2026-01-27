@@ -13,6 +13,7 @@ import {
   X,
   Save,
 } from "lucide-react";
+import cardTaskService from "../../services/cardTaskService";
 
 interface QuickActivityFormProps {
   cardId: number;
@@ -128,14 +129,23 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     }
 
     try {
-      // TODO: Integrar com backend
-      // await activityService.create({
-      //   card_id: cardId,
-      //   ...formData,
-      // });
+      // Combina data e hora para criar o datetime completo
+      const dueDateTime = formData.time
+        ? `${formData.date}T${formData.time}:00`
+        : `${formData.date}T12:00:00`;
 
-      console.log("Atividade criada:", formData);
-      alert("Atividade criada com sucesso! (mockado)");
+      await cardTaskService.create({
+        card_id: cardId,
+        title: formData.title,
+        task_type: formData.type,
+        due_date: dueDateTime,
+        priority: formData.priority,
+        description: formData.description || null,
+        location: formData.location || null,
+        duration_minutes: parseInt(formData.duration),
+        has_video_call: formData.has_video_call,
+        status: formData.status,
+      });
 
       // Reset form
       setFormData({

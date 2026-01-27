@@ -14,7 +14,8 @@ from app.schemas.card import (
     CardResponse,
     CardListResponse,
     CardMoveRequest,
-    CardAssignRequest
+    CardAssignRequest,
+    CardExpandedResponse
 )
 from app.schemas.field import CardFieldValueCreate, CardFieldValueResponse
 from app.models.user import User
@@ -419,3 +420,27 @@ async def add_or_update_field(
         board_id=board_id,
         custom_fields=[cf.model_dump() for cf in custom_fields]
     )
+
+
+@router.get("/{card_id}/expanded", response_model=CardExpandedResponse)
+def get_card_expanded(
+    card_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Busca um card com todos os relacionamentos carregados.
+
+    Ideal para a página CardDetails que precisa de todos os dados:
+    - Informações básicas do card
+    - Cliente vinculado (se houver)
+    - Usuário responsável
+    - Valores dos campos customizados
+    - Tarefas pendentes
+    - Produtos associados
+    - Atividades recentes
+
+    **Endpoint otimizado** para carregar todos os dados de uma vez.
+    """
+    service = CardService(db)
+    return service.get_card_expanded(card_id, current_user)

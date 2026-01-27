@@ -65,6 +65,9 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     # Transferências
     transfers = relationship("CardTransfer", back_populates="card", lazy="dynamic", cascade="all, delete-orphan")
 
+    # Produtos
+    products = relationship("CardProduct", back_populates="card", lazy="dynamic", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Card(id={self.id}, title='{self.title}')>"
 

@@ -33,6 +33,15 @@ class CardService {
   }
 
   /**
+   * Busca um card com todos os relacionamentos (expandido)
+   * Ideal para página CardDetails
+   */
+  async getExpanded(id: number): Promise<any> {
+    const response = await api.get(`/api/v1/cards/${id}/expanded`);
+    return response.data;
+  }
+
+  /**
    * Cria um novo card
    */
   async create(data: CreateCardRequest): Promise<Card> {
