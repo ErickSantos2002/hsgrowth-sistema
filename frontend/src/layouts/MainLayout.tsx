@@ -135,7 +135,7 @@ export default function MainLayout() {
                                             }}
                                             className={`flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
                                                 isActive
-                                                    ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/20"
+                                                    ? "bg-slate-800 text-white shadow-lg shadow-slate-800/20"
                                                     : "text-slate-300 hover:bg-slate-800/50 hover:text-white"
                                             } ${sidebarOpen ? "" : "justify-center"}`}
                                             title={!sidebarOpen ? item.label : ""}
@@ -149,7 +149,13 @@ export default function MainLayout() {
                                                     <span>{item.label}</span>
                                                     {/* Badge de Admin */}
                                                     {item.adminOnly && (
-                                                        <span className="ml-auto text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                                        <span
+                                                            className={`ml-auto text-xs px-2 py-0.5 rounded border ${
+                                                                isActive
+                                                                    ? "bg-emerald-700 text-white border-emerald-600/60"
+                                                                    : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                                            }`}
+                                                        >
                                                             Admin
                                                         </span>
                                                     )}
