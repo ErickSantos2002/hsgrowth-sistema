@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { ChevronDown } from "lucide-react";
+import BaseModal from "../common/BaseModal";
+import { FormField, Input, Button } from "../common";
 import userService from "../../services/userService";
 import { User, CreateUserRequest, UpdateUserRequest } from "../../types";
 
@@ -139,204 +141,255 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
-          <h2 className="text-2xl font-bold text-white">
-            {isEditing ? "Editar Usuário" : "Novo Usuário"}
-          </h2>
-          <button
-            onClick={handleClose}
-            disabled={saving}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white disabled:opacity-50"
-          >
-            <X size={20} />
-          </button>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={isEditing ? "Editar Usuário" : "Novo Usuário"}
+      subtitle={isEditing ? "Atualize os dados do usuário" : "Preencha os dados do novo usuário"}
+      size="2xl"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={handleClose} disabled={saving}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} loading={saving}>
+            {isEditing ? "Atualizar" : "Criar"}
+          </Button>
         </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Dados de Acesso</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4">Dados de Acesso</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              label={
+                <span>
                   Email <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="usuario@exemplo.com"
-                  required
-                  disabled={saving}
-                />
-              </div>
+                </span>
+              }
+              className="md:col-span-2"
+            >
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="usuario@exemplo.com"
+                required
+                disabled={saving}
+              />
+            </FormField>
 
-              {!isEditing && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+            {!isEditing && (
+              <>
+                <FormField
+                  label={
+                    <span>
                       Senha <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder="Mínimo 6 caracteres"
-                      required
-                      minLength={6}
-                      disabled={saving}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Confirmar Senha <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder="Digite a senha novamente"
-                      required
-                      disabled={saving}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Dados Pessoais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Nome Completo <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="João Silva"
-                  required
-                  disabled={saving}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="joaosilva"
-                  disabled={saving}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Telefone
-                </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="(11) 98765-4321"
-                  disabled={saving}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Permissões</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Função <span className="text-red-400">*</span>
-                </label>
-                <select
-                  value={roleId}
-                  onChange={(e) => setRoleId(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  required
-                  disabled={saving}
+                    </span>
+                  }
                 >
-                  <option value={1}>Administrador</option>
-                  <option value={2}>Gerente</option>
-                  <option value={3}>Vendedor</option>
-                </select>
-                <p className="mt-1 text-xs text-slate-400">
-                  {roleId === 1 && "Acesso total ao sistema"}
-                  {roleId === 2 && "Gerencia equipes e relatórios"}
-                  {roleId === 3 && "Gerencia apenas seus próprios cards"}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Status
-                </label>
-                <label className="flex items-center gap-3 p-3 bg-slate-800 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={isActive}
-                    onChange={(e) => setIsActive(e.target.checked)}
-                    className="w-4 h-4 text-emerald-600 bg-slate-700 border-slate-600 rounded focus:ring-emerald-500"
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    required
+                    minLength={6}
                     disabled={saving}
                   />
-                  <span className="text-white">Usuário Ativo</span>
-                </label>
-                <p className="mt-1 text-xs text-slate-400">
-                  Usuários inativos não podem fazer login
-                </p>
-              </div>
-            </div>
-          </div>
+                </FormField>
 
-          {isEditing && (
-            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-              <p className="text-sm text-blue-400">
-                <strong>Nota:</strong> Para alterar a senha, o usuário deve fazer isso através
-                da página de configurações após fazer login.
+                <FormField
+                  label={
+                    <span>
+                      Confirmar Senha <span className="text-red-400">*</span>
+                    </span>
+                  }
+                >
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Digite a senha novamente"
+                    required
+                    disabled={saving}
+                  />
+                </FormField>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4">Dados Pessoais</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              label={
+                <span>
+                  Nome Completo <span className="text-red-400">*</span>
+                </span>
+              }
+              className="md:col-span-2"
+            >
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="João Silva"
+                required
+                disabled={saving}
+              />
+            </FormField>
+
+            <FormField label="Username">
+              <Input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="joaosilva"
+                disabled={saving}
+              />
+            </FormField>
+
+            <FormField label="Telefone">
+              <Input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(11) 98765-4321"
+                disabled={saving}
+              />
+            </FormField>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4">Permissões</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              label={
+                <span>
+                  Função <span className="text-red-400">*</span>
+                </span>
+              }
+            >
+              <SelectMenu
+                value={String(roleId)}
+                options={[
+                  { value: "1", label: "Administrador" },
+                  { value: "2", label: "Gerente" },
+                  { value: "3", label: "Vendedor" },
+                ]}
+                onChange={(value) => setRoleId(Number(value))}
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                {roleId === 1 && "Acesso total ao sistema"}
+                {roleId === 2 && "Gerencia equipes e relatórios"}
+                {roleId === 3 && "Gerencia apenas seus próprios cards"}
               </p>
-            </div>
-          )}
+            </FormField>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-700">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={saving}
-              className="px-4 py-2 border border-slate-700 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white transition-colors disabled:opacity-50 flex items-center gap-2"
-            >
-              {saving ? "Salvando..." : isEditing ? "Atualizar" : "Criar"}
-            </button>
+            <FormField label="Status">
+              <label className="flex items-center gap-3 p-3 bg-slate-800 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 bg-slate-700 border-slate-600 rounded focus:ring-emerald-500"
+                  disabled={saving}
+                />
+                <span className="text-white">Usuário Ativo</span>
+              </label>
+              <p className="mt-1 text-xs text-slate-400">
+                Usuários inativos não podem fazer login
+              </p>
+            </FormField>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        {isEditing && (
+          <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-sm text-blue-400">
+              <strong>Nota:</strong> Para alterar a senha, o usuário deve fazer isso através
+              da página de configurações após fazer login.
+            </p>
+          </div>
+        )}
+      </form>
+    </BaseModal>
   );
 };
 
 export default UserModal;
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full flex items-center justify-between gap-3 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
