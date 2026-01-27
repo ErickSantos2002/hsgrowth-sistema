@@ -16,6 +16,9 @@ export { default as QuickActivityForm } from "./QuickActivityForm";
 export { default as FocusSection } from "./FocusSection";
 export { default as HistorySection } from "./HistorySection";
 export { default as PipelineStages } from "./PipelineStages";
+export { default as NotesSection } from "./NotesSection";
+export { default as SchedulerSection } from "./SchedulerSection";
+export { default as FilesSection } from "./FilesSection";
 
 // Exporta os tipos também
 export type { ActivityStatus } from "./StatusBadge";

@@ -17,6 +17,9 @@ import { User as UserType } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { SummarySection, ClientSection, ContactSection, CustomFieldsSection, ProductSection, QuickActivityForm, FocusSection, HistorySection } from "../components/cardDetails";
 import PipelineStages from "../components/cardDetails/PipelineStages";
+import NotesSection from "../components/cardDetails/NotesSection";
+import SchedulerSection from "../components/cardDetails/SchedulerSection";
+import FilesSection from "../components/cardDetails/FilesSection";
 
 /**
  * Página de detalhes do Card - Layout estilo Pipedrive com tema escuro
@@ -457,40 +460,37 @@ const CardDetails: React.FC = () => {
               </div>
             </div>
 
-            {/* Área de Criação Rápida - Muda conforme a aba */}
-            <div className="mb-6">
+            {/* Conteúdo da aba ativa */}
+            <div className="space-y-6">
               {activeTab === "atividade" && (
-                <QuickActivityForm
-                  cardId={card.id}
-                  onSave={loadCardData}
-                  onCancel={() => {}}
-                />
+                <>
+                  {/* Área de Criação Rápida */}
+                  <QuickActivityForm
+                    cardId={card.id}
+                    onSave={loadCardData}
+                    onCancel={() => {}}
+                  />
+
+                  {/* Seção Foco - Tarefas Pendentes */}
+                  <FocusSection tasks={card.pending_tasks || []} onUpdate={loadCardData} />
+
+                  {/* Seção Histórico */}
+                  <HistorySection activities={card.recent_activities || []} />
+                </>
               )}
 
               {activeTab === "anotacoes" && (
-                <button className="w-full px-4 py-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors text-left">
-                  Clique aqui para adicionar uma anotação...
-                </button>
+                <NotesSection
+                  cardId={card.id}
+                  notes={[]} // TODO: Carregar do backend quando implementado
+                  onUpdate={loadCardData}
+                />
               )}
 
-              {activeTab === "agendador" && (
-                <button className="w-full px-4 py-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors text-left">
-                  Clique aqui para agendar uma reunião...
-                </button>
-              )}
+              {activeTab === "agendador" && <SchedulerSection />}
 
-              {activeTab === "arquivos" && (
-                <button className="w-full px-4 py-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors text-left">
-                  Clique aqui para adicionar arquivos...
-                </button>
-              )}
+              {activeTab === "arquivos" && <FilesSection />}
             </div>
-
-            {/* Seção Foco - Sempre Visível */}
-            <FocusSection tasks={card.pending_tasks || []} onUpdate={loadCardData} />
-
-            {/* Seção Histórico - Sempre Visível */}
-            <HistorySection activities={card.recent_activities || []} />
           </div>
         </div>
       </div>
