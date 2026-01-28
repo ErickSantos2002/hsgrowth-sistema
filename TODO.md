@@ -1,6 +1,6 @@
 # TODO - HSGrowth CRM
 
-## Fase: CardDetails - Página de Detalhes do Card
+## Fase: CardDetails - Página de Detalhes do Card ✅ CONCLUÍDA
 
 ### ✅ Concluído
 
@@ -13,27 +13,49 @@
   - [x] ActionButton
   - [x] PipelineStages (barra de progresso visual das listas)
 
-#### Frontend - Coluna Esquerda (30%)
+#### Frontend - Coluna Esquerda (30%) - COMPLETA
 - [x] **Seção Resumo**:
   - [x] Nome do card (editável)
   - [x] Valor (editável com formatação de moeda)
+  - [x] **Valor sincronizado automaticamente com total de produtos**
+  - [x] **Campo bloqueado quando há produtos (read-only)**
+  - [x] Probabilidade de fechamento (%)
+  - [x] Data esperada de fechamento
+  - [x] Tags (em desenvolvimento)
+  - [x] Tempo no funil e data de criação
   - [x] Botões de ação: Ganho/Perdido
-  - [x] Dropdown de responsável (role-based: admin/manager podem alterar, vendedor apenas visualiza)
+  - [x] Dropdown de responsável (role-based)
 - [x] **Seção Cliente (Organização)**:
-  - [x] Busca e seleção de clientes existentes
-  - [x] Exibição de informações do cliente
-  - [x] Link para editar cliente
+  - [x] **Modal de busca otimizado (carrega uma vez, filtra localmente)**
+  - [x] **Busca por nome da empresa, CPF ou CNPJ**
+  - [x] **Suporte a pessoa física (CPF - 11 dígitos) e jurídica (CNPJ - 14 dígitos)**
+  - [x] **Formatação automática de CPF/CNPJ**
+  - [x] Exibição completa de informações do cliente
+  - [x] Botões: Ver página completa / Desvincular
 - [x] **Seção Informação de Contato (Pessoa)**:
-  - [x] Campos editáveis: Nome, Email, Telefone
-  - [x] Integração com backend
+  - [x] **Entrada manual de dados (nome, cargo)**
+  - [x] **3 tipos de email** (comercial, pessoal, alternativo)
+  - [x] **3 tipos de telefone** (comercial, WhatsApp, alternativo)
+  - [x] **Redes sociais** (LinkedIn, Instagram, Facebook)
+  - [x] **Formatação automática de telefone brasileiro**
+  - [x] Integração com backend (contact_info JSON)
 - [x] **Seção Campos Personalizados**:
   - [x] Renderização dinâmica baseada nos campos do board
   - [x] Suporte a tipos: text, number, date, select, checkbox
   - [x] Salvamento automático com debounce
-- [x] **Seção Produto**:
-  - [x] Adição de produtos com busca
-  - [x] Quantidade e desconto personalizados
-  - [x] Cálculo automático de subtotais e total geral
+- [x] **Seção Produto** - COMPLETA:
+  - [x] **Modal de busca de produtos do catálogo**
+  - [x] **Adição de produtos com nome e SKU visíveis**
+  - [x] **Edição com confirmação (botões Salvar/Cancelar)**
+  - [x] **Desconto em percentual (%) ao invés de valor absoluto**
+  - [x] **Cálculo em tempo real durante edição**
+  - [x] **Condições de pagamento**:
+    - [x] Modal com forma de pagamento (Boleto, Cartão, PIX, etc)
+    - [x] Número de parcelas
+    - [x] Observações (ex: "primeira parcela em 30 dias")
+    - [x] Exibição das condições salvas
+  - [x] **Totalizadores**: Subtotal, Desconto Total, Valor Total
+  - [x] **Sincronização automática**: valor do card = total de produtos
   - [x] Exclusão de produtos
 
 #### Frontend - Coluna Direita (70%)
@@ -108,6 +130,11 @@
 - [x] Modelo `Product` e `CardProduct`
   - [x] Catálogo de produtos
   - [x] Associação de produtos a cards com quantidade e desconto
+  - [x] **Propriedades calculadas: subtotal e total**
+  - [x] **Correção de tipo float/Decimal para evitar erros**
+- [x] Modelo `Card` - Expansões
+  - [x] **Campo payment_info (JSON) para condições de pagamento**
+  - [x] Schema PaymentInfo com validações
 - [x] Repository `CardTaskRepository`
   - [x] CRUD completo de tarefas
   - [x] Filtros: por card, por tipo, por status, por data
@@ -115,9 +142,13 @@
 - [x] Repository `ActivityRepository`
   - [x] Criação de eventos no histórico
   - [x] Busca por card, por tipo, por usuário
-- [x] Repository `ProductRepository` e `CardProductRepository`
-  - [x] CRUD de produtos e associações
-  - [x] Cálculo de totais
+- [x] Repository `ProductRepository`
+  - [x] CRUD de produtos do catálogo
+  - [x] Busca por SKU
+  - [x] Listagem com filtros e paginação
+  - [x] **Associação de produtos a cards (CardProduct)**
+  - [x] **Cálculo de totais (subtotal, desconto, total)**
+  - [x] **Retorno de product_name e product_sku em CardProduct**
 
 #### Backend - Services
 - [x] `CardTaskService`:
@@ -130,9 +161,15 @@
     - [x] Registra "task_deleted" ao deletar tarefa
     - [x] Registra "task_reopened" ao reabrir tarefa
 - [x] `CardService`:
-  - [x] Endpoint `/cards/{id}/with-relations` expandido
-  - [x] Retorna: card, custom_fields, pending_tasks, products, **recent_activities (últimas 50)**
+  - [x] Endpoint `/cards/{id}/expanded` (renomeado de with-relations)
+  - [x] Retorna: card, custom_fields, pending_tasks, products, **payment_info**, recent_activities (últimas 50)
   - [x] Integração com ActivityRepository
+  - [x] **Retorna product_sku nos produtos do card**
+- [x] `ProductService`:
+  - [x] CRUD completo de produtos do catálogo
+  - [x] Adicionar/Remover/Atualizar produtos em cards
+  - [x] **Sincronização automática do valor do card com total de produtos**
+  - [x] **Método _sync_card_value_with_products() chamado automaticamente**
 
 #### Backend - Endpoints (API)
 - [x] **CardTask Endpoints** (`/api/v1/card-tasks`):
@@ -146,27 +183,74 @@
   - [x] GET `/card/{card_id}/pending` - Tarefas pendentes de um card
   - [x] GET `/card/{card_id}/counts` - Contadores de tarefas
 - [x] **Product Endpoints** (`/api/v1/products`):
-  - [x] CRUD completo de produtos
-  - [x] Associação de produtos a cards
-  - [x] Cálculo de totais
+  - [x] GET `/` - Listar produtos com filtros e paginação
+  - [x] GET `/{id}` - Buscar produto por ID
+  - [x] POST `/` - Criar novo produto
+  - [x] PUT `/{id}` - Atualizar produto
+  - [x] DELETE `/{id}` - Deletar produto (soft delete)
+  - [x] POST `/cards/{card_id}/products` - Adicionar produto ao card
+  - [x] PUT `/card-products/{id}` - Atualizar produto do card
+  - [x] DELETE `/card-products/{id}` - Remover produto do card
+  - [x] GET `/cards/{card_id}/products` - Listar produtos de um card com totais
 - [x] **Card Endpoints** (expansão):
-  - [x] GET `/cards/{id}/with-relations` - Retorna card com todos os relacionamentos
+  - [x] GET `/cards/{id}/expanded` - Retorna card com todos os relacionamentos
+  - [x] PUT `/cards/{id}` - Atualiza card (suporta payment_info)
 
 #### Backend - Migrations
 - [x] Migration para tabela `card_tasks`
 - [x] Migration para tabela `products`
 - [x] Migration para tabela `card_products`
+- [x] **Migration para campo `payment_info` em cards**
+- [x] **Migration para tabela `gamification_action_points`**
 - [x] Correção de migrations duplicadas
 
 ---
 
-### ⏳ Em Andamento
+## Fase: Produtos - Gerenciamento de Catálogo ✅ CONCLUÍDA
 
-#### Backend - Sistema de Histórico
-- [ ] **PROBLEMA ATUAL**: Backend não está inicializando após implementação do histórico
-  - **Causa**: Erro de migrations após rebuild do container
-  - **Status**: Container em loop de restart
-  - **Próximo passo**: Resolver problema de inicialização do container
+### ✅ Concluído
+
+#### Frontend - Página Produtos
+- [x] **Página completa de gerenciamento** (`/products`):
+  - [x] Tabela com colunas: Produto (nome + SKU), Categoria, Preço, Status, Data de Criação, Ações
+  - [x] **Busca por nome ou SKU**
+  - [x] **Filtros**: Status (ativo/inativo), Categoria
+  - [x] **Paginação** completa
+  - [x] **Modal de criar/editar produto**:
+    - [x] Campos: Nome*, Descrição, SKU, Preço Unitário*, Moeda (BRL/USD/EUR), Categoria, Ativo
+    - [x] Validações de campos obrigatórios
+    - [x] Formatação de preço
+  - [x] **Ações**: Editar, Ativar/Desativar, Deletar
+  - [x] **Estatísticas**: Total de produtos, Ativos, Inativos
+  - [x] **Tema escuro** consistente com o resto do sistema
+
+#### Backend - Produtos
+- [x] Modelo `Product` completo
+- [x] Repository e Service implementados
+- [x] Endpoints CRUD funcionais
+- [x] Soft delete implementado
+- [x] Validações de SKU único
+
+---
+
+## Configurações - Gamificação ✅ CORRIGIDO
+
+### ✅ Concluído
+
+#### Aba Pontos (Admin)
+- [x] **CORREÇÃO**: Criada tabela `gamification_action_points` que estava faltando
+- [x] Migration com dados padrão (10 tipos de ação)
+- [x] Interface funcionando:
+  - [x] Edição de pontos por ação
+  - [x] Ativar/Desativar ações
+  - [x] Estatísticas (Total, Ativas, Média)
+  - [x] Descrição de cada ação
+- [x] Valores padrão inseridos:
+  - [x] card_created: 5 pts
+  - [x] card_won: 50 pts
+  - [x] card_lost: -5 pts
+  - [x] task_completed: 10 pts
+  - [x] E mais 6 tipos de ação
 
 ---
 
@@ -234,10 +318,7 @@
 
 ### 🐛 Bugs Conhecidos
 
-1. **[CRÍTICO]** Backend não está inicializando após implementação do histórico
-   - Container em loop de restart
-   - Problema com migrations do Alembic
-   - Precisa resolver antes de continuar
+**Nenhum bug crítico no momento!** 🎉
 
 ---
 
@@ -268,14 +349,14 @@
 
 ### 🎯 Próximos Passos (Ordem de Prioridade)
 
-1. **[URGENTE]** Resolver problema de inicialização do backend
-2. Implementar backend de Anotações (Notes)
-3. Melhorar tratamento de erros no frontend (substituir alerts por toasts)
-4. Implementar auto-save com debounce
-5. Adicionar testes unitários nos componentes principais
-6. Implementar sistema de permissões robusto
-7. Planejar e implementar sistema de Arquivos
-8. Planejar e implementar sistema de Agendador
+1. Melhorar tratamento de erros no frontend (substituir alerts por toasts/notifications)
+2. Implementar auto-save com debounce nos campos editáveis
+3. Implementar backend de Anotações (Notes) - frontend já está pronto
+4. Implementar sistema de Arquivos (upload/download)
+5. Implementar sistema de Agendador (calendário integrado)
+6. Adicionar testes unitários nos componentes principais
+7. Implementar sistema de permissões mais robusto
+8. Otimizações de performance (queries N+1, cache, paginação)
 
 ---
 
@@ -305,5 +386,28 @@
 
 ---
 
-**Última atualização**: 27/01/2026 15:30
+**Última atualização**: 28/01/2026 15:10
 **Responsável**: Erick (Cientista de Dados / Full Stack)
+
+## 📊 Resumo de Progresso
+
+### Fases Concluídas
+- ✅ **CardDetails** - Página completa de detalhes do negócio
+- ✅ **Produtos** - Gerenciamento de catálogo de produtos
+- ✅ **Configurações/Pontos** - Sistema de gamificação funcional
+
+### Funcionalidades Principais Implementadas
+1. Sistema completo de gerenciamento de negócios (cards)
+2. Histórico e timeline de atividades
+3. Tarefas/Atividades com timezone correto (Brasil UTC-3)
+4. Produtos com cálculo automático de valores
+5. Condições de pagamento
+6. Busca de clientes por CPF/CNPJ
+7. Campos personalizados dinâmicos
+8. Sistema de gamificação (badges e pontos)
+
+### Estatísticas
+- **Modelos do banco**: 15+
+- **Endpoints da API**: 50+
+- **Componentes React**: 30+
+- **Migrations**: 20+

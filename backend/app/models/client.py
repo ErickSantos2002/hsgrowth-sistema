@@ -45,6 +45,7 @@ class Client(Base, TimestampMixin, SoftDeleteMixin):
 
     # Relacionamentos
     cards = relationship("Card", back_populates="client", lazy="dynamic")
+    persons = relationship("Person", back_populates="organization")
 
     def __repr__(self):
         return f"<Client(id={self.id}, name='{self.name}', company='{self.company_name}')>"

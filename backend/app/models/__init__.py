@@ -9,11 +9,14 @@ from app.db.base import Base
 from app.models.role import Role
 from app.models.user import User
 from app.models.client import Client
+from app.models.person import Person
+from app.models.lead import Lead
 from app.models.board import Board
 from app.models.list import List
 from app.models.field_definition import FieldDefinition
 from app.models.card import Card
 from app.models.card_field_value import CardFieldValue
+from app.models.card_note import CardNote
 
 # Modelos de auditoria e atividades
 from app.models.activity import Activity
@@ -47,11 +50,14 @@ __all__ = [
     "Role",
     "User",
     "Client",
+    "Person",
+    "Lead",
     "Board",
     "List",
     "FieldDefinition",
     "Card",
     "CardFieldValue",
+    "CardNote",
     "Activity",
     "AuditLog",
     "CardTask",
