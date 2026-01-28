@@ -737,7 +737,7 @@ const KanbanBoard: React.FC = () => {
     >
       <div className="h-full flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
         {/* Header fixo */}
-      <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50 px-6 py-4 relative z-50">
+      <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50 px-6 py-4 relative z-20 lg:z-50">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
           {/* Lado esquerdo: Voltar + Nome do Board */}
           <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -776,14 +776,14 @@ const KanbanBoard: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end mt-1 sm:mt-0">
             {/* Barra de busca (expansível) */}
             {showSearchBar ? (
-              <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-3 py-2 animate-fadeIn">
+              <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-3 py-2 animate-fadeIn w-full sm:w-auto">
                 <Search size={18} className="text-slate-400" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar cards..."
-                  className="bg-transparent text-white placeholder-slate-400 outline-none w-64"
+                  className="bg-transparent text-white placeholder-slate-400 outline-none flex-1 min-w-0 sm:w-64"
                   autoFocus
                   onBlur={() => {
                     // Fechar se não houver termo de busca
@@ -900,7 +900,7 @@ const KanbanBoard: React.FC = () => {
 
       {/* Painel de Filtros (expansível) */}
       {showFilters && (
-        <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50 px-6 py-3 relative z-40">
+        <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50 px-6 py-3 relative z-10 lg:z-40">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <span className="text-sm font-medium text-slate-300">Filtros:</span>
 
@@ -971,7 +971,7 @@ const KanbanBoard: React.FC = () => {
           isDraggingBoard ? "cursor-grabbing select-none" : "cursor-grab"
         }`}
       >
-        <div className="flex gap-4 h-[calc(100%-20px)]">
+        <div className="flex gap-4 h-[calc(100%)]">
           {/* Renderizar listas */}
           {lists.length > 0 ? (
             lists.map((list) => {

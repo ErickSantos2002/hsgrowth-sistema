@@ -69,10 +69,10 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
       {...listeners}
       data-kanban-card
       onClick={onClick}
-      className="bg-white/5 hover:bg-white/10 border border-slate-700/30 hover:border-slate-600 p-2.5 rounded-lg transition-all cursor-pointer group shadow-sm hover:shadow-md"
+      className="bg-white/5 hover:bg-white/10 border border-slate-700/30 hover:border-slate-600 p-3.5 rounded-lg transition-all cursor-pointer group shadow-sm hover:shadow-md"
     >
       {/* Título */}
-      <h4 className="text-white text-sm mb-2 line-clamp-2 leading-snug">
+      <h4 className="text-white text-[15px] mb-2 line-clamp-2 leading-snug">
         {card.title}
       </h4>
 
@@ -123,7 +123,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
         {/* Avatar do responsável (menor e mais discreto) */}
         {card.assigned_to_name && (
           <div
-            className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-[9px] font-semibold"
+            className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-[10px] font-semibold"
             title={card.assigned_to_name}
           >
             {card.assigned_to_name
