@@ -307,7 +307,6 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 </span>
               }
               hint="Nome completo ou razão social"
-              required
             >
               <Input
                 value={formData.name}
