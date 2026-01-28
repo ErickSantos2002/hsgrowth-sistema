@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { FileText, Plus, Trash2, Edit, Save, X } from "lucide-react";
+import cardNoteService from "../../services/cardNoteService";
 
 interface Note {
   id: number;
@@ -38,13 +39,10 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
     try {
       setLoading(true);
 
-      // TODO: Implementar endpoint no backend
-      // await noteService.create({
-      //   card_id: cardId,
-      //   content: newNoteContent,
-      // });
-
-      console.log("Nota criada:", newNoteContent);
+      await cardNoteService.create({
+        card_id: cardId,
+        content: newNoteContent,
+      });
 
       setNewNoteContent("");
       setIsCreating(false);
@@ -77,12 +75,9 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
     try {
       setLoading(true);
 
-      // TODO: Implementar endpoint no backend
-      // await noteService.update(noteId, {
-      //   content: editContent,
-      // });
-
-      console.log("Nota atualizada:", editContent);
+      await cardNoteService.update(noteId, {
+        content: editContent,
+      });
 
       setEditingNoteId(null);
       setEditContent("");
@@ -112,10 +107,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
     try {
       setLoading(true);
 
-      // TODO: Implementar endpoint no backend
-      // await noteService.delete(noteId);
-
-      console.log("Nota deletada:", noteId);
+      await cardNoteService.delete(noteId);
 
       onUpdate();
     } catch (error) {
@@ -288,13 +280,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
           ))}
         </div>
       )}
-
-      {/* Aviso temporário sobre backend */}
-      <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-        <p className="text-xs text-yellow-300">
-          <strong>Nota:</strong> O backend para anotações está em desenvolvimento. As ações são logadas no console por enquanto.
-        </p>
-      </div>
     </div>
   );
 };

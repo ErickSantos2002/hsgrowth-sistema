@@ -370,5 +370,6 @@ class CardExpandedResponse(CardResponse):
     products: Optional[list] = Field(None, description="Produtos associados ao card")
     products_total: Optional[float] = Field(None, description="Valor total dos produtos")
     recent_activities: Optional[list] = Field(None, description="Atividades recentes (últimas 10)")
+    notes: Optional[list] = Field(None, description="Anotações do card")
 
     model_config = {"from_attributes": True}
