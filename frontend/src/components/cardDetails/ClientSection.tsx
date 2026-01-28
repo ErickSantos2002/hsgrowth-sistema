@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Building2, Plus, ExternalLink, History, Trash2 } from "lucide-react";
+import ReactDOM from "react-dom";
+import { Building2, ExternalLink, Search, X, Trash2 } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
-import EditableField from "./EditableField";
 import ActionButton from "./ActionButton";
 import { Card } from "../../types";
 import { Client } from "../../services/clientService";
@@ -14,32 +14,32 @@ interface ClientSectionProps {
 }
 
 /**
- * Seção "Cliente (Organização)" - Informações da empresa vinculada ao card
+ * Seção "Cliente (Organização)" - Informações do cliente vinculado ao card
+ * Permite vincular tanto pessoas físicas (CPF) quanto jurídicas (CNPJ)
  * Segunda seção da coluna esquerda, expandida por padrão
  */
 const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isCreatingClient, setIsCreatingClient] = useState(false);
-  const [showClientSelector, setShowClientSelector] = useState(false);
-  const [availableClients, setAvailableClients] = useState<Client[]>([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [allClients, setAllClients] = useState<Client[]>([]);
+  const [showModal, setShowModal] = useState(false);
 
   // Carrega dados do cliente quando o card é carregado
   useEffect(() => {
     loadClientData();
   }, [card]);
 
+
   /**
    * Carrega os dados do cliente associado ao card
    */
   const loadClientData = async () => {
-    // TODO: Backend precisa retornar client_id no Card e relacionamento com Client
-    // Por enquanto, vamos simular com contact_info
-    if (card.contact_info?.client_id) {
+    if (card.client_id) {
       try {
         setLoading(true);
-        const clientData = await clientService.getById(card.contact_info.client_id);
+        const clientData = await clientService.getById(card.client_id);
         setClient(clientData);
       } catch (error) {
         console.error("Erro ao carregar cliente:", error);
@@ -52,39 +52,90 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
   };
 
   /**
-   * Atualiza campo do cliente
+   * Carrega todos os clientes (PF e PJ) quando abre o modal (uma única vez)
    */
-  const handleUpdateField = async (field: string, value: string) => {
-    if (!client) return;
+  const handleOpenModal = async () => {
+    setShowModal(true);
 
-    try {
-      await clientService.update(client.id, { [field]: value });
-      await loadClientData();
-    } catch (error) {
-      console.error(`Erro ao atualizar ${field}:`, error);
-      alert(`Erro ao atualizar ${field}`);
+    // Só carrega se ainda não carregou
+    if (allClients.length === 0) {
+      try {
+        setIsLoadingClients(true);
+        const response = await clientService.list({ page_size: 100, is_active: true });
+
+        // Filtra clientes com documento (CPF ou CNPJ)
+        const clientsWithDocument = response.clients.filter((client) => {
+          if (!client.document) return false;
+          const cleanDoc = client.document.replace(/\D/g, "");
+          // CPF tem 11 dígitos, CNPJ tem 14 dígitos
+          return cleanDoc.length === 11 || cleanDoc.length === 14;
+        });
+
+        setAllClients(clientsWithDocument);
+      } catch (error) {
+        console.error("Erro ao carregar clientes:", error);
+        alert("Erro ao carregar lista de clientes");
+      } finally {
+        setIsLoadingClients(false);
+      }
     }
   };
 
   /**
-   * Vincula um cliente existente ao card
+   * Filtra clientes localmente com base no termo de busca
+   */
+  const filteredClients = allClients.filter((c) => {
+    if (!searchTerm.trim()) return true;
+
+    const search = searchTerm.toLowerCase().trim();
+    const cleanSearch = searchTerm.replace(/\D/g, "");
+
+    // Busca em nome da empresa
+    const matchesCompanyName = c.company_name
+      ? c.company_name.toLowerCase().includes(search)
+      : false;
+
+    // Busca em nome do contato
+    const matchesName = c.name
+      ? c.name.toLowerCase().includes(search)
+      : false;
+
+    // Busca em CPF/CNPJ (apenas números)
+    const matchesDocument = c.document && cleanSearch.length > 0
+      ? c.document.replace(/\D/g, "").includes(cleanSearch)
+      : false;
+
+    return matchesCompanyName || matchesName || matchesDocument;
+  });
+
+  /**
+   * Vincula um cliente ao card
    */
   const handleLinkClient = async (clientId: number) => {
     try {
-      // TODO: Backend precisa aceitar client_id no Card
-      // Por enquanto, salvamos no contact_info
+      setLoading(true);
+
       await cardService.update(card.id, {
-        contact_info: {
-          ...card.contact_info,
-          client_id: clientId,
-        },
+        client_id: clientId,
       });
-      setShowClientSelector(false);
+
+      setSearchTerm("");
+      setShowModal(false);
       onUpdate();
     } catch (error) {
       console.error("Erro ao vincular cliente:", error);
-      alert("Erro ao vincular cliente");
+      alert("Erro ao vincular cliente. Verifique o console para mais detalhes.");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  /**
+   * Fecha o modal e limpa a busca
+   */
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSearchTerm("");
   };
 
   /**
@@ -94,11 +145,8 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
     if (!confirm("Desvincular este cliente do negócio?")) return;
 
     try {
-      const newContactInfo = { ...card.contact_info };
-      delete newContactInfo.client_id;
-
       await cardService.update(card.id, {
-        contact_info: newContactInfo,
+        client_id: null,
       });
       onUpdate();
     } catch (error) {
@@ -108,152 +156,144 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
   };
 
   /**
-   * Carrega lista de clientes para seleção
+   * Formata CPF ou CNPJ
    */
-  const handleOpenClientSelector = async () => {
-    try {
-      const response = await clientService.list({ page_size: 50, is_active: true });
-      setAvailableClients(response.clients);
-      setShowClientSelector(true);
-    } catch (error) {
-      console.error("Erro ao carregar clientes:", error);
-      alert("Erro ao carregar lista de clientes");
+  const formatDocument = (document: string | undefined) => {
+    if (!document) return "";
+    const cleaned = document.replace(/\D/g, "");
+
+    // CPF: 000.000.000-00 (11 dígitos)
+    if (cleaned.length === 11) {
+      return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
     }
+
+    // CNPJ: 00.000.000/0000-00 (14 dígitos)
+    if (cleaned.length === 14) {
+      return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+    }
+
+    // Retorna sem formatação se não for CPF nem CNPJ
+    return document;
   };
 
   /**
-   * Formata CNPJ
+   * Formata telefone
    */
-  const formatCNPJ = (cnpj: string | undefined) => {
-    if (!cnpj) return "";
-    // Remove caracteres não numéricos
-    const cleaned = cnpj.replace(/\D/g, "");
-    // Formata: 00.000.000/0000-00
-    return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+  const formatPhone = (phone: string | null | undefined) => {
+    if (!phone) return "Não informado";
+    return phone;
   };
-
-  /**
-   * Filtra clientes com base no termo de busca
-   */
-  const filteredClients = availableClients.filter((c) =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.document?.includes(searchTerm)
-  );
 
   // Se não há cliente vinculado
   if (!client && !loading) {
     return (
-      <ExpandableSection
-        title="Cliente (Organização)"
-        defaultExpanded={true}
-        icon={<Building2 size={18} />}
-      >
-        <div className="space-y-3">
-          <p className="text-sm text-slate-400 text-center py-4">
-            Nenhum cliente vinculado a este negócio
-          </p>
+      <>
+        <ExpandableSection
+          title="Cliente (Organização)"
+          defaultExpanded={true}
+          icon={<Building2 size={18} />}
+        >
+          <div className="space-y-3">
+            <p className="text-sm text-slate-400 text-center py-2">
+              Nenhum cliente vinculado a este negócio
+            </p>
 
-          <div className="flex gap-2">
+            {/* Botão para abrir modal */}
             <button
-              onClick={handleOpenClientSelector}
-              className="flex-1 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              onClick={handleOpenModal}
+              className="w-full px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
             >
               <ExternalLink size={16} />
-              Vincular cliente existente
-            </button>
-
-            <button
-              onClick={() => setIsCreatingClient(true)}
-              className="flex-1 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              <Plus size={16} />
-              Criar novo cliente
+              Vincular cliente
             </button>
           </div>
+        </ExpandableSection>
 
-          {/* Modal de seleção de cliente */}
-          {showClientSelector && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-                <h3 className="text-xl font-semibold text-white mb-4">Selecionar Cliente</h3>
+        {/* Modal de busca (renderizado no body via Portal) */}
+        {showModal && ReactDOM.createPortal(
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={handleCloseModal}
+          >
+            <div
+              className="bg-slate-800 border border-slate-700 rounded-lg w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="font-semibold text-white">Vincular Cliente</h3>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
-                {/* Campo de busca */}
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar por nome, empresa ou CNPJ..."
-                  className="px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 mb-4"
-                  autoFocus
-                />
+              {/* Campo de busca dentro do modal */}
+              <div className="p-4 border-b border-slate-700">
+                <div className="relative">
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por nome, CPF ou CNPJ..."
+                    className="w-full pl-10 pr-10 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    autoFocus
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
 
-                {/* Lista de clientes */}
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  {filteredClients.length === 0 ? (
-                    <p className="text-sm text-slate-400 text-center py-8">
-                      Nenhum cliente encontrado
-                    </p>
-                  ) : (
-                    filteredClients.map((c) => (
+              {/* Resultados */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {isLoadingClients ? (
+                  <div className="p-8 text-center text-sm text-slate-400">
+                    Carregando clientes...
+                  </div>
+                ) : filteredClients.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-slate-400">
+                    {searchTerm
+                      ? "Nenhum cliente encontrado com esse critério"
+                      : allClients.length === 0
+                      ? "Nenhum cliente cadastrado"
+                      : "Digite para buscar"}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredClients.map((c) => (
                       <button
                         key={c.id}
                         onClick={() => handleLinkClient(c.id)}
                         className="w-full p-3 bg-slate-900/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-left transition-colors"
                       >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-medium text-white">{c.name}</p>
-                            {c.company_name && (
-                              <p className="text-sm text-slate-400">{c.company_name}</p>
-                            )}
-                            {c.document && (
-                              <p className="text-xs text-slate-500 mt-1">
-                                {formatCNPJ(c.document)}
-                              </p>
-                            )}
-                          </div>
-                          <ExternalLink size={16} className="text-slate-500" />
-                        </div>
+                        <p className="font-medium text-white">{c.company_name || c.name}</p>
+                        {c.document && (
+                          <p className="text-xs text-slate-400 mt-1">
+                            {formatDocument(c.document)}
+                          </p>
+                        )}
                       </button>
-                    ))
-                  )}
-                </div>
-
-                {/* Botão fechar */}
-                <button
-                  onClick={() => {
-                    setShowClientSelector(false);
-                    setSearchTerm("");
-                  }}
-                  className="mt-4 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
-                >
-                  Fechar
-                </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-          )}
-
-          {/* TODO: Modal de criação de novo cliente */}
-          {isCreatingClient && (
-            <div className="p-4 bg-slate-800/30 border border-slate-700/50 rounded-lg">
-              <p className="text-sm text-slate-400">
-                Formulário de criação de cliente (será implementado)
-              </p>
-              <button
-                onClick={() => setIsCreatingClient(false)}
-                className="mt-2 text-sm text-blue-400 hover:text-blue-300"
-              >
-                Cancelar
-              </button>
-            </div>
-          )}
-        </div>
-      </ExpandableSection>
+          </div>,
+          document.body
+        )}
+      </>
     );
   }
 
-  // Se há cliente vinculado
+  // Se há cliente vinculado - exibir apenas read-only
   return (
     <ExpandableSection
       title="Cliente (Organização)"
@@ -267,105 +307,80 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
       ) : (
         <div className="space-y-4">
           {/* Nome da Empresa */}
-          <EditableField
-            label="Nome da empresa"
-            value={client?.company_name || client?.name}
-            onSave={(value) => handleUpdateField("company_name", value)}
-            type="text"
-            placeholder="Nome da empresa"
-            icon={<Building2 size={14} />}
-          />
-
-          {/* CNPJ */}
-          <EditableField
-            label="CNPJ"
-            value={client?.document}
-            onSave={(value) => handleUpdateField("document", value)}
-            type="text"
-            placeholder="00.000.000/0000-00"
-            format={formatCNPJ}
-          />
-
-          {/* Endereço */}
-          <EditableField
-            label="Endereço completo"
-            value={client?.address}
-            onSave={(value) => handleUpdateField("address", value)}
-            type="textarea"
-            placeholder="Rua, Número, Complemento, Bairro"
-          />
-
-          {/* Cidade/Estado */}
-          <div className="grid grid-cols-2 gap-3">
-            <EditableField
-              label="Cidade"
-              value={client?.city}
-              onSave={(value) => handleUpdateField("city", value)}
-              type="text"
-              placeholder="Cidade"
-            />
-            <EditableField
-              label="Estado"
-              value={client?.state}
-              onSave={(value) => handleUpdateField("state", value)}
-              type="text"
-              placeholder="UF"
-            />
-          </div>
-
-          {/* Telefone */}
-          <EditableField
-            label="Telefone principal"
-            value={client?.phone}
-            onSave={(value) => handleUpdateField("phone", value)}
-            type="tel"
-            placeholder="(00) 0000-0000"
-          />
-
-          {/* E-mail */}
-          <EditableField
-            label="E-mail corporativo"
-            value={client?.email}
-            onSave={(value) => handleUpdateField("email", value)}
-            type="email"
-            placeholder="contato@empresa.com.br"
-          />
-
-          {/* Website */}
-          <EditableField
-            label="Website"
-            value={client?.website}
-            onSave={(value) => handleUpdateField("website", value)}
-            type="url"
-            placeholder="https://www.empresa.com.br"
-          />
-
-          {/* Campos futuros (placeholders) */}
-          <div className="pt-3 border-t border-slate-700/50 space-y-2">
-            <p className="text-xs text-slate-500 italic">
-              Campos adicionais (a implementar no backend):
-            </p>
-            <div className="text-xs text-slate-600">
-              • Segmento/Setor de atuação
-              <br />
-              • Número de funcionários
-              <br />• Faturamento anual
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
+              <Building2 size={14} className="text-slate-400" />
+              <span>Nome da empresa</span>
+            </div>
+            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+              <p className="text-white">{client?.company_name || client?.name || "Não informado"}</p>
             </div>
           </div>
+
+          {/* CPF/CNPJ */}
+          {client?.document && (
+            <div className="space-y-1">
+              <div className="text-sm font-medium text-slate-300">
+                {client.document.replace(/\D/g, "").length === 11 ? "CPF" : "CNPJ"}
+              </div>
+              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+                <p className="text-white">{formatDocument(client.document)}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Endereço */}
+          {client?.address && (
+            <div className="space-y-1">
+              <div className="text-sm font-medium text-slate-300">Endereço</div>
+              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+                <p className="text-white text-sm">{client.address}</p>
+                {(client.city || client.state) && (
+                  <p className="text-slate-400 text-sm mt-1">
+                    {client.city}{client.city && client.state && " - "}{client.state}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Contato */}
+          {(client?.phone || client?.email) && (
+            <div className="space-y-1">
+              <div className="text-sm font-medium text-slate-300">Contato</div>
+              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-1">
+                {client?.phone && (
+                  <p className="text-white text-sm">{formatPhone(client.phone)}</p>
+                )}
+                {client?.email && (
+                  <p className="text-blue-400 text-sm">{client.email}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Website */}
+          {client?.website && (
+            <div className="space-y-1">
+              <div className="text-sm font-medium text-slate-300">Website</div>
+              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+                <a
+                  href={client.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 text-sm hover:underline"
+                >
+                  {client.website}
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* Ações */}
           <div className="pt-3 border-t border-slate-700/50 space-y-2">
             <ActionButton
-              icon={<History size={16} />}
-              label="Histórico de negócios"
-              onClick={() => alert("Ver histórico - será implementado")}
-              variant="secondary"
-              className="w-full"
-            />
-
-            <ActionButton
               icon={<ExternalLink size={16} />}
-              label="Página completa do cliente"
+              label="Ver página completa do cliente"
               onClick={() => alert(`Navegar para /clients/${client?.id} - será implementado`)}
               variant="primary"
               className="w-full"

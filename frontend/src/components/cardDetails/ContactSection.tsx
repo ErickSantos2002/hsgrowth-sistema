@@ -1,8 +1,7 @@
 import React from "react";
-import { User, Mail, Phone, Briefcase, Linkedin, MessageCircle, ExternalLink } from "lucide-react";
+import { User, Mail, Phone, Briefcase, Linkedin, MessageCircle } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
 import EditableField from "./EditableField";
-import ActionButton from "./ActionButton";
 import { Card } from "../../types";
 import cardService from "../../services/cardService";
 
@@ -50,56 +49,6 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
       return cleaned.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
     }
     return phone;
-  };
-
-  /**
-   * Abre WhatsApp
-   */
-  const handleWhatsApp = () => {
-    const phone = card.contact_info?.phone_whatsapp || card.contact_info?.phone;
-    if (!phone) {
-      alert("Número de WhatsApp não cadastrado");
-      return;
-    }
-    const cleaned = phone.replace(/\D/g, "");
-    window.open(`https://wa.me/55${cleaned}`, "_blank");
-  };
-
-  /**
-   * Abre e-mail
-   */
-  const handleEmail = () => {
-    const email = card.contact_info?.email_commercial || card.contact_info?.email;
-    if (!email) {
-      alert("E-mail não cadastrado");
-      return;
-    }
-    window.open(`mailto:${email}`, "_blank");
-  };
-
-  /**
-   * Abre LinkedIn
-   */
-  const handleLinkedIn = () => {
-    const linkedin = card.contact_info?.linkedin;
-    if (!linkedin) {
-      alert("LinkedIn não cadastrado");
-      return;
-    }
-    window.open(linkedin, "_blank");
-  };
-
-  /**
-   * Inicia ligação (placeholder)
-   */
-  const handleCall = () => {
-    const phone = card.contact_info?.phone_commercial || card.contact_info?.phone;
-    if (!phone) {
-      alert("Telefone não cadastrado");
-      return;
-    }
-    // TODO: Integração com sistema de telefonia
-    alert(`Ligando para ${formatPhone(phone)} - Integração com telefonia será implementada`);
   };
 
   return (
@@ -236,54 +185,6 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               placeholder="https://facebook.com/perfil"
             />
           </div>
-        </div>
-
-        {/* Botões de Ação Rápida */}
-        <div className="pt-3 border-t border-slate-700/50">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-            Ações Rápidas
-          </h4>
-
-          <div className="grid grid-cols-2 gap-2">
-            <ActionButton
-              icon={<Phone size={16} />}
-              label="Ligar"
-              onClick={handleCall}
-              variant="primary"
-            />
-
-            <ActionButton
-              icon={<MessageCircle size={16} />}
-              label="WhatsApp"
-              onClick={handleWhatsApp}
-              variant="success"
-            />
-
-            <ActionButton
-              icon={<Mail size={16} />}
-              label="E-mail"
-              onClick={handleEmail}
-              variant="secondary"
-            />
-
-            <ActionButton
-              icon={<Linkedin size={16} />}
-              label="LinkedIn"
-              onClick={handleLinkedIn}
-              variant="primary"
-            />
-          </div>
-        </div>
-
-        {/* Link para página completa da pessoa */}
-        <div className="pt-3 border-t border-slate-700/50">
-          <ActionButton
-            icon={<ExternalLink size={16} />}
-            label="Ver perfil completo"
-            onClick={() => alert("Página completa da pessoa - será implementada")}
-            variant="secondary"
-            className="w-full"
-          />
         </div>
       </div>
     </ExpandableSection>

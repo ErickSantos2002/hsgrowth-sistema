@@ -149,15 +149,15 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
           format={formatDate}
         />
 
-        {/* Tags/Etiquetas (Por enquanto placeholder) */}
+        {/* Tags/Etiquetas (Em desenvolvimento) */}
         <div className="space-y-1">
           <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
             <Tag size={14} className="text-slate-400" />
             <span>Tags</span>
           </div>
-          <div className="px-3 py-2 border border-slate-700 rounded-lg bg-slate-900/30">
-            <p className="text-sm text-slate-500 italic">
-              Nenhuma tag adicionada
+          <div className="px-3 py-2 border border-amber-700/50 rounded-lg bg-amber-900/10">
+            <p className="text-sm text-amber-400/80 italic">
+              Em desenvolvimento
             </p>
           </div>
         </div>

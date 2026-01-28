@@ -48,6 +48,9 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     # Informações de contato (JSON)
     contact_info = Column(JSON, nullable=True)  # Dados de contato: nome, email, telefone, empresa, etc
 
+    # Informações de pagamento (JSON)
+    payment_info = Column(JSON, nullable=True)  # Condições de pagamento: forma, parcelas, observações
+
     # Relacionamentos
     list = relationship("List", back_populates="cards")
     client = relationship("Client", back_populates="cards")

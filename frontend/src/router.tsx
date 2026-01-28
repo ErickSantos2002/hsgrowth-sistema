@@ -10,6 +10,7 @@ import Boards from './pages/Boards';
 import KanbanBoard from './pages/KanbanBoard';
 import CardDetails from './pages/CardDetails';
 import Clients from './pages/Clients';
+import Products from './pages/Products';
 import Gamification from './pages/Gamification';
 import Transfers from './pages/Transfers';
 import Reports from './pages/Reports';
@@ -57,6 +58,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/boards/:boardId" element={<KanbanBoard />} />
       <Route path="/cards/:cardId" element={<CardDetails />} />
       <Route path="/clients" element={<Clients />} />
+      <Route path="/products" element={<Products />} />
       <Route path="/gamification" element={<Gamification />} />
       <Route path="/transfers" element={<Transfers />} />
       <Route path="/reports" element={<Reports />} />

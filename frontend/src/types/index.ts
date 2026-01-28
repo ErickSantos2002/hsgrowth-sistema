@@ -72,6 +72,7 @@ export interface List {
 export interface Card {
   id: number;
   list_id: number;
+  client_id: number | null;
   assigned_to_id: number | null;
   title: string;
   description: string | null;
@@ -79,6 +80,11 @@ export interface Card {
   value: number | null;
   due_date: string | null;
   contact_info: Record<string, any> | null;
+  payment_info: {
+    payment_method?: string;
+    installments?: number;
+    notes?: string;
+  } | null;
   is_won: boolean;
   is_lost: boolean;
   won_at: string | null;
@@ -90,11 +96,18 @@ export interface Card {
   assigned_to_name: string | null;
   list_name: string | null;
   board_id: number | null;
+  client_name: string | null;
 
   // Relacionamentos opcionais (quando expandido)
   list?: List;
   assigned_to?: User;
+  client?: Client;
   field_values?: CardFieldValue[];
+  pending_tasks?: any[];
+  notes?: any[];
+  recent_activities?: any[];
+  products?: any[];
+  custom_field_values?: any[];
 }
 
 export interface CardListResponse {
