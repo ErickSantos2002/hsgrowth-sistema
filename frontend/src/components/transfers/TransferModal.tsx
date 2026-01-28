@@ -517,7 +517,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
               { value: "0", label: "Selecione um usuário" },
               ...users.map((user) => ({
                 value: String(user.id),
-                label: `${user.name} (${user.email})`,
+                label: user.name,
               })),
             ]}
             onChange={(value) => {
