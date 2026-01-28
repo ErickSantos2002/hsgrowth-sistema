@@ -17,6 +17,8 @@ class ContactInfo(BaseModel):
     # Informações básicas
     name: Optional[str] = Field(None, max_length=255, description="Nome do contato")
     position: Optional[str] = Field(None, max_length=255, description="Cargo do contato")
+    client_id: Optional[int] = Field(None, description="ID da organização vinculada")
+    probability: Optional[int] = Field(None, ge=0, le=100, description="Probabilidade de fechamento (%)")
 
     # Emails (campo legado + campos específicos)
     email: Optional[EmailStr] = Field(None, description="Email principal (legado)")
@@ -97,6 +99,28 @@ class ContactInfo(BaseModel):
     }
 
 
+class PaymentInfo(BaseModel):
+    """
+    Schema estruturado para informações de pagamento do card.
+    Define condições comerciais acordadas com o cliente.
+    """
+    payment_method: Optional[str] = Field(None, max_length=50, description="Forma de pagamento (Boleto, Cartão, PIX, etc)")
+    installments: Optional[int] = Field(None, ge=1, le=120, description="Número de parcelas")
+    notes: Optional[str] = Field(None, description="Observações sobre o pagamento")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "payment_method": "Boleto",
+                    "installments": 6,
+                    "notes": "Primeira parcela em 30 dias, sem juros"
+                }
+            ]
+        }
+    }
+
+
 class CardBase(BaseModel):
     """
     Schema base de card (campos comuns).
@@ -150,6 +174,7 @@ class CardUpdate(BaseModel):
     value: Optional[float] = Field(None, ge=0, description="Valor monetário do card")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     contact_info: Optional[ContactInfo] = Field(None, description="Informações de contato estruturadas")
+    payment_info: Optional[PaymentInfo] = Field(None, description="Informações de pagamento/condições comerciais")
     is_won: Optional[bool] = Field(None, description="Card ganho (venda fechada)")
     is_lost: Optional[bool] = Field(None, description="Card perdido")
 
@@ -217,6 +242,7 @@ class CardResponse(CardBase):
     value: Optional[float] = Field(None, description="Valor monetário")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     contact_info: Optional[ContactInfo] = Field(None, description="Informações de contato estruturadas")
+    payment_info: Optional[PaymentInfo] = Field(None, description="Informações de pagamento/condições comerciais")
     is_won: bool = Field(..., description="Card ganho")
     is_lost: bool = Field(..., description="Card perdido")
     won_at: Optional[datetime] = Field(None, description="Data de vitória")

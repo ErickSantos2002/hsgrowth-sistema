@@ -52,4 +52,4 @@ class CardProduct(Base, TimestampMixin):
     @property
     def total(self) -> float:
         """Calcula o total (subtotal - desconto)"""
-        return float(self.subtotal - self.discount)
+        return self.subtotal - float(self.discount)

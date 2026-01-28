@@ -379,7 +379,11 @@ const CardDetails: React.FC = () => {
         <div className="w-[30%] border-r border-slate-700/50 overflow-y-auto overflow-x-hidden min-h-0">
           <div className="p-6 space-y-4 min-h-full">
             {/* Seção: Resumo */}
-            <SummarySection card={card} onUpdate={loadCardData} hasProducts={false} />
+            <SummarySection
+              card={card}
+              onUpdate={loadCardData}
+              hasProducts={((card as any).products?.length || 0) > 0}
+            />
 
             {/* Seção: Cliente (Organização) */}
             <ClientSection card={card} onUpdate={loadCardData} />

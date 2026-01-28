@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 import math
 
 from app.repositories.product_repository import ProductRepository
+from app.repositories.card_repository import CardRepository
 from app.models.product import Product
 from app.models.card_product import CardProduct
 from app.models.user import User
@@ -186,7 +187,9 @@ class ProductService:
         card_product = self.repository.add_product_to_card(card_id, card_product_data)
 
         # TODO: Criar evento de auditoria
-        # TODO: Atualizar valor total do card
+
+        # Atualiza o valor total do card
+        self._sync_card_value_with_products(card_id)
 
         return self._build_card_product_response(card_product)
 
@@ -228,7 +231,9 @@ class ProductService:
         )
 
         # TODO: Criar evento de auditoria
-        # TODO: Atualizar valor total do card
+
+        # Atualiza o valor total do card
+        self._sync_card_value_with_products(card_product.card_id)
 
         return self._build_card_product_response(updated_card_product)
 
@@ -248,6 +253,9 @@ class ProductService:
 
         # TODO: Verificar permissões
 
+        # Guarda o card_id antes de remover
+        card_id = card_product.card_id
+
         success = self.repository.remove_product_from_card(card_product_id)
 
         if not success:
@@ -257,11 +265,29 @@ class ProductService:
             )
 
         # TODO: Criar evento de auditoria
-        # TODO: Atualizar valor total do card
+
+        # Atualiza o valor total do card
+        self._sync_card_value_with_products(card_id)
 
         return {"message": "Produto removido do card com sucesso"}
 
     # ========== HELPER METHODS ==========
+
+    def _sync_card_value_with_products(self, card_id: int) -> None:
+        """
+        Sincroniza o valor do card com o total de produtos.
+        Atualiza automaticamente o campo 'value' do card.
+        """
+        # Calcula o total de produtos
+        totals = self.repository.get_card_products_total(card_id)
+        total_value = totals["total"]
+
+        # Atualiza o valor do card
+        card_repo = CardRepository(self.db)
+        card = card_repo.find_by_id(card_id)
+        if card:
+            card.value = total_value
+            self.db.commit()
 
     def _build_product_response(self, product: Product) -> ProductResponse:
         """Constrói o schema de resposta de produto"""
