@@ -1,7 +1,7 @@
-#!/bin/bash
-# Script de inicialização do container Docker
+#!/bin/sh
+# Script de inicializaÃ§Ã£o do container Docker
 
-set -e  # Para execução ao encontrar erro
+set -e  # Para execuÃ§Ã£o ao encontrar erro
 
 echo "============================================"
 echo "HSGrowth CRM - Inicializando..."
@@ -11,10 +11,10 @@ echo "============================================"
 echo "Aguardando PostgreSQL..."
 export PGPASSWORD=$DB_PASSWORD
 while ! pg_isready -h $DB_HOST -p $DB_PORT -U $DB_USER > /dev/null 2>&1; do
-    echo "PostgreSQL não está pronto - aguardando..."
+    echo "PostgreSQL nÃ£o estÃ¡ pronto - aguardando..."
     sleep 2
 done
-echo "✓ PostgreSQL está pronto!"
+echo "âœ“ PostgreSQL estÃ¡ pronto!"
 
 # Aguarda Redis estar pronto (se configurado)
 if [ ! -z "$REDIS_HOST" ]; then
@@ -22,10 +22,10 @@ if [ ! -z "$REDIS_HOST" ]; then
     timeout=30
     while [ $timeout -gt 0 ]; do
         if redis-cli -h $REDIS_HOST -p $REDIS_PORT ping > /dev/null 2>&1; then
-            echo "✓ Redis está pronto!"
+            echo "âœ“ Redis estÃ¡ pronto!"
             break
         fi
-        echo "Redis não está pronto - aguardando..."
+        echo "Redis nÃ£o estÃ¡ pronto - aguardando..."
         sleep 2
         timeout=$((timeout-2))
     done
@@ -34,12 +34,12 @@ fi
 # Executa migrations do Alembic
 echo "Executando migrations do banco de dados..."
 alembic upgrade head
-echo "✓ Migrations concluídas!"
+echo "âœ“ Migrations concluÃ­das!"
 
 # Se for ambiente de desenvolvimento, pode rodar seed (opcional)
 if [ "$ENVIRONMENT" = "development" ] && [ "$RUN_SEED" = "true" ]; then
     echo "Executando seed do banco de dados..."
-    python scripts/seed_database.py || echo "⚠ Seed falhou ou já foi executado"
+    python scripts/seed_database.py || echo "âš  Seed falhou ou jÃ¡ foi executado"
 fi
 
 echo "============================================"
@@ -49,12 +49,12 @@ echo "Host: $HOST"
 echo "Port: $PORT"
 echo "============================================"
 
-# Inicia aplicação com Uvicorn
-# Usa diferentes configurações baseado no environment
-# UVICORN_LOG_LEVEL é definido no docker-compose.yml (em minúsculas para uvicorn)
+# Inicia aplicaÃ§Ã£o com Uvicorn
+# Usa diferentes configuraÃ§Ãµes baseado no environment
+# UVICORN_LOG_LEVEL Ã© definido no docker-compose.yml (em minÃºsculas para uvicorn)
 
 if [ "$ENVIRONMENT" = "production" ]; then
-    # Produção: múltiplos workers, sem reload
+    # ProduÃ§Ã£o: mÃºltiplos workers, sem reload
     exec uvicorn app.main:app \
         --host $HOST \
         --port $PORT \

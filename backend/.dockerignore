@@ -89,3 +89,8 @@ temp/
 # OS files
 Thumbs.db
 .DS_Store
+
+# Allow startup script
+!scripts/
+!scripts/*.sh
+!scripts/start.sh

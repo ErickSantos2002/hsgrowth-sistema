@@ -76,8 +76,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Script de inicialização
-COPY --chown=appuser:appuser scripts/start.sh /app/start.sh
-RUN chmod +x /app/start.sh
+RUN chmod +x /app/scripts/start.sh
 
 # Comando padrão
-CMD ["/app/start.sh"]
+CMD ["sh", "/app/scripts/start.sh"]
