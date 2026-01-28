@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { X, Award, Users, CheckCircle, AlertCircle } from "lucide-react";
+import { Award, Users, CheckCircle, AlertCircle } from "lucide-react";
 import { Badge } from "../../services/gamificationService";
 import { User } from "../../types";
+import BaseModal from "../common/BaseModal";
+import { Button } from "../common";
 
 interface AwardBadgeModalProps {
   isOpen: boolean;
@@ -69,31 +71,32 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
     }
   };
 
-  if (!isOpen) return null;
-
   const selectedBadgeData = badges.find((b) => b.id === selectedBadge);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-600/20 rounded-lg">
-              <Award className="text-amber-400" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Atribuir Badge</h2>
-              <p className="text-sm text-slate-400">Conceda uma badge manualmente a vendedores</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg transition-colors" disabled={loading}>
-            <X className="text-slate-400" size={20} />
-          </button>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Atribuir Badge"
+      subtitle="Conceda uma badge manualmente a vendedores"
+      size="2xl"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose} disabled={loading}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            loading={loading}
+            disabled={badges.length === 0 || users.length === 0}
+          >
+            Atribuir Badge
+          </Button>
         </div>
-
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
           {/* Erro geral */}
           {error && (
             <div className="flex items-start gap-3 p-4 bg-red-900/20 border border-red-700 rounded-lg">
@@ -211,27 +214,8 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
             )}
           </div>
 
-          {/* Botões */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
-              disabled={loading}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading || badges.length === 0 || users.length === 0}
-            >
-              {loading ? "Atribuindo..." : "Atribuir Badge"}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+    </BaseModal>
   );
 };
 
