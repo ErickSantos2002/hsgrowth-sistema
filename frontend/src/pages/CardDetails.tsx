@@ -412,7 +412,7 @@ const CardDetails: React.FC = () => {
                   <Calendar size={18} />
                   Atividade
                   <span className="ml-1 px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium border border-blue-500/30">
-                    0
+                    {card.pending_tasks?.length || 0}
                   </span>
                 </button>
 
@@ -427,7 +427,7 @@ const CardDetails: React.FC = () => {
                   <FileText size={18} />
                   Anotações
                   <span className="ml-1 px-2 py-0.5 bg-slate-700/50 text-slate-400 text-xs rounded-full font-medium border border-slate-700">
-                    0
+                    {card.notes?.length || 0}
                   </span>
                 </button>
 
@@ -482,7 +482,7 @@ const CardDetails: React.FC = () => {
               {activeTab === "anotacoes" && (
                 <NotesSection
                   cardId={card.id}
-                  notes={[]} // TODO: Carregar do backend quando implementado
+                  notes={card.notes || []}
                   onUpdate={loadCardData}
                 />
               )}

@@ -650,6 +650,21 @@ class CardService:
             for act in activities_list
         ]
 
+        # Anotações (notes)
+        from app.repositories.card_note_repository import CardNoteRepository
+        note_repo = CardNoteRepository(self.db)
+        card_notes = note_repo.get_by_card(card_id)
+        notes = [
+            {
+                "id": note.id,
+                "content": note.content,
+                "created_at": note.created_at.isoformat() if note.created_at else None,
+                "updated_at": note.updated_at.isoformat() if note.updated_at else None,
+                "user_name": note.user.name if note.user else None
+            }
+            for note in card_notes
+        ]
+
         # Busca informações relacionadas
         list_obj = self.list_repository.find_by_id(card.list_id)
         board = self.board_repository.find_by_id(list_obj.board_id) if list_obj else None
@@ -695,9 +710,16 @@ class CardService:
                 {
                     "id": task.id,
                     "title": task.title,
+                    "description": task.description,
                     "task_type": task.task_type.value if hasattr(task.task_type, 'value') else task.task_type,
                     "priority": task.priority.value if hasattr(task.priority, 'value') else task.priority,
                     "due_date": task.due_date,
+                    "duration_minutes": task.duration_minutes,
+                    "location": task.location,
+                    "video_link": task.video_link,
+                    "notes": task.notes,
+                    "contact_name": task.contact_name,
+                    "status": task.status.value if hasattr(task.status, 'value') else task.status,
                     "assigned_to_name": task.assigned_to.name if task.assigned_to else None,
                     "is_overdue": task.is_overdue
                 }
@@ -718,7 +740,8 @@ class CardService:
                 for cp in card_products
             ],
             "products_total": products_totals["total"],
-            "recent_activities": recent_activities
+            "recent_activities": recent_activities,
+            "notes": notes
         }
 
         return response_data

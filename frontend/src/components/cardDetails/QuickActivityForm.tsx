@@ -48,9 +48,9 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     duration: "30", // minutos
     priority: "normal" as "normal" | "high" | "urgent",
     description: "",
+    notes: "",
     location: "",
-    has_video_call: false,
-    status: "free" as "free" | "busy",
+    video_link: "",
     participants: [] as number[],
   });
 
@@ -124,6 +124,11 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       return;
     }
 
+    if (!formData.description.trim()) {
+      alert("Por favor, preencha a descrição da atividade");
+      return;
+    }
+
     if (!formData.date) {
       alert("Por favor, selecione uma data");
       return;
@@ -139,11 +144,12 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         task_type: formData.type,
         due_date: dueDateTimeUTC,
         priority: formData.priority,
-        description: formData.description || null,
+        description: formData.description,
+        notes: formData.notes || null,
         location: formData.location || null,
         duration_minutes: parseInt(formData.duration),
-        has_video_call: formData.has_video_call,
-        status: formData.status,
+        video_link: formData.video_link || null,
+        status: "free", // Define como "free" por padrão (campo mantido no backend)
       });
 
       // Reset form
@@ -155,9 +161,9 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         duration: "30",
         priority: "normal",
         description: "",
+        notes: "",
         location: "",
-        has_video_call: false,
-        status: "free",
+        video_link: "",
         participants: [],
       });
       setIsExpanded(false);
@@ -288,16 +294,30 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         </div>
       </div>
 
-      {/* Descrição */}
+      {/* Descrição (obrigatória) */}
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-1">
-          Descrição/Notas (opcional)
+          Descrição *
         </label>
         <textarea
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Adicionar detalhes..."
-          rows={3}
+          placeholder="Descreva a atividade..."
+          rows={2}
+          className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+        />
+      </div>
+
+      {/* Notas (opcional) */}
+      <div>
+        <label className="block text-xs font-medium text-slate-400 mb-1">
+          Notas adicionais (opcional)
+        </label>
+        <textarea
+          value={formData.notes}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          placeholder="Adicionar notas extras..."
+          rows={2}
           className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
         />
       </div>
@@ -318,41 +338,16 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
           />
         </div>
 
-        {/* Chamada de vídeo */}
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={formData.has_video_call}
-            onChange={(e) => setFormData({ ...formData, has_video_call: e.target.checked })}
-            className="w-4 h-4 rounded bg-slate-900/50 border-slate-700"
-          />
+        {/* Link de videochamada */}
+        <div className="flex items-center gap-2">
           <Video size={16} className="text-slate-500" />
-          <span className="text-sm text-slate-300">Adicionar chamada de vídeo</span>
-        </label>
-
-        {/* Status */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400">Status:</span>
-          <button
-            onClick={() => setFormData({ ...formData, status: "free" })}
-            className={`px-3 py-1 border rounded text-xs font-medium transition-colors ${
-              formData.status === "free"
-                ? "bg-green-500/30 text-green-400 border-green-500"
-                : "bg-slate-800 text-slate-400 border-slate-700"
-            }`}
-          >
-            Livre
-          </button>
-          <button
-            onClick={() => setFormData({ ...formData, status: "busy" })}
-            className={`px-3 py-1 border rounded text-xs font-medium transition-colors ${
-              formData.status === "busy"
-                ? "bg-red-500/30 text-red-400 border-red-500"
-                : "bg-slate-800 text-slate-400 border-slate-700"
-            }`}
-          >
-            Ocupado
-          </button>
+          <input
+            type="url"
+            value={formData.video_link}
+            onChange={(e) => setFormData({ ...formData, video_link: e.target.value })}
+            placeholder="Link da videochamada (Google Meet, Zoom, etc.)"
+            className="flex-1 px-3 py-1.5 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-sm"
+          />
         </div>
       </div>
 
