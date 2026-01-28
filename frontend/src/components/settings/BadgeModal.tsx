@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { X, Award, AlertCircle } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { AlertCircle, ChevronDown } from "lucide-react";
 import { Badge } from "../../services/gamificationService";
+import BaseModal from "../common/BaseModal";
+import { FormField, Input, Textarea, Button } from "../common";
 
 interface BadgeModalProps {
   isOpen: boolean;
@@ -120,39 +122,29 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
     });
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[3000] p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-600/20 rounded-lg">
-              <Award className="text-amber-400" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">
-                {mode === "create" ? "Criar Nova Badge" : "Editar Badge"}
-              </h2>
-              <p className="text-sm text-slate-400">
-                {mode === "create"
-                  ? "Crie uma badge customizada para o sistema"
-                  : "Edite as informações da badge"}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-            disabled={loading}
-          >
-            <X className="text-slate-400" size={20} />
-          </button>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={mode === "create" ? "Criar Nova Badge" : "Editar Badge"}
+      subtitle={
+        mode === "create"
+          ? "Crie uma badge customizada para o sistema"
+          : "Edite as informações da badge"
+      }
+      size="2xl"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose} disabled={loading}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} loading={loading}>
+            {mode === "create" ? "Criar Badge" : "Salvar Alterações"}
+          </Button>
         </div>
-
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
           {/* Erro geral */}
           {errors.submit && (
             <div className="flex items-start gap-3 p-4 bg-red-900/20 border border-red-700 rounded-lg">
@@ -165,43 +157,46 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
           )}
 
           {/* Nome */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Nome da Badge <span className="text-red-400">*</span>
-            </label>
-            <input
+          <FormField
+            label={
+              <span>
+                Nome da Badge <span className="text-red-400">*</span>
+              </span>
+            }
+            error={errors.name}
+          >
+            <Input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className={`w-full px-4 py-2 bg-slate-900 border ${
-                errors.name ? "border-red-500" : "border-slate-700"
-              } rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
               placeholder="Ex: Vendedor Estrela"
               maxLength={50}
               disabled={loading}
             />
             {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name}</p>}
             <p className="text-slate-500 text-xs mt-1">{formData.name.length}/50 caracteres</p>
-          </div>
+          </FormField>
 
           {/* Descrição */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Descrição <span className="text-red-400">*</span>
-            </label>
-            <textarea
+          <FormField
+            label={
+              <span>
+                Descrição <span className="text-red-400">*</span>
+              </span>
+            }
+            error={errors.description}
+          >
+            <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className={`w-full px-4 py-2 bg-slate-900 border ${
-                errors.description ? "border-red-500" : "border-slate-700"
-              } rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[80px]`}
               placeholder="Ex: Concedida ao vendedor com melhor desempenho do mês"
               maxLength={200}
+              rows={3}
               disabled={loading}
             />
             {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
             <p className="text-slate-500 text-xs mt-1">{formData.description.length}/200 caracteres</p>
-          </div>
+          </FormField>
 
           {/* Ícones sugeridos */}
           <div>
@@ -227,10 +222,13 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
           </div>
 
           {/* Tipo de Critério */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Tipo de Critério <span className="text-red-400">*</span>
-            </label>
+          <FormField
+            label={
+              <span>
+                Tipo de Critério <span className="text-red-400">*</span>
+              </span>
+            }
+          >
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -260,46 +258,44 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
                 <p className="text-xs text-slate-400 mt-1">Sistema concede por regra</p>
               </button>
             </div>
-          </div>
+          </FormField>
 
           {/* Critérios Automáticos (se selecionado) */}
           {formData.criteria_type === "automatic" && (
             <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg space-y-4">
               <p className="text-sm font-medium text-slate-300">Regra de Concessão Automática</p>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Campo */}
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Campo</label>
-                  <select
+                  <SelectMenu
                     value={formData.criteria.field || ""}
-                    onChange={(e) => handleCriteriaChange("field", e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    disabled={loading}
-                  >
-                    <option value="">Selecione</option>
-                    <option value="total_points">Total de Pontos</option>
-                    <option value="rank">Posição no Ranking</option>
-                    <option value="cards_won">Cards Ganhos</option>
-                  </select>
+                    options={[
+                      { value: "", label: "Selecione" },
+                      { value: "total_points", label: "Total de Pontos" },
+                      { value: "rank", label: "Posição no Ranking" },
+                      { value: "cards_won", label: "Cards Ganhos" },
+                    ]}
+                    onChange={(value) => handleCriteriaChange("field", value)}
+                  />
                 </div>
 
                 {/* Operador */}
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Operador</label>
-                  <select
+                  <SelectMenu
                     value={formData.criteria.operator || ""}
-                    onChange={(e) => handleCriteriaChange("operator", e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    disabled={loading}
-                  >
-                    <option value="">Selecione</option>
-                    <option value=">=">&gt;= (maior ou igual)</option>
-                    <option value=">">&gt; (maior)</option>
-                    <option value="==">== (igual)</option>
-                    <option value="<">&lt; (menor)</option>
-                    <option value="<=">&lt;= (menor ou igual)</option>
-                  </select>
+                    options={[
+                      { value: "", label: "Selecione" },
+                      { value: ">=", label: ">= (maior ou igual)" },
+                      { value: ">", label: "> (maior)" },
+                      { value: "==", label: "== (igual)" },
+                      { value: "<", label: "< (menor)" },
+                      { value: "<=", label: "<= (menor ou igual)" },
+                    ]}
+                    onChange={(value) => handleCriteriaChange("operator", value)}
+                  />
                 </div>
 
                 {/* Valor */}
@@ -335,28 +331,79 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
             </div>
           )}
 
-          {/* Botões */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
-              disabled={loading}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading}
-            >
-              {loading ? "Salvando..." : mode === "create" ? "Criar Badge" : "Salvar Alterações"}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+    </BaseModal>
   );
 };
 
 export default BadgeModal;
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="w-full flex items-center justify-between gap-3 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
