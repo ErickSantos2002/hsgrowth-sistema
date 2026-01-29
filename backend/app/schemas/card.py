@@ -37,6 +37,17 @@ class ContactInfo(BaseModel):
     instagram: Optional[str] = Field(None, max_length=500, description="URL do perfil Instagram")
     facebook: Optional[str] = Field(None, max_length=500, description="URL do perfil Facebook")
 
+    @field_validator('email', 'email_commercial', 'email_personal', 'email_alternative', mode='before')
+    @classmethod
+    def validate_email(cls, v):
+        """
+        Valida campos de email, convertendo strings vazias para None.
+        Isso evita erro de validação do EmailStr com strings vazias.
+        """
+        if v is None or v == "" or (isinstance(v, str) and v.strip() == ""):
+            return None
+        return v
+
     @field_validator('phone', 'phone_commercial', 'phone_whatsapp', 'phone_alternative', mode='before')
     @classmethod
     def validate_phone(cls, v):
