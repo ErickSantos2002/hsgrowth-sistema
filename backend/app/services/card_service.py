@@ -778,7 +778,7 @@ class CardService:
         self.db.refresh(card)
 
         # Registra atividade
-        self.activity_repository.create_activity(
+        self.activity_repository.create(
             card_id=card_id,
             user_id=current_user.id,
             activity_type="person_linked",
@@ -813,7 +813,7 @@ class CardService:
         self.db.refresh(card)
 
         # Registra atividade
-        self.activity_repository.create_activity(
+        self.activity_repository.create(
             card_id=card_id,
             user_id=current_user.id,
             activity_type="person_unlinked",

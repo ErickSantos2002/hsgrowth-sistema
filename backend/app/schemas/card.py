@@ -41,12 +41,59 @@ class ContactInfo(BaseModel):
     @classmethod
     def validate_email(cls, v):
         """
-        Valida campos de email, convertendo strings vazias para None.
-        Isso evita erro de validação do EmailStr com strings vazias.
+        Limpa e valida emails antes da validação do EmailStr.
+        Retorna None para qualquer email inválido ao invés de quebrar a validação.
         """
-        if v is None or v == "" or (isinstance(v, str) and v.strip() == ""):
+        if not v or v == '':
             return None
-        return v
+
+        try:
+            # Converte para string se necessário
+            v = str(v).strip()
+
+            # Remove caracteres inválidos comuns no início/fim
+            invalid_chars = '.><,;"\' '
+            v = v.strip(invalid_chars)
+
+            # Se ficou vazio após limpeza
+            if not v:
+                return None
+
+            # Remove caracteres HTML/especiais
+            v = v.replace('<', '').replace('>', '').replace('"', '').replace("'", '')
+
+            # Se tiver múltiplos emails, pega apenas o primeiro
+            if ',' in v or ';' in v or '  ' in v:
+                for separator in [',', ';', '  ']:
+                    if separator in v:
+                        emails = [e.strip(invalid_chars) for e in v.split(separator)]
+                        for email in emails:
+                            if '@' in email and ' ' not in email and '.' in email.split('@')[1] and len(email) > 5:
+                                return email
+                        return None
+
+            # Validação básica
+            if '@' not in v or ' ' in v:
+                return None
+
+            # Verifica se tem ponto depois do @
+            if '.' not in v.split('@')[1]:
+                return None
+
+            # Se tiver mais de um @, é inválido
+            if v.count('@') > 1:
+                return None
+
+            # Validação final simples de formato
+            parts = v.split('@')
+            if len(parts) != 2 or len(parts[0]) < 1 or len(parts[1]) < 3:
+                return None
+
+            return v
+
+        except Exception:
+            # Se qualquer erro ocorrer, retorna None ao invés de quebrar
+            return None
 
     @field_validator('phone', 'phone_commercial', 'phone_whatsapp', 'phone_alternative', mode='before')
     @classmethod
@@ -269,6 +316,8 @@ class CardResponse(CardBase):
     list_name: Optional[str] = Field(None, description="Nome da lista")
     board_id: Optional[int] = Field(None, description="ID do board")
     client_name: Optional[str] = Field(None, description="Nome do cliente/organização")
+    person_id: Optional[int] = Field(None, description="ID da pessoa vinculada")
+    person_name: Optional[str] = Field(None, description="Nome da pessoa vinculada")
     custom_fields: Optional[list] = Field(None, description="Campos customizados do card")
 
     @field_validator('value', 'position', mode='before')

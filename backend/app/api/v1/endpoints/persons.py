@@ -70,7 +70,7 @@ router = APIRouter()
 )
 async def list_persons(
     page: int = Query(1, ge=1, description="Número da página"),
-    page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
+    page_size: int = Query(50, ge=1, le=10000, description="Tamanho da página"),
     is_active: Optional[bool] = Query(None, description="Filtrar por status ativo"),
     search: Optional[str] = Query(None, description="Buscar por nome, email, telefone ou cargo"),
     organization_id: Optional[int] = Query(None, description="Filtrar por organização"),

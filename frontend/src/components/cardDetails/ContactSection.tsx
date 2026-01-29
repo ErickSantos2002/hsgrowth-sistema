@@ -111,9 +111,14 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
     try {
       setLoading(true);
       await personService.linkToCard(card.id, personId);
+
+      // Carrega os dados da pessoa recém-vinculada
+      const personData = await personService.getById(personId);
+      setPerson(personData);
+
       setSearchTerm("");
       setShowModal(false);
-      onUpdate();
+      onUpdate(); // Atualiza o card no pai
     } catch (error) {
       console.error("Erro ao vincular pessoa:", error);
       alert("Erro ao vincular pessoa. Verifique o console para mais detalhes.");
