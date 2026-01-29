@@ -4,7 +4,82 @@ Este diretório contém scripts úteis para gerenciamento do banco de dados e im
 
 ## 📋 Scripts Disponíveis
 
-### 1. `clean_database.py` - Limpar Banco de Dados
+### 1. `migrate_contact_info_to_persons.py` - Migrar contact_info para Tabela Persons (NOVO - 29/01/2026)
+
+Migra dados do campo JSON `contact_info` nos cards para a tabela relacional `persons`.
+
+**⚠️ ATENÇÃO**: Execute apenas uma vez! Já foi executado em 29/01/2026.
+
+**Quando usar:**
+- Após criar a tabela persons (migration)
+- Em ambiente de staging/dev antes de produção
+- Para restaurar dados de backup
+
+**Como usar:**
+
+```bash
+# Dentro do container do backend
+docker exec -it hsgrowth-api python scripts/migrate_contact_info_to_persons.py
+
+# Ou localmente
+cd backend
+python scripts/migrate_contact_info_to_persons.py
+```
+
+**O script irá:**
+1. Ler todos os cards com contact_info preenchido
+2. Criar registros na tabela persons (se não existir)
+3. Vincular cards às pessoas criadas (person_id)
+4. Preservar dados originais (não deleta contact_info)
+5. Exibir estatísticas ao final
+
+**Resultado da execução original:**
+- ✅ 4.043 pessoas criadas
+- ✅ 3.525 cards vinculados
+- ⚠️ 1.315 pessoas com nomes inválidos (corrigidos no próximo script)
+
+---
+
+### 2. `clean_person_names.py` - Limpar Nomes Inválidos de Pessoas (NOVO - 29/01/2026)
+
+Corrige nomes inválidos na tabela persons (emails como nome, nomes genéricos, etc).
+
+**Quando usar:**
+- Após executar `migrate_contact_info_to_persons.py`
+- Após importações em massa de dados
+- Para manutenção de qualidade de dados
+
+**Como usar:**
+
+```bash
+# Dentro do container do backend
+docker exec -it hsgrowth-api python scripts/clean_person_names.py
+
+# Ou localmente
+cd backend
+python scripts/clean_person_names.py
+```
+
+**O script irá:**
+1. Identificar nomes inválidos (emails, nomes de 1 letra, etc)
+2. Extrair nomes de emails quando possível
+3. Usar campo `position` como fallback
+4. Atualizar registros no banco
+5. Exibir estatísticas ao final
+
+**Critérios de nome inválido:**
+- Contém `@` (é um email)
+- Apenas 1 caractere
+- Apenas números
+- Nomes genéricos (`.`, `a`, `test`)
+
+**Resultado da execução original:**
+- ✅ 1.197 nomes corrigidos de 1.315 inválidos (91% sucesso)
+- ⚠️ 118 nomes não puderam ser melhorados (mantidos originais)
+
+---
+
+### 3. `clean_database.py` - Limpar Banco de Dados
 
 Limpa completamente o banco de dados, removendo todos os dados de todas as tabelas.
 

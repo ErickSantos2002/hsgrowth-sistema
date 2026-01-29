@@ -88,6 +88,17 @@ docker-compose -f docker-compose.local.yml up -d
 - Vinculação de clientes aos cards/oportunidades
 - Preparado para importação do Pipedrive
 
+### 👥 Gestão de Pessoas (Contatos)
+- Cadastro completo de pessoas de contato
+- Múltiplos emails (comercial, pessoal, alternativo)
+- Múltiplos telefones (comercial, WhatsApp, alternativo)
+- Informações profissionais (cargo, organização)
+- Redes sociais (LinkedIn, Instagram, Facebook)
+- Vinculação de pessoas aos cards/oportunidades
+- Validação robusta de emails (trata casos especiais)
+- Busca avançada por nome, email, telefone, cargo
+- **Migração completa de contact_info (JSON) para tabela relacional** (29/01/2026)
+
 ### 📊 Boards e Listas (Kanban)
 - Quadros personalizados por equipe
 - Listas customizáveis com reordenação
@@ -274,6 +285,17 @@ backend/
 - Vinculação a cards
 - Preparado para importação do Pipedrive
 
+**Person (Pessoa/Contato)**
+- Pessoas de contato dentro de organizações
+- Múltiplos emails (comercial, pessoal, alternativo) - validação robusta
+- Múltiplos telefones (comercial, WhatsApp, alternativo)
+- Informações profissionais (cargo, organização)
+- Redes sociais (LinkedIn, Instagram, Facebook)
+- **Vinculado a cards** (person_id)
+- Relacionamento com organização (Client)
+- Status ativo/inativo
+- Migrado de contact_info (JSON) para tabela relacional
+
 **Board (Quadro)**
 - Quadros Kanban por equipe
 - Múltiplos boards por conta
@@ -287,6 +309,7 @@ backend/
 **Card (Cartão/Oportunidade)**
 - Título, descrição, valor monetário
 - **Vinculado a um cliente** (client_id)
+- **Vinculado a uma pessoa de contato** (person_id) - NOVO 29/01/2026
 - Atribuído a um vendedor
 - Status: aberto, ganho, perdido
 - Datas de vencimento e fechamento
@@ -457,6 +480,24 @@ docker-compose exec api python scripts/seed_database.py
 - `PUT /api/v1/users/{id}` - Atualizar usuário
 - `DELETE /api/v1/users/{id}` - Deletar usuário
 
+### Clientes
+- `GET /api/v1/clients` - Listar clientes
+- `POST /api/v1/clients` - Criar cliente
+- `GET /api/v1/clients/{id}` - Buscar cliente
+- `PUT /api/v1/clients/{id}` - Atualizar cliente
+- `DELETE /api/v1/clients/{id}` - Deletar cliente
+
+### Pessoas (NOVO - 29/01/2026)
+- `GET /api/v1/persons` - Listar pessoas (com filtros e paginação até 10.000)
+- `POST /api/v1/persons` - Criar pessoa
+- `GET /api/v1/persons/{id}` - Buscar pessoa
+- `PUT /api/v1/persons/{id}` - Atualizar pessoa
+- `DELETE /api/v1/persons/{id}` - Deletar pessoa
+- `PATCH /api/v1/persons/{id}/status` - Alterar status (ativo/inativo)
+- `GET /api/v1/persons/organization/{id}` - Listar pessoas de uma organização
+- `POST /api/v1/cards/{card_id}/person/link` - Vincular pessoa ao card
+- `DELETE /api/v1/cards/{card_id}/person/unlink` - Desvincular pessoa do card
+
 ### Boards
 - `GET /api/v1/boards` - Listar boards
 - `POST /api/v1/boards` - Criar board
@@ -594,6 +635,9 @@ docker-compose restart
 ## 📚 Documentação Adicional
 
 - **Correções de Testes**: `Documentação/CORREÇÕES_TESTES_08_01_2026.md`
+- **Migração contact_info → Persons**: `MIGRATION_CONTACT_INFO_TO_PERSONS.md` (29/01/2026)
+- **Estrutura do Banco de Dados**: `docs/DATABASE_STRUCTURE.md`
+- **Guia de Scripts**: `scripts/README.md`
 - **Migrations**: Ver pasta `alembic/versions/`
 - **Swagger/OpenAPI**: Acesse `http://localhost:8000/docs` após iniciar a API
 

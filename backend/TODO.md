@@ -616,9 +616,9 @@
 
 ---
 
-**Status**: 🟡 **EM MANUTENÇÃO - Correções de Infraestrutura**
-**Progresso**: **18 de 18 fases concluídas (100%) + Correções em andamento**
-**Última atualização**: 06/01/2026
+**Status**: ✅ **PRODUÇÃO - Migração Persons Concluída**
+**Progresso**: **20 de 20 fases concluídas (100%)**
+**Última atualização**: 29/01/2026
 
 ---
 
@@ -749,18 +749,160 @@ docker-compose up -d --build api
 
 ---
 
+## ✅ FASE 20: Migração contact_info → Tabela Persons (CONCLUÍDA - 29/01/2026)
+
+### 20.1 Estrutura do Banco de Dados
+- [x] Criada tabela `persons` com todos os campos
+  - Múltiplos emails (email, email_commercial, email_personal, email_alternative)
+  - Múltiplos telefones (phone, phone_commercial, phone_whatsapp, phone_alternative)
+  - Informações profissionais (position, organization_id)
+  - Redes sociais (linkedin, instagram, facebook)
+  - Relacionamentos (owner_id, organization_id)
+  - Status (is_active)
+
+- [x] Adicionada coluna `person_id` em `cards`
+  - Relacionamento many-to-one (card → person)
+  - Índice para performance
+
+- [x] Constraints de unicidade
+  - email_commercial UNIQUE
+  - email_personal UNIQUE
+  - email_alternative UNIQUE
+
+- [x] Índices de performance
+  - idx_persons_organization_id
+  - idx_persons_owner_id
+  - idx_persons_name
+  - idx_persons_is_active
+  - idx_cards_person_id
+
+### 20.2 Backend - Models, Schemas e Validações
+- [x] Criado `app/models/person.py` - Modelo SQLAlchemy
+- [x] Criado `app/schemas/person.py` - Schemas Pydantic
+  - PersonBase, PersonCreate, PersonUpdate, PersonResponse, PersonListResponse
+  - **Validador robusto de emails** com 20+ regras (trata casos especiais)
+
+- [x] Modificado `app/schemas/card.py`
+  - Adicionado person_id em CardBase
+  - Adicionado person_id e person_name em CardResponse
+  - Adicionado validador robusto em ContactInfo (compatibilidade)
+
+### 20.3 Backend - Repositories e Services
+- [x] Criado `app/repositories/person_repository.py`
+  - CRUD completo
+  - Listagem com paginação e filtros
+  - Validação de emails únicos
+
+- [x] Criado `app/services/person_service.py`
+  - Lógica de negócio
+  - Integração com CardService
+
+- [x] Modificado `app/services/card_service.py`
+  - link_person_to_card()
+  - unlink_person_from_card()
+  - Logging de atividades
+  - **Corrigido**: create_activity → create
+
+### 20.4 Backend - API Endpoints
+- [x] Criado `app/api/v1/endpoints/persons.py`
+  - GET /persons - Listar (page_size até 10.000)
+  - POST /persons - Criar
+  - GET /persons/{id} - Buscar
+  - PUT /persons/{id} - Atualizar
+  - DELETE /persons/{id} - Deletar
+  - PATCH /persons/{id}/status - Alterar status
+  - GET /persons/organization/{id} - Listar por organização
+
+- [x] Modificado `app/api/v1/endpoints/cards.py`
+  - POST /cards/{card_id}/person/link
+  - DELETE /cards/{card_id}/person/unlink
+
+- [x] Modificado `app/api/v1/endpoints/clients.py`
+  - **Aumentado page_size**: 100 → 10.000
+
+### 20.5 Backend - Scripts de Migração
+- [x] Criado `scripts/migrate_contact_info_to_persons.py`
+  - Migra contact_info (JSON) → tabela persons
+  - **Resultado**: 4.043 pessoas criadas, 3.525 cards vinculados
+
+- [x] Criado `scripts/clean_person_names.py`
+  - Limpa nomes inválidos (emails, nomes de 1 letra, etc)
+  - **Resultado**: 1.197 nomes corrigidos de 1.315 (91% sucesso)
+
+### 20.6 Frontend - Services
+- [x] Criado `frontend/src/services/personService.ts`
+  - CRUD completo
+  - Integração com API de persons
+  - Vinculação/desvinculação de card
+
+### 20.7 Frontend - Pages
+- [x] Criado `frontend/src/pages/Persons.tsx`
+  - Listagem de pessoas
+  - Filtros (status, busca)
+  - **Otimizado**: 1 request (page_size: 10.000) vs 50+ requests
+
+- [x] Modificado `frontend/src/pages/Clients.tsx`
+  - **Otimizado**: 1 request (page_size: 10.000) vs 50+ requests
+
+### 20.8 Frontend - Components
+- [x] Criado `frontend/src/components/cardDetails/ContactSection.tsx`
+  - Exibe dados da pessoa vinculada
+  - Modal de busca e vinculação
+  - Desvinculação de pessoa
+  - **Corrigido**: fetch imediato após vincular
+
+### 20.9 Documentação
+- [x] Criado `MIGRATION_CONTACT_INFO_TO_PERSONS.md`
+  - Documentação completa da migração
+  - Problemas encontrados e soluções
+  - Estatísticas detalhadas
+  - Guia de deploy
+
+- [x] Atualizado `README.md`
+  - Adicionada seção de Gestão de Pessoas
+  - Atualizado modelo de dados
+  - Adicionados endpoints de persons
+
+- [x] Atualizado `scripts/README.md`
+  - Documentados novos scripts de migração
+
+### 20.10 Melhorias de Performance
+- [x] **API endpoints**: page_size 100 → 10.000
+- [x] **Frontend**: 50+ requests → 1 request por página
+- [x] **Resultado**: +98% redução de requisições
+
+### 20.11 Qualidade de Dados
+- [x] **Validação robusta de emails**: 20+ regras
+- [x] **Nomes corrigidos**: 1.197 de 1.315 (91%)
+- [x] **Emails únicos**: Constraints no banco
+- [x] **Dados centralizados**: Zero duplicação
+
+### 20.12 Estatísticas da Migração
+- ✅ **4.043 pessoas** migradas de contact_info
+- ✅ **3.525 cards** vinculados a pessoas
+- ✅ **1.197 nomes** corrigidos
+- ✅ **~12.000 emails** processados e validados
+- ✅ **98% redução** de requisições (performance)
+- ✅ **25 arquivos** criados/modificados
+- ✅ **~3.500 linhas** de código
+
+---
+
 ## 🎉 Resumo do Projeto
 
-O backend do HSGrowth CRM está **100% implementado** com todas as 18 fases concluídas!
+O backend do HSGrowth CRM está **100% implementado** com todas as 20 fases concluídas!
 
 ### ✨ Destaques da Implementação
 
-- **18 fases** implementadas com sucesso
+- **20 fases** implementadas com sucesso
 - **140+ testes** automatizados (unitários e integração)
 - **5 serviços** Docker orquestrados (API, PostgreSQL, Redis, Celery Worker, Celery Beat)
 - **9 cron jobs** para tarefas periódicas
 - **Multi-tenant** com isolamento completo por conta
 - **Gamificação** completa (pontos, badges, rankings)
 - **Automações** trigger e agendadas
+- **Gestão de Pessoas** (migração de JSON para tabela relacional - 29/01/2026)
+- **4.043 pessoas** migradas com sucesso
+- **Performance otimizada** (+98% redução de requisições)
 - **Documentação Swagger** rica e detalhada
 - **Deploy Docker** funcional e pronto para produção

@@ -4,16 +4,19 @@
 
 ## 📋 Status do Projeto
 
-**Status:** ✅ Frontend Base Implementado (08/01/2026)
+**Status:** ✅ v2.0 - Gestão de Pessoas Implementada (29/01/2026)
 
 - ✅ Estrutura base do projeto configurada
 - ✅ Autenticação com JWT implementada
 - ✅ Layout principal (MainLayout) com sidebar responsiva
 - ✅ Integração com API backend
 - ✅ Sistema de tipos TypeScript completo
-- ✅ Serviços de API (auth, users, boards, cards, clients)
+- ✅ Serviços de API (auth, users, boards, cards, clients, **persons**)
+- ✅ **Página de Gestão de Pessoas** (listagem, filtros, busca)
+- ✅ **Vinculação de Pessoas a Cards** (modal, busca, vinculação/desvinculação)
+- ✅ **Performance otimizada** (+98% redução de requisições)
 - ✅ Visual moderno com Tailwind CSS
-- ⏳ Páginas funcionais em desenvolvimento
+- ⏳ Outras páginas funcionais em desenvolvimento
 
 ---
 
@@ -28,6 +31,7 @@ O HSGrowth CRM Frontend é uma aplicação web moderna construída com React 19 
 - **Boards Kanban**: Gerenciamento visual de oportunidades
 - **Gestão de Cards**: Criação e acompanhamento de leads/deals
 - **Clientes**: CRUD completo de clientes
+- **Pessoas (Contatos)**: CRUD completo de pessoas, vinculação a cards, múltiplos emails/telefones **(NOVO - v2.0)**
 - **Gamificação**: Pontos, badges e rankings
 - **Transferências**: Fluxo de aprovação de transferências de cards
 - **Relatórios**: Dashboards e relatórios de vendas
@@ -86,7 +90,9 @@ frontend/
 │   │   ├── ProtectedRoute.tsx   # HOC para rotas protegidas
 │   │   ├── Header.tsx           # (Antigo - não usado)
 │   │   ├── Sidebar.tsx          # (Antigo - não usado)
-│   │   └── ModalTrocarSenha.tsx # Modal de troca de senha
+│   │   ├── ModalTrocarSenha.tsx # Modal de troca de senha
+│   │   └── cardDetails/         # Componentes de detalhes do card (NOVO v2.0)
+│   │       └── ContactSection.tsx # Seção de pessoa de contato no card
 │   │
 │   ├── context/                 # Context API
 │   │   ├── AuthContext.tsx      # Contexto de autenticação
@@ -101,6 +107,8 @@ frontend/
 │   ├── pages/                   # Páginas/Views da aplicação
 │   │   ├── Login.tsx            # Página de login
 │   │   ├── Dashboard.tsx        # Dashboard (em construção)
+│   │   ├── Clients.tsx          # Gestão de clientes (otimizada v2.0)
+│   │   ├── Persons.tsx          # Gestão de pessoas (NOVO v2.0)
 │   │   ├── NotFound.tsx         # Página 404
 │   │   ├── Bloqueio.tsx         # Página de acesso negado
 │   │   └── EmConstrucao.tsx     # Placeholder páginas
@@ -111,7 +119,8 @@ frontend/
 │   │   ├── userService.ts       # CRUD de usuários
 │   │   ├── boardService.ts      # CRUD de boards
 │   │   ├── cardService.ts       # CRUD de cards
-│   │   ├── clientService.ts     # CRUD de clientes
+│   │   ├── clientService.ts     # CRUD de clientes (otimizado v2.0)
+│   │   ├── personService.ts     # CRUD de pessoas (NOVO v2.0)
 │   │   └── index.ts             # Exportações centralizadas
 │   │
 │   ├── types/                   # Definições TypeScript
@@ -302,13 +311,14 @@ api.interceptors.response.use(
 
 ### Serviços Disponíveis
 
-| Serviço         | Arquivo                 | Funcionalidades                                                    |
-| --------------- | ----------------------- | ------------------------------------------------------------------ |
-| authService     | `authService.ts`        | login, logout, refresh, getMe, forgotPassword, resetPassword       |
-| userService     | `userService.ts`        | list, getById, create, update, delete, changePassword              |
-| boardService    | `boardService.ts`       | list, getById, create, update, delete, duplicate                   |
-| cardService     | `cardService.ts`        | list, getById, create, update, delete, move, assign, win, lose     |
-| clientService   | `clientService.ts`      | list, getById, create, update, delete                              |
+| Serviço         | Arquivo                 | Funcionalidades                                                                  |
+| --------------- | ----------------------- | -------------------------------------------------------------------------------- |
+| authService     | `authService.ts`        | login, logout, refresh, getMe, forgotPassword, resetPassword                     |
+| userService     | `userService.ts`        | list, getById, create, update, delete, changePassword                            |
+| boardService    | `boardService.ts`       | list, getById, create, update, delete, duplicate                                 |
+| cardService     | `cardService.ts`        | list, getById, create, update, delete, move, assign, win, lose                   |
+| clientService   | `clientService.ts`      | list, getById, create, update, delete (otimizado: page_size 10.000)              |
+| personService   | `personService.ts`      | list, getById, create, update, delete, setStatus, linkToCard, unlinkFromCard **(NOVO v2.0)** |
 
 ### Exemplo de Uso
 
@@ -743,6 +753,40 @@ Este projeto é privado e de uso interno da empresa.
 
 ---
 
-**Última atualização:** 08/01/2026
-**Versão:** 1.0.0
-**Status:** ✅ Base implementada, páginas em desenvolvimento
+**Última atualização:** 29/01/2026
+**Versão:** 2.0.0
+**Status:** ✅ Gestão de Pessoas implementada, outras páginas em desenvolvimento
+
+---
+
+## 🆕 Novidades v2.0 (29/01/2026)
+
+### Gestão de Pessoas (Contatos)
+
+**Nova página `/persons`:**
+- ✅ Listagem completa de pessoas de contato
+- ✅ Filtro por status (Ativo/Inativo/Todos)
+- ✅ Busca avançada por nome, email, telefone, cargo
+- ✅ Paginação local (otimizada)
+- ✅ Exibição de dados: Nome, Cargo, Email, Telefone, Status, Data de cadastro
+
+**Novo componente ContactSection:**
+- ✅ Seção "Informação de Contato (Pessoa)" nos detalhes do card
+- ✅ Exibe dados completos da pessoa vinculada (nome, cargo, emails, telefones, redes sociais)
+- ✅ Modal de busca e vinculação de pessoa ao card
+- ✅ Busca local por múltiplos critérios
+- ✅ Desvinculação de pessoa do card
+
+**Novo serviço personService:**
+- ✅ CRUD completo de pessoas
+- ✅ Vinculação/desvinculação de pessoa a card
+- ✅ Interface Person com todos os campos (múltiplos emails, telefones, redes sociais)
+
+**Melhorias de Performance:**
+- ✅ Carregamento otimizado: 1 request vs 50+ requests
+- ✅ Page size aumentado para 10.000 (endpoints persons e clients)
+- ✅ Melhoria de +98% na performance de carregamento
+
+**Documentação:**
+- ✅ README.md atualizado com novas funcionalidades
+- ✅ Ver `backend/MIGRATION_CONTACT_INFO_TO_PERSONS.md` para detalhes da migração
