@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Plus, MoreVertical, Edit, Archive, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, MoreVertical, Edit, Archive, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { List, Card } from "../../types";
@@ -13,6 +13,10 @@ interface KanbanListProps {
   onArchiveList?: () => void;
   onDeleteList?: () => void;
   onCardClick?: (card: Card) => void;
+  onMoveLeft?: () => void; // Nova prop para mover lista para esquerda
+  onMoveRight?: () => void; // Nova prop para mover lista para direita
+  isFirstList?: boolean; // Se é a primeira lista (não pode ir mais para esquerda)
+  isLastList?: boolean; // Se é a última lista (não pode ir mais para direita)
 }
 
 const KanbanList: React.FC<KanbanListProps> = ({
@@ -23,6 +27,10 @@ const KanbanList: React.FC<KanbanListProps> = ({
   onArchiveList,
   onDeleteList,
   onCardClick,
+  onMoveLeft,
+  onMoveRight,
+  isFirstList = false,
+  isLastList = false,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [cardLimit, setCardLimit] = useState(3);
@@ -192,14 +200,39 @@ const KanbanList: React.FC<KanbanListProps> = ({
         </div>
       </SortableContext>
 
-      {/* Botão adicionar card */}
-      <button
-        onClick={onAddCard}
-        className="flex-shrink-0 w-full mt-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800/40 rounded-lg transition-colors flex items-center justify-center gap-2 group"
-      >
-        <Plus size={16} className="group-hover:scale-110 transition-transform" />
-        <span>Adicionar card</span>
-      </button>
+      {/* Botão adicionar card + Setas de movimentação */}
+      <div className="flex-shrink-0 flex items-center gap-2 mt-3">
+        {/* Seta esquerda - só aparece se não for a primeira lista */}
+        {!isFirstList && onMoveLeft && (
+          <button
+            onClick={onMoveLeft}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/40 rounded-lg transition-colors"
+            title="Mover lista para esquerda"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
+
+        {/* Botão adicionar card */}
+        <button
+          onClick={onAddCard}
+          className="flex-1 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800/40 rounded-lg transition-colors flex items-center justify-center gap-2 group"
+        >
+          <Plus size={16} className="group-hover:scale-110 transition-transform" />
+          <span>Adicionar card</span>
+        </button>
+
+        {/* Seta direita - só aparece se não for a última lista */}
+        {!isLastList && onMoveRight && (
+          <button
+            onClick={onMoveRight}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/40 rounded-lg transition-colors"
+            title="Mover lista para direita"
+          >
+            <ChevronRight size={16} />
+          </button>
+        )}
+      </div>
     </div>
   );
 };

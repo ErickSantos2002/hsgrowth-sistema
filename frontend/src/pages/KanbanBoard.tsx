@@ -39,17 +39,20 @@ import { arrayMove } from "@dnd-kit/sortable";
 import boardService from "../services/boardService";
 import listService from "../services/listService";
 import cardService from "../services/cardService";
-import { Board, List, Card } from "../types";
+import userService from "../services/userService";
+import { Board, List, Card, User } from "../types";
 import KanbanList from "../components/kanban/KanbanList";
 import KanbanCard from "../components/kanban/KanbanCard";
 import ListModal from "../components/kanban/ListModal";
 import ConfirmModal from "../components/kanban/ConfirmModal";
 import CardModal, { CardFormData } from "../components/kanban/CardModal";
 import BoardModal from "../components/kanban/BoardModal";
+import { useAuth } from "../context/AuthContext";
 
 const KanbanBoard: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth(); // Pegar usuário logado
 
   // Estados
   const [board, setBoard] = useState<Board | null>(null);
@@ -78,6 +81,8 @@ const KanbanBoard: React.FC = () => {
   const [listFilter, setListFilter] = useState("");
   const [valueFilter, setValueFilter] = useState("");
   const [dueDateFilter, setDueDateFilter] = useState("");
+  const [assignedToFilter, setAssignedToFilter] = useState(""); // Novo filtro de vendedor
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]); // Lista de usuários
   const boardScrollRef = useRef<HTMLDivElement | null>(null);
   const [isDraggingBoard, setIsDraggingBoard] = useState(false);
   const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
@@ -102,6 +107,27 @@ const KanbanBoard: React.FC = () => {
       loadBoardData();
     }
   }, [boardId]);
+
+  /**
+   * Carrega lista de usuários ativos e aplica lógica de permissão por role
+   */
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const users = await userService.listActive();
+        setAvailableUsers(users);
+
+        // Se o usuário logado é vendedor (salesperson), trava o filtro nele
+        if (user && user.role === "salesperson") {
+          setAssignedToFilter(String(user.id));
+        }
+      } catch (error) {
+        console.error("Erro ao carregar usuários:", error);
+      }
+    };
+
+    loadUsers();
+  }, [user]);
 
   const handleBoardMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!boardScrollRef.current) return;
@@ -347,26 +373,151 @@ const KanbanBoard: React.FC = () => {
   };
 
   /**
-   * Filtra cards baseado no termo de busca
-   * Busca por título, descrição, nome do contato, email e empresa
+   * Move a lista para a esquerda (diminui posição)
+   */
+  const handleMoveListLeft = async (list: List) => {
+    try {
+      // Encontrar a posição atual da lista no array ordenado
+      const currentIndex = lists.findIndex((l) => l.id === list.id);
+
+      if (currentIndex <= 0) {
+        // Já é a primeira lista, não pode ir mais para esquerda
+        return;
+      }
+
+      // Pegar a lista anterior (à esquerda) e usar a position dela
+      const targetList = lists[currentIndex - 1];
+      const newPosition = targetList.position;
+
+      await listService.move(Number(boardId), list.id, newPosition);
+      await loadBoardData();
+    } catch (error) {
+      console.error("Erro ao mover lista para esquerda:", error);
+      alert("Erro ao mover lista");
+    }
+  };
+
+  /**
+   * Move a lista para a direita (aumenta posição)
+   */
+  const handleMoveListRight = async (list: List) => {
+    try {
+      // Encontrar a posição atual da lista no array ordenado
+      const currentIndex = lists.findIndex((l) => l.id === list.id);
+
+      if (currentIndex >= lists.length - 1) {
+        // Já é a última lista, não pode ir mais para direita
+        return;
+      }
+
+      // Pegar a lista seguinte (à direita) e usar a position dela
+      const targetList = lists[currentIndex + 1];
+      const newPosition = targetList.position;
+
+      await listService.move(Number(boardId), list.id, newPosition);
+      await loadBoardData();
+    } catch (error) {
+      console.error("Erro ao mover lista para direita:", error);
+      alert("Erro ao mover lista");
+    }
+  };
+
+  /**
+   * Filtra cards baseado em todos os filtros ativos
+   * - Busca por termo (título, descrição, contato)
+   * - Filtro por lista
+   * - Filtro por vendedor (assigned_to_id)
+   * - Filtro por faixa de valor
+   * - Filtro por data de vencimento
    */
   const filterCards = (cardsToFilter: Card[]): Card[] => {
-    if (!searchTerm.trim()) return cardsToFilter;
-
-    const term = searchTerm.toLowerCase();
     return cardsToFilter.filter((card) => {
-      // Buscar no título
-      if (card.title?.toLowerCase().includes(term)) return true;
+      // Filtro de busca por termo
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const matchesSearch =
+          card.title?.toLowerCase().includes(term) ||
+          card.description?.toLowerCase().includes(term) ||
+          card.contact_info?.name?.toLowerCase().includes(term) ||
+          card.contact_info?.email?.toLowerCase().includes(term) ||
+          card.contact_info?.company?.toLowerCase().includes(term);
 
-      // Buscar na descrição
-      if (card.description?.toLowerCase().includes(term)) return true;
+        if (!matchesSearch) return false;
+      }
 
-      // Buscar nas informações de contato
-      if (card.contact_info?.name?.toLowerCase().includes(term)) return true;
-      if (card.contact_info?.email?.toLowerCase().includes(term)) return true;
-      if (card.contact_info?.company?.toLowerCase().includes(term)) return true;
+      // Filtro por lista (já é aplicado antes, mas mantém aqui por segurança)
+      if (listFilter && String(card.list_id) !== listFilter) {
+        return false;
+      }
 
-      return false;
+      // Filtro por vendedor (assigned_to_id)
+      if (assignedToFilter) {
+        const filterId = Number(assignedToFilter);
+        if (card.assigned_to_id !== filterId) {
+          return false;
+        }
+      }
+
+      // Filtro por faixa de valor
+      if (valueFilter && card.value !== null) {
+        const value = card.value;
+        let matches = false;
+
+        switch (valueFilter) {
+          case "0-1000":
+            matches = value >= 0 && value <= 1000;
+            break;
+          case "1000-5000":
+            matches = value > 1000 && value <= 5000;
+            break;
+          case "5000-10000":
+            matches = value > 5000 && value <= 10000;
+            break;
+          case "10000+":
+            matches = value > 10000;
+            break;
+        }
+
+        if (!matches) return false;
+      }
+
+      // Filtro por data de vencimento
+      if (dueDateFilter && card.due_date) {
+        const dueDate = new Date(card.due_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let matches = false;
+
+        switch (dueDateFilter) {
+          case "overdue":
+            // Atrasados: due_date < hoje
+            matches = dueDate < today;
+            break;
+          case "today":
+            // Hoje: due_date = hoje
+            const dueDateOnly = new Date(dueDate);
+            dueDateOnly.setHours(0, 0, 0, 0);
+            matches = dueDateOnly.getTime() === today.getTime();
+            break;
+          case "week":
+            // Esta semana: devido nos próximos 7 dias
+            const weekFromNow = new Date(today);
+            weekFromNow.setDate(weekFromNow.getDate() + 7);
+            matches = dueDate >= today && dueDate <= weekFromNow;
+            break;
+          case "month":
+            // Este mês
+            matches =
+              dueDate.getMonth() === today.getMonth() &&
+              dueDate.getFullYear() === today.getFullYear();
+            break;
+        }
+
+        if (!matches) return false;
+      }
+
+      return true;
     });
   };
 
@@ -919,6 +1070,22 @@ const KanbanBoard: React.FC = () => {
               />
             </div>
 
+            {/* Filtro por vendedor (responsável) */}
+            <div className="w-full sm:w-auto sm:min-w-[200px]">
+              <SelectMenu
+                value={assignedToFilter}
+                options={[
+                  { value: "", label: "Todos os vendedores" },
+                  ...availableUsers.map((u) => ({
+                    value: String(u.id),
+                    label: u.name,
+                  })),
+                ]}
+                onChange={setAssignedToFilter}
+                disabled={user?.role === "salesperson"} // Trava se for vendedor
+              />
+            </div>
+
             {/* Filtro por valor */}
             <div className="w-full sm:w-auto sm:min-w-[180px]">
               <SelectMenu
@@ -974,12 +1141,16 @@ const KanbanBoard: React.FC = () => {
         <div className="flex gap-4 h-[calc(100%)]">
           {/* Renderizar listas */}
           {lists.length > 0 ? (
-            lists.map((list) => {
+            lists.map((list, index) => {
               // Filtrar cards da lista, ordenar por position e aplicar busca
               const listCards = cards
                 .filter((card) => card.list_id === list.id)
                 .sort((a, b) => (a.position || 0) - (b.position || 0));
               const filteredCards = filterCards(listCards);
+
+              // Verificar se é primeira ou última lista
+              const isFirstList = index === 0;
+              const isLastList = index === lists.length - 1;
 
               return (
                 <KanbanList
@@ -991,6 +1162,10 @@ const KanbanBoard: React.FC = () => {
                   onArchiveList={() => handleArchiveList(list)}
                   onDeleteList={() => handleDeleteListClick(list)}
                   onCardClick={(card) => handleViewCard(card)}
+                  onMoveLeft={() => handleMoveListLeft(list)}
+                  onMoveRight={() => handleMoveListRight(list)}
+                  isFirstList={isFirstList}
+                  isLastList={isLastList}
                 />
               );
             })
@@ -1077,6 +1252,7 @@ interface SelectMenuProps {
   options: SelectOption[];
   placeholder?: string;
   onChange: (value: string) => void;
+  disabled?: boolean; // Nova prop para desabilitar o select
 }
 
 const SelectMenu: React.FC<SelectMenuProps> = ({
@@ -1084,6 +1260,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
   options,
   placeholder,
   onChange,
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -1107,8 +1284,11 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
     <div ref={menuRef} className="relative">
       <button
         type="button"
-        onClick={() => setIsOpen((open) => !open)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        onClick={() => !disabled && setIsOpen((open) => !open)}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "opacity-60 cursor-not-allowed" : ""
+        }`}
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
           {selectedLabel}
@@ -1118,7 +1298,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
           className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
