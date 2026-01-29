@@ -20,16 +20,16 @@ import logo from "../assets/logo.png";
 import NotificationDropdown from "../components/NotificationDropdown";
 
 const menuItems = [
-    { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false },
-    { path: "/boards", icon: Trello, label: "Boards", adminOnly: false },
-    { path: "/clients", icon: Users, label: "Clientes", adminOnly: false },
-    { path: "/products", icon: Package, label: "Produtos", adminOnly: false },
-    { path: "/gamification", icon: Trophy, label: "Gamificação", adminOnly: false },
-    { path: "/transfers", icon: Repeat, label: "Transferências", adminOnly: false },
-    { path: "/reports", icon: FileText, label: "Relatórios", adminOnly: false },
-    { path: "/automations", icon: Workflow, label: "Automações", adminOnly: false },
-    { path: "/settings", icon: Settings, label: "Configurações", adminOnly: false },
-    { path: "/users", icon: UserCircle, label: "Usuários", adminOnly: true },
+    { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false },
+    { path: "/boards", icon: Trello, label: "Boards", adminOnly: false, managerOrAdminOnly: false },
+    { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false },
+    { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false },
+    { path: "/gamification", icon: Trophy, label: "Gamificação", adminOnly: false, managerOrAdminOnly: false },
+    { path: "/transfers", icon: Repeat, label: "Transferências", adminOnly: false, managerOrAdminOnly: false },
+    { path: "/reports", icon: FileText, label: "Relatórios", adminOnly: false, managerOrAdminOnly: true },
+    { path: "/automations", icon: Workflow, label: "Automações", adminOnly: false, managerOrAdminOnly: true },
+    { path: "/settings", icon: Settings, label: "Configurações", adminOnly: false, managerOrAdminOnly: false },
+    { path: "/users", icon: UserCircle, label: "Usuários", adminOnly: true, managerOrAdminOnly: false },
 ];
 
 export default function MainLayout() {
@@ -119,6 +119,11 @@ export default function MainLayout() {
                             {menuItems.map((item) => {
                                 // Ocultar itens de admin se o usuário não for admin
                                 if (item.adminOnly && user?.role !== "admin") {
+                                    return null;
+                                }
+
+                                // Ocultar itens de manager/admin se o usuário for vendedor
+                                if (item.managerOrAdminOnly && user?.role === "salesperson") {
                                     return null;
                                 }
 

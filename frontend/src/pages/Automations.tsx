@@ -13,7 +13,9 @@ import {
   Clock,
   Search,
   ChevronDown,
+  Shield,
 } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 import automationService, { Automation } from "../services/automationService";
 import boardService from "../services/boardService";
 
@@ -24,12 +26,16 @@ interface Board {
 
 const Automations: React.FC = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBoard, setSelectedBoard] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Verifica se o usuário é admin ou manager
+  const isManagerOrAdmin = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
   useEffect(() => {
     loadData();
@@ -195,6 +201,23 @@ const Automations: React.FC = () => {
     if (auto.execution_count === 0) return 0;
     return ((auto.success_count / auto.execution_count) * 100).toFixed(1);
   };
+
+  // Verifica permissão de acesso
+  if (!isManagerOrAdmin) {
+    return (
+      <div className="p-6">
+        <div className="max-w-2xl mx-auto text-center py-12">
+          <div className="mb-4">
+            <Shield size={64} className="mx-auto text-red-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
+          <p className="text-slate-400">
+            Apenas administradores e gerentes podem acessar automações.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

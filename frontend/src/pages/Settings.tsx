@@ -341,11 +341,15 @@ const Settings: React.FC = () => {
   const tabs: { id: Tab; label: string; icon: any }[] = [
     { id: "profile" as Tab, label: "Perfil", icon: User },
     { id: "notifications" as Tab, label: "Notificações", icon: Bell },
-    { id: "security" as Tab, label: "Segurança", icon: Shield },
   ];
 
-  // Adiciona tab Badges para admin e gerente
+  // Adiciona tab Segurança apenas para admin e gerente
   const isManagerOrAdmin = user?.role === "admin" || user?.role === "manager";
+  if (isManagerOrAdmin) {
+    tabs.push({ id: "security" as Tab, label: "Segurança", icon: Shield });
+  }
+
+  // Adiciona tab Badges para admin e gerente
   if (isManagerOrAdmin) {
     tabs.push({ id: "badges" as Tab, label: "Badges", icon: Award });
   }
@@ -455,9 +459,17 @@ const Settings: React.FC = () => {
                       type="email"
                       value={profileData.email}
                       onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      disabled={user?.role === "salesperson"}
+                      className={`w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                        user?.role === "salesperson" ? "opacity-60 cursor-not-allowed" : ""
+                      }`}
                       placeholder="seu@email.com"
                     />
+                    {user?.role === "salesperson" && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Apenas administradores podem alterar o email
+                      </p>
+                    )}
                   </div>
 
                   <div>

@@ -16,7 +16,9 @@ import {
   Download,
   BarChart3,
   ChevronDown,
+  Shield,
 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 import {
   ResponsiveContainer,
   BarChart,
@@ -51,8 +53,12 @@ interface User {
 }
 
 const Reports: React.FC = () => {
+  const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('sales');
   const [loading, setLoading] = useState(false);
+
+  // Verifica se o usuário é admin ou manager
+  const isManagerOrAdmin = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
   // Listas para selects
   const [boards, setBoards] = useState<Board[]>([]);
@@ -201,6 +207,23 @@ const Reports: React.FC = () => {
   const handleExportExcel = () => {
     alert('TODO: Implementar exportação para Excel');
   };
+
+  // Verifica permissão de acesso
+  if (!isManagerOrAdmin) {
+    return (
+      <div className="p-6">
+        <div className="max-w-2xl mx-auto text-center py-12">
+          <div className="mb-4">
+            <Shield size={64} className="mx-auto text-red-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
+          <p className="text-slate-400">
+            Apenas administradores e gerentes podem acessar relatórios.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 overflow-x-hidden">
