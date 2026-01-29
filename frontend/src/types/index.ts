@@ -680,6 +680,11 @@ export interface UpdateCardRequest {
   currency?: string;
   due_date?: string;
   contact_info?: Record<string, any>;
+  payment_info?: {
+    payment_method: string;
+    installments: number;
+    notes?: string;
+  } | null;
 }
 
 export interface MoveCardRequest {

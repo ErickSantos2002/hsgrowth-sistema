@@ -289,7 +289,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
    * Filtra produtos disponíveis
    */
   const filteredProducts = availableProducts.filter(p =>
-    !products.some(prod => prod.product_id === p.id) &&
+    !products.some((prod: ProductItem) => prod.product_id === p.id) &&
     (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      p.sku.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -298,6 +298,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
     <ExpandableSection
       title="Produto"
       defaultExpanded={false}
+      headerClassName="sticky top-0 z-10 bg-slate-800/80 backdrop-blur-sm"
       icon={<Package size={18} />}
       badge={products.length > 0 ? products.length : undefined}
     >
@@ -539,12 +540,33 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
 
         {/* Modal de busca de produtos */}
         {showProductSearch && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-2xl">
-              <h3 className="text-xl font-semibold text-white mb-4">Adicionar Produto</h3>
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowProductSearch(false);
+              setSearchTerm("");
+            }}
+          >
+            <div
+              className="bg-slate-800 border border-slate-700 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 z-10 flex items-center justify-between p-6 pb-4 bg-slate-800">
+                <h3 className="text-xl font-semibold text-white">Adicionar Produto</h3>
+                <button
+                  onClick={() => {
+                    setShowProductSearch(false);
+                    setSearchTerm("");
+                  }}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
+                  title="Fechar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
               {/* Campo de busca */}
-              <div className="relative mb-4">
+              <div className="relative mb-4 px-6">
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
@@ -557,7 +579,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
               </div>
 
               {/* Lista de produtos */}
-              <div className="max-h-96 overflow-y-auto space-y-2">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-2 px-6">
                 {filteredProducts.length === 0 ? (
                   <p className="text-sm text-slate-400 text-center py-8">
                     {searchTerm ? "Nenhum produto encontrado" : "Todos os produtos já foram adicionados"}
@@ -584,15 +606,17 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
               </div>
 
               {/* Botão fechar */}
-              <button
-                onClick={() => {
-                  setShowProductSearch(false);
-                  setSearchTerm("");
-                }}
-                className="mt-4 w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
-              >
-                Fechar
-              </button>
+              <div className="p-6 pt-4">
+                <button
+                  onClick={() => {
+                    setShowProductSearch(false);
+                    setSearchTerm("");
+                  }}
+                  className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
           </div>
         )}

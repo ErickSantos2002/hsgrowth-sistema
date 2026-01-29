@@ -145,7 +145,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
       {!isCreating && (
         <button
           onClick={() => setIsCreating(true)}
-          className="w-full px-4 py-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-2"
+          className="w-full px-4 py-3 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 rounded-lg text-emerald-300 hover:text-emerald-200 transition-colors flex items-center justify-center gap-2"
         >
           <Plus size={18} />
           <span>Adicionar anotação</span>
@@ -227,7 +227,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                     <button
                       onClick={handleCancelEdit}
                       disabled={loading}
-                      className="flex-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg font-medium text-sm transition-colors"
+                      className="flex-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-1"
                     >
                       <X size={14} />
                       Cancelar

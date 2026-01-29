@@ -12,6 +12,7 @@ import {
   FileText,
   X,
   Save,
+  Plus,
 } from "lucide-react";
 import cardTaskService from "../../services/cardTaskService";
 import { convertBrazilToUTC } from "../../utils/timezone";
@@ -186,9 +187,10 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="w-full px-4 py-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors text-left"
+        className="w-full px-4 py-3 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 rounded-lg text-emerald-300 hover:text-emerald-200 transition-colors flex items-center justify-center gap-2"
       >
-        Clique aqui para adicionar uma atividade...
+        <Plus size={18} />
+        <span>Adicionar Atividades</span>
       </button>
     );
   }
@@ -355,7 +357,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       <div className="flex gap-2 pt-2 border-t border-slate-700/50">
         <button
           onClick={handleCancel}
-          className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
         >
           <X size={18} />
           Cancelar

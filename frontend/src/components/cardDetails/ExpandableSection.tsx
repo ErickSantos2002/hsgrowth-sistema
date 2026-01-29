@@ -7,6 +7,7 @@ interface ExpandableSectionProps {
   defaultExpanded?: boolean;
   icon?: React.ReactNode;
   badge?: string | number;
+  headerClassName?: string;
 }
 
 /**
@@ -19,6 +20,7 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
   defaultExpanded = false,
   icon,
   badge,
+  headerClassName,
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
@@ -27,7 +29,7 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
       {/* Header da seção - clicável para expandir/recolher */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-700/30 transition-colors"
+        className={`w-full px-4 py-3 flex items-center justify-between hover:bg-slate-700/30 transition-colors ${headerClassName || ""}`}
       >
         <div className="flex items-center gap-2">
           {/* Ícone de expand/collapse */}
