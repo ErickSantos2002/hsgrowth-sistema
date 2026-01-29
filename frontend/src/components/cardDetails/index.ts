@@ -17,6 +17,7 @@ export { default as FocusSection } from "./FocusSection";
 export { default as HistorySection } from "./HistorySection";
 export { default as PipelineStages } from "./PipelineStages";
 export { default as NotesSection } from "./NotesSection";
+export { default as NoteRenderer } from "./NoteRenderer";
 export { default as SchedulerSection } from "./SchedulerSection";
 export { default as FilesSection } from "./FilesSection";
 

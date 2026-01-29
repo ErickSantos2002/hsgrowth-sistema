@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FileText, Plus, Trash2, Edit, Save, X } from "lucide-react";
 import cardNoteService from "../../services/cardNoteService";
+import NoteRenderer from "./NoteRenderer";
 
 interface Note {
   id: number;
@@ -267,7 +268,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                     </div>
                   </div>
 
-                  <p className="text-sm text-slate-300 whitespace-pre-wrap">{note.content}</p>
+                  <NoteRenderer content={note.content} />
 
                   {note.updated_at !== note.created_at && (
                     <p className="text-xs text-slate-500 mt-2 italic">
