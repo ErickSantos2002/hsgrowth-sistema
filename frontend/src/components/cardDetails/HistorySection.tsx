@@ -28,6 +28,7 @@ import { convertUTCToBrazil } from "../../utils/timezone";
 
 interface HistorySectionProps {
   activities: any[];
+  notes?: any[];
 }
 
 /**
@@ -73,7 +74,7 @@ interface HistoryEvent {
  * Seção "Histórico" - Timeline completo de eventos do card
  * Exibida na aba "Atividade", abaixo da seção "Foco"
  */
-const HistorySection: React.FC<HistorySectionProps> = ({ activities }) => {
+const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] }) => {
   const [activeTab, setActiveTab] = useState<HistoryTab>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -101,7 +102,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities }) => {
     return typeMap[backendType] || "activity_created";
   };
 
-  const historyEvents: HistoryEvent[] = (activities || []).map((act: any) => ({
+  const activityEvents: HistoryEvent[] = (activities || []).map((act: any) => ({
     id: act.id,
     type: mapActivityType(act.activity_type),
     title: act.description || "Evento",
@@ -110,6 +111,20 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities }) => {
     created_at: act.created_at,
     metadata: act.activity_metadata || {},
   }));
+
+  const noteEvents: HistoryEvent[] = (notes || []).map((note: any) => ({
+    id: note.id,
+    type: "note_added",
+    title: note.content || "Nota",
+    description: "",
+    user_name: note.user_name || "Sistema",
+    created_at: note.created_at,
+    metadata: {},
+  }));
+
+  const historyEvents: HistoryEvent[] = [...activityEvents, ...noteEvents].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   // Dados mockados removidos - comentados para referência
   const _mockData: HistoryEvent[] = [
@@ -413,10 +428,15 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities }) => {
 
                 {/* Conteúdo do evento */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white mb-1">{event.title}</p>
+                  <p
+                    className="font-medium text-white mb-1 break-words whitespace-pre-wrap overflow-wrap-anywhere"
+                    dangerouslySetInnerHTML={{ __html: event.title }}
+                  />
 
                   {event.description && (
-                    <p className="text-sm text-slate-400 mb-2">{event.description}</p>
+                    <p className="text-sm text-slate-400 mb-2 break-words whitespace-pre-wrap">
+                      {event.description}
+                    </p>
                   )}
 
                   <div className="flex items-center gap-2 text-xs text-slate-500">

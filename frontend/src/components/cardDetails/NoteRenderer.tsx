@@ -18,8 +18,8 @@ interface NoteRendererProps {
  * Para HTML, faz parsing e exibe em formato organizado
  */
 const NoteRenderer: React.FC<NoteRendererProps> = ({ content }) => {
-  // Detecta se o conteúdo é HTML
-  const isHTML = content.trim().startsWith("<");
+  // Detecta se o conteúdo contém HTML
+  const isHTML = /<[^>]+>/.test(content);
 
   if (!isHTML) {
     // Conteúdo texto simples - renderiza normalmente

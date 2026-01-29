@@ -211,9 +211,9 @@ const CardDetails: React.FC = () => {
       {/* ========== HEADER FIXO ========== */}
       <div className="flex-shrink-0 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50">
         <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Lado Esquerdo: Botão Voltar + Título */}
-            <div className="flex items-center gap-3 flex-1">
+            <div className="flex flex-col items-center gap-2 flex-1 sm:flex-row sm:items-center sm:gap-3 sm:justify-start">
               <button
                 onClick={handleBack}
                 className="p-2 hover:bg-slate-800/80 rounded-lg transition-colors text-slate-400 hover:text-white"
@@ -239,19 +239,19 @@ const CardDetails: React.FC = () => {
                   autoFocus
                   className="text-2xl font-semibold text-white bg-slate-800/50 border-b-2 border-blue-500 focus:outline-none px-2 py-1 rounded"
                 />
-              ) : (
-                <h1
-                  onClick={() => setIsTitleEditing(true)}
-                  className="text-2xl font-semibold text-white cursor-pointer hover:text-blue-400 transition-colors"
-                  title="Clique para editar"
-                >
-                  {card.title}
-                </h1>
-              )}
+                ) : (
+                  <h1
+                    onClick={() => setIsTitleEditing(true)}
+                    className="text-2xl font-semibold text-white cursor-pointer hover:text-blue-400 transition-colors text-center sm:text-left"
+                    title="Clique para editar"
+                  >
+                    {card.title}
+                  </h1>
+                )}
             </div>
 
             {/* Lado Direito: Avatar + Botões de Ação */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-3">
               {/* Avatar do Responsável com Dropdown (apenas para admin/manager) */}
               <div className="relative">
                 {canChangeAssignee ? (
@@ -374,10 +374,10 @@ const CardDetails: React.FC = () => {
       </div>
 
       {/* ========== LAYOUT PRINCIPAL: 30% + 70% (COM SCROLL INDEPENDENTE) ========== */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-y-auto sm:overflow-hidden sm:flex-row sm:min-h-0">
         {/* ========== COLUNA ESQUERDA: 30% - INFORMAÇÕES (SCROLL INDEPENDENTE) ========== */}
-        <div className="w-[30%] border-r border-slate-700/50 overflow-y-auto overflow-x-hidden min-h-0">
-          <div className="p-6 space-y-4 min-h-full">
+        <div className="w-full flex-none border-b-0 overflow-visible sm:w-[30%] sm:border-b-0 sm:border-r sm:border-slate-700/50 sm:overflow-y-auto sm:overflow-x-hidden sm:min-h-0">
+          <div className="p-6 space-y-4 sm:min-h-full">
             {/* Seção: Resumo */}
             <SummarySection
               card={card}
@@ -400,11 +400,11 @@ const CardDetails: React.FC = () => {
         </div>
 
         {/* ========== COLUNA DIREITA: 70% - ATIVIDADES E HISTÓRICO (SCROLL INDEPENDENTE) ========== */}
-        <div className="w-[70%] overflow-y-auto overflow-x-hidden min-h-0">
-          <div className="p-6 min-h-full">
+        <div className="w-full flex-none overflow-visible sm:w-[70%] sm:overflow-y-auto sm:overflow-x-hidden sm:min-h-0">
+          <div className="p-6 sm:min-h-full">
             {/* Sistema de Abas */}
             <div className="border-b border-slate-700/50 mb-6">
-              <div className="flex gap-6">
+              <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hidden sm:gap-6 sm:overflow-visible">
                 <button
                   onClick={() => setActiveTab("atividade")}
                   className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 ${
@@ -479,7 +479,10 @@ const CardDetails: React.FC = () => {
                   <FocusSection tasks={card.pending_tasks || []} onUpdate={loadCardData} />
 
                   {/* Seção Histórico */}
-                  <HistorySection activities={card.recent_activities || []} />
+                  <HistorySection
+                    activities={card.recent_activities || []}
+                    notes={card.notes || []}
+                  />
                 </>
               )}
 
