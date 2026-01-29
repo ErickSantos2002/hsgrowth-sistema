@@ -16,19 +16,26 @@ while ! pg_isready -h $DB_HOST -p $DB_PORT -U $DB_USER > /dev/null 2>&1; do
 done
 echo "âœ“ PostgreSQL estÃ¡ pronto!"
 
-# Aguarda Redis estar pronto (se configurado)
-if [ ! -z "$REDIS_HOST" ]; then
+# Aguarda Redis estar pronto (se configurado e habilitado)
+if [ "$ENABLE_REDIS_CHECK" = "true" ] && [ ! -z "$REDIS_HOST" ]; then
     echo "Aguardando Redis..."
-    timeout=30
+    timeout=10
+    redis_ready=false
     while [ $timeout -gt 0 ]; do
         if redis-cli -h $REDIS_HOST -p $REDIS_PORT ping > /dev/null 2>&1; then
-            echo "âœ“ Redis estÃ¡ pronto!"
+            echo "âœ" Redis estÃ¡ pronto!"
+            redis_ready=true
             break
         fi
-        echo "Redis nÃ£o estÃ¡ pronto - aguardando..."
-        sleep 2
-        timeout=$((timeout-2))
+        sleep 1
+        timeout=$((timeout-1))
     done
+
+    if [ "$redis_ready" = "false" ]; then
+        echo "âš  Redis nÃ£o respondeu em 10s - continuando sem Redis (funcionalidades de cache podem nÃ£o funcionar)"
+    fi
+else
+    echo "â„¹ VerificaÃ§Ã£o do Redis desabilitada (ENABLE_REDIS_CHECK nÃ£o estÃ¡ true)"
 fi
 
 # Executa migrations do Alembic
