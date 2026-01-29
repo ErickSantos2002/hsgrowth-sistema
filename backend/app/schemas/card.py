@@ -43,6 +43,7 @@ class ContactInfo(BaseModel):
         """
         Valida formato de telefone brasileiro.
         Aceita formatos: (11) 99999-9999, 11999999999, +55 11 99999-9999, etc.
+        Também aceita múltiplos telefones separados por vírgula.
         """
         if v is None or v == "":
             return v
@@ -52,10 +53,11 @@ class ContactInfo(BaseModel):
 
         # Regex para validar telefones brasileiros (permite vários formatos)
         # Aceita: (11) 99999-9999, 11999999999, +55 11 99999-9999, etc.
-        phone_pattern = r'^[\+\(\)\s\-\d]+$'
+        # Também aceita vírgula para múltiplos telefones: (11) 99999-9999, (11) 88888-8888
+        phone_pattern = r'^[\+\(\)\s\-\,\d]+$'
 
         if not re.match(phone_pattern, v):
-            raise ValueError('Formato de telefone inválido. Use apenas números, espaços, parênteses, hífen e sinal de mais.')
+            raise ValueError('Formato de telefone inválido. Use apenas números, espaços, parênteses, hífen, vírgula e sinal de mais.')
 
         # Verifica se tem pelo menos 8 dígitos (telefone fixo mínimo)
         digits_only = re.sub(r'\D', '', v)

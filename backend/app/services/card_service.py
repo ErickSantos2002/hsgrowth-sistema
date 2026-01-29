@@ -157,13 +157,10 @@ class CardService:
         if minimal:
             cards_response = []
             for card in cards:
-                # Busca apenas o nome do responsável (mais leve)
+                # Usa o usuário já carregado via eager loading (sem query adicional)
                 assigned_to_name = None
-                if card.assigned_to_id:
-                    from app.models.user import User
-                    assigned_user = self.db.query(User).filter(User.id == card.assigned_to_id).first()
-                    if assigned_user:
-                        assigned_to_name = assigned_user.name
+                if card.assigned_to:
+                    assigned_to_name = card.assigned_to.name
 
                 cards_response.append(
                     CardMinimalResponse(
@@ -192,13 +189,10 @@ class CardService:
         # Modo COMPLETO: Retorna todos os campos
         cards_response = []
         for card in cards:
-            # Busca informações relacionadas
+            # Usa o usuário já carregado via eager loading (sem query adicional)
             assigned_to_name = None
-            if card.assigned_to_id:
-                from app.models.user import User
-                assigned_user = self.db.query(User).filter(User.id == card.assigned_to_id).first()
-                if assigned_user:
-                    assigned_to_name = assigned_user.name
+            if card.assigned_to:
+                assigned_to_name = card.assigned_to.name
 
             list_obj = self.list_repository.find_by_id(card.list_id)
             list_name = list_obj.name if list_obj else None

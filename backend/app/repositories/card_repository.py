@@ -71,8 +71,12 @@ class CardRepository:
             Lista de cards
         """
         from app.models.list import List
+        from sqlalchemy.orm import joinedload
 
-        query = self.db.query(Card).join(List).filter(
+        # Otimização: Eager loading do usuário responsável (evita problema N+1)
+        query = self.db.query(Card).join(List).options(
+            joinedload(Card.assigned_to)  # Carrega o usuário em uma única query
+        ).filter(
             List.board_id == board_id,
             Card.deleted_at.is_(None)  # Filtrar apenas cards não deletados
         )

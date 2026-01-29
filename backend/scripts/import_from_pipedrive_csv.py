@@ -146,7 +146,7 @@ class PipedriveCSVImporter:
                 name=owner_name,
                 role_id=role.id,
                 is_active=True,
-                hashed_password="$2b$12$temporary_password_needs_reset",
+                password_hash="$2b$12$temporary_password_needs_reset",
             )
             self.db.add(user)
             self.db.commit()
@@ -170,7 +170,7 @@ class PipedriveCSVImporter:
             if not name:
                 continue
 
-            # Verifica se já existe
+            # Verifica se já existe pelo nome (evita duplicatas)
             existing = self.db.query(Product).filter(Product.name == name).first()
             if existing:
                 self.product_map[product_id] = existing.id
@@ -221,6 +221,12 @@ class PipedriveCSVImporter:
             name = org["Nome"]
 
             if not name or name.startswith("[Exemplo]"):
+                continue
+
+            # Verifica se já existe pelo nome (evita duplicatas)
+            existing = self.db.query(Client).filter(Client.name == name, Client.source == "pipedrive").first()
+            if existing:
+                self.org_map[org_id] = existing.id
                 continue
 
             # Monta endereço
@@ -286,6 +292,12 @@ class PipedriveCSVImporter:
             if not name:
                 continue
 
+            # Verifica se já existe pelo pipedrive_id (evita duplicatas)
+            existing = self.db.query(Person).filter(Person.pipedrive_id == person_id).first()
+            if existing:
+                self.person_map[person_id] = existing.id
+                continue
+
             # Consolida telefone (prioriza celular)
             phone = (
                 person_data.get("Telefone - Celular") or
@@ -293,6 +305,11 @@ class PipedriveCSVImporter:
                 person_data.get("Telefone - Residencial") or
                 person_data.get("Telefone - Outros")
             )
+
+            # Trunca telefone se for muito grande (campo aceita 50 caracteres)
+            if phone and len(phone) > 50:
+                # Pega só o primeiro telefone (até a primeira vírgula)
+                phone = phone.split(",")[0].strip()[:50]
 
             # Consolida email
             email = (
@@ -412,6 +429,12 @@ class PipedriveCSVImporter:
             title = lead_data["Título"]
 
             if not title:
+                continue
+
+            # Verifica se já existe pelo pipedrive_id (evita duplicatas)
+            existing = self.db.query(Lead).filter(Lead.pipedrive_id == lead_id).first()
+            if existing:
+                self.lead_map[lead_id] = existing.id
                 continue
 
             # Valor
@@ -571,6 +594,13 @@ class PipedriveCSVImporter:
             if not title:
                 continue
 
+            # Verifica se já existe pelo título e list (evita duplicatas)
+            # Não podemos usar pipedrive_id porque não temos esse campo em Card
+            existing = self.db.query(Card).filter(Card.title == title).first()
+            if existing:
+                self.deal_map[deal_id] = existing.id
+                continue
+
             # Funil e Etapa
             pipeline = deal.get("Funil")
             stage = deal.get("Etapa")
@@ -614,16 +644,14 @@ class PipedriveCSVImporter:
                     }
 
             # Status
+            # is_won: 1 = ganho, 0 = em aberto, -1 = perdido
             status = deal.get("Status", "open").lower()
-            is_won = 1 if status == "ganho" else 0
-            is_lost = status == "perdido"
-
-            # Probabilidade
-            prob_str = deal.get("Probabilidade", "0")
-            try:
-                probability = int(prob_str) if prob_str else None
-            except:
-                probability = None
+            if status == "ganho":
+                is_won = 1
+            elif status == "perdido":
+                is_won = -1
+            else:
+                is_won = 0
 
             card = Card(
                 list_id=list_id,
@@ -635,8 +663,6 @@ class PipedriveCSVImporter:
                 currency=deal.get("Moeda de Valor", "BRL"),
                 contact_info=contact_info,
                 is_won=is_won,
-                is_lost=is_lost,
-                probability=probability,
                 position=0,
             )
 
@@ -720,8 +746,10 @@ class PipedriveCSVImporter:
 
         try:
             activities_data = self.read_csv("activities-21427617-49.csv")
+            total = len(activities_data)
+            print(f"   Total de atividades no CSV: {total}")
 
-            for activity_data in activities_data:
+            for idx, activity_data in enumerate(activities_data, 1):
                 subject = activity_data.get("Assunto")
 
                 if not subject:
@@ -749,21 +777,50 @@ class PipedriveCSVImporter:
                 user_id = self.get_or_create_user(user_name) if user_name else None
 
                 # Nota/descrição
-                note = activity_data.get("Nota")
+                note = activity_data.get("Nota", "")
+
+                # Monta a descrição combinando assunto e nota
+                description = subject
+                if note and note != subject:
+                    description = f"{subject} - {note}"
+
+                # Metadados adicionais
+                activity_metadata = {
+                    "is_completed": is_done,
+                    "due_date": activity_data.get("Data de vencimento"),
+                    "duration": activity_data.get("Duração"),
+                }
+
+                # Verifica se já existe atividade com mesma descrição para este card
+                existing = self.db.query(Activity).filter(
+                    Activity.card_id == card_id,
+                    Activity.description == description,
+                    Activity.activity_type == activity_type
+                ).first()
+
+                if existing:
+                    continue
 
                 activity = Activity(
                     card_id=card_id,
                     user_id=user_id,
-                    title=subject,
-                    description=note,
+                    description=description,
                     activity_type=activity_type,
-                    is_completed=is_done,
+                    activity_metadata=activity_metadata,
                 )
 
                 self.db.add(activity)
-                self.db.commit()
+
+                # Commit em lote a cada 500 registros
+                if idx % 500 == 0:
+                    self.db.commit()
+                    print(f"   Progresso: {idx}/{total} atividades processadas...")
 
                 self.stats["activities"] += 1
+
+            # Commit final
+            self.db.commit()
+            print(f"   ✅ {self.stats['activities']} atividades importadas")
 
             print(f"   ✅ {self.stats['activities']} atividades importadas")
 
