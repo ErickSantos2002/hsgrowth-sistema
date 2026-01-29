@@ -70,6 +70,17 @@
   }
 }
 
+.history-html a {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+}
+
+.history-html a:hover {
+  color: #e2e8f0;
+}
+
 /* Estilos para React Flow - Nodes Selecionados */
 .react-flow__node.selected {
   /* Adiciona um outline azul brilhante quando selecionado */

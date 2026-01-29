@@ -429,7 +429,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
                 {/* Conteúdo do evento */}
                 <div className="flex-1 min-w-0">
                   <p
-                    className="font-medium text-white mb-1 break-words whitespace-pre-wrap overflow-wrap-anywhere"
+                    className="history-html font-medium text-white mb-1 break-words whitespace-pre-wrap overflow-wrap-anywhere"
                     dangerouslySetInnerHTML={{ __html: event.title }}
                   />
 
