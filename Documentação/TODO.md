@@ -1,156 +1,311 @@
 # 📋 TODO - HSGrowth CRM
 
-**Prazo**: até 18/12/2025 (quinta-feira)
-**Data de criação**: 11/12/2025
+## 🚀 STATUS: v1.0.0 EM PRODUÇÃO (29/01/2026)
+
+**A primeira versão do HSGrowth CRM está em produção!**
 
 ---
 
-## ⚠️ ALTA PRIORIDADE - Decisões Pendentes
+## ⚠️ IMPORTANTE: Ambiente de Produção Ativo
 
-### 1. Gamificação (5 questões)
-- [x] Definir se badges são personalizáveis por admin
-  → **Decisão**: SIM - Badges padrão do sistema + badges customizadas pelo admin
-- [x] Definir prêmios e recompensas (apenas simbólico ou real?)
-  → **Decisão**: Apenas simbólico + exportação Excel/CSV para RH calcular bônus manualmente
-- [x] Definir integração com outros sistemas (RH, folha de pagamento?)
-  → **Decisão**: Apenas exportação manual (Excel/CSV), sem integração automática
-- [x] Definir se há reset anual de pontos
-  → **Decisão**: Pontos NUNCA resetam (perpétuos). Apenas rankings resetam periodicamente
-- [x] Definir critérios para novas badges
-  → **Decisão**: Critérios manuais (admin atribui) e automáticos (sistema atribui por regra)
+A partir de 29/01/2026, todas as mudanças devem seguir as diretrizes em `DESENVOLVIMENTO.md`:
 
-### 2. Automações (4 questões)
-- [x] Definir limite máximo de automações por conta
-  → **Decisão**: 50 automações ativas por conta (trigger + scheduled)
-- [x] Definir priorização quando múltiplas automações ativam
-  → **Decisão**: Campo priority (1-100), desempate por created_at. Ordem: priority DESC, created_at ASC
-- [x] Definir notificações de falhas (imediato, diário, semanal?)
-  → **Decisão**: In-app sempre + Email apenas crítico (3+ falhas/1h, auto-disable, erros 404/403). Microsoft 365 SMTP
-- [x] Definir se há automações agendadas (não apenas trigger)
-  → **Decisão**: SIM - Execução única (once) + recorrente (daily/weekly/monthly/annual). Cron job a cada 1 min
-
-### 3. Transferências (3 questões)
-- [x] Definir limite de transferências por vendedor/período
-  → **Decisão**: 10/mês (padrão), configurável (5/10/20/50/ilimitado), períodos (diário/semanal/mensal). Exceções temporárias pelo gerente. Fácil desabilitar
-- [x] Definir se transferências requerem aprovação de gerente
-  → **Decisão**: Opcional (padrão OFF). Toggle simples habilita fluxo de aprovação com solicitações pendentes, expiração 72h, painel gerente
-- [x] Definir transferência em lote (múltiplos cartões de uma vez)
-  → **Decisão**: SIM - Até 50 cartões/operação, mesmo destinatário, processamento assíncrono, relatório sucesso/falhas, integra com limite e aprovação
-
-### 4. Performance e Escalabilidade (3 questões)
-- [x] Definir estratégia de particionamento (por data, por conta?)
-  → **Decisão**: NÃO particionar inicialmente. Índices suficientes para 2-3 anos. Preparar arquitetura para particionar no futuro se necessário (cards>10M, activities>50M)
-- [x] Definir índices adicionais necessários
-  → **Decisão**: 5 índices extras estratégicos (cartões vencidos, busca/autocomplete, timeline, login, rankings). Monitorar uso com EXPLAIN ANALYZE
-- [x] Definir se usará cache distribuído (Redis Cluster?)
-  → **Decisão**: Cache em memória local (node-cache) - SEM Redis. Zero custo adicional. Cache: sessions, permissions, board structure, KPIs, rankings. Migrar para Redis no futuro se necessário
-
-### 5. Segurança e Compliance (2 questões)
-- [x] Definir campos que precisam criptografia
-  → **Decisão**: Apenas senhas (hash bcrypt, 12 rounds). Outros campos NÃO criptografados. Foco em outras medidas (SSL/TLS, firewall, backups criptografados, logs auditoria)
-- [x] Definir política de retenção de logs (90 dias, 1 ano, 2 anos?)
-  → **Decisão**: Auditoria 1 ano, Aplicação 90 dias, Acesso HTTP 30 dias. Rotação diária, compressão mensal, deleção automática. Custo ~$5-10/mês
+- Nunca faça push direto para `main`
+- Sempre teste localmente antes do deploy
+- Crie migrations do Alembic para mudanças no banco
+- Atualize o CHANGELOG.md
+- Use branches de feature/bugfix
+- Faça Pull Requests para revisão
 
 ---
 
-## 📚 Documentação Complementar a Criar
+## ✅ v1.0.0 - CONCLUÍDO (29/01/2026)
 
-### Documento 11 - Plano de Testes e Qualidade ✅
-- [x] Casos de teste para módulos core
-- [x] Casos de teste para Gamificação
-- [x] Casos de teste para Automações
-- [x] Casos de teste para Transferências
-- [x] Testes de integração
-- [x] Testes E2E
-- [x] Critérios de aceitação
+### Funcionalidades Implementadas
 
-### Documento 12 - Guia de Desenvolvimento ✅
-- [x] Setup de ambiente local (Node, PostgreSQL, Redis)
-- [x] Como rodar o projeto
-- [x] Padrões de código (naming conventions)
-- [x] Estrutura de commits
-- [x] Como rodar testes
-- [x] Troubleshooting comum
-- [x] Code review checklist
+#### Core CRM
+- [x] Sistema de autenticação JWT
+- [x] Gerenciamento de usuários e permissões
+- [x] Módulo de Boards (Kanban)
+- [x] Módulo de Cards (Negócios)
+- [x] Módulo de Clientes/Organizações
+- [x] Módulo de Produtos
+- [x] Sistema de notas
+- [x] Sistema de atividades/timeline
+- [x] Campos customizados
 
-### Documento 13 - Dicionário de Dados ✅
-- [x] Descrição detalhada de cada tabela
-- [x] Descrição detalhada de cada campo
-- [x] Regras de validação por campo
-- [x] Relacionamentos explicados
-- [x] Índices e justificativa
-- [x] Queries de exemplo
+#### Importação de Dados
+- [x] Importação completa do Pipedrive
+  - [x] 2.366 organizações
+  - [x] 4.043 pessoas
+  - [x] 4.512 deals
+  - [x] 1.583 leads
+  - [x] 11.915 notas
+  - [x] 10.601 atividades
+  - [x] 61 produtos
 
-### Documento 14 - Scripts de Migração ✅
-- [x] Como exportar dados do Pipedrive
-- [x] Mapeamento de campos Pipedrive → HSGrowth
-- [x] Script de transformação de dados
-- [x] Script de validação de dados
-- [x] Rollback plan
-- [x] Checklist de migração
+#### Performance e Otimizações
+- [x] Eager loading para evitar N+1
+- [x] Paginação otimizada
+- [x] Modo "minimal" para listagens
+- [x] Índices de banco otimizados
 
----
+#### Deploy e Infraestrutura
+- [x] Docker/Docker Compose
+- [x] PostgreSQL 15
+- [x] Deploy no Easypanel
+- [x] Migrations com Alembic
+- [x] SSL/HTTPS configurado
 
-## ✅ Validações Técnicas
-
-### Validar Modelo de Dados
-- [ ] Query: Listar todos os cartões de um quadro com campos customizados
-- [ ] Query: Ranking de vendedores por período
-- [ ] Query: Histórico completo de transferências de um cartão
-- [ ] Query: KPIs do dashboard
-- [ ] Query: Automações executadas com falhas
-- [ ] Query: Cartões vencidos por vendedor
-- [ ] Query: Performance de carregamento de Kanban (3.200 cartões)
-- [ ] Query: Auditoria de ações por usuário
-
-### POCs (Proof of Concept)
-- [ ] POC: Bull/BullMQ job queue
-- [ ] POC: Cron jobs com node-cron
-- [ ] POC: Execução de automações assíncronas
+#### Documentação
+- [x] 14 documentos técnicos completos
+- [x] README principal
+- [x] Guia de desenvolvimento
+- [x] CHANGELOG.md
+- [x] DESENVOLVIMENTO.md
 
 ---
 
-## 📅 Cronograma Sugerido
+## 🎯 PRÓXIMAS VERSÕES
 
-### 11-15/12 (Qui-Dom)
-- ✅ Resolver 17 questões pendentes (Gamificação, Automações, Transferências, Performance, Segurança) - CONCLUÍDO
-- ✅ Criar Documento 11 - Plano de Testes - CONCLUÍDO
+### v1.1.0 - Relatórios e Dashboards (Próximo)
 
-### 14-15/12 (Sáb-Dom)
-- ✅ Criar Documento 12 - Guia de Desenvolvimento - CONCLUÍDO
-- ✅ Criar Documento 13 - Dicionário de Dados - CONCLUÍDO
+**Prioridade**: ALTA
+**Prazo Estimado**: Fevereiro 2026
 
-### 16-17/12 (Seg-Ter)
-- [ ] Validar modelo de dados com queries - OPCIONAL
-- ✅ Criar Documento 14 - Scripts de Migração - CONCLUÍDO
-- [ ] POCs críticos - OPCIONAL
+#### Funcionalidades Planejadas
+- [ ] Dashboard de vendas com KPIs
+  - [ ] Total de negócios por período
+  - [ ] Taxa de conversão por funil
+  - [ ] Ticket médio
+  - [ ] Tempo médio de fechamento
+- [ ] Relatórios customizáveis
+  - [ ] Filtros avançados (data, vendedor, produto, status)
+  - [ ] Exportação Excel/CSV
+  - [ ] Gráficos interativos (Chart.js ou Recharts)
+- [ ] Ranking de vendedores
+  - [ ] Por valor vendido
+  - [ ] Por número de vendas
+  - [ ] Por taxa de conversão
+- [ ] Métricas em tempo real
+  - [ ] Atualização automática
+  - [ ] Notificações de metas atingidas
 
-### 18/12 (Qua)
-- ✅ Revisão final de toda documentação
-- ✅ Garantir 100% de consistência
-- ✅ Preparar para início da implementação
+#### Tarefas Técnicas
+- [ ] Criar endpoints de relatórios
+- [ ] Implementar queries otimizadas com agregações
+- [ ] Adicionar cache para queries pesadas
+- [ ] Criar componentes React de gráficos
+- [ ] Implementar exportação de dados
 
 ---
 
-## 🎯 Resultado Esperado
+### v1.2.0 - Automações de Funil
 
-Ao final (18/12):
-- ✅ 10 documentos principais completos (sem comissões)
-- ✅ 4 documentos complementares
-- ✅ 17 decisões resolvidas (Gamificação, Automações, Transferências, Performance, Segurança)
-- ✅ Modelo de dados validado
-- ✅ POCs testados
-- ✅ Pronto para começar desenvolvimento (Semana 1)
+**Prioridade**: ALTA
+**Prazo Estimado**: Março 2026
+
+#### Funcionalidades Planejadas
+- [ ] Automações baseadas em triggers
+  - [ ] Mover card entre listas automaticamente
+  - [ ] Atribuir responsável por critérios
+  - [ ] Alterar status baseado em tempo/valor
+  - [ ] Criar tarefas automaticamente
+- [ ] Automações agendadas
+  - [ ] Execução única (once)
+  - [ ] Recorrente (daily/weekly/monthly)
+- [ ] Interface visual de automações
+  - [ ] Criação drag-and-drop (opcional)
+  - [ ] Lista de automações ativas
+  - [ ] Histórico de execuções
+  - [ ] Logs de sucesso/falha
+- [ ] Notificações de falhas
+
+#### Tarefas Técnicas
+- [ ] Implementar job queue (Bull/BullMQ ou pg-boss)
+- [ ] Criar sistema de triggers
+- [ ] Implementar cron jobs
+- [ ] Criar interface de gerenciamento
+- [ ] Adicionar logs de auditoria
 
 ---
 
-**Status atual**: ✅ 17 questões concluídas (100%) + ✅ 4 documentos complementares concluídos (100%) + ✅ Revisão completa finalizada
-**Última atualização**: 15/12/2025 - 19:15
-**Mudança importante**:
-- ✅ Todas as 17 questões pendentes foram resolvidas e documentadas
-- ✅ Documento 11 - Plano de Testes e Qualidade (13 seções, cobertura completa)
-- ✅ Documento 12 - Guia de Desenvolvimento (8 seções, setup completo)
-- ✅ Documento 13 - Dicionário de Dados (10 seções, todas as tabelas documentadas)
-- ✅ Documento 14 - Scripts de Migração (10 seções, migração Pipedrive completa)
-- ✅ Revisão 1-14: Todas as inconsistências corrigidas (Redis→node-cache, pg-boss, comissões removidas)
-- 🎯 Sistema 100% documentado, consistente e pronto para iniciar implementação!
+### v1.3.0 - Integração com WhatsApp
+
+**Prioridade**: MÉDIA
+**Prazo Estimado**: Abril 2026
+
+#### Funcionalidades Planejadas
+- [ ] Envio de mensagens do CRM
+  - [ ] Template de mensagens
+  - [ ] Variáveis dinâmicas (nome, empresa, valor)
+  - [ ] Histórico de mensagens enviadas
+- [ ] Recebimento de mensagens
+  - [ ] Webhook para receber respostas
+  - [ ] Associar com cards existentes
+  - [ ] Criar cards a partir de conversas
+- [ ] Automações via WhatsApp
+  - [ ] Envio automático de follow-up
+  - [ ] Lembrete de vencimento
+  - [ ] Notificação de mudança de status
+
+#### Tarefas Técnicas
+- [ ] Integrar com API do WhatsApp Business
+- [ ] Criar sistema de templates
+- [ ] Implementar webhooks
+- [ ] Adicionar campo de histórico de conversas
+
+---
+
+### v1.4.0 - Gamificação
+
+**Prioridade**: MÉDIA
+**Prazo Estimado**: Maio 2026
+
+#### Funcionalidades Planejadas
+- [ ] Sistema de pontos
+  - [ ] Pontos por ação (venda, follow-up, etc.)
+  - [ ] Configuração de valores de pontos
+  - [ ] Histórico de pontuação
+- [ ] Sistema de badges
+  - [ ] Badges padrão do sistema
+  - [ ] Badges customizadas pelo admin
+  - [ ] Critérios automáticos e manuais
+- [ ] Rankings
+  - [ ] Ranking mensal/trimestral/anual
+  - [ ] Reset periódico (configurável)
+  - [ ] Visualização pública/privada
+- [ ] Exportação para RH
+  - [ ] Relatório de pontuação
+  - [ ] Exportação Excel/CSV
+  - [ ] Vincular com bônus
+
+#### Tarefas Técnicas
+- [ ] Criar tabelas de gamificação
+- [ ] Implementar cálculo de pontos
+- [ ] Criar sistema de badges
+- [ ] Implementar rankings com cache
+- [ ] Criar interface de administração
+
+---
+
+### v1.5.0 - Módulo de Leads
+
+**Prioridade**: MÉDIA
+**Prazo Estimado**: Junho 2026
+
+#### Funcionalidades Planejadas
+- [ ] Funil de leads separado
+  - [ ] Board exclusivo para leads
+  - [ ] Listas de qualificação
+  - [ ] Conversão de lead para deal
+- [ ] Campos específicos de leads
+  - [ ] Fonte do lead
+  - [ ] Nível de interesse
+  - [ ] Budget estimado
+  - [ ] Próximos passos
+- [ ] Automações de leads
+  - [ ] Distribuição automática
+  - [ ] Follow-up automático
+  - [ ] Qualificação baseada em critérios
+- [ ] Relatórios de leads
+  - [ ] Taxa de conversão por fonte
+  - [ ] Tempo médio de qualificação
+  - [ ] Leads por vendedor
+
+#### Tarefas Técnicas
+- [ ] Expandir modelo de leads existente
+- [ ] Criar endpoints específicos
+- [ ] Implementar lógica de conversão
+- [ ] Criar interface de funil de leads
+
+---
+
+## 🔧 Melhorias Técnicas Planejadas
+
+### Backend
+- [ ] Implementar testes unitários (pytest)
+- [ ] Implementar testes de integração
+- [ ] Adicionar rate limiting
+- [ ] Implementar cache distribuído (Redis) se necessário
+- [ ] Otimizar queries lentas (EXPLAIN ANALYZE)
+- [ ] Adicionar monitoring (Sentry/DataDog)
+- [ ] Implementar logs estruturados
+
+### Frontend
+- [ ] Implementar testes (Jest/Vitest)
+- [ ] Adicionar Storybook para componentes
+- [ ] Otimizar bundle size
+- [ ] Implementar lazy loading de rotas
+- [ ] Adicionar PWA support
+- [ ] Melhorar acessibilidade (WCAG)
+
+### DevOps
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Staging environment
+- [ ] Backup automatizado
+- [ ] Monitoring de performance
+- [ ] Alertas de downtime
+
+---
+
+## 🐛 Bugs Conhecidos
+
+Nenhum bug crítico no momento.
+
+### Melhorias Sugeridas
+- [ ] Adicionar loading skeleton nas listagens
+- [ ] Melhorar feedback visual de ações
+- [ ] Adicionar tooltips em campos complexos
+- [ ] Otimizar carregamento de boards muito grandes (5000+ cards)
+
+---
+
+## 📝 Documentação Pendente
+
+- [ ] Guia do usuário final (não técnico)
+- [ ] Vídeos tutoriais
+- [ ] FAQ
+- [ ] Troubleshooting de problemas comuns
+- [ ] Guia de migração de outros CRMs
+
+---
+
+## 💡 Ideias Futuras (Backlog)
+
+- [ ] Integração com Google Calendar
+- [ ] Integração com Slack
+- [ ] Mobile app (React Native)
+- [ ] API pública para integrações
+- [ ] Webhooks para eventos
+- [ ] Sistema de tags para categorização
+- [ ] Busca full-text avançada
+- [ ] Anexos de arquivos em cards
+- [ ] Sistema de comentários em cards
+- [ ] Menções (@usuario) em comentários
+- [ ] Notificações em tempo real (WebSockets)
+- [ ] Tema dark mode
+- [ ] Multi-idioma (i18n)
+- [ ] Importação de outros CRMs (HubSpot, Salesforce)
+
+---
+
+## 📊 Métricas de Sucesso
+
+### v1.0.0 (Baseline)
+- Tempo médio de carregamento de board: < 3s
+- Uptime: 99.5%
+- Usuários ativos: TBD
+- Negócios gerenciados: 4.512 (importados)
+
+### Metas para v1.1.0
+- Tempo médio de carregamento: < 2s
+- Uptime: 99.9%
+- Adoção de relatórios: 80% dos usuários
+- Satisfação do usuário: 4.5/5
+
+---
+
+**Última atualização**: 29/01/2026
+**Próxima revisão**: Semanalmente
+**Responsável**: Erick (Cientista de Dados/Full Stack Developer)
