@@ -190,7 +190,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
       <>
         <ExpandableSection
           title="Cliente (Organização)"
-          defaultExpanded={true}
+          defaultExpanded={false}
           icon={<Building2 size={18} />}
         >
           <div className="space-y-3">
@@ -297,7 +297,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
   return (
     <ExpandableSection
       title="Cliente (Organização)"
-      defaultExpanded={true}
+      defaultExpanded={false}
       icon={<Building2 size={18} />}
     >
       {loading ? (

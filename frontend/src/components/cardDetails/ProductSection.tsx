@@ -297,7 +297,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
   return (
     <ExpandableSection
       title="Produto"
-      defaultExpanded={products.length > 0}
+      defaultExpanded={false}
       icon={<Package size={18} />}
       badge={products.length > 0 ? products.length : undefined}
     >

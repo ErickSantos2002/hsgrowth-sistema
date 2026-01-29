@@ -101,7 +101,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
   return (
     <ExpandableSection
       title="Resumo"
-      defaultExpanded={true}
+      defaultExpanded={false}
       icon={<Info size={18} />}
     >
       <div className="space-y-4">

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+﻿import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ReactFlow, {
   Background,
@@ -46,6 +46,8 @@ const AutomationEditorContent: React.FC = () => {
   const [automationName, setAutomationName] = useState(
     id === "new" ? "Nova Automação" : "Vendas → Pós-Venda Automático"
   );
+  const [isTitleEditing, setIsTitleEditing] = useState(false);
+  const [titleValue, setTitleValue] = useState(automationName);
 
   // Estados do React Flow
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -98,8 +100,6 @@ const AutomationEditorContent: React.FC = () => {
           scheduled: "Agendado",
           create_card: "Criar Card",
           send_email: "Enviar Email",
-          create_notification: "Criar Notificação",
-          assign_user: "Atribuir Usuário",
           add_tag: "Adicionar Tag",
           move_to_list: "Mover para Lista",
           update_field: "Atualizar Campo",
@@ -133,23 +133,19 @@ const AutomationEditorContent: React.FC = () => {
     setSelectedNode(node);
   }, []);
 
-  // Handler para rastrear seleção múltipla
   const onSelectionChange = useCallback(
     ({ nodes: selectedNodes }: { nodes: Node[] }) => {
       setSelectedNodesCount(selectedNodes.length);
 
-      // Se não há nodes selecionados ou há mais de 1, fecha o painel de configuração
       if (selectedNodes.length !== 1) {
         setSelectedNode(null);
       } else if (selectedNodes.length === 1) {
-        // Se há apenas 1 selecionado, abre o painel
         setSelectedNode(selectedNodes[0]);
       }
     },
     []
   );
 
-  // Salvar configuração do node
   const handleSaveNodeConfig = useCallback(
     (nodeId: string, config: any) => {
       setNodes((nds) =>
@@ -170,7 +166,6 @@ const AutomationEditorContent: React.FC = () => {
     [setNodes]
   );
 
-  // Fechar painel de configuração
   const handleCloseConfigPanel = () => {
     setSelectedNode(null);
   };
@@ -183,7 +178,6 @@ const AutomationEditorContent: React.FC = () => {
     }
   }, [selectedNode]);
 
-  // Validar automação antes de salvar
   const validateAutomation = (): { valid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
@@ -207,12 +201,10 @@ const AutomationEditorContent: React.FC = () => {
       errors.push("Adicione pelo menos uma ação");
     }
 
-    // Verifica se há conexões
     if (edges.length === 0 && triggers.length > 0 && actions.length > 0) {
       errors.push("Conecte o gatilho a pelo menos uma ação");
     }
 
-    // Verifica se todos os nodes estão configurados
     const unconfiguredNodes = nodes.filter(n => {
       const config = n.data.config;
       return !config || Object.keys(config).length === 0;
@@ -223,7 +215,6 @@ const AutomationEditorContent: React.FC = () => {
       errors.push(`Configure todos os nodes: ${nodeLabels}`);
     }
 
-    // Verifica se triggers estão conectados a actions
     if (triggers.length > 0 && actions.length > 0 && edges.length > 0) {
       const disconnectedTriggers = triggers.filter(trigger => {
         return !edges.some(edge => edge.source === trigger.id);
@@ -276,9 +267,18 @@ const AutomationEditorContent: React.FC = () => {
     if (confirm("Tem certeza que deseja limpar todo o canvas?")) {
       setNodes([]);
       setEdges([]);
-      setSelectedNode(null); // Fecha o painel de configuração
+      setSelectedNode(null);
       setSelectedNodesCount(0);
     }
+  };
+
+  
+
+  const handleSaveTitle = () => {
+    const trimmed = titleValue.trim();
+    if (!trimmed) return;
+    setAutomationName(trimmed);
+    setIsTitleEditing(false);
   };
 
   // Controles de Zoom
@@ -306,7 +306,6 @@ const AutomationEditorContent: React.FC = () => {
     }
   }, [reactFlowInstance]);
 
-  // Atualiza o nível de zoom quando o viewport mudar
   // Carregar template no canvas
   const handleLoadTemplate = useCallback((templateNodes: Node[], templateEdges: Edge[]) => {
     setNodes(templateNodes);
@@ -348,7 +347,6 @@ const AutomationEditorContent: React.FC = () => {
     console.log(`Colado${newNodes.length > 1 ? 's' : ''} ${newNodes.length} node${newNodes.length > 1 ? 's' : ''}`);
   }, [copiedNodes, setNodes]);
 
-  // Duplicar node específico
   const handleDuplicateNode = useCallback(
     (nodeId: string) => {
       const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
@@ -369,7 +367,6 @@ const AutomationEditorContent: React.FC = () => {
     [nodes, setNodes]
   );
 
-  // Salvar snapshot no histórico
   const saveToHistory = useCallback(() => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push({ nodes, edges });
@@ -397,7 +394,6 @@ const AutomationEditorContent: React.FC = () => {
     }
   }, [history, historyIndex, setNodes, setEdges]);
 
-  // Detecta quando Ctrl está pressionado
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Control") {
@@ -420,10 +416,8 @@ const AutomationEditorContent: React.FC = () => {
     };
   }, []);
 
-  // Salva no histórico quando nodes ou edges mudam (com debounce)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      // Só salva se houver mudanças reais
       const lastState = history[historyIndex];
       const hasChanges =
         !lastState ||
@@ -502,6 +496,12 @@ const AutomationEditorContent: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleCopy, handlePaste, handleUndo, handleRedo, handleZoomIn, handleZoomOut, handleResetZoom, handleFitView]);
 
+  useEffect(() => {
+    if (!isTitleEditing) {
+      setTitleValue(automationName);
+    }
+  }, [automationName, isTitleEditing]);
+
   return (
     <div className="h-screen flex flex-col bg-slate-900">
       {/* Header */}
@@ -515,13 +515,32 @@ const AutomationEditorContent: React.FC = () => {
             >
               <ArrowLeft size={20} className="text-slate-400" />
             </button>
-            <input
-              type="text"
-              value={automationName}
-              onChange={(e) => setAutomationName(e.target.value)}
-              className="text-xl font-semibold text-white bg-transparent border-none focus:outline-none focus:ring-0 flex-1 min-w-0 truncate"
-              placeholder="Nome da automação"
-            />
+            {isTitleEditing ? (
+              <input
+                type="text"
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={handleSaveTitle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveTitle();
+                  if (e.key === "Escape") {
+                    setTitleValue(automationName);
+                    setIsTitleEditing(false);
+                  }
+                }}
+                autoFocus
+                className="text-xl font-semibold text-white bg-slate-800/50 border-b-2 border-blue-500 focus:outline-none px-2 py-1 rounded flex-1 min-w-0"
+                placeholder="Nome da automação"
+              />
+            ) : (
+              <h1
+                onClick={() => setIsTitleEditing(true)}
+                className="text-xl font-semibold text-white cursor-pointer hover:text-blue-400 transition-colors flex-1 min-w-0 truncate"
+                title="Clique para editar"
+              >
+                {automationName}
+              </h1>
+            )}
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 sm:justify-end">
             <button
@@ -607,7 +626,6 @@ const AutomationEditorContent: React.FC = () => {
           </ReactFlow>
         </div>
 
-        {/* Sidebar - Alterna entre lista de nodes e painel de configuração */}
         <div className="min-w-[280px] w-[320px] shrink-0">
           {selectedNode ? (
             <NodeConfigPanel
@@ -641,3 +659,10 @@ const AutomationEditor: React.FC = () => {
 };
 
 export default AutomationEditor;
+
+
+
+
+
+
+

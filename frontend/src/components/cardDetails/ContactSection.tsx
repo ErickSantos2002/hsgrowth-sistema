@@ -54,7 +54,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
   return (
     <ExpandableSection
       title="Informação de Contato (Pessoa)"
-      defaultExpanded={true}
+      defaultExpanded={false}
       icon={<User size={18} />}
     >
       <div className="space-y-4">
