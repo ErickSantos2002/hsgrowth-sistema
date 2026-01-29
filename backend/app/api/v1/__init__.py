@@ -3,7 +3,7 @@ API v1 Router.
 Agrega todos os endpoints da versão 1 da API.
 """
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, boards, cards, clients, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products
+from app.api.v1.endpoints import auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products
 
 api_router = APIRouter()
 
@@ -17,6 +17,7 @@ api_router.include_router(card_notes.router, prefix="/card-notes", tags=["Card N
 api_router.include_router(fields.router, prefix="/fields", tags=["Custom Fields"])
 api_router.include_router(products.router, prefix="/products", tags=["Products"])
 api_router.include_router(clients.router, prefix="/clients", tags=["Clients"])
+api_router.include_router(persons.router, prefix="/persons", tags=["Persons"])
 api_router.include_router(gamification.router, prefix="/gamification", tags=["Gamification"])
 api_router.include_router(automations.router, prefix="/automations", tags=["Automations"])
 api_router.include_router(transfers.router, prefix="/transfers", tags=["Transfers"])

@@ -21,12 +21,26 @@ class Person(Base):
     first_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
     name = Column(String(200), nullable=False, index=True)
-    email = Column(String(255), nullable=True, index=True)
-    phone = Column(String(50), nullable=True)
+
+    # Emails (múltiplos)
+    email = Column(String(255), nullable=True, index=True)  # Email principal (legado)
+    email_commercial = Column(String(255), nullable=True, index=True)  # Email comercial
+    email_personal = Column(String(255), nullable=True, index=True)  # Email pessoal
+    email_alternative = Column(String(255), nullable=True)  # Email alternativo
+
+    # Telefones (múltiplos)
+    phone = Column(String(50), nullable=True)  # Telefone principal (legado)
+    phone_commercial = Column(String(50), nullable=True)  # Telefone comercial
+    phone_whatsapp = Column(String(50), nullable=True)  # Celular/WhatsApp
+    phone_alternative = Column(String(50), nullable=True)  # Telefone alternativo
 
     # Profissional
     position = Column(String(200), nullable=True)  # Cargo
-    linkedin = Column(String(500), nullable=True)
+
+    # Redes sociais
+    linkedin = Column(String(500), nullable=True)  # LinkedIn
+    instagram = Column(String(500), nullable=True)  # Instagram
+    facebook = Column(String(500), nullable=True)  # Facebook
 
     # Relacionamentos
     organization_id = Column(Integer, ForeignKey("clients.id"), nullable=True)

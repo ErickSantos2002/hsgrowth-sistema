@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Building, User, Users, ChevronDown } from "lucide-react";
-import clientService, { Client } from "../services/clientService";
+import { Plus, Search, Filter, Edit, Trash2, RefreshCw, User, Users, ChevronDown, Briefcase, Mail } from "lucide-react";
+import personService, { Person } from "../services/personService";
 import { Button, Alert } from "../components/common";
-import ClientModal from "../components/clients/ClientModal";
+import PersonModal from "../components/persons/PersonModal";
 
-const Clients: React.FC = () => {
+const Persons: React.FC = () => {
   // Estados
-  const [clients, setClients] = useState<Client[]>([]);
+  const [persons, setPersons] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterActive, setFilterActive] = useState<string>("all"); // all, active, inactive
@@ -15,113 +15,117 @@ const Clients: React.FC = () => {
 
   // Estados do modal
   const [showModal, setShowModal] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
 
-  // Backend não implementado ainda
+  // Backend error state
   const [backendError, setBackendError] = useState(false);
 
   /**
-   * Carrega os clientes ao montar o componente
+   * Carrega as pessoas ao montar o componente
    */
   useEffect(() => {
-    loadClients();
+    loadPersons();
   }, []);
 
   /**
-   * Carrega lista de clientes do backend (todas de uma vez)
+   * Carrega lista de pessoas do backend (todas de uma vez)
    */
-  const loadClients = async () => {
+  const loadPersons = async () => {
     try {
       setLoading(true);
       setBackendError(false);
 
-      // Carrega todos os clientes de uma vez com page_size alto
-      const response = await clientService.list({
+      // Carrega todas as pessoas de uma vez com page_size alto
+      const response = await personService.list({
         page: 1,
         page_size: 10000, // Suficiente para pegar todos os registros de uma vez
       });
 
-      setClients(response.clients || []);
+      setPersons(response.persons || []);
     } catch (error) {
-      console.error("Erro ao carregar clientes:", error);
+      console.error("Erro ao carregar pessoas:", error);
       setBackendError(true);
-      setClients([]);
+      setPersons([]);
     } finally {
       setLoading(false);
     }
   };
 
   /**
-   * Abre modal para criar novo cliente
+   * Abre modal para criar nova pessoa
    */
   const handleCreate = () => {
-    setEditingClient(null);
+    setEditingPerson(null);
     setShowModal(true);
   };
 
   /**
-   * Abre modal para editar cliente
+   * Abre modal para editar pessoa
    */
-  const handleEdit = (client: Client) => {
-    setEditingClient(client);
+  const handleEdit = (person: Person) => {
+    setEditingPerson(person);
     setShowModal(true);
   };
 
   /**
-   * Deleta um cliente
+   * Deleta uma pessoa
    */
-  const handleDelete = async (client: Client) => {
-    if (confirm(`Tem certeza que deseja deletar o cliente "${client.name}"?`)) {
+  const handleDelete = async (person: Person) => {
+    if (confirm(`Tem certeza que deseja deletar a pessoa "${person.name}"?`)) {
       try {
-        await clientService.delete(client.id);
-        await loadClients();
+        await personService.delete(person.id);
+        await loadPersons();
       } catch (error) {
-        console.error("Erro ao deletar cliente:", error);
-        alert("Erro ao deletar cliente");
+        console.error("Erro ao deletar pessoa:", error);
+        alert("Erro ao deletar pessoa");
       }
     }
   };
 
   /**
-   * Salva cliente (criar ou editar)
+   * Salva pessoa (criar ou editar)
    */
   const handleSave = async () => {
-    await loadClients();
+    await loadPersons();
     setShowModal(false);
   };
 
   /**
-   * Filtra clientes baseado na busca e filtros
+   * Filtra pessoas baseado na busca e filtros
    */
-  const filteredClients = clients.filter((client) => {
+  const filteredPersons = persons.filter((person) => {
     // Filtro de busca
     const matchesSearch =
       !searchTerm ||
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone?.includes(searchTerm);
+      person.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.email_commercial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.email_personal?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.phone?.includes(searchTerm) ||
+      person.phone_commercial?.includes(searchTerm) ||
+      person.phone_whatsapp?.includes(searchTerm);
 
     // Filtro de status
     const matchesStatus =
       filterActive === "all" ||
-      (filterActive === "active" && client.is_active) ||
-      (filterActive === "inactive" && !client.is_active);
+      (filterActive === "active" && person.is_active) ||
+      (filterActive === "inactive" && !person.is_active);
 
     return matchesSearch && matchesStatus;
   });
 
   const itemsPerPage = 7;
-  const totalItems = filteredClients.length;
+  const totalItems = filteredPersons.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const paginatedClients = filteredClients.slice(startIndex, endIndex);
+  const paginatedPersons = filteredPersons.slice(startIndex, endIndex);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterActive, clients.length]);
+  }, [searchTerm, filterActive, persons.length]);
 
   const getPageNumbers = () => {
     const maxButtons = 5;
@@ -143,6 +147,22 @@ const Clients: React.FC = () => {
     return new Date(date).toLocaleDateString("pt-BR");
   };
 
+  // Formata telefone
+  const formatPhone = (phone: string | undefined | null) => {
+    if (!phone) return "-";
+    const cleaned = phone.replace(/\D/g, "");
+
+    // Celular: (00) 00000-0000
+    if (cleaned.length === 11) {
+      return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+    }
+    // Fixo: (00) 0000-0000
+    if (cleaned.length === 10) {
+      return cleaned.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+    }
+    return phone;
+  };
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -151,16 +171,16 @@ const Clients: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <Users className="text-white" size={32} />
-              Clientes
+              Pessoas
             </h1>
-            <p className="text-slate-400 mt-1">Gerencie sua base de clientes</p>
+            <p className="text-slate-400 mt-1">Gerencie seus contatos e pessoas</p>
           </div>
           <div className="hidden md:flex items-center gap-3">
             <Button
               variant="secondary"
               size="sm"
               icon={<RefreshCw size={16} />}
-              onClick={loadClients}
+              onClick={loadPersons}
               disabled={loading}
               className="py-2.5 sm:py-2 sm:min-w-[140px]"
             >
@@ -173,16 +193,15 @@ const Clients: React.FC = () => {
               onClick={handleCreate}
               className="sm:min-w-[140px]"
             >
-              Novo Cliente
+              Nova Pessoa
             </Button>
           </div>
         </div>
 
         {/* Aviso de backend não implementado */}
         {backendError && (
-          <Alert type="warning" title="Endpoint não implementado" className="mb-4">
-            O backend ainda não implementou o endpoint <code>/api/v1/clients</code>.
-            A estrutura do frontend está pronta. Após implementar o endpoint, essa página funcionará automaticamente.
+          <Alert type="warning" title="Erro ao carregar" className="mb-4">
+            Não foi possível carregar a lista de pessoas. Verifique a conexão com o backend.
           </Alert>
         )}
 
@@ -193,7 +212,7 @@ const Clients: React.FC = () => {
               variant="secondary"
               size="sm"
               icon={<RefreshCw size={16} />}
-              onClick={loadClients}
+              onClick={loadPersons}
               disabled={loading}
               className="flex-1 py-2.5"
             >
@@ -206,7 +225,7 @@ const Clients: React.FC = () => {
               onClick={handleCreate}
               className="flex-1"
             >
-              Novo Cliente
+              Nova Pessoa
             </Button>
           </div>
           {/* Campo de busca */}
@@ -217,7 +236,7 @@ const Clients: React.FC = () => {
             />
             <input
               type="text"
-              placeholder="Buscar por nome, empresa, email ou telefone."
+              placeholder="Buscar por nome, email, telefone ou cargo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm sm:text-base text-white placeholder:text-sm placeholder:sm:text-base placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -263,23 +282,23 @@ const Clients: React.FC = () => {
 
       {/* Contador */}
       <div className="mb-4 text-sm text-slate-400">
-        {filteredClients.length} cliente{filteredClients.length !== 1 ? "s" : ""} encontrado
-        {filteredClients.length !== 1 ? "s" : ""}
+        {filteredPersons.length} pessoa{filteredPersons.length !== 1 ? "s" : ""} encontrada
+        {filteredPersons.length !== 1 ? "s" : ""}
       </div>
 
-      {/* Tabela de clientes */}
+      {/* Tabela de pessoas */}
       {loading ? (
-        <div className="text-center py-12 text-slate-400">Carregando clientes...</div>
-      ) : filteredClients.length === 0 ? (
+        <div className="text-center py-12 text-slate-400">Carregando pessoas...</div>
+      ) : filteredPersons.length === 0 ? (
         <div className="text-center py-12 bg-slate-800/50 border border-slate-700 rounded-xl">
           <p className="text-slate-400 mb-4">
             {searchTerm || filterActive !== "all"
-              ? "Nenhum cliente encontrado com os filtros aplicados"
-              : "Nenhum cliente cadastrado ainda"}
+              ? "Nenhuma pessoa encontrada com os filtros aplicados"
+              : "Nenhuma pessoa cadastrada ainda"}
           </p>
           {!searchTerm && filterActive === "all" && (
             <Button variant="primary" icon={<Plus size={16} />} onClick={handleCreate}>
-              Cadastrar Primeiro Cliente
+              Cadastrar Primeira Pessoa
             </Button>
           )}
         </div>
@@ -290,13 +309,13 @@ const Clients: React.FC = () => {
               <thead>
                 <tr className="bg-slate-800/50 border-b border-slate-700">
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                    Cliente
+                    Pessoa
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    Cargo
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                     Contato
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                    Localização
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                     Status
@@ -310,84 +329,87 @@ const Clients: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {paginatedClients.map((client) => (
+                {paginatedPersons.map((person) => (
                   <tr
-                    key={client.id}
+                    key={person.id}
                     className="hover:bg-slate-700/30 transition-colors"
                   >
-                    {/* Cliente */}
+                    {/* Pessoa */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            client.company_name
-                              ? "bg-blue-500/20 text-blue-400"
-                              : "bg-emerald-500/20 text-emerald-400"
-                          }`}
-                        >
-                          {client.company_name ? <Building size={20} /> : <User size={20} />}
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500/20 text-blue-400">
+                          <User size={20} />
                         </div>
                         <div>
-                          <div className="font-medium text-white">{client.name}</div>
-                          {client.company_name && (
-                            <div className="text-sm text-slate-400">{client.company_name}</div>
-                          )}
+                          <div className="font-medium text-white">{person.name}</div>
                         </div>
                       </div>
                     </td>
 
-                    {/* Contato */}
+                    {/* Cargo */}
                     <td className="px-6 py-4">
                       <div className="text-sm">
-                        {client.email && (
-                          <div className="text-white">{client.email}</div>
-                        )}
-                        {client.phone && (
-                          <div className="text-slate-400">{client.phone}</div>
-                        )}
-                        {!client.email && !client.phone && (
+                        {person.position ? (
+                          <div className="flex items-center gap-2 text-slate-300">
+                            <Briefcase size={14} className="text-slate-400" />
+                            {person.position}
+                          </div>
+                        ) : (
                           <span className="text-slate-500">-</span>
                         )}
                       </div>
                     </td>
 
-                    {/* Localização */}
-                    <td className="px-6 py-4 text-sm text-slate-300">
-                      {client.city && client.state
-                        ? `${client.city}, ${client.state}`
-                        : client.city || client.state || "-"}
+                    {/* Contato */}
+                    <td className="px-6 py-4">
+                      <div className="text-sm space-y-1">
+                        {(person.email_commercial || person.email) && (
+                          <div className="flex items-center gap-2 text-blue-400">
+                            <Mail size={14} />
+                            {person.email_commercial || person.email}
+                          </div>
+                        )}
+                        {person.phone_whatsapp && (
+                          <div className="text-slate-400">
+                            {formatPhone(person.phone_whatsapp)}
+                          </div>
+                        )}
+                        {!person.email && !person.email_commercial && !person.phone_whatsapp && (
+                          <span className="text-slate-500">-</span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Status */}
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          client.is_active
+                          person.is_active
                             ? "bg-emerald-500/20 text-emerald-400"
                             : "bg-red-500/20 text-red-400"
                         }`}
                       >
-                        {client.is_active ? "Ativo" : "Inativo"}
+                        {person.is_active ? "Ativo" : "Inativo"}
                       </span>
                     </td>
 
                     {/* Data de cadastro */}
                     <td className="px-6 py-4 text-sm text-slate-400">
-                      {formatDate(client.created_at)}
+                      {formatDate(person.created_at)}
                     </td>
 
                     {/* Ações */}
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => handleEdit(client)}
+                          onClick={() => handleEdit(person)}
                           className="p-2 hover:bg-yellow-500/20 rounded-lg transition-colors text-yellow-400 hover:text-yellow-300"
                           title="Editar"
                         >
                           <Edit size={16} />
                         </button>
                         <button
-                          onClick={() => handleDelete(client)}
+                          onClick={() => handleDelete(person)}
                           className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-400 hover:text-red-300"
                           title="Deletar"
                         >
@@ -480,18 +502,18 @@ const Clients: React.FC = () => {
         </div>
       )}
 
-      {/* Modal de Criar/Editar Cliente */}
-      <ClientModal
+      {/* Modal de Criar/Editar Pessoa */}
+      <PersonModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onSave={handleSave}
-        client={editingClient}
+        person={editingPerson}
       />
     </div>
   );
 };
 
-export default Clients;
+export default Persons;
 
 // ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
 interface SelectOption {

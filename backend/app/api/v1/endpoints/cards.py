@@ -444,3 +444,71 @@ def get_card_expanded(
     """
     service = CardService(db)
     return service.get_card_expanded(card_id, current_user)
+
+
+@router.post(
+    "/{card_id}/person",
+    summary="Vincular pessoa ao card",
+    description="""
+    Vincula uma pessoa (contato) a um card.
+
+    **Parâmetros:**
+    - `card_id`: ID do card
+    - `person_id`: ID da pessoa (no corpo da requisição)
+
+    **Comportamento:**
+    - Vincula a pessoa ao card através do campo person_id
+    - Registra a ação no histórico de atividades
+    - Substitui a pessoa anterior se já houver uma vinculada
+
+    **Erros:**
+    - 404: Card ou pessoa não encontrados
+    - 401: Não autenticado
+    """
+)
+async def link_person_to_card(
+    card_id: int,
+    person_id: int = Query(..., description="ID da pessoa"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Vincula uma pessoa a um card.
+    """
+    service = CardService(db)
+    card = service.link_person_to_card(card_id, person_id, current_user)
+
+    return {"message": "Pessoa vinculada ao card com sucesso", "card_id": card.id, "person_id": card.person_id}
+
+
+@router.delete(
+    "/{card_id}/person",
+    summary="Desvincular pessoa do card",
+    description="""
+    Desvincula a pessoa (contato) de um card.
+
+    **Parâmetros:**
+    - `card_id`: ID do card
+
+    **Comportamento:**
+    - Remove a vinculação da pessoa do card (person_id = NULL)
+    - Registra a ação no histórico de atividades
+    - A pessoa não é deletada, apenas desvinculada do card
+
+    **Erros:**
+    - 404: Card não encontrado
+    - 401: Não autenticado
+    """
+)
+async def unlink_person_from_card(
+    card_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Desvincula a pessoa de um card.
+    """
+    service = CardService(db)
+    card = service.unlink_person_from_card(card_id, current_user)
+
+    return {"message": "Pessoa desvinculada do card com sucesso", "card_id": card.id}

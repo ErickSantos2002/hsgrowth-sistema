@@ -13,6 +13,7 @@ import {
     Repeat,
     Workflow,
     Package,
+    Contact,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -23,6 +24,7 @@ const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false },
     { path: "/boards", icon: Trello, label: "Boards", adminOnly: false, managerOrAdminOnly: false },
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false },
+    { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false },
     { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false },
     { path: "/gamification", icon: Trophy, label: "Gamificação", adminOnly: false, managerOrAdminOnly: false },
     { path: "/transfers", icon: Repeat, label: "Transferências", adminOnly: false, managerOrAdminOnly: false },

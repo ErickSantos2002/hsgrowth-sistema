@@ -1,9 +1,11 @@
-import React from "react";
-import { User, Mail, Phone, Briefcase, Linkedin, MessageCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
+import { User, ExternalLink, Search, X, Trash2, Mail, Phone, Briefcase, Linkedin, MessageCircle } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
-import EditableField from "./EditableField";
+import ActionButton from "./ActionButton";
 import { Card } from "../../types";
-import cardService from "../../services/cardService";
+import { Person } from "../../services/personService";
+import personService from "../../services/personService";
 
 interface ContactSectionProps {
   card: Card;
@@ -15,29 +17,139 @@ interface ContactSectionProps {
  * Terceira seção da coluna esquerda, expandida por padrão
  */
 const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
+  const [person, setPerson] = useState<Person | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isLoadingPersons, setIsLoadingPersons] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [allPersons, setAllPersons] = useState<Person[]>([]);
+  const [showModal, setShowModal] = useState(false);
+
+  // Carrega dados da pessoa quando o card é carregado
+  useEffect(() => {
+    loadPersonData();
+  }, [card]);
+
   /**
-   * Atualiza campo de contato
+   * Carrega os dados da pessoa associada ao card
    */
-  const handleUpdateContactField = async (field: string, value: string) => {
+  const loadPersonData = async () => {
+    if (card.person_id) {
+      try {
+        setLoading(true);
+        const personData = await personService.getById(card.person_id);
+        setPerson(personData);
+      } catch (error) {
+        console.error("Erro ao carregar pessoa:", error);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setPerson(null);
+    }
+  };
+
+  /**
+   * Carrega todas as pessoas quando abre o modal
+   */
+  const handleOpenModal = async () => {
+    setShowModal(true);
+
+    // Só carrega se ainda não carregou
+    if (allPersons.length === 0) {
+      try {
+        setIsLoadingPersons(true);
+        const response = await personService.list({ page_size: 100, is_active: true });
+        setAllPersons(response.persons);
+      } catch (error) {
+        console.error("Erro ao carregar pessoas:", error);
+        alert("Erro ao carregar lista de pessoas");
+      } finally {
+        setIsLoadingPersons(false);
+      }
+    }
+  };
+
+  /**
+   * Filtra pessoas localmente com base no termo de busca
+   */
+  const filteredPersons = allPersons.filter((p) => {
+    if (!searchTerm.trim()) return true;
+
+    const search = searchTerm.toLowerCase().trim();
+
+    // Busca em nome
+    const matchesName = p.name
+      ? p.name.toLowerCase().includes(search)
+      : false;
+
+    // Busca em cargo
+    const matchesPosition = p.position
+      ? p.position.toLowerCase().includes(search)
+      : false;
+
+    // Busca em emails
+    const matchesEmail =
+      (p.email && p.email.toLowerCase().includes(search)) ||
+      (p.email_commercial && p.email_commercial.toLowerCase().includes(search)) ||
+      (p.email_personal && p.email_personal.toLowerCase().includes(search));
+
+    // Busca em telefones
+    const cleanSearch = searchTerm.replace(/\D/g, "");
+    const matchesPhone = cleanSearch.length > 0 && (
+      (p.phone && p.phone.replace(/\D/g, "").includes(cleanSearch)) ||
+      (p.phone_commercial && p.phone_commercial.replace(/\D/g, "").includes(cleanSearch)) ||
+      (p.phone_whatsapp && p.phone_whatsapp.replace(/\D/g, "").includes(cleanSearch))
+    );
+
+    return matchesName || matchesPosition || matchesEmail || matchesPhone;
+  });
+
+  /**
+   * Vincula uma pessoa ao card
+   */
+  const handleLinkPerson = async (personId: number) => {
     try {
-      await cardService.update(card.id, {
-        contact_info: {
-          ...card.contact_info,
-          [field]: value,
-        },
-      });
+      setLoading(true);
+      await personService.linkToCard(card.id, personId);
+      setSearchTerm("");
+      setShowModal(false);
       onUpdate();
     } catch (error) {
-      console.error(`Erro ao atualizar ${field}:`, error);
-      alert(`Erro ao atualizar ${field}`);
+      console.error("Erro ao vincular pessoa:", error);
+      alert("Erro ao vincular pessoa. Verifique o console para mais detalhes.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Fecha o modal e limpa a busca
+   */
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSearchTerm("");
+  };
+
+  /**
+   * Remove vínculo da pessoa
+   */
+  const handleUnlinkPerson = async () => {
+    if (!confirm("Desvincular esta pessoa do negócio?")) return;
+
+    try {
+      await personService.unlinkFromCard(card.id);
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao desvincular pessoa:", error);
+      alert("Erro ao desvincular pessoa");
     }
   };
 
   /**
    * Formata telefone brasileiro
    */
-  const formatPhone = (phone: string | undefined) => {
-    if (!phone) return "";
+  const formatPhone = (phone: string | undefined | null) => {
+    if (!phone) return "Não informado";
     const cleaned = phone.replace(/\D/g, "");
 
     // Celular: (00) 00000-0000
@@ -51,142 +163,264 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
     return phone;
   };
 
+  // Se não há pessoa vinculada
+  if (!person && !loading) {
+    return (
+      <>
+        <ExpandableSection
+          title="Informação de Contato (Pessoa)"
+          defaultExpanded={false}
+          icon={<User size={18} />}
+        >
+          <div className="space-y-3">
+            <p className="text-sm text-slate-400 text-center py-2">
+              Nenhuma pessoa vinculada a este negócio
+            </p>
+
+            {/* Botão para abrir modal */}
+            <button
+              onClick={handleOpenModal}
+              className="w-full px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              <ExternalLink size={16} />
+              Vincular pessoa
+            </button>
+          </div>
+        </ExpandableSection>
+
+        {/* Modal de busca (renderizado no body via Portal) */}
+        {showModal && ReactDOM.createPortal(
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={handleCloseModal}
+          >
+            <div
+              className="bg-slate-800 border border-slate-700 rounded-lg w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="font-semibold text-white">Vincular Pessoa</h3>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Campo de busca dentro do modal */}
+              <div className="p-4 border-b border-slate-700">
+                <div className="relative">
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por nome, email, telefone ou cargo..."
+                    className="w-full pl-10 pr-10 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    autoFocus
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Resultados */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {isLoadingPersons ? (
+                  <div className="p-8 text-center text-sm text-slate-400">
+                    Carregando pessoas...
+                  </div>
+                ) : filteredPersons.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-slate-400">
+                    {searchTerm
+                      ? "Nenhuma pessoa encontrada com esse critério"
+                      : allPersons.length === 0
+                      ? "Nenhuma pessoa cadastrada"
+                      : "Digite para buscar"}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredPersons.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => handleLinkPerson(p.id)}
+                        className="w-full p-3 bg-slate-900/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-left transition-colors"
+                      >
+                        <p className="font-medium text-white">{p.name}</p>
+                        {p.position && (
+                          <p className="text-xs text-slate-400 mt-1">{p.position}</p>
+                        )}
+                        {(p.email_commercial || p.email) && (
+                          <p className="text-xs text-blue-400 mt-1">
+                            {p.email_commercial || p.email}
+                          </p>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      </>
+    );
+  }
+
+  // Se há pessoa vinculada - exibir read-only
   return (
     <ExpandableSection
       title="Informação de Contato (Pessoa)"
       defaultExpanded={false}
       icon={<User size={18} />}
     >
-      <div className="space-y-4">
-        {/* Nome completo */}
-        <EditableField
-          label="Nome completo"
-          value={card.contact_info?.name}
-          onSave={(value) => handleUpdateContactField("name", value)}
-          type="text"
-          placeholder="Nome da pessoa"
-          icon={<User size={14} />}
-        />
+      {loading ? (
+        <div className="text-center py-4">
+          <p className="text-sm text-slate-400">Carregando...</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Nome completo */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
+              <User size={14} className="text-slate-400" />
+              <span>Nome completo</span>
+            </div>
+            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+              <p className="text-white">{person?.name || "Não informado"}</p>
+            </div>
+          </div>
 
-        {/* Cargo/Posição */}
-        <EditableField
-          label="Cargo/Posição"
-          value={card.contact_info?.position}
-          onSave={(value) => handleUpdateContactField("position", value)}
-          type="text"
-          placeholder="Ex: Gerente de Compras"
-          icon={<Briefcase size={14} />}
-        />
+          {/* Cargo/Posição */}
+          {person?.position && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
+                <Briefcase size={14} className="text-slate-400" />
+                <span>Cargo/Posição</span>
+              </div>
+              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+                <p className="text-white">{person.position}</p>
+              </div>
+            </div>
+          )}
 
-        {/* Divisor: E-mails */}
-        <div className="pt-3 border-t border-slate-700/50">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-            E-mails
-          </h4>
+          {/* E-mails */}
+          {(person?.email_commercial || person?.email_personal || person?.email) && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
+                <Mail size={14} className="text-slate-400" />
+                <span>E-mails</span>
+              </div>
+              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-1">
+                {person?.email_commercial && (
+                  <div>
+                    <p className="text-xs text-slate-400">Comercial</p>
+                    <p className="text-blue-400 text-sm">{person.email_commercial}</p>
+                  </div>
+                )}
+                {person?.email_personal && (
+                  <div>
+                    <p className="text-xs text-slate-400">Pessoal</p>
+                    <p className="text-blue-400 text-sm">{person.email_personal}</p>
+                  </div>
+                )}
+                {person?.email && !person.email_commercial && (
+                  <p className="text-blue-400 text-sm">{person.email}</p>
+                )}
+              </div>
+            </div>
+          )}
 
-          <div className="space-y-3">
-            <EditableField
-              label="E-mail comercial"
-              value={card.contact_info?.email_commercial || card.contact_info?.email}
-              onSave={(value) => handleUpdateContactField("email_commercial", value)}
-              type="email"
-              placeholder="email@empresa.com"
-              icon={<Mail size={14} />}
+          {/* Telefones */}
+          {(person?.phone_commercial || person?.phone_whatsapp || person?.phone) && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
+                <Phone size={14} className="text-slate-400" />
+                <span>Telefones</span>
+              </div>
+              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-1">
+                {person?.phone_whatsapp && (
+                  <div>
+                    <p className="text-xs text-slate-400">WhatsApp</p>
+                    <p className="text-white text-sm">{formatPhone(person.phone_whatsapp)}</p>
+                  </div>
+                )}
+                {person?.phone_commercial && (
+                  <div>
+                    <p className="text-xs text-slate-400">Comercial</p>
+                    <p className="text-white text-sm">{formatPhone(person.phone_commercial)}</p>
+                  </div>
+                )}
+                {person?.phone && !person.phone_commercial && !person.phone_whatsapp && (
+                  <p className="text-white text-sm">{formatPhone(person.phone)}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Redes Sociais */}
+          {(person?.linkedin || person?.instagram || person?.facebook) && (
+            <div className="space-y-1">
+              <div className="text-sm font-medium text-slate-300">Redes Sociais</div>
+              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-1">
+                {person?.linkedin && (
+                  <div className="flex items-center gap-2">
+                    <Linkedin size={14} className="text-blue-400" />
+                    <a
+                      href={person.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 text-sm hover:underline"
+                    >
+                      LinkedIn
+                    </a>
+                  </div>
+                )}
+                {person?.instagram && (
+                  <p className="text-white text-sm">{person.instagram}</p>
+                )}
+                {person?.facebook && (
+                  <a
+                    href={person.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 text-sm hover:underline"
+                  >
+                    Facebook
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Ações */}
+          <div className="pt-3 border-t border-slate-700/50 space-y-2">
+            <ActionButton
+              icon={<ExternalLink size={16} />}
+              label="Ver página completa da pessoa"
+              onClick={() => alert(`Navegar para /persons/${person?.id} - será implementado`)}
+              variant="primary"
+              className="w-full"
             />
 
-            <EditableField
-              label="E-mail pessoal"
-              value={card.contact_info?.email_personal}
-              onSave={(value) => handleUpdateContactField("email_personal", value)}
-              type="email"
-              placeholder="email@pessoal.com"
-              icon={<Mail size={14} />}
-            />
-
-            <EditableField
-              label="E-mail alternativo"
-              value={card.contact_info?.email_alternative}
-              onSave={(value) => handleUpdateContactField("email_alternative", value)}
-              type="email"
-              placeholder="outro@email.com"
-              icon={<Mail size={14} />}
+            <ActionButton
+              icon={<Trash2 size={16} />}
+              label="Desvincular pessoa"
+              onClick={handleUnlinkPerson}
+              variant="danger"
+              className="w-full"
             />
           </div>
         </div>
-
-        {/* Divisor: Telefones */}
-        <div className="pt-3 border-t border-slate-700/50">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-            Telefones
-          </h4>
-
-          <div className="space-y-3">
-            <EditableField
-              label="Telefone comercial"
-              value={card.contact_info?.phone_commercial || card.contact_info?.phone}
-              onSave={(value) => handleUpdateContactField("phone_commercial", value)}
-              type="tel"
-              placeholder="(00) 0000-0000"
-              icon={<Phone size={14} />}
-              format={formatPhone}
-            />
-
-            <EditableField
-              label="Celular/WhatsApp"
-              value={card.contact_info?.phone_whatsapp}
-              onSave={(value) => handleUpdateContactField("phone_whatsapp", value)}
-              type="tel"
-              placeholder="(00) 00000-0000"
-              icon={<MessageCircle size={14} />}
-              format={formatPhone}
-            />
-
-            <EditableField
-              label="Telefone alternativo"
-              value={card.contact_info?.phone_alternative}
-              onSave={(value) => handleUpdateContactField("phone_alternative", value)}
-              type="tel"
-              placeholder="(00) 00000-0000"
-              icon={<Phone size={14} />}
-              format={formatPhone}
-            />
-          </div>
-        </div>
-
-        {/* Divisor: Redes Sociais */}
-        <div className="pt-3 border-t border-slate-700/50">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-            Redes Sociais
-          </h4>
-
-          <div className="space-y-3">
-            <EditableField
-              label="LinkedIn"
-              value={card.contact_info?.linkedin}
-              onSave={(value) => handleUpdateContactField("linkedin", value)}
-              type="url"
-              placeholder="https://linkedin.com/in/perfil"
-              icon={<Linkedin size={14} />}
-            />
-
-            <EditableField
-              label="Instagram"
-              value={card.contact_info?.instagram}
-              onSave={(value) => handleUpdateContactField("instagram", value)}
-              type="text"
-              placeholder="@usuario"
-            />
-
-            <EditableField
-              label="Facebook"
-              value={card.contact_info?.facebook}
-              onSave={(value) => handleUpdateContactField("facebook", value)}
-              type="url"
-              placeholder="https://facebook.com/perfil"
-            />
-          </div>
-        </div>
-      </div>
+      )}
     </ExpandableSection>
   );
 };

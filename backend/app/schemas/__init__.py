@@ -57,6 +57,14 @@ from app.schemas.field import (
     CardFieldValueResponse,
 )
 
+from app.schemas.person import (
+    PersonBase,
+    PersonCreate,
+    PersonUpdate,
+    PersonResponse,
+    PersonListResponse,
+)
+
 __all__ = [
     # Auth schemas
     "LoginRequest",
@@ -101,4 +109,10 @@ __all__ = [
     "FieldDefinitionResponse",
     "CardFieldValueCreate",
     "CardFieldValueResponse",
+    # Person schemas
+    "PersonBase",
+    "PersonCreate",
+    "PersonUpdate",
+    "PersonResponse",
+    "PersonListResponse",
 ]

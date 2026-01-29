@@ -12,6 +12,7 @@ from app.repositories.board_repository import BoardRepository
 from app.repositories.field_repository import FieldRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.activity_repository import ActivityRepository
+from app.repositories.person_repository import PersonRepository
 from app.schemas.card import CardCreate, CardUpdate, CardResponse, CardListResponse
 from app.schemas.field import CardFieldValueCreate, CardFieldValueResponse
 from app.models.card import Card
@@ -31,6 +32,7 @@ class CardService:
         self.field_repository = FieldRepository(db)
         self.activity_repository = ActivityRepository(db)
         self.notification_repository = NotificationRepository(db)
+        self.person_repository = PersonRepository(db)
 
     def _verify_card_access(self, card: Card) -> None:
         """
@@ -671,6 +673,7 @@ class CardService:
             "description": card.description,
             "list_id": card.list_id,
             "client_id": card.client_id,
+            "person_id": card.person_id,
             "assigned_to_id": card.assigned_to_id,
             "value": float(card.value) if card.value else None,
             "due_date": card.due_date,
@@ -689,6 +692,7 @@ class CardService:
             "list_name": list_obj.name if list_obj else None,
             "board_id": board.id if board else None,
             "client_name": card.client.name if card.client else None,
+            "person_name": card.person.name if card.person else None,
 
             # Relacionamentos expandidos
             "custom_field_values": [
@@ -741,3 +745,79 @@ class CardService:
         }
 
         return response_data
+
+    def link_person_to_card(self, card_id: int, person_id: int, current_user: User) -> Card:
+        """
+        Vincula uma pessoa a um card.
+
+        Args:
+            card_id: ID do card
+            person_id: ID da pessoa
+            current_user: Usuário atual
+
+        Returns:
+            Card atualizado
+
+        Raises:
+            HTTPException: Se card ou pessoa não forem encontrados
+        """
+        # Busca o card
+        card = self.get_card_by_id(card_id)
+
+        # Verifica se a pessoa existe
+        person = self.person_repository.find_by_id(person_id)
+        if not person:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Pessoa não encontrada"
+            )
+
+        # Vincula a pessoa ao card
+        card.person_id = person_id
+        self.db.commit()
+        self.db.refresh(card)
+
+        # Registra atividade
+        self.activity_repository.create_activity(
+            card_id=card_id,
+            user_id=current_user.id,
+            activity_type="person_linked",
+            description=f"Pessoa '{person.name}' vinculada ao card"
+        )
+
+        return card
+
+    def unlink_person_from_card(self, card_id: int, current_user: User) -> Card:
+        """
+        Desvincula a pessoa de um card.
+
+        Args:
+            card_id: ID do card
+            current_user: Usuário atual
+
+        Returns:
+            Card atualizado
+
+        Raises:
+            HTTPException: Se card não for encontrado
+        """
+        # Busca o card
+        card = self.get_card_by_id(card_id)
+
+        # Guarda o nome da pessoa antes de desvincular (para o log)
+        person_name = card.person.name if card.person else "Desconhecido"
+
+        # Desvincula a pessoa
+        card.person_id = None
+        self.db.commit()
+        self.db.refresh(card)
+
+        # Registra atividade
+        self.activity_repository.create_activity(
+            card_id=card_id,
+            user_id=current_user.id,
+            activity_type="person_unlinked",
+            description=f"Pessoa '{person_name}' desvinculada do card"
+        )
+
+        return card
