@@ -123,7 +123,14 @@ export default function MainLayout() {
                                 }
 
                                 const Icon = item.icon;
-                                const isActive = location.pathname === item.path;
+
+                                // Verifica se o item está ativo
+                                // Para "Boards", considera também sub-rotas (/boards/:id e /cards/:id)
+                                const isActive =
+                                    location.pathname === item.path ||
+                                    (item.path === "/boards" &&
+                                     (location.pathname.startsWith("/boards/") ||
+                                      location.pathname.startsWith("/cards/")));
 
                                 return (
                                     <li key={item.path}>
