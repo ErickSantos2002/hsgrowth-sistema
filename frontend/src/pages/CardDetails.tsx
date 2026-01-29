@@ -209,7 +209,7 @@ const CardDetails: React.FC = () => {
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* ========== HEADER FIXO ========== */}
-      <div className="flex-shrink-0 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50">
+      <div className="relative z-40 flex-shrink-0 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50">
         <div className="px-6 py-4">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Lado Esquerdo: Botão Voltar + Título */}
@@ -273,12 +273,12 @@ const CardDetails: React.FC = () => {
                       <>
                         {/* Overlay para fechar ao clicar fora */}
                         <div
-                          className="fixed inset-0 z-10"
+                          className="fixed inset-0 z-40"
                           onClick={() => setShowAssigneeDropdown(false)}
                         />
 
                         {/* Menu dropdown */}
-                        <div className="absolute top-full right-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-20 max-h-80 overflow-y-auto">
+                        <div className="fixed left-4 right-4 top-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[60] max-h-80 overflow-y-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64 sm:z-[999]">
                           <div className="p-2">
                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-2 py-1 mb-1">
                               Selecionar responsável
@@ -374,9 +374,9 @@ const CardDetails: React.FC = () => {
       </div>
 
       {/* ========== LAYOUT PRINCIPAL: 30% + 70% (COM SCROLL INDEPENDENTE) ========== */}
-      <div className="flex flex-col flex-1 overflow-y-auto sm:overflow-hidden sm:flex-row sm:min-h-0">
+      <div className="relative z-0 flex flex-col flex-1 overflow-y-auto sm:overflow-hidden sm:flex-row sm:min-h-0">
         {/* ========== COLUNA ESQUERDA: 30% - INFORMAÇÕES (SCROLL INDEPENDENTE) ========== */}
-        <div className="w-full flex-none border-b-0 overflow-visible sm:w-[30%] sm:border-b-0 sm:border-r sm:border-slate-700/50 sm:overflow-y-auto sm:overflow-x-hidden sm:min-h-0">
+        <div className="relative z-0 w-full flex-none border-b-0 overflow-visible sm:w-[30%] sm:border-b-0 sm:border-r sm:border-slate-700/50 sm:overflow-y-auto sm:overflow-x-hidden sm:min-h-0 sm:z-auto">
           <div className="p-6 space-y-4 sm:min-h-full">
             {/* Seção: Resumo */}
             <SummarySection
@@ -400,7 +400,7 @@ const CardDetails: React.FC = () => {
         </div>
 
         {/* ========== COLUNA DIREITA: 70% - ATIVIDADES E HISTÓRICO (SCROLL INDEPENDENTE) ========== */}
-        <div className="w-full flex-none overflow-visible sm:w-[70%] sm:overflow-y-auto sm:overflow-x-hidden sm:min-h-0">
+        <div className="relative z-0 w-full flex-none overflow-visible sm:w-[70%] sm:overflow-y-auto sm:overflow-x-hidden sm:min-h-0 sm:z-auto">
           <div className="p-6 sm:min-h-full">
             {/* Sistema de Abas */}
             <div className="border-b border-slate-700/50 mb-6">
