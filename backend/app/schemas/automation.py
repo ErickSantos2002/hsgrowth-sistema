@@ -45,6 +45,7 @@ class ActionType(str, Enum):
     """Tipos de ação que uma automação pode executar."""
     MOVE_CARD = "move_card"
     ASSIGN_CARD = "assign_card"
+    ASSIGN_ROUND_ROBIN = "assign_round_robin"
     UPDATE_FIELD = "update_field"
     SEND_NOTIFICATION = "send_notification"
     AWARD_POINTS = "award_points"

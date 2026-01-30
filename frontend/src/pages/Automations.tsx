@@ -18,6 +18,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import automationService, { Automation } from "../services/automationService";
 import boardService from "../services/boardService";
+import AutomationRoundRobinForm from "../components/AutomationRoundRobinForm";
 
 interface Board {
   id: number;
@@ -33,6 +34,7 @@ const Automations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBoard, setSelectedBoard] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showRoundRobinForm, setShowRoundRobinForm] = useState(false);
 
   // Verifica se o usuário é admin ou manager
   const isManagerOrAdmin = currentUser?.role === 'admin' || currentUser?.role === 'manager';
@@ -45,85 +47,34 @@ const Automations: React.FC = () => {
     try {
       setLoading(true);
 
-      // TODO: Temporariamente usando dados mockados
-      // Quando backend estiver pronto, usar: automationService.list()
-
       // Carrega boards reais
       const boardsResponse = await boardService.list();
-      setBoards(boardsResponse.boards || []);
+      const boardsList = boardsResponse.boards || [];
+      setBoards(boardsList);
 
-      // Dados mockados de automações
-      const mockAutomations: Automation[] = [
-        {
-          id: 1,
-          name: "Vendas → Pós-Venda Automático",
-          description: "Quando um card for marcado como ganho em Vendas, criar automaticamente no Pós-Venda",
-          board_id: 1,
-          board_name: "Vendas",
-          is_active: true,
-          nodes: [],
-          edges: [],
-          created_by: 1,
-          created_at: "2026-01-20T10:00:00Z",
-          updated_at: "2026-01-21T15:30:00Z",
-          last_executed_at: "2026-01-21T18:45:00Z",
-          execution_count: 47,
-          success_count: 45,
-          error_count: 2,
-        },
-        {
-          id: 2,
-          name: "Notificar Gerente - Card Alto Valor",
-          description: "Enviar notificação para o gerente quando um card acima de R$ 10.000 for criado",
-          board_id: 1,
-          board_name: "Vendas",
-          is_active: true,
-          nodes: [],
-          edges: [],
-          created_by: 1,
-          created_at: "2026-01-18T14:20:00Z",
-          updated_at: "2026-01-18T14:20:00Z",
-          last_executed_at: "2026-01-21T16:10:00Z",
-          execution_count: 12,
-          success_count: 12,
-          error_count: 0,
-        },
-        {
-          id: 3,
-          name: "Follow-up Automático - 3 dias",
-          description: "Criar tarefa de follow-up 3 dias após card ser movido para 'Proposta Enviada'",
-          board_id: 1,
-          board_name: "Vendas",
-          is_active: false,
-          nodes: [],
-          edges: [],
-          created_by: 1,
-          created_at: "2026-01-15T09:00:00Z",
-          updated_at: "2026-01-19T11:22:00Z",
-          execution_count: 0,
-          success_count: 0,
-          error_count: 0,
-        },
-        {
-          id: 4,
-          name: "Email Boas-Vindas - Cliente Novo",
-          description: "Enviar email de boas-vindas quando cliente for cadastrado",
-          board_id: 2,
-          board_name: "Onboarding",
-          is_active: true,
-          nodes: [],
-          edges: [],
-          created_by: 1,
-          created_at: "2026-01-10T08:30:00Z",
-          updated_at: "2026-01-10T08:30:00Z",
-          last_executed_at: "2026-01-21T17:00:00Z",
-          execution_count: 89,
-          success_count: 87,
-          error_count: 2,
-        },
-      ];
+      // Carrega automações de todos os boards
+      const allAutomations: Automation[] = [];
 
-      setAutomations(mockAutomations);
+      for (const board of boardsList) {
+        try {
+          const response: any = await automationService.list(board.id);
+          const boardAutomations = (response.automations || response || []).map((auto: any) => ({
+            ...auto,
+            board_name: board.name,
+            nodes: [],
+            edges: [],
+            created_by: 1,
+            execution_count: auto.execution_count || 0,
+            success_count: 0,
+            error_count: auto.failure_count || 0,
+          }));
+          allAutomations.push(...boardAutomations);
+        } catch (err) {
+          console.error(`Erro ao carregar automações do board ${board.id}:`, err);
+        }
+      }
+
+      setAutomations(allAutomations);
     } catch (error) {
       console.error("Erro ao carregar automações:", error);
     } finally {
@@ -133,10 +84,9 @@ const Automations: React.FC = () => {
 
   const handleToggleActive = async (id: number, currentStatus: boolean) => {
     try {
-      // TODO: Quando backend estiver pronto
-      // await automationService.toggleActive(id, !currentStatus);
+      await automationService.update(id, { is_active: !currentStatus });
 
-      // Mock: atualiza localmente
+      // Atualiza localmente
       setAutomations((prev) =>
         prev.map((auto) =>
           auto.id === id ? { ...auto, is_active: !currentStatus } : auto
@@ -152,9 +102,7 @@ const Automations: React.FC = () => {
     if (!confirm("Tem certeza que deseja deletar esta automação?")) return;
 
     try {
-      // TODO: Quando backend estiver pronto
-      // await automationService.delete(id);
-
+      await automationService.delete(id);
       setAutomations((prev) => prev.filter((auto) => auto.id !== id));
     } catch (error) {
       console.error("Erro ao deletar automação:", error);
@@ -234,7 +182,7 @@ const Automations: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => navigate("/automations/new")}
+              onClick={() => setShowRoundRobinForm(true)}
               className="hidden md:flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
             >
               <Plus size={20} />
@@ -245,7 +193,7 @@ const Automations: React.FC = () => {
           {/* Filtros */}
           <div className="flex flex-col md:flex-row gap-3">
             <button
-              onClick={() => navigate("/automations/new")}
+              onClick={() => setShowRoundRobinForm(true)}
               className="md:hidden flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
             >
               <Plus size={20} />
@@ -503,6 +451,17 @@ const Automations: React.FC = () => {
             </div>
           </div>
         )}
+
+      {/* Modal de criação de automação de rodízio */}
+      {showRoundRobinForm && (
+        <AutomationRoundRobinForm
+          onClose={() => setShowRoundRobinForm(false)}
+          onSuccess={() => {
+            setShowRoundRobinForm(false);
+            loadData(); // Recarrega a lista
+          }}
+        />
+      )}
     </div>
   );
 };

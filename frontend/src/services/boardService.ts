@@ -70,6 +70,14 @@ class BoardService {
     });
     return response.data;
   }
+
+  /**
+   * Busca as listas de um board
+   */
+  async getLists(boardId: number): Promise<any[]> {
+    const response = await api.get(`/api/v1/boards/${boardId}/lists`);
+    return response.data;
+  }
 }
 
 export default new BoardService();
