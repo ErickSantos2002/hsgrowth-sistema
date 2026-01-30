@@ -71,11 +71,12 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Verifica se é um access token
-    if not verify_token_type(payload, "access"):
+    # Verifica se é um access token ou integration token
+    token_type = payload.get("type")
+    if token_type not in ["access", "integration"]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Tipo de token inválido. Use um access token.",
+            detail="Tipo de token inválido. Use um access token ou integration token.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
