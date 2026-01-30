@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from app.models.integration_client import IntegrationClient
-from app.core.security import verify_password, get_password_hash
+from app.core.security import verify_password, hash_password
 
 
 class IntegrationClientService:
@@ -55,7 +55,7 @@ class IntegrationClientService:
         client_id, client_secret = self.generate_client_credentials()
 
         # Hash do secret (NUNCA armazena plain text)
-        client_secret_hash = get_password_hash(client_secret)
+        client_secret_hash = hash_password(client_secret)
 
         # Cria o client
         client = IntegrationClient(
