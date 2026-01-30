@@ -63,8 +63,11 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     to_encode.update({
         "exp": expire,  # Expiration time
         "iat": datetime.utcnow(),  # Issued at
-        "type": "access"  # Tipo do token
     })
+
+    # Define type como "access" apenas se não foi especificado
+    if "type" not in to_encode:
+        to_encode["type"] = "access"
 
     # Cria e assina o token
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
