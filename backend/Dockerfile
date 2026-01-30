@@ -78,5 +78,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Script de inicialização
 RUN chmod +x /app/scripts/start.sh
 
+# Limpa cache do Python para garantir código atualizado
+RUN find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+RUN find /app -type f -name "*.pyc" -delete 2>/dev/null || true
+
 # Comando padrão
 CMD ["sh", "/app/scripts/start.sh"]
