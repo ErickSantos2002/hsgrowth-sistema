@@ -61,7 +61,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
     if (allClients.length === 0) {
       try {
         setIsLoadingClients(true);
-        const response = await clientService.list({ page_size: 100, is_active: true });
+        const response = await clientService.list({ page_size: 10000, is_active: true });
 
         // Filtra clientes com documento (CPF ou CNPJ)
         const clientsWithDocument = response.clients.filter((client) => {

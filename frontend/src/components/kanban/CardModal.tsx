@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { DollarSign, Calendar, User, Mail, Phone, Building } from "lucide-react";
+import { DollarSign, Calendar, User } from "lucide-react";
 import { Card, List } from "../../types";
 import { BaseModal, FormField, Input, Select, Textarea, Button, Alert } from "../common";
 import userService from "../../services/userService";
 import { User as UserType } from "../../types";
+import { useAuth } from "../../hooks/useAuth";
 
 interface CardModalProps {
   isOpen: boolean;
@@ -22,12 +23,6 @@ export interface CardFormData {
   value?: number;
   due_date?: string;
   assigned_to_id?: number;
-  contact_info?: {
-    name?: string;
-    email?: string;
-    phone?: string;
-    company?: string;
-  };
 }
 
 /**
@@ -43,6 +38,7 @@ const CardModal: React.FC<CardModalProps> = ({
   currentListId,
   title,
 }) => {
+  const { user: currentUser } = useAuth();
   const [formData, setFormData] = useState<CardFormData>({
     list_id: currentListId,
     title: "",
@@ -50,15 +46,12 @@ const CardModal: React.FC<CardModalProps> = ({
     value: undefined,
     due_date: "",
     assigned_to_id: undefined,
-    contact_info: {
-      name: "",
-      email: "",
-      phone: "",
-      company: "",
-    },
   });
   const [errors, setErrors] = useState<{ title?: string }>({});
   const [users, setUsers] = useState<UserType[]>([]);
+
+  // Verifica se o usuário atual é vendedor
+  const isSalesperson = currentUser?.role?.toLowerCase() === "salesperson";
 
   // Carregar usuários ativos
   const loadUsers = async () => {
@@ -90,27 +83,18 @@ const CardModal: React.FC<CardModalProps> = ({
           value: card.value || undefined,
           due_date: dueDateFormatted,
           assigned_to_id: card.assigned_to_id || undefined,
-          contact_info: {
-            name: card.contact_info?.name || "",
-            email: card.contact_info?.email || "",
-            phone: card.contact_info?.phone || "",
-            company: card.contact_info?.company || "",
-          },
         });
       } else {
+        // Se for vendedor, já seta automaticamente como responsável
+        const defaultAssignedTo = isSalesperson ? currentUser?.id : undefined;
+
         setFormData({
           list_id: currentListId,
           title: "",
           description: "",
           value: undefined,
           due_date: "",
-          assigned_to_id: undefined,
-          contact_info: {
-            name: "",
-            email: "",
-            phone: "",
-            company: "",
-          },
+          assigned_to_id: defaultAssignedTo,
         });
       }
       setErrors({});
@@ -141,16 +125,9 @@ const CardModal: React.FC<CardModalProps> = ({
       return;
     }
 
-    // Limpar campos vazios de contact_info
-    const cleanedContactInfo = Object.fromEntries(
-      Object.entries(formData.contact_info || {}).filter(([_, v]) => v)
-    );
-
     onSave({
       ...formData,
       title: formData.title.trim(),
-      contact_info:
-        Object.keys(cleanedContactInfo).length > 0 ? cleanedContactInfo : undefined,
     });
     onClose();
   };
@@ -278,7 +255,11 @@ const CardModal: React.FC<CardModalProps> = ({
                 Responsável
               </span>
             }
-            hint="Quem é o responsável por este card"
+            hint={
+              isSalesperson
+                ? "Você será automaticamente o responsável"
+                : "Quem é o responsável por este card"
+            }
           >
             <Select
               value={formData.assigned_to_id || ""}
@@ -288,6 +269,7 @@ const CardModal: React.FC<CardModalProps> = ({
                   assigned_to_id: e.target.value ? Number(e.target.value) : undefined,
                 })
               }
+              disabled={isSalesperson}
             >
               <option value="">Sem responsável</option>
               {users.map((user) => (
@@ -297,119 +279,6 @@ const CardModal: React.FC<CardModalProps> = ({
               ))}
             </Select>
           </FormField>
-        </div>
-
-        {/* Seção de Informações de Contato */}
-        <div className="border-t border-slate-700 pt-6">
-          <h3 className="text-lg font-semibold text-white mb-1">
-            Informações de Contato
-          </h3>
-          <p className="text-sm text-slate-400 mb-4">
-            Dados do cliente ou pessoa de contato relacionada a este card
-          </p>
-
-          <div className="space-y-4">
-            {/* Nome do contato */}
-            <FormField
-              label={
-                <span className="flex items-center gap-1">
-                  <User size={14} />
-                  Nome do Contato
-                </span>
-              }
-            >
-              <Input
-                type="text"
-                value={formData.contact_info?.name || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    contact_info: {
-                      ...formData.contact_info,
-                      name: e.target.value,
-                    },
-                  })
-                }
-                placeholder="João Silva"
-              />
-            </FormField>
-
-            {/* Email e Telefone */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                label={
-                  <span className="flex items-center gap-1">
-                    <Mail size={14} />
-                    Email
-                  </span>
-                }
-              >
-                <Input
-                  type="email"
-                  value={formData.contact_info?.email || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      contact_info: {
-                        ...formData.contact_info,
-                        email: e.target.value,
-                      },
-                    })
-                  }
-                  placeholder="joao@empresa.com"
-                />
-              </FormField>
-
-              <FormField
-                label={
-                  <span className="flex items-center gap-1">
-                    <Phone size={14} />
-                    Telefone
-                  </span>
-                }
-              >
-                <Input
-                  type="tel"
-                  value={formData.contact_info?.phone || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      contact_info: {
-                        ...formData.contact_info,
-                        phone: e.target.value,
-                      },
-                    })
-                  }
-                  placeholder="(11) 98765-4321"
-                />
-              </FormField>
-            </div>
-
-            {/* Empresa */}
-            <FormField
-              label={
-                <span className="flex items-center gap-1">
-                  <Building size={14} />
-                  Empresa
-                </span>
-              }
-            >
-              <Input
-                type="text"
-                value={formData.contact_info?.company || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    contact_info: {
-                      ...formData.contact_info,
-                      company: e.target.value,
-                    },
-                  })
-                }
-                placeholder="Empresa XYZ Ltda"
-              />
-            </FormField>
-          </div>
         </div>
 
         {/* Preview do card (apenas se tiver título) */}
@@ -426,11 +295,6 @@ const CardModal: React.FC<CardModalProps> = ({
                 {formData.value && (
                   <span className="text-green-400 font-semibold">
                     R$ {formData.value.toLocaleString("pt-BR")}
-                  </span>
-                )}
-                {formData.contact_info?.name && (
-                  <span className="text-slate-400">
-                    👤 {formData.contact_info.name}
                   </span>
                 )}
                 {formData.due_date && (

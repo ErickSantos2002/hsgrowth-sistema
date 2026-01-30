@@ -58,7 +58,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
     if (allPersons.length === 0) {
       try {
         setIsLoadingPersons(true);
-        const response = await personService.list({ page_size: 100, is_active: true });
+        const response = await personService.list({ page_size: 10000, is_active: true });
         setAllPersons(response.persons);
       } catch (error) {
         console.error("Erro ao carregar pessoas:", error);

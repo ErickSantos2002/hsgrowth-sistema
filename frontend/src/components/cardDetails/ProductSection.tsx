@@ -72,7 +72,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
   const loadAvailableProducts = async () => {
     try {
       setLoading(true);
-      const response = await productService.list({ page_size: 100, is_active: true });
+      const response = await productService.list({ page_size: 10000, is_active: true });
       setAvailableProducts(response.products);
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
