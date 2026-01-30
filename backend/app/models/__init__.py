@@ -11,6 +11,7 @@ from app.models.user import User
 from app.models.client import Client
 from app.models.person import Person
 from app.models.lead import Lead
+from app.models.integration_client import IntegrationClient
 from app.models.board import Board
 from app.models.list import List
 from app.models.field_definition import FieldDefinition
@@ -52,6 +53,7 @@ __all__ = [
     "Client",
     "Person",
     "Lead",
+    "IntegrationClient",
     "Board",
     "List",
     "FieldDefinition",

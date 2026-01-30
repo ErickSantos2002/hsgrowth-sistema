@@ -574,10 +574,84 @@ async def reset_password(
     }
 
 
-# TODO: Implementar endpoint de client credentials para autenticação de sistemas externos
-# @router.post("/client-credentials", response_model=TokenResponse)
-# async def client_credentials_auth(...):
-#     """
-#     Autenticação para sistemas externos usando client_id e client_secret.
-#     """
-#     pass
+@router.post("/client-credentials", response_model=TokenResponse)
+async def client_credentials_auth(
+    credentials: ClientCredentialsRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Autenticação para sistemas externos usando client_id e client_secret.
+
+    **Uso:**
+    - Sistemas externos (N8N, Zapier, etc) usam este endpoint para obter um token de acesso
+    - O client_id e client_secret são gerados via comando ou endpoint de gerenciamento
+    - O token retornado pode ser usado como Bearer token em todas as requisições da API
+
+    **Segurança:**
+    - Client secrets nunca são armazenados em plain text (apenas hash)
+    - Tokens têm validade de 8 horas
+    - Cada autenticação registra last_used_at para auditoria
+
+    **Exemplo N8N:**
+    ```
+    POST /api/v1/auth/client-credentials
+    {
+      "client_id": "hsg_abc123...",
+      "client_secret": "secret_xyz789...",
+      "grant_type": "client_credentials"
+    }
+    ```
+    """
+    from app.services.integration_client_service import IntegrationClientService
+    from app.core.security import create_access_token, create_refresh_token
+    from app.core.config import settings
+
+    # Valida grant_type
+    if credentials.grant_type != "client_credentials":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="grant_type inválido. Use 'client_credentials'"
+        )
+
+    # Autentica o client
+    client_service = IntegrationClientService(db)
+    client = client_service.authenticate(credentials.client_id, credentials.client_secret)
+
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciais inválidas",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Cria os tokens JWT
+    # Para integration clients, usamos o client_id como subject
+    access_token = create_access_token(
+        data={
+            "sub": f"client:{client.client_id}",
+            "type": "integration",
+            "client_id": client.client_id,
+            "impersonate_user_id": client.impersonate_user_id
+        }
+    )
+
+    refresh_token = create_refresh_token(
+        data={
+            "sub": f"client:{client.client_id}",
+            "type": "integration"
+        }
+    )
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_SECONDS,
+        "user": {
+            "id": None,
+            "email": None,
+            "name": client.name,
+            "role": "integration",
+            "client_id": client.client_id
+        }
+    }
