@@ -148,6 +148,9 @@ class AutomationResponse(AutomationBase):
     # Actions
     actions: List[Dict[str, Any]]
 
+    # State (estado persistente da automação)
+    state: Dict[str, Any] = Field(default_factory=dict, description="Estado persistente da automação")
+
     # Execution stats
     execution_count: int
     last_run_at: Optional[datetime] = None

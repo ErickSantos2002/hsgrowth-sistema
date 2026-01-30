@@ -481,7 +481,71 @@ class AutomationService:
                 card.won_at = None
                 self.db.commit()
 
+            elif action_type == "assign_round_robin" and card:
+                # Rodízio de vendedores
+                self._assign_round_robin(automation, card)
+
             # Outras ações podem ser implementadas conforme necessário
+
+    def _assign_round_robin(self, automation: Automation, card: Card) -> None:
+        """
+        Atribui o card ao próximo vendedor em sistema de rodízio.
+
+        Args:
+            automation: Automação que contém o estado do rodízio
+            card: Card a ser atribuído
+        """
+        from app.models.user import User
+        from app.models.role import Role
+
+        # Busca todos os vendedores ativos
+        salesperson_role = self.db.query(Role).filter(
+            Role.name.ilike("salesperson")
+        ).first()
+
+        if not salesperson_role:
+            return  # Sem role de vendedor configurado
+
+        salespeople = self.db.query(User).filter(
+            User.role_id == salesperson_role.id,
+            User.is_active == True,
+            User.is_deleted == False
+        ).order_by(User.id).all()
+
+        if not salespeople:
+            return  # Sem vendedores disponíveis
+
+        # Pega o estado do rodízio
+        state = automation.state or {}
+        last_user_id = state.get("round_robin_last_user_id")
+
+        # Encontra o próximo vendedor
+        next_user = None
+        if last_user_id:
+            # Encontra o índice do último vendedor usado
+            last_index = -1
+            for i, user in enumerate(salespeople):
+                if user.id == last_user_id:
+                    last_index = i
+                    break
+
+            # Pega o próximo (circular)
+            if last_index >= 0:
+                next_index = (last_index + 1) % len(salespeople)
+                next_user = salespeople[next_index]
+
+        # Se não encontrou ou é a primeira vez, usa o primeiro da lista
+        if not next_user:
+            next_user = salespeople[0]
+
+        # Atribui o card ao vendedor
+        card.assigned_to_id = next_user.id
+        self.db.commit()
+
+        # Atualiza o estado da automação
+        automation.state = automation.state or {}
+        automation.state["round_robin_last_user_id"] = next_user.id
+        self.db.commit()
 
     def _to_response(self, automation: Automation) -> AutomationResponse:
         """Converte Automation para AutomationResponse."""
@@ -500,6 +564,7 @@ class AutomationService:
             recurrence_pattern=automation.recurrence_pattern,
             next_run_at=automation.next_run_at,
             actions=automation.actions,
+            state=automation.state or {},
             execution_count=automation.execution_count,
             last_run_at=automation.last_run_at,
             failure_count=automation.failure_count,

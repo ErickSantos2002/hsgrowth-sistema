@@ -61,6 +61,11 @@ class Automation(Base, TimestampMixin):
     # Exemplo: [{"type": "move_card", "target_list_id": 3}, {"type": "notify", "user_id": 10}]
     actions = Column(JSON, default=[], nullable=False)
 
+    # Estado persistente da automação (JSON)
+    # Usado para guardar estados como: último vendedor do rodízio, contadores, etc.
+    # Exemplo: {"round_robin_last_user_id": 5}
+    state = Column(JSON, default={}, nullable=False)
+
     # === CONTROLE DE EXECUÇÃO ===
     # Total de execuções
     execution_count = Column(Integer, default=0, nullable=False)
