@@ -11,6 +11,7 @@ from app.db.session import SessionLocal
 from app.core.security import decode_token, verify_token_type
 from app.models.user import User
 from app.models.role import Role
+from app.models.integration_client import IntegrationClient
 
 # Security scheme para JWT (Bearer token)
 # auto_error=False para permitir tratamento manual e retornar 401 ao invés de 403
@@ -78,27 +79,76 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Extrai o user_id do payload
-    user_id_str = payload.get("sub")
-    if user_id_str is None:
+    # Extrai o subject do payload
+    sub = payload.get("sub")
+    if sub is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_id: int = int(user_id_str)
+    # Verifica se é um token de integração
+    if sub.startswith("client:"):
+        # Token de integração - busca o integration client
+        client_id = payload.get("client_id")
+        if not client_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token de integração inválido",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
-    # Busca o usuário no banco com eager loading do role
-    user = db.query(User).options(joinedload(User.role)).filter(User.id == user_id, User.is_deleted == False).first()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuário não encontrado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        # Busca o integration client
+        integration_client = db.query(IntegrationClient).filter(
+            IntegrationClient.client_id == client_id,
+            IntegrationClient.is_active == True
+        ).first()
 
-    return user
+        if not integration_client:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Integration client não encontrado ou inativo",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Se tiver impersonate_user_id, usa esse usuário
+        if integration_client.impersonate_user_id:
+            user = db.query(User).options(joinedload(User.role)).filter(
+                User.id == integration_client.impersonate_user_id,
+                User.is_deleted == False
+            ).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Usuário de impersonação não encontrado",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            return user
+        else:
+            # Sem impersonate_user_id - retorna erro
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Integration client sem usuário de impersonação configurado. Configure um impersonate_user_id.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    else:
+        # Token de usuário normal
+        user_id: int = int(sub)
+
+        # Busca o usuário no banco com eager loading do role
+        user = db.query(User).options(joinedload(User.role)).filter(
+            User.id == user_id,
+            User.is_deleted == False
+        ).first()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Usuário não encontrado",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return user
 
 
 async def get_current_active_user(
