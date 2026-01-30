@@ -53,6 +53,7 @@ class CardRepository:
         skip: int = 0,
         limit: int = 100,
         assigned_to_id: Optional[int] = None,
+        person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
         is_lost: Optional[bool] = None
     ) -> List[Card]:
@@ -84,6 +85,9 @@ class CardRepository:
         if assigned_to_id is not None:
             query = query.filter(Card.assigned_to_id == assigned_to_id)
 
+        if person_id is not None:
+            query = query.filter(Card.person_id == person_id)
+
         if is_won is not None:
             query = query.filter(Card.is_won == is_won)
 
@@ -96,6 +100,7 @@ class CardRepository:
         self,
         board_id: int,
         assigned_to_id: Optional[int] = None,
+        person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
         is_lost: Optional[bool] = None
     ) -> int:
@@ -119,6 +124,9 @@ class CardRepository:
 
         if assigned_to_id is not None:
             query = query.filter(Card.assigned_to_id == assigned_to_id)
+
+        if person_id is not None:
+            query = query.filter(Card.person_id == person_id)
 
         if is_won is not None:
             query = query.filter(Card.is_won == is_won)

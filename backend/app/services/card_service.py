@@ -94,6 +94,7 @@ class CardService:
         all: bool = False,
         minimal: bool = False,
         assigned_to_id: Optional[int] = None,
+        person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
         is_lost: Optional[bool] = None
     ):
@@ -137,6 +138,7 @@ class CardService:
             skip=skip,
             limit=limit,
             assigned_to_id=assigned_to_id,
+            person_id=person_id,
             is_won=is_won,
             is_lost=is_lost
         )
@@ -145,6 +147,7 @@ class CardService:
         total = self.card_repository.count_by_board(
             board_id=board_id,
             assigned_to_id=assigned_to_id,
+            person_id=person_id,
             is_won=is_won,
             is_lost=is_lost
         )

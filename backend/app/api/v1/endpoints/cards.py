@@ -120,6 +120,7 @@ async def list_cards(
     all: bool = Query(False, description="Retornar TODOS os cards sem paginação (Kanban)"),
     minimal: bool = Query(False, description="Retornar apenas campos essenciais (otimizado para Kanban)"),
     assigned_to_id: Optional[int] = Query(None, description="Filtrar por responsável"),
+    person_id: Optional[int] = Query(None, description="Filtrar por pessoa (contato)"),
     is_won: Optional[bool] = Query(None, description="Filtrar por cards ganhos"),
     is_lost: Optional[bool] = Query(None, description="Filtrar por cards perdidos"),
     current_user: User = Depends(get_current_active_user),
@@ -140,6 +141,7 @@ async def list_cards(
         all=all,
         minimal=minimal,
         assigned_to_id=assigned_to_id,
+        person_id=person_id,
         is_won=is_won,
         is_lost=is_lost
     )
