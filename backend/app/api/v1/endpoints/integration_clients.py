@@ -46,7 +46,7 @@ class CreateIntegrationClientResponse(IntegrationClientResponse):
 # Dependency para verificar se é admin
 def require_admin(current_user: User = Depends(get_current_active_user)) -> User:
     """Verifica se o usuário atual é admin"""
-    if current_user.role.lower() != "admin":
+    if current_user.role.name.lower() != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Apenas administradores podem gerenciar integration clients"
