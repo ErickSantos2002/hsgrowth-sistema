@@ -656,3 +656,17 @@ async def client_credentials_auth(
             "client_id": client.client_id
         }
     }
+
+
+@router.get("/debug-token")
+async def debug_token(current_user: User = Depends(get_current_user)):
+    """
+    Endpoint temporário de debug para verificar se a autenticação está funcionando.
+    """
+    return {
+        "message": "Token validado com sucesso!",
+        "user_id": current_user.id,
+        "user_email": current_user.email,
+        "user_name": current_user.name,
+        "user_role": current_user.role.name if current_user.role else None
+    }
