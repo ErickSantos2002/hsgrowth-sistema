@@ -164,7 +164,6 @@ class CardRepository:
             assigned_to_id=card_data.assigned_to_id,
             value=card_data.value,
             due_date=card_data.due_date,
-            contact_info=card_data.contact_info or {},
             position=position,
             is_won=0  # 0 = aberto, 1 = ganho, -1 = perdido
         )

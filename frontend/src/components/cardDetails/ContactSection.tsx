@@ -305,106 +305,117 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
           </div>
 
           {/* Cargo/Posição */}
-          {person?.position && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
-                <Briefcase size={14} className="text-slate-400" />
-                <span>Cargo/Posição</span>
-              </div>
-              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
-                <p className="text-white">{person.position}</p>
-              </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
+              <Briefcase size={14} className="text-slate-400" />
+              <span>Cargo/Posição</span>
             </div>
-          )}
+            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+              <p className={person?.position ? "text-white" : "text-slate-500 italic"}>
+                {person?.position || "Não informado"}
+              </p>
+            </div>
+          </div>
 
           {/* E-mails */}
-          {(person?.email_commercial || person?.email_personal || person?.email) && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
-                <Mail size={14} className="text-slate-400" />
-                <span>E-mails</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
+              <Mail size={14} className="text-slate-400" />
+              <span>E-mails</span>
+            </div>
+            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-2">
+              <div>
+                <p className="text-xs text-slate-400">Comercial</p>
+                <p className={person?.email_commercial ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
+                  {person?.email_commercial || "Não informado"}
+                </p>
               </div>
-              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-1">
-                {person?.email_commercial && (
-                  <div>
-                    <p className="text-xs text-slate-400">Comercial</p>
-                    <p className="text-blue-400 text-sm">{person.email_commercial}</p>
-                  </div>
-                )}
-                {person?.email_personal && (
-                  <div>
-                    <p className="text-xs text-slate-400">Pessoal</p>
-                    <p className="text-blue-400 text-sm">{person.email_personal}</p>
-                  </div>
-                )}
-                {person?.email && !person.email_commercial && (
-                  <p className="text-blue-400 text-sm">{person.email}</p>
-                )}
+              <div>
+                <p className="text-xs text-slate-400">Pessoal</p>
+                <p className={person?.email_personal ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
+                  {person?.email_personal || "Não informado"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Alternativo</p>
+                <p className={person?.email_alternative ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
+                  {person?.email_alternative || "Não informado"}
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Telefones */}
-          {(person?.phone_commercial || person?.phone_whatsapp || person?.phone) && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
-                <Phone size={14} className="text-slate-400" />
-                <span>Telefones</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
+              <Phone size={14} className="text-slate-400" />
+              <span>Telefones</span>
+            </div>
+            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-2">
+              <div>
+                <p className="text-xs text-slate-400">WhatsApp</p>
+                <p className={person?.phone_whatsapp ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                  {formatPhone(person?.phone_whatsapp)}
+                </p>
               </div>
-              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-1">
-                {person?.phone_whatsapp && (
-                  <div>
-                    <p className="text-xs text-slate-400">WhatsApp</p>
-                    <p className="text-white text-sm">{formatPhone(person.phone_whatsapp)}</p>
-                  </div>
-                )}
-                {person?.phone_commercial && (
-                  <div>
-                    <p className="text-xs text-slate-400">Comercial</p>
-                    <p className="text-white text-sm">{formatPhone(person.phone_commercial)}</p>
-                  </div>
-                )}
-                {person?.phone && !person.phone_commercial && !person.phone_whatsapp && (
-                  <p className="text-white text-sm">{formatPhone(person.phone)}</p>
-                )}
+              <div>
+                <p className="text-xs text-slate-400">Comercial</p>
+                <p className={person?.phone_commercial ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                  {formatPhone(person?.phone_commercial)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Alternativo</p>
+                <p className={person?.phone_alternative ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                  {formatPhone(person?.phone_alternative)}
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Redes Sociais */}
-          {(person?.linkedin || person?.instagram || person?.facebook) && (
-            <div className="space-y-1">
-              <div className="text-sm font-medium text-slate-300">Redes Sociais</div>
-              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-1">
-                {person?.linkedin && (
-                  <div className="flex items-center gap-2">
-                    <Linkedin size={14} className="text-blue-400" />
-                    <a
-                      href={person.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 text-sm hover:underline"
-                    >
-                      LinkedIn
-                    </a>
-                  </div>
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-slate-300">Redes Sociais</div>
+            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-2">
+              <div>
+                <p className="text-xs text-slate-400">LinkedIn</p>
+                {person?.linkedin ? (
+                  <a
+                    href={person.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 text-sm hover:underline flex items-center gap-1"
+                  >
+                    <Linkedin size={14} />
+                    Ver perfil
+                  </a>
+                ) : (
+                  <p className="text-slate-500 italic text-sm">Não informado</p>
                 )}
-                {person?.instagram && (
-                  <p className="text-white text-sm">{person.instagram}</p>
-                )}
-                {person?.facebook && (
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Instagram</p>
+                <p className={person?.instagram ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                  {person?.instagram || "Não informado"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Facebook</p>
+                {person?.facebook ? (
                   <a
                     href={person.facebook}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-400 text-sm hover:underline"
                   >
-                    Facebook
+                    Ver perfil
                   </a>
+                ) : (
+                  <p className="text-slate-500 italic text-sm">Não informado</p>
                 )}
               </div>
             </div>
-          )}
+          </div>
 
           {/* Ações */}
           <div className="pt-3 border-t border-slate-700/50 space-y-2">

@@ -42,7 +42,6 @@ def card_to_response(
         assigned_to_id=card.assigned_to_id,
         value=card.value,
         due_date=card.due_date,
-        contact_info=card.contact_info,
         is_won=card.is_won == 1,  # Converte Integer para bool
         is_lost=card.is_lost,  # Já é property que retorna bool
         won_at=card.won_at,  # Property que retorna datetime ou None
@@ -193,7 +192,6 @@ async def get_card(
     - `assigned_to_id`: ID do vendedor responsável
     - `value`: Valor monetário estimado (decimal)
     - `due_date`: Data de vencimento/follow-up (formato: YYYY-MM-DD)
-    - `contact_info`: JSON com dados de contato (nome, email, telefone, etc)
 
     **Automações:**
     - Dispara trigger `card_created` para automações configuradas
@@ -229,11 +227,6 @@ async def get_card(
                         "assigned_to_name": "Ana Santos",
                         "value": 75000.00,
                         "due_date": "2026-01-20",
-                        "contact_info": {
-                            "name": "Carlos Silva",
-                            "email": "carlos@abc.com",
-                            "phone": "+55 11 98765-4321"
-                        },
                         "is_won": False,
                         "is_lost": False,
                         "position": 10.0,
@@ -407,7 +400,6 @@ async def add_or_update_field(
         assigned_to_id=card.assigned_to_id,
         value=card.value,
         due_date=card.due_date,
-        contact_info=card.contact_info,
         is_won=card.is_won,
         is_lost=card.is_lost,
         won_at=card.won_at,

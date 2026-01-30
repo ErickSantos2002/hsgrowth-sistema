@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { Package, Plus, Trash2, Search, CreditCard, Info, Edit2, Check, X } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
 import { Card } from "../../types";
@@ -298,7 +299,6 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
     <ExpandableSection
       title="Produto"
       defaultExpanded={false}
-      headerClassName="sticky top-0 z-10 bg-slate-800/80 backdrop-blur-sm"
       icon={<Package size={18} />}
       badge={products.length > 0 ? products.length : undefined}
     >
@@ -538,8 +538,8 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
           {paymentInfo ? "Editar condições de pagamento" : "Adicionar condições de pagamento"}
         </button>
 
-        {/* Modal de busca de produtos */}
-        {showProductSearch && (
+        {/* Modal de busca de produtos (renderizado no body via Portal) */}
+        {showProductSearch && ReactDOM.createPortal(
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => {
@@ -548,155 +548,179 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
             }}
           >
             <div
-              className="bg-slate-800 border border-slate-700 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-slate-800 border border-slate-700 rounded-lg w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="sticky top-0 z-10 flex items-center justify-between p-6 pb-4 bg-slate-800">
-                <h3 className="text-xl font-semibold text-white">Adicionar Produto</h3>
+              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="font-semibold text-white">Adicionar Produto</h3>
                 <button
                   onClick={() => {
                     setShowProductSearch(false);
                     setSearchTerm("");
                   }}
-                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
-                  title="Fechar"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
-                  <X size={18} />
+                  <X size={20} />
                 </button>
               </div>
 
-              {/* Campo de busca */}
-              <div className="relative mb-4 px-6">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar por nome ou SKU..."
-                  className="w-full pl-10 pr-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500"
-                  autoFocus
-                />
+              {/* Campo de busca dentro do modal */}
+              <div className="p-4 border-b border-slate-700">
+                <div className="relative">
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por nome ou SKU..."
+                    className="w-full pl-10 pr-10 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    autoFocus
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Lista de produtos */}
-              <div className="flex-1 min-h-0 overflow-y-auto space-y-2 px-6">
-                {filteredProducts.length === 0 ? (
-                  <p className="text-sm text-slate-400 text-center py-8">
-                    {searchTerm ? "Nenhum produto encontrado" : "Todos os produtos já foram adicionados"}
-                  </p>
+              {/* Resultados */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {loading ? (
+                  <div className="p-8 text-center text-sm text-slate-400">
+                    Carregando produtos...
+                  </div>
+                ) : filteredProducts.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-slate-400">
+                    {searchTerm
+                      ? "Nenhum produto encontrado com esse critério"
+                      : availableProducts.length === 0
+                      ? "Nenhum produto cadastrado"
+                      : "Todos os produtos já foram adicionados"}
+                  </div>
                 ) : (
-                  filteredProducts.map((product) => (
-                    <button
-                      key={product.id}
-                      onClick={() => handleAddProduct(product.id)}
-                      className="w-full p-3 bg-slate-900/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-left transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-white">{product.name}</p>
-                          <p className="text-xs text-slate-500">SKU: {product.sku}</p>
+                  <div className="space-y-2">
+                    {filteredProducts.map((product) => (
+                      <button
+                        key={product.id}
+                        onClick={() => handleAddProduct(product.id)}
+                        className="w-full p-3 bg-slate-900/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-left transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-white">{product.name}</p>
+                            <p className="text-xs text-slate-500">SKU: {product.sku}</p>
+                          </div>
+                          <p className="text-sm font-medium text-emerald-400">
+                            {formatCurrency(parseFloat(product.unit_price))}
+                          </p>
                         </div>
-                        <p className="text-sm font-medium text-emerald-400">
-                          {formatCurrency(product.unit_price)}
-                        </p>
-                      </div>
-                    </button>
-                  ))
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
-
-              {/* Botão fechar */}
-              <div className="p-6 pt-4">
-                <button
-                  onClick={() => {
-                    setShowProductSearch(false);
-                    setSearchTerm("");
-                  }}
-                  className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
-                >
-                  Fechar
-                </button>
-              </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
-        {/* Modal de condições de pagamento */}
-        {showPaymentModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-xl font-semibold text-white mb-4">Condições de Pagamento</h3>
-
-              <div className="space-y-4">
-                {/* Forma de pagamento */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Forma de pagamento *
-                  </label>
-                  <select
-                    value={paymentForm.payment_method}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="">Selecione...</option>
-                    <option value="Boleto">Boleto</option>
-                    <option value="Cartão de Crédito">Cartão de Crédito</option>
-                    <option value="PIX">PIX</option>
-                    <option value="Transferência">Transferência</option>
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="Outro">Outro</option>
-                  </select>
-                </div>
-
-                {/* Número de parcelas */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Número de parcelas
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="120"
-                    value={paymentForm.installments}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, installments: parseInt(e.target.value) || 1 })}
-                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                {/* Observações */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Observações
-                  </label>
-                  <textarea
-                    value={paymentForm.notes}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
-                    placeholder="Ex: Primeira parcela em 30 dias, sem juros..."
-                    rows={3}
-                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* Botões */}
-              <div className="flex gap-2 mt-6">
-                <button
-                  onClick={handleSavePayment}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded-lg font-medium transition-colors disabled:opacity-50"
-                >
-                  Salvar
-                </button>
+        {/* Modal de condições de pagamento (renderizado no body via Portal) */}
+        {showPaymentModal && ReactDOM.createPortal(
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={() => setShowPaymentModal(false)}
+          >
+            <div
+              className="bg-slate-800 border border-slate-700 rounded-lg w-full max-w-md shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="font-semibold text-white">Condições de Pagamento</h3>
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
-                  Cancelar
+                  <X size={20} />
                 </button>
               </div>
+
+              <div className="p-6">
+                <div className="space-y-4">
+                  {/* Forma de pagamento */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Forma de pagamento *
+                    </label>
+                    <select
+                      value={paymentForm.payment_method}
+                      onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="Boleto">Boleto</option>
+                      <option value="Cartão de Crédito">Cartão de Crédito</option>
+                      <option value="PIX">PIX</option>
+                      <option value="Transferência">Transferência</option>
+                      <option value="Dinheiro">Dinheiro</option>
+                      <option value="Outro">Outro</option>
+                    </select>
+                  </div>
+
+                  {/* Número de parcelas */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Número de parcelas
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="120"
+                      value={paymentForm.installments}
+                      onChange={(e) => setPaymentForm({ ...paymentForm, installments: parseInt(e.target.value) || 1 })}
+                      className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* Observações */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Observações
+                    </label>
+                    <textarea
+                      value={paymentForm.notes}
+                      onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                      placeholder="Ex: Primeira parcela em 30 dias, sem juros..."
+                      rows={3}
+                      className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Botões */}
+                <div className="flex gap-2 mt-6">
+                  <button
+                    onClick={handleSavePayment}
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => setShowPaymentModal(false)}
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </ExpandableSection>

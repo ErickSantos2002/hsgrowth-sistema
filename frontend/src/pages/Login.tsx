@@ -118,16 +118,6 @@ export default function Login() {
                             )}
                         </button>
                     </form>
-
-                    {/* Credenciais de teste */}
-                    <div className="mt-6 pt-6 border-t border-slate-700/50 text-center">
-                        <p className="text-sm text-slate-400 mb-2">
-                            Credenciais de teste:
-                        </p>
-                        <p className="font-mono text-xs text-slate-500 bg-slate-800/30 px-3 py-2 rounded-lg inline-block">
-                            admin@hsgrowth.com / admin123
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>

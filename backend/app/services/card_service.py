@@ -175,8 +175,7 @@ class CardService:
                         value=card.value,
                         due_date=card.due_date,
                         is_won=card.is_won,
-                        is_lost=card.is_lost,
-                        contact_info=card.contact_info  # Será filtrado pelo validator
+                        is_lost=card.is_lost
                     )
                 )
 
@@ -208,7 +207,6 @@ class CardService:
                     assigned_to_id=card.assigned_to_id,
                     value=card.value,
                     due_date=card.due_date,
-                    contact_info=card.contact_info,
                     is_won=card.is_won,
                     is_lost=card.is_lost,
                     won_at=card.won_at,
@@ -677,7 +675,6 @@ class CardService:
             "assigned_to_id": card.assigned_to_id,
             "value": float(card.value) if card.value else None,
             "due_date": card.due_date,
-            "contact_info": card.contact_info,
             "payment_info": card.payment_info,
             "is_won": card.is_won == 1,
             "is_lost": card.is_lost,

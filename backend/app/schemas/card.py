@@ -198,7 +198,6 @@ class CardCreate(CardBase):
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
     value: Optional[float] = Field(None, ge=0, description="Valor monetário do card")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
-    contact_info: Optional[ContactInfo] = Field(None, description="Informações de contato estruturadas")
 
     model_config = {
         "json_schema_extra": {
@@ -209,14 +208,7 @@ class CardCreate(CardBase):
                     "list_id": 1,
                     "assigned_to_id": 2,
                     "value": 5000.00,
-                    "due_date": "2026-01-15T10:00:00",
-                    "contact_info": {
-                        "name": "João Silva",
-                        "position": "Diretor Comercial",
-                        "email_commercial": "joao@empresaxyz.com",
-                        "phone_whatsapp": "(11) 99999-9999",
-                        "linkedin": "https://linkedin.com/in/joaosilva"
-                    }
+                    "due_date": "2026-01-15T10:00:00"
                 }
             ]
         }
@@ -233,7 +225,6 @@ class CardUpdate(BaseModel):
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
     value: Optional[float] = Field(None, ge=0, description="Valor monetário do card")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
-    contact_info: Optional[ContactInfo] = Field(None, description="Informações de contato estruturadas")
     payment_info: Optional[PaymentInfo] = Field(None, description="Informações de pagamento/condições comerciais")
     is_won: Optional[bool] = Field(None, description="Card ganho (venda fechada)")
     is_lost: Optional[bool] = Field(None, description="Card perdido")
@@ -244,11 +235,7 @@ class CardUpdate(BaseModel):
                 {
                     "title": "Lead - Empresa XYZ - Proposta Enviada",
                     "value": 7500.00,
-                    "is_won": False,
-                    "contact_info": {
-                        "name": "João Silva",
-                        "phone_whatsapp": "(11) 99999-9999"
-                    }
+                    "is_won": False
                 }
             ]
         }
@@ -301,7 +288,6 @@ class CardResponse(CardBase):
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
     value: Optional[float] = Field(None, description="Valor monetário")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
-    contact_info: Optional[ContactInfo] = Field(None, description="Informações de contato estruturadas")
     payment_info: Optional[PaymentInfo] = Field(None, description="Informações de pagamento/condições comerciais")
     is_won: bool = Field(..., description="Card ganho")
     is_lost: bool = Field(..., description="Card perdido")
@@ -336,16 +322,6 @@ class CardResponse(CardBase):
             return v == 1
         return v
 
-    @field_validator('contact_info', mode='before')
-    @classmethod
-    def parse_contact_info(cls, v):
-        """Converte dict do banco para ContactInfo se necessário"""
-        if v is None:
-            return v
-        if isinstance(v, dict) and not isinstance(v, ContactInfo):
-            return ContactInfo(**v)
-        return v
-
     model_config = {
         "from_attributes": True,
         "json_schema_extra": {
@@ -358,13 +334,6 @@ class CardResponse(CardBase):
                     "assigned_to_id": 2,
                     "value": 5000.00,
                     "due_date": "2026-01-15T10:00:00",
-                    "contact_info": {
-                        "name": "João Silva",
-                        "position": "Diretor Comercial",
-                        "email_commercial": "joao@empresaxyz.com",
-                        "phone_whatsapp": "(11) 99999-9999",
-                        "linkedin": "https://linkedin.com/in/joaosilva"
-                    },
                     "is_won": False,
                     "is_lost": False,
                     "won_at": None,
@@ -395,7 +364,6 @@ class CardMinimalResponse(BaseModel):
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     is_won: bool = Field(..., description="Card ganho")
     is_lost: bool = Field(..., description="Card perdido")
-    contact_info: Optional[Dict[str, str]] = Field(None, description="Nome do contato apenas")
 
     @field_validator('value', 'position', mode='before')
     @classmethod
@@ -411,14 +379,6 @@ class CardMinimalResponse(BaseModel):
         """Converte Integer para Boolean (0/1 -> False/True)"""
         if isinstance(v, int):
             return v == 1
-        return v
-
-    @field_validator('contact_info', mode='before')
-    @classmethod
-    def filter_contact_info(cls, v):
-        """Retorna apenas o nome do contato para otimizar payload"""
-        if v and isinstance(v, dict):
-            return {"name": v.get("name")}
         return v
 
     model_config = {"from_attributes": True}
