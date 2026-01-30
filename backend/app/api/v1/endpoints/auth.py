@@ -647,7 +647,7 @@ async def client_credentials_auth(
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": settings.ACCESS_TOKEN_EXPIRE_SECONDS,
+        "expires_in": settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Converte minutos para segundos
         "user": {
             "id": None,
             "email": None,
