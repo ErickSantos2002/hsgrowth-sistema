@@ -27,6 +27,7 @@ from app.schemas.auth import (
     RegisterRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
+    ClientCredentialsRequest,
 )
 from app.schemas.user import UserResponse
 
