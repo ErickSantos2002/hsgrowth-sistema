@@ -97,6 +97,16 @@ const api4comService = {
   async deleteExtension(userId: number): Promise<void> {
     await api.delete(`/api/v1/api4com/extensions/${userId}`);
   },
+
+  // ========== Chamadas ==========
+
+  /**
+   * Inicia uma chamada telefônica
+   */
+  async makeCall(data: { phone: string; card_id: number }): Promise<{ success: boolean; message: string; call_log_id?: number; error?: string }> {
+    const response = await api.post('/api/v1/api4com/call', data);
+    return response.data;
+  },
 };
 
 export default api4comService;

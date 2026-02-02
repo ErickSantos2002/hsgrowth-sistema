@@ -13,7 +13,10 @@ from app.schemas.api4com import (
     API4ComConfigResponse,
     UserExtensionCreate,
     UserExtensionResponse,
-    API4ComTestResponse
+    API4ComTestResponse,
+    CallRequest,
+    CallResponse,
+    WebhookCallData
 )
 
 
@@ -208,19 +211,70 @@ def delete_extension(
     }
 
 
-# ========== Call Endpoint (Fase 2) ==========
+# ========== Call Endpoints ==========
 
-# @router.post("/call")
-# async def make_call(
-#     phone: str,
-#     card_id: Optional[int] = None,
-#     current_user: User = Depends(get_current_active_user),
-#     db: Session = Depends(get_db)
-# ):
-#     """
-#     Realiza uma chamada telefônica via API4COM.
-#
-#     Será implementado na Fase 2.
-#     """
-#     service = API4ComService(db)
-#     return await service.make_call(current_user.id, phone, card_id)
+@router.post("/call", response_model=CallResponse)
+async def make_call(
+    call_request: CallRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Realiza uma chamada telefônica via API4COM.
+
+    **Funcionamento:**
+    1. Verifica se usuário tem ramal configurado
+    2. Verifica se API4COM está configurada e ativa
+    3. Cria registro da chamada no banco (call_log)
+    4. Envia requisição para API4COM com metadata personalizada
+    5. Webphone do usuário abrirá automaticamente para realizar a chamada
+
+    **Permissões:** Qualquer usuário autenticado com ramal configurado
+
+    Args:
+        call_request: Telefone e card_id da chamada
+
+    Returns:
+        Resultado da operação (sucesso/falha)
+
+    Raises:
+        400: Se API4COM não estiver configurada ou usuário não tiver ramal
+        401: Se usuário não estiver autenticado
+    """
+    service = API4ComService(db)
+    return await service.make_call(call_request, current_user)
+
+
+@router.post("/webhook")
+async def receive_webhook(
+    webhook_data: WebhookCallData,
+    db: Session = Depends(get_db)
+):
+    """
+    Recebe webhook da API4COM quando uma chamada termina.
+
+    **Importante:**
+    - Este endpoint é chamado pela API4COM, não por usuários
+    - Não requer autenticação (webhook público)
+    - Atualiza o call_log com dados finais da chamada
+
+    **Dados recebidos:**
+    - ID da chamada
+    - Duração
+    - Status final (completed, failed, no_answer, etc)
+    - URL da gravação
+    - Metadata (gateway, card_id, etc)
+
+    Args:
+        webhook_data: Dados da chamada finalizada
+
+    Returns:
+        Confirmação de recebimento
+    """
+    service = API4ComService(db)
+    await service.process_webhook(webhook_data)
+
+    return {
+        "message": "Webhook processado com sucesso",
+        "call_id": webhook_data.id
+    }

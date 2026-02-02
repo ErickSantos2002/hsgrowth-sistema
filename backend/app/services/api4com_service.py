@@ -15,7 +15,10 @@ from app.schemas.api4com import (
     UserExtensionCreate,
     UserExtensionUpdate,
     UserExtensionResponse,
-    API4ComTestResponse
+    API4ComTestResponse,
+    CallRequest,
+    CallResponse,
+    WebhookCallData
 )
 from app.models.user import User
 from app.models.api4com import API4ComConfig, UserExtension
@@ -349,33 +352,139 @@ class API4ComService:
 
         self.repository.delete_extension(extension)
 
-    # ========== Call Methods (Fase 2) ==========
+    # ========== Call Methods ==========
 
     async def make_call(
         self,
-        user_id: int,
-        phone: str,
-        card_id: Optional[int] = None
-    ) -> Dict[str, Any]:
+        call_request: CallRequest,
+        current_user: User
+    ) -> CallResponse:
         """
         Realiza uma chamada telefônica via API4COM.
 
         Args:
-            user_id: ID do usuário (vendedor) que fará a chamada
-            phone: Número de telefone do destinatário
-            card_id: ID do card relacionado (opcional)
+            call_request: Dados da chamada (phone, card_id)
+            current_user: Usuário que está fazendo a chamada
 
         Returns:
             Resultado da chamada
 
         Raises:
             HTTPException: Se não houver configuração, ramal ou token
+        """
+        # 1. Verifica se existe configuração ativa
+        config = self.repository.get_config()
+        if not config or not config.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="API4COM não está configurada ou ativa"
+            )
+
+        # 2. Verifica se o token é válido
+        if not config.api_token or not config.token_expires_at:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token não configurado. Faça login primeiro"
+            )
+
+        if config.token_expires_at <= datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token expirado. Configure novamente a API4COM"
+            )
+
+        # 3. Verifica se o usuário tem ramal configurado
+        extension = self.repository.get_extension_by_user(current_user.id)
+        if not extension or not extension.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Você não tem ramal configurado. Contate o administrador"
+            )
+
+        # 4. Cria registro de chamada no banco
+        call_log = self.repository.create_call_log(
+            user_id=current_user.id,
+            card_id=call_request.card_id,
+            phone=call_request.phone,
+            extension=extension.extension
+        )
+
+        # 5. Chama a API4COM para iniciar a chamada
+        try:
+            client = API4ComClient(token=config.api_token)
+
+            # Metadata personalizada para rastreamento
+            metadata = {
+                "gateway": "GrowthHS",
+                "card_id": call_request.card_id,
+                "user_id": current_user.id,
+                "call_log_id": call_log.id
+            }
+
+            # Faz a chamada via /dialer endpoint
+            dialer_response = await client.make_call(
+                extension=extension.extension,
+                phone=call_request.phone,
+                metadata=metadata
+            )
+
+            # 6. Atualiza call_log com ID da API4COM se retornado
+            api4com_call_id = dialer_response.get("id") or dialer_response.get("call_id")
+            if api4com_call_id:
+                self.repository.update_call_log(
+                    call_log,
+                    status="ringing",
+                    api4com_call_id=str(api4com_call_id)
+                )
+
+            return CallResponse(
+                success=True,
+                message="Chamada iniciada com sucesso",
+                call_log_id=call_log.id
+            )
+
+        except Exception as e:
+            # Marca chamada como falha
+            error_msg = str(e)
+            self.repository.update_call_log(
+                call_log,
+                status="failed",
+                error_message=error_msg
+            )
+
+            return CallResponse(
+                success=False,
+                message="Erro ao iniciar chamada",
+                call_log_id=call_log.id,
+                error=error_msg
+            )
+
+    async def process_webhook(self, webhook_data: WebhookCallData) -> None:
+        """
+        Processa webhook da API4COM quando uma chamada termina.
+
+        Args:
+            webhook_data: Dados recebidos do webhook
 
         Note:
-            Será implementado na Fase 2
+            Atualiza o call_log com duração, gravação, status final
         """
-        # TODO: Implementar na Fase 2
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Funcionalidade de chamada será implementada na Fase 2"
+        # Tenta encontrar o call_log pelo ID da API4COM
+        if not webhook_data.id:
+            return
+
+        call_log = self.repository.get_call_log_by_api4com_id(webhook_data.id)
+
+        if not call_log:
+            # Chamada não foi registrada pelo nosso sistema, ignora
+            return
+
+        # Atualiza informações da chamada
+        import json
+        self.repository.update_call_log(
+            call_log,
+            status=webhook_data.status or "completed",
+            duration=webhook_data.duration,
+            recording_url=webhook_data.recording_url,
+            call_metadata=json.dumps(webhook_data.metadata) if webhook_data.metadata else None
         )

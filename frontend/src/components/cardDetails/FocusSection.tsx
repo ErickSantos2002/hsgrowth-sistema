@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Check,
   ChevronDown,
@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 import StatusBadge, { type ActivityStatus } from "./StatusBadge";
 import cardTaskService from "../../services/cardTaskService";
+import api4comService from "../../services/api4comService";
+import personService, { Person } from "../../services/personService";
+import { Card } from "../../types";
 import {
   formatBrazilDate,
   extractBrazilDateForInput,
@@ -45,6 +48,7 @@ interface PendingTask {
 
 interface FocusSectionProps {
   tasks: PendingTask[];
+  card: Card;
   onUpdate: () => void;
 }
 
@@ -52,7 +56,7 @@ interface FocusSectionProps {
  * Seção "Foco" - Atividades pendentes do card
  * Exibida na aba "Atividade", logo abaixo do formulário de criação rápida
  */
-const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
+const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) => {
   const [expandAll, setExpandAll] = useState(false);
   const [expandedActivities, setExpandedActivities] = useState<number[]>([]);
   const [loadingTaskId, setLoadingTaskId] = useState<number | null>(null);
@@ -61,9 +65,29 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
   const [rescheduleTaskId, setRescheduleTaskId] = useState<number | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleTime, setRescheduleTime] = useState("");
+  const [person, setPerson] = useState<Person | null>(null);
+  const [callingTaskId, setCallingTaskId] = useState<number | null>(null);
 
   // Usa os dados que vem do backend
   const activities = tasks || [];
+
+  // Carrega dados da pessoa quando o card é carregado
+  useEffect(() => {
+    const loadPersonData = async () => {
+      if (card.person_id) {
+        try {
+          const personData = await personService.getById(card.person_id);
+          setPerson(personData);
+        } catch (error) {
+          console.error("Erro ao carregar pessoa:", error);
+        }
+      } else {
+        setPerson(null);
+      }
+    };
+
+    loadPersonData();
+  }, [card.person_id]);
 
   /**
    * Retorna ícone do tipo de atividade
@@ -233,6 +257,47 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
     setRescheduleTaskId(null);
     setRescheduleDate("");
     setRescheduleTime("");
+  };
+
+  /**
+   * Faz chamada telefônica via API4COM
+   */
+  const handleMakeCall = async (activityId: number) => {
+    // Verifica se tem pessoa vinculada
+    if (!person) {
+      alert("Não há pessoa vinculada a este card");
+      return;
+    }
+
+    // Verifica se tem número de WhatsApp
+    if (!person.phone_whatsapp) {
+      alert("A pessoa não possui número de WhatsApp cadastrado");
+      return;
+    }
+
+    if (!confirm(`Ligar para ${person.name} no número ${person.phone_whatsapp}?`)) {
+      return;
+    }
+
+    try {
+      setCallingTaskId(activityId);
+
+      const result = await api4comService.makeCall({
+        phone: person.phone_whatsapp,
+        card_id: card.id
+      });
+
+      if (result.success) {
+        alert("Chamada iniciada! O webphone abrirá automaticamente.");
+      } else {
+        alert(`Erro ao iniciar chamada: ${result.error || result.message}`);
+      }
+    } catch (error: any) {
+      console.error("Erro ao fazer chamada:", error);
+      alert(`Erro ao iniciar chamada: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setCallingTaskId(null);
+    }
   };
 
   /**
@@ -473,6 +538,23 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, onUpdate }) => {
 
                         {/* Botões de ação */}
                         <div className="flex gap-2 pt-2">
+                          {/* Botão Ligar - só aparece para atividades de ligação */}
+                          {activity.task_type === "call" && (
+                            <button
+                              onClick={() => handleMakeCall(activity.id)}
+                              disabled={callingTaskId === activity.id || !person?.phone_whatsapp}
+                              className="flex-1 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50 rounded font-medium text-sm transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                              title={!person?.phone_whatsapp ? "Pessoa sem WhatsApp cadastrado" : "Ligar agora"}
+                            >
+                              {callingTaskId === activity.id ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <Phone size={14} />
+                              )}
+                              Ligar
+                            </button>
+                          )}
+
                           <button
                             onClick={() => handleToggleComplete(activity.id)}
                             disabled={loadingTaskId === activity.id}

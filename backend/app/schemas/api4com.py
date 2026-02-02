@@ -86,3 +86,58 @@ class API4ComTestResponse(BaseModel):
     message: str = Field(..., description="Mensagem descritiva do resultado")
     token_valid: bool = Field(..., description="Se o token está válido")
     error: Optional[str] = Field(None, description="Detalhes do erro, se houver")
+
+
+# ========== Call Schemas ==========
+
+class CallRequest(BaseModel):
+    """Schema para iniciar uma chamada telefônica."""
+    phone: str = Field(..., description="Número de telefone para ligar (com DDI, ex: +5548999999999)")
+    card_id: int = Field(..., description="ID do card que originou a chamada")
+
+
+class CallResponse(BaseModel):
+    """Schema de resposta ao iniciar chamada."""
+    success: bool = Field(..., description="Se a chamada foi iniciada com sucesso")
+    message: str = Field(..., description="Mensagem descritiva")
+    call_log_id: Optional[int] = Field(None, description="ID do registro de chamada criado")
+    error: Optional[str] = Field(None, description="Detalhes do erro, se houver")
+
+
+class WebhookCallData(BaseModel):
+    """
+    Schema para receber dados do webhook da API4COM quando uma chamada termina.
+    Baseado na documentação da API4COM.
+    """
+    id: Optional[str] = Field(None, description="ID da chamada na API4COM")
+    caller: Optional[str] = Field(None, description="Número de quem ligou")
+    called: Optional[str] = Field(None, description="Número que foi chamado")
+    duration: Optional[int] = Field(None, description="Duração da chamada em segundos")
+    recording_url: Optional[str] = Field(None, description="URL da gravação da chamada")
+    status: Optional[str] = Field(None, description="Status da chamada (completed, failed, etc)")
+    metadata: Optional[dict] = Field(None, description="Metadata personalizada enviada na chamada")
+    started_at: Optional[str] = Field(None, description="Timestamp de início da chamada")
+    ended_at: Optional[str] = Field(None, description="Timestamp de fim da chamada")
+
+
+class CallLogResponse(BaseModel):
+    """Schema de resposta do histórico de chamadas."""
+    id: int
+    user_id: int
+    card_id: int
+    phone: str
+    extension: str
+    status: str
+    duration: Optional[int] = None
+    recording_url: Optional[str] = None
+    api4com_call_id: Optional[str] = None
+    error_message: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    # Dados relacionados
+    user_name: Optional[str] = Field(None, description="Nome do vendedor")
+    card_title: Optional[str] = Field(None, description="Título do card")
+
+    class Config:
+        from_attributes = True

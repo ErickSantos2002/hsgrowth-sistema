@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from cryptography.fernet import Fernet
 import os
 
-from app.models.api4com import API4ComConfig, UserExtension
+from app.models.api4com import API4ComConfig, UserExtension, CallLog
 from app.models.user import User
 from app.schemas.api4com import (
     API4ComConfigCreate,
@@ -283,3 +283,149 @@ class API4ComRepository:
         """
         self.db.delete(extension)
         self.db.commit()
+
+    # ========== Call Log Methods ==========
+
+    def create_call_log(
+        self,
+        user_id: int,
+        card_id: int,
+        phone: str,
+        extension: str
+    ) -> CallLog:
+        """
+        Cria registro de chamada telefônica.
+
+        Args:
+            user_id: ID do vendedor que está fazendo a chamada
+            card_id: ID do card de onde a chamada foi originada
+            phone: Telefone para onde está ligando
+            extension: Ramal usado para fazer a chamada
+
+        Returns:
+            Registro de chamada criado
+        """
+        call_log = CallLog(
+            user_id=user_id,
+            card_id=card_id,
+            phone=phone,
+            extension=extension,
+            status="pending"  # Status inicial
+        )
+
+        self.db.add(call_log)
+        self.db.commit()
+        self.db.refresh(call_log)
+
+        return call_log
+
+    def get_call_log_by_id(self, call_log_id: int) -> Optional[CallLog]:
+        """
+        Busca chamada por ID.
+
+        Args:
+            call_log_id: ID do registro de chamada
+
+        Returns:
+            Registro encontrado ou None
+        """
+        return (
+            self.db.query(CallLog)
+            .filter(CallLog.id == call_log_id)
+            .first()
+        )
+
+    def get_call_log_by_api4com_id(self, api4com_call_id: str) -> Optional[CallLog]:
+        """
+        Busca chamada pelo ID retornado pela API4COM.
+
+        Args:
+            api4com_call_id: ID da chamada na API4COM
+
+        Returns:
+            Registro encontrado ou None
+        """
+        return (
+            self.db.query(CallLog)
+            .filter(CallLog.api4com_call_id == api4com_call_id)
+            .first()
+        )
+
+    def update_call_log(
+        self,
+        call_log: CallLog,
+        status: Optional[str] = None,
+        duration: Optional[int] = None,
+        recording_url: Optional[str] = None,
+        api4com_call_id: Optional[str] = None,
+        error_message: Optional[str] = None,
+        call_metadata: Optional[str] = None
+    ) -> CallLog:
+        """
+        Atualiza dados da chamada.
+
+        Args:
+            call_log: Registro a ser atualizado
+            status: Novo status da chamada
+            duration: Duração em segundos
+            recording_url: URL da gravação
+            api4com_call_id: ID da chamada na API4COM
+            error_message: Mensagem de erro
+            call_metadata: Metadata adicional (JSON string)
+
+        Returns:
+            Registro atualizado
+        """
+        if status is not None:
+            call_log.status = status
+        if duration is not None:
+            call_log.duration = duration
+        if recording_url is not None:
+            call_log.recording_url = recording_url
+        if api4com_call_id is not None:
+            call_log.api4com_call_id = api4com_call_id
+        if error_message is not None:
+            call_log.error_message = error_message
+        if call_metadata is not None:
+            call_log.call_metadata = call_metadata
+
+        call_log.updated_at = datetime.now(timezone.utc)
+
+        self.db.commit()
+        self.db.refresh(call_log)
+
+        return call_log
+
+    def list_call_logs_by_card(self, card_id: int) -> List[CallLog]:
+        """
+        Lista todas as chamadas de um card específico.
+
+        Args:
+            card_id: ID do card
+
+        Returns:
+            Lista de chamadas do card
+        """
+        return (
+            self.db.query(CallLog)
+            .filter(CallLog.card_id == card_id)
+            .order_by(CallLog.created_at.desc())
+            .all()
+        )
+
+    def list_call_logs_by_user(self, user_id: int) -> List[CallLog]:
+        """
+        Lista todas as chamadas de um usuário específico.
+
+        Args:
+            user_id: ID do usuário
+
+        Returns:
+            Lista de chamadas do usuário
+        """
+        return (
+            self.db.query(CallLog)
+            .filter(CallLog.user_id == user_id)
+            .order_by(CallLog.created_at.desc())
+            .all()
+        )

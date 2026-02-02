@@ -45,6 +45,9 @@ from app.models.transfer_approval import TransferApproval
 # Modelos de notificações
 from app.models.notification import Notification
 
+# Modelos de API4COM (VOIP)
+from app.models.api4com import API4ComConfig, UserExtension, CallLog
+
 # Lista de todos os modelos (útil para imports)
 __all__ = [
     "Base",
@@ -74,4 +77,7 @@ __all__ = [
     "CardTransfer",
     "TransferApproval",
     "Notification",
+    "API4ComConfig",
+    "UserExtension",
+    "CallLog",
 ]

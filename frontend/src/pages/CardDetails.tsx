@@ -476,7 +476,7 @@ const CardDetails: React.FC = () => {
                   />
 
                   {/* Seção Foco - Tarefas Pendentes */}
-                  <FocusSection tasks={card.pending_tasks || []} onUpdate={loadCardData} />
+                  <FocusSection tasks={card.pending_tasks || []} card={card} onUpdate={loadCardData} />
 
                   {/* Seção Histórico */}
                   <HistorySection
