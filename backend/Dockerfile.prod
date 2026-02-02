@@ -1,5 +1,5 @@
 # ==================== STAGE 1: Builder ====================
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Define build arguments
 ARG ENVIRONMENT=production
@@ -22,13 +22,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copia apenas requirements primeiro (melhor cache do Docker)
-COPY requirements.txt .
+COPY requirements-prod.txt .
 
 # Instala dependências Python em um virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt --verbose
+
+# Instala dependências em etapas para melhor debugging
+RUN echo "=== Atualizando pip, setuptools e wheel ===" && \
+    pip install --upgrade pip setuptools wheel
+
+RUN echo "=== Instalando dependências core ===" && \
+    pip install --no-cache-dir \
+    fastapi==0.109.0 \
+    uvicorn[standard]==0.27.0 \
+    python-multipart==0.0.6
+
+RUN echo "=== Instalando dependências de banco de dados ===" && \
+    pip install --no-cache-dir \
+    sqlalchemy==2.0.25 \
+    alembic==1.13.1 \
+    psycopg2-binary==2.9.9
+
+RUN echo "=== Instalando outras dependências ===" && \
+    pip install --no-cache-dir -r requirements-prod.txt
 
 
 # ==================== STAGE 2: Runtime ====================
@@ -75,12 +92,12 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Script de inicialização
-RUN chmod +x /app/scripts/start.sh
+# Torna o script de inicialização executável
+RUN chmod +x /app/scripts/start.sh || true
 
-# Limpa cache do Python para garantir código atualizado
-RUN find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-RUN find /app -type f -name "*.pyc" -delete 2>/dev/null || true
+# Limpa cache do Python
+RUN find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true && \
+    find /app -type f -name "*.pyc" -delete 2>/dev/null || true
 
 # Comando padrão
-CMD ["sh", "/app/scripts/start.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
