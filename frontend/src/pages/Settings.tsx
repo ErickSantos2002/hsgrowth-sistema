@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown } from "lucide-react";
+import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 import gamificationService, { Badge, ActionPoints } from "../services/gamificationService";
 import BadgeModal, { BadgeFormData } from "../components/settings/BadgeModal";
 import AwardBadgeModal from "../components/settings/AwardBadgeModal";
+import api4comService, { API4ComConfig, UserExtension, API4ComConfigCreate, UserExtensionCreate } from "../services/api4comService";
+import { toast } from "react-hot-toast";
 
-type Tab = "profile" | "notifications" | "security" | "badges" | "points";
+type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com";
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -53,6 +55,25 @@ const Settings: React.FC = () => {
   const [actionPoints, setActionPoints] = useState<ActionPoints[]>([]);
   const [loadingPoints, setLoadingPoints] = useState(false);
   const [editingPoints, setEditingPoints] = useState<Record<string, number>>({});
+
+  // Estados da API4COM (Admin)
+  const [api4comConfig, setApi4comConfig] = useState<API4ComConfig | null>(null);
+  const [loadingApi4comConfig, setLoadingApi4comConfig] = useState(false);
+  const [savingApi4comConfig, setSavingApi4comConfig] = useState(false);
+  const [testingApi4comConnection, setTestingApi4comConnection] = useState(false);
+  const [api4comExtensions, setApi4comExtensions] = useState<UserExtension[]>([]);
+  const [loadingApi4comExtensions, setLoadingApi4comExtensions] = useState(false);
+  const [savingApi4comExtension, setSavingApi4comExtension] = useState(false);
+  const [showApi4comConfigForm, setShowApi4comConfigForm] = useState(false);
+  const [api4comConfigForm, setApi4comConfigForm] = useState<API4ComConfigCreate>({
+    email: '',
+    password: '',
+  });
+  const [api4comExtensionForm, setApi4comExtensionForm] = useState<UserExtensionCreate>({
+    user_id: 0,
+    extension: '',
+  });
+  const [editingApi4comExtension, setEditingApi4comExtension] = useState<UserExtension | null>(null);
 
   // Mock de usuários ativos no sistema (online)
   const [activeUsers] = useState([
@@ -117,6 +138,14 @@ const Settings: React.FC = () => {
   useEffect(() => {
     if (activeTab === "points" && user?.role === "admin") {
       loadActionPoints();
+    }
+  }, [activeTab, user]);
+
+  // Carrega dados da API4COM quando a tab api4com é ativada (apenas admin)
+  useEffect(() => {
+    if (activeTab === "api4com" && user?.role === "admin") {
+      loadApi4comConfig();
+      loadApi4comExtensions();
     }
   }, [activeTab, user]);
 
@@ -328,6 +357,133 @@ const Settings: React.FC = () => {
     }
   };
 
+  // Funções para gerenciar API4COM (Admin)
+  const loadApi4comConfig = async () => {
+    try {
+      setLoadingApi4comConfig(true);
+      const data = await api4comService.getConfig();
+      setApi4comConfig(data);
+      setApi4comConfigForm({ email: data.email, password: '' });
+      setShowApi4comConfigForm(false);
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        setShowApi4comConfigForm(true);
+      } else {
+        toast.error('Erro ao carregar configuração');
+      }
+    } finally {
+      setLoadingApi4comConfig(false);
+    }
+  };
+
+  const loadApi4comExtensions = async () => {
+    try {
+      setLoadingApi4comExtensions(true);
+      const data = await api4comService.listExtensions();
+      setApi4comExtensions(data);
+
+      // Carrega vendedores para o formulário de vincular ramais
+      const users = await userService.listActive();
+      setSalespeople(users.filter(u => u.role === "salesperson"));
+    } catch (error) {
+      toast.error('Erro ao carregar ramais');
+    } finally {
+      setLoadingApi4comExtensions(false);
+    }
+  };
+
+  const handleSaveApi4comConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!api4comConfigForm.email || !api4comConfigForm.password) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+
+    setSavingApi4comConfig(true);
+    try {
+      const data = await api4comService.saveConfig(api4comConfigForm);
+      setApi4comConfig(data);
+      setShowApi4comConfigForm(false);
+      setApi4comConfigForm({ ...api4comConfigForm, password: '' });
+      toast.success('Configuração salva e token obtido com sucesso!');
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Erro ao salvar configuração';
+      toast.error(message);
+    } finally {
+      setSavingApi4comConfig(false);
+    }
+  };
+
+  const handleTestApi4comConnection = async () => {
+    setTestingApi4comConnection(true);
+    try {
+      const result = await api4comService.testConnection();
+
+      if (result.success) {
+        toast.success(result.message);
+        loadApi4comConfig();
+      } else {
+        toast.error(result.message + (result.error ? `: ${result.error}` : ''));
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Erro ao testar conexão';
+      toast.error(message);
+    } finally {
+      setTestingApi4comConnection(false);
+    }
+  };
+
+  const handleSaveApi4comExtension = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!api4comExtensionForm.user_id || !api4comExtensionForm.extension) {
+      toast.error('Selecione um vendedor e informe o ramal');
+      return;
+    }
+
+    setSavingApi4comExtension(true);
+    try {
+      await api4comService.saveExtension(api4comExtensionForm);
+      const message = editingApi4comExtension ? 'Ramal atualizado com sucesso!' : 'Ramal vinculado com sucesso!';
+      toast.success(message);
+      setApi4comExtensionForm({ user_id: 0, extension: '' });
+      setEditingApi4comExtension(null);
+      loadApi4comExtensions();
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Erro ao vincular ramal';
+      toast.error(message);
+    } finally {
+      setSavingApi4comExtension(false);
+    }
+  };
+
+  const handleDeleteApi4comExtension = async (userId: number, userName: string) => {
+    if (!confirm(`Deseja remover o ramal de ${userName}?`)) return;
+
+    try {
+      await api4comService.deleteExtension(userId);
+      toast.success('Ramal removido com sucesso!');
+      loadApi4comExtensions();
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Erro ao remover ramal';
+      toast.error(message);
+    }
+  };
+
+  const handleEditApi4comExtension = (extension: UserExtension) => {
+    setEditingApi4comExtension(extension);
+    setApi4comExtensionForm({
+      user_id: extension.user_id,
+      extension: extension.extension,
+    });
+  };
+
+  const handleCancelEditApi4comExtension = () => {
+    setEditingApi4comExtension(null);
+    setApi4comExtensionForm({ user_id: 0, extension: '' });
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -357,6 +513,11 @@ const Settings: React.FC = () => {
   // Adiciona tab Pontos apenas para admin
   if (user?.role === "admin") {
     tabs.push({ id: "points" as Tab, label: "Pontos", icon: Coins });
+  }
+
+  // Adiciona tab API4COM apenas para admin
+  if (user?.role === "admin") {
+    tabs.push({ id: "api4com" as Tab, label: "API4COM", icon: Phone });
   }
 
   return (
@@ -1252,6 +1413,326 @@ const Settings: React.FC = () => {
                     <li>
                       • Alterações afetam apenas ações futuras (não são retroativas)
                     </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: API4COM (Admin Only) */}
+            {activeTab === "api4com" && user?.role === "admin" && (
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white mb-2">Configurações API4COM (VOIP)</h2>
+                    <p className="text-slate-400 text-sm">
+                      Gerencie credenciais e ramais para integração com API4COM
+                    </p>
+                  </div>
+                </div>
+
+                {/* ========== Seção de Configuração ========== */}
+                <div className="bg-slate-900 border border-slate-700 rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white">Credenciais da API4COM</h3>
+                    {api4comConfig && !showApi4comConfigForm && (
+                      <button
+                        onClick={() => setShowApi4comConfigForm(true)}
+                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Alterar Credenciais
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Status da Configuração */}
+                  {api4comConfig && !showApi4comConfigForm && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-sm text-slate-400">Email:</span>
+                          <p className="font-medium text-white">{api4comConfig.email}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm text-slate-400">Status:</span>
+                          <p>
+                            {api4comConfig.is_active ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                                Ativo
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+                                Inativo
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm text-slate-400">Token válido:</span>
+                          <p>
+                            {api4comConfig.has_valid_token ? (
+                              <span className="text-green-400 font-medium">Sim</span>
+                            ) : (
+                              <span className="text-red-400 font-medium">Não</span>
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm text-slate-400">Expira em:</span>
+                          <p className="text-sm text-slate-300">
+                            {api4comConfig.token_expires_at
+                              ? new Date(api4comConfig.token_expires_at).toLocaleString('pt-BR')
+                              : '-'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {api4comConfig.last_test_at && (
+                        <div className="border-t border-slate-700 pt-3">
+                          <span className="text-sm text-slate-400">Último teste:</span>
+                          <p className="text-sm text-slate-300">
+                            {new Date(api4comConfig.last_test_at).toLocaleString('pt-BR')} -{' '}
+                            {api4comConfig.last_test_success ? (
+                              <span className="text-green-400">Sucesso</span>
+                            ) : (
+                              <span className="text-red-400">Falhou</span>
+                            )}
+                          </p>
+                          {api4comConfig.last_test_error && (
+                            <p className="text-sm text-red-400 mt-1">{api4comConfig.last_test_error}</p>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="pt-3">
+                        <button
+                          onClick={handleTestApi4comConnection}
+                          disabled={testingApi4comConnection}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {testingApi4comConnection ? 'Testando...' : 'Testar Conexão'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Formulário de Configuração */}
+                  {showApi4comConfigForm && (
+                    <form onSubmit={handleSaveApi4comConfig} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">
+                          Email da API4COM
+                        </label>
+                        <input
+                          type="email"
+                          value={api4comConfigForm.email}
+                          onChange={(e) => setApi4comConfigForm({ ...api4comConfigForm, email: e.target.value })}
+                          className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">
+                          Senha da API4COM
+                        </label>
+                        <input
+                          type="password"
+                          value={api4comConfigForm.password}
+                          onChange={(e) => setApi4comConfigForm({ ...api4comConfigForm, password: e.target.value })}
+                          className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          required
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                          Ao salvar, o sistema fará login e obterá o token automaticamente
+                        </p>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="submit"
+                          disabled={savingApi4comConfig}
+                          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {savingApi4comConfig ? 'Salvando...' : 'Salvar e Obter Token'}
+                        </button>
+                        {api4comConfig && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowApi4comConfigForm(false);
+                              setApi4comConfigForm({ email: api4comConfig.email, password: '' });
+                            }}
+                            className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  )}
+                </div>
+
+                {/* ========== Seção de Ramais ========== */}
+                <div className="bg-slate-900 border border-slate-700 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Ramais dos Vendedores</h3>
+
+                  {/* Formulário para Adicionar/Editar Ramal */}
+                  <form onSubmit={handleSaveApi4comExtension} className="mb-6 p-4 bg-slate-800 rounded-lg">
+                    <h4 className="text-sm font-medium text-slate-300 mb-3">
+                      {editingApi4comExtension ? 'Editar Ramal do Vendedor' : 'Vincular Vendedor ao Ramal'}
+                    </h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="col-span-1">
+                        <label className="block text-sm font-medium text-slate-300 mb-1">
+                          Vendedor
+                        </label>
+                        <select
+                          value={api4comExtensionForm.user_id}
+                          onChange={(e) =>
+                            setApi4comExtensionForm({ ...api4comExtensionForm, user_id: Number(e.target.value) })
+                          }
+                          disabled={!!editingApi4comExtension}
+                          className={`w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                            editingApi4comExtension ? 'opacity-60 cursor-not-allowed' : ''
+                          }`}
+                          required
+                        >
+                          <option value={0}>Selecione...</option>
+                          {salespeople.map((sp) => (
+                            <option key={sp.id} value={sp.id}>
+                              {sp.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="col-span-1">
+                        <label className="block text-sm font-medium text-slate-300 mb-1">
+                          Ramal
+                        </label>
+                        <input
+                          type="text"
+                          value={api4comExtensionForm.extension}
+                          onChange={(e) =>
+                            setApi4comExtensionForm({ ...api4comExtensionForm, extension: e.target.value })
+                          }
+                          placeholder="Ex: 1000"
+                          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          required
+                        />
+                      </div>
+
+                      <div className="col-span-1 flex items-end gap-2">
+                        <button
+                          type="submit"
+                          disabled={savingApi4comExtension}
+                          className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {savingApi4comExtension
+                            ? 'Salvando...'
+                            : editingApi4comExtension
+                            ? 'Atualizar'
+                            : 'Vincular'}
+                        </button>
+                        {editingApi4comExtension && (
+                          <button
+                            type="button"
+                            onClick={handleCancelEditApi4comExtension}
+                            className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </form>
+
+                  {/* Tabela de Ramais */}
+                  {loadingApi4comExtensions ? (
+                    <div className="text-center text-slate-400 py-8">Carregando ramais...</div>
+                  ) : api4comExtensions.length === 0 ? (
+                    <div className="text-center text-slate-400 py-8">
+                      Nenhum ramal vinculado ainda
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-slate-800">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                              Vendedor
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                              Email
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                              Ramal
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                              Ações
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-700">
+                          {api4comExtensions.map((ext) => (
+                            <tr key={ext.id} className="hover:bg-slate-800/50">
+                              <td className="px-4 py-3 text-sm font-medium text-white">
+                                {ext.user_name}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-slate-400">{ext.user_email}</td>
+                              <td className="px-4 py-3 text-sm font-mono text-white">
+                                {ext.extension}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                {ext.is_active ? (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                                    Ativo
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/20 text-slate-400">
+                                    Inativo
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <div className="flex gap-3">
+                                  <button
+                                    onClick={() => handleEditApi4comExtension(ext)}
+                                    className="text-blue-400 hover:text-blue-300 font-medium"
+                                  >
+                                    Editar
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteApi4comExtension(ext.user_id, ext.user_name || '')}
+                                    className="text-red-400 hover:text-red-300 font-medium"
+                                  >
+                                    Remover
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Informação */}
+                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
+                    <Phone size={16} />
+                    Como funciona
+                  </h4>
+                  <ul className="text-sm text-slate-300 space-y-1">
+                    <li>• Configure as credenciais da sua conta API4COM para obter o token de autenticação</li>
+                    <li>• Vincule cada vendedor ao seu ramal físico existente no sistema VOIP</li>
+                    <li>• O token é renovado automaticamente quando próximo da expiração</li>
+                    <li>• Vendedores poderão fazer ligações diretamente do sistema (Fase 2)</li>
                   </ul>
                 </div>
               </div>

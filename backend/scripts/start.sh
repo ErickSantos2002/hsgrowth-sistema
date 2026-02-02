@@ -39,7 +39,7 @@ fi
 
 # Executa migrations do Alembic
 echo "Executando migrations do banco de dados..."
-alembic upgrade head
+alembic upgrade heads
 echo "âœ“ Migrations concluÃ­das!"
 
 # Se for ambiente de desenvolvimento, pode rodar seed (opcional)
