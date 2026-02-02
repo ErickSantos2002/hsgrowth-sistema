@@ -563,8 +563,15 @@ class AutomationService:
         self.db.commit()
 
         # Atualiza o estado da automação
-        automation.state = automation.state or {}
+        from sqlalchemy.orm.attributes import flag_modified
+
+        if automation.state is None:
+            automation.state = {}
+
         automation.state["round_robin_last_user_id"] = next_user.id
+
+        # Marca o campo como modificado para o SQLAlchemy detectar a mudança
+        flag_modified(automation, "state")
         self.db.commit()
 
     def _to_response(self, automation: Automation) -> AutomationResponse:
