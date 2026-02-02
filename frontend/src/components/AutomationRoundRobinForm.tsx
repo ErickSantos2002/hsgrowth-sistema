@@ -73,7 +73,7 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.board_id || !formData.target_list_id) {
+    if (!formData.name || !formData.board_id) {
       alert("Preencha todos os campos obrigatórios");
       return;
     }
@@ -81,15 +81,23 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
     try {
       setLoading(true);
 
+      // Monta trigger_conditions baseado na lista selecionada
+      let triggerConditions = null;
+      if (formData.target_list_id) {
+        // Lista específica selecionada
+        triggerConditions = {
+          to_list_id: Number(formData.target_list_id),
+        };
+      }
+      // Se target_list_id vazio, triggerConditions fica null (todas as listas)
+
       const automationData = {
         name: formData.name,
         description: formData.description,
         board_id: Number(formData.board_id),
         automation_type: "trigger",
         trigger_event: "card_moved",
-        trigger_conditions: {
-          to_list_id: Number(formData.target_list_id),
-        },
+        trigger_conditions: triggerConditions,
         actions: [
           {
             type: "assign_round_robin",
@@ -195,7 +203,7 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
           {/* Lista de destino */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Lista de Destino (trigger) *
+              Lista de Destino (trigger)
             </label>
             <div className="relative">
               <List className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -203,7 +211,6 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
                 value={formData.target_list_id}
                 onChange={(e) => setFormData({ ...formData, target_list_id: e.target.value })}
                 className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-                required
                 disabled={!formData.board_id || loadingLists}
               >
                 <option value="">
@@ -211,7 +218,7 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
                     ? "Carregando listas..."
                     : !formData.board_id
                     ? "Selecione um board primeiro"
-                    : "Selecione a lista"}
+                    : "Todas as listas do board"}
                 </option>
                 {lists.map((list) => (
                   <option key={list.id} value={list.id}>
@@ -221,7 +228,10 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
               </select>
             </div>
             <p className="mt-1 text-xs text-slate-400">
-              Quando um card chegar nesta lista, será automaticamente atribuído ao próximo vendedor
+              {formData.target_list_id
+                ? "Quando um card chegar nesta lista, será automaticamente atribuído ao próximo vendedor"
+                : "Quando qualquer card for movido no board, será automaticamente atribuído ao próximo vendedor"
+              }
             </p>
           </div>
 
@@ -246,7 +256,8 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
               <div className="text-sm text-purple-200">
                 <p className="font-medium mb-1">Como funciona:</p>
                 <ul className="space-y-1 text-purple-300">
-                  <li>• Cards que chegarem na lista selecionada serão distribuídos automaticamente</li>
+                  <li>• Escolha uma lista específica ou deixe vazio para aplicar em todas as listas</li>
+                  <li>• Cards movidos serão distribuídos automaticamente em rodízio</li>
                   <li>• Apenas vendedores ativos participam do rodízio</li>
                   <li>• O sistema garante distribuição equilibrada entre todos os vendedores</li>
                 </ul>

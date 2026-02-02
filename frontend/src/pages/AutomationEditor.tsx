@@ -23,6 +23,8 @@ import NodesSidebar from "../components/automations/NodesSidebar";
 import NodeConfigPanel from "../components/automations/NodeConfigPanel";
 import CustomEdge from "../components/automations/CustomEdge";
 import TemplatesModal from "../components/automations/TemplatesModal";
+import automationService from "../services/automationService";
+import { convertApiToReactFlow, convertReactFlowToApi, validateAutomation } from "../utils/automationConverter";
 
 // Tipos de nodes customizados
 const nodeTypes = {
@@ -44,10 +46,13 @@ const AutomationEditorContent: React.FC = () => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [automationName, setAutomationName] = useState(
-    id === "new" ? "Nova Automação" : "Vendas → Pós-Venda Automático"
+    id === "new" ? "Nova Automação" : "Carregando..."
   );
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const [titleValue, setTitleValue] = useState(automationName);
+  const [boardId, setBoardId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Estados do React Flow
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -205,15 +210,9 @@ const AutomationEditorContent: React.FC = () => {
       errors.push("Conecte o gatilho a pelo menos uma ação");
     }
 
-    const unconfiguredNodes = nodes.filter(n => {
-      const config = n.data.config;
-      return !config || Object.keys(config).length === 0;
-    });
-
-    if (unconfiguredNodes.length > 0) {
-      const nodeLabels = unconfiguredNodes.map(n => n.data.label).join(", ");
-      errors.push(`Configure todos os nodes: ${nodeLabels}`);
-    }
+    // Validação de configuração removida - nem todos os nodes precisam de config
+    // Triggers como card_created, card_won, card_lost não precisam
+    // Actions como mark_won, mark_lost, assign_round_robin podem não precisar
 
     if (triggers.length > 0 && actions.length > 0 && edges.length > 0) {
       const disconnectedTriggers = triggers.filter(trigger => {
@@ -229,9 +228,9 @@ const AutomationEditorContent: React.FC = () => {
     return { valid: errors.length === 0, errors };
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Valida antes de salvar
-    const validation = validateAutomation();
+    const validation = validateAutomation(nodes, edges);
 
     if (!validation.valid) {
       const errorMessage = validation.errors.join("\n• ");
@@ -239,19 +238,44 @@ const AutomationEditorContent: React.FC = () => {
       return;
     }
 
-    // TODO: Salvar no backend
-    console.log("Salvando automação:", {
-      name: automationName,
-      nodes,
-      edges,
-    });
-    alert("Automação salva com sucesso!");
-    navigate("/automations");
+    // Verifica se tem boardId
+    if (!boardId) {
+      alert(
+        "Esta automação não está vinculada a um board.\n\n" +
+        "Para criar uma nova automação, use o botão 'Nova Automação' na página de Automações e escolha o board."
+      );
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      // Converte React Flow para formato da API
+      const automationData = convertReactFlowToApi(nodes, edges, automationName, boardId);
+
+      if (id && id !== "new") {
+        // Atualiza automação existente
+        await automationService.update(Number(id), automationData);
+        alert("Automação atualizada com sucesso!");
+      } else {
+        // Cria nova automação
+        await automationService.create(automationData);
+        alert("Automação criada com sucesso!");
+      }
+
+      navigate("/automations");
+    } catch (error: any) {
+      console.error("Erro ao salvar automação:", error);
+      const errorMessage = error.response?.data?.detail || error.message || "Erro desconhecido";
+      alert(`Erro ao salvar automação:\n\n${errorMessage}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleTest = () => {
+  const handleTest = async () => {
     // Valida antes de testar
-    const validation = validateAutomation();
+    const validation = validateAutomation(nodes, edges);
 
     if (!validation.valid) {
       const errorMessage = validation.errors.join("\n• ");
@@ -259,8 +283,37 @@ const AutomationEditorContent: React.FC = () => {
       return;
     }
 
-    // TODO: Implementar teste real
-    alert("Testando automação... (mock)\n\nAutomação validada com sucesso!");
+    // Verifica se é uma automação existente (salva)
+    if (!id || id === "new") {
+      alert(
+        "Para testar a automação, você precisa salvá-la primeiro.\n\n" +
+        "Clique no botão 'Salvar' e depois poderá testá-la."
+      );
+      return;
+    }
+
+    try {
+      setIsSaving(true); // Reusa o estado de loading
+
+      // Executa trigger manual
+      const result = await automationService.trigger(Number(id));
+
+      alert(
+        "Teste executado com sucesso!\n\n" +
+        `Status: ${result.status}\n` +
+        `Duração: ${result.duration_ms ? Math.round(result.duration_ms) + "ms" : "N/A"}\n\n` +
+        "Verifique os logs de execução para mais detalhes."
+      );
+    } catch (error: any) {
+      console.error("Erro ao testar automação:", error);
+      const errorMessage = error.response?.data?.detail || error.message || "Erro desconhecido";
+      alert(
+        `Erro ao testar automação:\n\n${errorMessage}\n\n` +
+        "Verifique se a automação está configurada corretamente e se há cards disponíveis para processar."
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClear = () => {
@@ -502,6 +555,55 @@ const AutomationEditorContent: React.FC = () => {
     }
   }, [automationName, isTitleEditing]);
 
+  // Carrega automação existente
+  useEffect(() => {
+    if (id && id !== "new") {
+      loadAutomation(Number(id));
+    }
+  }, [id]);
+
+  const loadAutomation = async (automationId: number) => {
+    try {
+      setIsLoading(true);
+      const automation = await automationService.getById(automationId);
+
+      // Define nome e boardId
+      setAutomationName(automation.name);
+      setBoardId(automation.board_id);
+
+      // Converte para React Flow e popula canvas
+      const { nodes: convertedNodes, edges: convertedEdges } = convertApiToReactFlow(automation);
+
+      setNodes(convertedNodes);
+      setEdges(convertedEdges);
+
+      // Ajusta visualização após carregar
+      setTimeout(() => {
+        if (reactFlowInstance) {
+          reactFlowInstance.fitView({ padding: 0.2 });
+        }
+      }, 100);
+    } catch (error) {
+      console.error("Erro ao carregar automação:", error);
+      alert("Erro ao carregar automação. Verifique se ela existe.");
+      navigate("/automations");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mb-4"></div>
+          <p className="text-slate-400">Carregando automação...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col bg-slate-900">
       {/* Header */}
@@ -566,10 +668,11 @@ const AutomationEditorContent: React.FC = () => {
             </button>
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 px-3 sm:px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-500/30"
+              disabled={isSaving}
+              className="flex items-center gap-2 px-3 sm:px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={16} />
-              <span className="hidden sm:inline">Salvar</span>
+              <span className="hidden sm:inline">{isSaving ? "Salvando..." : "Salvar"}</span>
             </button>
           </div>
         </div>

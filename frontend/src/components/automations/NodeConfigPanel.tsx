@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Save, AlertCircle, ChevronDown } from "lucide-react";
 import { Node as FlowNode } from "reactflow";
+import boardService from "../../services/boardService";
+import userService from "../../services/userService";
 
 interface NodeConfigPanelProps {
   node: FlowNode | null;
@@ -10,13 +12,62 @@ interface NodeConfigPanelProps {
 
 const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave }) => {
   const [config, setConfig] = useState<any>({});
+  const [boards, setBoards] = useState<any[]>([]);
+  const [lists, setLists] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (node) {
       // Carrega configuração existente do node
       setConfig(node.data.config || {});
     }
+    // Carrega dados iniciais
+    loadBoards();
+    loadUsers();
   }, [node]);
+
+  // Carrega listas quando board é selecionado
+  useEffect(() => {
+    if (config.board_id) {
+      loadLists(Number(config.board_id));
+    }
+  }, [config.board_id]);
+
+  const loadBoards = async () => {
+    try {
+      const response = await boardService.list();
+      setBoards(response.boards || []);
+    } catch (error) {
+      console.error("Erro ao carregar boards:", error);
+    }
+  };
+
+  const loadLists = async (boardId: number) => {
+    try {
+      setLoading(true);
+      const response = await boardService.getLists(boardId);
+      setLists(response || []);
+    } catch (error) {
+      console.error("Erro ao carregar listas:", error);
+      setLists([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await userService.listActive();
+      // Filtra apenas vendedores e gerentes
+      const salespeople = response.filter((u: any) =>
+        u.role === "salesperson" || u.role === "manager"
+      );
+      setUsers(salespeople);
+    } catch (error) {
+      console.error("Erro ao carregar usuários:", error);
+    }
+  };
 
   if (!node) return null;
 
@@ -41,118 +92,41 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
       case "card_moved":
         return (
           <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Board
-              </label>
-              <SelectMenu
-                value={config.board_id || ""}
-                onChange={(value) => updateConfig("board_id", value)}
-                options={[
-                  { value: "", label: "Qualquer board" },
-                  { value: "1", label: "Vendas" },
-                  { value: "2", label: "Pós-Venda" },
-                  { value: "3", label: "Suporte" },
-                ]}
-              />
-            </div>
-
             {nodeType === "card_moved" && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Para a lista
-                </label>
-                <SelectMenu
-                  value={config.list_id || ""}
-                  onChange={(value) => updateConfig("list_id", value)}
-                  options={[
-                    { value: "", label: "Qualquer lista" },
-                    { value: "1", label: "Novo Lead" },
-                    { value: "2", label: "Contato Feito" },
-                    { value: "3", label: "Proposta Enviada" },
-                    { value: "4", label: "Negociação" },
-                    { value: "5", label: "Ganho" },
-                    { value: "6", label: "Perdido" },
-                  ]}
-                />
-              </div>
-            )}
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Condição adicional (opcional)
-              </label>
-              <div className="mb-2">
-                <SelectMenu
-                  value={config.condition_field || ""}
-                  onChange={(value) => updateConfig("condition_field", value)}
-                  options={[
-                    { value: "", label: "Nenhuma condição" },
-                    { value: "value", label: "Valor do card" },
-                    { value: "priority", label: "Prioridade" },
-                    { value: "days_in_stage", label: "Dias no estágio" },
-                  ]}
-                />
-              </div>
-
-              {config.condition_field && (
-                <div className="flex gap-2">
-                  <div className="w-1/3">
-                    <SelectMenu
-                      value={config.condition_operator || ">"}
-                      onChange={(value) => updateConfig("condition_operator", value)}
-                      options={[
-                        { value: ">", label: ">" },
-                        { value: "<", label: "<" },
-                        { value: "=", label: "=" },
-                        { value: ">=", label: "≥" },
-                        { value: "<=", label: "≤" },
-                      ]}
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={config.condition_value || ""}
-                    onChange={(e) => updateConfig("condition_value", e.target.value)}
-                    placeholder="Valor"
-                    className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Board
+                  </label>
+                  <SelectMenu
+                    value={config.board_id || ""}
+                    onChange={(value) => updateConfig("board_id", value)}
+                    options={[
+                      { value: "", label: "Qualquer board" },
+                      ...boards.map(b => ({ value: String(b.id), label: b.name }))
+                    ]}
                   />
                 </div>
-              )}
-            </div>
-          </>
-        );
 
-      case "card_overdue":
-        return (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Board
-              </label>
-              <SelectMenu
-                value={config.board_id || ""}
-                onChange={(value) => updateConfig("board_id", value)}
-                options={[
-                  { value: "", label: "Qualquer board" },
-                  { value: "1", label: "Vendas" },
-                  { value: "2", label: "Pós-Venda" },
-                  { value: "3", label: "Suporte" },
-                ]}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Dias de atraso
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={config.days_overdue || 1}
-                onChange={(e) => updateConfig("days_overdue", parseInt(e.target.value))}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Para a lista
+                  </label>
+                  <SelectMenu
+                    value={config.to_list_id || ""}
+                    onChange={(value) => updateConfig("to_list_id", value)}
+                    options={[
+                      { value: "", label: loading ? "Carregando..." : "Qualquer lista" },
+                      ...lists.map(l => ({ value: String(l.id), label: l.name }))
+                    ]}
+                    disabled={!config.board_id}
+                  />
+                  <p className="text-xs text-slate-400 mt-1">
+                    Deixe vazio para qualquer movimento de card
+                  </p>
+                </div>
+              </>
+            )}
           </>
         );
 
@@ -164,52 +138,16 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 Frequência
               </label>
               <SelectMenu
-                value={config.frequency || "daily"}
-                onChange={(value) => updateConfig("frequency", value)}
+                value={config.recurrence_pattern || "daily"}
+                onChange={(value) => updateConfig("recurrence_pattern", value)}
                 options={[
                   { value: "daily", label: "Diariamente" },
                   { value: "weekly", label: "Semanalmente" },
                   { value: "monthly", label: "Mensalmente" },
+                  { value: "annual", label: "Anualmente" },
                 ]}
               />
             </div>
-
-            {config.frequency === "weekly" && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Dia da semana
-                </label>
-                <SelectMenu
-                  value={config.day_of_week || "1"}
-                  onChange={(value) => updateConfig("day_of_week", value)}
-                  options={[
-                    { value: "0", label: "Domingo" },
-                    { value: "1", label: "Segunda" },
-                    { value: "2", label: "Terça" },
-                    { value: "3", label: "Quarta" },
-                    { value: "4", label: "Quinta" },
-                    { value: "5", label: "Sexta" },
-                    { value: "6", label: "Sábado" },
-                  ]}
-                />
-              </div>
-            )}
-
-            {config.frequency === "monthly" && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Dia do mês
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={config.day_of_month || 1}
-                  onChange={(e) => updateConfig("day_of_month", parseInt(e.target.value))}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-            )}
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -226,14 +164,95 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
         );
 
       default:
-        return null;
+        return (
+          <div className="text-sm text-slate-400">
+            Este gatilho não requer configuração adicional.
+          </div>
+        );
     }
   };
 
   // Renderiza form específico para cada tipo de ação
   const renderActionConfig = () => {
     switch (nodeType) {
-      case "create_card":
+      case "assign_round_robin":
+        return (
+          <>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Vendedores no rodízio
+              </label>
+              <div className="space-y-2 max-h-60 overflow-y-auto bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+                {users.length === 0 ? (
+                  <p className="text-sm text-slate-400">Carregando vendedores...</p>
+                ) : (
+                  users.map((user) => {
+                    const isSelected = (config.user_ids || []).includes(String(user.id));
+                    return (
+                      <label
+                        key={user.id}
+                        className="flex items-center gap-2 p-2 hover:bg-slate-700 rounded cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            const currentIds = config.user_ids || [];
+                            let newIds;
+                            if (e.target.checked) {
+                              newIds = [...currentIds, String(user.id)];
+                            } else {
+                              newIds = currentIds.filter((id: string) => id !== String(user.id));
+                            }
+                            updateConfig("user_ids", newIds);
+                          }}
+                          className="w-4 h-4 bg-slate-700 border-slate-600 rounded focus:ring-2 focus:ring-purple-500"
+                        />
+                        <span className="text-sm text-white">
+                          {user.name} {user.role === "manager" ? "(Gerente)" : ""}
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              <p className="text-xs text-slate-400 mt-2">
+                {(config.user_ids || []).length === 0
+                  ? "⚠️ Nenhum vendedor selecionado. Todos os vendedores ativos participarão do rodízio."
+                  : `✓ ${(config.user_ids || []).length} vendedor(es) selecionado(s)`}
+              </p>
+            </div>
+
+            <div className="text-sm text-slate-400 bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+              <p className="mb-2">🔄 <strong>Como funciona:</strong></p>
+              <p>Cards serão distribuídos automaticamente entre os vendedores selecionados em sistema de rodízio equilibrado.</p>
+            </div>
+          </>
+        );
+
+      case "assign_card":
+        return (
+          <>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Atribuir para *
+              </label>
+              <SelectMenu
+                value={config.user_id || ""}
+                onChange={(value) => updateConfig("user_id", value)}
+                options={[
+                  { value: "", label: "Selecione o vendedor" },
+                  ...users.map(u => ({
+                    value: String(u.id),
+                    label: `${u.name} ${u.role === "manager" ? "(Gerente)" : ""}`
+                  }))
+                ]}
+              />
+            </div>
+          </>
+        );
+
+      case "move_card":
         return (
           <>
             <div className="mb-4">
@@ -245,12 +264,11 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 onChange={(value) => updateConfig("target_board_id", value)}
                 options={[
                   { value: "", label: "Selecione o board" },
-                  { value: "1", label: "Vendas" },
-                  { value: "2", label: "Pós-Venda" },
-                  { value: "3", label: "Suporte" },
+                  ...boards.map(b => ({ value: String(b.id), label: b.name }))
                 ]}
               />
             </div>
+
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Lista de destino *
@@ -259,89 +277,34 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 value={config.target_list_id || ""}
                 onChange={(value) => updateConfig("target_list_id", value)}
                 options={[
-                  { value: "", label: "Selecione a lista" },
-                  { value: "1", label: "Novo Lead" },
-                  { value: "2", label: "Contato Feito" },
-                  { value: "3", label: "Proposta Enviada" },
+                  { value: "", label: loading ? "Carregando..." : "Selecione a lista" },
+                  ...lists.map(l => ({ value: String(l.id), label: l.name }))
                 ]}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Título do card *
-              </label>
-              <input
-                type="text"
-                value={config.title || ""}
-                onChange={(e) => updateConfig("title", e.target.value)}
-                placeholder="Ex: Card criado automaticamente"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Descrição (opcional)
-              </label>
-              <textarea
-                value={config.description || ""}
-                onChange={(e) => updateConfig("description", e.target.value)}
-                placeholder="Descrição do card..."
-                rows={3}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                disabled={!config.target_board_id}
               />
             </div>
           </>
         );
 
-      case "send_email":
+      case "mark_won":
         return (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Para *
-              </label>
-              <input
-                type="email"
-                value={config.to || ""}
-                onChange={(e) => updateConfig("to", e.target.value)}
-                placeholder="email@exemplo.com"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
-              <p className="text-xs text-slate-400 mt-1">
-                Use variáveis: {"{"}client_email{"}"}, {"{"}user_email{"}"}
-              </p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Assunto *
-              </label>
-              <input
-                type="text"
-                value={config.subject || ""}
-                onChange={(e) => updateConfig("subject", e.target.value)}
-                placeholder="Assunto do email"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Corpo da mensagem *
-              </label>
-              <textarea
-                value={config.body || ""}
-                onChange={(e) => updateConfig("body", e.target.value)}
-                placeholder="Corpo do email..."
-                rows={5}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
-              />
-              <p className="text-xs text-slate-400 mt-1">
-                Variáveis disponíveis: {"{"}card_title{"}"}, {"{"}card_value{"}"}, {"{"}client_name{"}"}
-              </p>
-            </div>
-          </>
+          <div className="text-sm text-slate-400 bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+            <p className="mb-2">✅ <strong>Marcar como Ganho</strong></p>
+            <p>Esta ação marca o card como ganho automaticamente.</p>
+            <p className="mt-2 text-xs">Não requer configuração adicional.</p>
+          </div>
         );
 
-      case "create_notification":
+      case "mark_lost":
+        return (
+          <div className="text-sm text-slate-400 bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+            <p className="mb-2">❌ <strong>Marcar como Perdido</strong></p>
+            <p>Esta ação marca o card como perdido automaticamente.</p>
+            <p className="mt-2 text-xs">Não requer configuração adicional.</p>
+          </div>
+        );
+
+      case "send_notification":
         return (
           <>
             <div className="mb-4">
@@ -349,34 +312,15 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 Destinatário *
               </label>
               <SelectMenu
-                value={config.recipient_type || ""}
-                onChange={(value) => updateConfig("recipient_type", value)}
+                value={config.user_id || ""}
+                onChange={(value) => updateConfig("user_id", value)}
                 options={[
-                  { value: "", label: "Selecione" },
-                  { value: "assigned_user", label: "Usuário responsável pelo card" },
-                  { value: "board_owner", label: "Dono do board" },
-                  { value: "all_users", label: "Todos os usuários" },
-                  { value: "specific_user", label: "Usuário específico" },
+                  { value: "", label: "Selecione o usuário" },
+                  ...users.map(u => ({ value: String(u.id), label: u.name }))
                 ]}
               />
             </div>
-            {config.recipient_type === "specific_user" && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Usuário
-                </label>
-                <SelectMenu
-                  value={config.user_id || ""}
-                  onChange={(value) => updateConfig("user_id", value)}
-                  options={[
-                    { value: "", label: "Selecione o usuário" },
-                    { value: "1", label: "João Silva" },
-                    { value: "2", label: "Maria Santos" },
-                    { value: "3", label: "Pedro Costa" },
-                  ]}
-                />
-              </div>
-            )}
+
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Mensagem *
@@ -388,154 +332,19 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 rows={3}
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
               />
-            </div>
-          </>
-        );
-
-      case "assign_user":
-        return (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Atribuir para *
-              </label>
-              <SelectMenu
-                value={config.user_id || ""}
-                onChange={(value) => updateConfig("user_id", value)}
-                options={[
-                  { value: "", label: "Selecione o usuário" },
-                  { value: "1", label: "João Silva" },
-                  { value: "2", label: "Maria Santos" },
-                  { value: "3", label: "Pedro Costa" },
-                  { value: "4", label: "Ana Oliveira" },
-                ]}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="flex items-center gap-2 text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={config.notify_user || false}
-                  onChange={(e) => updateConfig("notify_user", e.target.checked)}
-                  className="w-4 h-4 bg-slate-700 border-slate-600 rounded focus:ring-2 focus:ring-emerald-500"
-                />
-                <span className="text-sm">Notificar o usuário</span>
-              </label>
-            </div>
-          </>
-        );
-
-      case "add_tag":
-        return (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Nome da tag *
-              </label>
-              <input
-                type="text"
-                value={config.tag_name || ""}
-                onChange={(e) => updateConfig("tag_name", e.target.value)}
-                placeholder="Ex: Urgente, VIP, Follow-up"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Cor da tag
-              </label>
-              <SelectMenu
-                value={config.tag_color || "blue"}
-                onChange={(value) => updateConfig("tag_color", value)}
-                options={[
-                  { value: "blue", label: "Azul" },
-                  { value: "green", label: "Verde" },
-                  { value: "red", label: "Vermelho" },
-                  { value: "yellow", label: "Amarelo" },
-                  { value: "purple", label: "Roxo" },
-                  { value: "pink", label: "Rosa" },
-                ]}
-              />
-            </div>
-          </>
-        );
-
-      case "move_to_list":
-        return (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Board de destino *
-              </label>
-              <SelectMenu
-                value={config.target_board_id || ""}
-                onChange={(value) => updateConfig("target_board_id", value)}
-                options={[
-                  { value: "", label: "Selecione o board" },
-                  { value: "same", label: "Mesmo board" },
-                  { value: "1", label: "Vendas" },
-                  { value: "2", label: "Pós-Venda" },
-                  { value: "3", label: "Suporte" },
-                ]}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Lista de destino *
-              </label>
-              <SelectMenu
-                value={config.target_list_id || ""}
-                onChange={(value) => updateConfig("target_list_id", value)}
-                options={[
-                  { value: "", label: "Selecione a lista" },
-                  { value: "1", label: "Novo Lead" },
-                  { value: "2", label: "Contato Feito" },
-                  { value: "3", label: "Proposta Enviada" },
-                  { value: "4", label: "Negociação" },
-                  { value: "5", label: "Ganho" },
-                  { value: "6", label: "Perdido" },
-                ]}
-              />
-            </div>
-          </>
-        );
-
-      case "update_field":
-        return (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Campo a atualizar *
-              </label>
-              <SelectMenu
-                value={config.field_name || ""}
-                onChange={(value) => updateConfig("field_name", value)}
-                options={[
-                  { value: "", label: "Selecione o campo" },
-                  { value: "priority", label: "Prioridade" },
-                  { value: "value", label: "Valor" },
-                  { value: "description", label: "Descrição" },
-                  { value: "due_date", label: "Data de vencimento" },
-                ]}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Novo valor *
-              </label>
-              <input
-                type="text"
-                value={config.field_value || ""}
-                onChange={(e) => updateConfig("field_value", e.target.value)}
-                placeholder="Novo valor do campo"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
+              <p className="text-xs text-slate-400 mt-1">
+                Variáveis: {"{"}card_title{"}"}, {"{"}user_name{"}"}
+              </p>
             </div>
           </>
         );
 
       default:
-        return null;
+        return (
+          <div className="text-sm text-slate-400">
+            Esta ação não requer configuração adicional.
+          </div>
+        );
     }
   };
 
@@ -601,9 +410,10 @@ interface SelectMenuProps {
   options: SelectOption[];
   placeholder?: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }
 
-const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
+const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange, disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -626,8 +436,11 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
     <div ref={menuRef} className="relative">
       <button
         type="button"
-        onClick={() => setIsOpen((open) => !open)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        onClick={() => !disabled && setIsOpen((open) => !open)}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
           {selectedLabel}
@@ -637,7 +450,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
           className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button

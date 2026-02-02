@@ -119,12 +119,21 @@ class AutomationUpdate(BaseModel):
     """Schema para atualizar automação."""
     name: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = None
+    board_id: Optional[int] = None
+    automation_type: Optional[AutomationType] = None
     is_active: Optional[bool] = None
     priority: Optional[int] = Field(None, ge=1, le=100)
-    actions: Optional[List[AutomationAction]] = None
+
+    # Campos de trigger
+    trigger_event: Optional[str] = None
     trigger_conditions: Optional[Dict[str, Any]] = None
+
+    # Campos de scheduled
     scheduled_at: Optional[datetime] = None
     recurrence_pattern: Optional[RecurrencePattern] = None
+
+    # Outros
+    actions: Optional[List[AutomationAction]] = None
     auto_disable_on_failures: Optional[int] = Field(None, ge=1)
 
     class Config:

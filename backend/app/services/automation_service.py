@@ -498,19 +498,39 @@ class AutomationService:
         from app.models.user import User
         from app.models.role import Role
 
-        # Busca todos os vendedores ativos
-        salesperson_role = self.db.query(Role).filter(
-            Role.name.ilike("salesperson")
-        ).first()
+        # Verifica se há user_ids específicos nos params da ação
+        action_params = {}
+        for action in automation.actions:
+            if action.get("type") == "assign_round_robin":
+                action_params = action.get("params", {})
+                break
 
-        if not salesperson_role:
-            return  # Sem role de vendedor configurado
+        user_ids = action_params.get("user_ids", [])
 
-        salespeople = self.db.query(User).filter(
-            User.role_id == salesperson_role.id,
-            User.is_active == True,
-            User.is_deleted == False
-        ).order_by(User.id).all()
+        if user_ids:
+            # Usa apenas os vendedores especificados
+            # Converte strings para int se necessário
+            user_ids_int = [int(uid) if isinstance(uid, str) else uid for uid in user_ids]
+
+            salespeople = self.db.query(User).filter(
+                User.id.in_(user_ids_int),
+                User.is_active == True,
+                User.is_deleted == False
+            ).order_by(User.id).all()
+        else:
+            # Busca todos os vendedores ativos (comportamento padrão)
+            salesperson_role = self.db.query(Role).filter(
+                Role.name.ilike("salesperson")
+            ).first()
+
+            if not salesperson_role:
+                return  # Sem role de vendedor configurado
+
+            salespeople = self.db.query(User).filter(
+                User.role_id == salesperson_role.id,
+                User.is_active == True,
+                User.is_deleted == False
+            ).order_by(User.id).all()
 
         if not salespeople:
             return  # Sem vendedores disponíveis

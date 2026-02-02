@@ -93,12 +93,6 @@ export interface AutomationExecution {
   triggered_by?: string;
 }
 
-export interface AutomationStats {
-  total_automations: number;
-  active_automations: number;
-  total_executions: number;
-  success_rate: number;
-}
 
 /**
  * Interfaces de Request
@@ -127,11 +121,13 @@ export interface UpdateAutomationRequest {
  */
 class AutomationService {
   /**
-   * Lista todas as automações
+   * Lista automações de um board específico
+   * @param boardId - ID do board (obrigatório)
    */
-  async list(boardId?: number): Promise<Automation[]> {
-    const params = boardId ? { board_id: boardId } : {};
-    const response = await api.get<Automation[]>("/api/v1/automations", { params });
+  async list(boardId: number): Promise<{ automations: Automation[]; total: number; page: number; page_size: number; total_pages: number }> {
+    const response = await api.get("/api/v1/automations", {
+      params: { board_id: boardId }
+    });
     return response.data;
   }
 
@@ -166,44 +162,49 @@ class AutomationService {
     await api.delete(`/api/v1/automations/${id}`);
   }
 
-  /**
-   * Ativa/Desativa uma automação
-   */
-  async toggleActive(id: number, isActive: boolean): Promise<Automation> {
-    const response = await api.patch<Automation>(`/api/v1/automations/${id}/toggle`, {
-      is_active: isActive,
-    });
-    return response.data;
-  }
 
   /**
    * Busca execuções de uma automação
+   * @param id - ID da automação
+   * @param page - Número da página (padrão: 1)
+   * @param pageSize - Tamanho da página (padrão: 50)
+   * @param status - Filtrar por status (opcional)
    */
-  async getExecutions(id: number, page = 1, limit = 20): Promise<{
+  async getExecutions(
+    id: number,
+    page = 1,
+    pageSize = 50,
+    status?: "success" | "failed" | "pending"
+  ): Promise<{
     executions: AutomationExecution[];
     total: number;
     page: number;
+    page_size: number;
     total_pages: number;
   }> {
-    const response = await api.get(`/api/v1/automations/${id}/executions`, {
-      params: { page, limit },
+    const params: any = { page, page_size: pageSize };
+    if (status) {
+      params.status = status;
+    }
+    const response = await api.get(`/api/v1/automations/${id}/executions`, { params });
+    return response.data;
+  }
+
+  /**
+   * Executa uma automação manualmente (trigger manual)
+   * @param id - ID da automação
+   * @param cardId - ID do card (opcional)
+   * @param executionData - Dados adicionais (opcional)
+   */
+  async trigger(
+    id: number,
+    cardId?: number,
+    executionData?: Record<string, any>
+  ): Promise<any> {
+    const response = await api.post(`/api/v1/automations/${id}/trigger`, {
+      card_id: cardId,
+      execution_data: executionData || {}
     });
-    return response.data;
-  }
-
-  /**
-   * Testa uma automação (execução manual)
-   */
-  async test(id: number): Promise<{ success: boolean; message: string }> {
-    const response = await api.post(`/api/v1/automations/${id}/test`);
-    return response.data;
-  }
-
-  /**
-   * Busca estatísticas de automações
-   */
-  async getStats(): Promise<AutomationStats> {
-    const response = await api.get<AutomationStats>("/api/v1/automations/stats");
     return response.data;
   }
 

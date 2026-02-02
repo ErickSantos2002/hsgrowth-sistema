@@ -14,6 +14,7 @@ import {
   Search,
   ChevronDown,
   Shield,
+  Workflow,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import automationService, { Automation } from "../services/automationService";
@@ -35,6 +36,7 @@ const Automations: React.FC = () => {
   const [selectedBoard, setSelectedBoard] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showRoundRobinForm, setShowRoundRobinForm] = useState(false);
+  const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
 
   // Verifica se o usuário é admin ou manager
   const isManagerOrAdmin = currentUser?.role === 'admin' || currentUser?.role === 'manager';
@@ -57,15 +59,15 @@ const Automations: React.FC = () => {
 
       for (const board of boardsList) {
         try {
-          const response: any = await automationService.list(board.id);
-          const boardAutomations = (response.automations || response || []).map((auto: any) => ({
+          const response = await automationService.list(board.id);
+          const boardAutomations = response.automations.map((auto: any) => ({
             ...auto,
             board_name: board.name,
             nodes: [],
             edges: [],
             created_by: 1,
             execution_count: auto.execution_count || 0,
-            success_count: 0,
+            success_count: auto.execution_count - auto.failure_count || 0,
             error_count: auto.failure_count || 0,
           }));
           allAutomations.push(...boardAutomations);
@@ -242,20 +244,11 @@ const Automations: React.FC = () => {
             <h3 className="text-xl font-semibold text-white mb-2">
               Nenhuma automação encontrada
             </h3>
-            <p className="text-slate-400 mb-6">
+            <p className="text-slate-400">
               {searchTerm || selectedBoard
                 ? "Tente ajustar os filtros de busca"
-                : "Crie sua primeira automação para começar"}
+                : "Clique no botão 'Nova Automação' no topo para criar sua primeira automação"}
             </p>
-            {!searchTerm && !selectedBoard && (
-              <button
-                onClick={() => navigate("/automations/new")}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
-              >
-                <Plus size={20} />
-                Criar Primeira Automação
-              </button>
-            )}
           </div>
         )}
 
@@ -356,11 +349,18 @@ const Automations: React.FC = () => {
                     )}
                   </button>
                   <button
-                    onClick={() => navigate(`/automations/${automation.id}/edit`)}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-                    title="Editar"
+                    onClick={() => setEditingAutomation(automation)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    title="Editar informações"
                   >
                     <Edit size={16} />
+                  </button>
+                  <button
+                    onClick={() => navigate(`/automations/${automation.id}/edit`)}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                    title="Construtor de automação"
+                  >
+                    <Workflow size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(automation.id)}
@@ -452,12 +452,17 @@ const Automations: React.FC = () => {
           </div>
         )}
 
-      {/* Modal de criação de automação de rodízio */}
-      {showRoundRobinForm && (
+      {/* Modal de criação/edição de automação de rodízio */}
+      {(showRoundRobinForm || editingAutomation) && (
         <AutomationRoundRobinForm
-          onClose={() => setShowRoundRobinForm(false)}
+          automation={editingAutomation || undefined}
+          onClose={() => {
+            setShowRoundRobinForm(false);
+            setEditingAutomation(null);
+          }}
           onSuccess={() => {
             setShowRoundRobinForm(false);
+            setEditingAutomation(null);
             loadData(); // Recarrega a lista
           }}
         />

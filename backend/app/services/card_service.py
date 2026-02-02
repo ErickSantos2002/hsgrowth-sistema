@@ -19,6 +19,12 @@ from app.models.card import Card
 from app.models.user import User
 
 
+# Import local para evitar circular dependency
+def get_automation_service():
+    from app.services.automation_service import AutomationService
+    return AutomationService
+
+
 class CardService:
     """
     Service para lógica de negócio relacionada a cards.
@@ -259,6 +265,26 @@ class CardService:
 
         # Cria o card
         card = self.card_repository.create(card_data)
+        print(f"[AUTOMATION] Card criado ID={card.id}, Board={board.id}")
+
+        # Dispara automações do tipo "card_created"
+        try:
+            print(f"[AUTOMATION] Buscando automações para board_id={board.id}, trigger=card_created")
+            AutomationService = get_automation_service()
+            automation_service = AutomationService(self.db)
+            executions = automation_service.process_trigger(
+                board_id=board.id,
+                trigger_event="card_created",
+                card=card,
+                user=current_user,
+                trigger_data={}
+            )
+            print(f"[AUTOMATION] Disparadas {len(executions)} automações")
+        except Exception as e:
+            # Log do erro mas não falha a criação do card
+            print(f"[AUTOMATION] Erro ao disparar automações: {e}")
+            import traceback
+            traceback.print_exc()
 
         return card
 
@@ -405,6 +431,43 @@ class CardService:
             except Exception as e:
                 # Log erro mas não quebra o fluxo principal
                 print(f"Erro ao criar parabenização: {e}")
+
+        # Dispara automações baseado no tipo de movimento
+        try:
+            AutomationService = get_automation_service()
+            automation_service = AutomationService(self.db)
+
+            # Sempre dispara card_moved
+            automation_service.process_trigger(
+                board_id=target_board.id,
+                trigger_event="card_moved",
+                card=moved_card,
+                user=current_user,
+                trigger_data={"to_list_id": target_list_id}
+            )
+
+            # Dispara eventos específicos se aplicável
+            if target_list.is_done_stage:
+                automation_service.process_trigger(
+                    board_id=target_board.id,
+                    trigger_event="card_won",
+                    card=moved_card,
+                    user=current_user,
+                    trigger_data={}
+                )
+            elif target_list.is_lost_stage:
+                automation_service.process_trigger(
+                    board_id=target_board.id,
+                    trigger_event="card_lost",
+                    card=moved_card,
+                    user=current_user,
+                    trigger_data={}
+                )
+        except Exception as e:
+            # Log do erro mas não falha o movimento do card
+            print(f"Erro ao disparar automações: {e}")
+            import traceback
+            traceback.print_exc()
 
         return moved_card
 
