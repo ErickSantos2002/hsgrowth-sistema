@@ -357,6 +357,24 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleInitializeActionPoints = async () => {
+    if (!confirm("Deseja inicializar as configurações padrão de pontos? Isso irá criar as ações padrão do sistema.")) {
+      return;
+    }
+
+    try {
+      setLoadingPoints(true);
+      await gamificationService.initializeActionPoints();
+      toast.success("Configurações padrão inicializadas com sucesso!");
+      await loadActionPoints();
+    } catch (error) {
+      console.error("Erro ao inicializar configurações:", error);
+      toast.error("Erro ao inicializar configurações padrão");
+    } finally {
+      setLoadingPoints(false);
+    }
+  };
+
   // Funções para gerenciar API4COM (Admin)
   const loadApi4comConfig = async () => {
     try {
@@ -1259,6 +1277,15 @@ const Settings: React.FC = () => {
                       Defina quantos pontos vale cada ação no sistema de gamificação
                     </p>
                   </div>
+                  {actionPoints.length === 0 && !loadingPoints && (
+                    <button
+                      onClick={handleInitializeActionPoints}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-lg hover:shadow-emerald-500/50"
+                    >
+                      <Plus size={20} />
+                      Inicializar Configurações Padrão
+                    </button>
+                  )}
                 </div>
 
                 {/* Estatísticas */}

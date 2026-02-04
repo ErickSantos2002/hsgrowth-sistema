@@ -33,6 +33,7 @@ from app.models.gamification_point import GamificationPoint
 from app.models.gamification_badge import GamificationBadge
 from app.models.user_badge import UserBadge
 from app.models.gamification_ranking import GamificationRanking
+from app.models.gamification_action_points import GamificationActionPoints
 
 # Modelos de automações
 from app.models.automation import Automation
@@ -72,6 +73,7 @@ __all__ = [
     "GamificationBadge",
     "UserBadge",
     "GamificationRanking",
+    "GamificationActionPoints",
     "Automation",
     "AutomationExecution",
     "CardTransfer",
