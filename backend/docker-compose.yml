@@ -110,6 +110,7 @@ services:
 
     volumes:
       - ./app:/app/app
+      - ./alembic:/app/alembic
       - ./logs:/app/logs
       - ./backups:/app/backups
       - ./scripts:/app/scripts

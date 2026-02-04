@@ -4,7 +4,7 @@ Rotas para login, refresh token, logout, reset de senha, etc.
 """
 from datetime import datetime, timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user
@@ -20,6 +20,7 @@ from app.core.security import (
 )
 from app.core.config import settings
 from app.models.user import User
+from app.models.audit_log import AuditLog
 from app.schemas.auth import (
     LoginRequest,
     TokenResponse,
@@ -89,6 +90,7 @@ router = APIRouter()
     }
 )
 async def login(
+    request: Request,
     login_data: LoginRequest,
     db: Session = Depends(get_db)
 ) -> Any:
@@ -118,6 +120,23 @@ async def login(
 
     # Atualiza o last_login_at
     user.last_login_at = datetime.utcnow()
+    db.commit()
+
+    # Captura informações da requisição para audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Registra o login no audit log
+    audit_log = AuditLog(
+        user_id=user.id,
+        action="LOGIN",
+        entity_type="User",
+        entity_id=user.id,
+        description=f"Login realizado: {user.email}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
     db.commit()
 
     # Cria os tokens
@@ -655,6 +674,47 @@ async def client_credentials_auth(
             "role": "integration",
             "client_id": client.client_id
         }
+    }
+
+
+@router.get(
+    "/login-history",
+    summary="Histórico de logins do usuário",
+    description="Retorna o histórico de logins do usuário autenticado"
+)
+async def get_login_history(
+    limit: int = 20,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna o histórico de logins do usuário autenticado.
+    Limitado aos últimos 20 logins por padrão.
+    """
+    # Faz join com User para pegar nome e email
+    logins = db.query(AuditLog, User).join(
+        User, AuditLog.user_id == User.id
+    ).filter(
+        AuditLog.user_id == current_user.id,
+        AuditLog.action == "LOGIN"
+    ).order_by(
+        AuditLog.created_at.desc()
+    ).limit(limit).all()
+
+    return {
+        "total": len(logins),
+        "logins": [
+            {
+                "id": log.id,
+                "user_name": user.name,
+                "user_email": user.email,
+                "ip_address": log.ip_address,
+                "user_agent": log.user_agent,
+                # Adiciona 'Z' para indicar UTC explicitamente
+                "created_at": log.created_at.isoformat() + 'Z' if log.created_at else None
+            }
+            for log, user in logins
+        ]
     }
 
 

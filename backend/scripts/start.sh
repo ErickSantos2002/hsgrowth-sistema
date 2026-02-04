@@ -40,7 +40,7 @@ fi
 # Executa migrations do Alembic
 echo "Executando migrations do banco de dados..."
 alembic upgrade heads
-echo "âœ“ Migrations concluÃ­das!"
+echo "Migrations concluidas!"
 
 # Se for ambiente de desenvolvimento, pode rodar seed (opcional)
 if [ "$ENVIRONMENT" = "development" ] && [ "$RUN_SEED" = "true" ]; then

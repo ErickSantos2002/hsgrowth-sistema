@@ -144,6 +144,35 @@ class AuthService {
   }
 
   /**
+   * Busca o histórico de logins do usuário autenticado
+   */
+  async getLoginHistory(limit: number = 20): Promise<{
+    total: number;
+    logins: Array<{
+      id: number;
+      user_name: string;
+      user_email: string;
+      ip_address: string;
+      user_agent: string;
+      created_at: string;
+    }>;
+  }> {
+    const response = await api.get<{
+      total: number;
+      logins: Array<{
+        id: number;
+        user_name: string;
+        user_email: string;
+        ip_address: string;
+        user_agent: string;
+        created_at: string;
+      }>;
+    }>(`/api/v1/auth/login-history?limit=${limit}`);
+
+    return response.data;
+  }
+
+  /**
    * Retorna o access token
    */
   getAccessToken(): string | null {

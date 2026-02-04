@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone } from "lucide-react";
+import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
+import authService from "../services/authService";
 import gamificationService, { Badge, ActionPoints } from "../services/gamificationService";
 import BadgeModal, { BadgeFormData } from "../components/settings/BadgeModal";
 import AwardBadgeModal from "../components/settings/AwardBadgeModal";
@@ -75,45 +76,16 @@ const Settings: React.FC = () => {
   });
   const [editingApi4comExtension, setEditingApi4comExtension] = useState<UserExtension | null>(null);
 
-  // Mock de usuários ativos no sistema (online)
-  const [activeUsers] = useState([
-    {
-      id: 1,
-      name: "João Silva",
-      email: "joao@hsgrowth.com",
-      role: "Admin",
-      status: "online",
-      lastActivity: "Agora",
-      device: "Chrome - Windows",
-    },
-    {
-      id: 2,
-      name: "Maria Santos",
-      email: "maria@hsgrowth.com",
-      role: "Vendedor",
-      status: "online",
-      lastActivity: "há 5 minutos",
-      device: "Firefox - MacOS",
-    },
-    {
-      id: 3,
-      name: "Pedro Costa",
-      email: "pedro@hsgrowth.com",
-      role: "Gerente",
-      status: "away",
-      lastActivity: "há 15 minutos",
-      device: "Chrome - Linux",
-    },
-    {
-      id: user?.id || 999,
-      name: user?.name || "Você",
-      email: user?.email || "",
-      role: user?.role_name || "Usuário",
-      status: "online",
-      lastActivity: "Agora",
-      device: "Chrome - Windows",
-    },
-  ]);
+  // Estados do Histórico de Logins
+  const [loginHistory, setLoginHistory] = useState<Array<{
+    id: number;
+    user_name: string;
+    user_email: string;
+    ip_address: string;
+    user_agent: string;
+    created_at: string;
+  }>>([]);
+  const [loadingLoginHistory, setLoadingLoginHistory] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -148,6 +120,13 @@ const Settings: React.FC = () => {
       loadApi4comExtensions();
     }
   }, [activeTab, user]);
+
+  // Carrega histórico de logins quando a tab security é ativada
+  useEffect(() => {
+    if (activeTab === "security") {
+      loadLoginHistory();
+    }
+  }, [activeTab]);
 
   // Filtra badges quando mudam os filtros ou a busca
   useEffect(() => {
@@ -372,6 +351,20 @@ const Settings: React.FC = () => {
       toast.error("Erro ao inicializar configurações padrão");
     } finally {
       setLoadingPoints(false);
+    }
+  };
+
+  // Função para carregar histórico de logins
+  const loadLoginHistory = async () => {
+    try {
+      setLoadingLoginHistory(true);
+      const data = await authService.getLoginHistory(20);
+      setLoginHistory(data.logins);
+    } catch (error) {
+      console.error("Erro ao carregar histórico de logins:", error);
+      toast.error("Erro ao carregar histórico de logins");
+    } finally {
+      setLoadingLoginHistory(false);
     }
   };
 
@@ -952,101 +945,148 @@ const Settings: React.FC = () => {
               <div className="space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Usuários Ativos</h2>
+                    <h2 className="text-xl font-semibold text-white">Histórico de Logins</h2>
                     <p className="text-sm text-slate-400 mt-1">
-                      Controle de acesso - Veja quem está logado no sistema
+                      Acompanhe os acessos à sua conta para maior segurança
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-lg">
-                    <Activity size={16} className="text-green-400" />
-                    <span className="text-sm font-medium text-green-400">
-                      {activeUsers.filter((u) => u.status === "online").length} Online
+                  <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                    <Shield size={16} className="text-blue-400" />
+                    <span className="text-sm font-medium text-blue-400">
+                      {loginHistory.length} logins registrados
                     </span>
                   </div>
                 </div>
 
-                {/* Lista de Usuários Ativos */}
+                {/* Lista de Histórico de Logins */}
                 <div className="space-y-3">
-                  {activeUsers.map((activeUser) => (
-                    <div
-                      key={activeUser.id}
-                      className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:bg-slate-700/70 transition-colors"
-                    >
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-4">
-                          {/* Avatar */}
-                          <div className="relative">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold">
-                              {getInitials(activeUser.name)}
-                            </div>
-                            {/* Status Indicator */}
-                            <div
-                              className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-slate-700 ${
-                                activeUser.status === "online"
-                                  ? "bg-green-500"
-                                  : "bg-yellow-500"
-                              }`}
-                              title={
-                                activeUser.status === "online" ? "Online" : "Ausente"
-                              }
-                            />
-                          </div>
+                  {loadingLoginHistory ? (
+                    // Loading state
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : loginHistory.length === 0 ? (
+                    // Empty state
+                    <div className="text-center py-12">
+                      <Shield size={48} className="mx-auto text-slate-600 mb-3" />
+                      <p className="text-slate-400">Nenhum login registrado ainda</p>
+                    </div>
+                  ) : (
+                    // Login history list
+                    loginHistory.map((login) => {
+                      // Parseia o user_agent para extrair informações
+                      const getBrowserInfo = (userAgent: string) => {
+                        const ua = userAgent.toLowerCase();
 
-                          {/* Info do Usuário */}
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-semibold text-white truncate">{activeUser.name}</p>
-                              {activeUser.id === user?.id && (
-                                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full">
-                                  Você
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-slate-400 truncate">{activeUser.email}</p>
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <span className="inline-flex items-center px-2 py-0.5 bg-slate-800 text-slate-300 text-xs font-medium rounded">
-                                {activeUser.role}
-                              </span>
-                              <div className="flex items-center gap-1 text-xs text-slate-500">
-                                <Monitor size={12} />
-                                <span className="truncate">{activeUser.device}</span>
+                        // Detecta browser
+                        let browser = "Desconhecido";
+                        if (ua.includes("edg")) browser = "Edge";
+                        else if (ua.includes("chrome")) browser = "Chrome";
+                        else if (ua.includes("firefox")) browser = "Firefox";
+                        else if (ua.includes("safari")) browser = "Safari";
+                        else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
+
+                        // Detecta OS
+                        let os = "Desconhecido";
+                        if (ua.includes("windows")) os = "Windows";
+                        else if (ua.includes("mac")) os = "macOS";
+                        else if (ua.includes("linux")) os = "Linux";
+                        else if (ua.includes("android")) os = "Android";
+                        else if (ua.includes("ios") || ua.includes("iphone") || ua.includes("ipad")) os = "iOS";
+
+                        // Detecta tipo de dispositivo
+                        let deviceType = "Desktop";
+                        if (ua.includes("mobile")) deviceType = "Mobile";
+                        else if (ua.includes("tablet")) deviceType = "Tablet";
+
+                        return { browser, os, deviceType };
+                      };
+
+                      // Formata a data
+                      const formatDate = (dateString: string) => {
+                        const date = new Date(dateString);
+                        const now = new Date();
+                        const diffMs = now.getTime() - date.getTime();
+                        const diffMins = Math.floor(diffMs / 60000);
+                        const diffHours = Math.floor(diffMs / 3600000);
+                        const diffDays = Math.floor(diffMs / 86400000);
+
+                        if (diffMins < 1) return "Agora";
+                        if (diffMins < 60) return `Há ${diffMins} minuto${diffMins > 1 ? 's' : ''}`;
+                        if (diffHours < 24) return `Há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+                        if (diffDays < 7) return `Há ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+
+                        return date.toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+                      };
+
+                      const { browser, os, deviceType } = getBrowserInfo(login.user_agent);
+
+                      return (
+                        <div
+                          key={login.id}
+                          className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:bg-slate-700/70 transition-colors"
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-start gap-3">
+                              {/* Ícone do dispositivo */}
+                              <div className="mt-1">
+                                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                  <Monitor size={20} className="text-blue-400" />
+                                </div>
+                              </div>
+
+                              {/* Informações do login */}
+                              <div className="min-w-0 flex-1">
+                                {/* Nome do usuário e horário */}
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                  <p className="font-semibold text-white text-base">{login.user_name}</p>
+                                  <div className="flex items-center gap-1.5 text-sm text-slate-300 bg-slate-800 px-2 py-1 rounded">
+                                    <Clock size={14} />
+                                    <span className="font-medium">{formatDate(login.created_at)}</span>
+                                  </div>
+                                </div>
+
+                                {/* Browser e OS */}
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <span className="text-sm text-slate-400">{browser}</span>
+                                  <span className="text-slate-600">•</span>
+                                  <span className="text-sm text-slate-400">{os}</span>
+                                  <span className="text-slate-600">•</span>
+                                  <span className="text-sm text-slate-400">{deviceType}</span>
+                                </div>
+
+                                {/* IP Address */}
+                                <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                                  <Globe size={14} />
+                                  <span className="truncate">{login.ip_address}</span>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-
-                        {/* Status e Última Atividade */}
-                        <div className="text-left sm:text-right">
-                          <div className="flex items-center gap-1.5 text-sm text-slate-400 mb-1">
-                            <Clock size={14} />
-                            <span className="truncate">{activeUser.lastActivity}</span>
-                          </div>
-                          <span
-                            className={`inline-block px-2 py-1 text-xs font-medium rounded ${
-                              activeUser.status === "online"
-                                ? "bg-green-500/20 text-green-400"
-                                : "bg-yellow-500/20 text-yellow-400"
-                            }`}
-                          >
-                            {activeUser.status === "online" ? "Online" : "Ausente"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })
+                  )}
                 </div>
 
                 {/* Informação */}
                 <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
                   <h4 className="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
                     <Shield size={16} />
-                    Como funciona
+                    Sobre o Histórico de Logins
                   </h4>
                   <p className="text-sm text-slate-300">
-                    Os usuários são considerados <strong>Online</strong> quando estão ativos no
-                    sistema. Após 15 minutos de inatividade, o status muda para{" "}
-                    <strong>Ausente</strong>. As sessões são gerenciadas automaticamente via
-                    Redis.
+                    Cada login realizado no sistema é registrado com informações de{" "}
+                    <strong>endereço IP</strong>, <strong>dispositivo</strong> e{" "}
+                    <strong>navegador</strong> utilizado. Isso permite auditar acessos e identificar
+                    atividades suspeitas. Os registros são mantidos permanentemente para fins de
+                    segurança e conformidade.
                   </p>
                 </div>
               </div>
