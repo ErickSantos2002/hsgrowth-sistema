@@ -29,10 +29,15 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
   // Carrega listas quando board é selecionado
   useEffect(() => {
+    // Para triggers (card_moved): usa board_id
     if (config.board_id) {
       loadLists(Number(config.board_id));
     }
-  }, [config.board_id]);
+    // Para actions (move_card): usa target_board_id
+    else if (config.target_board_id) {
+      loadLists(Number(config.target_board_id));
+    }
+  }, [config.board_id, config.target_board_id]);
 
   const loadBoards = async () => {
     try {
@@ -349,7 +354,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
   };
 
   return (
-    <div className="w-80 bg-slate-800/50 backdrop-blur border-l border-slate-700 p-4 overflow-y-auto overflow-x-hidden max-h-[85vh] sm:max-h-[calc(100vh-140px)]">
+    <div className="w-80 h-[calc(100vh-70px)] bg-slate-800/50 backdrop-blur border-l border-slate-700 p-4 overflow-y-auto overflow-x-hidden flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -376,12 +381,12 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
       </div>
 
       {/* Form de configuração */}
-      <div className="mb-6">
+      <div className="flex-1 overflow-y-auto mb-6">
         {isTrigger ? renderTriggerConfig() : renderActionConfig()}
       </div>
 
       {/* Botões de ação */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-shrink-0">
         <button
           onClick={onClose}
           className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"

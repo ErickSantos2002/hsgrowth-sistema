@@ -230,7 +230,7 @@ const AutomationEditorContent: React.FC = () => {
 
   const handleSave = async () => {
     // Valida antes de salvar
-    const validation = validateAutomation(nodes, edges);
+    const validation = validateAutomation();
 
     if (!validation.valid) {
       const errorMessage = validation.errors.join("\n• ");
@@ -275,7 +275,7 @@ const AutomationEditorContent: React.FC = () => {
 
   const handleTest = async () => {
     // Valida antes de testar
-    const validation = validateAutomation(nodes, edges);
+    const validation = validateAutomation();
 
     if (!validation.valid) {
       const errorMessage = validation.errors.join("\n• ");
@@ -569,7 +569,7 @@ const AutomationEditorContent: React.FC = () => {
 
       // Define nome e boardId
       setAutomationName(automation.name);
-      setBoardId(automation.board_id);
+      setBoardId(automation.board_id ?? null);
 
       // Converte para React Flow e popula canvas
       const { nodes: convertedNodes, edges: convertedEdges } = convertApiToReactFlow(automation);

@@ -303,8 +303,49 @@ class CardService:
         # Busca e verifica acesso
         card = self.get_card_by_id(card_id)
 
+        # Guarda valores antigos para detectar mudanças
+        old_is_won = card.is_won
+        old_is_lost = card.is_lost
+
         # Atualiza o card
         updated_card = self.card_repository.update(card, card_data)
+
+        # Dispara triggers de automação se status mudou
+        try:
+            # Busca a lista do card para pegar o board_id
+            list_obj = self.list_repository.find_by_id(updated_card.list_id)
+            if list_obj:
+                board = self.board_repository.find_by_id(list_obj.board_id)
+                if board:
+                    AutomationService = get_automation_service()
+                    automation_service = AutomationService(self.db)
+
+                    # Dispara trigger card_won se mudou de False para True
+                    if not old_is_won and updated_card.is_won:
+                        print(f"[AUTOMATION] Card {card_id} marcado como ganho, disparando trigger card_won")
+                        automation_service.process_trigger(
+                            board_id=board.id,
+                            trigger_event="card_won",
+                            card=updated_card,
+                            user=current_user,
+                            trigger_data={"manual": True}
+                        )
+
+                    # Dispara trigger card_lost se mudou de False para True
+                    if not old_is_lost and updated_card.is_lost:
+                        print(f"[AUTOMATION] Card {card_id} marcado como perdido, disparando trigger card_lost")
+                        automation_service.process_trigger(
+                            board_id=board.id,
+                            trigger_event="card_lost",
+                            card=updated_card,
+                            user=current_user,
+                            trigger_data={"manual": True}
+                        )
+        except Exception as e:
+            # Log do erro mas não falha a atualização do card
+            print(f"[AUTOMATION] Erro ao disparar automações no update_card: {e}")
+            import traceback
+            traceback.print_exc()
 
         return updated_card
 
