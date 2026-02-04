@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe } from "lucide-react";
+import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe, FileText, Filter, Calendar } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 import authService from "../services/authService";
@@ -7,9 +7,10 @@ import gamificationService, { Badge, ActionPoints } from "../services/gamificati
 import BadgeModal, { BadgeFormData } from "../components/settings/BadgeModal";
 import AwardBadgeModal from "../components/settings/AwardBadgeModal";
 import api4comService, { API4ComConfig, UserExtension, API4ComConfigCreate, UserExtensionCreate } from "../services/api4comService";
+import auditLogService, { AuditLog } from "../services/auditLogService";
 import { toast } from "react-hot-toast";
 
-type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com";
+type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs";
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -87,6 +88,21 @@ const Settings: React.FC = () => {
   }>>([]);
   const [loadingLoginHistory, setLoadingLoginHistory] = useState(false);
 
+  // Estados dos Logs de Auditoria
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsTotalPages, setLogsTotalPages] = useState(1);
+  const [logsTotal, setLogsTotal] = useState(0);
+  const [logsFilters, setLogsFilters] = useState({
+    action: "",
+    entity_type: "",
+    start_date: "",
+    end_date: "",
+  });
+  const [availableActions, setAvailableActions] = useState<string[]>([]);
+  const [availableEntityTypes, setAvailableEntityTypes] = useState<string[]>([]);
+
   useEffect(() => {
     if (user) {
       setProfileData({
@@ -120,6 +136,15 @@ const Settings: React.FC = () => {
       loadApi4comExtensions();
     }
   }, [activeTab, user]);
+
+  // Carrega logs de auditoria quando a tab logs é ativada (admin ou gerente)
+  useEffect(() => {
+    const isManagerOrAdmin = user?.role === "admin" || user?.role === "manager";
+    if (activeTab === "logs" && isManagerOrAdmin) {
+      loadLogs();
+      loadFilterOptions();
+    }
+  }, [activeTab, user, logsFilters]);
 
   // Carrega histórico de logins quando a tab security é ativada
   useEffect(() => {
@@ -368,6 +393,63 @@ const Settings: React.FC = () => {
     }
   };
 
+  // Funções para gerenciar logs de auditoria (Admin/Manager)
+  const loadLogs = async () => {
+    try {
+      setLoadingLogs(true);
+
+      // Busca 100 logs da API com os filtros aplicados
+      const data = await auditLogService.getLogs({
+        page: 1,
+        page_size: 100,
+        action: logsFilters.action || undefined,
+        entity_type: logsFilters.entity_type || undefined,
+        start_date: logsFilters.start_date || undefined,
+        end_date: logsFilters.end_date || undefined,
+      });
+
+      setAuditLogs(data.logs);
+      setLogsTotal(data.logs.length);
+      // Calcula 5 páginas (20 registros por página)
+      setLogsTotalPages(Math.ceil(data.logs.length / 20));
+      setLogsPage(1); // Reseta para primeira página
+    } catch (error) {
+      console.error("Erro ao carregar logs de auditoria:", error);
+      toast.error("Erro ao carregar logs de auditoria");
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const loadFilterOptions = async () => {
+    try {
+      const [actions, entityTypes] = await Promise.all([
+        auditLogService.getActions(),
+        auditLogService.getEntityTypes(),
+      ]);
+      setAvailableActions(actions);
+      setAvailableEntityTypes(entityTypes);
+    } catch (error) {
+      console.error("Erro ao carregar opções de filtro:", error);
+    }
+  };
+
+  const handleLogsFilterChange = (field: string, value: string) => {
+    setLogsFilters((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleClearLogsFilters = () => {
+    setLogsFilters({
+      action: "",
+      entity_type: "",
+      start_date: "",
+      end_date: "",
+    });
+  };
+
   // Funções para gerenciar API4COM (Admin)
   const loadApi4comConfig = async () => {
     try {
@@ -529,6 +611,11 @@ const Settings: React.FC = () => {
   // Adiciona tab API4COM apenas para admin
   if (user?.role === "admin") {
     tabs.push({ id: "api4com" as Tab, label: "API4COM", icon: Phone });
+  }
+
+  // Adiciona tab Logs de Auditoria para admin e gerente
+  if (isManagerOrAdmin) {
+    tabs.push({ id: "logs" as Tab, label: "Logs de Auditoria", icon: FileText });
   }
 
   return (
@@ -1801,6 +1888,222 @@ const Settings: React.FC = () => {
                     <li>• O token é renovado automaticamente quando próximo da expiração</li>
                     <li>• Vendedores poderão fazer ligações diretamente do sistema (Fase 2)</li>
                   </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Logs de Auditoria */}
+            {activeTab === "logs" && isManagerOrAdmin && (
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold text-white mb-2">Logs de Auditoria</h2>
+                  <p className="text-slate-400 text-sm">
+                    Visualize todas as ações realizadas no sistema pelos usuários
+                  </p>
+                </div>
+
+                {/* Filtros */}
+                <div className="bg-slate-900 border border-slate-700 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Filter size={20} />
+                    Filtros
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Filtro por Ação */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Ação
+                      </label>
+                      <select
+                        value={logsFilters.action}
+                        onChange={(e) => handleLogsFilterChange("action", e.target.value)}
+                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
+                        <option value="">Todas</option>
+                        {availableActions.map((action) => (
+                          <option key={action} value={action}>
+                            {action}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filtro por Tipo de Entidade */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Tipo de Entidade
+                      </label>
+                      <select
+                        value={logsFilters.entity_type}
+                        onChange={(e) => handleLogsFilterChange("entity_type", e.target.value)}
+                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
+                        <option value="">Todas</option>
+                        {availableEntityTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filtro por Data Inicial */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        <Calendar size={16} className="inline mr-1" />
+                        Data Inicial
+                      </label>
+                      <input
+                        type="date"
+                        value={logsFilters.start_date}
+                        onChange={(e) => handleLogsFilterChange("start_date", e.target.value)}
+                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    {/* Filtro por Data Final */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        <Calendar size={16} className="inline mr-1" />
+                        Data Final
+                      </label>
+                      <input
+                        type="date"
+                        value={logsFilters.end_date}
+                        onChange={(e) => handleLogsFilterChange("end_date", e.target.value)}
+                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      onClick={handleClearLogsFilters}
+                      className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
+                    >
+                      Limpar Filtros
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tabela de Logs */}
+                <div className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+                  {loadingLogs ? (
+                    <div className="p-8 text-center text-slate-400">
+                      Carregando logs...
+                    </div>
+                  ) : auditLogs.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400">
+                      Nenhum log encontrado
+                    </div>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-slate-800 border-b border-slate-700">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Data/Hora
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Usuário
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Ação
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Entidade
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Descrição
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                IP
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-700">
+                            {auditLogs
+                              .slice((logsPage - 1) * 20, logsPage * 20)
+                              .map((log) => (
+                                <tr key={log.id} className="hover:bg-slate-800/50">
+                                  <td className="px-4 py-3 text-sm text-slate-300 whitespace-nowrap">
+                                    {new Date(log.created_at).toLocaleString("pt-BR")}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-slate-300">
+                                    <div>
+                                      <div className="font-medium">{log.user_name}</div>
+                                      {log.user_email && (
+                                        <div className="text-xs text-slate-400">{log.user_email}</div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                                      {log.action}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-slate-300">
+                                    {log.entity_type}
+                                    {log.entity_id && (
+                                      <span className="text-slate-500"> #{log.entity_id}</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-slate-300">
+                                    {log.description}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-slate-400 whitespace-nowrap">
+                                    {log.ip_address}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Paginação */}
+                      {logsTotalPages > 1 && (
+                        <div className="p-4 border-t border-slate-700 flex items-center justify-between">
+                          <div className="text-sm text-slate-400">
+                            Mostrando {(logsPage - 1) * 20 + 1} a {Math.min(logsPage * 20, logsTotal)} de {logsTotal} logs
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setLogsPage((p) => Math.max(1, p - 1))}
+                              disabled={logsPage === 1}
+                              className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Anterior
+                            </button>
+                            <div className="flex items-center gap-2">
+                              {Array.from({ length: logsTotalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                  key={page}
+                                  onClick={() => setLogsPage(page)}
+                                  className={`px-3 py-2 rounded-lg ${
+                                    logsPage === page
+                                      ? "bg-emerald-600 text-white"
+                                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                                  }`}
+                                >
+                                  {page}
+                                </button>
+                              ))}
+                            </div>
+                            <button
+                              onClick={() => setLogsPage((p) => Math.min(logsTotalPages, p + 1))}
+                              disabled={logsPage === logsTotalPages}
+                              className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Próxima
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             )}

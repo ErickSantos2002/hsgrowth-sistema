@@ -76,23 +76,23 @@ export default function MainLayout() {
 
             {/* Sidebar */}
             <aside
-                className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 bg-gradient-to-b from-slate-900/95 to-slate-950/95 backdrop-blur-xl border-r border-slate-700/50 ${
+                className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 bg-gradient-to-b from-slate-900/95 to-slate-950/95 backdrop-blur-xl border-r border-slate-700/50 overflow-hidden ${
                     sidebarOpen
                         ? "w-64 translate-x-0"
                         : "w-20 lg:translate-x-0 -translate-x-full"
                 }`}
             >
-                <div className="h-full px-3 py-4 flex flex-col">
+                <div className={`h-full py-4 flex flex-col overflow-hidden ${sidebarOpen ? "px-3" : "px-2"}`}>
                     {/* Logo */}
-                    <div className={`flex items-center mb-8 px-3 ${sidebarOpen ? "justify-between" : "justify-center"}`}>
-                        <div className={`flex items-center ${sidebarOpen ? "gap-3" : ""}`}>
-                            <div className="relative w-12 h-12 flex items-center justify-center">
+                    <div className={`flex items-center mb-8 overflow-hidden ${sidebarOpen ? "justify-between px-3" : "justify-center px-0"}`}>
+                        <div className={`flex items-center flex-shrink-0 ${sidebarOpen ? "gap-3" : ""}`}>
+                            <div className={`relative flex items-center justify-center flex-shrink-0 ${sidebarOpen ? "w-12 h-12" : "w-10 h-10"}`}>
                                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-300 rounded-full blur-sm"></div>
                                 <div className="relative bg-gradient-to-br from-cyan-300 to-blue-200 rounded-full p-1 overflow-hidden">
                                     <img
                                         src={logo}
                                         alt="HSGrowth CRM"
-                                        className="h-8 w-8 object-contain relative z-10"
+                                        className={`object-contain relative z-10 ${sidebarOpen ? "h-8 w-8" : "h-6 w-6"}`}
                                     />
                                 </div>
                             </div>
@@ -116,7 +116,7 @@ export default function MainLayout() {
                     </div>
 
                     {/* Menu Items */}
-                    <div className="flex-1 overflow-y-auto min-h-0">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
                         <ul className="space-y-2 font-medium">
                             {menuItems.map((item) => {
                                 // Ocultar itens de admin se o usuário não for admin
