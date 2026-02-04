@@ -65,8 +65,8 @@ docker-compose -f docker-compose.local.yml up -d
 - 07/01/2026: 62/78 (79.5%)
 - 08/01/2026: 78/78 (100%) - **+20.5%** 🚀
 
-**Documentação das Correções:**
-- Ver `Documentação/CORREÇÕES_TESTES_08_01_2026.md` para detalhes completos
+**Documentação Completa:**
+- Ver `../Documentação/HISTORICO-DESENVOLVIMENTO.md` para histórico completo do desenvolvimento
 
 ## ✨ Funcionalidades Principais
 
