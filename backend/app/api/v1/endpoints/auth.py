@@ -103,8 +103,25 @@ async def login(
         User.is_deleted == False
     ).first()
 
+    # Captura informações da requisição para possível log de falha
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
     # Verifica se o usuário existe e a senha está correta
     if not user or not verify_password(login_data.password, user.password_hash):
+        # Registra tentativa de login falhada
+        audit_log = AuditLog(
+            user_id=user.id if user else None,
+            action="FAILED_LOGIN",
+            entity_type="User",
+            entity_id=user.id if user else None,
+            description=f"Tentativa de login falhada: {login_data.email}",
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
+        db.add(audit_log)
+        db.commit()
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou senha incorretos",
@@ -121,10 +138,6 @@ async def login(
     # Atualiza o last_login_at
     user.last_login_at = datetime.utcnow()
     db.commit()
-
-    # Captura informações da requisição para audit log
-    client_ip = request.client.host if request.client else "unknown"
-    user_agent = request.headers.get("user-agent", "unknown")
 
     # Registra o login no audit log
     audit_log = AuditLog(
@@ -276,7 +289,9 @@ async def refresh_token(
 
 @router.post("/logout", summary="Logout de usuário")
 async def logout(
-    current_user: User = Depends(get_current_user)
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ) -> Any:
     """
     Realiza logout do usuário autenticado.
@@ -285,6 +300,22 @@ async def logout(
     (descartando o token). Este endpoint pode ser usado para logging ou
     para implementar uma blacklist de tokens no futuro.
     """
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="LOGOUT",
+        entity_type="User",
+        entity_id=current_user.id,
+        description=f"Logout realizado: {current_user.name} ({current_user.email})",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
     # Aqui poderia adicionar o token a uma blacklist (Redis, por exemplo)
     # Por enquanto, apenas retorna sucesso
     return {
@@ -542,6 +573,7 @@ async def forgot_password(
     }
 )
 async def reset_password(
+    request: Request,
     reset_data: ResetPasswordRequest,
     db: Session = Depends(get_db)
 ) -> Any:
@@ -587,6 +619,22 @@ async def reset_password(
     user.reset_token = None
     user.reset_token_expires_at = None
     user.password_changed_at = datetime.utcnow()
+    db.commit()
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=user.id,
+        action="PASSWORD_RESET",
+        entity_type="User",
+        entity_id=user.id,
+        description=f"Senha resetada via email: {user.name} ({user.email})",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
     db.commit()
 
     return {

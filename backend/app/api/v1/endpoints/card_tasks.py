@@ -1,7 +1,7 @@
 """
 Endpoints da API para CardTask (Tarefas/Atividades dos Cards).
 """
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Request
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -16,6 +16,8 @@ from app.schemas.card_task import (
     CardTaskMarkComplete
 )
 from app.models.user import User
+from app.models.audit_log import AuditLog
+from app.models.card_task import CardTask
 from app.api.deps import get_current_active_user
 
 router = APIRouter()
@@ -23,6 +25,7 @@ router = APIRouter()
 
 @router.post("", response_model=CardTaskResponse, status_code=status.HTTP_201_CREATED)
 def create_task(
+    request: Request,
     task_data: CardTaskCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
@@ -40,7 +43,25 @@ def create_task(
     - other: Outro
     """
     service = CardTaskService(db)
-    return service.create_task(task_data, current_user)
+    task = service.create_task(task_data, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="CREATE",
+        entity_type="Task",
+        entity_id=task.id,
+        description=f"Tarefa criada: {task.title} ({task.task_type})",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return task
 
 
 @router.get("", response_model=CardTaskListResponse)
@@ -138,6 +159,7 @@ def get_task(
 
 @router.put("/{task_id}", response_model=CardTaskResponse)
 def update_task(
+    request: Request,
     task_id: int,
     task_data: CardTaskUpdate,
     db: Session = Depends(get_db),
@@ -149,11 +171,47 @@ def update_task(
     Apenas campos fornecidos serão atualizados.
     """
     service = CardTaskService(db)
-    return service.update_task(task_id, task_data, current_user)
+    task = service.update_task(task_id, task_data, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Constrói descrição com campos alterados
+    changed_fields = []
+    if task_data.title is not None:
+        changed_fields.append("título")
+    if task_data.description is not None:
+        changed_fields.append("descrição")
+    if task_data.task_type is not None:
+        changed_fields.append("tipo")
+    if task_data.priority is not None:
+        changed_fields.append("prioridade")
+    if task_data.due_date is not None:
+        changed_fields.append("data de vencimento")
+    if task_data.assigned_to_id is not None:
+        changed_fields.append("responsável")
+
+    fields_str = ", ".join(changed_fields) if changed_fields else "dados"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="UPDATE",
+        entity_type="Task",
+        entity_id=task.id,
+        description=f"Tarefa atualizada: {task.title} - Campos: {fields_str}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return task
 
 
 @router.patch("/{task_id}/complete", response_model=CardTaskResponse)
 def toggle_complete(
+    request: Request,
     task_id: int,
     data: CardTaskMarkComplete,
     db: Session = Depends(get_db),
@@ -165,15 +223,58 @@ def toggle_complete(
     Ao marcar como concluída, registra a data de conclusão.
     """
     service = CardTaskService(db)
-    return service.toggle_complete(task_id, data.is_completed, current_user)
+    task = service.toggle_complete(task_id, data.is_completed, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    action_desc = "concluída" if data.is_completed else "reaberta"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="COMPLETE" if data.is_completed else "UPDATE",
+        entity_type="Task",
+        entity_id=task.id,
+        description=f"Tarefa {action_desc}: {task.title}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return task
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_200_OK)
 def delete_task(
+    request: Request,
     task_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Deleta uma tarefa"""
+    # Busca a task antes de deletar para registrar no log
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    task_title = task.title if task else f"ID {task_id}"
+
     service = CardTaskService(db)
-    return service.delete_task(task_id, current_user)
+    result = service.delete_task(task_id, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="DELETE",
+        entity_type="Task",
+        entity_id=task_id,
+        description=f"Tarefa deletada: {task_title}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return result

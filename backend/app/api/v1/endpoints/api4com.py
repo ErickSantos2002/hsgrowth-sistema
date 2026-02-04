@@ -1,12 +1,13 @@
 """
 Endpoints REST para gerenciar integração com API4COM (VOIP).
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
 
 from app.api.deps import get_db, get_current_active_user
 from app.models.user import User
+from app.models.audit_log import AuditLog
 from app.services.api4com_service import API4ComService
 from app.schemas.api4com import (
     API4ComConfigCreate,
@@ -51,6 +52,7 @@ async def get_api4com_config(
 
 @router.post("/config", response_model=API4ComConfigResponse)
 async def save_api4com_config(
+    request: Request,
     config_data: API4ComConfigCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -79,8 +81,34 @@ async def save_api4com_config(
             detail="Apenas admin pode configurar credenciais"
         )
 
+    # Verifica se já existe configuração
+    from app.models.api4com import API4ComConfig
+    existing_config = db.query(API4ComConfig).filter(API4ComConfig.is_deleted == False).first()
+    is_update = existing_config is not None
+
     service = API4ComService(db)
-    return await service.save_config(config_data, current_user)
+    config = await service.save_config(config_data, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    action = "CONFIG_UPDATE" if is_update else "CONFIG_CREATE"
+    action_desc = "atualizada" if is_update else "criada"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action=action,
+        entity_type="API4ComConfig",
+        entity_id=config.id,
+        description=f"Configuração API4Com {action_desc}: {config.email}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return config
 
 
 @router.post("/test", response_model=API4ComTestResponse)
@@ -142,6 +170,7 @@ def list_extensions(
 
 @router.post("/extensions", response_model=UserExtensionResponse)
 def save_extension(
+    request: Request,
     extension_data: UserExtensionCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -170,12 +199,46 @@ def save_extension(
             detail="Apenas admin e gerente podem gerenciar ramais"
         )
 
+    # Verifica se já existe extension para esse usuário
+    from app.models.api4com import UserExtension
+    existing_extension = db.query(UserExtension).filter(
+        UserExtension.user_id == extension_data.user_id,
+        UserExtension.is_deleted == False
+    ).first()
+    is_update = existing_extension is not None
+
     service = API4ComService(db)
-    return service.save_extension(extension_data, current_user)
+    user_extension = service.save_extension(extension_data, current_user)
+
+    # Busca o nome do usuário para o log
+    user = db.query(User).filter(User.id == extension_data.user_id).first()
+    user_name = user.name if user else f"Usuário ID {extension_data.user_id}"
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    action = "EXTENSION_UPDATE" if is_update else "EXTENSION_CREATE"
+    action_desc = "atualizado" if is_update else "criado"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action=action,
+        entity_type="UserExtension",
+        entity_id=user_extension.id,
+        description=f"Ramal {action_desc}: {user_name} → Ramal {user_extension.extension}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return user_extension
 
 
 @router.delete("/extensions/{user_id}")
 def delete_extension(
+    request: Request,
     user_id: int,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -202,8 +265,36 @@ def delete_extension(
             detail="Apenas admin e gerente podem remover ramais"
         )
 
+    # Busca informações antes de deletar para o log
+    from app.models.api4com import UserExtension
+    user_extension = db.query(UserExtension).filter(
+        UserExtension.user_id == user_id,
+        UserExtension.is_deleted == False
+    ).first()
+
+    extension_number = user_extension.extension if user_extension else "desconhecido"
+
+    user = db.query(User).filter(User.id == user_id).first()
+    user_name = user.name if user else f"Usuário ID {user_id}"
+
     service = API4ComService(db)
     service.delete_extension(user_id, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="EXTENSION_DELETE",
+        entity_type="UserExtension",
+        entity_id=user_extension.id if user_extension else None,
+        description=f"Ramal removido: {user_name} - Ramal {extension_number}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     return {
         "message": "Ramal removido com sucesso",

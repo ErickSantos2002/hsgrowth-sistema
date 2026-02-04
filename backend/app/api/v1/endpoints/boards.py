@@ -3,7 +3,7 @@ Endpoints de Boards e Lists.
 Rotas para gerenciamento de quadros e listas.
 """
 from typing import Any, Optional, List
-from fastapi import APIRouter, Depends, Query, Path
+from fastapi import APIRouter, Depends, Query, Path, Request
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user
@@ -23,6 +23,8 @@ from app.schemas.list import (
     ListMoveRequest
 )
 from app.models.user import User
+from app.models.audit_log import AuditLog
+from app.models.board import Board
 
 router = APIRouter()
 
@@ -88,6 +90,7 @@ async def get_board(
 
 @router.post("", response_model=BoardResponse, summary="Criar board", status_code=201)
 async def create_board(
+    request: Request,
     board_data: BoardCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -103,6 +106,22 @@ async def create_board(
     service = BoardService(db)
     board = service.create_board(board_data, current_user)
 
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="CREATE",
+        entity_type="Board",
+        entity_id=board.id,
+        description=f"Board criado: {board.name}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
     return BoardResponse(
         id=board.id,
         name=board.name,
@@ -117,6 +136,7 @@ async def create_board(
 
 @router.put("/{board_id}", response_model=BoardResponse, summary="Atualizar board")
 async def update_board(
+    request: Request,
     board_id: int = Path(..., description="ID do board"),
     board_data: BoardUpdate = ...,
     current_user: User = Depends(get_current_active_user),
@@ -130,6 +150,35 @@ async def update_board(
     """
     service = BoardService(db)
     board = service.update_board(board_id, board_data, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Constrói descrição com campos alterados
+    changed_fields = []
+    if board_data.name is not None:
+        changed_fields.append("nome")
+    if board_data.description is not None:
+        changed_fields.append("descrição")
+    if board_data.color is not None:
+        changed_fields.append("cor")
+    if board_data.icon is not None:
+        changed_fields.append("ícone")
+
+    fields_str = ", ".join(changed_fields) if changed_fields else "dados"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="UPDATE",
+        entity_type="Board",
+        entity_id=board.id,
+        description=f"Board atualizado: {board.name} - Campos: {fields_str}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     return BoardResponse(
         id=board.id,
@@ -145,6 +194,7 @@ async def update_board(
 
 @router.delete("/{board_id}", summary="Deletar board")
 async def delete_board(
+    request: Request,
     board_id: int = Path(..., description="ID do board"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -154,8 +204,28 @@ async def delete_board(
 
     - **board_id**: ID do board
     """
+    # Busca o board antes de deletar para registrar no log
+    board = db.query(Board).filter(Board.id == board_id).first()
+    board_name = board.name if board else f"ID {board_id}"
+
     service = BoardService(db)
     service.delete_board(board_id, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="DELETE",
+        entity_type="Board",
+        entity_id=board_id,
+        description=f"Board deletado: {board_name}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     return {"message": "Board deletado com sucesso"}
 

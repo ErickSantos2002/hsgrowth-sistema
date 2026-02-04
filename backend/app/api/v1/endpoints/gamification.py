@@ -3,7 +3,7 @@ Endpoints de Gamificação.
 Rotas para pontos, badges e rankings.
 """
 from typing import Any, List
-from fastapi import APIRouter, Depends, Query, Path, Body
+from fastapi import APIRouter, Depends, Query, Path, Body, Request
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user, require_role
@@ -21,6 +21,8 @@ from app.schemas.gamification import (
     ActionPointsResponse
 )
 from app.models.user import User
+from app.models.audit_log import AuditLog
+from app.models.gamification_badge import GamificationBadge
 
 router = APIRouter()
 
@@ -67,6 +69,7 @@ async def get_user_gamification(
 
 @router.post("/points", response_model=GamificationPointResponse, summary="Atribuir pontos", status_code=201)
 async def award_points(
+    request: Request,
     user_id: int = Body(..., description="ID do usuário"),
     reason: str = Body(..., description="Tipo de ação"),
     description: str = Body(None, description="Descrição da ação"),
@@ -83,7 +86,29 @@ async def award_points(
     - **custom_points**: Pontos customizados (opcional, sobrescreve padrão)
     """
     service = GamificationService(db)
-    return service.award_points(user_id, reason, description, custom_points)
+    points_record = service.award_points(user_id, reason, description, custom_points)
+
+    # Busca o nome do usuário para o log
+    user = db.query(User).filter(User.id == user_id).first()
+    user_name = user.name if user else f"Usuário ID {user_id}"
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="POINTS_AWARDED",
+        entity_type="GamificationPoint",
+        entity_id=points_record.id,
+        description=f"Pontos atribuídos: {points_record.points} pts → {user_name} ({reason})",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return points_record
 
 
 # ========== BADGES ==========
@@ -107,6 +132,7 @@ async def list_badges(
 
 @router.post("/badges", response_model=BadgeResponse, summary="Criar badge", status_code=201)
 async def create_badge(
+    request: Request,
     badge_data: BadgeCreate,
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
@@ -121,11 +147,30 @@ async def create_badge(
     - **points_required**: Pontos necessários (opcional)
     """
     service = GamificationService(db)
-    return service.create_badge(badge_data, current_user)
+    badge = service.create_badge(badge_data, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="CREATE",
+        entity_type="GamificationBadge",
+        entity_id=badge.id,
+        description=f"GamificationBadge criado: {badge.name}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return badge
 
 
 @router.post("/badges/{badge_id}/award", response_model=UserBadgeResponse, summary="Atribuir badge a usuário", status_code=200)
 async def award_badge(
+    request: Request,
     badge_id: int = Path(..., description="ID do badge"),
     user_id: int = Body(..., embed=True, description="ID do usuário"),
     current_user: User = Depends(get_current_active_user),
@@ -138,7 +183,31 @@ async def award_badge(
     - **user_id**: ID do usuário que receberá o badge
     """
     service = GamificationService(db)
-    return service.award_badge_to_user(user_id, badge_id, current_user)
+    user_badge = service.award_badge_to_user(user_id, badge_id, current_user)
+
+    # Busca informações para o log
+    badge = db.query(GamificationBadge).filter(GamificationBadge.id == badge_id).first()
+    user = db.query(User).filter(User.id == user_id).first()
+    badge_name = badge.name if badge else f"GamificationBadge ID {badge_id}"
+    user_name = user.name if user else f"Usuário ID {user_id}"
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="AWARD",
+        entity_type="GamificationBadge",
+        entity_id=badge_id,
+        description=f"GamificationBadge atribuído: {badge_name} → {user_name}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return user_badge
 
 
 @router.get("/badges/me", response_model=List[UserBadgeResponse], summary="Meus badges")
@@ -153,7 +222,7 @@ async def get_my_badges(
     return service.get_user_badges(current_user.id)
 
 
-@router.get("/badges/users/{user_id}", response_model=List[UserBadgeResponse], summary="Badges de um usuário")
+@router.get("/badges/users/{user_id}", response_model=List[UserBadgeResponse], summary="GamificationBadges de um usuário")
 async def get_user_badges(
     user_id: int = Path(..., description="ID do usuário"),
     current_user: User = Depends(get_current_active_user),
@@ -185,6 +254,7 @@ async def get_badge(
 
 @router.put("/badges/{badge_id}", response_model=BadgeResponse, summary="Atualizar badge")
 async def update_badge(
+    request: Request,
     badge_id: int = Path(..., description="ID do badge"),
     badge_data: BadgeUpdate = Body(..., description="Dados para atualizar"),
     current_user: User = Depends(require_role("admin")),
@@ -197,11 +267,43 @@ async def update_badge(
     - **badge_data**: Campos a serem atualizados
     """
     service = GamificationService(db)
-    return service.update_badge(badge_id, badge_data, current_user)
+    badge = service.update_badge(badge_id, badge_data, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Constrói descrição com campos alterados
+    changed_fields = []
+    if badge_data.name is not None:
+        changed_fields.append("nome")
+    if badge_data.description is not None:
+        changed_fields.append("descrição")
+    if badge_data.icon is not None:
+        changed_fields.append("ícone")
+    if badge_data.criteria is not None:
+        changed_fields.append("critérios")
+
+    fields_str = ", ".join(changed_fields) if changed_fields else "dados"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="UPDATE",
+        entity_type="GamificationBadge",
+        entity_id=badge.id,
+        description=f"GamificationBadge atualizado: {badge.name} - Campos: {fields_str}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return badge
 
 
 @router.delete("/badges/{badge_id}", summary="Deletar badge", status_code=200)
 async def delete_badge(
+    request: Request,
     badge_id: int = Path(..., description="ID do badge"),
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
@@ -211,8 +313,30 @@ async def delete_badge(
 
     - **badge_id**: ID do badge
     """
+    # Busca o badge antes de deletar para registrar no log
+    badge = db.query(GamificationBadge).filter(GamificationBadge.id == badge_id).first()
+    badge_name = badge.name if badge else f"ID {badge_id}"
+
     service = GamificationService(db)
-    return service.delete_badge(badge_id, current_user)
+    result = service.delete_badge(badge_id, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="DELETE",
+        entity_type="GamificationBadge",
+        entity_id=badge_id,
+        description=f"GamificationBadge deletado: {badge_name}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return result
 
 
 # ========== RANKINGS ==========
@@ -294,6 +418,7 @@ async def get_action_points(
 
 @router.post("/action-points", response_model=ActionPointsResponse, summary="Criar configuração de pontos", status_code=201)
 async def create_action_points(
+    request: Request,
     action_data: ActionPointsCreate,
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
@@ -307,11 +432,30 @@ async def create_action_points(
     - **description**: Descrição da ação
     """
     service = GamificationService(db)
-    return service.create_action_points(action_data, current_user)
+    config = service.create_action_points(action_data, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="POINTS_CONFIG_CREATE",
+        entity_type="ActionPoints",
+        entity_id=config.id,
+        description=f"Configuração de pontos criada: {config.action_type} = {config.points} pts",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return config
 
 
 @router.put("/action-points/{action_type}", response_model=ActionPointsResponse, summary="Atualizar configuração de pontos")
 async def update_action_points(
+    request: Request,
     action_type: str = Path(..., description="Tipo de ação"),
     action_data: ActionPointsUpdate = Body(..., description="Dados para atualizar"),
     current_user: User = Depends(require_role("admin")),
@@ -326,7 +470,36 @@ async def update_action_points(
     - **description**: Nova descrição (opcional)
     """
     service = GamificationService(db)
-    return service.update_action_points(action_type, action_data, current_user)
+    config = service.update_action_points(action_type, action_data, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Constrói descrição com campos alterados
+    changed_fields = []
+    if action_data.points is not None:
+        changed_fields.append(f"pontos={config.points}")
+    if action_data.is_active is not None:
+        changed_fields.append(f"ativo={config.is_active}")
+    if action_data.description is not None:
+        changed_fields.append("descrição")
+
+    fields_str = ", ".join(changed_fields) if changed_fields else "dados"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="POINTS_CONFIG_UPDATE",
+        entity_type="ActionPoints",
+        entity_id=config.id,
+        description=f"Configuração de pontos atualizada: {config.action_type} - {fields_str}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return config
 
 
 @router.post("/action-points/initialize", summary="Inicializar configurações padrão", status_code=200)

@@ -3,7 +3,7 @@ Endpoints de Cards.
 Rotas para gerenciamento de cartões e campos customizados.
 """
 from typing import Any, Optional, List
-from fastapi import APIRouter, Depends, Query, Path
+from fastapi import APIRouter, Depends, Query, Path, Request
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user
@@ -18,6 +18,7 @@ from app.schemas.card import (
     CardExpandedResponse
 )
 from app.schemas.field import CardFieldValueCreate, CardFieldValueResponse
+from app.models.audit_log import AuditLog
 from app.models.user import User
 from app.models.card import Card
 
@@ -243,6 +244,7 @@ async def get_card(
     }
 )
 async def create_card(
+    request: Request,
     card_data: CardCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -253,11 +255,28 @@ async def create_card(
     service = CardService(db)
     card = service.create_card(card_data, current_user)
 
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="CREATE",
+        entity_type="Card",
+        entity_id=card.id,
+        description=f"Card criado: {card.title}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
     return card_to_response(card)
 
 
 @router.put("/{card_id}", response_model=CardResponse, summary="Atualizar card")
 async def update_card(
+    request: Request,
     card_id: int = Path(..., description="ID do card"),
     card_data: CardUpdate = ...,
     current_user: User = Depends(get_current_active_user),
@@ -272,11 +291,43 @@ async def update_card(
     service = CardService(db)
     card = service.update_card(card_id, card_data, current_user)
 
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Constrói descrição com campos alterados
+    changed_fields = []
+    if card_data.title is not None:
+        changed_fields.append("título")
+    if card_data.description is not None:
+        changed_fields.append("descrição")
+    if card_data.value is not None:
+        changed_fields.append("valor")
+    if card_data.due_date is not None:
+        changed_fields.append("data de vencimento")
+    if card_data.assigned_to_id is not None:
+        changed_fields.append("responsável")
+
+    fields_str = ", ".join(changed_fields) if changed_fields else "dados"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="UPDATE",
+        entity_type="Card",
+        entity_id=card.id,
+        description=f"Card atualizado: {card.title} - Campos: {fields_str}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
     return card_to_response(card)
 
 
 @router.delete("/{card_id}", summary="Deletar card")
 async def delete_card(
+    request: Request,
     card_id: int = Path(..., description="ID do card"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -286,14 +337,35 @@ async def delete_card(
 
     - **card_id**: ID do card
     """
+    # Busca o card antes de deletar para registrar no log
+    card = db.query(Card).filter(Card.id == card_id).first()
+    card_title = card.title if card else f"ID {card_id}"
+
     service = CardService(db)
     service.delete_card(card_id, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="DELETE",
+        entity_type="Card",
+        entity_id=card_id,
+        description=f"Card deletado: {card_title}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     return {"message": "Card deletado com sucesso"}
 
 
 @router.put("/{card_id}/move", response_model=CardResponse, summary="Mover card entre listas")
 async def move_card(
+    request: Request,
     card_id: int = Path(..., description="ID do card"),
     move_data: CardMoveRequest = ...,
     current_user: User = Depends(get_current_active_user),
@@ -314,11 +386,33 @@ async def move_card(
         current_user=current_user
     )
 
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Busca o nome da lista de destino
+    from app.models.list import List as BoardList
+    target_list = db.query(BoardList).filter(BoardList.id == move_data.target_list_id).first()
+    list_name = target_list.name if target_list else f"Lista ID {move_data.target_list_id}"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="STATUS_CHANGE",
+        entity_type="Card",
+        entity_id=card.id,
+        description=f"Card movido: {card.title} → {list_name}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
     return card_to_response(card)
 
 
 @router.put("/{card_id}/assign", response_model=CardResponse, summary="Atribuir card a usuário")
 async def assign_card(
+    request: Request,
     card_id: int = Path(..., description="ID do card"),
     assign_data: CardAssignRequest = ...,
     current_user: User = Depends(get_current_active_user),
@@ -336,6 +430,26 @@ async def assign_card(
         user_id=assign_data.assigned_to_id,
         current_user=current_user
     )
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Busca o nome do novo responsável
+    assigned_user = db.query(User).filter(User.id == assign_data.assigned_to_id).first()
+    assigned_name = assigned_user.name if assigned_user else f"Usuário ID {assign_data.assigned_to_id}"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="TRANSFER",
+        entity_type="Card",
+        entity_id=card.id,
+        description=f"Card transferido: {card.title} → {assigned_name}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     return card_to_response(card)
 

@@ -3,13 +3,14 @@ Endpoints de Usuários.
 Rotas para gerenciamento de usuários (CRUD).
 """
 from typing import Any, Optional, List
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user, require_role
 from app.services.user_service import UserService
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, UserListResponse, ChangePasswordRequest
 from app.models.user import User
+from app.models.audit_log import AuditLog
 
 router = APIRouter()
 
@@ -352,6 +353,7 @@ async def get_user(
     }
 )
 async def create_user(
+    request: Request,
     user_data: UserCreate,
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
@@ -361,6 +363,22 @@ async def create_user(
     """
     service = UserService(db)
     user = service.create_user(user_data)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="CREATE",
+        entity_type="User",
+        entity_id=user.id,
+        description=f"Usuário criado: {user.name} ({user.email})",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     # Converte para response schema
     return UserResponse(
@@ -382,6 +400,7 @@ async def create_user(
 
 @router.put("/{user_id}", response_model=UserResponse, summary="Atualizar usuário")
 async def update_user(
+    request: Request,
     user_id: int,
     user_data: UserUpdate,
     current_user: User = Depends(get_current_active_user),
@@ -395,6 +414,37 @@ async def update_user(
     """
     service = UserService(db)
     user = service.update_user(user_id, user_data, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Constrói descrição com campos alterados
+    changed_fields = []
+    if user_data.name is not None:
+        changed_fields.append("nome")
+    if user_data.email is not None:
+        changed_fields.append("email")
+    if user_data.phone is not None:
+        changed_fields.append("telefone")
+    if user_data.role_id is not None:
+        changed_fields.append("role")
+    if user_data.is_active is not None:
+        changed_fields.append("status")
+
+    fields_str = ", ".join(changed_fields) if changed_fields else "dados"
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="UPDATE",
+        entity_type="User",
+        entity_id=user.id,
+        description=f"Usuário atualizado: {user.name} - Campos alterados: {fields_str}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     # Converte para response schema
     return UserResponse(
@@ -416,6 +466,7 @@ async def update_user(
 
 @router.delete("/{user_id}", summary="Deletar usuário")
 async def delete_user(
+    request: Request,
     user_id: int,
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
@@ -425,14 +476,36 @@ async def delete_user(
 
     - **user_id**: ID do usuário
     """
+    # Busca o usuário antes de deletar para registrar no log
+    user = db.query(User).filter(User.id == user_id).first()
+    user_name = user.name if user else f"ID {user_id}"
+    user_email = user.email if user else "unknown"
+
     service = UserService(db)
     service.delete_user(user_id, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="DELETE",
+        entity_type="User",
+        entity_id=user_id,
+        description=f"Usuário deletado: {user_name} ({user_email})",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     return {"message": "Usuário deletado com sucesso"}
 
 
 @router.post("/me/change-password", summary="Alterar senha")
 async def change_password(
+    request: Request,
     password_data: ChangePasswordRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -449,5 +522,21 @@ async def change_password(
         current_password=password_data.current_password,
         new_password=password_data.new_password
     )
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="PASSWORD_CHANGE",
+        entity_type="User",
+        entity_id=current_user.id,
+        description=f"Senha alterada pelo usuário: {current_user.name}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     return {"message": "Senha alterada com sucesso"}
