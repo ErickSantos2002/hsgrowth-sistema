@@ -7,6 +7,85 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.0] - 2026-02-04
+
+### ✨ Novas Funcionalidades
+
+#### Sistema de Logs de Auditoria
+- **Backend**: Sistema completo de auditoria para rastreamento de todas as ações no sistema
+- **33 tipos de logs** distribuídos em 9 módulos:
+  - **Autenticação** (3): LOGIN, LOGOUT, FAILED_LOGIN
+  - **Usuários** (6): CREATE, UPDATE, DELETE, PASSWORD_CHANGE, ACTIVATE, DEACTIVATE
+  - **Cards/Leads** (5): CREATE, UPDATE, DELETE, STATUS_CHANGE, TRANSFER
+  - **Boards** (3): CREATE, UPDATE, DELETE
+  - **Tarefas** (4): CREATE, UPDATE, COMPLETE, DELETE
+  - **Comentários** (4): CREATE, UPDATE, DELETE (cards e tarefas)
+  - **Badges** (4): CREATE, UPDATE, DELETE, AWARD
+  - **Pontos de Gamificação** (3): CREATE, UPDATE, TOGGLE
+  - **API4COM/VOIP** (5): CONFIG_CREATE, CONFIG_UPDATE, CONFIG_TEST, EXTENSION_CREATE, EXTENSION_DELETE
+- **Endpoint de consulta** (`/api/v1/audit-logs`):
+  - Paginação completa
+  - Filtros por: usuário, ação, tipo de entidade, período (data inicial/final)
+  - Endpoints auxiliares para popular filtros (actions, entity-types)
+- **Registro automático** de: usuário, IP, user-agent, timestamp, descrição da ação
+- **Permissões**: Apenas Admin pode visualizar logs completos
+
+#### Interface de Logs de Auditoria
+- **Nova aba "Logs de Auditoria"** na página de Configurações
+- Visível apenas para Admin e Manager
+- **Funcionalidades**:
+  - Visualização dos últimos 100 logs com paginação local (20 por página)
+  - Filtros por ação, tipo de entidade e período
+  - Tabela com informações detalhadas: data/hora, usuário, ação, entidade, descrição, IP
+  - Design responsivo e consistente com o sistema
+
+#### Histórico de Logins Melhorado
+- Endpoint `/api/v1/auth/login-history` agora mostra **todos os logins** do sistema para Admin/Manager
+- Corrigido para não filtrar apenas logins do usuário atual
+- Aba "Segurança" agora exibe logins de todos os usuários
+
+### 🐛 Correções
+
+#### Sidebar
+- Corrigido scroll horizontal ao minimizar sidebar
+- Adicionado `overflow-hidden` nos containers
+- Ajustado padding dinâmico baseado no estado (expandida/minimizada)
+- Logo redimensiona automaticamente quando minimizada
+
+#### Autenticação e Cache
+- **Corrigido problema crítico de cache** entre usuários diferentes
+- Ao fazer logout e login com outro usuário, o sistema agora:
+  - Força reload completo da página
+  - Limpa todo o estado do React
+  - Reseta todos os componentes
+  - Previne que usuário veja permissões/dados de outro usuário
+- Implementado `window.location.href` ao invés de navegação SPA no login/logout
+
+#### Timezone de Logins
+- Adicionado sufixo 'Z' em timestamps UTC para interpretação correta no frontend
+- Corrigido display de "Agora" permanente no histórico de logins
+
+### 🔧 Melhorias Técnicas
+
+#### Backend
+- Model `AuditLog` com campos: user_id, action, entity_type, entity_id, description, ip_address, user_agent, created_at
+- Captura automática de IP e User-Agent em todos os endpoints auditados
+- Join otimizado com tabela User para exibir nome/email nos logs
+- Ordenação por data (mais recentes primeiro)
+
+#### Frontend
+- Novo service `auditLogService` com métodos para buscar logs e opções de filtro
+- Estados gerenciados para paginação local
+- Componentes reutilizáveis mantendo padrão visual do sistema
+
+### 📝 Documentação
+
+- Atualizado CHANGELOG com todas as funcionalidades implementadas
+- Código bem comentado em português (conforme padrão do projeto)
+- Docstrings completas em todos os endpoints
+
+---
+
 ## [1.0.0] - 2026-01-29
 
 ### 🚀 PRIMEIRA VERSÃO EM PRODUÇÃO

@@ -24,7 +24,8 @@ export default function Login() {
 
         try {
             await login(email, senha);
-            navigate("/");
+            // Força reload completo da página para limpar todo o estado anterior
+            window.location.href = "/";
         } catch (error: any) {
             setError(error.message || "Email ou senha incorretos.");
         } finally {

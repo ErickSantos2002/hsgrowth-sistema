@@ -727,8 +727,8 @@ async def client_credentials_auth(
 
 @router.get(
     "/login-history",
-    summary="Histórico de logins do usuário",
-    description="Retorna o histórico de logins do usuário autenticado"
+    summary="Histórico de logins do sistema",
+    description="Retorna todos os logins do sistema. Endpoint usado apenas na aba Segurança (Admin/Manager)."
 )
 async def get_login_history(
     limit: int = 20,
@@ -736,14 +736,15 @@ async def get_login_history(
     db: Session = Depends(get_db)
 ):
     """
-    Retorna o histórico de logins do usuário autenticado.
-    Limitado aos últimos 20 logins por padrão.
+    Retorna todos os logins do sistema.
+    Como a aba de Segurança só é acessível para Admin e Manager,
+    não há filtro por usuário - mostra todos os logins.
     """
+    # Busca todos os logins (sem filtro por usuário)
     # Faz join com User para pegar nome e email
     logins = db.query(AuditLog, User).join(
         User, AuditLog.user_id == User.id
     ).filter(
-        AuditLog.user_id == current_user.id,
         AuditLog.action == "LOGIN"
     ).order_by(
         AuditLog.created_at.desc()
