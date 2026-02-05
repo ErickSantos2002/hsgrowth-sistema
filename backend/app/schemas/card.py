@@ -195,9 +195,24 @@ class CardCreate(CardBase):
     """
     list_id: int = Field(..., description="ID da lista onde o card será criado")
     client_id: Optional[int] = Field(None, description="ID do cliente/organização")
-    assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
+    assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável (Vendedor)")
+    sdr_id: Optional[int] = Field(None, description="ID do usuário SDR responsável")
     value: Optional[float] = Field(None, ge=0, description="Valor monetário do card")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
+
+    # Campos do blueprint da consultora - Tracking de entrada nos boards
+    prospection_entry_date: Optional[datetime] = Field(None, description="Data de entrada no board de Prospecção")
+    acquisition_entry_date: Optional[datetime] = Field(None, description="Data de entrada no board de Aquisição")
+    expansion_entry_date: Optional[datetime] = Field(None, description="Data de entrada no board de Expansão")
+
+    # Campos do blueprint da consultora - Informações de negócio
+    deal_type: Optional[str] = Field(None, max_length=100, description="Tipo de negócio (Nova Venda, Cross Sell, Up Sell)")
+    acquisition_channel: Optional[str] = Field(None, max_length=100, description="Canal de aquisição (Inbound, Outbound, Indicação, etc)")
+    acquisition_channel_detail: Optional[str] = Field(None, max_length=200, description="Detalhamento do canal de aquisição")
+    utm_params: Optional[str] = Field(None, max_length=500, description="Parâmetros UTM (tracking de marketing)")
+    loss_reason: Optional[str] = Field(None, max_length=200, description="Motivo da perda (quando card é perdido)")
+    has_implementation: Optional[bool] = Field(None, description="Se tem implementação")
+    has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
 
     model_config = {
         "json_schema_extra": {
@@ -222,12 +237,27 @@ class CardUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=500, description="Título do card")
     description: Optional[str] = Field(None, description="Descrição detalhada")
     client_id: Optional[int] = Field(None, description="ID do cliente/organização")
-    assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
+    assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável (Vendedor)")
+    sdr_id: Optional[int] = Field(None, description="ID do usuário SDR responsável")
     value: Optional[float] = Field(None, ge=0, description="Valor monetário do card")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     payment_info: Optional[PaymentInfo] = Field(None, description="Informações de pagamento/condições comerciais")
     is_won: Optional[bool] = Field(None, description="Card ganho (venda fechada)")
     is_lost: Optional[bool] = Field(None, description="Card perdido")
+
+    # Campos do blueprint da consultora - Tracking de entrada nos boards
+    prospection_entry_date: Optional[datetime] = Field(None, description="Data de entrada no board de Prospecção")
+    acquisition_entry_date: Optional[datetime] = Field(None, description="Data de entrada no board de Aquisição")
+    expansion_entry_date: Optional[datetime] = Field(None, description="Data de entrada no board de Expansão")
+
+    # Campos do blueprint da consultora - Informações de negócio
+    deal_type: Optional[str] = Field(None, max_length=100, description="Tipo de negócio (Nova Venda, Cross Sell, Up Sell)")
+    acquisition_channel: Optional[str] = Field(None, max_length=100, description="Canal de aquisição (Inbound, Outbound, Indicação, etc)")
+    acquisition_channel_detail: Optional[str] = Field(None, max_length=200, description="Detalhamento do canal de aquisição")
+    utm_params: Optional[str] = Field(None, max_length=500, description="Parâmetros UTM (tracking de marketing)")
+    loss_reason: Optional[str] = Field(None, max_length=200, description="Motivo da perda (quando card é perdido)")
+    has_implementation: Optional[bool] = Field(None, description="Se tem implementação")
+    has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
 
     model_config = {
         "json_schema_extra": {
@@ -285,7 +315,8 @@ class CardResponse(CardBase):
     id: int = Field(..., description="ID do card")
     list_id: int = Field(..., description="ID da lista")
     client_id: Optional[int] = Field(None, description="ID do cliente/organização")
-    assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
+    assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável (Vendedor)")
+    sdr_id: Optional[int] = Field(None, description="ID do usuário SDR responsável")
     value: Optional[float] = Field(None, description="Valor monetário")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     payment_info: Optional[PaymentInfo] = Field(None, description="Informações de pagamento/condições comerciais")
@@ -296,6 +327,20 @@ class CardResponse(CardBase):
     position: float = Field(..., description="Posição na lista (decimal)")
     created_at: datetime = Field(..., description="Data de criação")
     updated_at: datetime = Field(..., description="Data de atualização")
+
+    # Campos do blueprint da consultora - Tracking de entrada nos boards
+    prospection_entry_date: Optional[datetime] = Field(None, description="Data de entrada no board de Prospecção")
+    acquisition_entry_date: Optional[datetime] = Field(None, description="Data de entrada no board de Aquisição")
+    expansion_entry_date: Optional[datetime] = Field(None, description="Data de entrada no board de Expansão")
+
+    # Campos do blueprint da consultora - Informações de negócio
+    deal_type: Optional[str] = Field(None, description="Tipo de negócio (Nova Venda, Cross Sell, Up Sell)")
+    acquisition_channel: Optional[str] = Field(None, description="Canal de aquisição (Inbound, Outbound, Indicação, etc)")
+    acquisition_channel_detail: Optional[str] = Field(None, description="Detalhamento do canal de aquisição")
+    utm_params: Optional[str] = Field(None, description="Parâmetros UTM (tracking de marketing)")
+    loss_reason: Optional[str] = Field(None, description="Motivo da perda (quando card é perdido)")
+    has_implementation: Optional[bool] = Field(None, description="Se tem implementação")
+    has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
 
     # Campos relacionados (opcional)
     assigned_to_name: Optional[str] = Field(None, description="Nome do responsável")

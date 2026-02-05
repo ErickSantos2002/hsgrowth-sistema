@@ -29,6 +29,7 @@ class PersonBase(BaseModel):
 
     # Profissional
     position: Optional[str] = Field(None, max_length=200, description="Cargo")
+    area: Optional[str] = Field(None, max_length=200, description="Área/Departamento")
 
     # Redes sociais
     linkedin: Optional[str] = Field(None, max_length=500, description="LinkedIn URL")
@@ -92,6 +93,7 @@ class PersonUpdate(BaseModel):
 
     # Profissional
     position: Optional[str] = Field(None, max_length=200, description="Cargo")
+    area: Optional[str] = Field(None, max_length=200, description="Área/Departamento")
 
     # Redes sociais
     linkedin: Optional[str] = Field(None, max_length=500, description="LinkedIn URL")

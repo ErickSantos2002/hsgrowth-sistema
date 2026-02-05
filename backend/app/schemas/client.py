@@ -21,6 +21,16 @@ class ClientBase(BaseModel):
     state: Optional[str] = Field(None, max_length=2, description="UF (ex: SP, RJ)")
     country: Optional[str] = Field(None, max_length=100, description="País")
     website: Optional[str] = Field(None, max_length=255, description="Website")
+
+    # Campos do blueprint da consultora
+    cnae: Optional[str] = Field(None, max_length=20, description="CNAE (Classificação Nacional de Atividades Econômicas)")
+    linkedin_url: Optional[str] = Field(None, max_length=500, description="LinkedIn da empresa")
+    relationship_type: Optional[str] = Field(None, max_length=50, description="Tipo de relacionamento (Cliente, Fornecedor, Lead, etc)")
+    commercial_activity: Optional[str] = Field(None, max_length=50, description="Atividade comercial (Ativo, Dormente, Inativo)")
+    sector: Optional[str] = Field(None, max_length=100, description="Setor/Indústria")
+    employee_count: Optional[str] = Field(None, max_length=50, description="Número de colaboradores (faixa)")
+    annual_revenue: Optional[str] = Field(None, max_length=50, description="Faturamento/Receita anual (faixa)")
+
     notes: Optional[str] = Field(None, description="Observações")
     source: Optional[str] = Field(None, max_length=50, description="Origem (pipedrive, manual, etc)")
     is_active: bool = Field(True, description="Cliente ativo/inativo")
@@ -66,6 +76,16 @@ class ClientUpdate(BaseModel):
     state: Optional[str] = Field(None, max_length=2, description="UF (ex: SP, RJ)")
     country: Optional[str] = Field(None, max_length=100, description="País")
     website: Optional[str] = Field(None, max_length=255, description="Website")
+
+    # Campos do blueprint da consultora
+    cnae: Optional[str] = Field(None, max_length=20, description="CNAE (Classificação Nacional de Atividades Econômicas)")
+    linkedin_url: Optional[str] = Field(None, max_length=500, description="LinkedIn da empresa")
+    relationship_type: Optional[str] = Field(None, max_length=50, description="Tipo de relacionamento (Cliente, Fornecedor, Lead, etc)")
+    commercial_activity: Optional[str] = Field(None, max_length=50, description="Atividade comercial (Ativo, Dormente, Inativo)")
+    sector: Optional[str] = Field(None, max_length=100, description="Setor/Indústria")
+    employee_count: Optional[str] = Field(None, max_length=50, description="Número de colaboradores (faixa)")
+    annual_revenue: Optional[str] = Field(None, max_length=50, description="Faturamento/Receita anual (faixa)")
+
     notes: Optional[str] = Field(None, description="Observações")
     source: Optional[str] = Field(None, max_length=50, description="Origem (pipedrive, manual, etc)")
     is_active: Optional[bool] = Field(None, description="Cliente ativo/inativo")

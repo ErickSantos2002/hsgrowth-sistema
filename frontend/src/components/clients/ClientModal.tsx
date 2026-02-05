@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Building, User, Mail, Phone, FileText, MapPin, Globe, StickyNote, ChevronDown } from "lucide-react";
+import { Building, User, Mail, Phone, FileText, MapPin, Globe, StickyNote, ChevronDown, Briefcase, Linkedin } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import { FormField, Input, Select, Textarea, Button } from "../common";
 import clientService, { Client, CreateClientRequest } from "../../services/clientService";
+import {
+  RELATIONSHIP_TYPES,
+  COMMERCIAL_ACTIVITIES,
+  SECTORS,
+  EMPLOYEE_COUNTS,
+  ANNUAL_REVENUES,
+} from "../../constants/blueprintOptions";
 
 /**
  * Props do componente ClientModal
@@ -30,6 +37,15 @@ interface ClientFormData {
   website: string;
   notes: string;
   is_active: boolean;
+
+  // Campos do blueprint da consultora
+  cnae: string;
+  linkedin_url: string;
+  relationship_type: string;
+  commercial_activity: string;
+  sector: string;
+  employee_count: string;
+  annual_revenue: string;
 }
 
 /**
@@ -118,6 +134,17 @@ const maskPhone = (value: string): string => {
 };
 
 /**
+ * Aplica máscara de CNAE (0000-0/00)
+ */
+const maskCNAE = (value: string): string => {
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{4})(\d)/, "$1-$2")
+    .replace(/(\d{1})(\d{2})/, "$1/$2")
+    .replace(/(\/\d{2})\d+?$/, "$1");
+};
+
+/**
  * Modal de Criar/Editar Cliente
  *
  * Formulário completo com todos os campos do cliente, incluindo:
@@ -144,6 +171,13 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
     website: "",
     notes: "",
     is_active: true,
+    cnae: "",
+    linkedin_url: "",
+    relationship_type: "",
+    commercial_activity: "",
+    sector: "",
+    employee_count: "",
+    annual_revenue: "",
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -167,6 +201,13 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
         website: client.website || "",
         notes: client.notes || "",
         is_active: client.is_active,
+        cnae: client.cnae || "",
+        linkedin_url: client.linkedin_url || "",
+        relationship_type: client.relationship_type || "",
+        commercial_activity: client.commercial_activity || "",
+        sector: client.sector || "",
+        employee_count: client.employee_count || "",
+        annual_revenue: client.annual_revenue || "",
       });
     } else {
       // Resetar formulário ao criar novo
@@ -183,6 +224,13 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
         website: "",
         notes: "",
         is_active: true,
+        cnae: "",
+        linkedin_url: "",
+        relationship_type: "",
+        commercial_activity: "",
+        sector: "",
+        employee_count: "",
+        annual_revenue: "",
       });
     }
     setError(null);
@@ -206,6 +254,12 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
     // Validação básica de website (se preenchido)
     if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
       setError("Website deve começar com http:// ou https://");
+      return false;
+    }
+
+    // Validação básica de LinkedIn (se preenchido)
+    if (formData.linkedin_url && !formData.linkedin_url.includes("linkedin.com")) {
+      setError("LinkedIn deve ser uma URL válida do LinkedIn");
       return false;
     }
 
@@ -236,6 +290,13 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
         website: formData.website.trim() || undefined,
         notes: formData.notes.trim() || undefined,
         is_active: formData.is_active,
+        cnae: formData.cnae.replace(/\D/g, "") || undefined, // Remove máscara
+        linkedin_url: formData.linkedin_url.trim() || undefined,
+        relationship_type: formData.relationship_type || undefined,
+        commercial_activity: formData.commercial_activity || undefined,
+        sector: formData.sector || undefined,
+        employee_count: formData.employee_count || undefined,
+        annual_revenue: formData.annual_revenue || undefined,
       };
 
       if (isEditing) {
@@ -384,6 +445,141 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 onChange={(e) => handleChange("document", maskDocument(e.target.value))}
                 placeholder="000.000.000-00 ou 00.000.000/0000-00"
                 maxLength={18}
+              />
+            </FormField>
+          </div>
+        </div>
+
+        {/* Seção: Informações da Empresa */}
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Briefcase size={20} className="text-emerald-400" />
+            Informações da Empresa
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* CNAE */}
+            <FormField
+              label={
+                <span className="flex items-center gap-1">
+                  <FileText size={14} />
+                  CNAE
+                </span>
+              }
+              hint="Classificação Nacional de Atividades Econômicas"
+            >
+              <Input
+                value={formData.cnae}
+                onChange={(e) => handleChange("cnae", maskCNAE(e.target.value))}
+                placeholder="Ex: 4712-1/00"
+                maxLength={10}
+              />
+            </FormField>
+
+            {/* LinkedIn da Empresa */}
+            <FormField
+              label={
+                <span className="flex items-center gap-1">
+                  <Linkedin size={14} />
+                  LinkedIn da Empresa
+                </span>
+              }
+              hint="URL da página da empresa no LinkedIn"
+            >
+              <Input
+                value={formData.linkedin_url}
+                onChange={(e) => handleChange("linkedin_url", e.target.value)}
+                placeholder="https://www.linkedin.com/company/empresa"
+              />
+            </FormField>
+
+            {/* Tipo de Relacionamento */}
+            <FormField
+              label="Tipo de Relacionamento"
+              hint="Classificação do relacionamento comercial"
+            >
+              <SelectMenu
+                value={formData.relationship_type}
+                options={[
+                  { value: "", label: "Selecione..." },
+                  ...RELATIONSHIP_TYPES.map((type) => ({
+                    value: type,
+                    label: type,
+                  })),
+                ]}
+                onChange={(value) => handleChange("relationship_type", value)}
+              />
+            </FormField>
+
+            {/* Atividade Comercial */}
+            <FormField
+              label="Atividade Comercial"
+              hint="Status da atividade comercial do cliente"
+            >
+              <SelectMenu
+                value={formData.commercial_activity}
+                options={[
+                  { value: "", label: "Selecione..." },
+                  ...COMMERCIAL_ACTIVITIES.map((activity) => ({
+                    value: activity,
+                    label: activity,
+                  })),
+                ]}
+                onChange={(value) => handleChange("commercial_activity", value)}
+              />
+            </FormField>
+
+            {/* Setor/Indústria */}
+            <FormField
+              label="Setor/Indústria"
+              hint="Setor de atuação da empresa"
+            >
+              <SelectMenu
+                value={formData.sector}
+                options={[
+                  { value: "", label: "Selecione..." },
+                  ...SECTORS.map((sector) => ({
+                    value: sector,
+                    label: sector,
+                  })),
+                ]}
+                onChange={(value) => handleChange("sector", value)}
+              />
+            </FormField>
+
+            {/* Número de Colaboradores */}
+            <FormField
+              label="Número de Colaboradores"
+              hint="Faixa de quantidade de funcionários"
+            >
+              <SelectMenu
+                value={formData.employee_count}
+                options={[
+                  { value: "", label: "Selecione..." },
+                  ...EMPLOYEE_COUNTS.map((count) => ({
+                    value: count,
+                    label: count,
+                  })),
+                ]}
+                onChange={(value) => handleChange("employee_count", value)}
+              />
+            </FormField>
+
+            {/* Faturamento/Receita Anual */}
+            <FormField
+              label="Faturamento/Receita Anual"
+              hint="Faixa de faturamento anual da empresa"
+              className="md:col-span-2"
+            >
+              <SelectMenu
+                value={formData.annual_revenue}
+                options={[
+                  { value: "", label: "Selecione..." },
+                  ...ANNUAL_REVENUES.map((revenue) => ({
+                    value: revenue,
+                    label: revenue,
+                  })),
+                ]}
+                onChange={(value) => handleChange("annual_revenue", value)}
               />
             </FormField>
           </div>

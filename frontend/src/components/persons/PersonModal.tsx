@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { User, Mail, Phone, Briefcase, Linkedin, Instagram, Facebook, ChevronDown } from "lucide-react";
+import { User, Mail, Phone, Briefcase, Linkedin, Instagram, Facebook, ChevronDown, Users } from "lucide-react";
 import BaseModal from "../common/BaseModal";
-import { FormField, Input, Textarea, Button } from "../common";
+import { FormField, Input, Textarea, Button, Select } from "../common";
 import personService, { Person, CreatePersonRequest } from "../../services/personService";
+import userService from "../../services/userService";
+import { User as UserType } from "../../types";
+import { PERSON_AREAS } from "../../constants/blueprintOptions";
 
 /**
  * Props do componente PersonModal
@@ -36,6 +39,8 @@ interface PersonFormData {
 
   // Profissional
   position: string;
+  area: string;
+  owner_id: number | null;
 
   // Redes sociais
   linkedin: string;
@@ -85,6 +90,8 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
     phone_whatsapp: "",
     phone_alternative: "",
     position: "",
+    area: "",
+    owner_id: null,
     linkedin: "",
     instagram: "",
     facebook: "",
@@ -93,6 +100,25 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<UserType[]>([]);
+
+  /**
+   * Carrega usuários ativos para o dropdown de proprietário
+   */
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const activeUsers = await userService.listActive();
+        setUsers(activeUsers);
+      } catch (err) {
+        console.error("Erro ao carregar usuários:", err);
+      }
+    };
+
+    if (isOpen) {
+      loadUsers();
+    }
+  }, [isOpen]);
 
   /**
    * Preenche o formulário quando estiver editando
@@ -112,6 +138,8 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         phone_whatsapp: person.phone_whatsapp || "",
         phone_alternative: person.phone_alternative || "",
         position: person.position || "",
+        area: person.area || "",
+        owner_id: person.owner_id || null,
         linkedin: person.linkedin || "",
         instagram: person.instagram || "",
         facebook: person.facebook || "",
@@ -132,6 +160,8 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         phone_whatsapp: "",
         phone_alternative: "",
         position: "",
+        area: "",
+        owner_id: null,
         linkedin: "",
         instagram: "",
         facebook: "",
@@ -198,6 +228,8 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         phone_whatsapp: formData.phone_whatsapp.replace(/\D/g, "") || undefined,
         phone_alternative: formData.phone_alternative.replace(/\D/g, "") || undefined,
         position: formData.position.trim() || undefined,
+        area: formData.area.trim() || undefined,
+        owner_id: formData.owner_id || undefined,
         linkedin: formData.linkedin.trim() || undefined,
         instagram: formData.instagram.trim() || undefined,
         facebook: formData.facebook.trim() || undefined,
@@ -315,7 +347,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
             <Briefcase size={20} className="text-emerald-400" />
             Informações Profissionais
           </h3>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Cargo/Posição */}
             <FormField
               label={
@@ -325,12 +357,58 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
                 </span>
               }
               hint="Cargo ou função na organização"
+              className="md:col-span-2"
             >
               <Input
                 value={formData.position}
                 onChange={(e) => handleChange("position", e.target.value)}
                 placeholder="Ex: Gerente de Vendas"
               />
+            </FormField>
+
+            {/* Área/Departamento */}
+            <FormField
+              label="Área/Departamento"
+              hint="Área de atuação dentro da organização"
+            >
+              <Select
+                value={formData.area}
+                onChange={(e) => handleChange("area", e.target.value)}
+                fullWidth
+              >
+                <option value="">Selecione...</option>
+                {PERSON_AREAS.map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+
+            {/* Proprietário */}
+            <FormField
+              label={
+                <span className="flex items-center gap-1">
+                  <Users size={14} />
+                  Proprietário
+                </span>
+              }
+              hint="Responsável por esta pessoa"
+            >
+              <Select
+                value={formData.owner_id?.toString() || ""}
+                onChange={(e) =>
+                  handleChange("owner_id", e.target.value ? parseInt(e.target.value) : null)
+                }
+                fullWidth
+              >
+                <option value="">Nenhum</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
+              </Select>
             </FormField>
           </div>
         </div>

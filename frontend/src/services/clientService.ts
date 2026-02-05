@@ -22,6 +22,15 @@ export interface Client {
   created_at: string;
   updated_at?: string;
   is_deleted: boolean;
+
+  // Campos do blueprint da consultora
+  cnae?: string;
+  linkedin_url?: string;
+  relationship_type?: string;
+  commercial_activity?: string;
+  sector?: string;
+  employee_count?: string;
+  annual_revenue?: string;
 }
 
 export interface ClientListResponse {
@@ -45,6 +54,15 @@ export interface CreateClientRequest {
   website?: string;
   notes?: string;
   is_active?: boolean;
+
+  // Campos do blueprint da consultora
+  cnae?: string;
+  linkedin_url?: string;
+  relationship_type?: string;
+  commercial_activity?: string;
+  sector?: string;
+  employee_count?: string;
+  annual_revenue?: string;
 }
 
 export interface UpdateClientRequest {
@@ -60,6 +78,15 @@ export interface UpdateClientRequest {
   website?: string;
   notes?: string;
   is_active?: boolean;
+
+  // Campos do blueprint da consultora
+  cnae?: string;
+  linkedin_url?: string;
+  relationship_type?: string;
+  commercial_activity?: string;
+  sector?: string;
+  employee_count?: string;
+  annual_revenue?: string;
 }
 
 /**

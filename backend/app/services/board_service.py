@@ -11,6 +11,7 @@ from app.repositories.list_repository import ListRepository
 from app.schemas.board import BoardCreate, BoardUpdate, BoardResponse, BoardListResponse
 from app.models.board import Board
 from app.models.user import User
+from app.models.lead import Lead
 
 
 class BoardService:
@@ -154,6 +155,8 @@ class BoardService:
     def delete_board(self, board_id: int, current_user: User) -> None:
         """
         Deleta um board permanentemente.
+        Remove primeiro os leads vinculados às listas do board para evitar
+        constraint de foreign key.
 
         Args:
             board_id: ID do board
@@ -167,6 +170,16 @@ class BoardService:
 
         # TODO: Verificar se o usuário tem permissão de admin
         # Por enquanto, permite qualquer usuário da conta deletar
+
+        # Busca todas as listas do board
+        lists = self.list_repository.list_by_board(board_id)
+        list_ids = [lst.id for lst in lists]
+
+        # Deleta leads vinculados às listas deste board
+        # Isso evita erro de foreign key constraint ao deletar as listas
+        if list_ids:
+            self.db.query(Lead).filter(Lead.list_id.in_(list_ids)).delete(synchronize_session=False)
+            self.db.commit()
 
         # Deleta o board (isso também deletará listas e cards em cascade)
         self.board_repository.delete(board)

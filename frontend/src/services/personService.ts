@@ -24,6 +24,7 @@ export interface Person {
 
   // Profissional
   position?: string;
+  area?: string; // Campo do blueprint da consultora
 
   // Redes sociais
   linkedin?: string;
@@ -69,6 +70,7 @@ export interface CreatePersonRequest {
 
   // Profissional
   position?: string;
+  area?: string; // Campo do blueprint da consultora
   organization_id?: number;
   owner_id?: number;
 
@@ -101,6 +103,7 @@ export interface UpdatePersonRequest {
 
   // Profissional
   position?: string;
+  area?: string; // Campo do blueprint da consultora
   organization_id?: number;
   owner_id?: number;
 

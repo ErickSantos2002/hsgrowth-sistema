@@ -8,8 +8,8 @@ export interface User {
   avatar_url: string | null;
   phone: string | null;
   role_id: number;
-  role: "admin" | "manager" | "salesperson"; // Role do usuário
-  role_name: string; // Nome formatado da role (Administrador, Gerente, Vendedor)
+  role: "admin" | "manager" | "salesperson" | "sdr"; // Role do usuário
+  role_name: string; // Nome formatado da role (Administrador, Gerente, Vendedor, SDR)
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;
@@ -92,16 +92,31 @@ export interface Card {
   created_at: string;
   updated_at: string;
 
+  // Campos do blueprint da consultora
+  sdr_id?: number | null;
+  prospection_entry_date?: string | null;
+  acquisition_entry_date?: string | null;
+  expansion_entry_date?: string | null;
+  deal_type?: string | null;
+  acquisition_channel?: string | null;
+  acquisition_channel_detail?: string | null;
+  utm_params?: string | null;
+  loss_reason?: string | null;
+  has_implementation?: boolean | null;
+  has_personnel?: boolean | null;
+
   // Campos relacionados (retornados pelo backend)
   assigned_to_name: string | null;
   list_name: string | null;
   board_id: number | null;
   client_name: string | null;
+  sdr_name?: string | null;
 
   // Relacionamentos opcionais (quando expandido)
   list?: List;
   assigned_to?: User;
   client?: Client;
+  sdr?: User;
   field_values?: CardFieldValue[];
   pending_tasks?: any[];
   notes?: any[];
@@ -136,6 +151,15 @@ export interface Client {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+
+  // Campos do blueprint da consultora
+  cnae?: string | null;
+  linkedin_url?: string | null;
+  relationship_type?: string | null;
+  commercial_activity?: string | null;
+  sector?: string | null;
+  employee_count?: string | null;
+  annual_revenue?: string | null;
 }
 
 // ==================== CUSTOM FIELDS ====================
@@ -595,7 +619,7 @@ export interface CardFilters extends PaginationParams {
 }
 
 export interface UserFilters extends PaginationParams {
-  role?: "admin" | "manager" | "salesperson";
+  role?: "admin" | "manager" | "salesperson" | "sdr";
   is_active?: boolean;
   search?: string;
 }
@@ -669,6 +693,16 @@ export interface CreateCardRequest {
   currency?: string;
   due_date?: string;
   contact_info?: Record<string, any>;
+
+  // Campos do blueprint da consultora
+  sdr_id?: number;
+  deal_type?: string;
+  acquisition_channel?: string;
+  acquisition_channel_detail?: string;
+  utm_params?: string;
+  loss_reason?: string;
+  has_implementation?: boolean;
+  has_personnel?: boolean;
 }
 
 export interface UpdateCardRequest {
@@ -685,6 +719,16 @@ export interface UpdateCardRequest {
     installments: number;
     notes?: string;
   } | null;
+
+  // Campos do blueprint da consultora
+  sdr_id?: number;
+  deal_type?: string;
+  acquisition_channel?: string;
+  acquisition_channel_detail?: string;
+  utm_params?: string;
+  loss_reason?: string;
+  has_implementation?: boolean;
+  has_personnel?: boolean;
 }
 
 export interface MoveCardRequest {
@@ -705,6 +749,15 @@ export interface CreateClientRequest {
   website?: string;
   notes?: string;
   source?: string;
+
+  // Campos do blueprint da consultora
+  cnae?: string;
+  linkedin_url?: string;
+  relationship_type?: string;
+  commercial_activity?: string;
+  sector?: string;
+  employee_count?: string;
+  annual_revenue?: string;
 }
 
 export interface UpdateClientRequest {
@@ -720,6 +773,15 @@ export interface UpdateClientRequest {
   website?: string;
   notes?: string;
   is_active?: boolean;
+
+  // Campos do blueprint da consultora
+  cnae?: string;
+  linkedin_url?: string;
+  relationship_type?: string;
+  commercial_activity?: string;
+  sector?: string;
+  employee_count?: string;
+  annual_revenue?: string;
 }
 
 // ==================== NOTIFICATIONS ====================
