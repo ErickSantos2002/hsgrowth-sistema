@@ -1587,7 +1587,7 @@ const Settings: React.FC = () => {
 
                 {/* ========== Seção de Configuração ========== */}
                 <div className="bg-slate-900 border border-slate-700 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                     <h3 className="text-lg font-semibold text-white">Credenciais da API4COM</h3>
                     {api4comConfig && !showApi4comConfigForm && (
                       <button
@@ -1602,7 +1602,7 @@ const Settings: React.FC = () => {
                   {/* Status da Configuração */}
                   {api4comConfig && !showApi4comConfigForm && (
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <span className="text-sm text-slate-400">Email:</span>
                           <p className="font-medium text-white">{api4comConfig.email}</p>
@@ -1717,7 +1717,7 @@ const Settings: React.FC = () => {
                               setShowApi4comConfigForm(false);
                               setApi4comConfigForm({ email: api4comConfig.email, password: '' });
                             }}
-                            className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                            className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30"
                           >
                             Cancelar
                           </button>
@@ -1736,29 +1736,20 @@ const Settings: React.FC = () => {
                     <h4 className="text-sm font-medium text-slate-300 mb-3">
                       {editingApi4comExtension ? 'Editar Ramal do Vendedor' : 'Vincular Vendedor ao Ramal'}
                     </h4>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="col-span-1">
                         <label className="block text-sm font-medium text-slate-300 mb-1">
                           Vendedor
                         </label>
-                        <select
-                          value={api4comExtensionForm.user_id}
-                          onChange={(e) =>
-                            setApi4comExtensionForm({ ...api4comExtensionForm, user_id: Number(e.target.value) })
+                        <SelectMenu
+                          value={api4comExtensionForm.user_id ? String(api4comExtensionForm.user_id) : ""}
+                          options={salespeople.map((sp) => ({ value: String(sp.id), label: sp.name }))}
+                          placeholder="Selecione..."
+                          onChange={(value) =>
+                            setApi4comExtensionForm({ ...api4comExtensionForm, user_id: Number(value) })
                           }
                           disabled={!!editingApi4comExtension}
-                          className={`w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                            editingApi4comExtension ? 'opacity-60 cursor-not-allowed' : ''
-                          }`}
-                          required
-                        >
-                          <option value={0}>Selecione...</option>
-                          {salespeople.map((sp) => (
-                            <option key={sp.id} value={sp.id}>
-                              {sp.name}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </div>
 
                       <div className="col-span-1">
@@ -1777,11 +1768,11 @@ const Settings: React.FC = () => {
                         />
                       </div>
 
-                      <div className="col-span-1 flex items-end gap-2">
+                      <div className="col-span-1 flex flex-col sm:flex-row sm:items-end gap-2">
                         <button
                           type="submit"
                           disabled={savingApi4comExtension}
-                          className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full sm:flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {savingApi4comExtension
                             ? 'Salvando...'
@@ -1793,7 +1784,7 @@ const Settings: React.FC = () => {
                           <button
                             type="button"
                             onClick={handleCancelEditApi4comExtension}
-                            className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                            className="w-full sm:w-auto px-4 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30"
                           >
                             Cancelar
                           </button>
@@ -1853,18 +1844,22 @@ const Settings: React.FC = () => {
                                 )}
                               </td>
                               <td className="px-4 py-3 text-sm">
-                                <div className="flex gap-3">
+                                <div className="flex gap-2">
                                   <button
                                     onClick={() => handleEditApi4comExtension(ext)}
-                                    className="text-blue-400 hover:text-blue-300 font-medium"
+                                    className="p-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 transition-colors"
+                                    title="Editar ramal"
+                                    aria-label="Editar ramal"
                                   >
-                                    Editar
+                                    <Edit2 size={16} />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteApi4comExtension(ext.user_id, ext.user_name || '')}
-                                    className="text-red-400 hover:text-red-300 font-medium"
+                                    className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
+                                    title="Remover ramal"
+                                    aria-label="Remover ramal"
                                   >
-                                    Remover
+                                    <Trash2 size={16} />
                                   </button>
                                 </div>
                               </td>
@@ -2143,9 +2138,16 @@ interface SelectMenuProps {
   options: SelectOption[];
   placeholder?: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }
 
-const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
+const SelectMenu: React.FC<SelectMenuProps> = ({
+  value,
+  options,
+  placeholder,
+  onChange,
+  disabled = false,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -2161,6 +2163,12 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (disabled && isOpen) {
+      setIsOpen(false);
+    }
+  }, [disabled, isOpen]);
+
   const selectedOption = options.find((option) => option.value === value);
   const selectedLabel = selectedOption?.label || placeholder || "Selecione";
 
@@ -2168,8 +2176,14 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
     <div ref={menuRef} className="relative">
       <button
         type="button"
-        onClick={() => setIsOpen((open) => !open)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        onClick={() => {
+          if (disabled) return;
+          setIsOpen((open) => !open);
+        }}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "opacity-60 cursor-not-allowed" : ""
+        }`}
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
           {selectedLabel}
