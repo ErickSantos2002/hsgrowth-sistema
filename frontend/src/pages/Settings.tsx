@@ -93,8 +93,6 @@ const Settings: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [logsPage, setLogsPage] = useState(1);
-  const [logsTotalPages, setLogsTotalPages] = useState(1);
-  const [logsTotal, setLogsTotal] = useState(0);
   const [logsFilters, setLogsFilters] = useState({
     action: "",
     entity_type: "",
@@ -416,9 +414,6 @@ const Settings: React.FC = () => {
       });
 
       setAuditLogs(data.logs);
-      setLogsTotal(data.logs.length);
-      // Calcula 5 páginas (20 registros por página)
-      setLogsTotalPages(Math.ceil(data.logs.length / 20));
       setLogsPage(1); // Reseta para primeira página
     } catch (error) {
       console.error("Erro ao carregar logs de auditoria:", error);
@@ -649,6 +644,66 @@ const Settings: React.FC = () => {
   };
 
   const loginPageNumbers = getLoginPageNumbers();
+
+  const logsItemsPerPage = 20;
+  const logsMaxItems = 100;
+  const sortedAuditLogs = [...auditLogs].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  const limitedAuditLogs = sortedAuditLogs.slice(0, logsMaxItems);
+  const logsTotalItems = limitedAuditLogs.length;
+  const logsTotalPages = Math.max(1, Math.ceil(logsTotalItems / logsItemsPerPage));
+  const safeLogsPage = Math.min(logsPage, logsTotalPages);
+  const logsStartIndex = (safeLogsPage - 1) * logsItemsPerPage;
+  const logsEndIndex = Math.min(logsStartIndex + logsItemsPerPage, logsTotalItems);
+  const paginatedAuditLogs = limitedAuditLogs.slice(logsStartIndex, logsEndIndex);
+
+  const getLogsPageNumbers = () => {
+    const maxButtons = 5;
+    let start = Math.max(1, safeLogsPage - Math.floor(maxButtons / 2));
+    let end = start + maxButtons - 1;
+
+    if (end > logsTotalPages) {
+      end = logsTotalPages;
+      start = Math.max(1, end - maxButtons + 1);
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  };
+
+  const logsPageNumbers = getLogsPageNumbers();
+
+  const getLogActionStyles = (action: string) => {
+    const normalized = action?.toLowerCase();
+
+    switch (normalized) {
+      case "create":
+      case "created":
+        return "bg-emerald-500/20 text-emerald-400";
+      case "update":
+      case "updated":
+        return "bg-blue-500/20 text-blue-400";
+      case "delete":
+      case "deleted":
+      case "remove":
+      case "removed":
+        return "bg-red-500/20 text-red-400";
+      case "approve":
+      case "approved":
+        return "bg-green-500/20 text-green-400";
+      case "reject":
+      case "rejected":
+        return "bg-rose-500/20 text-rose-400";
+      case "login":
+        return "bg-cyan-500/20 text-cyan-400";
+      case "logout":
+        return "bg-slate-500/20 text-slate-300";
+      case "transfer":
+        return "bg-purple-500/20 text-purple-400";
+      default:
+        return "bg-slate-500/20 text-slate-300";
+    }
+  };
 
   return (
     <div className="p-6">
@@ -1993,7 +2048,7 @@ const Settings: React.FC = () => {
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold text-white mb-2">Logs de Auditoria</h2>
                   <p className="text-slate-400 text-sm">
-                    Visualize todas as ações realizadas no sistema pelos usuários
+                    Visualize os últimos 100 logs de ações realizadas no sistema pelos usuários
                   </p>
                 </div>
 
@@ -2010,18 +2065,14 @@ const Settings: React.FC = () => {
                       <label className="block text-sm font-medium text-slate-300 mb-2">
                         Ação
                       </label>
-                      <select
+                      <SelectMenu
                         value={logsFilters.action}
-                        onChange={(e) => handleLogsFilterChange("action", e.target.value)}
-                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      >
-                        <option value="">Todas</option>
-                        {availableActions.map((action) => (
-                          <option key={action} value={action}>
-                            {action}
-                          </option>
-                        ))}
-                      </select>
+                        options={[
+                          { value: "", label: "Todas" },
+                          ...availableActions.map((action) => ({ value: action, label: action })),
+                        ]}
+                        onChange={(value) => handleLogsFilterChange("action", value)}
+                      />
                     </div>
 
                     {/* Filtro por Tipo de Entidade */}
@@ -2029,18 +2080,14 @@ const Settings: React.FC = () => {
                       <label className="block text-sm font-medium text-slate-300 mb-2">
                         Tipo de Entidade
                       </label>
-                      <select
+                      <SelectMenu
                         value={logsFilters.entity_type}
-                        onChange={(e) => handleLogsFilterChange("entity_type", e.target.value)}
-                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      >
-                        <option value="">Todas</option>
-                        {availableEntityTypes.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
+                        options={[
+                          { value: "", label: "Todas" },
+                          ...availableEntityTypes.map((type) => ({ value: type, label: type })),
+                        ]}
+                        onChange={(value) => handleLogsFilterChange("entity_type", value)}
+                      />
                     </div>
 
                     {/* Filtro por Data Inicial */}
@@ -2119,9 +2166,7 @@ const Settings: React.FC = () => {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-700">
-                            {auditLogs
-                              .slice((logsPage - 1) * 20, logsPage * 20)
-                              .map((log) => (
+                          {paginatedAuditLogs.map((log) => (
                                 <tr key={log.id} className="hover:bg-slate-800/50">
                                   <td className="px-4 py-3 text-sm text-slate-300 whitespace-nowrap">
                                     {new Date(log.created_at).toLocaleString("pt-BR")}
@@ -2135,7 +2180,11 @@ const Settings: React.FC = () => {
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 text-sm">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                                    <span
+                                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLogActionStyles(
+                                        log.action
+                                      )}`}
+                                    >
                                       {log.action}
                                     </span>
                                   </td>
@@ -2157,45 +2206,83 @@ const Settings: React.FC = () => {
                         </table>
                       </div>
 
-                      {/* Paginação */}
-                      {logsTotalPages > 1 && (
-                        <div className="p-4 border-t border-slate-700 flex items-center justify-between">
-                          <div className="text-sm text-slate-400">
-                            Mostrando {(logsPage - 1) * 20 + 1} a {Math.min(logsPage * 20, logsTotal)} de {logsTotal} logs
-                          </div>
-                          <div className="flex gap-2">
+                      <div className="flex flex-col gap-4 border-t border-slate-700/60 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+                        <div className="text-sm text-slate-400">
+                          Mostrando {logsTotalItems === 0 ? 0 : logsStartIndex + 1} a {logsEndIndex} de{" "}
+                          {logsTotalItems} registros
+                        </div>
+                        <div className="flex items-center justify-center gap-3 sm:justify-end">
+                          <div className="flex items-center gap-2 sm:hidden">
                             <button
-                              onClick={() => setLogsPage((p) => Math.max(1, p - 1))}
-                              disabled={logsPage === 1}
-                              className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              type="button"
+                              onClick={() => setLogsPage((page) => Math.max(1, page - 1))}
+                              disabled={safeLogsPage === 1}
+                              className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                                safeLogsPage === 1
+                                  ? "border-slate-700 text-slate-600"
+                                  : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                              }`}
+                            >
+                              {"<"}
+                            </button>
+                            <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
+                              {safeLogsPage}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setLogsPage((page) => Math.min(logsTotalPages, page + 1))}
+                              disabled={safeLogsPage === logsTotalPages}
+                              className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                                safeLogsPage === logsTotalPages
+                                  ? "border-slate-700 text-slate-600"
+                                  : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                              }`}
+                            >
+                              {">"}
+                            </button>
+                          </div>
+                          <div className="hidden items-center gap-2 sm:flex">
+                            <button
+                              type="button"
+                              onClick={() => setLogsPage((page) => Math.max(1, page - 1))}
+                              disabled={safeLogsPage === 1}
+                              className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                                safeLogsPage === 1
+                                  ? "border-slate-700 text-slate-600"
+                                  : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                              }`}
                             >
                               Anterior
                             </button>
-                            <div className="flex items-center gap-2">
-                              {Array.from({ length: logsTotalPages }, (_, i) => i + 1).map((page) => (
-                                <button
-                                  key={page}
-                                  onClick={() => setLogsPage(page)}
-                                  className={`px-3 py-2 rounded-lg ${
-                                    logsPage === page
-                                      ? "bg-emerald-600 text-white"
-                                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                                  }`}
-                                >
-                                  {page}
-                                </button>
-                              ))}
-                            </div>
+                            {logsPageNumbers.map((page) => (
+                              <button
+                                key={page}
+                                type="button"
+                                onClick={() => setLogsPage(page)}
+                                className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
+                                  page === safeLogsPage
+                                    ? "border-emerald-500 bg-emerald-500 text-white"
+                                    : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            ))}
                             <button
-                              onClick={() => setLogsPage((p) => Math.min(logsTotalPages, p + 1))}
-                              disabled={logsPage === logsTotalPages}
-                              className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              type="button"
+                              onClick={() => setLogsPage((page) => Math.min(logsTotalPages, page + 1))}
+                              disabled={safeLogsPage === logsTotalPages}
+                              className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                                safeLogsPage === logsTotalPages
+                                  ? "border-slate-700 text-slate-600"
+                                  : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                              }`}
                             >
-                              Próxima
+                              Proxima
                             </button>
                           </div>
                         </div>
-                      )}
+                      </div>
                     </>
                   )}
                 </div>
