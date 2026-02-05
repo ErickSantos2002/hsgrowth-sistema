@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { X, Users, List, Zap } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { List, Zap, ChevronDown } from "lucide-react";
+import BaseModal from "./common/BaseModal";
+import { FormField, Input, Textarea, Button } from "./common";
 import automationService from "../services/automationService";
 import boardService from "../services/boardService";
 
@@ -18,25 +20,34 @@ interface AutomationRoundRobinFormProps {
   onClose: () => void;
   onSuccess: () => void;
   automation?: any; // Para edição futura
+  isOpen?: boolean;
 }
 
 const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
   onClose,
   onSuccess,
   automation,
+  isOpen = true,
 }) => {
   const [boards, setBoards] = useState<Board[]>([]);
   const [lists, setLists] = useState<BoardList[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingLists, setLoadingLists] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
+  const isEditing = !!automation;
+
+  const getInitialFormData = () => ({
     name: automation?.name || "",
     description: automation?.description || "",
-    board_id: automation?.board_id || "",
-    target_list_id: automation?.trigger_conditions?.to_list_id || "",
+    board_id: automation?.board_id ? String(automation.board_id) : "",
+    target_list_id: automation?.trigger_conditions?.to_list_id
+      ? String(automation.trigger_conditions.to_list_id)
+      : "",
     is_active: automation?.is_active !== undefined ? automation.is_active : true,
   });
+
+  const [formData, setFormData] = useState(getInitialFormData());
 
   useEffect(() => {
     loadBoards();
@@ -45,15 +56,22 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
   useEffect(() => {
     if (formData.board_id) {
       loadLists(Number(formData.board_id));
+    } else {
+      setLists([]);
     }
   }, [formData.board_id]);
+
+  useEffect(() => {
+    setFormData(getInitialFormData());
+    setError(null);
+  }, [automation, isOpen]);
 
   const loadBoards = async () => {
     try {
       const response = await boardService.list();
       setBoards(response.boards || []);
-    } catch (error) {
-      console.error("Erro ao carregar boards:", error);
+    } catch (err) {
+      console.error("Erro ao carregar boards:", err);
     }
   };
 
@@ -62,38 +80,62 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
       setLoadingLists(true);
       const response = await boardService.getLists(boardId);
       setLists(response || []);
-    } catch (error) {
-      console.error("Erro ao carregar listas:", error);
+    } catch (err) {
+      console.error("Erro ao carregar listas:", err);
       setLists([]);
     } finally {
       setLoadingLists(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleChange = (field: keyof typeof formData, value: string | boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+    setError(null);
+  };
 
-    if (!formData.name || !formData.board_id) {
-      alert("Preencha todos os campos obrigatórios");
-      return;
+  const handleBoardChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      board_id: value,
+      target_list_id: "",
+    }));
+    setError(null);
+  };
+
+  const validate = () => {
+    if (!formData.name.trim()) {
+      setError("Nome é obrigatório");
+      return false;
     }
+
+    if (!formData.board_id) {
+      setError("Board é obrigatório");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validate()) return;
 
     try {
       setLoading(true);
+      setError(null);
 
-      // Monta trigger_conditions baseado na lista selecionada
       let triggerConditions = null;
       if (formData.target_list_id) {
-        // Lista específica selecionada
         triggerConditions = {
           to_list_id: Number(formData.target_list_id),
         };
       }
-      // Se target_list_id vazio, triggerConditions fica null (todas as listas)
 
       const automationData = {
-        name: formData.name,
-        description: formData.description,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
         board_id: Number(formData.board_id),
         automation_type: "trigger",
         trigger_event: "card_moved",
@@ -115,178 +157,246 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
       }
 
       onSuccess();
-    } catch (error) {
-      console.error("Erro ao salvar automação:", error);
-      alert("Erro ao salvar automação. Verifique os dados e tente novamente.");
+    } catch (err: any) {
+      console.error("Erro ao salvar automação:", err);
+      const message = err?.response?.data?.detail || "Erro ao salvar automação. Verifique os dados e tente novamente.";
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
+  const listHint = !formData.board_id
+    ? "Selecione um board para carregar as listas"
+    : formData.target_list_id
+    ? "Quando um card chegar nesta lista, será automaticamente atribuído ao próximo vendedor"
+    : "Quando qualquer card for movido no board, será automaticamente atribuído ao próximo vendedor";
+
+  const boardOptions = [
+    { value: "", label: "Selecione um board" },
+    ...boards.map((board) => ({ value: String(board.id), label: board.name })),
+  ];
+
+  const listOptions = [
+    {
+      value: "",
+      label: loadingLists
+        ? "Carregando listas..."
+        : !formData.board_id
+        ? "Selecione um board primeiro"
+        : "Todas as listas do board",
+    },
+    ...lists.map((list) => ({ value: String(list.id), label: list.name })),
+  ];
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <Users className="w-6 h-6 text-purple-400" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-white">
-                {automation ? "Editar" : "Nova"} Automação
-              </h2>
-              <p className="text-sm text-slate-400">
-                Rodízio de vendedores - Distribui cards automaticamente
-              </p>
-            </div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? "Editar Automação" : "Nova Automação"}
+      subtitle={
+        isEditing
+          ? "Atualize os dados da automação de rodízio"
+          : "Configure o rodízio de vendedores para distribuição automática"
+      }
+      size="2xl"
+      footer={
+        <div className="flex justify-between items-center">
+          <div>{error && <p className="text-red-400 text-sm">{error}</p>}</div>
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={onClose} disabled={loading}>
+              Cancelar
+            </Button>
+            <Button variant="primary" onClick={handleSave} loading={loading}>
+              {isEditing ? "Salvar Alterações" : "Criar Automação"}
+            </Button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        {/* Seção: Dados da Automação */}
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Zap size={20} className="text-emerald-400" />
+            Dados da Automação
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField label="Nome da Automação" required className="md:col-span-2">
+              <Input
+                value={formData.name}
+                onChange={(e) => handleChange("name", e.target.value)}
+                placeholder="Ex: Rodízio RD - Atribuir Vendedor"
+                autoFocus
+              />
+            </FormField>
+
+            <FormField label="Descrição" hint="Descreva o que essa automação faz" className="md:col-span-2">
+              <Textarea
+                value={formData.description}
+                onChange={(e) => handleChange("description", e.target.value)}
+                placeholder="Descreva o que essa automação faz..."
+                rows={4}
+              />
+            </FormField>
+          </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Nome */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Nome da Automação *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Ex: Rodízio RD - Atribuir Vendedor"
+        {/* Seção: Configuração do Trigger */}
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <List size={20} className="text-emerald-400" />
+            Configuração do Trigger
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              label="Board"
               required
-            />
-          </div>
-
-          {/* Descrição */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Descrição
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-              placeholder="Descreva o que essa automação faz..."
-              rows={3}
-            />
-          </div>
-
-          {/* Board */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Board *
-            </label>
-            <select
-              value={formData.board_id}
-              onChange={(e) => setFormData({ ...formData, board_id: e.target.value, target_list_id: "" })}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
+              hint="Board onde a automação será aplicada"
+              className="md:col-span-2"
             >
-              <option value="">Selecione um board</option>
-              {boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <SelectMenu value={formData.board_id} options={boardOptions} onChange={handleBoardChange} />
+            </FormField>
 
-          {/* Lista de destino */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Lista de Destino (trigger)
-            </label>
-            <div className="relative">
-              <List className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <select
+            <FormField
+              label="Lista de Destino (trigger)"
+              hint={listHint}
+              className="md:col-span-2"
+            >
+              <SelectMenu
                 value={formData.target_list_id}
-                onChange={(e) => setFormData({ ...formData, target_list_id: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                options={listOptions}
+                onChange={(value) => handleChange("target_list_id", value)}
                 disabled={!formData.board_id || loadingLists}
-              >
-                <option value="">
-                  {loadingLists
-                    ? "Carregando listas..."
-                    : !formData.board_id
-                    ? "Selecione um board primeiro"
-                    : "Todas as listas do board"}
-                </option>
-                {lists.map((list) => (
-                  <option key={list.id} value={list.id}>
-                    {list.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className="mt-1 text-xs text-slate-400">
-              {formData.target_list_id
-                ? "Quando um card chegar nesta lista, será automaticamente atribuído ao próximo vendedor"
-                : "Quando qualquer card for movido no board, será automaticamente atribuído ao próximo vendedor"
-              }
-            </p>
+              />
+            </FormField>
           </div>
+        </div>
 
-          {/* Ativo */}
+        {/* Seção: Status */}
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4">Status</h3>
           <div className="flex items-center gap-3">
             <input
               type="checkbox"
               id="is_active"
               checked={formData.is_active}
-              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-              className="w-4 h-4 rounded border-slate-600 text-purple-500 focus:ring-purple-500 focus:ring-offset-slate-800"
+              onChange={(e) => handleChange("is_active", e.target.checked)}
+              className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
             />
-            <label htmlFor="is_active" className="text-sm text-slate-300">
+            <label htmlFor="is_active" className="text-sm text-slate-300 cursor-pointer">
               Automação ativa (começar a executar imediatamente)
             </label>
           </div>
+        </div>
 
-          {/* Info Box */}
-          <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-            <div className="flex gap-3">
-              <Zap className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-purple-200">
-                <p className="font-medium mb-1">Como funciona:</p>
-                <ul className="space-y-1 text-purple-300">
-                  <li>• Escolha uma lista específica ou deixe vazio para aplicar em todas as listas</li>
-                  <li>• Cards movidos serão distribuídos automaticamente em rodízio</li>
-                  <li>• Apenas vendedores ativos participam do rodízio</li>
-                  <li>• O sistema garante distribuição equilibrada entre todos os vendedores</li>
-                </ul>
-              </div>
+        {/* Info Box */}
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+          <div className="flex gap-3">
+            <Zap className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-emerald-200">
+              <p className="font-medium mb-1">Como funciona:</p>
+              <ul className="space-y-1 text-emerald-300">
+                <li>• Escolha uma lista específica ou deixe vazio para aplicar em todas as listas</li>
+                <li>• Cards movidos serão distribuídos automaticamente em rodízio</li>
+                <li>• Apenas vendedores ativos participam do rodízio</li>
+                <li>• O sistema garante distribuição equilibrada entre todos os vendedores</li>
+              </ul>
             </div>
           </div>
-
-          {/* Buttons */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
-              disabled={loading}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading}
-            >
-              {loading ? "Salvando..." : automation ? "Atualizar" : "Criar"} Automação
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
-    </div>
+    </BaseModal>
   );
 };
 
 export default AutomationRoundRobinForm;
+
+// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectMenuProps {
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+const SelectMenu: React.FC<SelectMenuProps> = ({
+  value,
+  options,
+  placeholder,
+  onChange,
+  disabled = false,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (disabled && isOpen) {
+      setIsOpen(false);
+    }
+  }, [disabled, isOpen]);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          if (disabled) return;
+          setIsOpen((open) => !open);
+        }}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "opacity-60 cursor-not-allowed" : ""
+        }`}
+      >
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option.value || option.label}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
+                option.value === value ? "bg-slate-800/70" : ""
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
