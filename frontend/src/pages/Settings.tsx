@@ -718,14 +718,14 @@ const Settings: React.FC = () => {
 
         {/* Tabs */}
         <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl overflow-hidden">
-          <div className="flex border-b border-slate-700">
+          <div className="flex border-b border-slate-700 overflow-x-auto whitespace-nowrap">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 font-medium transition-colors ${
+                  className={`flex-shrink-0 min-w-max sm:flex-1 sm:min-w-0 flex items-center justify-center gap-2 px-4 py-3 font-medium transition-colors ${
                     activeTab === tab.id
                       ? "bg-emerald-600 text-white"
                       : "text-slate-400 hover:text-white hover:bg-slate-700/50"
