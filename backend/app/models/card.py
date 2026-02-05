@@ -30,6 +30,9 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     # Relacionamento com User (responsável)
     assigned_to_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
+    # Relacionamento com SDR (Sales Development Representative)
+    sdr_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # Informações básicas
     title = Column(String(500), nullable=False, index=True)  # Título do cartão
     description = Column(Text, nullable=True)  # Descrição detalhada
@@ -54,11 +57,24 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     # Informações de pagamento (JSON)
     payment_info = Column(JSON, nullable=True)  # Condições de pagamento: forma, parcelas, observações
 
+    # Campos do blueprint da consultora
+    prospection_entry_date = Column(DateTime, nullable=True)  # Data de entrada no board Prospecção
+    acquisition_entry_date = Column(DateTime, nullable=True)  # Data de entrada no board Aquisição
+    expansion_entry_date = Column(DateTime, nullable=True)  # Data de entrada no board Expansão
+    deal_type = Column(String(50), nullable=True)  # Tipo de negócio: Nova Venda, Cross Sell, Up Sell
+    acquisition_channel = Column(String(100), nullable=True)  # Canal de aquisição: Inbound, Outbound, etc
+    acquisition_channel_detail = Column(String(200), nullable=True)  # Detalhamento do canal
+    utm_params = Column(Text, nullable=True)  # Parâmetros UTM
+    loss_reason = Column(String(200), nullable=True)  # Motivo da perda
+    has_implementation = Column(Integer, nullable=True)  # Tem implementação? 0=false, 1=true, null=não informado
+    has_personnel = Column(Integer, nullable=True)  # Tem pessoas para manusear? 0=false, 1=true, null=não informado
+
     # Relacionamentos
     list = relationship("List", back_populates="cards")
     client = relationship("Client", back_populates="cards")
     person = relationship("Person", foreign_keys=[person_id])
     assigned_to = relationship("User", foreign_keys=[assigned_to_id], back_populates="assigned_cards")
+    sdr = relationship("User", foreign_keys=[sdr_id])
 
     # Valores dos campos customizados
     field_values = relationship("CardFieldValue", back_populates="card", lazy="dynamic", cascade="all, delete-orphan")

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DollarSign, Calendar, User } from "lucide-react";
+import { Calendar, User } from "lucide-react";
 import { Card, List } from "../../types";
 import { BaseModal, FormField, Input, Select, Textarea, Button, Alert } from "../common";
 import userService from "../../services/userService";
@@ -20,9 +20,9 @@ export interface CardFormData {
   list_id: number;
   title: string;
   description?: string;
-  value?: number;
   due_date?: string;
   assigned_to_id?: number;
+  sdr_id?: number;
 }
 
 /**
@@ -43,21 +43,31 @@ const CardModal: React.FC<CardModalProps> = ({
     list_id: currentListId,
     title: "",
     description: "",
-    value: undefined,
     due_date: "",
     assigned_to_id: undefined,
+    sdr_id: undefined,
   });
   const [errors, setErrors] = useState<{ title?: string }>({});
   const [users, setUsers] = useState<UserType[]>([]);
+  const [salespeople, setSalespeople] = useState<UserType[]>([]);
+  const [sdrs, setSDRs] = useState<UserType[]>([]);
 
   // Verifica se o usuário atual é vendedor
   const isSalesperson = currentUser?.role?.toLowerCase() === "salesperson";
 
-  // Carregar usuários ativos
+  // Carregar usuários ativos e filtrar por role
   const loadUsers = async () => {
     try {
       const activeUsers = await userService.listActive();
       setUsers(activeUsers);
+
+      // Filtra vendedores (role = "salesperson")
+      const salespeople = activeUsers.filter((u) => u.role === "salesperson");
+      setSalespeople(salespeople);
+
+      // Filtra SDRs (role = "sdr")
+      const sdrs = activeUsers.filter((u) => u.role === "sdr");
+      setSDRs(sdrs);
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
     }
@@ -80,9 +90,9 @@ const CardModal: React.FC<CardModalProps> = ({
           list_id: card.list_id,
           title: card.title,
           description: card.description || "",
-          value: card.value || undefined,
           due_date: dueDateFormatted,
           assigned_to_id: card.assigned_to_id || undefined,
+          sdr_id: card.sdr_id || undefined,
         });
       } else {
         // Se for vendedor, já seta automaticamente como responsável
@@ -92,9 +102,9 @@ const CardModal: React.FC<CardModalProps> = ({
           list_id: currentListId,
           title: "",
           description: "",
-          value: undefined,
           due_date: "",
           assigned_to_id: defaultAssignedTo,
+          sdr_id: undefined,
         });
       }
       setErrors({});
@@ -206,32 +216,8 @@ const CardModal: React.FC<CardModalProps> = ({
           />
         </FormField>
 
-        {/* Valor, Data e Responsável */}
+        {/* Data e Responsáveis */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label={
-              <span className="flex items-center gap-1">
-                <DollarSign size={14} />
-                Valor (R$)
-              </span>
-            }
-            hint="Valor estimado da oportunidade"
-          >
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.value || ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  value: e.target.value ? Number(e.target.value) : undefined,
-                })
-              }
-              placeholder="0,00"
-            />
-          </FormField>
-
           <FormField
             label={
               <span className="flex items-center gap-1">
@@ -252,13 +238,40 @@ const CardModal: React.FC<CardModalProps> = ({
             label={
               <span className="flex items-center gap-1">
                 <User size={14} />
-                Responsável
+                Responsável SDR
+              </span>
+            }
+            hint="SDR responsável pela prospecção"
+          >
+            <Select
+              value={formData.sdr_id || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  sdr_id: e.target.value ? Number(e.target.value) : undefined,
+                })
+              }
+            >
+              <option value="">Nenhum SDR</option>
+              {sdrs.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <FormField
+            label={
+              <span className="flex items-center gap-1">
+                <User size={14} />
+                Responsável Vendedor
               </span>
             }
             hint={
               isSalesperson
                 ? "Você será automaticamente o responsável"
-                : "Quem é o responsável por este card"
+                : "Vendedor responsável por este card"
             }
           >
             <Select
@@ -271,8 +284,8 @@ const CardModal: React.FC<CardModalProps> = ({
               }
               disabled={isSalesperson}
             >
-              <option value="">Sem responsável</option>
-              {users.map((user) => (
+              <option value="">Sem vendedor</option>
+              {salespeople.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name}
                 </option>
@@ -292,17 +305,22 @@ const CardModal: React.FC<CardModalProps> = ({
                 {formData.title}
               </h4>
               <div className="flex items-center gap-3 text-xs">
-                {formData.value && (
-                  <span className="text-green-400 font-semibold">
-                    R$ {formData.value.toLocaleString("pt-BR")}
-                  </span>
-                )}
                 {formData.due_date && (
                   <span className="text-slate-400">
                     📅{" "}
                     {new Date(formData.due_date + "T00:00:00").toLocaleDateString(
                       "pt-BR"
                     )}
+                  </span>
+                )}
+                {formData.assigned_to_id && (
+                  <span className="text-emerald-400">
+                    👤 {salespeople.find((u) => u.id === formData.assigned_to_id)?.name}
+                  </span>
+                )}
+                {formData.sdr_id && (
+                  <span className="text-amber-400">
+                    SDR: {sdrs.find((u) => u.id === formData.sdr_id)?.name}
                   </span>
                 )}
               </div>

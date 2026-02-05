@@ -59,11 +59,8 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
         ]);
 
         setUsers(allUsers);
-        // Filtra SDRs (assumindo que role seja "sdr" ou similar)
-        // Ajustar conforme a estrutura real da role
-        const sdrs = allUsers.filter(
-          (u) => u.role === "salesperson" || u.role_name?.toLowerCase().includes("sdr")
-        );
+        // Filtra SDRs (role = "sdr")
+        const sdrs = allUsers.filter((u) => u.role === "sdr");
         setSDRUsers(sdrs);
         setBoards(boardsData.boards);
 

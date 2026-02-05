@@ -62,6 +62,13 @@ def create_roles(db: Session) -> dict:
             "description": "Gerencia seus próprios cards",
             "permissions": ["cards.read", "cards.create", "cards.update", "boards.read"],
             "is_system_role": True
+        },
+        {
+            "name": "sdr",
+            "display_name": "SDR",
+            "description": "Sales Development Representative - Responsável por prospecção e qualificação de leads",
+            "permissions": ["cards.read", "cards.create", "cards.update", "boards.read", "clients.read", "clients.create"],
+            "is_system_role": True
         }
     ]
 

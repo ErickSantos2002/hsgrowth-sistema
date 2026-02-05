@@ -165,16 +165,13 @@ class CardRepository:
         # Coloca o card no final da lista
         position = self.get_max_position(card_data.list_id) + 1
 
-        card = Card(
-            title=card_data.title,
-            description=card_data.description,
-            list_id=card_data.list_id,
-            assigned_to_id=card_data.assigned_to_id,
-            value=card_data.value,
-            due_date=card_data.due_date,
-            position=position,
-            is_won=0  # 0 = aberto, 1 = ganho, -1 = perdido
-        )
+        # Converte o schema para dict, excluindo campos não setados
+        data_dict = card_data.model_dump(exclude_unset=True)
+        data_dict["position"] = position
+        data_dict["is_won"] = 0  # 0 = aberto, 1 = ganho, -1 = perdido
+
+        # Cria o card com todos os campos do schema
+        card = Card(**data_dict)
 
         self.db.add(card)
         self.db.commit()

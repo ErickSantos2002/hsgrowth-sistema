@@ -121,26 +121,8 @@ async def get_client(
     service = ClientService(db)
     client = service.get_client_by_id(client_id)
 
-    # Converte para response schema
-    return ClientResponse(
-        id=client.id,
-        name=client.name,
-        email=client.email,
-        phone=client.phone,
-        company_name=client.company_name,
-        document=client.document,
-        address=client.address,
-        city=client.city,
-        state=client.state,
-        country=client.country,
-        website=client.website,
-        notes=client.notes,
-        source=client.source,
-        is_active=client.is_active,
-        created_at=client.created_at,
-        updated_at=client.updated_at,
-        is_deleted=client.is_deleted
-    )
+    # Converte para response schema (automaticamente pega todos os campos incluindo blueprint)
+    return ClientResponse.model_validate(client)
 
 
 @router.post(
@@ -221,26 +203,8 @@ async def create_client(
     service = ClientService(db)
     client = service.create_client(client_data)
 
-    # Converte para response schema
-    return ClientResponse(
-        id=client.id,
-        name=client.name,
-        email=client.email,
-        phone=client.phone,
-        company_name=client.company_name,
-        document=client.document,
-        address=client.address,
-        city=client.city,
-        state=client.state,
-        country=client.country,
-        website=client.website,
-        notes=client.notes,
-        source=client.source,
-        is_active=client.is_active,
-        created_at=client.created_at,
-        updated_at=client.updated_at,
-        is_deleted=client.is_deleted
-    )
+    # Converte para response schema (automaticamente pega todos os campos incluindo blueprint)
+    return ClientResponse.model_validate(client)
 
 
 @router.put(
@@ -279,26 +243,8 @@ async def update_client(
     service = ClientService(db)
     client = service.update_client(client_id, client_data)
 
-    # Converte para response schema
-    return ClientResponse(
-        id=client.id,
-        name=client.name,
-        email=client.email,
-        phone=client.phone,
-        company_name=client.company_name,
-        document=client.document,
-        address=client.address,
-        city=client.city,
-        state=client.state,
-        country=client.country,
-        website=client.website,
-        notes=client.notes,
-        source=client.source,
-        is_active=client.is_active,
-        created_at=client.created_at,
-        updated_at=client.updated_at,
-        is_deleted=client.is_deleted
-    )
+    # Converte para response schema (automaticamente pega todos os campos incluindo blueprint)
+    return ClientResponse.model_validate(client)
 
 
 @router.delete(

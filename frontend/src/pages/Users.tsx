@@ -13,7 +13,7 @@ const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterRole, setFilterRole] = useState<string>("all"); // all, admin, manager, salesperson
+  const [filterRole, setFilterRole] = useState<string>("all"); // all, admin, manager, salesperson, sdr
   const [filterActive, setFilterActive] = useState<string>("all"); // all, active, inactive
 
   // Estados do modal
@@ -201,6 +201,8 @@ const Users: React.FC = () => {
         return "bg-blue-500/20 text-blue-400";
       case "salesperson":
         return "bg-emerald-500/20 text-emerald-400";
+      case "sdr":
+        return "bg-amber-500/20 text-amber-400";
       default:
         return "bg-slate-500/20 text-slate-400";
     }
@@ -214,6 +216,8 @@ const Users: React.FC = () => {
       case "manager":
         return <UserCircle size={16} />;
       case "salesperson":
+        return <UserCircle size={16} />;
+      case "sdr":
         return <UserCircle size={16} />;
       default:
         return <UserCircle size={16} />;
@@ -299,6 +303,7 @@ const Users: React.FC = () => {
                 { value: "admin", label: "Administrador" },
                 { value: "manager", label: "Gerente" },
                 { value: "salesperson", label: "Vendedor" },
+                { value: "sdr", label: "SDR" },
               ]}
               onChange={setFilterRole}
             />

@@ -549,8 +549,8 @@ const KanbanBoard: React.FC = () => {
         list_id: data.list_id,
         title: data.title,
         description: data.description || undefined,
-        value: data.value || undefined,
         assigned_to_id: data.assigned_to_id || undefined,
+        sdr_id: data.sdr_id || undefined,
         contact_info: data.contact_info || undefined,
       };
 
