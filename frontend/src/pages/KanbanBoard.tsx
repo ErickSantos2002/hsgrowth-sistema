@@ -82,6 +82,7 @@ const KanbanBoard: React.FC = () => {
   const [valueFilter, setValueFilter] = useState("");
   const [dueDateFilter, setDueDateFilter] = useState("");
   const [assignedToFilter, setAssignedToFilter] = useState(""); // Novo filtro de vendedor
+  const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
   const [availableUsers, setAvailableUsers] = useState<User[]>([]); // Lista de usuários
   const boardScrollRef = useRef<HTMLDivElement | null>(null);
   const [isDraggingBoard, setIsDraggingBoard] = useState(false);
@@ -455,6 +456,28 @@ const KanbanBoard: React.FC = () => {
         const filterId = Number(assignedToFilter);
         if (card.assigned_to_id !== filterId) {
           return false;
+        }
+      }
+
+      // Filtro por status (ganho/perdido/aberto)
+      if (statusFilter) {
+        const cardIsWon = card.is_won === true;
+        const cardIsLost = (card as any).is_lost === true; // Backend retorna is_lost separado
+        const cardIsOpen = !cardIsWon && !cardIsLost;
+
+        switch (statusFilter) {
+          case "open":
+            if (!cardIsOpen) return false;
+            break;
+          case "won":
+            if (!cardIsWon) return false;
+            break;
+          case "lost":
+            if (!cardIsLost) return false;
+            break;
+          case "all":
+            // Mostra todos
+            break;
         }
       }
 
@@ -1067,6 +1090,20 @@ const KanbanBoard: React.FC = () => {
                   })),
                 ]}
                 onChange={setListFilter}
+              />
+            </div>
+
+            {/* Filtro por status (ganho/perdido/aberto) */}
+            <div className="w-full sm:w-auto sm:min-w-[160px]">
+              <SelectMenu
+                value={statusFilter}
+                options={[
+                  { value: "open", label: "Apenas Abertos" },
+                  { value: "all", label: "Todos" },
+                  { value: "won", label: "Apenas Ganhos" },
+                  { value: "lost", label: "Apenas Perdidos" },
+                ]}
+                onChange={setStatusFilter}
               />
             </div>
 

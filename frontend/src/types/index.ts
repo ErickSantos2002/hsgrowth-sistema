@@ -85,8 +85,8 @@ export interface Card {
     installments?: number;
     notes?: string;
   } | null;
-  is_won: boolean;
-  is_lost: boolean;
+  is_won: boolean; // true se ganho
+  is_lost: boolean; // true se perdido (backend converte -1 para true)
   won_at: string | null;
   lost_at: string | null;
   created_at: string;
