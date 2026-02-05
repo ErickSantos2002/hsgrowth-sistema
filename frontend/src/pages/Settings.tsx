@@ -1417,19 +1417,19 @@ const Settings: React.FC = () => {
 
                 {/* Estatísticas */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                  <div className="p-6 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-xl border border-blue-500/20 rounded-xl hover:border-blue-500/40 transition-all">
                     <p className="text-slate-400 text-sm mb-1">Total de Ações</p>
                     <p className="text-2xl font-bold text-white">{actionPoints.length}</p>
                   </div>
-                  <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                  <div className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-xl border border-green-500/20 rounded-xl hover:border-green-500/40 transition-all">
                     <p className="text-slate-400 text-sm mb-1">Ações Ativas</p>
                     <p className="text-2xl font-bold text-emerald-400">
                       {actionPoints.filter((a) => a.is_active).length}
                     </p>
                   </div>
-                  <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                  <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-xl border border-purple-500/20 rounded-xl hover:border-purple-500/40 transition-all">
                     <p className="text-slate-400 text-sm mb-1">Pontos Médios</p>
-                    <p className="text-2xl font-bold text-blue-400">
+                    <p className="text-2xl font-bold text-purple-400">
                       {actionPoints.length > 0
                         ? Math.round(
                             actionPoints.reduce((sum, a) => sum + a.points, 0) / actionPoints.length
