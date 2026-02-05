@@ -158,7 +158,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
               setNodeRef(node);
               cardsContainerRef.current = node;
             }}
-            className="space-y-3 overflow-y-auto pr-10 sm:pr-1 scrollbar-muted overscroll-contain touch-pan-y h-full"
+            className="space-y-3 overflow-y-auto pr-10 sm:pr-1 scrollbar-desktop overscroll-contain touch-pan-y h-full"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
           {cards.length > 0 ? (
