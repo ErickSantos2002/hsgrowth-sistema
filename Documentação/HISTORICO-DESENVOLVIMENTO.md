@@ -504,6 +504,119 @@ if (item.managerOrAdminOnly && user?.role === "salesperson") {
 - ✅ Permissões por role implementadas
 - ✅ UX polida e profissional
 
+### 05 de Fevereiro 2026 - Blueprint da Consultora 📋
+
+**Marco:** Implementação completa dos ajustes solicitados pela consultora de vendas
+
+**Objetivo:** Adequar o sistema HSGrowth CRM às necessidades específicas de gestão comercial identificadas pela consultora contratada pela empresa.
+
+**Mudanças implementadas:**
+
+#### 1. Modelo Person (Contatos) - 1 campo adicionado
+- ✅ Campo `area` (Área/Departamento) com 8 opções pré-definidas
+
+#### 2. Modelo Client (Organizações) - 7 campos adicionados
+- ✅ `cnae` - Código CNAE com máscara 0000-0/00
+- ✅ `linkedin_url` - LinkedIn da empresa
+- ✅ `relationship_type` - Tipo de relacionamento (Cliente, Fornecedor, Lead, Parceiro, Prospect, Revendedor)
+- ✅ `commercial_activity` - Atividade comercial (Ativo, Dormente, Inativo)
+- ✅ `sector` - Setor/Indústria (20 opções)
+- ✅ `employee_count` - Número de colaboradores (6 faixas)
+- ✅ `annual_revenue` - Faturamento anual (6 faixas)
+
+#### 3. Modelo Card (Negócios) - 11 campos adicionados
+- ✅ `sdr_id` - SDR responsável (novo role adicionado ao sistema)
+- ✅ `prospection_entry_date` - Data de entrada no board Prospecção (preenchimento automático)
+- ✅ `acquisition_entry_date` - Data de entrada no board Aquisição (preenchimento automático)
+- ✅ `expansion_entry_date` - Data de entrada no board Expansão (preenchimento automático)
+- ✅ `deal_type` - Tipo de negócio (Nova Venda, Cross Sell, Up Sell)
+- ✅ `acquisition_channel` - Canal de aquisição (Inbound, Outbound, Indicação, Parcerias, Eventos, Base)
+- ✅ `acquisition_channel_detail` - Detalhamento do canal (dropdown condicional baseado no canal)
+- ✅ `utm_params` - Parâmetros UTM (campo comentado no frontend por não ser usado)
+- ✅ `loss_reason` - Motivo da perda com modal específica por board
+- ✅ `has_implementation` - Se tem implementação (Sim/Não)
+- ✅ `has_personnel` - Se tem pessoas para manusear (Sim/Não)
+
+#### 4. Feature: Modal de Motivo da Perda 🎯
+**Implementação destacada:** Sistema inteligente de captura de motivos de perda
+
+- Modal profissional que aparece ao marcar card como perdido
+- Motivos específicos por board:
+  - **Prospecção (10 motivos):** Lead fora do ICP, Sem contato/dados inválidos, Lead inválido/duplicado, etc.
+  - **Aquisição (10 motivos):** Preço/orçamento, Sem budget aprovado, Prioridade mudou, etc.
+  - **Expansão (8 motivos):** Preço/orçamento, Produto não atende, Perda para concorrência, etc.
+- Obriga seleção antes de confirmar perda
+- Visual destacado em vermelho com alerta de irreversibilidade
+
+#### 5. Role SDR Adicionado ao Sistema
+- ✅ Novo role criado: `sdr` (role_id = 4)
+- ✅ Frontend filtrado para exibir apenas SDRs nos dropdowns apropriados
+- ✅ Seed database atualizado
+
+#### Problemas Resolvidos
+
+**Problema 1: Campos não retornados pela API**
+- **Causa:** Endpoints faziam conversão manual sem incluir campos do blueprint
+- **Solução:** Alterado para usar `.model_validate()` que pega todos os campos automaticamente
+- **Arquivos:** `client_service.py`, `card_service.py`
+
+**Problema 2: Máscara CNAE impedia digitação**
+- **Causa:** Regex overlapping causava conflitos
+- **Solução:** Reescrita com lógica condicional baseada no tamanho da string
+- **Arquivo:** `ClientModal.tsx`
+
+**Problema 3: Models desatualizados**
+- **Causa:** Migration aplicada mas models SQLAlchemy não atualizados
+- **Solução:** Sincronização dos models com campos do blueprint
+- **Arquivos:** `client.py`, `person.py`
+
+#### Arquivos Criados/Modificados
+
+**Backend (5 arquivos):**
+- Migration: `2026_02_05_1230-blueprint_consultora_ajustes.py` (19 campos)
+- `app/models/client.py` - Adicionados 7 campos
+- `app/models/person.py` - Campo area
+- `app/services/client_service.py` - Corrigido retorno de campos
+- `app/services/card_service.py` - Tracking automático de datas
+
+**Frontend (12 arquivos):**
+- `constants/blueprintOptions.ts` - Centralização de todas as opções
+- `components/persons/PersonModal.tsx` - 2 campos adicionados
+- `components/clients/ClientModal.tsx` - 7 campos adicionados
+- `components/cardDetails/SummarySection.tsx` - 11 campos adicionados
+- `components/cardDetails/LossReasonModal.tsx` - **Novo componente**
+- `components/cardDetails/EditableSelectField.tsx` - **Novo componente**
+- `pages/CardDetails.tsx` - Integração com modal de perda
+- `types/index.ts` - Interfaces atualizadas
+- `services/*Service.ts` - 3 services atualizados
+
+#### Funcionalidades Especiais
+
+**1. Tracking Automático de Boards:**
+- Sistema preenche automaticamente as datas quando card entra em cada board
+- Implementado tanto na criação quanto na movimentação entre boards
+- Campos read-only no frontend (exibidos como badge verde/cinza)
+
+**2. Dropdown Condicional:**
+- Canal de Aquisição → Detalhamento aparece apenas quando canal é selecionado
+- Opções de detalhamento mudam dinamicamente baseado no canal escolhido
+- Exemplo: "Inbound" mostra opções diferentes de "Outbound"
+
+**3. Centralização de Constantes:**
+- Todas as opções de dropdowns centralizadas em um único arquivo
+- Facilita manutenção e garante consistência
+- Arquivo: `frontend/src/constants/blueprintOptions.ts`
+
+#### Estatísticas
+
+- **Total de campos adicionados:** 19 (1 person + 7 client + 11 card)
+- **Linhas de código:** ~2.500 linhas
+- **Tempo de implementação:** 1 dia
+- **Arquivos modificados:** 17 arquivos
+- **Novos componentes:** 2 (LossReasonModal, EditableSelectField)
+
+**Status:** ✅ 100% Concluído e testado em produção
+
 ---
 
 ## 🔮 Futuro (Roadmap Executado)

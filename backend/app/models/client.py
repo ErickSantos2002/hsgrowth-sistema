@@ -37,6 +37,15 @@ class Client(Base, TimestampMixin, SoftDeleteMixin):
     website = Column(String(255), nullable=True)
     notes = Column(Text, nullable=True)  # Observações
 
+    # Campos do blueprint da consultora
+    cnae = Column(String(20), nullable=True)  # Código CNAE
+    linkedin_url = Column(String(500), nullable=True)  # LinkedIn da empresa
+    relationship_type = Column(String(50), nullable=True)  # Cliente, Prospect, Lead, etc
+    commercial_activity = Column(String(50), nullable=True)  # Ativo, Dormente, Inativo
+    sector = Column(String(100), nullable=True)  # Setor/Indústria
+    employee_count = Column(String(50), nullable=True)  # Faixa de colaboradores
+    annual_revenue = Column(String(50), nullable=True)  # Faixa de faturamento anual
+
     # Origem do cliente
     source = Column(String(50), nullable=True)  # pipedrive, manual, importacao, etc
 

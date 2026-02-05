@@ -131,36 +131,38 @@ export const ACQUISITION_CHANNEL_DETAILS: Record<string, string[]> = {
 export const LOSS_REASONS_PROSPECTION = [
   "Lead fora do ICP",
   "Sem contato / dados inválidos",
-  "Falta de interesse",
-  "Timing ruim",
-  "Sem verba",
-  "Decisor não identificado",
-  "Não avançou / Ghosting",
-  "Outros",
+  "Lead inválido / duplicado / teste",
+  "Sem interesse ou sem timing",
+  "Não chegamos no responsável pelo tema",
+  "Revenda",
+  "Já cliente / em atendimento interno",
+  "Cenário externo",
+  "Demanda Calibração",
+  "Demanda Suporte",
 ];
 
 export const LOSS_REASONS_ACQUISITION = [
   "Preço / orçamento",
   "Sem budget aprovado",
-  "Optou por concorrente",
-  "Não tem fit com a solução",
-  "Processo de vendas longo demais",
-  "Decisor mudou",
-  "Não avançou / Ghosting",
-  "Questões contratuais",
-  "Timing ruim",
-  "Outros",
+  "Prioridade mudou",
+  "Solução não percebida como crítica",
+  "Produto não atende / restrição técnica",
+  "Proposta fora de timing",
+  "Aprovação interna travada",
+  "Perda para concorrência",
+  "Demanda Calibração",
+  "Demanda Suporte",
 ];
 
 export const LOSS_REASONS_EXPANSION = [
-  "Cliente insatisfeito",
-  "Resultado não atingido",
-  "Mudança de fornecedor",
-  "Budget cortado",
-  "Reestruturação interna",
-  "Não renovou contrato",
-  "Downgrade",
-  "Outros",
+  "Preço / orçamento",
+  "Sem budget aprovado",
+  "Prioridade mudou",
+  "Solução não percebida como crítica",
+  "Produto não atende / restrição técnica",
+  "Proposta fora de timing",
+  "Aprovação interna travada",
+  "Perda para concorrência",
 ];
 
 // Mapeamento de board_id para motivos de perda
@@ -169,6 +171,13 @@ export const LOSS_REASONS_BY_BOARD_NAME: Record<string, string[]> = {
   "Prospecção": LOSS_REASONS_PROSPECTION,
   "Aquisição": LOSS_REASONS_ACQUISITION,
   "Expansão": LOSS_REASONS_EXPANSION,
+};
+
+// Mapeamento por board_id
+export const LOSS_REASONS_BY_BOARD_ID: Record<number, string[]> = {
+  6: LOSS_REASONS_PROSPECTION, // Prospecção
+  7: LOSS_REASONS_ACQUISITION, // Aquisição
+  8: LOSS_REASONS_EXPANSION,   // Expansão (Pós Venda)
 };
 
 export const BOOLEAN_OPTIONS = [

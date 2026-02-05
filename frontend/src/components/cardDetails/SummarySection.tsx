@@ -157,10 +157,11 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
   /**
    * Atualiza parâmetros UTM
    */
-  const handleUpdateUTMParams = async (value: string) => {
-    await cardService.update(card.id, { utm_params: value || undefined });
-    onUpdate();
-  };
+  // COMENTADO: Campo UTM não será usado no momento
+  // const handleUpdateUTMParams = async (value: string) => {
+  //   await cardService.update(card.id, { utm_params: value || undefined });
+  //   onUpdate();
+  // };
 
   /**
    * Atualiza motivo da perda
@@ -350,7 +351,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              Para alterar o vendedor, use a seção de atribuição ou transferência.
+              O vendedor vai ser atribuido automaticamente pelo sistema ou por um Gerente
             </p>
           </div>
         </div>
@@ -478,15 +479,15 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
             />
           )}
 
-          {/* Parâmetros UTM */}
-          <EditableField
+          {/* Parâmetros UTM - COMENTADO: Não será usado no momento */}
+          {/* <EditableField
             label="Parâmetros UTM"
             value={card.utm_params}
             onSave={handleUpdateUTMParams}
             type="text"
             placeholder="Ex: utm_source=google&utm_medium=cpc"
             icon={<LinkIcon size={14} />}
-          />
+          /> */}
 
           {/* Tem Implementação? */}
           <EditableSelectField

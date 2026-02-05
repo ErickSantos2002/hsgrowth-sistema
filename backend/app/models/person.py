@@ -36,6 +36,7 @@ class Person(Base):
 
     # Profissional
     position = Column(String(200), nullable=True)  # Cargo
+    area = Column(String(200), nullable=True)  # Área/Departamento
 
     # Redes sociais
     linkedin = Column(String(500), nullable=True)  # LinkedIn

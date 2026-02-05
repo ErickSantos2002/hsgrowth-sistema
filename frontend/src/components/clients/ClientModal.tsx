@@ -137,11 +137,16 @@ const maskPhone = (value: string): string => {
  * Aplica máscara de CNAE (0000-0/00)
  */
 const maskCNAE = (value: string): string => {
-  return value
-    .replace(/\D/g, "")
-    .replace(/(\d{4})(\d)/, "$1-$2")
-    .replace(/(\d{1})(\d{2})/, "$1/$2")
-    .replace(/(\/\d{2})\d+?$/, "$1");
+  const onlyNumbers = value.replace(/\D/g, "");
+
+  // Formato: 0000-0/00 (4 dígitos, hífen, 1 dígito, barra, 2 dígitos)
+  if (onlyNumbers.length <= 4) {
+    return onlyNumbers;
+  } else if (onlyNumbers.length <= 5) {
+    return onlyNumbers.replace(/(\d{4})(\d{0,1})/, "$1-$2");
+  } else {
+    return onlyNumbers.replace(/(\d{4})(\d{1})(\d{0,2})/, "$1-$2/$3");
+  }
 };
 
 /**

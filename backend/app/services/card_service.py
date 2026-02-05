@@ -267,6 +267,20 @@ class CardService:
         card = self.card_repository.create(card_data)
         print(f"[AUTOMATION] Card criado ID={card.id}, Board={board.id}")
 
+        # Preenche data de entrada no board automaticamente
+        from datetime import datetime
+        now = datetime.utcnow()
+
+        if board.id == 6:  # Prospecção
+            card.prospection_entry_date = now
+        elif board.id == 7:  # Aquisição
+            card.acquisition_entry_date = now
+        elif board.id == 8:  # Expansão (Pós Venda)
+            card.expansion_entry_date = now
+
+        self.db.commit()
+        self.db.refresh(card)
+
         # Dispara automações do tipo "card_created"
         try:
             print(f"[AUTOMATION] Buscando automações para board_id={board.id}, trigger=card_created")
@@ -409,6 +423,22 @@ class CardService:
         # Guarda lista de origem para parabenização
         source_list = self.list_repository.find_by_id(card.list_id)
         source_list_name = source_list.name if source_list else "Lista"
+        source_board = self.board_repository.find_by_id(source_list.board_id) if source_list else None
+
+        # Preenche data de entrada no board se estiver mudando de board
+        if source_board and source_board.id != target_board.id:
+            now = datetime.now()
+
+            # Só preenche se ainda não tiver data (evita sobrescrever)
+            if target_board.id == 6 and not card.prospection_entry_date:  # Prospecção
+                card.prospection_entry_date = now
+            elif target_board.id == 7 and not card.acquisition_entry_date:  # Aquisição
+                card.acquisition_entry_date = now
+            elif target_board.id == 8 and not card.expansion_entry_date:  # Expansão (Pós Venda)
+                card.expansion_entry_date = now
+
+            self.db.commit()
+            self.db.refresh(card)
 
         # Verifica se a lista de destino é uma lista "won" ou "lost"
         # e marca o card adequadamente
@@ -780,9 +810,11 @@ class CardService:
             "client_id": card.client_id,
             "person_id": card.person_id,
             "assigned_to_id": card.assigned_to_id,
+            "sdr_id": card.sdr_id,  # ✅ Incluído campo sdr_id
             "value": float(card.value) if card.value else None,
             "due_date": card.due_date,
             "payment_info": card.payment_info,
+            "contact_info": card.contact_info,  # ✅ Incluído campo contact_info
             "is_won": card.is_won == 1,
             "is_lost": card.is_lost,
             "won_at": card.won_at,
@@ -791,8 +823,21 @@ class CardService:
             "created_at": card.created_at,
             "updated_at": card.updated_at,
 
+            # Campos do blueprint da consultora
+            "prospection_entry_date": card.prospection_entry_date,
+            "acquisition_entry_date": card.acquisition_entry_date,
+            "expansion_entry_date": card.expansion_entry_date,
+            "deal_type": card.deal_type,
+            "acquisition_channel": card.acquisition_channel,
+            "acquisition_channel_detail": card.acquisition_channel_detail,
+            "utm_params": card.utm_params,
+            "loss_reason": card.loss_reason,
+            "has_implementation": card.has_implementation,
+            "has_personnel": card.has_personnel,
+
             # Informações relacionadas
             "assigned_to_name": card.assigned_to.name if card.assigned_to else None,
+            "sdr_name": card.sdr.name if card.sdr else None,  # ✅ Nome do SDR
             "list_name": list_obj.name if list_obj else None,
             "board_id": board.id if board else None,
             "client_name": card.client.name if card.client else None,

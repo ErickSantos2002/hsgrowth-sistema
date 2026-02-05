@@ -20,6 +20,7 @@ import PipelineStages from "../components/cardDetails/PipelineStages";
 import NotesSection from "../components/cardDetails/NotesSection";
 import SchedulerSection from "../components/cardDetails/SchedulerSection";
 import FilesSection from "../components/cardDetails/FilesSection";
+import LossReasonModal from "../components/cardDetails/LossReasonModal";
 
 /**
  * Página de detalhes do Card - Layout estilo Pipedrive com tema escuro
@@ -41,6 +42,9 @@ const CardDetails: React.FC = () => {
 
   // Estado das abas
   const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos">("atividade");
+
+  // Estado da modal de motivo da perda
+  const [showLossReasonModal, setShowLossReasonModal] = useState(false);
 
   /**
    * Carrega dados do card ao montar o componente
@@ -115,19 +119,29 @@ const CardDetails: React.FC = () => {
   };
 
   /**
-   * Marca como perdido
+   * Marca como perdido (abre modal de motivo)
    */
-  const handleMarkAsLost = async () => {
+  const handleMarkAsLost = () => {
     if (!card) return;
-    const motivo = prompt("Por que este negócio foi perdido?");
-    if (motivo !== null) {
-      try {
-        await cardService.update(card.id, { is_won: false, is_lost: true });
-        await loadCardData();
-      } catch (error) {
-        console.error("Erro ao marcar como perdido:", error);
-        alert("Erro ao marcar negócio como perdido");
-      }
+    setShowLossReasonModal(true);
+  };
+
+  /**
+   * Confirma a perda do card com o motivo selecionado
+   */
+  const handleConfirmLoss = async (reason: string) => {
+    if (!card) return;
+    try {
+      await cardService.update(card.id, {
+        is_won: false,
+        is_lost: true,
+        loss_reason: reason,
+      });
+      setShowLossReasonModal(false);
+      await loadCardData();
+    } catch (error) {
+      console.error("Erro ao marcar como perdido:", error);
+      alert("Erro ao marcar negócio como perdido");
     }
   };
 
@@ -501,6 +515,17 @@ const CardDetails: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Motivo da Perda */}
+      {card && (
+        <LossReasonModal
+          isOpen={showLossReasonModal}
+          onClose={() => setShowLossReasonModal(false)}
+          onConfirm={handleConfirmLoss}
+          boardId={card.board_id}
+          boardName={card.board_name || "Board"}
+        />
+      )}
     </div>
   );
 };

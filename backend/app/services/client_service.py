@@ -104,7 +104,15 @@ class ClientService:
                 is_active=client.is_active,
                 created_at=client.created_at,
                 updated_at=client.updated_at,
-                is_deleted=client.is_deleted
+                is_deleted=client.is_deleted,
+                # Campos do blueprint da consultora
+                cnae=client.cnae,
+                linkedin_url=client.linkedin_url,
+                relationship_type=client.relationship_type,
+                commercial_activity=client.commercial_activity,
+                sector=client.sector,
+                employee_count=client.employee_count,
+                annual_revenue=client.annual_revenue
             )
             for client in clients
         ]

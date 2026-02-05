@@ -41,6 +41,7 @@ def card_to_response(
         description=card.description,
         list_id=card.list_id,
         assigned_to_id=card.assigned_to_id,
+        sdr_id=card.sdr_id,  # ✅ Incluído campo sdr_id
         value=card.value,
         due_date=card.due_date,
         is_won=card.is_won == 1,  # Converte Integer para bool
@@ -52,7 +53,18 @@ def card_to_response(
         updated_at=card.updated_at,
         assigned_to_name=assigned_to_name,
         list_name=list_name,
-        board_id=board_id
+        board_id=board_id,
+        # Campos do blueprint da consultora
+        prospection_entry_date=card.prospection_entry_date,
+        acquisition_entry_date=card.acquisition_entry_date,
+        expansion_entry_date=card.expansion_entry_date,
+        deal_type=card.deal_type,
+        acquisition_channel=card.acquisition_channel,
+        acquisition_channel_detail=card.acquisition_channel_detail,
+        utm_params=card.utm_params,
+        loss_reason=card.loss_reason,
+        has_implementation=card.has_implementation,
+        has_personnel=card.has_personnel
     )
 
 
