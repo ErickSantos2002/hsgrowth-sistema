@@ -57,6 +57,7 @@ const Settings: React.FC = () => {
   const [actionPoints, setActionPoints] = useState<ActionPoints[]>([]);
   const [loadingPoints, setLoadingPoints] = useState(false);
   const [editingPoints, setEditingPoints] = useState<Record<string, number>>({});
+  const [loginPage, setLoginPage] = useState(1);
 
   // Estados da API4COM (Admin)
   const [api4comConfig, setApi4comConfig] = useState<API4ComConfig | null>(null);
@@ -128,6 +129,12 @@ const Settings: React.FC = () => {
       loadActionPoints();
     }
   }, [activeTab, user]);
+
+  useEffect(() => {
+    if (activeTab === "security") {
+      setLoginPage(1);
+    }
+  }, [activeTab, loginHistory.length]);
 
   // Carrega dados da API4COM quando a tab api4com é ativada (apenas admin)
   useEffect(() => {
@@ -383,7 +390,7 @@ const Settings: React.FC = () => {
   const loadLoginHistory = async () => {
     try {
       setLoadingLoginHistory(true);
-      const data = await authService.getLoginHistory(20);
+      const data = await authService.getLoginHistory(25);
       setLoginHistory(data.logins);
     } catch (error) {
       console.error("Erro ao carregar histórico de logins:", error);
@@ -617,6 +624,31 @@ const Settings: React.FC = () => {
   if (isManagerOrAdmin) {
     tabs.push({ id: "logs" as Tab, label: "Logs de Auditoria", icon: FileText });
   }
+
+  const loginItemsPerPage = 5;
+  const loginMaxItems = 25;
+  const limitedLoginHistory = loginHistory.slice(0, loginMaxItems);
+  const loginTotalItems = limitedLoginHistory.length;
+  const loginTotalPages = Math.max(1, Math.ceil(loginTotalItems / loginItemsPerPage));
+  const safeLoginPage = Math.min(loginPage, loginTotalPages);
+  const loginStartIndex = (safeLoginPage - 1) * loginItemsPerPage;
+  const loginEndIndex = Math.min(loginStartIndex + loginItemsPerPage, loginTotalItems);
+  const paginatedLoginHistory = limitedLoginHistory.slice(loginStartIndex, loginEndIndex);
+
+  const getLoginPageNumbers = () => {
+    const maxButtons = 5;
+    let start = Math.max(1, safeLoginPage - Math.floor(maxButtons / 2));
+    let end = start + maxButtons - 1;
+
+    if (end > loginTotalPages) {
+      end = loginTotalPages;
+      start = Math.max(1, end - maxButtons + 1);
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  };
+
+  const loginPageNumbers = getLoginPageNumbers();
 
   return (
     <div className="p-6">
@@ -1029,154 +1061,221 @@ const Settings: React.FC = () => {
 
             {/* Tab: Segurança */}
             {activeTab === "security" && (
-              <div className="space-y-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-semibold text-white">Histórico de Logins</h2>
-                    <p className="text-sm text-slate-400 mt-1">
-                      Acompanhe os acessos à sua conta para maior segurança
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-                    <Shield size={16} className="text-blue-400" />
-                    <span className="text-sm font-medium text-blue-400">
-                      {loginHistory.length} logins registrados
-                    </span>
-                  </div>
-                </div>
-
-                {/* Lista de Histórico de Logins */}
-                <div className="space-y-3">
-                  {loadingLoginHistory ? (
-                    // Loading state
-                    <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <>
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+                    <div>
+                      <h2 className="text-xl font-semibold text-white">Histórico de Logins</h2>
+                      <p className="text-sm text-slate-400 mt-1">
+                        Acompanhe os últimos 25 acessos à sua conta para maior segurança
+                      </p>
                     </div>
-                  ) : loginHistory.length === 0 ? (
-                    // Empty state
-                    <div className="text-center py-12">
-                      <Shield size={48} className="mx-auto text-slate-600 mb-3" />
-                      <p className="text-slate-400">Nenhum login registrado ainda</p>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                      <Shield size={16} className="text-blue-400" />
+                      <span className="text-sm font-medium text-blue-400">
+                        Últimos 25 logins
+                      </span>
                     </div>
-                  ) : (
-                    // Login history list
-                    loginHistory.map((login) => {
-                      // Parseia o user_agent para extrair informações
-                      const getBrowserInfo = (userAgent: string) => {
-                        const ua = userAgent.toLowerCase();
+                  </div>
 
-                        // Detecta browser
-                        let browser = "Desconhecido";
-                        if (ua.includes("edg")) browser = "Edge";
-                        else if (ua.includes("chrome")) browser = "Chrome";
-                        else if (ua.includes("firefox")) browser = "Firefox";
-                        else if (ua.includes("safari")) browser = "Safari";
-                        else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
+                  {/* Lista de Histórico de Logins */}
+                  <div className="space-y-3">
+                    {loadingLoginHistory ? (
+                      // Loading state
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                      </div>
+                    ) : loginHistory.length === 0 ? (
+                      // Empty state
+                      <div className="text-center py-12">
+                        <Shield size={48} className="mx-auto text-slate-600 mb-3" />
+                        <p className="text-slate-400">Nenhum login registrado ainda</p>
+                      </div>
+                    ) : (
+                      // Login history list
+                      paginatedLoginHistory.map((login) => {
+                        // Parseia o user_agent para extrair informações
+                        const getBrowserInfo = (userAgent: string) => {
+                          const ua = userAgent.toLowerCase();
 
-                        // Detecta OS
-                        let os = "Desconhecido";
-                        if (ua.includes("windows")) os = "Windows";
-                        else if (ua.includes("mac")) os = "macOS";
-                        else if (ua.includes("linux")) os = "Linux";
-                        else if (ua.includes("android")) os = "Android";
-                        else if (ua.includes("ios") || ua.includes("iphone") || ua.includes("ipad")) os = "iOS";
+                          // Detecta browser
+                          let browser = "Desconhecido";
+                          if (ua.includes("edg")) browser = "Edge";
+                          else if (ua.includes("chrome")) browser = "Chrome";
+                          else if (ua.includes("firefox")) browser = "Firefox";
+                          else if (ua.includes("safari")) browser = "Safari";
+                          else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
 
-                        // Detecta tipo de dispositivo
-                        let deviceType = "Desktop";
-                        if (ua.includes("mobile")) deviceType = "Mobile";
-                        else if (ua.includes("tablet")) deviceType = "Tablet";
+                          // Detecta OS
+                          let os = "Desconhecido";
+                          if (ua.includes("windows")) os = "Windows";
+                          else if (ua.includes("mac")) os = "macOS";
+                          else if (ua.includes("linux")) os = "Linux";
+                          else if (ua.includes("android")) os = "Android";
+                          else if (ua.includes("ios") || ua.includes("iphone") || ua.includes("ipad")) os = "iOS";
 
-                        return { browser, os, deviceType };
-                      };
+                          // Detecta tipo de dispositivo
+                          let deviceType = "Desktop";
+                          if (ua.includes("mobile")) deviceType = "Mobile";
+                          else if (ua.includes("tablet")) deviceType = "Tablet";
 
-                      // Formata a data
-                      const formatDate = (dateString: string) => {
-                        const date = new Date(dateString);
-                        const now = new Date();
-                        const diffMs = now.getTime() - date.getTime();
-                        const diffMins = Math.floor(diffMs / 60000);
-                        const diffHours = Math.floor(diffMs / 3600000);
-                        const diffDays = Math.floor(diffMs / 86400000);
+                          return { browser, os, deviceType };
+                        };
 
-                        if (diffMins < 1) return "Agora";
-                        if (diffMins < 60) return `Há ${diffMins} minuto${diffMins > 1 ? 's' : ''}`;
-                        if (diffHours < 24) return `Há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
-                        if (diffDays < 7) return `Há ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+                        // Formata a data
+                        const formatDate = (dateString: string) => {
+                          const date = new Date(dateString);
+                          const now = new Date();
+                          const diffMs = now.getTime() - date.getTime();
+                          const diffMins = Math.floor(diffMs / 60000);
+                          const diffHours = Math.floor(diffMs / 3600000);
+                          const diffDays = Math.floor(diffMs / 86400000);
 
-                        return date.toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        });
-                      };
+                          if (diffMins < 1) return "Agora";
+                          if (diffMins < 60) return `Há ${diffMins} minuto${diffMins > 1 ? 's' : ''}`;
+                          if (diffHours < 24) return `Há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+                          if (diffDays < 7) return `Há ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
 
-                      const { browser, os, deviceType } = getBrowserInfo(login.user_agent);
+                          return date.toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          });
+                        };
 
-                      return (
-                        <div
-                          key={login.id}
-                          className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:bg-slate-700/70 transition-colors"
-                        >
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-start gap-3">
-                              {/* Ícone do dispositivo */}
-                              <div className="mt-1">
-                                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                                  <Monitor size={20} className="text-blue-400" />
-                                </div>
-                              </div>
+                        const { browser, os, deviceType } = getBrowserInfo(login.user_agent);
 
-                              {/* Informações do login */}
-                              <div className="min-w-0 flex-1">
-                                {/* Nome do usuário e horário */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                                  <p className="font-semibold text-white text-base">{login.user_name}</p>
-                                  <div className="flex items-center gap-1.5 text-sm text-slate-300 bg-slate-800 px-2 py-1 rounded">
-                                    <Clock size={14} />
-                                    <span className="font-medium">{formatDate(login.created_at)}</span>
+                        return (
+                          <div
+                            key={login.id}
+                            className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:bg-slate-700/70 transition-colors"
+                          >
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex items-start gap-3">
+                                {/* Ícone do dispositivo */}
+                                <div className="mt-1">
+                                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                    <Monitor size={20} className="text-blue-400" />
                                   </div>
                                 </div>
 
-                                {/* Browser e OS */}
-                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                  <span className="text-sm text-slate-400">{browser}</span>
-                                  <span className="text-slate-600">•</span>
-                                  <span className="text-sm text-slate-400">{os}</span>
-                                  <span className="text-slate-600">•</span>
-                                  <span className="text-sm text-slate-400">{deviceType}</span>
-                                </div>
+                                {/* Informações do login */}
+                                <div className="min-w-0 flex-1">
+                                  {/* Nome do usuário e horário */}
+                                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                    <p className="font-semibold text-white text-base">{login.user_name}</p>
+                                    <div className="flex items-center gap-1.5 text-sm text-slate-300 bg-slate-800 px-2 py-1 rounded">
+                                      <Clock size={14} />
+                                      <span className="font-medium">{formatDate(login.created_at)}</span>
+                                    </div>
+                                  </div>
 
-                                {/* IP Address */}
-                                <div className="flex items-center gap-1.5 text-sm text-slate-500">
-                                  <Globe size={14} />
-                                  <span className="truncate">{login.ip_address}</span>
+                                  {/* Browser e OS */}
+                                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    <span className="text-sm text-slate-400">{browser}</span>
+                                    <span className="text-slate-600">•</span>
+                                    <span className="text-sm text-slate-400">{os}</span>
+                                    <span className="text-slate-600">•</span>
+                                    <span className="text-sm text-slate-400">{deviceType}</span>
+                                  </div>
+
+                                  {/* IP Address */}
+                                  <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                                    <Globe size={14} />
+                                    <span className="truncate">{login.ip_address}</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
+                        );
+                      })
+                    )}
+                  </div>
+                  {!loadingLoginHistory && loginTotalItems > 0 && (
+                    <div className="flex flex-col gap-4 border-t border-slate-700/60 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+                      <div className="text-sm text-slate-400">
+                        Mostrando {loginTotalItems === 0 ? 0 : loginStartIndex + 1} a {loginEndIndex} de{" "}
+                        {loginTotalItems} registros
+                      </div>
+                      <div className="flex items-center justify-center gap-3 sm:justify-end">
+                        <div className="flex items-center gap-2 sm:hidden">
+                          <button
+                            type="button"
+                            onClick={() => setLoginPage((page) => Math.max(1, page - 1))}
+                            disabled={safeLoginPage === 1}
+                            className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                              safeLoginPage === 1
+                                ? "border-slate-700 text-slate-600"
+                                : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                            }`}
+                          >
+                            {"<"}
+                          </button>
+                          <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
+                            {safeLoginPage}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setLoginPage((page) => Math.min(loginTotalPages, page + 1))}
+                            disabled={safeLoginPage === loginTotalPages}
+                            className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
+                              safeLoginPage === loginTotalPages
+                                ? "border-slate-700 text-slate-600"
+                                : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                            }`}
+                          >
+                            {">"}
+                          </button>
                         </div>
-                      );
-                    })
+                        <div className="hidden items-center gap-2 sm:flex">
+                          <button
+                            type="button"
+                            onClick={() => setLoginPage((page) => Math.max(1, page - 1))}
+                            disabled={safeLoginPage === 1}
+                            className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                              safeLoginPage === 1
+                                ? "border-slate-700 text-slate-600"
+                                : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                            }`}
+                          >
+                            Anterior
+                          </button>
+                          {loginPageNumbers.map((page) => (
+                            <button
+                              key={page}
+                              type="button"
+                              onClick={() => setLoginPage(page)}
+                              className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
+                                page === safeLoginPage
+                                  ? "border-emerald-500 bg-emerald-500 text-white"
+                                  : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setLoginPage((page) => Math.min(loginTotalPages, page + 1))}
+                            disabled={safeLoginPage === loginTotalPages}
+                            className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                              safeLoginPage === loginTotalPages
+                                ? "border-slate-700 text-slate-600"
+                                : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                            }`}
+                          >
+                            Proxima
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                {/* Informação */}
-                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <h4 className="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
-                    <Shield size={16} />
-                    Sobre o Histórico de Logins
-                  </h4>
-                  <p className="text-sm text-slate-300">
-                    Cada login realizado no sistema é registrado com informações de{" "}
-                    <strong>endereço IP</strong>, <strong>dispositivo</strong> e{" "}
-                    <strong>navegador</strong> utilizado. Isso permite auditar acessos e identificar
-                    atividades suspeitas. Os registros são mantidos permanentemente para fins de
-                    segurança e conformidade.
-                  </p>
-                </div>
-              </div>
+              </>
             )}
 
             {/* Tab: Badges (Admin e Gerente) */}
@@ -2105,6 +2204,22 @@ const Settings: React.FC = () => {
 
           </div>
         </div>
+
+        {activeTab === "security" && (
+          <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <h4 className="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
+              <Shield size={16} />
+              Sobre o Histórico de Logins
+            </h4>
+            <p className="text-sm text-slate-300">
+              Cada login realizado no sistema é registrado com informações de{" "}
+              <strong>endereço IP</strong>, <strong>dispositivo</strong> e{" "}
+              <strong>navegador</strong> utilizado. Isso permite auditar acessos e identificar
+              atividades suspeitas. Os registros são mantidos permanentemente para fins de
+              segurança e conformidade.
+            </p>
+          </div>
+        )}
 
         {/* Modal de Badge */}
         <BadgeModal
