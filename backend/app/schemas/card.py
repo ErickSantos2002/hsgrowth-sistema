@@ -216,14 +216,27 @@ class CardCreate(CardBase):
 
     model_config = {
         "json_schema_extra": {
+            # Exemplo completo de criação de card com dados realistas de CRM brasileiro
             "examples": [
                 {
-                    "title": "Lead - Empresa XYZ",
-                    "description": "Contato inicial via telefone. Interessado em nossos serviços.",
+                    "title": "Lead - Indústria Paulista Ltda",
+                    "description": "Contato via Inbound Marketing. Empresa interessada em consultoria de growth para o setor industrial.",
                     "list_id": 1,
+                    "client_id": 42,
                     "assigned_to_id": 2,
-                    "value": 5000.00,
-                    "due_date": "2026-01-15T10:00:00"
+                    "sdr_id": 7,
+                    "value": 18500.00,
+                    "due_date": "2026-02-28T14:00:00",
+                    "prospection_entry_date": "2026-01-10T09:30:00",
+                    "acquisition_entry_date": None,
+                    "expansion_entry_date": None,
+                    "deal_type": "Nova Venda",
+                    "acquisition_channel": "Inbound",
+                    "acquisition_channel_detail": "Webinar sobre Growth para Indústrias",
+                    "utm_params": "utm_source=linkedin&utm_medium=ads&utm_campaign=webinar_jan2026",
+                    "loss_reason": None,
+                    "has_implementation": True,
+                    "has_personnel": False
                 }
             ]
         }
@@ -261,11 +274,33 @@ class CardUpdate(BaseModel):
 
     model_config = {
         "json_schema_extra": {
+            # Exemplo realista: atualização de card marcando como ganho com informações de pagamento
             "examples": [
                 {
-                    "title": "Lead - Empresa XYZ - Proposta Enviada",
-                    "value": 7500.00,
-                    "is_won": False
+                    "title": "Fechamento - Rede Farma Sul S.A.",
+                    "description": "Proposta aceita pelo diretor comercial. Contrato assinado em 05/02/2026.",
+                    "client_id": 85,
+                    "assigned_to_id": 3,
+                    "sdr_id": 7,
+                    "value": 42000.00,
+                    "due_date": "2026-03-01T10:00:00",
+                    "payment_info": {
+                        "payment_method": "Boleto",
+                        "installments": 6,
+                        "notes": "Parcelas fixas de R$ 7.000,00 com vencimento todo dia 15, início em março/2026"
+                    },
+                    "is_won": True,
+                    "is_lost": False,
+                    "prospection_entry_date": "2025-11-20T08:00:00",
+                    "acquisition_entry_date": "2025-12-10T14:30:00",
+                    "expansion_entry_date": None,
+                    "deal_type": "Nova Venda",
+                    "acquisition_channel": "Indicação",
+                    "acquisition_channel_detail": "Indicação do cliente Distribuidora Horizonte",
+                    "utm_params": None,
+                    "loss_reason": None,
+                    "has_implementation": True,
+                    "has_personnel": True
                 }
             ]
         }
@@ -370,24 +405,50 @@ class CardResponse(CardBase):
     model_config = {
         "from_attributes": True,
         "json_schema_extra": {
+            # Exemplo completo de resposta com todos os campos do card
             "examples": [
                 {
-                    "id": 1,
-                    "title": "Lead - Empresa XYZ",
-                    "description": "Contato inicial via telefone",
-                    "list_id": 1,
-                    "assigned_to_id": 2,
-                    "value": 5000.00,
-                    "due_date": "2026-01-15T10:00:00",
-                    "is_won": False,
+                    "id": 152,
+                    "title": "Consultoria Growth - TechBrasil Sistemas Ltda",
+                    "description": "Projeto de consultoria de growth para SaaS B2B. Reunião de kickoff agendada para março.",
+                    "list_id": 4,
+                    "client_id": 85,
+                    "assigned_to_id": 3,
+                    "sdr_id": 7,
+                    "value": 42000.00,
+                    "due_date": "2026-03-01T10:00:00",
+                    "payment_info": {
+                        "payment_method": "Boleto",
+                        "installments": 6,
+                        "notes": "Parcelas fixas de R$ 7.000,00 com vencimento todo dia 15"
+                    },
+                    "is_won": True,
                     "is_lost": False,
-                    "won_at": None,
+                    "won_at": "2026-02-05T16:45:00",
                     "lost_at": None,
-                    "position": 0,
-                    "created_at": "2026-01-05T10:00:00",
-                    "updated_at": "2026-01-05T10:00:00",
+                    "position": 2.0,
+                    "created_at": "2025-11-20T08:00:00",
+                    "updated_at": "2026-02-05T16:45:00",
+                    "prospection_entry_date": "2025-11-20T08:00:00",
+                    "acquisition_entry_date": "2025-12-10T14:30:00",
+                    "expansion_entry_date": None,
+                    "deal_type": "Nova Venda",
+                    "acquisition_channel": "Inbound",
+                    "acquisition_channel_detail": "Formulário de contato no site institucional",
+                    "utm_params": "utm_source=google&utm_medium=cpc&utm_campaign=growth_saas",
+                    "loss_reason": None,
+                    "has_implementation": True,
+                    "has_personnel": True,
                     "assigned_to_name": "Maria Santos",
-                    "list_name": "Novos Leads"
+                    "list_name": "Ganhos",
+                    "board_id": 2,
+                    "client_name": "TechBrasil Sistemas Ltda",
+                    "person_id": 210,
+                    "person_name": "Carlos Eduardo Mendes",
+                    "custom_fields": [
+                        {"field_name": "Segmento", "value": "Tecnologia"},
+                        {"field_name": "Porte", "value": "Médio"}
+                    ]
                 }
             ]
         }

@@ -1,14 +1,14 @@
 """
 Schemas Pydantic para CardTask (Tarefas/Atividades do Card).
 """
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, validator
 from typing import Optional
 from datetime import datetime
 from enum import Enum
 
 
 class TaskType(str, Enum):
-    """Tipos de atividade/tarefa"""
+    """Tipos de atividade/tarefa."""
     CALL = "call"
     MEETING = "meeting"
     TASK = "task"
@@ -19,14 +19,14 @@ class TaskType(str, Enum):
 
 
 class TaskPriority(str, Enum):
-    """Prioridade da tarefa"""
+    """Prioridade da tarefa."""
     NORMAL = "normal"
     HIGH = "high"
     URGENT = "urgent"
 
 
 class TaskStatus(str, Enum):
-    """Status da disponibilidade"""
+    """Status da disponibilidade."""
     FREE = "free"
     BUSY = "busy"
 
@@ -34,27 +34,42 @@ class TaskStatus(str, Enum):
 # ==================== REQUEST SCHEMAS ====================
 
 class CardTaskCreate(BaseModel):
-    """Schema para criar uma nova tarefa"""
+    """Cria uma nova tarefa/atividade vinculada a um card."""
     card_id: int = Field(..., description="ID do card")
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
     title: str = Field(..., min_length=1, max_length=255, description="Título da tarefa")
     description: Optional[str] = Field(None, description="Descrição detalhada")
-    task_type: TaskType = Field(TaskType.TASK, description="Tipo da tarefa")
-    priority: TaskPriority = Field(TaskPriority.NORMAL, description="Prioridade")
+    task_type: TaskType = Field(TaskType.TASK, description="Tipo da tarefa (call, meeting, task, deadline, email, lunch, other)")
+    priority: TaskPriority = Field(TaskPriority.NORMAL, description="Prioridade (normal, high, urgent)")
     due_date: Optional[datetime] = Field(None, description="Data/hora de vencimento")
     duration_minutes: Optional[int] = Field(30, ge=5, le=480, description="Duração em minutos (5-480)")
-    location: Optional[str] = Field(None, max_length=255, description="Local")
-    video_link: Optional[str] = Field(None, max_length=500, description="Link de videochamada")
+    location: Optional[str] = Field(None, max_length=255, description="Local da atividade")
+    video_link: Optional[str] = Field(None, max_length=500, description="Link de videochamada (Zoom, Meet, etc.)")
     notes: Optional[str] = Field(None, description="Notas adicionais")
-    contact_name: Optional[str] = Field(None, max_length=255, description="Nome do contato")
-    status: TaskStatus = Field(TaskStatus.FREE, description="Status de disponibilidade")
+    contact_name: Optional[str] = Field(None, max_length=255, description="Nome do contato relacionado")
+    status: TaskStatus = Field(TaskStatus.FREE, description="Status de disponibilidade (free, busy)")
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
+            "example": {
+                "card_id": 42,
+                "assigned_to_id": 5,
+                "title": "Ligar para cliente sobre proposta",
+                "description": "Confirmar valores e condições da proposta enviada ontem",
+                "task_type": "call",
+                "priority": "high",
+                "due_date": "2026-01-20T14:00:00",
+                "duration_minutes": 30,
+                "contact_name": "Carlos Oliveira",
+                "notes": "Cliente prefere ligação no período da tarde"
+            }
+        }
+    )
 
 
 class CardTaskUpdate(BaseModel):
-    """Schema para atualizar uma tarefa"""
+    """Atualiza uma tarefa existente. Apenas campos fornecidos serão alterados."""
     assigned_to_id: Optional[int] = None
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
@@ -69,68 +84,130 @@ class CardTaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     is_completed: Optional[bool] = None
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
+            "example": {
+                "title": "Ligar para cliente - urgente",
+                "priority": "urgent",
+                "due_date": "2026-01-18T10:00:00"
+            }
+        }
+    )
 
 
 class CardTaskMarkComplete(BaseModel):
-    """Schema para marcar tarefa como concluída/pendente"""
-    is_completed: bool = Field(..., description="True para concluído, False para pendente")
+    """Marca ou desmarca uma tarefa como concluída."""
+    is_completed: bool = Field(..., description="True para concluída, False para reabrir como pendente")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "is_completed": True
+            }
+        }
+    )
 
 
 # ==================== RESPONSE SCHEMAS ====================
 
 class CardTaskResponse(BaseModel):
-    """Schema de resposta com dados da tarefa"""
-    id: int
-    card_id: int
-    assigned_to_id: Optional[int]
-    title: str
-    description: Optional[str]
-    task_type: str
-    priority: str
-    due_date: Optional[datetime]
-    duration_minutes: Optional[int]
-    location: Optional[str]
-    video_link: Optional[str]
-    notes: Optional[str]
-    contact_name: Optional[str]
-    status: str
-    is_completed: bool
-    completed_at: Optional[datetime]
-    created_at: datetime
-    updated_at: datetime
+    """Dados completos de uma tarefa/atividade."""
+    id: int = Field(..., description="ID único da tarefa")
+    card_id: int = Field(..., description="ID do card vinculado")
+    assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
+    title: str = Field(..., description="Título da tarefa")
+    description: Optional[str] = Field(None, description="Descrição detalhada")
+    task_type: str = Field(..., description="Tipo da tarefa")
+    priority: str = Field(..., description="Prioridade (normal, high, urgent)")
+    due_date: Optional[datetime] = Field(None, description="Data/hora de vencimento")
+    duration_minutes: Optional[int] = Field(None, description="Duração em minutos")
+    location: Optional[str] = Field(None, description="Local da atividade")
+    video_link: Optional[str] = Field(None, description="Link de videochamada")
+    notes: Optional[str] = Field(None, description="Notas adicionais")
+    contact_name: Optional[str] = Field(None, description="Nome do contato")
+    status: str = Field(..., description="Status de disponibilidade")
+    is_completed: bool = Field(..., description="Se a tarefa está concluída")
+    completed_at: Optional[datetime] = Field(None, description="Data/hora de conclusão")
+    created_at: datetime = Field(..., description="Data de criação")
+    updated_at: datetime = Field(..., description="Data da última atualização")
 
     # Campos relacionados (opcionais, populados quando expandido)
-    assigned_to_name: Optional[str] = None
-    is_overdue: Optional[bool] = None
+    assigned_to_name: Optional[str] = Field(None, description="Nome do usuário responsável")
+    is_overdue: Optional[bool] = Field(None, description="Se a tarefa está atrasada")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "card_id": 42,
+                "assigned_to_id": 5,
+                "title": "Ligar para cliente sobre proposta",
+                "description": "Confirmar valores e condições",
+                "task_type": "call",
+                "priority": "high",
+                "due_date": "2026-01-20T14:00:00",
+                "duration_minutes": 30,
+                "location": None,
+                "video_link": None,
+                "notes": "Cliente prefere ligação à tarde",
+                "contact_name": "Carlos Oliveira",
+                "status": "free",
+                "is_completed": False,
+                "completed_at": None,
+                "created_at": "2026-01-15T10:00:00",
+                "updated_at": "2026-01-15T10:00:00",
+                "assigned_to_name": "João Silva",
+                "is_overdue": False
+            }
+        }
+    )
 
 
 class CardTaskListResponse(BaseModel):
-    """Schema de resposta para lista de tarefas"""
-    tasks: list[CardTaskResponse]
-    total: int
-    page: int
-    page_size: int
-    total_pages: int
+    """Lista paginada de tarefas."""
+    tasks: list[CardTaskResponse] = Field(..., description="Lista de tarefas")
+    total: int = Field(..., description="Total de tarefas encontradas")
+    page: int = Field(..., description="Página atual")
+    page_size: int = Field(..., description="Itens por página")
+    total_pages: int = Field(..., description="Total de páginas")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "tasks": [
+                    {
+                        "id": 1,
+                        "card_id": 42,
+                        "title": "Ligar para cliente",
+                        "task_type": "call",
+                        "priority": "high",
+                        "is_completed": False,
+                        "assigned_to_name": "João Silva"
+                    }
+                ],
+                "total": 15,
+                "page": 1,
+                "page_size": 50,
+                "total_pages": 1
+            }
+        }
+    )
 
 
 # ==================== FILTROS ====================
 
 class CardTaskFilters(BaseModel):
-    """Filtros para listagem de tarefas"""
-    card_id: Optional[int] = None
-    assigned_to_id: Optional[int] = None
-    task_type: Optional[TaskType] = None
-    priority: Optional[TaskPriority] = None
-    is_completed: Optional[bool] = None
-    due_date_start: Optional[datetime] = None
-    due_date_end: Optional[datetime] = None
-    page: int = Field(1, ge=1)
-    page_size: int = Field(50, ge=1, le=100)
+    """Filtros para listagem de tarefas."""
+    card_id: Optional[int] = Field(None, description="Filtrar por card específico")
+    assigned_to_id: Optional[int] = Field(None, description="Filtrar por responsável")
+    task_type: Optional[TaskType] = Field(None, description="Filtrar por tipo de tarefa")
+    priority: Optional[TaskPriority] = Field(None, description="Filtrar por prioridade")
+    is_completed: Optional[bool] = Field(None, description="Filtrar por status de conclusão")
+    due_date_start: Optional[datetime] = Field(None, description="Data de vencimento inicial")
+    due_date_end: Optional[datetime] = Field(None, description="Data de vencimento final")
+    page: int = Field(1, ge=1, description="Número da página")
+    page_size: int = Field(50, ge=1, le=100, description="Itens por página (máx: 100)")
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)

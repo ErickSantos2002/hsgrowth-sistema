@@ -7,6 +7,73 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.1] - 2026-02-05
+
+### ✨ Novas Funcionalidades
+
+#### Filtro de Status no Board
+- **Novo filtro de status** no painel de filtros do Kanban
+- Opções disponíveis:
+  - **Apenas Abertos** (padrão) - Mostra apenas cards em aberto (não ganhos nem perdidos)
+  - **Todos** - Exibe todos os cards incluindo ganhos e perdidos
+  - **Apenas Ganhos** - Filtra somente negócios ganhos
+  - **Apenas Perdidos** - Filtra somente negócios perdidos
+- **Melhoria de performance**: Por padrão, carrega apenas cards abertos, evitando carregar milhares de cards ganhos/perdidos desnecessariamente
+- Integrado ao sistema de filtros existente (lista, vendedor, valor, data)
+
+### 📊 Importação de Dados
+
+#### Importação de Deals do Pipedrive
+- **4.202 deals importados** do funil "Novas Vendas" do Pipedrive
+- **Distribuição inteligente** por status:
+  - 1.410 negócios ganhos → Lista 32 (Negócio Ganho)
+  - 2.536 negócios perdidos → Lista 33 (Negócio Perdido)
+  - 123 leads novos → Lista 22 (Lead Novo - Board Prospecção)
+  - 133 em diagnóstico → Lista 30 (Diagnóstico e Proposta - Board Aquisição)
+- **3.578 pessoas criadas** automaticamente durante importação
+- Preservação de dados: valores, datas, motivos de perda, canais de aquisição
+- Mapeamento de proprietários para usuários do sistema
+- Sistema de verificação de duplicados por título e data de criação
+- Pipedrive Deal ID armazenado em `contact_info` para referência
+
+#### Scripts de Importação
+- `clean_deals_csv.py` - Limpeza e filtragem do CSV exportado do Pipedrive
+- `import_deals_to_cards.py` - Importação de deals para o sistema como cards
+- Commits parciais a cada 100 deals para segurança
+- Estatísticas detalhadas ao final do processo
+
+### 🐛 Correções
+
+#### Tipos TypeScript
+- Corrigido tipo `Card.is_won` de `boolean` para refletir corretamente o comportamento da API
+- Adicionado `Card.is_lost` que estava faltando no tipo
+- Sincronização entre schema Pydantic do backend e interfaces TypeScript do frontend
+
+#### Filtros do Board
+- Ajustada lógica de filtro para trabalhar corretamente com booleans retornados pela API
+- Correção na detecção de cards abertos: `!is_won && !is_lost`
+
+### 🔧 Melhorias Técnicas
+
+#### Backend
+- Validador do schema `CardResponse` converte corretamente Integer (0/1/-1) para Boolean
+- `is_won: 0` → `is_won: false, is_lost: false` (aberto)
+- `is_won: 1` → `is_won: true, is_lost: false` (ganho)
+- `is_won: -1` → `is_won: false, is_lost: true` (perdido)
+
+#### Frontend
+- Estado `statusFilter` com valor padrão "open" para melhor experiência
+- Filtro integrado à função `filterCards()` existente
+- UI responsiva com SelectMenu component
+
+### 📝 Documentação
+
+- Atualizado `HISTORICO-DESENVOLVIMENTO.md` com seção completa sobre Blueprint da Consultora
+- Removido `BLUEPRINT-AJUSTES.md` (conteúdo incorporado ao histórico)
+- Arquivo `deals_novas_vendas_clean.csv` gerado com 4.204 deals limpos e filtrados
+
+---
+
 ## [1.1.0] - 2026-02-04
 
 ### ✨ Novas Funcionalidades

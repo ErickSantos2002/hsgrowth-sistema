@@ -32,9 +32,10 @@ class UserCreate(UserBase):
                     "email": "usuario@example.com",
                     "username": "usuario123",
                     "name": "João da Silva",
+                    "avatar_url": "https://example.com/avatars/joao.jpg",
+                    "phone": "(11) 99999-9999",
                     "password": "senha123",
-                    "role_id": 2,
-                    "phone": "(11) 99999-9999"
+                    "role_id": 2
                 }
             ]
         }
@@ -58,9 +59,14 @@ class UserUpdate(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
+                    "email": "joao.atualizado@example.com",
+                    "username": "joao_silva",
                     "name": "João da Silva Atualizado",
+                    "avatar_url": "https://example.com/avatars/joao_novo.jpg",
                     "phone": "(11) 98888-8888",
-                    "avatar_url": "https://example.com/avatar.jpg"
+                    "password": "novaSenha456",
+                    "role_id": 3,
+                    "is_active": True
                 }
             ]
         }
@@ -91,13 +97,14 @@ class UserResponse(UserBase):
                     "email": "usuario@example.com",
                     "username": "usuario123",
                     "name": "João da Silva",
-                    "avatar_url": "https://example.com/avatar.jpg",
+                    "avatar_url": "https://example.com/avatars/joao.jpg",
                     "phone": "(11) 99999-9999",
                     "role_id": 2,
                     "is_active": True,
                     "last_login_at": "2026-01-05T10:30:00",
                     "created_at": "2026-01-01T08:00:00",
                     "updated_at": "2026-01-05T10:30:00",
+                    "role": "salesperson",
                     "role_name": "Vendedor"
                 }
             ]

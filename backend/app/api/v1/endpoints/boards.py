@@ -29,9 +29,119 @@ from app.models.board import Board
 router = APIRouter()
 
 
+# ========== EXEMPLOS DE RESPONSES PARA DOCUMENTAÇÃO SWAGGER ==========
+
+# Exemplo reutilizável de um board completo para as respostas
+_BOARD_EXAMPLE = {
+    "id": 1,
+    "name": "Funil de Vendas B2B",
+    "description": "Gerenciamento de leads corporativos da HSGrowth",
+    "color": "#3B82F6",
+    "icon": "briefcase",
+    "is_deleted": False,
+    "created_at": "2026-01-10T09:30:00",
+    "updated_at": "2026-01-15T14:22:00",
+    "lists_count": 5,
+    "cards_count": 87
+}
+
+# Exemplo reutilizável de uma lista completa para as respostas
+_LIST_EXAMPLE = {
+    "id": 1,
+    "name": "Novos Leads",
+    "color": "#3b82f6",
+    "board_id": 1,
+    "position": 0,
+    "created_at": "2026-01-10T09:35:00",
+    "updated_at": "2026-01-10T09:35:00",
+    "cards_count": 23
+}
+
+# Respostas de erro reutilizáveis
+_BOARD_NOT_FOUND_RESPONSE = {
+    "description": "Board não encontrado",
+    "content": {
+        "application/json": {
+            "example": {"detail": "Board com ID 999 não encontrado"}
+        }
+    }
+}
+
+_LIST_NOT_FOUND_RESPONSE = {
+    "description": "Lista não encontrada",
+    "content": {
+        "application/json": {
+            "example": {"detail": "Lista com ID 999 não encontrada"}
+        }
+    }
+}
+
+_VALIDATION_ERROR_RESPONSE = {
+    "description": "Erro de validação nos dados enviados",
+    "content": {
+        "application/json": {
+            "example": {
+                "detail": [
+                    {
+                        "loc": ["body", "name"],
+                        "msg": "Field required",
+                        "type": "missing"
+                    }
+                ]
+            }
+        }
+    }
+}
+
+
 # ========== ENDPOINTS DE BOARDS ==========
 
-@router.get("", response_model=BoardListResponse, summary="Listar boards")
+@router.get(
+    "",
+    response_model=BoardListResponse,
+    summary="Listar boards",
+    responses={
+        200: {
+            "description": "Lista paginada de boards retornada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "boards": [
+                            {
+                                "id": 1,
+                                "name": "Funil de Vendas B2B",
+                                "description": "Gerenciamento de leads corporativos",
+                                "color": "#3B82F6",
+                                "icon": "briefcase",
+                                "is_deleted": False,
+                                "created_at": "2026-01-10T09:30:00",
+                                "updated_at": "2026-01-15T14:22:00",
+                                "lists_count": 5,
+                                "cards_count": 87
+                            },
+                            {
+                                "id": 2,
+                                "name": "Pós-Venda e Sucesso",
+                                "description": "Acompanhamento de clientes ativos",
+                                "color": "#10B981",
+                                "icon": "heart-handshake",
+                                "is_deleted": False,
+                                "created_at": "2026-01-12T11:00:00",
+                                "updated_at": "2026-01-20T16:45:00",
+                                "lists_count": 4,
+                                "cards_count": 34
+                            }
+                        ],
+                        "total": 2,
+                        "page": 1,
+                        "page_size": 50,
+                        "total_pages": 1
+                    }
+                }
+            }
+        }
+    }
+)
 async def list_boards(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
@@ -54,7 +164,22 @@ async def list_boards(
     )
 
 
-@router.get("/{board_id}", response_model=BoardResponse, summary="Buscar board")
+@router.get(
+    "/{board_id}",
+    response_model=BoardResponse,
+    summary="Buscar board",
+    responses={
+        200: {
+            "description": "Board encontrado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": _BOARD_EXAMPLE
+                }
+            }
+        },
+        404: _BOARD_NOT_FOUND_RESPONSE
+    }
+)
 async def get_board(
     board_id: int = Path(..., description="ID do board"),
     current_user: User = Depends(get_current_active_user),
@@ -88,7 +213,34 @@ async def get_board(
     )
 
 
-@router.post("", response_model=BoardResponse, summary="Criar board", status_code=201)
+@router.post(
+    "",
+    response_model=BoardResponse,
+    summary="Criar board",
+    status_code=201,
+    responses={
+        201: {
+            "description": "Board criado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 3,
+                        "name": "Prospecção Outbound",
+                        "description": "Board para controle de prospecção ativa via e-mail e LinkedIn",
+                        "color": "#8B5CF6",
+                        "icon": "send",
+                        "is_deleted": False,
+                        "created_at": "2026-02-01T08:00:00",
+                        "updated_at": "2026-02-01T08:00:00",
+                        "lists_count": None,
+                        "cards_count": None
+                    }
+                }
+            }
+        },
+        422: _VALIDATION_ERROR_RESPONSE
+    }
+)
 async def create_board(
     request: Request,
     board_data: BoardCreate,
@@ -134,7 +286,34 @@ async def create_board(
     )
 
 
-@router.put("/{board_id}", response_model=BoardResponse, summary="Atualizar board")
+@router.put(
+    "/{board_id}",
+    response_model=BoardResponse,
+    summary="Atualizar board",
+    responses={
+        200: {
+            "description": "Board atualizado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "name": "Funil de Vendas B2B - Q1 2026",
+                        "description": "Gerenciamento de leads corporativos - Primeiro trimestre",
+                        "color": "#6366F1",
+                        "icon": "briefcase",
+                        "is_deleted": False,
+                        "created_at": "2026-01-10T09:30:00",
+                        "updated_at": "2026-02-05T11:15:00",
+                        "lists_count": None,
+                        "cards_count": None
+                    }
+                }
+            }
+        },
+        404: _BOARD_NOT_FOUND_RESPONSE,
+        422: _VALIDATION_ERROR_RESPONSE
+    }
+)
 async def update_board(
     request: Request,
     board_id: int = Path(..., description="ID do board"),
@@ -192,7 +371,21 @@ async def update_board(
     )
 
 
-@router.delete("/{board_id}", summary="Deletar board")
+@router.delete(
+    "/{board_id}",
+    summary="Deletar board",
+    responses={
+        200: {
+            "description": "Board deletado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {"message": "Board deletado com sucesso"}
+                }
+            }
+        },
+        404: _BOARD_NOT_FOUND_RESPONSE
+    }
+)
 async def delete_board(
     request: Request,
     board_id: int = Path(..., description="ID do board"),
@@ -230,7 +423,34 @@ async def delete_board(
     return {"message": "Board deletado com sucesso"}
 
 
-@router.post("/{board_id}/duplicate", response_model=BoardResponse, summary="Duplicar board", status_code=201)
+@router.post(
+    "/{board_id}/duplicate",
+    response_model=BoardResponse,
+    summary="Duplicar board",
+    status_code=201,
+    responses={
+        201: {
+            "description": "Board duplicado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 4,
+                        "name": "Funil de Vendas B2B - Cópia",
+                        "description": "Gerenciamento de leads corporativos da HSGrowth",
+                        "color": "#3B82F6",
+                        "icon": "briefcase",
+                        "is_deleted": False,
+                        "created_at": "2026-02-06T10:00:00",
+                        "updated_at": "2026-02-06T10:00:00",
+                        "lists_count": None,
+                        "cards_count": None
+                    }
+                }
+            }
+        },
+        404: _BOARD_NOT_FOUND_RESPONSE
+    }
+)
 async def duplicate_board(
     board_id: int = Path(..., description="ID do board"),
     duplicate_data: BoardDuplicateRequest = ...,
@@ -268,7 +488,73 @@ async def duplicate_board(
 
 # ========== ENDPOINTS DE LISTS ==========
 
-@router.get("/{board_id}/lists", response_model=List[ListResponse], summary="Listar listas do board")
+@router.get(
+    "/{board_id}/lists",
+    response_model=List[ListResponse],
+    summary="Listar listas do board",
+    responses={
+        200: {
+            "description": "Listas do board retornadas com sucesso, ordenadas por posição",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "id": 1,
+                            "name": "Novos Leads",
+                            "color": "#3b82f6",
+                            "board_id": 1,
+                            "position": 0,
+                            "created_at": "2026-01-10T09:35:00",
+                            "updated_at": "2026-01-10T09:35:00",
+                            "cards_count": 23
+                        },
+                        {
+                            "id": 2,
+                            "name": "Em Contato",
+                            "color": "#f59e0b",
+                            "board_id": 1,
+                            "position": 1,
+                            "created_at": "2026-01-10T09:36:00",
+                            "updated_at": "2026-01-10T09:36:00",
+                            "cards_count": 15
+                        },
+                        {
+                            "id": 3,
+                            "name": "Proposta Enviada",
+                            "color": "#8b5cf6",
+                            "board_id": 1,
+                            "position": 2,
+                            "created_at": "2026-01-10T09:37:00",
+                            "updated_at": "2026-01-10T09:37:00",
+                            "cards_count": 8
+                        },
+                        {
+                            "id": 4,
+                            "name": "Negociação",
+                            "color": "#ef4444",
+                            "board_id": 1,
+                            "position": 3,
+                            "created_at": "2026-01-10T09:38:00",
+                            "updated_at": "2026-01-10T09:38:00",
+                            "cards_count": 5
+                        },
+                        {
+                            "id": 5,
+                            "name": "Fechado/Ganho",
+                            "color": "#10b981",
+                            "board_id": 1,
+                            "position": 4,
+                            "created_at": "2026-01-10T09:39:00",
+                            "updated_at": "2026-01-20T16:00:00",
+                            "cards_count": 36
+                        }
+                    ]
+                }
+            }
+        },
+        404: _BOARD_NOT_FOUND_RESPONSE
+    }
+)
 async def list_board_lists(
     board_id: int = Path(..., description="ID do board"),
     current_user: User = Depends(get_current_active_user),
@@ -283,7 +569,32 @@ async def list_board_lists(
     return service.list_by_board(board_id)
 
 
-@router.post("/{board_id}/lists", response_model=ListResponse, summary="Criar lista", status_code=201)
+@router.post(
+    "/{board_id}/lists",
+    response_model=ListResponse,
+    summary="Criar lista",
+    status_code=201,
+    responses={
+        201: {
+            "description": "Lista criada com sucesso no board",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 6,
+                        "name": "Qualificação",
+                        "color": "#06b6d4",
+                        "board_id": 1,
+                        "position": 5,
+                        "created_at": "2026-02-06T10:30:00",
+                        "updated_at": "2026-02-06T10:30:00",
+                        "cards_count": None
+                    }
+                }
+            }
+        },
+        422: _VALIDATION_ERROR_RESPONSE
+    }
+)
 async def create_list(
     board_id: int = Path(..., description="ID do board"),
     list_data: ListCreate = ...,
@@ -312,7 +623,32 @@ async def create_list(
     )
 
 
-@router.put("/{board_id}/lists/{list_id}", response_model=ListResponse, summary="Atualizar lista")
+@router.put(
+    "/{board_id}/lists/{list_id}",
+    response_model=ListResponse,
+    summary="Atualizar lista",
+    responses={
+        200: {
+            "description": "Lista atualizada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 2,
+                        "name": "Em Contato (Follow-up)",
+                        "color": "#f59e0b",
+                        "board_id": 1,
+                        "position": 1,
+                        "created_at": "2026-01-10T09:36:00",
+                        "updated_at": "2026-02-06T11:00:00",
+                        "cards_count": None
+                    }
+                }
+            }
+        },
+        404: _LIST_NOT_FOUND_RESPONSE,
+        422: _VALIDATION_ERROR_RESPONSE
+    }
+)
 async def update_list(
     board_id: int = Path(..., description="ID do board"),
     list_id: int = Path(..., description="ID da lista"),
@@ -341,7 +677,21 @@ async def update_list(
     )
 
 
-@router.delete("/{board_id}/lists/{list_id}", summary="Deletar lista")
+@router.delete(
+    "/{board_id}/lists/{list_id}",
+    summary="Deletar lista",
+    responses={
+        200: {
+            "description": "Lista deletada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {"message": "Lista deletada com sucesso"}
+                }
+            }
+        },
+        404: _LIST_NOT_FOUND_RESPONSE
+    }
+)
 async def delete_list(
     board_id: int = Path(..., description="ID do board"),
     list_id: int = Path(..., description="ID da lista"),
@@ -360,7 +710,31 @@ async def delete_list(
     return {"message": "Lista deletada com sucesso"}
 
 
-@router.put("/{board_id}/lists/{list_id}/move", response_model=ListResponse, summary="Mover/reordenar lista")
+@router.put(
+    "/{board_id}/lists/{list_id}/move",
+    response_model=ListResponse,
+    summary="Mover/reordenar lista",
+    responses={
+        200: {
+            "description": "Lista movida para a nova posição com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 3,
+                        "name": "Proposta Enviada",
+                        "color": "#8b5cf6",
+                        "board_id": 1,
+                        "position": 1,
+                        "created_at": "2026-01-10T09:37:00",
+                        "updated_at": "2026-02-06T11:30:00",
+                        "cards_count": None
+                    }
+                }
+            }
+        },
+        404: _LIST_NOT_FOUND_RESPONSE
+    }
+)
 async def move_list(
     board_id: int = Path(..., description="ID do board"),
     list_id: int = Path(..., description="ID da lista"),

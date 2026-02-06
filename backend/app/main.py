@@ -1,9 +1,13 @@
 """
 Entry point da aplicação FastAPI - HSGrowth CRM
 """
+import os
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from app.core.config import settings
@@ -53,51 +57,87 @@ async def lifespan(app: FastAPI):
 tags_metadata = [
     {
         "name": "Health",
-        "description": "Endpoints de saúde e status da API",
+        "description": "Endpoints de saúde e status da API.",
     },
     {
         "name": "Root",
-        "description": "Endpoint raiz da API",
+        "description": "Endpoint raiz da API.",
     },
     {
         "name": "Auth",
-        "description": "Autenticação e gerenciamento de sessão. Login, registro, refresh token, recuperação de senha.",
+        "description": "Autenticação e gerenciamento de sessão. Login, registro, refresh token, recuperação de senha e autenticação client_credentials para integrações.",
     },
     {
         "name": "Users",
-        "description": "Gerenciamento de usuários. CRUD, paginação, filtros e alteração de senha.",
+        "description": "Gerenciamento de usuários. CRUD, paginação, filtros, alteração de senha e avatar.",
     },
     {
         "name": "Boards",
-        "description": "Quadros Kanban. Criação, edição, duplicação e gerenciamento de listas.",
+        "description": "Quadros Kanban e listas. Criação, edição, duplicação de boards e gerenciamento de listas (colunas do pipeline).",
     },
     {
         "name": "Cards",
-        "description": "Cards/Leads do pipeline. CRUD, movimentação entre listas, atribuição, campos customizados.",
+        "description": "Cards/Leads do pipeline de vendas. CRUD, movimentação entre listas, atribuição a vendedores, histórico e campos customizados.",
+    },
+    {
+        "name": "Card Tasks",
+        "description": "Tarefas e atividades dos cards. Ligações, reuniões, prazos e outras atividades vinculadas a oportunidades de venda.",
+    },
+    {
+        "name": "Card Notes",
+        "description": "Anotações dos cards. Registro de observações, interações e informações relevantes sobre as oportunidades.",
+    },
+    {
+        "name": "Custom Fields",
+        "description": "Campos personalizados dos boards. Definição e gerenciamento de campos customizados (texto, número, select, etc.) e seus valores nos cards.",
+    },
+    {
+        "name": "Products",
+        "description": "Catálogo de produtos e serviços. Gerenciamento do catálogo e vinculação de produtos aos cards com cálculo de valores.",
+    },
+    {
+        "name": "Clients",
+        "description": "Gerenciamento de empresas/clientes. CRUD de organizações vinculadas aos cards do pipeline.",
+    },
+    {
+        "name": "Persons",
+        "description": "Gerenciamento de contatos/pessoas. CRUD de pessoas vinculadas a clientes e cards do pipeline.",
     },
     {
         "name": "Gamification",
-        "description": "Sistema de pontos, badges e rankings. Motivação e engajamento da equipe de vendas.",
+        "description": "Sistema de gamificação. Pontos, badges e rankings para motivação e engajamento da equipe de vendas.",
     },
     {
         "name": "Automations",
-        "description": "Automações trigger e agendadas. Fluxos automatizados para ações em cards.",
+        "description": "Automações do sistema. Triggers baseados em eventos e agendamentos para ações automáticas em cards (mover, atribuir, notificar, etc.).",
     },
     {
         "name": "Transfers",
-        "description": "Transferência de cards entre vendedores. Fluxo de aprovação e gestão de transferências.",
+        "description": "Transferência de cards entre vendedores. Transferências individuais e em lote, fluxo de aprovação e estatísticas.",
     },
     {
         "name": "Reports",
-        "description": "Relatórios e dashboard. KPIs, vendas, conversão e exportação de dados.",
+        "description": "Relatórios e dashboard. KPIs do pipeline, relatórios de vendas, funil de conversão, transferências e exportação de dados.",
     },
     {
         "name": "Notifications",
-        "description": "Notificações in-app. Sistema de avisos e alertas para usuários.",
+        "description": "Notificações in-app. Sistema de avisos e alertas em tempo real para usuários sobre ações no CRM.",
     },
     {
         "name": "Admin",
-        "description": "Endpoints administrativos. Gestão avançada do sistema (requer role admin).",
+        "description": "Endpoints administrativos (requer role admin). Gestão de usuários, logs de auditoria, queries SQL, monitoramento de automações e estatísticas do sistema.",
+    },
+    {
+        "name": "Integration Clients",
+        "description": "Gerenciamento de clients de integração (requer role admin). Criação e gestão de credenciais OAuth2 client_credentials para sistemas externos (N8N, Zapier, etc.).",
+    },
+    {
+        "name": "API4COM",
+        "description": "Integração com API4COM (VOIP). Configuração da central telefônica, gerenciamento de ramais, realização de chamadas e recebimento de webhooks.",
+    },
+    {
+        "name": "Audit Logs",
+        "description": "Logs de auditoria do sistema (requer role admin). Registro detalhado de todas as ações realizadas no CRM com filtros avançados.",
     },
 ]
 
@@ -215,6 +255,19 @@ async def root():
 # Incluir routers da API v1
 from app.api.v1 import api_router
 app.include_router(api_router, prefix="/api/v1")
+
+
+# Montar diretório de arquivos estáticos (CSS, JS, imagens, etc.)
+_static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.isdir(_static_dir):
+    app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
+
+@app.get("/api-docs", include_in_schema=False)
+async def custom_api_docs():
+    """Página de documentação customizada da API."""
+    html_path = os.path.join(os.path.dirname(__file__), "static", "api-docs.html")
+    return FileResponse(html_path, media_type="text/html")
 
 
 if __name__ == "__main__":

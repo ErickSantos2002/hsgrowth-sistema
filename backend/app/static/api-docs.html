@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSGrowth CRM - Documentação da API</title>
+
+    <!-- Tailwind CSS 3.4 CDN Play -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Marked.js para renderizar Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* Scrollbar customizada */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Scrollbar da sidebar */
+        #sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+        #sidebar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 2px;
+        }
+
+        /* Animação de fade-in */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Animação do skeleton loader */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 0.5rem;
+        }
+
+        /* Estilos do Markdown renderizado */
+        .markdown-body h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.75rem; color: #f1f5f9; }
+        .markdown-body h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #e2e8f0; }
+        .markdown-body h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #cbd5e1; }
+        .markdown-body p { margin-bottom: 0.5rem; color: #94a3b8; line-height: 1.6; }
+        .markdown-body ul { list-style: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; color: #94a3b8; }
+        .markdown-body ol { list-style: decimal; margin-left: 1.25rem; margin-bottom: 0.5rem; color: #94a3b8; }
+        .markdown-body li { margin-bottom: 0.25rem; }
+        .markdown-body code {
+            background: #1e293b;
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            color: #67e8f9;
+        }
+        .markdown-body pre {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin-bottom: 0.75rem;
+            border: 1px solid #1e293b;
+        }
+        .markdown-body pre code {
+            background: transparent;
+            padding: 0;
+            color: #e2e8f0;
+        }
+        .markdown-body strong { color: #e2e8f0; font-weight: 600; }
+        .markdown-body a { color: #38bdf8; text-decoration: underline; }
+        .markdown-body a:hover { color: #67e8f9; }
+        .markdown-body blockquote {
+            border-left: 3px solid #334155;
+            padding-left: 1rem;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* Transição suave para collapse */
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease-out, opacity 0.25s ease-out;
+            opacity: 0;
+        }
+        .collapsible-content.open {
+            max-height: 10000px;
+            opacity: 1;
+            transition: max-height 0.5s ease-in, opacity 0.3s ease-in;
+        }
+
+        /* Badge de método HTTP animado */
+        .method-badge {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .method-badge:hover {
+            transform: scale(1.05);
+        }
+
+        /* Sidebar item ativo */
+        .sidebar-item {
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+        }
+        .sidebar-item:hover {
+            background: rgba(30, 41, 59, 0.5);
+            border-left-color: #334155;
+        }
+        .sidebar-item.active {
+            background: rgba(56, 189, 248, 0.08);
+            border-left-color: #38bdf8;
+            color: #38bdf8;
+        }
+
+        /* Tooltip para botão copiar */
+        .copy-tooltip {
+            position: absolute;
+            top: -2rem;
+            right: 0;
+            background: #10b981;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+        .copy-tooltip.show {
+            opacity: 1;
+        }
+
+        /* Mobile menu overlay */
+        .mobile-overlay {
+            transition: opacity 0.3s ease;
+        }
+
+        /* Estilo para tabela de parâmetros */
+        .params-table th {
+            background: #0f172a;
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .params-table td {
+            border-top: 1px solid #1e293b;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-300 font-sans min-h-screen">
+
+    <!-- Header fixo -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
+        <div class="flex items-center justify-between px-4 lg:px-6 h-16">
+            <!-- Logo e título -->
+            <div class="flex items-center gap-3">
+                <!-- Botão menu mobile -->
+                <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-lg hover:bg-slate-800 transition-colors">
+                    <i data-lucide="menu" class="w-5 h-5 text-slate-400"></i>
+                </button>
+
+                <div class="relative">
+                    <div class="absolute inset-0 bg-cyan-400/20 blur-xl rounded-full"></div>
+                    <img src="/static/logo.png" alt="HSGrowth" class="relative w-8 h-8 rounded-lg">
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                        HSGrowth CRM
+                    </h1>
+                    <p class="text-[10px] text-slate-500 -mt-0.5 tracking-wider uppercase">API Documentation</p>
+                </div>
+                <span id="api-version-badge" class="hidden ml-2 px-2 py-0.5 text-xs font-mono bg-slate-800 text-cyan-400 rounded-md border border-slate-700"></span>
+            </div>
+
+            <!-- Links de navegação -->
+            <div class="flex items-center gap-2">
+                <a href="/docs" target="_blank"
+                   class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 rounded-lg transition-all border border-slate-700/50">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Swagger</span>
+                </a>
+                <a href="/redoc" target="_blank"
+                   class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 rounded-lg transition-all border border-slate-700/50">
+                    <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">ReDoc</span>
+                </a>
+                <a href="/openapi.json" target="_blank"
+                   class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 rounded-lg transition-all border border-slate-700/50">
+                    <i data-lucide="file-json" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">OpenAPI</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile overlay -->
+    <div id="mobile-overlay" class="mobile-overlay fixed inset-0 bg-black/60 z-30 hidden lg:hidden" onclick="closeMobileSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+           class="fixed top-16 left-0 bottom-0 w-72 z-40
+                  bg-gradient-to-b from-slate-900/95 to-slate-950/95 backdrop-blur-xl
+                  border-r border-slate-800/50 overflow-y-auto
+                  transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+
+        <!-- Campo de busca -->
+        <div class="sticky top-0 p-4 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/30 z-10">
+            <div class="relative">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                <input id="search-input" type="text" placeholder="Buscar endpoints..."
+                       class="w-full pl-9 pr-8 py-2 text-sm bg-slate-800/50 border border-slate-700/50 rounded-lg
+                              text-slate-300 placeholder-slate-500
+                              focus:outline-none focus:ring-1 focus:ring-cyan-400/30 focus:border-cyan-400/30
+                              transition-all">
+                <button id="search-clear" class="hidden absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-slate-700 transition-colors">
+                    <i data-lucide="x" class="w-3 h-3 text-slate-500"></i>
+                </button>
+            </div>
+            <div id="search-count" class="hidden mt-1.5 text-xs text-slate-500"></div>
+        </div>
+
+        <!-- Índice de categorias -->
+        <nav id="sidebar-nav" class="p-3 space-y-0.5">
+            <!-- Populado via JavaScript -->
+        </nav>
+    </aside>
+
+    <!-- Conteúdo principal -->
+    <main id="main-content" class="lg:ml-72 pt-16 min-h-screen">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+            <!-- Loading skeleton -->
+            <div id="loading-skeleton">
+                <div class="mb-8">
+                    <div class="skeleton h-10 w-96 mb-4"></div>
+                    <div class="skeleton h-4 w-full mb-2"></div>
+                    <div class="skeleton h-4 w-3/4 mb-6"></div>
+                    <div class="flex gap-4">
+                        <div class="skeleton h-24 w-48"></div>
+                        <div class="skeleton h-24 w-48"></div>
+                        <div class="skeleton h-24 w-48"></div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="skeleton h-8 w-64 mb-3"></div>
+                    <div class="skeleton h-16 w-full"></div>
+                    <div class="skeleton h-16 w-full"></div>
+                    <div class="skeleton h-16 w-full"></div>
+                </div>
+            </div>
+
+            <!-- Conteúdo renderizado -->
+            <div id="api-content" class="hidden">
+                <!-- Hero section -->
+                <section id="hero" class="mb-10 animate-fade-in">
+                    <div class="mb-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-cyan-400/10 rounded-xl border border-cyan-400/20">
+                                <i data-lucide="code-2" class="w-6 h-6 text-cyan-400"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-white">Referência da API</h2>
+                                <p class="text-sm text-slate-500">Documentação completa de todos os endpoints</p>
+                            </div>
+                        </div>
+                        <div id="api-description" class="markdown-body text-sm leading-relaxed"></div>
+                    </div>
+
+                    <!-- Cards de estatísticas -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                        <div class="bg-slate-800/30 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex items-center gap-3">
+                            <div class="p-2 bg-blue-500/10 rounded-lg">
+                                <i data-lucide="route" class="w-5 h-5 text-blue-400"></i>
+                            </div>
+                            <div>
+                                <p id="stat-endpoints" class="text-2xl font-bold text-white">--</p>
+                                <p class="text-xs text-slate-500">Endpoints</p>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800/30 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex items-center gap-3">
+                            <div class="p-2 bg-emerald-500/10 rounded-lg">
+                                <i data-lucide="box" class="w-5 h-5 text-emerald-400"></i>
+                            </div>
+                            <div>
+                                <p id="stat-schemas" class="text-2xl font-bold text-white">--</p>
+                                <p class="text-xs text-slate-500">Schemas</p>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800/30 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex items-center gap-3">
+                            <div class="p-2 bg-amber-500/10 rounded-lg">
+                                <i data-lucide="tags" class="w-5 h-5 text-amber-400"></i>
+                            </div>
+                            <div>
+                                <p id="stat-categories" class="text-2xl font-bold text-white">--</p>
+                                <p class="text-xs text-slate-500">Categorias</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Base URL -->
+                    <div class="bg-slate-800/30 border border-slate-700/50 rounded-xl p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="globe" class="w-4 h-4 text-slate-500"></i>
+                                <span class="text-xs text-slate-500 uppercase font-semibold tracking-wider">Base URL</span>
+                            </div>
+                            <button onclick="copyToClipboard(this, window.location.origin)" class="relative p-1.5 rounded-md hover:bg-slate-700 transition-colors">
+                                <i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500"></i>
+                                <span class="copy-tooltip">Copiado!</span>
+                            </button>
+                        </div>
+                        <code id="base-url" class="mt-2 block text-sm font-mono text-cyan-400"></code>
+                    </div>
+                </section>
+
+                <!-- Seções de endpoints por categoria -->
+                <div id="endpoints-container"></div>
+
+                <!-- Footer -->
+                <footer class="mt-16 pt-8 border-t border-slate-800/50 text-center text-sm text-slate-600">
+                    <p>HSGrowth CRM &mdash; Documentação gerada automaticamente a partir do OpenAPI Schema</p>
+                    <p class="mt-1">
+                        <a href="/docs" class="hover:text-cyan-400 transition-colors">Swagger UI</a>
+                        <span class="mx-2">&bull;</span>
+                        <a href="/redoc" class="hover:text-cyan-400 transition-colors">ReDoc</a>
+                        <span class="mx-2">&bull;</span>
+                        <a href="/openapi.json" class="hover:text-cyan-400 transition-colors">OpenAPI JSON</a>
+                    </p>
+                </footer>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    // ==============================================
+    // Aplicação principal - Documentação da API
+    // ==============================================
+
+    (function() {
+        'use strict';
+
+        // --- Estado global ---
+        let openApiSpec = null;
+        let categorizedEndpoints = {};
+        let allEndpointElements = [];
+        let activeSection = null;
+
+        // --- Configuração das cores dos métodos HTTP ---
+        const METHOD_COLORS = {
+            get:    { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30', dot: 'bg-emerald-400' },
+            post:   { bg: 'bg-blue-500/15',    text: 'text-blue-400',    border: 'border-blue-500/30',    dot: 'bg-blue-400' },
+            put:    { bg: 'bg-amber-500/15',   text: 'text-amber-400',   border: 'border-amber-500/30',   dot: 'bg-amber-400' },
+            patch:  { bg: 'bg-orange-500/15',  text: 'text-orange-400',  border: 'border-orange-500/30',  dot: 'bg-orange-400' },
+            delete: { bg: 'bg-red-500/15',     text: 'text-red-400',     border: 'border-red-500/30',     dot: 'bg-red-400' },
+        };
+
+        // --- Ícones por categoria (mapeamento tag -> ícone Lucide) ---
+        const TAG_ICONS = {
+            'Health': 'heart-pulse',
+            'Root': 'home',
+            'Auth': 'shield-check',
+            'Users': 'users',
+            'Boards': 'layout-dashboard',
+            'Cards': 'credit-card',
+            'Card Tasks': 'list-checks',
+            'Card Notes': 'sticky-note',
+            'Custom Fields': 'settings-2',
+            'Products': 'package',
+            'Clients': 'building-2',
+            'Persons': 'user',
+            'Gamification': 'trophy',
+            'Automations': 'bot',
+            'Transfers': 'arrow-left-right',
+            'Reports': 'bar-chart-3',
+            'Notifications': 'bell',
+            'Admin': 'shield',
+            'Integration Clients': 'plug',
+            'API4COM': 'phone',
+            'Audit Logs': 'scroll-text',
+        };
+
+        // ==============================================
+        // Inicialização
+        // ==============================================
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/openapi.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                openApiSpec = await response.json();
+                renderAll();
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        // ==============================================
+        // Renderização principal
+        // ==============================================
+
+        function renderAll() {
+            // Configurar marked.js
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+            });
+
+            categorizeEndpoints();
+            renderHero();
+            renderSidebar();
+            renderEndpoints();
+            initSearch();
+            initScrollSpy();
+            initMobileMenu();
+
+            // Esconder skeleton e mostrar conteúdo
+            document.getElementById('loading-skeleton').classList.add('hidden');
+            document.getElementById('api-content').classList.remove('hidden');
+
+            // Inicializar ícones Lucide
+            lucide.createIcons();
+        }
+
+        // ==============================================
+        // Organizar endpoints por categoria/tag
+        // ==============================================
+
+        function categorizeEndpoints() {
+            const paths = openApiSpec.paths || {};
+            categorizedEndpoints = {};
+
+            // Inicializar com tags definidas na spec (para manter a ordem)
+            if (openApiSpec.tags) {
+                openApiSpec.tags.forEach(tag => {
+                    categorizedEndpoints[tag.name] = {
+                        description: tag.description || '',
+                        endpoints: []
+                    };
+                });
+            }
+
+            // Percorrer todos os paths e métodos
+            for (const [path, methods] of Object.entries(paths)) {
+                for (const [method, details] of Object.entries(methods)) {
+                    if (['get', 'post', 'put', 'patch', 'delete'].indexOf(method) === -1) continue;
+
+                    const tags = details.tags || ['Sem Categoria'];
+                    tags.forEach(tag => {
+                        if (!categorizedEndpoints[tag]) {
+                            categorizedEndpoints[tag] = { description: '', endpoints: [] };
+                        }
+                        categorizedEndpoints[tag].endpoints.push({
+                            method: method.toUpperCase(),
+                            path,
+                            ...details
+                        });
+                    });
+                }
+            }
+
+            // Remover categorias vazias
+            for (const tag of Object.keys(categorizedEndpoints)) {
+                if (categorizedEndpoints[tag].endpoints.length === 0) {
+                    delete categorizedEndpoints[tag];
+                }
+            }
+        }
+
+        // ==============================================
+        // Renderizar Hero section
+        // ==============================================
+
+        function renderHero() {
+            // Versão
+            const versionBadge = document.getElementById('api-version-badge');
+            if (openApiSpec.info?.version) {
+                versionBadge.textContent = `v${openApiSpec.info.version}`;
+                versionBadge.classList.remove('hidden');
+            }
+
+            // Descrição em Markdown
+            const descEl = document.getElementById('api-description');
+            if (openApiSpec.info?.description) {
+                descEl.innerHTML = marked.parse(openApiSpec.info.description);
+            }
+
+            // Estatísticas
+            let totalEndpoints = 0;
+            for (const cat of Object.values(categorizedEndpoints)) {
+                totalEndpoints += cat.endpoints.length;
+            }
+            const totalSchemas = Object.keys(openApiSpec.components?.schemas || {}).length;
+            const totalCategories = Object.keys(categorizedEndpoints).length;
+
+            document.getElementById('stat-endpoints').textContent = totalEndpoints;
+            document.getElementById('stat-schemas').textContent = totalSchemas;
+            document.getElementById('stat-categories').textContent = totalCategories;
+
+            // Base URL
+            document.getElementById('base-url').textContent = window.location.origin;
+        }
+
+        // ==============================================
+        // Renderizar Sidebar
+        // ==============================================
+
+        function renderSidebar() {
+            const nav = document.getElementById('sidebar-nav');
+            nav.innerHTML = '';
+
+            for (const [tag, data] of Object.entries(categorizedEndpoints)) {
+                const slug = slugify(tag);
+                const icon = TAG_ICONS[tag] || 'folder';
+                const count = data.endpoints.length;
+
+                const item = document.createElement('a');
+                item.href = `#section-${slug}`;
+                item.className = 'sidebar-item flex items-center justify-between px-3 py-2 rounded-lg text-sm cursor-pointer group';
+                item.dataset.section = slug;
+                item.innerHTML = `
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <i data-lucide="${icon}" class="w-4 h-4 text-slate-500 group-hover:text-slate-400 flex-shrink-0"></i>
+                        <span class="truncate">${tag}</span>
+                    </div>
+                    <span class="text-xs text-slate-600 bg-slate-800/50 px-1.5 py-0.5 rounded flex-shrink-0">${count}</span>
+                `;
+
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const target = document.getElementById(`section-${slug}`);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        closeMobileSidebar();
+                    }
+                });
+
+                nav.appendChild(item);
+            }
+        }
+
+        // ==============================================
+        // Renderizar Endpoints
+        // ==============================================
+
+        function renderEndpoints() {
+            const container = document.getElementById('endpoints-container');
+            container.innerHTML = '';
+            allEndpointElements = [];
+
+            for (const [tag, data] of Object.entries(categorizedEndpoints)) {
+                const slug = slugify(tag);
+                const icon = TAG_ICONS[tag] || 'folder';
+
+                // Seção da categoria
+                const section = document.createElement('section');
+                section.id = `section-${slug}`;
+                section.className = 'mb-12 scroll-mt-24';
+                section.dataset.tag = tag;
+
+                // Header da categoria
+                section.innerHTML = `
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-slate-800/80 rounded-xl border border-slate-700/50">
+                            <i data-lucide="${icon}" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">${tag}</h2>
+                            ${data.description ? `<p class="text-sm text-slate-500 mt-0.5">${data.description}</p>` : ''}
+                        </div>
+                        <span class="ml-auto text-xs text-slate-600 bg-slate-800/50 px-2 py-1 rounded-lg">${data.endpoints.length} endpoint${data.endpoints.length > 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="space-y-3 endpoint-list"></div>
+                `;
+
+                const list = section.querySelector('.endpoint-list');
+
+                // Cards de cada endpoint
+                data.endpoints.forEach((endpoint, index) => {
+                    const card = createEndpointCard(endpoint, index);
+                    list.appendChild(card);
+                    allEndpointElements.push({
+                        element: card,
+                        tag,
+                        method: endpoint.method,
+                        path: endpoint.path,
+                        summary: (endpoint.summary || '').toLowerCase(),
+                        description: (endpoint.description || '').toLowerCase(),
+                    });
+                });
+
+                container.appendChild(section);
+            }
+        }
+
+        // ==============================================
+        // Criar card de endpoint individual
+        // ==============================================
+
+        function createEndpointCard(endpoint, index) {
+            const method = endpoint.method.toLowerCase();
+            const colors = METHOD_COLORS[method] || METHOD_COLORS.get;
+
+            const card = document.createElement('div');
+            card.className = `bg-slate-800/30 backdrop-blur border border-slate-700/40 rounded-xl overflow-hidden hover:border-slate-600/60 transition-all duration-200`;
+            card.style.animationDelay = `${index * 30}ms`;
+
+            // Header clicável do card
+            const header = document.createElement('button');
+            header.className = 'w-full flex items-center gap-3 p-4 text-left group';
+            header.onclick = () => toggleEndpoint(card);
+
+            header.innerHTML = `
+                <span class="method-badge inline-flex items-center justify-center px-2.5 py-1 text-xs font-bold font-mono uppercase rounded-lg ${colors.bg} ${colors.text} ${colors.border} border min-w-[4.5rem]">
+                    ${endpoint.method}
+                </span>
+                <code class="text-sm font-mono text-slate-300 group-hover:text-white transition-colors truncate">${endpoint.path}</code>
+                ${endpoint.deprecated ? '<span class="px-2 py-0.5 text-xs bg-red-500/10 text-red-400 border border-red-500/20 rounded-md">Deprecated</span>' : ''}
+                <span class="ml-auto text-xs text-slate-500 hidden sm:block max-w-xs truncate">${endpoint.summary || ''}</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-600 flex-shrink-0 transition-transform duration-200 chevron-icon"></i>
+            `;
+
+            card.appendChild(header);
+
+            // Conteúdo colapsável
+            const content = document.createElement('div');
+            content.className = 'collapsible-content';
+
+            let contentHTML = '<div class="px-4 pb-4 space-y-4 border-t border-slate-700/30 pt-4">';
+
+            // Summary e Description
+            if (endpoint.summary) {
+                contentHTML += `<h3 class="text-base font-semibold text-white">${endpoint.summary}</h3>`;
+            }
+            if (endpoint.description) {
+                contentHTML += `<div class="markdown-body text-sm">${marked.parse(endpoint.description)}</div>`;
+            }
+
+            // Parâmetros
+            const params = endpoint.parameters || [];
+            if (params.length > 0) {
+                contentHTML += `
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-slate-500"></i>
+                            Parâmetros
+                        </h4>
+                        <div class="overflow-x-auto rounded-lg border border-slate-700/40">
+                            <table class="params-table w-full text-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left px-3 py-2 rounded-tl-lg">Nome</th>
+                                        <th class="text-left px-3 py-2">Tipo</th>
+                                        <th class="text-center px-3 py-2">In</th>
+                                        <th class="text-center px-3 py-2">Obrigatório</th>
+                                        <th class="text-left px-3 py-2 rounded-tr-lg">Descrição</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${params.map(p => {
+                                        const paramType = resolveParamType(p);
+                                        return `
+                                            <tr class="hover:bg-slate-800/30">
+                                                <td class="px-3 py-2">
+                                                    <code class="text-cyan-400 text-xs font-mono">${p.name}</code>
+                                                </td>
+                                                <td class="px-3 py-2 text-xs text-slate-500 font-mono">${paramType}</td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <span class="text-xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">${p.in}</span>
+                                                </td>
+                                                <td class="px-3 py-2 text-center">
+                                                    ${p.required ? '<span class="text-xs text-amber-400 font-medium">sim</span>' : '<span class="text-xs text-slate-600">não</span>'}
+                                                </td>
+                                                <td class="px-3 py-2 text-xs text-slate-500">${p.description || '—'}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Request Body
+            if (endpoint.requestBody) {
+                const bodyContent = endpoint.requestBody.content;
+                const jsonBody = bodyContent?.['application/json'];
+                if (jsonBody) {
+                    const example = jsonBody.example || jsonBody.schema?.example || getSchemaExample(jsonBody.schema);
+                    const schemaRef = jsonBody.schema?.$ref || jsonBody.schema?.title || '';
+                    const schemaName = schemaRef ? schemaRef.split('/').pop() : '';
+
+                    contentHTML += `
+                        <div>
+                            <h4 class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                                <i data-lucide="file-input" class="w-4 h-4 text-slate-500"></i>
+                                Request Body
+                                ${schemaName ? `<span class="text-xs text-slate-600 font-mono font-normal">${schemaName}</span>` : ''}
+                                ${endpoint.requestBody.required ? '<span class="text-xs text-amber-400">obrigatório</span>' : ''}
+                            </h4>
+                    `;
+
+                    if (example) {
+                        const jsonStr = JSON.stringify(example, null, 2);
+                        contentHTML += `
+                            <div class="relative group/code">
+                                <button onclick="copyToClipboard(this, \`${escapeForAttribute(jsonStr)}\`)"
+                                        class="absolute top-2 right-2 p-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 transition-colors opacity-0 group-hover/code:opacity-100 z-10">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500"></i>
+                                    <span class="copy-tooltip">Copiado!</span>
+                                </button>
+                                <pre class="bg-slate-900/80 border border-slate-700/30 rounded-lg p-4 overflow-x-auto text-xs"><code class="text-slate-300 font-mono">${syntaxHighlight(jsonStr)}</code></pre>
+                            </div>
+                        `;
+                    }
+
+                    // Renderizar campos do schema
+                    const schemaFields = resolveSchemaFields(jsonBody.schema);
+                    if (schemaFields.length > 0) {
+                        contentHTML += `
+                            <details class="mt-2">
+                                <summary class="text-xs text-slate-500 hover:text-slate-400 cursor-pointer py-1">
+                                    Campos do schema (${schemaFields.length})
+                                </summary>
+                                <div class="overflow-x-auto rounded-lg border border-slate-700/40 mt-1">
+                                    <table class="params-table w-full text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left px-3 py-2">Campo</th>
+                                                <th class="text-left px-3 py-2">Tipo</th>
+                                                <th class="text-center px-3 py-2">Obrigatório</th>
+                                                <th class="text-left px-3 py-2">Descrição</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${schemaFields.map(f => `
+                                                <tr class="hover:bg-slate-800/30">
+                                                    <td class="px-3 py-2"><code class="text-cyan-400 text-xs font-mono">${f.name}</code></td>
+                                                    <td class="px-3 py-2 text-xs text-slate-500 font-mono">${f.type}</td>
+                                                    <td class="px-3 py-2 text-center">
+                                                        ${f.required ? '<span class="text-xs text-amber-400 font-medium">sim</span>' : '<span class="text-xs text-slate-600">não</span>'}
+                                                    </td>
+                                                    <td class="px-3 py-2 text-xs text-slate-500">${f.description || '—'}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </details>
+                        `;
+                    }
+
+                    contentHTML += '</div>';
+                }
+            }
+
+            // Responses
+            const responses = endpoint.responses || {};
+            const responseCodes = Object.keys(responses);
+            if (responseCodes.length > 0) {
+                contentHTML += `
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                            <i data-lucide="arrow-down-left" class="w-4 h-4 text-slate-500"></i>
+                            Respostas
+                        </h4>
+                        <div class="space-y-2">
+                `;
+
+                responseCodes.forEach(code => {
+                    const resp = responses[code];
+                    const statusColor = getStatusColor(code);
+                    const jsonContent = resp.content?.['application/json'];
+                    const example = jsonContent?.example || jsonContent?.schema?.example || getSchemaExample(jsonContent?.schema);
+
+                    contentHTML += `
+                        <div class="border border-slate-700/30 rounded-lg overflow-hidden">
+                            <button onclick="toggleResponse(this)" class="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-800/30 transition-colors group/resp">
+                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold font-mono rounded ${statusColor.bg} ${statusColor.text} min-w-[3rem]">${code}</span>
+                                <span class="text-xs text-slate-400">${resp.description || ''}</span>
+                                <i data-lucide="chevron-down" class="w-3 h-3 text-slate-600 ml-auto transition-transform duration-200 resp-chevron"></i>
+                            </button>
+                    `;
+
+                    if (example) {
+                        const jsonStr = JSON.stringify(example, null, 2);
+                        contentHTML += `
+                            <div class="collapsible-content response-body">
+                                <div class="relative group/code px-3 pb-3">
+                                    <button onclick="copyToClipboard(this, \`${escapeForAttribute(jsonStr)}\`)"
+                                            class="absolute top-0 right-4 p-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 transition-colors opacity-0 group-hover/code:opacity-100 z-10">
+                                        <i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500"></i>
+                                        <span class="copy-tooltip">Copiado!</span>
+                                    </button>
+                                    <pre class="bg-slate-900/80 border border-slate-700/30 rounded-lg p-3 overflow-x-auto text-xs max-h-80"><code class="text-slate-300 font-mono">${syntaxHighlight(jsonStr)}</code></pre>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    contentHTML += '</div>';
+                });
+
+                contentHTML += '</div></div>';
+            }
+
+            contentHTML += '</div>';
+            content.innerHTML = contentHTML;
+            card.appendChild(content);
+
+            return card;
+        }
+
+        // ==============================================
+        // Funções auxiliares de schema/tipo
+        // ==============================================
+
+        /** Resolve o tipo de um parâmetro */
+        function resolveParamType(param) {
+            if (param.schema) {
+                return resolveTypeString(param.schema);
+            }
+            return param.type || 'any';
+        }
+
+        /** Resolve uma string de tipo a partir de um schema */
+        function resolveTypeString(schema) {
+            if (!schema) return 'any';
+            if (schema.$ref) return schema.$ref.split('/').pop();
+            if (schema.allOf) {
+                return schema.allOf.map(s => resolveTypeString(s)).join(' & ');
+            }
+            if (schema.anyOf || schema.oneOf) {
+                const items = schema.anyOf || schema.oneOf;
+                return items.map(s => resolveTypeString(s)).filter(t => t !== 'null').join(' | ');
+            }
+            if (schema.type === 'array') {
+                const itemType = resolveTypeString(schema.items);
+                return `${itemType}[]`;
+            }
+            if (schema.enum) {
+                return schema.enum.map(v => `"${v}"`).join(' | ');
+            }
+            return schema.type || 'any';
+        }
+
+        /** Resolve os campos de um schema para tabela */
+        function resolveSchemaFields(schema) {
+            if (!schema) return [];
+
+            // Resolver $ref
+            const resolved = resolveRef(schema);
+            if (!resolved || !resolved.properties) return [];
+
+            const required = resolved.required || [];
+            return Object.entries(resolved.properties).map(([name, prop]) => {
+                const resolvedProp = resolveRef(prop);
+                return {
+                    name,
+                    type: resolveTypeString(resolvedProp || prop),
+                    required: required.includes(name),
+                    description: (resolvedProp || prop).description || '',
+                };
+            });
+        }
+
+        /** Resolve uma referência $ref no spec */
+        function resolveRef(schema) {
+            if (!schema) return null;
+            if (!schema.$ref) return schema;
+
+            const refPath = schema.$ref.replace('#/', '').split('/');
+            let current = openApiSpec;
+            for (const part of refPath) {
+                current = current?.[part];
+                if (!current) return null;
+            }
+            return current;
+        }
+
+        /** Tenta obter um exemplo de um schema */
+        function getSchemaExample(schema) {
+            if (!schema) return null;
+            if (schema.example) return schema.example;
+
+            const resolved = resolveRef(schema);
+            if (!resolved) return null;
+            if (resolved.example) return resolved.example;
+
+            // Verificar json_schema_extra/examples
+            if (resolved.examples && resolved.examples.length > 0) {
+                return resolved.examples[0];
+            }
+
+            return null;
+        }
+
+        // ==============================================
+        // Syntax highlighting simples para JSON
+        // ==============================================
+
+        function syntaxHighlight(json) {
+            return json
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(\.\d+)?([eE][+-]?\d+)?)/g,
+                    function(match) {
+                        let cls = 'text-emerald-400'; // número
+                        if (/^"/.test(match)) {
+                            if (/:$/.test(match)) {
+                                cls = 'text-blue-400'; // chave
+                                match = match.replace(/:$/, '') + '<span class="text-slate-500">:</span>';
+                            } else {
+                                cls = 'text-amber-300'; // string
+                            }
+                        } else if (/true|false/.test(match)) {
+                            cls = 'text-purple-400'; // boolean
+                        } else if (/null/.test(match)) {
+                            cls = 'text-red-400'; // null
+                        }
+                        return `<span class="${cls}">${match}</span>`;
+                    }
+                );
+        }
+
+        // ==============================================
+        // Cor do status code HTTP
+        // ==============================================
+
+        function getStatusColor(code) {
+            const c = parseInt(code);
+            if (c >= 200 && c < 300) return { bg: 'bg-emerald-500/15', text: 'text-emerald-400' };
+            if (c >= 300 && c < 400) return { bg: 'bg-blue-500/15', text: 'text-blue-400' };
+            if (c >= 400 && c < 500) return { bg: 'bg-amber-500/15', text: 'text-amber-400' };
+            if (c >= 500)            return { bg: 'bg-red-500/15', text: 'text-red-400' };
+            return { bg: 'bg-slate-500/15', text: 'text-slate-400' };
+        }
+
+        // ==============================================
+        // Toggle/Collapse
+        // ==============================================
+
+        /** Abre/fecha o card de um endpoint */
+        function toggleEndpoint(card) {
+            const content = card.querySelector('.collapsible-content');
+            const chevron = card.querySelector('.chevron-icon');
+            const isOpen = content.classList.contains('open');
+
+            content.classList.toggle('open');
+            if (chevron) {
+                chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+            }
+
+            // Re-inicializar ícones Lucide no conteúdo aberto
+            if (!isOpen) {
+                requestAnimationFrame(() => lucide.createIcons({ nameAttr: 'data-lucide', node: content }));
+            }
+        }
+        // Expor globalmente
+        window.toggleEndpoint = toggleEndpoint;
+
+        /** Abre/fecha um response body */
+        function toggleResponse(button) {
+            const parent = button.parentElement;
+            const body = parent.querySelector('.response-body');
+            const chevron = button.querySelector('.resp-chevron');
+            if (!body) return;
+
+            const isOpen = body.classList.contains('open');
+            body.classList.toggle('open');
+            if (chevron) {
+                chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+            }
+        }
+        window.toggleResponse = toggleResponse;
+
+        // ==============================================
+        // Copiar para clipboard
+        // ==============================================
+
+        function copyToClipboard(button, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const tooltip = button.querySelector('.copy-tooltip');
+                if (tooltip) {
+                    tooltip.classList.add('show');
+                    setTimeout(() => tooltip.classList.remove('show'), 1500);
+                }
+            }).catch(() => {
+                // Fallback para browsers mais antigos
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            });
+        }
+        window.copyToClipboard = copyToClipboard;
+
+        // ==============================================
+        // Busca com debounce
+        // ==============================================
+
+        function initSearch() {
+            const input = document.getElementById('search-input');
+            const clearBtn = document.getElementById('search-clear');
+            const countEl = document.getElementById('search-count');
+            let debounceTimer = null;
+
+            input.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => performSearch(input.value), 200);
+
+                // Toggle botão limpar
+                if (input.value) {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                }
+            });
+
+            clearBtn.addEventListener('click', () => {
+                input.value = '';
+                clearBtn.classList.add('hidden');
+                countEl.classList.add('hidden');
+                performSearch('');
+                input.focus();
+            });
+
+            // Atalho: Ctrl+K ou / para focar na busca
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey && e.key === 'k') || (e.key === '/' && document.activeElement.tagName !== 'INPUT')) {
+                    e.preventDefault();
+                    input.focus();
+                    input.select();
+                }
+            });
+        }
+
+        function performSearch(query) {
+            const q = query.toLowerCase().trim();
+            const countEl = document.getElementById('search-count');
+            let visibleCount = 0;
+            let totalCount = allEndpointElements.length;
+
+            allEndpointElements.forEach(item => {
+                if (!q) {
+                    item.element.classList.remove('hidden');
+                    visibleCount++;
+                    return;
+                }
+
+                const matches =
+                    item.method.toLowerCase().includes(q) ||
+                    item.path.toLowerCase().includes(q) ||
+                    item.summary.includes(q) ||
+                    item.description.includes(q) ||
+                    item.tag.toLowerCase().includes(q);
+
+                if (matches) {
+                    item.element.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    item.element.classList.add('hidden');
+                }
+            });
+
+            // Esconder/mostrar seções vazias
+            document.querySelectorAll('#endpoints-container > section').forEach(section => {
+                const visibleEndpoints = section.querySelectorAll('.endpoint-list > div:not(.hidden)');
+                section.classList.toggle('hidden', visibleEndpoints.length === 0);
+            });
+
+            // Atualizar sidebar com contagem filtrada
+            if (q) {
+                document.querySelectorAll('.sidebar-item').forEach(item => {
+                    const sectionSlug = item.dataset.section;
+                    const section = document.getElementById(`section-${sectionSlug}`);
+                    if (section) {
+                        item.classList.toggle('hidden', section.classList.contains('hidden'));
+                    }
+                });
+                countEl.textContent = `${visibleCount} de ${totalCount} endpoints`;
+                countEl.classList.remove('hidden');
+            } else {
+                document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('hidden'));
+                countEl.classList.add('hidden');
+            }
+        }
+
+        // ==============================================
+        // Scroll Spy com IntersectionObserver
+        // ==============================================
+
+        function initScrollSpy() {
+            const sections = document.querySelectorAll('#endpoints-container > section');
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+
+            if (sections.length === 0) return;
+
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const tag = entry.target.dataset.tag;
+                            const slug = slugify(tag);
+
+                            // Atualizar sidebar
+                            sidebarItems.forEach(item => {
+                                item.classList.toggle('active', item.dataset.section === slug);
+                            });
+
+                            activeSection = slug;
+                        }
+                    });
+                },
+                {
+                    rootMargin: '-80px 0px -60% 0px',
+                    threshold: 0,
+                }
+            );
+
+            sections.forEach(section => observer.observe(section));
+        }
+
+        // ==============================================
+        // Menu mobile
+        // ==============================================
+
+        function initMobileMenu() {
+            const btn = document.getElementById('mobile-menu-btn');
+            btn.addEventListener('click', toggleMobileSidebar);
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+
+            // No desktop, não esconder
+            if (window.innerWidth >= 1024) {
+                sidebar.classList.remove('-translate-x-full');
+            }
+        }
+        window.closeMobileSidebar = closeMobileSidebar;
+
+        // Garantir comportamento correto ao redimensionar
+        window.addEventListener('resize', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            if (window.innerWidth >= 1024) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        });
+
+        // ==============================================
+        // Utilitários
+        // ==============================================
+
+        /** Gerar slug a partir de uma string */
+        function slugify(text) {
+            return text.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '');
+        }
+
+        /** Escapar string para uso em atributos HTML (template literals) */
+        function escapeForAttribute(str) {
+            return str
+                .replace(/\\/g, '\\\\')
+                .replace(/`/g, '\\`')
+                .replace(/\$/g, '\\$');
+        }
+
+        /** Mostrar mensagem de erro */
+        function showError(message) {
+            document.getElementById('loading-skeleton').innerHTML = `
+                <div class="flex flex-col items-center justify-center py-20 text-center">
+                    <div class="p-4 bg-red-500/10 rounded-2xl border border-red-500/20 mb-4">
+                        <i data-lucide="alert-triangle" class="w-8 h-8 text-red-400"></i>
+                    </div>
+                    <h2 class="text-lg font-semibold text-white mb-2">Erro ao carregar documentação</h2>
+                    <p class="text-sm text-slate-500 max-w-md">
+                        Não foi possível carregar o schema OpenAPI. Verifique se a API está rodando e tente novamente.
+                    </p>
+                    <p class="text-xs text-red-400 mt-2 font-mono">${message}</p>
+                    <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm rounded-lg transition-colors">
+                        Tentar novamente
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+    })();
+    </script>
+</body>
+</html>

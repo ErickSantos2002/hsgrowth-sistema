@@ -39,7 +39,54 @@ router = APIRouter()
 
 # ================== Gestão de Usuários ==================
 
-@router.get("/users", response_model=dict, summary="[Admin] Listar todos os usuários")
+@router.get(
+    "/users",
+    response_model=dict,
+    summary="[Admin] Listar todos os usuários",
+    responses={
+        200: {
+            "description": "Lista de usuários retornada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "items": [
+                            {
+                                "id": 1,
+                                "name": "Carlos Eduardo Silva",
+                                "email": "carlos.silva@hsgrowth.com.br",
+                                "role": "admin",
+                                "is_active": True,
+                                "created_at": "2025-06-15T10:30:00Z"
+                            },
+                            {
+                                "id": 2,
+                                "name": "Fernanda Oliveira",
+                                "email": "fernanda.oliveira@hsgrowth.com.br",
+                                "role": "user",
+                                "is_active": True,
+                                "created_at": "2025-07-20T14:00:00Z"
+                            }
+                        ],
+                        "total": 25,
+                        "page": 1,
+                        "page_size": 50,
+                        "total_pages": 1
+                    }
+                }
+            },
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Apenas administradores podem acessar esta rota"
+                    }
+                }
+            },
+        },
+    },
+)
 async def list_all_users(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
@@ -82,7 +129,65 @@ async def list_all_users(
     }
 
 
-@router.post("/users", response_model=UserResponse, summary="[Admin] Criar usuário")
+@router.post(
+    "/users",
+    response_model=UserResponse,
+    summary="[Admin] Criar usuário",
+    status_code=201,
+    responses={
+        201: {
+            "description": "Usuário criado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 3,
+                        "name": "Juliana Martins",
+                        "email": "juliana.martins@hsgrowth.com.br",
+                        "role": "user",
+                        "is_active": True,
+                        "created_at": "2025-09-10T09:15:00Z"
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Dados inválidos ou e-mail já cadastrado",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Já existe um usuário cadastrado com este e-mail"
+                    }
+                }
+            },
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Apenas administradores podem acessar esta rota"
+                    }
+                }
+            },
+        },
+        422: {
+            "description": "Erro de validação nos dados enviados",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "email"],
+                                "msg": "value is not a valid email address",
+                                "type": "value_error.email"
+                            }
+                        ]
+                    }
+                }
+            },
+        },
+    },
+)
 async def admin_create_user(
     data: UserCreate,
     current_user: User = Depends(require_role("admin")),
@@ -97,7 +202,45 @@ async def admin_create_user(
     return service.create_user(data)
 
 
-@router.put("/users/{user_id}/reset-password", response_model=AdminPasswordResetResponse, summary="[Admin] Resetar senha de usuário")
+@router.put(
+    "/users/{user_id}/reset-password",
+    response_model=AdminPasswordResetResponse,
+    summary="[Admin] Resetar senha de usuário",
+    responses={
+        200: {
+            "description": "Senha resetada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Senha resetada com sucesso",
+                        "user_id": 5,
+                        "temporary_password": "aB3$kLm9xQ1!"
+                    }
+                }
+            },
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Apenas administradores podem acessar esta rota"
+                    }
+                }
+            },
+        },
+        404: {
+            "description": "Usuário não encontrado",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Usuário não encontrado"
+                    }
+                }
+            },
+        },
+    },
+)
 async def admin_reset_user_password(
     user_id: int = Path(..., description="ID do usuário"),
     data: AdminPasswordResetRequest = None,
@@ -153,7 +296,62 @@ async def admin_reset_user_password(
 
 # ================== Logs de Auditoria ==================
 
-@router.get("/logs", response_model=AuditLogListResponse, summary="[Admin] Visualizar logs de auditoria")
+@router.get(
+    "/logs",
+    response_model=AuditLogListResponse,
+    summary="[Admin] Visualizar logs de auditoria",
+    responses={
+        200: {
+            "description": "Logs de auditoria retornados com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "items": [
+                            {
+                                "id": 142,
+                                "user_id": 1,
+                                "user_name": "Carlos Eduardo Silva",
+                                "action": "UPDATE",
+                                "entity_type": "Card",
+                                "entity_id": 87,
+                                "details": "Moveu card 'Proposta Comercial - Empresa ABC Ltda' para coluna 'Fechamento'",
+                                "ip_address": "192.168.1.50",
+                                "user_agent": "Mozilla/5.0",
+                                "created_at": "2025-09-10T16:45:00Z"
+                            },
+                            {
+                                "id": 141,
+                                "user_id": 2,
+                                "user_name": "Fernanda Oliveira",
+                                "action": "CREATE",
+                                "entity_type": "Board",
+                                "entity_id": 12,
+                                "details": "Criou board 'Pipeline Vendas Q4 2025'",
+                                "ip_address": "10.0.0.15",
+                                "user_agent": "Mozilla/5.0",
+                                "created_at": "2025-09-10T14:20:00Z"
+                            }
+                        ],
+                        "total": 1420,
+                        "page": 1,
+                        "page_size": 50,
+                        "total_pages": 29
+                    }
+                }
+            },
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Apenas administradores podem acessar esta rota"
+                    }
+                }
+            },
+        },
+    },
+)
 async def get_audit_logs(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=200, description="Tamanho da página"),
@@ -228,7 +426,67 @@ async def get_audit_logs(
 
 # ================== Execução de Query SQL ==================
 
-@router.post("/database/query", response_model=SQLQueryResponse, summary="[Admin] Executar query SQL")
+@router.post(
+    "/database/query",
+    response_model=SQLQueryResponse,
+    summary="[Admin] Executar query SQL",
+    responses={
+        200: {
+            "description": "Query executada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "columns": ["id", "name", "email", "role"],
+                        "rows": [
+                            [1, "Carlos Eduardo Silva", "carlos.silva@hsgrowth.com.br", "admin"],
+                            [2, "Fernanda Oliveira", "fernanda.oliveira@hsgrowth.com.br", "user"],
+                            [3, "Ricardo Mendes", "ricardo.mendes@hsgrowth.com.br", "user"]
+                        ],
+                        "row_count": 3,
+                        "execution_time_ms": 12.45
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Erro de sintaxe ou execução da query SQL",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Erro ao executar query: (psycopg2.errors.UndefinedTable) relation \"tabela_inexistente\" does not exist"
+                    }
+                }
+            },
+        },
+        403: {
+            "description": "Acesso negado ou query não permitida",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "acesso_negado": {
+                            "summary": "Usuário sem permissão de admin",
+                            "value": {
+                                "detail": "Apenas administradores podem acessar esta rota"
+                            }
+                        },
+                        "query_proibida": {
+                            "summary": "Query com palavra-chave proibida",
+                            "value": {
+                                "detail": "Query não permitida. Apenas SELECT é permitido. Palavra proibida: DELETE"
+                            }
+                        },
+                        "query_nao_select": {
+                            "summary": "Query que não começa com SELECT",
+                            "value": {
+                                "detail": "Query deve começar com SELECT"
+                            }
+                        }
+                    }
+                }
+            },
+        },
+    },
+)
 async def execute_sql_query(
     request: SQLQueryRequest,
     current_user: User = Depends(require_role("admin")),
@@ -292,7 +550,61 @@ async def execute_sql_query(
 
 # ================== Monitoramento de Automações ==================
 
-@router.get("/automations/monitor", response_model=AutomationMonitorResponse, summary="[Admin] Monitorar automações")
+@router.get(
+    "/automations/monitor",
+    response_model=AutomationMonitorResponse,
+    summary="[Admin] Monitorar automações",
+    responses={
+        200: {
+            "description": "Dados de monitoramento das automações",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "total_automations": 8,
+                        "active_automations": 6,
+                        "inactive_automations": 2,
+                        "total_executions_today": 47,
+                        "failed_executions_today": 3,
+                        "automations": [
+                            {
+                                "automation_id": 1,
+                                "automation_name": "Enviar e-mail de boas-vindas ao novo lead",
+                                "is_active": True,
+                                "total_executions": 320,
+                                "successful_executions": 315,
+                                "failed_executions": 5,
+                                "last_execution_at": "2025-09-10T17:30:00Z",
+                                "last_execution_status": "success",
+                                "average_execution_time_ms": None
+                            },
+                            {
+                                "automation_id": 2,
+                                "automation_name": "Notificar vendedor quando card muda de coluna",
+                                "is_active": True,
+                                "total_executions": 1580,
+                                "successful_executions": 1575,
+                                "failed_executions": 5,
+                                "last_execution_at": "2025-09-10T17:25:00Z",
+                                "last_execution_status": "success",
+                                "average_execution_time_ms": None
+                            }
+                        ]
+                    }
+                }
+            },
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Apenas administradores podem acessar esta rota"
+                    }
+                }
+            },
+        },
+    },
+)
 async def monitor_automations(
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
@@ -373,7 +685,40 @@ async def monitor_automations(
 
 # ================== Estatísticas do Sistema ==================
 
-@router.get("/stats", response_model=SystemStatsResponse, summary="[Admin] Estatísticas do sistema")
+@router.get(
+    "/stats",
+    response_model=SystemStatsResponse,
+    summary="[Admin] Estatísticas do sistema",
+    responses={
+        200: {
+            "description": "Estatísticas gerais do sistema",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "total_users": 25,
+                        "active_users": 22,
+                        "total_boards": 12,
+                        "total_cards": 487,
+                        "total_automations": 8,
+                        "total_transfers": 1320,
+                        "total_notifications": 5640,
+                        "database_size_mb": 156.78
+                    }
+                }
+            },
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Apenas administradores podem acessar esta rota"
+                    }
+                }
+            },
+        },
+    },
+)
 async def get_system_stats(
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)

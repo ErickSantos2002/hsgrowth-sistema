@@ -113,6 +113,17 @@ class DashboardKPIsResponse(BaseModel):
                     "top_sellers_this_month": [
                         {"name": "João Silva", "cards_won": 25, "total_value": 125000.00},
                         {"name": "Maria Santos", "cards_won": 22, "total_value": 98000.00}
+                    ],
+                    "cards_by_stage": [
+                        {"stage_name": "Prospecção", "card_count": 120, "total_value": 240000.00},
+                        {"stage_name": "Qualificação", "card_count": 85, "total_value": 170000.00},
+                        {"stage_name": "Proposta", "card_count": 45, "total_value": 135000.00},
+                        {"stage_name": "Negociação", "card_count": 30, "total_value": 90000.00},
+                        {"stage_name": "Fechamento", "card_count": 15, "total_value": 45000.00}
+                    ],
+                    "sales_evolution": [
+                        {"period": "2025-12", "won_count": 75, "won_value": 380000.00, "lost_count": 28},
+                        {"period": "2026-01", "won_count": 89, "won_value": 450000.00, "lost_count": 34}
                     ]
                 }
             ]

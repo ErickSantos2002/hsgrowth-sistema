@@ -4,7 +4,7 @@ Define estruturas de dados para automações trigger e scheduled.
 """
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from enum import Enum
 
 
@@ -63,12 +63,19 @@ class ExecutionStatus(str, Enum):
 # ========== ACTION SCHEMAS ==========
 
 class AutomationAction(BaseModel):
-    """Schema base para ações de automação."""
-    type: ActionType = Field(..., description="Tipo de ação")
-    params: Dict[str, Any] = Field(default_factory=dict, description="Parâmetros da ação")
+    """Ação que será executada pela automação."""
+    type: ActionType = Field(..., description="Tipo de ação a executar")
+    params: Dict[str, Any] = Field(default_factory=dict, description="Parâmetros da ação (variam por tipo)")
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
+            "example": {
+                "type": "move_card",
+                "params": {"target_list_id": 3}
+            }
+        }
+    )
 
 
 # ========== AUTOMATION SCHEMAS ==========
@@ -76,111 +83,166 @@ class AutomationAction(BaseModel):
 class AutomationBase(BaseModel):
     """Schema base para automação."""
     name: str = Field(..., max_length=255, description="Nome da automação")
-    description: Optional[str] = Field(None, description="Descrição da automação")
-    automation_type: AutomationType = Field(..., description="Tipo de automação")
+    description: Optional[str] = Field(None, description="Descrição do que a automação faz")
+    automation_type: AutomationType = Field(..., description="Tipo: trigger (evento) ou scheduled (agendada)")
     is_active: bool = Field(True, description="Se a automação está ativa")
-    priority: int = Field(50, ge=1, le=100, description="Prioridade (1-100)")
+    priority: int = Field(50, ge=1, le=100, description="Prioridade de execução (1=baixa, 100=alta)")
 
 
 class AutomationTriggerConfig(BaseModel):
-    """Configuração de automação trigger."""
-    trigger_event: TriggerEvent = Field(..., description="Evento que dispara")
-    trigger_conditions: Optional[Dict[str, Any]] = Field(None, description="Condições do trigger")
+    """Configuração de automação do tipo trigger (baseada em eventos)."""
+    trigger_event: TriggerEvent = Field(..., description="Evento que dispara a automação")
+    trigger_conditions: Optional[Dict[str, Any]] = Field(None, description="Condições adicionais para disparo")
 
 
 class AutomationScheduledConfig(BaseModel):
-    """Configuração de automação scheduled."""
-    schedule_type: ScheduleType = Field(..., description="Tipo de agendamento")
+    """Configuração de automação do tipo scheduled (agendada)."""
+    schedule_type: ScheduleType = Field(..., description="Tipo: once (única) ou recurrent (recorrente)")
     scheduled_at: Optional[datetime] = Field(None, description="Data/hora de execução (para once)")
-    recurrence_pattern: Optional[RecurrencePattern] = Field(None, description="Padrão de recorrência")
+    recurrence_pattern: Optional[RecurrencePattern] = Field(None, description="Padrão de recorrência (para recurrent)")
 
 
 class AutomationCreate(AutomationBase):
-    """Schema para criar automação."""
-    board_id: int = Field(..., description="ID do board")
-    actions: List[AutomationAction] = Field(..., min_items=1, description="Ações a executar")
+    """Cria uma nova automação no board."""
+    board_id: int = Field(..., description="ID do board onde a automação será aplicada")
+    actions: List[AutomationAction] = Field(..., min_items=1, description="Lista de ações a executar (mínimo 1)")
 
     # Campos opcionais para trigger
-    trigger_event: Optional[TriggerEvent] = None
-    trigger_conditions: Optional[Dict[str, Any]] = None
+    trigger_event: Optional[TriggerEvent] = Field(None, description="Evento que dispara (obrigatório para tipo trigger)")
+    trigger_conditions: Optional[Dict[str, Any]] = Field(None, description="Condições para disparo do trigger")
 
     # Campos opcionais para scheduled
-    schedule_type: Optional[ScheduleType] = None
-    scheduled_at: Optional[datetime] = None
-    recurrence_pattern: Optional[RecurrencePattern] = None
+    schedule_type: Optional[ScheduleType] = Field(None, description="Tipo de agendamento (obrigatório para tipo scheduled)")
+    scheduled_at: Optional[datetime] = Field(None, description="Data/hora de execução única")
+    recurrence_pattern: Optional[RecurrencePattern] = Field(None, description="Padrão de recorrência")
 
-    auto_disable_on_failures: int = Field(5, ge=1, description="Auto-desabilitar após X falhas")
+    auto_disable_on_failures: int = Field(5, ge=1, description="Desabilitar automaticamente após X falhas consecutivas")
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
+            "example": {
+                "name": "Mover card ao ganhar",
+                "description": "Quando um card é marcado como ganho, move para a lista de Clientes",
+                "automation_type": "trigger",
+                "board_id": 1,
+                "trigger_event": "card_won",
+                "trigger_conditions": None,
+                "actions": [
+                    {"type": "move_card", "params": {"target_list_id": 5}},
+                    {"type": "award_points", "params": {"points": 20}}
+                ],
+                "is_active": True,
+                "priority": 80,
+                "auto_disable_on_failures": 5
+            }
+        }
+    )
 
 
 class AutomationUpdate(BaseModel):
-    """Schema para atualizar automação."""
-    name: Optional[str] = Field(None, max_length=255)
-    description: Optional[str] = None
-    board_id: Optional[int] = None
-    automation_type: Optional[AutomationType] = None
-    is_active: Optional[bool] = None
-    priority: Optional[int] = Field(None, ge=1, le=100)
+    """Atualiza uma automação existente. Apenas campos fornecidos serão alterados."""
+    name: Optional[str] = Field(None, max_length=255, description="Nome da automação")
+    description: Optional[str] = Field(None, description="Descrição")
+    board_id: Optional[int] = Field(None, description="ID do board")
+    automation_type: Optional[AutomationType] = Field(None, description="Tipo de automação")
+    is_active: Optional[bool] = Field(None, description="Se está ativa")
+    priority: Optional[int] = Field(None, ge=1, le=100, description="Prioridade")
 
     # Campos de trigger
-    trigger_event: Optional[str] = None
-    trigger_conditions: Optional[Dict[str, Any]] = None
+    trigger_event: Optional[str] = Field(None, description="Evento trigger")
+    trigger_conditions: Optional[Dict[str, Any]] = Field(None, description="Condições do trigger")
 
     # Campos de scheduled
-    scheduled_at: Optional[datetime] = None
-    recurrence_pattern: Optional[RecurrencePattern] = None
+    scheduled_at: Optional[datetime] = Field(None, description="Data/hora de execução")
+    recurrence_pattern: Optional[RecurrencePattern] = Field(None, description="Padrão de recorrência")
 
     # Outros
-    actions: Optional[List[AutomationAction]] = None
-    auto_disable_on_failures: Optional[int] = Field(None, ge=1)
+    actions: Optional[List[AutomationAction]] = Field(None, description="Lista de ações")
+    auto_disable_on_failures: Optional[int] = Field(None, ge=1, description="Auto-desabilitar após X falhas")
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
+            "example": {
+                "name": "Mover card ao ganhar (atualizado)",
+                "is_active": False,
+                "priority": 90
+            }
+        }
+    )
 
 
 class AutomationResponse(AutomationBase):
-    """Schema de resposta para automação."""
-    id: int
-    board_id: int
+    """Dados completos de uma automação."""
+    id: int = Field(..., description="ID único da automação")
+    board_id: int = Field(..., description="ID do board")
 
     # Trigger fields
-    trigger_event: Optional[str] = None
-    trigger_conditions: Optional[Dict[str, Any]] = None
+    trigger_event: Optional[str] = Field(None, description="Evento que dispara a automação")
+    trigger_conditions: Optional[Dict[str, Any]] = Field(None, description="Condições do trigger")
 
     # Scheduled fields
-    schedule_type: Optional[str] = None
-    scheduled_at: Optional[datetime] = None
-    recurrence_pattern: Optional[str] = None
-    next_run_at: Optional[datetime] = None
+    schedule_type: Optional[str] = Field(None, description="Tipo de agendamento")
+    scheduled_at: Optional[datetime] = Field(None, description="Data/hora de execução")
+    recurrence_pattern: Optional[str] = Field(None, description="Padrão de recorrência")
+    next_run_at: Optional[datetime] = Field(None, description="Próxima execução agendada")
 
     # Actions
-    actions: List[Dict[str, Any]]
+    actions: List[Dict[str, Any]] = Field(..., description="Lista de ações configuradas")
 
     # State (estado persistente da automação)
-    state: Dict[str, Any] = Field(default_factory=dict, description="Estado persistente da automação")
+    state: Dict[str, Any] = Field(default_factory=dict, description="Estado persistente da automação (ex: round-robin index)")
 
     # Execution stats
-    execution_count: int
-    last_run_at: Optional[datetime] = None
-    failure_count: int
-    auto_disable_on_failures: int
+    execution_count: int = Field(..., description="Total de execuções")
+    last_run_at: Optional[datetime] = Field(None, description="Data/hora da última execução")
+    failure_count: int = Field(..., description="Total de falhas")
+    auto_disable_on_failures: int = Field(..., description="Limite de falhas para auto-desabilitar")
 
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = Field(..., description="Data de criação")
+    updated_at: datetime = Field(..., description="Data da última atualização")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "name": "Mover card ao ganhar",
+                "description": "Quando um card é marcado como ganho, move para lista de Clientes",
+                "automation_type": "trigger",
+                "is_active": True,
+                "priority": 80,
+                "board_id": 1,
+                "trigger_event": "card_won",
+                "trigger_conditions": None,
+                "schedule_type": None,
+                "scheduled_at": None,
+                "recurrence_pattern": None,
+                "next_run_at": None,
+                "actions": [
+                    {"type": "move_card", "params": {"target_list_id": 5}},
+                    {"type": "award_points", "params": {"points": 20}}
+                ],
+                "state": {},
+                "execution_count": 15,
+                "last_run_at": "2026-01-15T14:30:00",
+                "failure_count": 0,
+                "auto_disable_on_failures": 5,
+                "created_at": "2026-01-01T10:00:00",
+                "updated_at": "2026-01-15T14:30:00"
+            }
+        }
+    )
 
 
 class AutomationListResponse(BaseModel):
-    """Schema de resposta para lista de automações."""
-    automations: List[AutomationResponse]
-    total: int
-    page: int
-    page_size: int
-    total_pages: int
+    """Lista paginada de automações."""
+    automations: List[AutomationResponse] = Field(..., description="Lista de automações")
+    total: int = Field(..., description="Total de automações encontradas")
+    page: int = Field(..., description="Página atual")
+    page_size: int = Field(..., description="Itens por página")
+    total_pages: int = Field(..., description="Total de páginas")
 
 
 # ========== EXECUTION SCHEMAS ==========
@@ -191,51 +253,78 @@ class AutomationExecutionBase(BaseModel):
 
 
 class AutomationExecutionCreate(BaseModel):
-    """Schema para criar execução (interno)."""
-    automation_id: int
-    card_id: Optional[int] = None
-    triggered_by_id: Optional[int] = None
-    status: ExecutionStatus = ExecutionStatus.PENDING
-    execution_data: Dict[str, Any] = Field(default_factory=dict)
+    """Schema para criar execução (uso interno do sistema)."""
+    automation_id: int = Field(..., description="ID da automação executada")
+    card_id: Optional[int] = Field(None, description="ID do card afetado")
+    triggered_by_id: Optional[int] = Field(None, description="ID do usuário que disparou")
+    status: ExecutionStatus = Field(ExecutionStatus.PENDING, description="Status inicial")
+    execution_data: Dict[str, Any] = Field(default_factory=dict, description="Dados da execução")
 
 
 class AutomationExecutionResponse(AutomationExecutionBase):
-    """Schema de resposta para execução."""
-    id: int
-    automation_id: int
-    card_id: Optional[int] = None
-    triggered_by_id: Optional[int] = None
-    status: str
-    started_at: datetime
-    completed_at: Optional[datetime] = None
-    duration_ms: Optional[float] = None
-    execution_data: Dict[str, Any]
-    error_message: Optional[str] = None
-    error_stack: Optional[str] = None
+    """Dados de uma execução de automação."""
+    id: int = Field(..., description="ID único da execução")
+    automation_id: int = Field(..., description="ID da automação")
+    card_id: Optional[int] = Field(None, description="ID do card afetado")
+    triggered_by_id: Optional[int] = Field(None, description="ID do usuário que disparou")
+    status: str = Field(..., description="Status: pending, success ou failed")
+    started_at: datetime = Field(..., description="Data/hora de início")
+    completed_at: Optional[datetime] = Field(None, description="Data/hora de conclusão")
+    duration_ms: Optional[float] = Field(None, description="Duração da execução em milissegundos")
+    execution_data: Dict[str, Any] = Field(..., description="Dados e resultado da execução")
+    error_message: Optional[str] = Field(None, description="Mensagem de erro (se falhou)")
+    error_stack: Optional[str] = Field(None, description="Stack trace do erro (se falhou)")
 
     # Campos relacionados
-    automation_name: Optional[str] = None
-    card_title: Optional[str] = None
+    automation_name: Optional[str] = Field(None, description="Nome da automação")
+    card_title: Optional[str] = Field(None, description="Título do card afetado")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "automation_id": 1,
+                "card_id": 42,
+                "triggered_by_id": 5,
+                "status": "success",
+                "started_at": "2026-01-15T14:30:00",
+                "completed_at": "2026-01-15T14:30:01",
+                "duration_ms": 150.5,
+                "execution_data": {"action": "move_card", "from_list": 2, "to_list": 5},
+                "error_message": None,
+                "error_stack": None,
+                "automation_name": "Mover card ao ganhar",
+                "card_title": "Projeto Alpha"
+            }
+        }
+    )
 
 
 class AutomationExecutionListResponse(BaseModel):
-    """Schema de resposta para lista de execuções."""
-    executions: List[AutomationExecutionResponse]
-    total: int
-    page: int
-    page_size: int
-    total_pages: int
+    """Lista paginada de execuções de automação."""
+    executions: List[AutomationExecutionResponse] = Field(..., description="Lista de execuções")
+    total: int = Field(..., description="Total de execuções encontradas")
+    page: int = Field(..., description="Página atual")
+    page_size: int = Field(..., description="Itens por página")
+    total_pages: int = Field(..., description="Total de páginas")
 
 
 # ========== TRIGGER REQUEST ==========
 
 class AutomationTriggerRequest(BaseModel):
-    """Request para disparar automação manualmente."""
-    card_id: Optional[int] = Field(None, description="ID do card (se aplicável)")
-    execution_data: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Dados adicionais")
+    """Request para disparar uma automação manualmente."""
+    card_id: Optional[int] = Field(None, description="ID do card (se aplicável à automação)")
+    execution_data: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Dados adicionais para a execução")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "card_id": 42,
+                "execution_data": {"manual_trigger": True, "reason": "Teste manual"}
+            }
+        }
+    )
 
 
 # ========== CONSTANTS ==========

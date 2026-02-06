@@ -26,7 +26,34 @@ router = APIRouter()
 
 # ========== Config Endpoints ==========
 
-@router.get("/config", response_model=API4ComConfigResponse)
+@router.get(
+    "/config",
+    response_model=API4ComConfigResponse,
+    summary="Obter configuração API4COM",
+    responses={
+        200: {
+            "description": "Configuração atual da API4COM",
+            "content": {"application/json": {"example": {
+                "id": 1,
+                "email": "admin@minhaempresa.com",
+                "is_active": True,
+                "has_valid_token": True,
+                "token_expires_at": "2026-01-16T10:00:00",
+                "last_test_at": "2026-01-15T10:00:00",
+                "last_test_success": True,
+                "last_test_error": None,
+                "created_at": "2026-01-01T10:00:00",
+                "updated_at": "2026-01-15T10:00:00"
+            }}}
+        },
+        403: {
+            "description": "Acesso negado - apenas admin/gerente",
+            "content": {"application/json": {"example": {
+                "detail": "Apenas admin e gerente podem acessar configurações"
+            }}}
+        }
+    }
+)
 async def get_api4com_config(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -50,7 +77,46 @@ async def get_api4com_config(
     return await service.get_config()
 
 
-@router.post("/config", response_model=API4ComConfigResponse)
+@router.post(
+    "/config",
+    response_model=API4ComConfigResponse,
+    summary="Salvar configuração API4COM",
+    responses={
+        200: {
+            "description": "Configuração salva/atualizada com sucesso",
+            "content": {"application/json": {"example": {
+                "id": 1,
+                "email": "admin@minhaempresa.com",
+                "is_active": True,
+                "has_valid_token": True,
+                "token_expires_at": "2026-01-16T10:00:00",
+                "last_test_at": None,
+                "last_test_success": None,
+                "last_test_error": None,
+                "created_at": "2026-01-15T10:00:00",
+                "updated_at": "2026-01-15T10:00:00"
+            }}}
+        },
+        400: {
+            "description": "Falha ao conectar com API4COM",
+            "content": {"application/json": {"example": {
+                "detail": "Falha ao autenticar na API4COM. Verifique email e senha."
+            }}}
+        },
+        403: {
+            "description": "Acesso negado - apenas admin",
+            "content": {"application/json": {"example": {
+                "detail": "Apenas admin pode configurar credenciais"
+            }}}
+        },
+        422: {
+            "description": "Dados inválidos na requisição",
+            "content": {"application/json": {"example": {
+                "detail": [{"loc": ["body", "email"], "msg": "value is not a valid email address", "type": "value_error.email"}]
+            }}}
+        }
+    }
+)
 async def save_api4com_config(
     request: Request,
     config_data: API4ComConfigCreate,
@@ -111,7 +177,48 @@ async def save_api4com_config(
     return config
 
 
-@router.post("/test", response_model=API4ComTestResponse)
+@router.post(
+    "/test",
+    response_model=API4ComTestResponse,
+    summary="Testar conexão API4COM",
+    responses={
+        200: {
+            "description": "Resultado do teste de conexão",
+            "content": {"application/json": {"examples": {
+                "sucesso": {
+                    "summary": "Conexão bem-sucedida",
+                    "value": {
+                        "success": True,
+                        "message": "Conexão com API4COM estabelecida com sucesso",
+                        "token_valid": True,
+                        "error": None
+                    }
+                },
+                "falha": {
+                    "summary": "Conexão falhou",
+                    "value": {
+                        "success": False,
+                        "message": "Falha ao conectar com API4COM",
+                        "token_valid": False,
+                        "error": "Token expirado. Reconfigure as credenciais."
+                    }
+                }
+            }}}
+        },
+        403: {
+            "description": "Acesso negado - apenas admin/gerente",
+            "content": {"application/json": {"example": {
+                "detail": "Apenas admin e gerente podem testar conexão"
+            }}}
+        },
+        404: {
+            "description": "Configuração não encontrada",
+            "content": {"application/json": {"example": {
+                "detail": "Configuração da API4COM não encontrada. Configure primeiro."
+            }}}
+        }
+    }
+)
 async def test_api4com_connection(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -141,7 +248,42 @@ async def test_api4com_connection(
 
 # ========== Extension Endpoints ==========
 
-@router.get("/extensions", response_model=List[UserExtensionResponse])
+@router.get(
+    "/extensions",
+    response_model=List[UserExtensionResponse],
+    summary="Listar ramais",
+    responses={
+        200: {
+            "description": "Lista de ramais cadastrados com dados dos vendedores",
+            "content": {"application/json": {"example": [
+                {
+                    "id": 1,
+                    "user_id": 5,
+                    "extension": "1000",
+                    "is_active": True,
+                    "created_at": "2026-01-15T10:00:00",
+                    "user_name": "João Silva",
+                    "user_email": "joao@minhaempresa.com"
+                },
+                {
+                    "id": 2,
+                    "user_id": 8,
+                    "extension": "1001",
+                    "is_active": True,
+                    "created_at": "2026-01-15T11:00:00",
+                    "user_name": "Carlos Oliveira",
+                    "user_email": "carlos@minhaempresa.com"
+                }
+            ]}}
+        },
+        403: {
+            "description": "Acesso negado - apenas admin/gerente",
+            "content": {"application/json": {"example": {
+                "detail": "Apenas admin e gerente podem listar ramais"
+            }}}
+        }
+    }
+)
 def list_extensions(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -168,7 +310,43 @@ def list_extensions(
     return service.list_extensions()
 
 
-@router.post("/extensions", response_model=UserExtensionResponse)
+@router.post(
+    "/extensions",
+    response_model=UserExtensionResponse,
+    summary="Criar/atualizar ramal",
+    responses={
+        200: {
+            "description": "Ramal criado ou atualizado com sucesso",
+            "content": {"application/json": {"example": {
+                "id": 1,
+                "user_id": 5,
+                "extension": "1000",
+                "is_active": True,
+                "created_at": "2026-01-15T10:00:00",
+                "user_name": "João Silva",
+                "user_email": "joao@minhaempresa.com"
+            }}}
+        },
+        403: {
+            "description": "Acesso negado - apenas admin/gerente",
+            "content": {"application/json": {"example": {
+                "detail": "Apenas admin e gerente podem gerenciar ramais"
+            }}}
+        },
+        404: {
+            "description": "Vendedor não encontrado",
+            "content": {"application/json": {"example": {
+                "detail": "Usuário com ID 99 não encontrado"
+            }}}
+        },
+        422: {
+            "description": "Dados inválidos na requisição",
+            "content": {"application/json": {"example": {
+                "detail": [{"loc": ["body", "extension"], "msg": "field required", "type": "value_error.missing"}]
+            }}}
+        }
+    }
+)
 def save_extension(
     request: Request,
     extension_data: UserExtensionCreate,
@@ -236,7 +414,31 @@ def save_extension(
     return user_extension
 
 
-@router.delete("/extensions/{user_id}")
+@router.delete(
+    "/extensions/{user_id}",
+    summary="Remover ramal",
+    responses={
+        200: {
+            "description": "Ramal removido com sucesso",
+            "content": {"application/json": {"example": {
+                "message": "Ramal removido com sucesso",
+                "user_id": 5
+            }}}
+        },
+        403: {
+            "description": "Acesso negado - apenas admin/gerente",
+            "content": {"application/json": {"example": {
+                "detail": "Apenas admin e gerente podem remover ramais"
+            }}}
+        },
+        404: {
+            "description": "Ramal não encontrado para o usuário",
+            "content": {"application/json": {"example": {
+                "detail": "Ramal não encontrado para o usuário com ID 99"
+            }}}
+        }
+    }
+)
 def delete_extension(
     request: Request,
     user_id: int,
@@ -304,7 +506,45 @@ def delete_extension(
 
 # ========== Call Endpoints ==========
 
-@router.post("/call", response_model=CallResponse)
+@router.post(
+    "/call",
+    response_model=CallResponse,
+    summary="Realizar chamada telefônica",
+    responses={
+        200: {
+            "description": "Chamada iniciada com sucesso",
+            "content": {"application/json": {"example": {
+                "success": True,
+                "message": "Chamada iniciada com sucesso para +5548999887766",
+                "call_log_id": 15,
+                "error": None
+            }}}
+        },
+        400: {
+            "description": "API4COM não configurada ou usuário sem ramal",
+            "content": {"application/json": {"examples": {
+                "sem_config": {
+                    "summary": "API4COM não configurada",
+                    "value": {
+                        "detail": "API4COM não está configurada. Peça ao administrador para configurar."
+                    }
+                },
+                "sem_ramal": {
+                    "summary": "Usuário sem ramal",
+                    "value": {
+                        "detail": "Você não possui ramal configurado. Solicite ao gerente."
+                    }
+                }
+            }}}
+        },
+        422: {
+            "description": "Dados inválidos na requisição",
+            "content": {"application/json": {"example": {
+                "detail": [{"loc": ["body", "phone"], "msg": "field required", "type": "value_error.missing"}]
+            }}}
+        }
+    }
+)
 async def make_call(
     call_request: CallRequest,
     current_user: User = Depends(get_current_active_user),
@@ -336,7 +576,19 @@ async def make_call(
     return await service.make_call(call_request, current_user)
 
 
-@router.post("/webhook")
+@router.post(
+    "/webhook",
+    summary="Webhook da API4COM",
+    responses={
+        200: {
+            "description": "Webhook processado com sucesso",
+            "content": {"application/json": {"example": {
+                "message": "Webhook processado com sucesso",
+                "call_id": "call_abc123"
+            }}}
+        }
+    }
+)
 async def receive_webhook(
     webhook_data: WebhookCallData,
     db: Session = Depends(get_db)

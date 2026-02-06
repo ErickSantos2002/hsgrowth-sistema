@@ -15,7 +15,67 @@ from app.models.audit_log import AuditLog
 router = APIRouter()
 
 
-@router.get("", summary="Listar logs de auditoria")
+@router.get(
+    "",
+    summary="Listar logs de auditoria",
+    responses={
+        200: {
+            "description": "Logs de auditoria retornados com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "logs": [
+                            {
+                                "id": 305,
+                                "user_id": 1,
+                                "user_name": "Carlos Eduardo Silva",
+                                "user_email": "carlos.silva@hsgrowth.com.br",
+                                "action": "UPDATE",
+                                "entity_type": "Card",
+                                "entity_id": 87,
+                                "description": "Atualizou valor do card 'Proposta Comercial - Empresa ABC Ltda' para R$ 45.000,00",
+                                "ip_address": "192.168.1.50",
+                                "user_agent": "Mozilla/5.0",
+                                "created_at": "2025-09-10T16:45:00Z"
+                            },
+                            {
+                                "id": 304,
+                                "user_id": 2,
+                                "user_name": "Fernanda Oliveira",
+                                "user_email": "fernanda.oliveira@hsgrowth.com.br",
+                                "action": "CREATE",
+                                "entity_type": "Board",
+                                "entity_id": 12,
+                                "description": "Criou board 'Pipeline Vendas Q4 2025'",
+                                "ip_address": "10.0.0.15",
+                                "user_agent": "Mozilla/5.0",
+                                "created_at": "2025-09-10T14:20:00Z"
+                            }
+                        ],
+                        "pagination": {
+                            "total": 305,
+                            "page": 1,
+                            "page_size": 50,
+                            "total_pages": 7,
+                            "has_next": True,
+                            "has_prev": False
+                        }
+                    }
+                }
+            },
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Apenas administradores podem acessar esta rota"
+                    }
+                }
+            },
+        },
+    },
+)
 async def list_audit_logs(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Registros por página"),
@@ -125,7 +185,39 @@ async def list_audit_logs(
     }
 
 
-@router.get("/actions", summary="Listar tipos de ações disponíveis")
+@router.get(
+    "/actions",
+    summary="Listar tipos de ações disponíveis",
+    responses={
+        200: {
+            "description": "Lista de tipos de ações registradas no sistema",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "actions": [
+                            "CREATE",
+                            "DELETE",
+                            "LOGIN",
+                            "LOGOUT",
+                            "MOVE",
+                            "UPDATE"
+                        ]
+                    }
+                }
+            },
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Apenas administradores podem acessar esta rota"
+                    }
+                }
+            },
+        },
+    },
+)
 async def list_actions(
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
@@ -141,7 +233,39 @@ async def list_actions(
     }
 
 
-@router.get("/entity-types", summary="Listar tipos de entidades disponíveis")
+@router.get(
+    "/entity-types",
+    summary="Listar tipos de entidades disponíveis",
+    responses={
+        200: {
+            "description": "Lista de tipos de entidades registradas no sistema",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "entity_types": [
+                            "Automation",
+                            "Board",
+                            "Card",
+                            "Column",
+                            "Notification",
+                            "User"
+                        ]
+                    }
+                }
+            },
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Apenas administradores podem acessar esta rota"
+                    }
+                }
+            },
+        },
+    },
+)
 async def list_entity_types(
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)

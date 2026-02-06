@@ -49,6 +49,7 @@ class PersonCreate(PersonBase):
     """
     Schema para criação de pessoa.
     """
+    # Exemplo completo com todos os campos definidos em PersonBase
     model_config = {
         "json_schema_extra": {
             "examples": [
@@ -56,15 +57,23 @@ class PersonCreate(PersonBase):
                     "name": "Maria Silva",
                     "first_name": "Maria",
                     "last_name": "Silva",
+                    "email": "maria.silva@empresa.com",
                     "email_commercial": "maria.silva@empresa.com",
-                    "email_personal": "maria@gmail.com",
-                    "phone_whatsapp": "11987654321",
-                    "phone_commercial": "1133334444",
+                    "email_personal": "maria.pessoal@gmail.com",
+                    "email_alternative": "maria.alt@outlook.com",
+                    "phone": "(48) 99876-5432",
+                    "phone_commercial": "(48) 3333-4444",
+                    "phone_whatsapp": "(48) 99876-5432",
+                    "phone_alternative": "(48) 98765-1234",
                     "position": "Gerente de Compras",
+                    "area": "Compras e Suprimentos",
                     "linkedin": "https://linkedin.com/in/mariasilva",
+                    "instagram": "https://instagram.com/mariasilva",
+                    "facebook": "https://facebook.com/mariasilva",
                     "organization_id": 1,
                     "owner_id": 1,
-                    "is_active": True
+                    "is_active": True,
+                    "pipedrive_id": 10234
                 }
             ]
         }
@@ -108,13 +117,31 @@ class PersonUpdate(BaseModel):
     is_active: Optional[bool] = Field(None, description="Pessoa ativa/inativa")
     pipedrive_id: Optional[int] = Field(None, description="ID no Pipedrive")
 
+    # Exemplo realista de atualização de informações de contato
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
+                    "name": "Maria Silva Oliveira",
+                    "first_name": "Maria",
+                    "last_name": "Silva Oliveira",
+                    "email": "maria.oliveira@novaempresa.com.br",
+                    "email_commercial": "maria.oliveira@novaempresa.com.br",
+                    "email_personal": "maria.pessoal@gmail.com",
+                    "email_alternative": None,
+                    "phone": "(48) 99888-7777",
+                    "phone_commercial": "(48) 3222-5555",
+                    "phone_whatsapp": "(48) 99888-7777",
+                    "phone_alternative": None,
                     "position": "Diretora de Compras",
-                    "phone_whatsapp": "11988888888",
-                    "linkedin": "https://linkedin.com/in/mariasilva-updated"
+                    "area": "Diretoria Comercial",
+                    "linkedin": "https://linkedin.com/in/mariasilva-oliveira",
+                    "instagram": "https://instagram.com/mariaoliveira",
+                    "facebook": None,
+                    "organization_id": 3,
+                    "owner_id": 2,
+                    "is_active": True,
+                    "pipedrive_id": 10234
                 }
             ]
         }
@@ -198,13 +225,14 @@ class PersonResponse(PersonBase):
                     "last_name": "Silva",
                     "email": "maria.silva@empresa.com",
                     "email_commercial": "maria.silva@empresa.com",
-                    "email_personal": "maria@gmail.com",
+                    "email_personal": "maria.pessoal@gmail.com",
                     "email_alternative": None,
-                    "phone": "11987654321",
-                    "phone_commercial": "1133334444",
-                    "phone_whatsapp": "11987654321",
+                    "phone": "(48) 99876-5432",
+                    "phone_commercial": "(48) 3333-4444",
+                    "phone_whatsapp": "(48) 99876-5432",
                     "phone_alternative": None,
                     "position": "Gerente de Compras",
+                    "area": "Compras e Suprimentos",
                     "linkedin": "https://linkedin.com/in/mariasilva",
                     "instagram": None,
                     "facebook": None,
@@ -230,6 +258,7 @@ class PersonListResponse(BaseModel):
     page_size: int = Field(..., description="Tamanho da página")
     total_pages: int = Field(..., description="Total de páginas")
 
+    # Exemplo com itens completos seguindo o schema PersonResponse
     model_config = {
         "json_schema_extra": {
             "examples": [
@@ -240,13 +269,50 @@ class PersonListResponse(BaseModel):
                             "name": "Maria Silva",
                             "first_name": "Maria",
                             "last_name": "Silva",
+                            "email": "maria.silva@empresa.com",
                             "email_commercial": "maria.silva@empresa.com",
-                            "phone_whatsapp": "11987654321",
+                            "email_personal": "maria.pessoal@gmail.com",
+                            "email_alternative": None,
+                            "phone": "(48) 99876-5432",
+                            "phone_commercial": "(48) 3333-4444",
+                            "phone_whatsapp": "(48) 99876-5432",
+                            "phone_alternative": None,
                             "position": "Gerente de Compras",
+                            "area": "Compras e Suprimentos",
+                            "linkedin": "https://linkedin.com/in/mariasilva",
+                            "instagram": None,
+                            "facebook": None,
                             "organization_id": 1,
+                            "owner_id": 1,
                             "is_active": True,
+                            "pipedrive_id": None,
                             "created_at": "2026-01-29T10:00:00",
                             "updated_at": "2026-01-29T10:00:00"
+                        },
+                        {
+                            "id": 2,
+                            "name": "Carlos Eduardo Santos",
+                            "first_name": "Carlos Eduardo",
+                            "last_name": "Santos",
+                            "email": "carlos.santos@techbr.com.br",
+                            "email_commercial": "carlos.santos@techbr.com.br",
+                            "email_personal": "carloseduardo@gmail.com",
+                            "email_alternative": "ce.santos@outlook.com",
+                            "phone": "(11) 98765-4321",
+                            "phone_commercial": "(11) 3456-7890",
+                            "phone_whatsapp": "(11) 98765-4321",
+                            "phone_alternative": "(11) 97654-3210",
+                            "position": "Diretor de Tecnologia",
+                            "area": "Tecnologia da Informacao",
+                            "linkedin": "https://linkedin.com/in/carlossantos",
+                            "instagram": "https://instagram.com/carloseduardo",
+                            "facebook": "https://facebook.com/carloseduardosantos",
+                            "organization_id": 2,
+                            "owner_id": 1,
+                            "is_active": True,
+                            "pipedrive_id": 20456,
+                            "created_at": "2026-01-30T14:30:00",
+                            "updated_at": "2026-02-01T09:15:00"
                         }
                     ],
                     "total": 4043,

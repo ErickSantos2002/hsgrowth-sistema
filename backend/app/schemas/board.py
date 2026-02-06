@@ -26,7 +26,9 @@ class BoardCreate(BoardBase):
             "examples": [
                 {
                     "name": "Leads de Vendas",
-                    "description": "Quadro para gerenciar leads do funil de vendas"
+                    "description": "Quadro para gerenciar leads do funil de vendas",
+                    "color": "#3B82F6",
+                    "icon": "grid"
                 }
             ]
         }
@@ -48,7 +50,10 @@ class BoardUpdate(BaseModel):
             "examples": [
                 {
                     "name": "Leads de Vendas Q1 2026",
-                    "description": "Quadro atualizado para Q1"
+                    "description": "Quadro atualizado para Q1",
+                    "color": "#10B981",
+                    "icon": "target",
+                    "is_deleted": False
                 }
             ]
         }
@@ -76,7 +81,9 @@ class BoardResponse(BoardBase):
                     "id": 1,
                     "name": "Leads de Vendas",
                     "description": "Quadro para gerenciar leads do funil de vendas",
-                    "is_archived": False,
+                    "color": "#3B82F6",
+                    "icon": "grid",
+                    "is_deleted": False,
                     "created_at": "2026-01-05T10:00:00",
                     "updated_at": "2026-01-05T10:00:00",
                     "lists_count": 5,

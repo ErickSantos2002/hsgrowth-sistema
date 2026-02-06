@@ -32,7 +32,45 @@ APPROVAL_REQUIRED = getattr(settings, 'TRANSFER_APPROVAL_REQUIRED', False)
 
 # ========== TRANSFERÊNCIAS ==========
 
-@router.post("", response_model=CardTransferResponse, summary="Criar transferência", status_code=201)
+@router.post(
+    "",
+    response_model=CardTransferResponse,
+    summary="Criar transferência",
+    status_code=201,
+    responses={
+        201: {
+            "description": "Transferência criada com sucesso",
+            "content": {"application/json": {"example": {
+                "id": 1,
+                "card_id": 42,
+                "from_user_id": 5,
+                "to_user_id": 8,
+                "reason": "expertise",
+                "notes": "Cliente precisa de atendimento técnico especializado",
+                "status": "completed",
+                "is_batch_transfer": False,
+                "batch_id": None,
+                "created_at": "2026-01-15T10:00:00",
+                "updated_at": "2026-01-15T10:00:00",
+                "card_title": "Consultoria TI - Empresa Brasileira Ltda",
+                "from_user_name": "João Silva",
+                "to_user_name": "Carlos Oliveira"
+            }}}
+        },
+        404: {
+            "description": "Card ou usuário destino não encontrado",
+            "content": {"application/json": {"example": {
+                "detail": "Card com ID 42 não encontrado"
+            }}}
+        },
+        422: {
+            "description": "Dados inválidos na requisição",
+            "content": {"application/json": {"example": {
+                "detail": [{"loc": ["body", "card_id"], "msg": "field required", "type": "value_error.missing"}]
+            }}}
+        }
+    }
+)
 async def create_transfer(
     transfer_data: CardTransferCreate,
     current_user: User = Depends(get_current_active_user),
@@ -59,7 +97,56 @@ async def create_transfer(
     return service.create_transfer(transfer_data, current_user)
 
 
-@router.post("/batch", response_model=BatchTransferResponse, summary="Transferência em lote", status_code=201)
+@router.post(
+    "/batch",
+    response_model=BatchTransferResponse,
+    summary="Transferência em lote",
+    status_code=201,
+    responses={
+        201: {
+            "description": "Transferência em lote criada com sucesso",
+            "content": {"application/json": {"example": {
+                "batch_id": "batch_f47ac10b",
+                "total_cards": 4,
+                "successful": 3,
+                "failed": 1,
+                "transfers": [
+                    {
+                        "id": 10,
+                        "card_id": 42,
+                        "from_user_id": 5,
+                        "to_user_id": 8,
+                        "reason": "vacation",
+                        "notes": "Transferência por férias do vendedor João - retorno 15/02",
+                        "status": "completed",
+                        "is_batch_transfer": True,
+                        "batch_id": "batch_f47ac10b",
+                        "created_at": "2026-01-15T10:00:00",
+                        "updated_at": "2026-01-15T10:00:00",
+                        "card_title": "Implantação ERP - Comércio Varejista SA",
+                        "from_user_name": "João Silva",
+                        "to_user_name": "Maria Santos"
+                    }
+                ],
+                "errors": [
+                    {"card_id": 45, "error": "Card não encontrado"}
+                ]
+            }}}
+        },
+        400: {
+            "description": "Erro na requisição (limite excedido ou dados inválidos)",
+            "content": {"application/json": {"example": {
+                "detail": "Limite máximo de 50 cards por lote excedido"
+            }}}
+        },
+        422: {
+            "description": "Dados inválidos na requisição",
+            "content": {"application/json": {"example": {
+                "detail": [{"loc": ["body", "card_ids"], "msg": "field required", "type": "value_error.missing"}]
+            }}}
+        }
+    }
+)
 async def create_batch_transfer(
     batch_data: BatchTransferCreate,
     current_user: User = Depends(get_current_active_user),
@@ -85,7 +172,46 @@ async def create_batch_transfer(
     return service.create_batch_transfer(batch_data, current_user)
 
 
-@router.get("/all", response_model=CardTransferListResponse, summary="Listar todas as transferências (Admin/Gerente)")
+@router.get(
+    "/all",
+    response_model=CardTransferListResponse,
+    summary="Listar todas as transferências (Admin/Gerente)",
+    responses={
+        200: {
+            "description": "Lista paginada de todas as transferências do sistema",
+            "content": {"application/json": {"example": {
+                "transfers": [
+                    {
+                        "id": 1,
+                        "card_id": 42,
+                        "from_user_id": 5,
+                        "to_user_id": 8,
+                        "reason": "expertise",
+                        "notes": "Cliente precisa de atendimento técnico",
+                        "status": "completed",
+                        "is_batch_transfer": False,
+                        "batch_id": None,
+                        "created_at": "2026-01-15T10:00:00",
+                        "updated_at": "2026-01-15T10:00:00",
+                        "card_title": "Projeto Solar - Construtora Horizonte",
+                        "from_user_name": "Ana Costa",
+                        "to_user_name": "Carlos Oliveira"
+                    }
+                ],
+                "total": 48,
+                "page": 1,
+                "page_size": 50,
+                "total_pages": 1
+            }}}
+        },
+        403: {
+            "description": "Acesso negado - apenas admin/gerente",
+            "content": {"application/json": {"example": {
+                "detail": "Apenas administradores e gerentes podem listar todas as transferências"
+            }}}
+        }
+    }
+)
 async def list_all_transfers(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
@@ -117,7 +243,40 @@ async def list_all_transfers(
     )
 
 
-@router.get("/sent", response_model=CardTransferListResponse, summary="Listar transferências enviadas")
+@router.get(
+    "/sent",
+    response_model=CardTransferListResponse,
+    summary="Listar transferências enviadas",
+    responses={
+        200: {
+            "description": "Lista paginada de transferências enviadas pelo usuário autenticado",
+            "content": {"application/json": {"example": {
+                "transfers": [
+                    {
+                        "id": 5,
+                        "card_id": 78,
+                        "from_user_id": 5,
+                        "to_user_id": 3,
+                        "reason": "workload_balance",
+                        "notes": "Balanceamento de carteira - muitos leads novos",
+                        "status": "completed",
+                        "is_batch_transfer": False,
+                        "batch_id": None,
+                        "created_at": "2026-01-14T09:30:00",
+                        "updated_at": "2026-01-14T09:30:00",
+                        "card_title": "Plano Empresarial - Clínica Saúde Mais",
+                        "from_user_name": "João Silva",
+                        "to_user_name": "Maria Santos"
+                    }
+                ],
+                "total": 12,
+                "page": 1,
+                "page_size": 50,
+                "total_pages": 1
+            }}}
+        }
+    }
+)
 async def list_sent_transfers(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
@@ -142,7 +301,40 @@ async def list_sent_transfers(
     )
 
 
-@router.get("/received", response_model=CardTransferListResponse, summary="Listar transferências recebidas")
+@router.get(
+    "/received",
+    response_model=CardTransferListResponse,
+    summary="Listar transferências recebidas",
+    responses={
+        200: {
+            "description": "Lista paginada de transferências recebidas pelo usuário autenticado",
+            "content": {"application/json": {"example": {
+                "transfers": [
+                    {
+                        "id": 7,
+                        "card_id": 91,
+                        "from_user_id": 3,
+                        "to_user_id": 5,
+                        "reason": "reassignment",
+                        "notes": "Reatribuição por proximidade geográfica com o cliente",
+                        "status": "completed",
+                        "is_batch_transfer": False,
+                        "batch_id": None,
+                        "created_at": "2026-01-13T14:20:00",
+                        "updated_at": "2026-01-13T14:20:00",
+                        "card_title": "Licenciamento Software - Padaria Pão Quente",
+                        "from_user_name": "Maria Santos",
+                        "to_user_name": "João Silva"
+                    }
+                ],
+                "total": 8,
+                "page": 1,
+                "page_size": 50,
+                "total_pages": 1
+            }}}
+        }
+    }
+)
 async def list_received_transfers(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
@@ -169,7 +361,52 @@ async def list_received_transfers(
 
 # ========== APROVAÇÕES ==========
 
-@router.get("/approvals/pending", response_model=TransferApprovalListResponse, summary="Listar aprovações pendentes")
+@router.get(
+    "/approvals/pending",
+    response_model=TransferApprovalListResponse,
+    summary="Listar aprovações pendentes",
+    responses={
+        200: {
+            "description": "Lista paginada de aprovações pendentes do gerente/admin",
+            "content": {"application/json": {"example": {
+                "approvals": [
+                    {
+                        "id": 3,
+                        "transfer_id": 12,
+                        "approver_id": 1,
+                        "status": "pending",
+                        "expires_at": "2026-01-18T10:00:00",
+                        "decided_at": None,
+                        "comments": None,
+                        "created_at": "2026-01-15T10:00:00",
+                        "updated_at": "2026-01-15T10:00:00",
+                        "transfer": {
+                            "id": 12,
+                            "card_id": 55,
+                            "from_user_id": 5,
+                            "to_user_id": 8,
+                            "reason": "expertise",
+                            "notes": "Cliente pediu atendimento especializado em BI",
+                            "status": "pending_approval",
+                            "is_batch_transfer": False,
+                            "batch_id": None,
+                            "created_at": "2026-01-15T10:00:00",
+                            "updated_at": "2026-01-15T10:00:00",
+                            "card_title": "Dashboards BI - Distribuidora Nacional",
+                            "from_user_name": "João Silva",
+                            "to_user_name": "Carlos Oliveira"
+                        },
+                        "approver_name": "Admin Master"
+                    }
+                ],
+                "total": 3,
+                "page": 1,
+                "page_size": 50,
+                "total_pages": 1
+            }}}
+        }
+    }
+)
 async def list_pending_approvals(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
@@ -192,7 +429,56 @@ async def list_pending_approvals(
     )
 
 
-@router.post("/approvals/{approval_id}/decide", response_model=TransferApprovalResponse, summary="Decidir aprovação")
+@router.post(
+    "/approvals/{approval_id}/decide",
+    response_model=TransferApprovalResponse,
+    summary="Decidir aprovação",
+    responses={
+        200: {
+            "description": "Decisão registrada com sucesso",
+            "content": {"application/json": {"example": {
+                "id": 3,
+                "transfer_id": 12,
+                "approver_id": 1,
+                "status": "approved",
+                "expires_at": "2026-01-18T10:00:00",
+                "decided_at": "2026-01-16T14:30:00",
+                "comments": "Transferência aprovada. Carlos tem expertise em BI.",
+                "created_at": "2026-01-15T10:00:00",
+                "updated_at": "2026-01-16T14:30:00",
+                "transfer": {
+                    "id": 12,
+                    "card_id": 55,
+                    "from_user_id": 5,
+                    "to_user_id": 8,
+                    "reason": "expertise",
+                    "notes": "Cliente pediu atendimento especializado em BI",
+                    "status": "completed",
+                    "is_batch_transfer": False,
+                    "batch_id": None,
+                    "created_at": "2026-01-15T10:00:00",
+                    "updated_at": "2026-01-16T14:30:00",
+                    "card_title": "Dashboards BI - Distribuidora Nacional",
+                    "from_user_name": "João Silva",
+                    "to_user_name": "Carlos Oliveira"
+                },
+                "approver_name": "Admin Master"
+            }}}
+        },
+        404: {
+            "description": "Aprovação não encontrada",
+            "content": {"application/json": {"example": {
+                "detail": "Aprovação com ID 99 não encontrada"
+            }}}
+        },
+        422: {
+            "description": "Decisão inválida",
+            "content": {"application/json": {"example": {
+                "detail": [{"loc": ["body", "decision"], "msg": "field required", "type": "value_error.missing"}]
+            }}}
+        }
+    }
+)
 async def decide_approval(
     approval_id: int = Path(..., description="ID da aprovação"),
     decision_data: TransferApprovalDecision = ...,
@@ -215,7 +501,40 @@ async def decide_approval(
 
 # ========== ESTATÍSTICAS ==========
 
-@router.get("/statistics", response_model=TransferStatistics, summary="Estatísticas de transferências")
+@router.get(
+    "/statistics",
+    response_model=TransferStatistics,
+    summary="Estatísticas de transferências",
+    responses={
+        200: {
+            "description": "Estatísticas gerais de transferências do sistema",
+            "content": {"application/json": {"example": {
+                "total_transfers": 150,
+                "pending_approvals": 3,
+                "completed_today": 5,
+                "completed_this_week": 22,
+                "completed_this_month": 45,
+                "by_reason": {
+                    "reassignment": 50,
+                    "workload_balance": 40,
+                    "expertise": 30,
+                    "vacation": 20,
+                    "other": 10
+                },
+                "top_receivers": [
+                    {"user_id": 8, "user_name": "Carlos Oliveira", "count": 25},
+                    {"user_id": 3, "user_name": "Maria Santos", "count": 18},
+                    {"user_id": 11, "user_name": "Fernanda Lima", "count": 12}
+                ],
+                "top_senders": [
+                    {"user_id": 5, "user_name": "João Silva", "count": 30},
+                    {"user_id": 2, "user_name": "Ana Costa", "count": 15},
+                    {"user_id": 9, "user_name": "Roberto Almeida", "count": 10}
+                ]
+            }}}
+        }
+    }
+)
 async def get_statistics(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
