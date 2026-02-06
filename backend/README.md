@@ -236,6 +236,9 @@ backend/
 │   │   ├── card_repository.py
 │   │   ├── gamification_repository.py
 │   │   └── ...
+│   ├── static/                     # Arquivos estáticos
+│   │   ├── api-docs.html           # Documentação customizada da API
+│   │   └── logo.png                # Logo do sistema
 │   ├── workers/                    # Workers assíncronos
 │   │   ├── celery_app.py           # Configuração Celery
 │   │   ├── tasks.py                # Tasks assíncronas
@@ -632,14 +635,25 @@ docker-compose restart api
 docker-compose restart
 ```
 
-## 📚 Documentação Adicional
+## 📚 Documentação da API
+
+A API possui **3 interfaces de documentação** acessíveis pelo navegador:
+
+| Rota | Descrição | Uso |
+|------|-----------|-----|
+| `/docs` | **Swagger UI** -- Interface interativa com "Try it out" | Testar endpoints diretamente |
+| `/redoc` | **ReDoc** -- Referência limpa e navegável | Consulta rápida |
+| `/api-docs` | **Documentação Customizada** -- Vitrine profissional estilo Stripe | Apresentação e overview |
+
+A página `/api-docs` carrega dinamicamente o `/openapi.json` e renderiza todas as 21 categorias com cards de endpoint colapsáveis, syntax highlighting, busca com debounce, scroll spy e design responsivo.
+
+### Documentação Adicional
 
 - **Correções de Testes**: `Documentação/CORREÇÕES_TESTES_08_01_2026.md`
-- **Migração contact_info → Persons**: `MIGRATION_CONTACT_INFO_TO_PERSONS.md` (29/01/2026)
+- **Migração contact_info -> Persons**: `MIGRATION_CONTACT_INFO_TO_PERSONS.md` (29/01/2026)
 - **Estrutura do Banco de Dados**: `docs/DATABASE_STRUCTURE.md`
 - **Guia de Scripts**: `scripts/README.md`
 - **Migrations**: Ver pasta `alembic/versions/`
-- **Swagger/OpenAPI**: Acesse `http://localhost:8000/docs` após iniciar a API
 
 ## 🎯 Próximos Passos
 

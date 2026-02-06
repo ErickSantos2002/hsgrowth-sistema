@@ -7,6 +7,56 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.2] - 2026-02-06
+
+### Adicionado
+
+#### Página de Documentação Customizada da API (`/api-docs`)
+- **Nova página de vitrine profissional** da API, estilo Stripe/Twilio API docs
+- Página HTML auto-contida servida pelo FastAPI em `/api-docs`
+- Carrega dinamicamente o `/openapi.json` e renderiza tudo via JavaScript
+- **Identidade visual** replicando o frontend (dark theme, gradients slate-950, Tailwind CSS)
+- **CDNs utilizados**: Tailwind CSS 3.4, Lucide Icons, Marked.js, Google Fonts (Inter, JetBrains Mono)
+
+#### Funcionalidades da Página
+- **Header fixo**: Logo com gradient cyan-blue, nome, versão da API, links para Swagger/ReDoc/OpenAPI JSON
+- **Sidebar fixa (w-72)**: Busca com debounce (200ms), atalho Ctrl+K, índice das 21 categorias com contagem de endpoints, scroll spy com IntersectionObserver
+- **Hero section**: Descrição da API em Markdown renderizado, cards de estatísticas (endpoints/schemas/categorias), base URL com botão copiar
+- **21 categorias** com ícones Lucide mapeados individualmente
+- **Cards de endpoint colapsáveis** com:
+  - Badge colorido por método HTTP (GET=emerald, POST=blue, PUT=amber, DELETE=red, PATCH=orange)
+  - Path em monospace, summary e description (Markdown)
+  - Tabela de parâmetros (nome, tipo, in, obrigatório, descrição)
+  - Request body com JSON example, syntax highlighting e botão copiar
+  - Responses por status code (colapsáveis com botão copiar)
+  - Campos do schema em `<details>` expansível
+- **Responsivo**: Sidebar esconde em mobile com overlay e botão menu hamburger
+- **Skeleton loader** enquanto carrega o OpenAPI JSON
+- **Tratamento de erro** caso a API não responda
+
+### Melhorias Técnicas
+
+#### Backend
+- **Diretório `app/static/`** criado para servir arquivos estáticos (CSS, JS, imagens)
+- **`StaticFiles` montado** via `app.mount("/static", ...)` após include_router
+- **Rota `/api-docs`** com `include_in_schema=False` (não aparece no Swagger)
+- **Logo** copiada do frontend para `app/static/logo.png`
+- **Zero mudanças no Docker** necessárias (volume mount já cobre `app/static/`)
+
+#### Documentação da API - 3 Formas de Acesso
+- `/docs` -- Swagger UI (interativo com "Try it out")
+- `/redoc` -- ReDoc (referência limpa e navegável)
+- `/api-docs` -- Página customizada (vitrine profissional) **[NOVO]**
+
+### Arquivos Criados
+- `backend/app/static/api-docs.html` -- Página HTML completa (~600 linhas)
+- `backend/app/static/logo.png` -- Logo copiada do frontend
+
+### Arquivos Modificados
+- `backend/app/main.py` -- Imports (os, FileResponse, StaticFiles), mount de estáticos e rota /api-docs
+
+---
+
 ## [1.1.1] - 2026-02-05
 
 ### ✨ Novas Funcionalidades

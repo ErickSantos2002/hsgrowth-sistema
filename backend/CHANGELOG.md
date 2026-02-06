@@ -7,6 +7,51 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
+## [2.1.0] - 2026-02-06
+
+### Adicionado
+
+#### Página de Documentação Customizada da API
+- **Nova rota `/api-docs`** servindo página HTML de vitrine profissional da API
+- Página auto-contida (~600 linhas) com CSS e JS inline
+- Carrega dinamicamente `/openapi.json` e renderiza via JavaScript
+- Estilo visual inspirado em Stripe/Twilio API docs com dark theme (Tailwind CSS)
+- **CDNs**: Tailwind CSS 3.4, Lucide Icons, Marked.js, Google Fonts (Inter, JetBrains Mono)
+
+**Funcionalidades:**
+- Header fixo com logo, versão e links para Swagger/ReDoc/OpenAPI
+- Sidebar fixa com busca (debounce 200ms, atalho Ctrl+K), índice por tag, scroll spy
+- Cards de endpoint colapsáveis com badges HTTP coloridos, tabelas de parâmetros, request/response examples com syntax highlighting e botão copiar
+- Skeleton loader, tratamento de erros, responsivo com menu mobile
+
+#### Diretório de Arquivos Estáticos
+- **`app/static/`** criado para servir arquivos estáticos
+- `StaticFiles` montado em `/static` via `app.mount()`
+- Logo copiada do frontend para `app/static/logo.png`
+
+### Detalhes Técnicos
+
+**Novos imports em `main.py`:**
+- `os` (stdlib)
+- `fastapi.responses.FileResponse`
+- `fastapi.staticfiles.StaticFiles`
+
+**Rota `/api-docs`:**
+- `include_in_schema=False` (não aparece no Swagger/OpenAPI)
+- Retorna `FileResponse` com `media_type="text/html"`
+
+**Docker:**
+- Zero mudanças necessárias (volume mount `./app:/app/app` já cobre `app/static/`)
+
+### Arquivos Criados
+- `app/static/api-docs.html`
+- `app/static/logo.png`
+
+### Arquivos Modificados
+- `app/main.py` (+3 imports, +mount estáticos, +rota /api-docs)
+
+---
+
 ## [2.0.0] - 2026-01-29
 
 ### 🚀 Adicionado
