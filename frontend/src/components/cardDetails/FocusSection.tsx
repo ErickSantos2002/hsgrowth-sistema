@@ -22,6 +22,7 @@ import StatusBadge, { type ActivityStatus } from "./StatusBadge";
 import cardTaskService from "../../services/cardTaskService";
 import api4comService from "../../services/api4comService";
 import personService, { Person } from "../../services/personService";
+import automationService from "../../services/automationService";
 import { Card } from "../../types";
 import {
   formatBrazilDate,
@@ -67,6 +68,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
   const [rescheduleTime, setRescheduleTime] = useState("");
   const [person, setPerson] = useState<Person | null>(null);
   const [callingTaskId, setCallingTaskId] = useState<number | null>(null);
+  const [noShowTaskId, setNoShowTaskId] = useState<number | null>(null);
 
   // Usa os dados que vem do backend
   const activities = tasks || [];
@@ -164,6 +166,8 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       title: task.title,
       description: task.description || "",
       location: task.location || "",
+      notes: task.notes || "",
+      video_link: task.video_link || "",
       priority: task.priority,
     });
   };
@@ -183,6 +187,8 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
         title: editFormData.title,
         description: editFormData.description || null,
         location: editFormData.location || null,
+        notes: editFormData.notes || null,
+        video_link: editFormData.video_link || null,
         priority: editFormData.priority,
       });
       setEditingTaskId(null);
@@ -297,6 +303,33 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       alert(`Erro ao iniciar chamada: ${error.response?.data?.detail || error.message}`);
     } finally {
       setCallingTaskId(null);
+    }
+  };
+
+  /**
+   * Marca reunião como NoShow e dispara automação para mover card para Reagendamento
+   */
+  const handleNoShow = async (activityId: number) => {
+    if (!confirm("Marcar como NoShow? O card será movido para Reagendamento.")) {
+      return;
+    }
+
+    try {
+      setNoShowTaskId(activityId);
+      // Dispara a automação manual de NoShow (ID 12)
+      await automationService.trigger(12, card.id, {
+        manual_trigger: true,
+        activity_id: activityId
+      });
+      // Marca a atividade como concluída
+      await cardTaskService.toggleComplete(activityId, true);
+      onUpdate();
+      alert("Reunião marcada como NoShow e card movido para Reagendamento");
+    } catch (error: any) {
+      console.error("Erro ao marcar NoShow:", error);
+      alert(error.response?.data?.detail || "Erro ao marcar NoShow");
+    } finally {
+      setNoShowTaskId(null);
     }
   };
 
@@ -447,14 +480,27 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
 
                         <div>
                           <label className="block text-xs font-medium text-slate-400 mb-1">
-                            Local
+                            Anotações
+                          </label>
+                          <textarea
+                            value={editFormData.notes}
+                            onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                            rows={3}
+                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            placeholder="Adicione anotações da reunião"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 mb-1">
+                            Link da gravação
                           </label>
                           <input
-                            type="text"
-                            value={editFormData.location}
-                            onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
+                            type="url"
+                            value={editFormData.video_link}
+                            onChange={(e) => setEditFormData({ ...editFormData, video_link: e.target.value })}
                             className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Endereço ou local"
+                            placeholder="https://meet.google.com/... ou link da gravação"
                           />
                         </div>
 
@@ -552,6 +598,23 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                                 <Phone size={14} />
                               )}
                               Ligar
+                            </button>
+                          )}
+
+                          {/* Botão NoShow - só aparece para reuniões */}
+                          {activity.task_type === "meeting" && (
+                            <button
+                              onClick={() => handleNoShow(activity.id)}
+                              disabled={noShowTaskId === activity.id || loadingTaskId === activity.id}
+                              className="flex-1 px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/50 rounded font-medium text-sm transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                              title="Cliente não compareceu - move para Reagendamento"
+                            >
+                              {noShowTaskId === activity.id ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <Users size={14} />
+                              )}
+                              NoShow
                             </button>
                           )}
 

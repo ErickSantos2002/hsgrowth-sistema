@@ -178,7 +178,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
     is_active: true,
     cnae: "",
     linkedin_url: "",
-    relationship_type: "",
+    relationship_type: "Lead", // Valor padrão: toda empresa começa como Lead
     commercial_activity: "",
     sector: "",
     employee_count: "",
@@ -231,7 +231,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
         is_active: true,
         cnae: "",
         linkedin_url: "",
-        relationship_type: "",
+        relationship_type: "Lead", // Valor padrão: toda empresa começa como Lead
         commercial_activity: "",
         sector: "",
         employee_count: "",
@@ -500,7 +500,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
             {/* Tipo de Relacionamento */}
             <FormField
               label="Tipo de Relacionamento"
-              hint="Classificação do relacionamento comercial"
+              hint={!isEditing ? "Toda empresa começa como Lead (editável após criação)" : "Classificação do relacionamento comercial"}
             >
               <SelectMenu
                 value={formData.relationship_type}
@@ -512,6 +512,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                   })),
                 ]}
                 onChange={(value) => handleChange("relationship_type", value)}
+                disabled={!isEditing}
               />
             </FormField>
 
@@ -720,9 +721,10 @@ interface SelectMenuProps {
   options: SelectOption[];
   placeholder?: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }
 
-const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
+const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -745,8 +747,11 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
     <div ref={menuRef} className="relative">
       <button
         type="button"
-        onClick={() => setIsOpen((open) => !open)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        onClick={() => !disabled && setIsOpen((open) => !open)}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
           {selectedLabel}
@@ -756,7 +761,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
           className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button

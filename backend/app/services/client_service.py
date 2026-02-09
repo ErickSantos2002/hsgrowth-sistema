@@ -152,6 +152,11 @@ class ClientService:
                 detail="Documento já cadastrado"
             )
 
+        # Define relationship_type padrão como "Lead" se não foi fornecido
+        # Automação da consultora: Toda empresa criada inicia como "Lead"
+        if not client_data.relationship_type:
+            client_data.relationship_type = "Lead"
+
         # Cria o cliente
         client = self.repository.create(client_data)
         return client
@@ -187,6 +192,14 @@ class ClientService:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Documento já cadastrado"
+                )
+
+        # Valida mudança de relationship_type - bloqueia downgrade de Cliente
+        if client_data.relationship_type and client_data.relationship_type != client.relationship_type:
+            if client.relationship_type == "Cliente" and client_data.relationship_type in ["Lead", "Prospect"]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Empresas com tipo de relacionamento 'Cliente' não podem ser alteradas para 'Lead' ou 'Prospect'. Este campo é irreversível."
                 )
 
         # Atualiza o cliente

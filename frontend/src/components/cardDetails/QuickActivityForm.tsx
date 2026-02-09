@@ -26,7 +26,7 @@ interface QuickActivityFormProps {
 /**
  * Tipos de atividade disponíveis
  */
-type ActivityType = "call" | "meeting" | "task" | "deadline" | "email" | "lunch" | "other";
+type ActivityType = "call" | "meeting" | "task" | "follow_up" | "other";
 
 interface ActivityTypeConfig {
   type: ActivityType;
@@ -62,9 +62,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     { type: "call", label: "Ligação", icon: <Phone size={16} />, color: "blue" },
     { type: "meeting", label: "Reunião", icon: <Users size={16} />, color: "purple" },
     { type: "task", label: "Tarefa", icon: <CheckSquare size={16} />, color: "green" },
-    { type: "deadline", label: "Prazo", icon: <Clock size={16} />, color: "red" },
-    { type: "email", label: "E-mail", icon: <Mail size={16} />, color: "cyan" },
-    { type: "lunch", label: "Almoço", icon: <Coffee size={16} />, color: "orange" },
+    { type: "follow_up", label: "Follow Up", icon: <Clock size={16} />, color: "yellow" },
     { type: "other", label: "Outro", icon: <MoreHorizontal size={16} />, color: "slate" },
   ];
 
@@ -82,15 +80,9 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       task: isSelected
         ? "bg-green-500/30 text-green-400 border-green-500"
         : "bg-green-500/10 text-green-400 border-green-500/30 hover:bg-green-500/20",
-      deadline: isSelected
-        ? "bg-red-500/30 text-red-400 border-red-500"
-        : "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20",
-      email: isSelected
-        ? "bg-cyan-500/30 text-cyan-400 border-cyan-500"
-        : "bg-cyan-500/10 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/20",
-      lunch: isSelected
-        ? "bg-orange-500/30 text-orange-400 border-orange-500"
-        : "bg-orange-500/10 text-orange-400 border-orange-500/30 hover:bg-orange-500/20",
+      follow_up: isSelected
+        ? "bg-yellow-500/30 text-yellow-400 border-yellow-500"
+        : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/20",
       other: isSelected
         ? "bg-slate-500/30 text-slate-400 border-slate-500"
         : "bg-slate-500/10 text-slate-400 border-slate-500/30 hover:bg-slate-500/20",
@@ -210,7 +202,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       {/* Tipos de atividade */}
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-2">Tipo de atividade</label>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
           {activityTypes.map((activityType) => (
             <button
               key={activityType.type}

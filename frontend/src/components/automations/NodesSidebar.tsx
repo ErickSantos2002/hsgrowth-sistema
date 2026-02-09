@@ -66,6 +66,13 @@ const availableNodes: NodeType[] = [
     category: "trigger",
     color: "cyan",
   },
+  {
+    type: "manual",
+    label: "Manual",
+    icon: <Tag size={18} />,
+    category: "trigger",
+    color: "yellow",
+  },
   // AÇÕES
   {
     type: "assign_round_robin",
@@ -73,6 +80,13 @@ const availableNodes: NodeType[] = [
     icon: <UserPlus size={18} />,
     category: "action",
     color: "purple",
+  },
+  {
+    type: "assign_sdr_round_robin",
+    label: "Rodízio de SDRs",
+    icon: <UserPlus size={18} />,
+    category: "action",
+    color: "cyan",
   },
   {
     type: "assign_card",
@@ -108,6 +122,13 @@ const availableNodes: NodeType[] = [
     icon: <Bell size={18} />,
     category: "action",
     color: "blue",
+  },
+  {
+    type: "update_client_field",
+    label: "Atualizar Campo do Cliente",
+    icon: <Edit size={18} />,
+    category: "action",
+    color: "yellow",
   },
 ];
 

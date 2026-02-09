@@ -97,6 +97,17 @@ class CardService {
     const response = await api.post<Card>(`/api/v1/cards/${id}/lose`);
     return response.data;
   }
+
+  /**
+   * Busca global de cards por título
+   * Busca em todos os boards que o usuário tem acesso
+   */
+  async globalSearch(query: string, limit: number = 10): Promise<Card[]> {
+    const response = await api.get<Card[]>("/api/v1/cards/search/global", {
+      params: { q: query, limit },
+    });
+    return response.data;
+  }
 }
 
 export default new CardService();

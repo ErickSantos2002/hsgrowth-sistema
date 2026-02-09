@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/logo.png";
 import NotificationDropdown from "../components/NotificationDropdown";
+import GlobalSearch from "../components/GlobalSearch";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false },
@@ -216,15 +217,18 @@ export default function MainLayout() {
             <div className={`${sidebarOpen ? "lg:ml-64" : "lg:ml-20"} transition-all duration-300 h-screen flex flex-col`}>
                 {/* Top Navbar */}
                 <nav className="flex-shrink-0 z-[2000] bg-slate-900/50 backdrop-blur-xl border-b border-slate-700/50 px-6 py-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-2 text-slate-400 rounded-lg hover:bg-slate-800/50 hover:text-white transition-all"
+                            className="p-2 text-slate-400 rounded-lg hover:bg-slate-800/50 hover:text-white transition-all flex-shrink-0"
                         >
                             <Menu size={24} />
                         </button>
 
-                        <div className="flex items-center gap-3">
+                        {/* Busca Global */}
+                        <GlobalSearch />
+
+                        <div className="flex items-center gap-3 flex-shrink-0">
                             {/* Avatar + Info do Usuário */}
                             <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:bg-slate-800/70 transition-all">
                                 {/* Avatar com inicial do nome */}

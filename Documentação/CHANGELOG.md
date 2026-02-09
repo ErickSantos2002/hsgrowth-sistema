@@ -7,6 +7,97 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.3] - 2026-02-09
+
+### ✨ Novas Funcionalidades
+
+#### Sistema de Rodízio de SDRs
+- **Nova ação de automação**: `assign_sdr_round_robin` para distribuir cards automaticamente entre SDRs
+- **Componente visual**: Node configurável no editor de automações com seleção de SDRs participantes
+- **Backend**: Implementada função `_assign_sdr_round_robin` que gerencia rodízio equilibrado via estado da automação
+- **Frontend**:
+  - Avatar e dropdown de SDR no CardDetails para atribuição manual
+  - Filtro por role "sdr" na configuração do rodízio
+  - Cores cyan/blue para diferenciar SDR de vendedor
+  - Ícone UserPlus com borda cyan no ActionNode
+
+#### Busca Global de Cards
+- **Novo componente**: GlobalSearch.tsx no MainLayout para buscar cards em todos os boards
+- **Endpoint**: `/api/v1/cards/search/global` com busca por título
+- **Funcionalidades**:
+  - Debounce de 300ms para otimizar requisições
+  - Atalho de teclado: Ctrl+K (Windows) / Cmd+K (Mac)
+  - Dropdown com resultados mostrando: título, board/lista, responsável, valor
+  - Limite configurável de resultados (padrão: 10)
+  - Respeita permissões (vendedor vê apenas seus cards)
+
+#### Sistema de Tipos de Atividade Simplificado
+- **Removidos tipos**: email, lunch, deadline (desnecessários no fluxo atual)
+- **Adicionado tipo**: follow_up (acompanhamento/retorno ao cliente)
+- **Tipos finais** (5): call, meeting, task, follow_up, other
+- Grid responsivo ajustado para nova quantidade de tipos
+
+#### Melhorias na Seção Foco para Reuniões
+- **Campos editáveis adicionados**:
+  - Anotações (textarea) - para registrar pontos importantes da reunião
+  - Link da gravação (input URL) - para vincular gravação do Google Meet/Zoom
+- **Removido**: Campo "Local" (não utilizado no fluxo)
+- **Botão NoShow**: Novo botão para reuniões não realizadas
+  - Cor laranja para destaque visual
+  - Dispara automação ID 12 (configurável)
+  - Move card automaticamente para lista 25 (Reagendamento)
+  - Marca atividade como concluída
+
+### 🔧 Melhorias Técnicas
+
+#### Backend
+- **Automação**: Novo ActionType `ASSIGN_SDR_ROUND_ROBIN` no enum de ações
+- **Estado persistente**: Rodízio de SDR mantém estado em `automation.state["round_robin_last_sdr_id"]`
+- **Filtro de usuários**: Busca apenas usuários com `role = "sdr"` para rodízio de SDRs
+- **Endpoint de busca**: Query otimizada com filtro por título usando ILIKE
+
+#### Frontend
+- **NodeConfigPanel**: Carrega todos os usuários ativos e aplica filtro específico por role na renderização
+  - Rodízio de Vendedores: filtra `role === "salesperson"`
+  - Rodízio de SDRs: filtra `role === "sdr"`
+- **CardDetails**:
+  - Estados gerenciados para dropdown e loading de SDR
+  - Funções `handleChangeSdr` e `handleAutoAssignSdr` (comentado por enquanto)
+  - Variável `sdrUsers` filtra apenas SDRs para dropdown
+- **FocusSection**:
+  - Import de `automationService` para disparar automações
+  - Função `handleNoShow` dispara automação e marca atividade concluída
+  - Campos `notes` e `video_link` adicionados ao formulário de edição
+
+### 🐛 Correções
+
+#### Filtro de Usuários em Automações
+- **Problema**: NodeConfigPanel carregava apenas vendedores e gerentes, excluindo SDRs
+- **Solução**: Removido filtro prematuro, agora carrega todos os usuários ativos e aplica filtro específico por tipo de rodízio
+- **Impacto**: Rodízio de SDRs agora exibe corretamente a lista de SDRs disponíveis
+
+### 📝 Arquivos Modificados
+
+#### Backend
+- `app/schemas/automation.py` - Adicionado ASSIGN_SDR_ROUND_ROBIN ao ActionType enum
+- `app/services/automation_service.py` - Implementada função _assign_sdr_round_robin
+- `app/schemas/card_task.py` - Ajustado enum TaskType (removidos 3 tipos, adicionado follow_up)
+- `app/api/v1/endpoints/cards.py` - Novo endpoint /search/global
+
+#### Frontend
+- `src/components/automations/NodesSidebar.tsx` - Adicionado node "Rodízio de SDRs"
+- `src/components/automations/NodeConfigPanel.tsx` - Configuração de SDR round robin + fix de filtros
+- `src/components/automations/ActionNode.tsx` - Ícone e cor cyan para assign_sdr_round_robin
+- `src/components/cardDetails/QuickActivityForm.tsx` - Tipos de atividade simplificados
+- `src/components/cardDetails/FocusSection.tsx` - Campos editáveis e botão NoShow para reuniões
+- `src/components/GlobalSearch.tsx` - Novo componente de busca global (criado)
+- `src/layouts/MainLayout.tsx` - Integração do GlobalSearch no header
+- `src/pages/CardDetails.tsx` - Avatar/dropdown de SDR + funções de atribuição
+- `src/services/cardService.ts` - Método globalSearch adicionado
+- `src/types/index.ts` - Tipos já existentes (sdr_id, sdr_name, sdr)
+
+---
+
 ## [1.1.2] - 2026-02-06
 
 ### Adicionado

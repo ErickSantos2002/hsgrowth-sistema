@@ -64,11 +64,8 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
   const loadUsers = async () => {
     try {
       const response = await userService.listActive();
-      // Filtra apenas vendedores e gerentes
-      const salespeople = response.filter((u: any) =>
-        u.role === "salesperson" || u.role === "manager"
-      );
-      setUsers(salespeople);
+      // Carrega todos os usuários ativos (filtro específico será feito na renderização)
+      setUsers(response);
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
     }
@@ -168,6 +165,15 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
           </>
         );
 
+      case "manual":
+        return (
+          <div className="text-sm text-slate-400 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+            <p className="mb-2">👆 <strong>Trigger Manual</strong></p>
+            <p>Esta automação será executada apenas quando um usuário clicar em um botão específico (ex: no card ou em uma lista).</p>
+            <p className="mt-2 text-xs">Não requer configuração adicional.</p>
+          </div>
+        );
+
       default:
         return (
           <div className="text-sm text-slate-400">
@@ -188,10 +194,10 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 Vendedores no rodízio
               </label>
               <div className="space-y-2 max-h-60 overflow-y-auto bg-slate-700/50 rounded-lg p-3 border border-slate-600">
-                {users.length === 0 ? (
-                  <p className="text-sm text-slate-400">Carregando vendedores...</p>
+                {users.filter(u => u.role === "salesperson").length === 0 ? (
+                  <p className="text-sm text-slate-400">Nenhum vendedor encontrado</p>
                 ) : (
-                  users.map((user) => {
+                  users.filter(u => u.role === "salesperson").map((user) => {
                     const isSelected = (config.user_ids || []).includes(String(user.id));
                     return (
                       <label
@@ -214,7 +220,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                           className="w-4 h-4 bg-slate-700 border-slate-600 rounded focus:ring-2 focus:ring-purple-500"
                         />
                         <span className="text-sm text-white">
-                          {user.name} {user.role === "manager" ? "(Gerente)" : ""}
+                          {user.name}
                         </span>
                       </label>
                     );
@@ -231,6 +237,61 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
             <div className="text-sm text-slate-400 bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
               <p className="mb-2">🔄 <strong>Como funciona:</strong></p>
               <p>Cards serão distribuídos automaticamente entre os vendedores selecionados em sistema de rodízio equilibrado.</p>
+            </div>
+          </>
+        );
+
+      case "assign_sdr_round_robin":
+        return (
+          <>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                SDRs no rodízio
+              </label>
+              <div className="space-y-2 max-h-60 overflow-y-auto bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+                {users.filter(u => u.role === "sdr").length === 0 ? (
+                  <p className="text-sm text-slate-400">Nenhum SDR encontrado</p>
+                ) : (
+                  users.filter(u => u.role === "sdr").map((user) => {
+                    const isSelected = (config.user_ids || []).includes(String(user.id));
+                    return (
+                      <label
+                        key={user.id}
+                        className="flex items-center gap-2 p-2 hover:bg-slate-700 rounded cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            const currentIds = config.user_ids || [];
+                            let newIds;
+                            if (e.target.checked) {
+                              newIds = [...currentIds, String(user.id)];
+                            } else {
+                              newIds = currentIds.filter((id: string) => id !== String(user.id));
+                            }
+                            updateConfig("user_ids", newIds);
+                          }}
+                          className="w-4 h-4 bg-slate-700 border-slate-600 rounded focus:ring-2 focus:ring-cyan-500"
+                        />
+                        <span className="text-sm text-white">
+                          {user.name}
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              <p className="text-xs text-slate-400 mt-2">
+                {(config.user_ids || []).length === 0
+                  ? "⚠️ Nenhum SDR selecionado. Todos os SDRs ativos participarão do rodízio."
+                  : `✓ ${(config.user_ids || []).length} SDR(s) selecionado(s)`}
+              </p>
+            </div>
+
+            <div className="text-sm text-slate-400 bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+              <p className="mb-2">🔄 <strong>Como funciona:</strong></p>
+              <p>Cards serão distribuídos automaticamente entre os SDRs selecionados em sistema de rodízio equilibrado.</p>
             </div>
           </>
         );
@@ -340,6 +401,142 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               <p className="text-xs text-slate-400 mt-1">
                 Variáveis: {"{"}card_title{"}"}, {"{"}user_name{"}"}
               </p>
+            </div>
+          </>
+        );
+
+      case "update_client_field":
+        return (
+          <>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Campo do Cliente *
+              </label>
+              <SelectMenu
+                value={config.field_name || ""}
+                onChange={(value) => {
+                  updateConfig("field_name", value);
+                  // Limpa o valor quando muda o campo
+                  updateConfig("value", "");
+                }}
+                options={[
+                  { value: "", label: "Selecione o campo" },
+                  { value: "relationship_type", label: "Tipo de Relacionamento" },
+                  { value: "commercial_activity", label: "Atividade Comercial" },
+                  { value: "sector", label: "Setor/Indústria" },
+                  { value: "employee_count", label: "Quantidade de Funcionários" },
+                  { value: "annual_revenue", label: "Faturamento Anual" },
+                  { value: "cnae", label: "CNAE" },
+                  { value: "linkedin_url", label: "LinkedIn" },
+                ]}
+              />
+            </div>
+
+            {config.field_name === "relationship_type" && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Valor *
+                </label>
+                <SelectMenu
+                  value={config.value || ""}
+                  onChange={(value) => updateConfig("value", value)}
+                  options={[
+                    { value: "", label: "Selecione o valor" },
+                    { value: "Lead", label: "Lead" },
+                    { value: "Prospect", label: "Prospect" },
+                    { value: "Cliente", label: "Cliente" },
+                  ]}
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Nota: Cliente → Lead/Prospect é bloqueado pelo sistema
+                </p>
+              </div>
+            )}
+
+            {config.field_name === "commercial_activity" && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Valor *
+                </label>
+                <SelectMenu
+                  value={config.value || ""}
+                  onChange={(value) => updateConfig("value", value)}
+                  options={[
+                    { value: "", label: "Selecione o valor" },
+                    { value: "Ativo", label: "Ativo" },
+                    { value: "Dormente", label: "Dormente" },
+                    { value: "Inativo", label: "Inativo" },
+                  ]}
+                />
+              </div>
+            )}
+
+            {config.field_name === "employee_count" && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Valor *
+                </label>
+                <SelectMenu
+                  value={config.value || ""}
+                  onChange={(value) => updateConfig("value", value)}
+                  options={[
+                    { value: "", label: "Selecione o valor" },
+                    { value: "1-10", label: "1-10 funcionários" },
+                    { value: "11-50", label: "11-50 funcionários" },
+                    { value: "51-200", label: "51-200 funcionários" },
+                    { value: "201-500", label: "201-500 funcionários" },
+                    { value: "501-1000", label: "501-1000 funcionários" },
+                    { value: "1001+", label: "1001+ funcionários" },
+                  ]}
+                />
+              </div>
+            )}
+
+            {config.field_name === "annual_revenue" && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Valor *
+                </label>
+                <SelectMenu
+                  value={config.value || ""}
+                  onChange={(value) => updateConfig("value", value)}
+                  options={[
+                    { value: "", label: "Selecione o valor" },
+                    { value: "0-100K", label: "R$ 0 - 100 mil" },
+                    { value: "100K-500K", label: "R$ 100 mil - 500 mil" },
+                    { value: "500K-1M", label: "R$ 500 mil - 1 milhão" },
+                    { value: "1M-5M", label: "R$ 1 milhão - 5 milhões" },
+                    { value: "5M-10M", label: "R$ 5 milhões - 10 milhões" },
+                    { value: "10M+", label: "R$ 10 milhões+" },
+                  ]}
+                />
+              </div>
+            )}
+
+            {config.field_name && !["relationship_type", "commercial_activity", "employee_count", "annual_revenue"].includes(config.field_name) && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Valor *
+                </label>
+                <input
+                  type="text"
+                  value={config.value || ""}
+                  onChange={(e) => updateConfig("value", e.target.value)}
+                  placeholder={`Digite o valor para ${config.field_name}`}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+              </div>
+            )}
+
+            <div className="text-sm text-slate-400 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+              <p className="mb-2">📝 <strong>Atualizar Campo do Cliente</strong></p>
+              <p>Esta ação atualiza um campo do cliente vinculado ao card.</p>
+              {config.field_name && (
+                <p className="mt-2 text-xs">
+                  Campo selecionado: <strong>{config.field_name}</strong>
+                  {config.value && ` → Valor: ${config.value}`}
+                </p>
+              )}
             </div>
           </>
         );

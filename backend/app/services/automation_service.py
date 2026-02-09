@@ -272,7 +272,7 @@ class AutomationService:
         self,
         board_id: int,
         trigger_event: str,
-        card: Card,
+        card: Optional[Card],
         user: User,
         trigger_data: Optional[Dict[str, Any]] = None
     ) -> List[AutomationExecutionResponse]:
@@ -282,7 +282,7 @@ class AutomationService:
         Args:
             board_id: ID do board
             trigger_event: Tipo de evento
-            card: Card que disparou
+            card: Card que disparou (opcional para triggers sem card como client_created)
             user: Usuário que disparou
             trigger_data: Dados do trigger
 
@@ -299,7 +299,7 @@ class AutomationService:
                 # Executa
                 execution = self.execute_automation(
                     automation.id,
-                    card.id,
+                    card.id if card else None,
                     user.id,
                     trigger_data
                 )
@@ -485,6 +485,14 @@ class AutomationService:
                 # Rodízio de vendedores
                 self._assign_round_robin(automation, card)
 
+            elif action_type == "assign_sdr_round_robin" and card:
+                # Rodízio de SDRs
+                self._assign_sdr_round_robin(automation, card)
+
+            elif action_type == "update_client_field" and card:
+                # Atualiza campo do cliente vinculado ao card
+                self._update_client_field(card, params)
+
             # Outras ações podem ser implementadas conforme necessário
 
     def _assign_round_robin(self, automation: Automation, card: Card) -> None:
@@ -573,6 +581,134 @@ class AutomationService:
         # Marca o campo como modificado para o SQLAlchemy detectar a mudança
         flag_modified(automation, "state")
         self.db.commit()
+
+    def _assign_sdr_round_robin(self, automation: Automation, card: Card) -> None:
+        """
+        Atribui o card ao próximo SDR em sistema de rodízio.
+
+        Args:
+            automation: Automação que contém o estado do rodízio
+            card: Card a ser atribuído
+        """
+        from app.models.user import User
+        from app.models.role import Role
+
+        # Verifica se há user_ids específicos nos params da ação
+        action_params = {}
+        for action in automation.actions:
+            if action.get("type") == "assign_sdr_round_robin":
+                action_params = action.get("params", {})
+                break
+
+        user_ids = action_params.get("user_ids", [])
+
+        if user_ids:
+            # Usa apenas os SDRs especificados
+            # Converte strings para int se necessário
+            user_ids_int = [int(uid) if isinstance(uid, str) else uid for uid in user_ids]
+
+            sdrs = self.db.query(User).filter(
+                User.id.in_(user_ids_int),
+                User.is_active == True,
+                User.is_deleted == False
+            ).order_by(User.id).all()
+        else:
+            # Busca todos os SDRs ativos (comportamento padrão)
+            sdr_role = self.db.query(Role).filter(
+                Role.name.ilike("sdr")
+            ).first()
+
+            if not sdr_role:
+                return  # Sem role de SDR configurado
+
+            sdrs = self.db.query(User).filter(
+                User.role_id == sdr_role.id,
+                User.is_active == True,
+                User.is_deleted == False
+            ).order_by(User.id).all()
+
+        if not sdrs:
+            return  # Sem SDRs disponíveis
+
+        # Pega o estado do rodízio (usa chave diferente para SDRs)
+        state = automation.state or {}
+        last_sdr_id = state.get("round_robin_last_sdr_id")
+
+        # Encontra o próximo SDR
+        next_sdr = None
+        if last_sdr_id:
+            # Encontra o índice do último SDR usado
+            last_index = -1
+            for i, user in enumerate(sdrs):
+                if user.id == last_sdr_id:
+                    last_index = i
+                    break
+
+            # Pega o próximo (circular)
+            if last_index >= 0:
+                next_index = (last_index + 1) % len(sdrs)
+                next_sdr = sdrs[next_index]
+
+        # Se não encontrou ou é a primeira vez, usa o primeiro da lista
+        if not next_sdr:
+            next_sdr = sdrs[0]
+
+        # Atribui o card ao SDR
+        card.sdr_id = next_sdr.id
+        self.db.commit()
+
+        # Atualiza o estado da automação
+        from sqlalchemy.orm.attributes import flag_modified
+
+        if automation.state is None:
+            automation.state = {}
+
+        automation.state["round_robin_last_sdr_id"] = next_sdr.id
+
+        # Marca o campo como modificado para o SQLAlchemy detectar a mudança
+        flag_modified(automation, "state")
+        self.db.commit()
+
+    def _update_client_field(self, card: Card, params: dict) -> None:
+        """
+        Atualiza um campo do cliente vinculado ao card.
+
+        Args:
+            card: Card que possui o cliente vinculado
+            params: Parâmetros da action com 'field_name' e 'value'
+        """
+        # Verifica se o card tem cliente vinculado
+        if not card.client_id:
+            print(f"[AUTOMATION] Card {card.id} não possui cliente vinculado, ignorando update_client_field")
+            return
+
+        # Busca o cliente
+        from app.models.client import Client
+        client = self.db.query(Client).filter(Client.id == card.client_id).first()
+
+        if not client:
+            print(f"[AUTOMATION] Cliente {card.client_id} não encontrado para card {card.id}")
+            return
+
+        # Pega o nome do campo e o valor
+        field_name = params.get("field_name")
+        value = params.get("value")
+
+        if not field_name:
+            print(f"[AUTOMATION] field_name não especificado na action update_client_field")
+            return
+
+        # Verifica se o campo existe no modelo Client
+        if not hasattr(client, field_name):
+            print(f"[AUTOMATION] Campo '{field_name}' não existe no modelo Client")
+            return
+
+        # Atualiza o campo
+        old_value = getattr(client, field_name)
+        setattr(client, field_name, value)
+        self.db.commit()
+
+        print(f"[AUTOMATION] Cliente {client.id} campo '{field_name}' atualizado de '{old_value}' para '{value}'")
 
     def _to_response(self, automation: Automation) -> AutomationResponse:
         """Converte Automation para AutomationResponse."""

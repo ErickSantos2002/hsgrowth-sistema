@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Sparkles, Mail, Bell, MoveRight, AlertTriangle } from "lucide-react";
+import { X, Sparkles, Mail, Bell, MoveRight, AlertTriangle, UserCheck, Edit } from "lucide-react";
 import { Node, Edge } from "reactflow";
 
 interface Template {
@@ -253,6 +253,88 @@ const templates: Template[] = [
         id: "edge_7",
         source: "trigger_5",
         target: "action_7",
+        animated: true,
+      },
+    ],
+  },
+  {
+    id: "card-won-update-client",
+    name: "Negócio Ganho → Cliente",
+    description: "Quando um negócio for ganho, atualiza o tipo de relacionamento para 'Cliente'",
+    icon: <UserCheck size={24} className="text-green-400" />,
+    category: "Vendas",
+    nodes: [
+      {
+        id: "trigger_6",
+        type: "triggerNode",
+        position: { x: 100, y: 100 },
+        data: {
+          label: "Card Ganho",
+          triggerType: "card_won",
+          config: {},
+        },
+      },
+      {
+        id: "action_8",
+        type: "actionNode",
+        position: { x: 100, y: 250 },
+        data: {
+          label: "Atualizar Campo do Cliente",
+          actionType: "update_client_field",
+          config: {
+            field_name: "relationship_type",
+            value: "Cliente",
+          },
+        },
+      },
+    ],
+    edges: [
+      {
+        id: "edge_8",
+        source: "trigger_6",
+        target: "action_8",
+        animated: true,
+      },
+    ],
+  },
+  {
+    id: "card-moved-to-prospect",
+    name: "Reunião Agendada → Prospect",
+    description: "Quando um card move para 'Reunião Agendada', atualiza o cliente para 'Prospect'",
+    icon: <Edit size={24} className="text-purple-400" />,
+    category: "Vendas",
+    nodes: [
+      {
+        id: "trigger_7",
+        type: "triggerNode",
+        position: { x: 100, y: 100 },
+        data: {
+          label: "Card Movido",
+          triggerType: "card_moved",
+          config: {
+            // to_list_id deve ser configurado depois
+          },
+        },
+      },
+      {
+        id: "action_9",
+        type: "actionNode",
+        position: { x: 100, y: 250 },
+        data: {
+          label: "Atualizar Campo do Cliente",
+          actionType: "update_client_field",
+          config: {
+            field_name: "relationship_type",
+            value: "Prospect",
+          },
+        },
+      },
+    ],
+    edges: [
+      {
+        id: "edge_9",
+        source: "trigger_7",
+        target: "action_9",
         animated: true,
       },
     ],

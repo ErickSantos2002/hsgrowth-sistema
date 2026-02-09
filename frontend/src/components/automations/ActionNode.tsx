@@ -1,6 +1,6 @@
 import React from "react";
 import { Handle, Position, useReactFlow } from "reactflow";
-import { Zap, FilePlus, Mail, Bell, UserPlus, Tag, MoveRight, Edit, Settings, X, Copy } from "lucide-react";
+import { Zap, FilePlus, Mail, Bell, UserPlus, Tag, MoveRight, Edit, Settings, X, Copy, CheckCircle, XCircle } from "lucide-react";
 
 interface ActionNodeProps {
   id: string;
@@ -45,6 +45,7 @@ const ActionNode: React.FC<ActionNodeProps> = ({ id, data }) => {
   // Mapeia ícones por tipo de ação
   const getIcon = () => {
     switch (data.actionType) {
+      // Tipos legados (compatibilidade)
       case "create_card":
         return <FilePlus size={20} className="text-blue-400" />;
       case "send_email":
@@ -59,6 +60,24 @@ const ActionNode: React.FC<ActionNodeProps> = ({ id, data }) => {
         return <MoveRight size={20} className="text-indigo-400" />;
       case "update_field":
         return <Edit size={20} className="text-orange-400" />;
+
+      // Tipos atuais
+      case "assign_round_robin":
+      case "assign_card":
+        return <UserPlus size={20} className="text-purple-400" />;
+      case "assign_sdr_round_robin":
+        return <UserPlus size={20} className="text-cyan-400" />;
+      case "move_card":
+        return <MoveRight size={20} className="text-indigo-400" />;
+      case "mark_won":
+        return <CheckCircle size={20} className="text-green-400" />;
+      case "mark_lost":
+        return <XCircle size={20} className="text-red-400" />;
+      case "send_notification":
+        return <Bell size={20} className="text-blue-400" />;
+      case "update_client_field":
+        return <Edit size={20} className="text-yellow-400" />;
+
       default:
         return <Zap size={20} className="text-emerald-400" />;
     }
@@ -67,6 +86,7 @@ const ActionNode: React.FC<ActionNodeProps> = ({ id, data }) => {
   // Cor do border por tipo
   const getBorderColor = () => {
     switch (data.actionType) {
+      // Tipos legados (compatibilidade)
       case "create_card":
         return "border-blue-500";
       case "send_email":
@@ -81,6 +101,24 @@ const ActionNode: React.FC<ActionNodeProps> = ({ id, data }) => {
         return "border-indigo-500";
       case "update_field":
         return "border-orange-500";
+
+      // Tipos atuais
+      case "assign_round_robin":
+      case "assign_card":
+        return "border-purple-500";
+      case "assign_sdr_round_robin":
+        return "border-cyan-500";
+      case "move_card":
+        return "border-indigo-500";
+      case "mark_won":
+        return "border-green-500";
+      case "mark_lost":
+        return "border-red-500";
+      case "send_notification":
+        return "border-blue-500";
+      case "update_client_field":
+        return "border-yellow-500";
+
       default:
         return "border-emerald-500";
     }

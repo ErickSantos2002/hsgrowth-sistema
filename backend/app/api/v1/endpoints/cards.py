@@ -632,3 +632,81 @@ async def unlink_person_from_card(
     card = service.unlink_person_from_card(card_id, current_user)
 
     return {"message": "Pessoa desvinculada do card com sucesso", "card_id": card.id}
+
+
+@router.get(
+    "/search/global",
+    response_model=List[CardResponse],
+    summary="Busca global de cards",
+    description="""
+    Busca cards por título em todos os boards que o usuário tem acesso.
+
+    **Parâmetros:**
+    - `q`: Termo de busca (mínimo 2 caracteres)
+    - `limit`: Limite de resultados (padrão: 10, máximo: 50)
+
+    **Comportamento:**
+    - Busca por título que contenha o termo (case-insensitive)
+    - Retorna cards de todos os boards
+    - Respeita permissões do usuário (vendedor vê apenas seus cards)
+    - Ordenado por atualização mais recente
+
+    **Exemplo de uso:**
+    - `/api/v1/cards/search/global?q=proposta`
+    - `/api/v1/cards/search/global?q=empresa&limit=20`
+    """
+)
+async def global_search_cards(
+    q: str = Query(..., min_length=2, description="Termo de busca"),
+    limit: int = Query(10, ge=1, le=50, description="Limite de resultados"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Busca global de cards em todos os boards.
+    """
+    from app.models.list import List
+    from app.models.board import Board
+    from sqlalchemy import or_
+
+    # Query base: busca cards que contenham o termo no título
+    query = db.query(Card).filter(
+        Card.is_deleted == False,
+        Card.title.ilike(f"%{q}%")
+    )
+
+    # Vendedor só vê seus próprios cards
+    if current_user.role == "salesperson":
+        query = query.filter(Card.assigned_to_id == current_user.id)
+
+    # Busca os cards ordenados por atualização mais recente
+    cards = query.order_by(Card.updated_at.desc()).limit(limit).all()
+
+    # Converte para response com informações adicionais
+    results = []
+    for card in cards:
+        # Busca nome da lista e board
+        card_list = db.query(List).filter(List.id == card.list_id).first()
+        list_name = card_list.name if card_list else None
+        board_id = card_list.board_id if card_list else None
+        board_name = None
+
+        if board_id:
+            board = db.query(Board).filter(Board.id == board_id).first()
+            board_name = board.name if board else None
+
+        # Busca nome do responsável
+        assigned_to_name = None
+        if card.assigned_to_id:
+            assigned_user = db.query(User).filter(User.id == card.assigned_to_id).first()
+            assigned_to_name = assigned_user.name if assigned_user else None
+
+        result = card_to_response(
+            card=card,
+            assigned_to_name=assigned_to_name,
+            list_name=f"{board_name} / {list_name}" if board_name and list_name else list_name,
+            board_id=board_id
+        )
+        results.append(result)
+
+    return results

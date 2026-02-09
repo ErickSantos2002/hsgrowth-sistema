@@ -9,10 +9,13 @@ import {
   FileText,
   Paperclip,
   Users,
+  UserPlus,
+  Sparkles,
 } from "lucide-react";
 import { Card } from "../types";
 import cardService from "../services/cardService";
 import userService from "../services/userService";
+import automationService from "../services/automationService";
 import { User as UserType } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { SummarySection, ClientSection, ContactSection, CustomFieldsSection, ProductSection, QuickActivityForm, FocusSection, HistorySection } from "../components/cardDetails";
@@ -38,7 +41,10 @@ const CardDetails: React.FC = () => {
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+  const [showSdrDropdown, setShowSdrDropdown] = useState(false);
   const [isMovingCard, setIsMovingCard] = useState(false);
+  const [isAutoAssigning, setIsAutoAssigning] = useState(false);
+  const [isAutoAssigningSdr, setIsAutoAssigningSdr] = useState(false);
 
   // Estado das abas
   const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos">("atividade");
@@ -146,6 +152,50 @@ const CardDetails: React.FC = () => {
   };
 
   /**
+   * Atribui vendedor automaticamente via rodízio (Automação ID 6)
+   */
+  const handleAutoAssign = async () => {
+    if (!card) return;
+
+    try {
+      setIsAutoAssigning(true);
+      // Dispara a automação manual de rodízio (ID 6)
+      await automationService.trigger(6, card.id, { manual_trigger: true });
+      // Recarrega o card para mostrar o vendedor atribuído
+      await loadCardData();
+      alert("Vendedor atribuído automaticamente com sucesso!");
+    } catch (error: any) {
+      console.error("Erro ao atribuir vendedor automaticamente:", error);
+      alert(error.response?.data?.detail || "Erro ao atribuir vendedor automaticamente");
+    } finally {
+      setIsAutoAssigning(false);
+    }
+  };
+
+  /**
+   * Atribui SDR automaticamente via rodízio
+   * TODO: O ID da automação deve ser configurável ou buscado dinamicamente
+   */
+  const handleAutoAssignSdr = async () => {
+    if (!card) return;
+
+    try {
+      setIsAutoAssigningSdr(true);
+      // Dispara a automação manual de rodízio de SDR
+      // Nota: O ID da automação deve ser criado primeiro no sistema
+      await automationService.trigger(7, card.id, { manual_trigger: true });
+      // Recarrega o card para mostrar o SDR atribuído
+      await loadCardData();
+      alert("SDR atribuído automaticamente com sucesso!");
+    } catch (error: any) {
+      console.error("Erro ao atribuir SDR automaticamente:", error);
+      alert(error.response?.data?.detail || "Erro ao atribuir SDR automaticamente");
+    } finally {
+      setIsAutoAssigningSdr(false);
+    }
+  };
+
+  /**
    * Volta para o board
    */
   const handleBack = () => {
@@ -169,6 +219,22 @@ const CardDetails: React.FC = () => {
     } catch (error) {
       console.error("Erro ao atualizar responsável:", error);
       alert("Erro ao atualizar responsável");
+    }
+  };
+
+  /**
+   * Atualiza o SDR do card
+   */
+  const handleChangeSdr = async (userId: number) => {
+    if (!card) return;
+
+    try {
+      await cardService.update(card.id, { sdr_id: userId });
+      await loadCardData();
+      setShowSdrDropdown(false);
+    } catch (error) {
+      console.error("Erro ao atualizar SDR:", error);
+      alert("Erro ao atualizar SDR");
     }
   };
 
@@ -201,6 +267,12 @@ const CardDetails: React.FC = () => {
 
   // Encontra o responsável atual
   const assignedUser = users.find((u) => u.id === card?.assigned_to_id);
+
+  // Encontra o SDR atual
+  const sdrUser = users.find((u) => u.id === card?.sdr_id);
+
+  // Filtra apenas SDRs para o dropdown
+  const sdrUsers = users.filter((u) => u.role === "sdr");
 
   // Loading
   if (loading) {
@@ -335,6 +407,77 @@ const CardDetails: React.FC = () => {
                 )}
               </div>
 
+              {/* Avatar do SDR com Dropdown (apenas para admin/manager) */}
+              {sdrUsers.length > 0 && (
+                <div className="relative">
+                  {canChangeAssignee ? (
+                    // Admin/Manager - com dropdown
+                    <>
+                      <button
+                        onClick={() => setShowSdrDropdown(!showSdrDropdown)}
+                        className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg hover:bg-slate-700/80 cursor-pointer transition-colors border border-slate-700/50"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-medium text-sm">
+                          {sdrUser?.name?.substring(0, 2).toUpperCase() || "SDR"}
+                        </div>
+                        <span className="text-sm font-medium text-white">{sdrUser?.name || "Sem SDR"}</span>
+                        <ChevronDown size={16} className="text-slate-400" />
+                      </button>
+
+                      {/* Dropdown de seleção de SDR */}
+                      {showSdrDropdown && (
+                        <>
+                          {/* Overlay para fechar ao clicar fora */}
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setShowSdrDropdown(false)}
+                          />
+
+                          {/* Menu dropdown */}
+                          <div className="fixed left-4 right-4 top-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[60] max-h-80 overflow-y-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64 sm:z-[999]">
+                            <div className="p-2">
+                              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-2 py-1 mb-1">
+                                Selecionar SDR
+                              </p>
+                              {sdrUsers.map((user) => (
+                                <button
+                                  key={user.id}
+                                  onClick={() => handleChangeSdr(user.id)}
+                                  className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-colors text-left ${
+                                    user.id === card?.sdr_id
+                                      ? "bg-cyan-500/20 text-cyan-400"
+                                      : "hover:bg-slate-700 text-slate-300"
+                                  }`}
+                                >
+                                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-medium text-xs">
+                                    {user.name.substring(0, 2).toUpperCase()}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{user.name}</p>
+                                    <p className="text-xs text-slate-500 truncate">{user.role_name}</p>
+                                  </div>
+                                  {user.id === card?.sdr_id && (
+                                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    // Vendedor - apenas visualização (sem seta)
+                    <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg border border-slate-700/50">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-medium text-sm">
+                        {sdrUser?.name?.substring(0, 2).toUpperCase() || "SDR"}
+                      </div>
+                      <span className="text-sm font-medium text-white">{sdrUser?.name || "Sem SDR"}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Botão Ganho */}
               {!card.is_won && !card.is_lost && (
                 <button
@@ -356,6 +499,50 @@ const CardDetails: React.FC = () => {
                   Perdido
                 </button>
               )}
+
+              {/* Botão Atribuir Vendedor Automaticamente (Rodízio) */}
+              {!card.is_won && !card.is_lost && !card.assigned_to_id && (
+                <button
+                  onClick={handleAutoAssign}
+                  disabled={isAutoAssigning}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white rounded-lg font-medium transition-all shadow-lg shadow-purple-500/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Atribui automaticamente um vendedor via rodízio"
+                >
+                  {isAutoAssigning ? (
+                    <>
+                      <Sparkles size={18} className="animate-spin" />
+                      Atribuindo...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={18} />
+                      Atribuir Vendedor
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* Botão Atribuir SDR Automaticamente (Rodízio) - DESABILITADO NO MOMENTO */}
+              {/* {!card.is_won && !card.is_lost && !card.sdr_id && sdrUsers.length > 0 && (
+                <button
+                  onClick={handleAutoAssignSdr}
+                  disabled={isAutoAssigningSdr}
+                  className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-700 hover:to-cyan-600 text-white rounded-lg font-medium transition-all shadow-lg shadow-cyan-500/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Atribui automaticamente um SDR via rodízio"
+                >
+                  {isAutoAssigningSdr ? (
+                    <>
+                      <Sparkles size={18} className="animate-spin" />
+                      Atribuindo...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={18} />
+                      Atribuir SDR
+                    </>
+                  )}
+                </button>
+              )} */}
 
               {/* Se já foi ganho ou perdido */}
               {card.is_won && (

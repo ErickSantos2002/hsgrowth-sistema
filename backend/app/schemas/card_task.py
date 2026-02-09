@@ -12,9 +12,7 @@ class TaskType(str, Enum):
     CALL = "call"
     MEETING = "meeting"
     TASK = "task"
-    DEADLINE = "deadline"
-    EMAIL = "email"
-    LUNCH = "lunch"
+    FOLLOW_UP = "follow_up"
     OTHER = "other"
 
 
@@ -39,7 +37,7 @@ class CardTaskCreate(BaseModel):
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável")
     title: str = Field(..., min_length=1, max_length=255, description="Título da tarefa")
     description: Optional[str] = Field(None, description="Descrição detalhada")
-    task_type: TaskType = Field(TaskType.TASK, description="Tipo da tarefa (call, meeting, task, deadline, email, lunch, other)")
+    task_type: TaskType = Field(TaskType.TASK, description="Tipo da tarefa (call, meeting, task, follow_up, other)")
     priority: TaskPriority = Field(TaskPriority.NORMAL, description="Prioridade (normal, high, urgent)")
     due_date: Optional[datetime] = Field(None, description="Data/hora de vencimento")
     duration_minutes: Optional[int] = Field(30, ge=5, le=480, description="Duração em minutos (5-480)")

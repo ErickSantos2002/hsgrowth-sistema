@@ -25,6 +25,7 @@ class TriggerEvent(str, Enum):
     CARD_LOST = "card_lost"
     CARD_ASSIGNED = "card_assigned"
     FIELD_CHANGED = "field_changed"
+    MANUAL = "manual"  # Automação disparada manualmente pelo usuário
 
 
 class ScheduleType(str, Enum):
@@ -46,7 +47,9 @@ class ActionType(str, Enum):
     MOVE_CARD = "move_card"
     ASSIGN_CARD = "assign_card"
     ASSIGN_ROUND_ROBIN = "assign_round_robin"
+    ASSIGN_SDR_ROUND_ROBIN = "assign_sdr_round_robin"  # Rodízio de SDRs
     UPDATE_FIELD = "update_field"
+    UPDATE_CLIENT_FIELD = "update_client_field"  # Atualiza campos do cliente vinculado ao card
     SEND_NOTIFICATION = "send_notification"
     AWARD_POINTS = "award_points"
     MARK_WON = "mark_won"
@@ -374,5 +377,13 @@ ACTION_EXAMPLES = [
     {
         "type": "mark_lost",
         "params": {}
+    },
+    {
+        "type": "update_client_field",
+        "params": {"field_name": "relationship_type", "value": "Cliente"}
+    },
+    {
+        "type": "assign_sdr_round_robin",
+        "params": {"user_ids": [1, 2, 3]}
     }
 ]
