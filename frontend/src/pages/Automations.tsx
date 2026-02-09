@@ -350,21 +350,21 @@ const Automations: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setEditingAutomation(automation)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    className="p-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 transition-colors"
                     title="Editar informações"
                   >
                     <Edit size={16} />
                   </button>
                   <button
                     onClick={() => navigate(`/automations/${automation.id}/edit`)}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                    className="p-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 transition-colors"
                     title="Construtor de automação"
                   >
                     <Workflow size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(automation.id)}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                    className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
                     title="Deletar"
                   >
                     <Trash2 size={16} />

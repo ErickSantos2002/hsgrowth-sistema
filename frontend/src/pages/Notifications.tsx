@@ -302,7 +302,7 @@ const Notifications: React.FC = () => {
                               e.stopPropagation();
                               handleMarkAsRead(notification.id);
                             }}
-                            className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 rounded-lg transition-colors"
+                            className="p-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 transition-colors"
                             title="Marcar como lida"
                           >
                             <Check size={18} />
@@ -313,7 +313,7 @@ const Notifications: React.FC = () => {
                             e.stopPropagation();
                             handleDelete(notification.id);
                           }}
-                          className="p-2 text-red-400 hover:text-red-300 hover:bg-slate-700 rounded-lg transition-colors"
+                          className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
                           title="Deletar"
                         >
                           <Trash2 size={18} />

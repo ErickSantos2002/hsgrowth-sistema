@@ -232,13 +232,15 @@ const BadgesAdmin: React.FC = () => {
               </button>
               <button
                 onClick={() => openEditModal(badge)}
-                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                className="p-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 transition-colors"
+                title="Editar badge"
               >
                 <Edit2 size={16} />
               </button>
               <button
                 onClick={() => handleDeleteBadge(badge.id)}
-                className="px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors"
+                className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
+                title="Deletar badge"
               >
                 <Trash2 size={16} />
               </button>
