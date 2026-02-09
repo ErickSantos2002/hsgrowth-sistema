@@ -10,7 +10,7 @@ def clean_deals_csv():
     """Limpa e filtra o CSV de deals"""
 
     print("Lendo arquivo CSV...")
-    df = pd.read_csv('deals-21427617-53.csv')
+    df = pd.read_csv('deals-21427617-54.csv')
     print(f"Total de deals lidos: {len(df)}")
 
     # Filtrar apenas "Novas Vendas"
