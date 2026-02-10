@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
-import { User, ExternalLink, Search, X, Trash2, Mail, Phone, Briefcase, Linkedin, MessageCircle } from "lucide-react";
+import { User, ExternalLink, Search, X, Trash2, Mail, Phone, Briefcase, Linkedin, MessageCircle, Plus } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
 import ActionButton from "./ActionButton";
 import { Card } from "../../types";
 import { Person } from "../../services/personService";
 import personService from "../../services/personService";
+import PersonModal from "../persons/PersonModal";
 
 interface ContactSectionProps {
   card: Card;
@@ -23,11 +24,41 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [allPersons, setAllPersons] = useState<Person[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Carrega dados da pessoa quando o card é carregado
   useEffect(() => {
     loadPersonData();
   }, [card]);
+
+  // Busca pessoas no backend quando o usuário digita (com debounce)
+  useEffect(() => {
+    // Não busca se não houver termo de busca ou se o modal não estiver aberto
+    if (!searchTerm.trim() || !showModal) {
+      setAllPersons([]);
+      return;
+    }
+
+    // Debounce: aguarda 500ms após parar de digitar para fazer a busca
+    const timeoutId = setTimeout(async () => {
+      try {
+        setIsLoadingPersons(true);
+        const response = await personService.list({
+          page_size: 100,
+          is_active: true,
+          search: searchTerm.trim()
+        });
+        setAllPersons(response.persons);
+      } catch (error) {
+        console.error("Erro ao buscar pessoas:", error);
+      } finally {
+        setIsLoadingPersons(false);
+      }
+    }, 500);
+
+    // Cleanup: cancela o timeout se o usuário continuar digitando
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, showModal]);
 
   /**
    * Carrega os dados da pessoa associada ao card
@@ -49,60 +80,14 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
   };
 
   /**
-   * Carrega todas as pessoas quando abre o modal
+   * Abre o modal de busca (não carrega pessoas automaticamente)
    */
-  const handleOpenModal = async () => {
+  const handleOpenModal = () => {
     setShowModal(true);
-
-    // Só carrega se ainda não carregou
-    if (allPersons.length === 0) {
-      try {
-        setIsLoadingPersons(true);
-        const response = await personService.list({ page_size: 10000, is_active: true });
-        setAllPersons(response.persons);
-      } catch (error) {
-        console.error("Erro ao carregar pessoas:", error);
-        alert("Erro ao carregar lista de pessoas");
-      } finally {
-        setIsLoadingPersons(false);
-      }
-    }
+    setSearchTerm("");
+    setAllPersons([]);
   };
 
-  /**
-   * Filtra pessoas localmente com base no termo de busca
-   */
-  const filteredPersons = allPersons.filter((p) => {
-    if (!searchTerm.trim()) return true;
-
-    const search = searchTerm.toLowerCase().trim();
-
-    // Busca em nome
-    const matchesName = p.name
-      ? p.name.toLowerCase().includes(search)
-      : false;
-
-    // Busca em cargo
-    const matchesPosition = p.position
-      ? p.position.toLowerCase().includes(search)
-      : false;
-
-    // Busca em emails
-    const matchesEmail =
-      (p.email && p.email.toLowerCase().includes(search)) ||
-      (p.email_commercial && p.email_commercial.toLowerCase().includes(search)) ||
-      (p.email_personal && p.email_personal.toLowerCase().includes(search));
-
-    // Busca em telefones
-    const cleanSearch = searchTerm.replace(/\D/g, "");
-    const matchesPhone = cleanSearch.length > 0 && (
-      (p.phone && p.phone.replace(/\D/g, "").includes(cleanSearch)) ||
-      (p.phone_commercial && p.phone_commercial.replace(/\D/g, "").includes(cleanSearch)) ||
-      (p.phone_whatsapp && p.phone_whatsapp.replace(/\D/g, "").includes(cleanSearch))
-    );
-
-    return matchesName || matchesPosition || matchesEmail || matchesPhone;
-  });
 
   /**
    * Vincula uma pessoa ao card
@@ -151,6 +136,34 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
   };
 
   /**
+   * Callback quando uma nova pessoa é criada
+   * Automaticamente vincula a pessoa ao card
+   */
+  const handlePersonCreated = async () => {
+    setShowCreateModal(false);
+
+    // Aguarda um momento para o backend processar
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    try {
+      // Busca a pessoa recém-criada (última criada)
+      const response = await personService.list({ page_size: 1, is_active: true });
+
+      if (response.persons.length > 0) {
+        const newPerson = response.persons[0];
+
+        // Vincula automaticamente ao card
+        await personService.linkToCard(card.id, newPerson.id);
+
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Erro ao vincular pessoa recém-criada:", error);
+      alert("Pessoa criada com sucesso, mas houve erro ao vincular. Você pode vincular manualmente.");
+    }
+  };
+
+  /**
    * Formata telefone brasileiro
    */
   const formatPhone = (phone: string | undefined | null) => {
@@ -182,14 +195,24 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               Nenhuma pessoa vinculada a este negócio
             </p>
 
-            {/* Botão para abrir modal */}
-            <button
-              onClick={handleOpenModal}
-              className="w-full px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              <ExternalLink size={16} />
-              Vincular pessoa
-            </button>
+            {/* Botões de Vincular e Cadastrar */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={handleOpenModal}
+                className="px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <ExternalLink size={16} />
+                Vincular
+              </button>
+
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-4 py-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus size={16} />
+                Cadastrar
+              </button>
+            </div>
           </div>
         </ExpandableSection>
 
@@ -240,19 +263,19 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               <div className="flex-1 overflow-y-auto p-4">
                 {isLoadingPersons ? (
                   <div className="p-8 text-center text-sm text-slate-400">
-                    Carregando pessoas...
+                    Buscando pessoas...
                   </div>
-                ) : filteredPersons.length === 0 ? (
+                ) : !searchTerm.trim() ? (
                   <div className="p-8 text-center text-sm text-slate-400">
-                    {searchTerm
-                      ? "Nenhuma pessoa encontrada com esse critério"
-                      : allPersons.length === 0
-                      ? "Nenhuma pessoa cadastrada"
-                      : "Digite para buscar"}
+                    Digite o nome, email, telefone ou cargo para buscar
+                  </div>
+                ) : allPersons.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-slate-400">
+                    Nenhuma pessoa encontrada com esse critério
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {filteredPersons.map((p) => (
+                    {allPersons.map((p) => (
                       <button
                         key={p.id}
                         onClick={() => handleLinkPerson(p.id)}
@@ -275,6 +298,16 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
             </div>
           </div>,
           document.body
+        )}
+
+        {/* Modal de criar pessoa */}
+        {showCreateModal && (
+          <PersonModal
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onSave={handlePersonCreated}
+            person={null}
+          />
         )}
       </>
     );

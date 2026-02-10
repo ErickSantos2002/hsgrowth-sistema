@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
-import { Building2, ExternalLink, Search, X, Trash2 } from "lucide-react";
+import { Building2, ExternalLink, Search, X, Trash2, Plus } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
 import ActionButton from "./ActionButton";
 import { Card } from "../../types";
 import { Client } from "../../services/clientService";
 import clientService from "../../services/clientService";
 import cardService from "../../services/cardService";
+import ClientModal from "../clients/ClientModal";
 
 interface ClientSectionProps {
   card: Card;
@@ -25,11 +26,50 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [allClients, setAllClients] = useState<Client[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Carrega dados do cliente quando o card é carregado
   useEffect(() => {
     loadClientData();
   }, [card]);
+
+  // Busca clientes no backend quando o usuário digita (com debounce)
+  useEffect(() => {
+    // Não busca se não houver termo de busca ou se o modal não estiver aberto
+    if (!searchTerm.trim() || !showModal) {
+      setAllClients([]);
+      return;
+    }
+
+    // Debounce: aguarda 500ms após parar de digitar para fazer a busca
+    const timeoutId = setTimeout(async () => {
+      try {
+        setIsLoadingClients(true);
+        const response = await clientService.list({
+          page_size: 100,
+          is_active: true,
+          search: searchTerm.trim()
+        });
+
+        // Filtra clientes com documento (CPF ou CNPJ)
+        const clientsWithDocument = response.clients.filter((client) => {
+          if (!client.document) return false;
+          const cleanDoc = client.document.replace(/\D/g, "");
+          // CPF tem 11 dígitos, CNPJ tem 14 dígitos
+          return cleanDoc.length === 11 || cleanDoc.length === 14;
+        });
+
+        setAllClients(clientsWithDocument);
+      } catch (error) {
+        console.error("Erro ao buscar clientes:", error);
+      } finally {
+        setIsLoadingClients(false);
+      }
+    }, 500);
+
+    // Cleanup: cancela o timeout se o usuário continuar digitando
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, showModal]);
 
 
   /**
@@ -52,61 +92,14 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
   };
 
   /**
-   * Carrega todos os clientes (PF e PJ) quando abre o modal (uma única vez)
+   * Abre o modal de busca (não carrega clientes automaticamente)
    */
-  const handleOpenModal = async () => {
+  const handleOpenModal = () => {
     setShowModal(true);
-
-    // Só carrega se ainda não carregou
-    if (allClients.length === 0) {
-      try {
-        setIsLoadingClients(true);
-        const response = await clientService.list({ page_size: 10000, is_active: true });
-
-        // Filtra clientes com documento (CPF ou CNPJ)
-        const clientsWithDocument = response.clients.filter((client) => {
-          if (!client.document) return false;
-          const cleanDoc = client.document.replace(/\D/g, "");
-          // CPF tem 11 dígitos, CNPJ tem 14 dígitos
-          return cleanDoc.length === 11 || cleanDoc.length === 14;
-        });
-
-        setAllClients(clientsWithDocument);
-      } catch (error) {
-        console.error("Erro ao carregar clientes:", error);
-        alert("Erro ao carregar lista de clientes");
-      } finally {
-        setIsLoadingClients(false);
-      }
-    }
+    setSearchTerm("");
+    setAllClients([]);
   };
 
-  /**
-   * Filtra clientes localmente com base no termo de busca
-   */
-  const filteredClients = allClients.filter((c) => {
-    if (!searchTerm.trim()) return true;
-
-    const search = searchTerm.toLowerCase().trim();
-    const cleanSearch = searchTerm.replace(/\D/g, "");
-
-    // Busca em nome da empresa
-    const matchesCompanyName = c.company_name
-      ? c.company_name.toLowerCase().includes(search)
-      : false;
-
-    // Busca em nome do contato
-    const matchesName = c.name
-      ? c.name.toLowerCase().includes(search)
-      : false;
-
-    // Busca em CPF/CNPJ (apenas números)
-    const matchesDocument = c.document && cleanSearch.length > 0
-      ? c.document.replace(/\D/g, "").includes(cleanSearch)
-      : false;
-
-    return matchesCompanyName || matchesName || matchesDocument;
-  });
 
   /**
    * Vincula um cliente ao card
@@ -156,6 +149,36 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
   };
 
   /**
+   * Callback quando um novo cliente é criado
+   * Automaticamente vincula o cliente ao card
+   */
+  const handleClientCreated = async () => {
+    setShowCreateModal(false);
+
+    // Aguarda um momento para o backend processar
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    try {
+      // Busca o cliente recém-criado (último criado)
+      const response = await clientService.list({ page_size: 1, is_active: true });
+
+      if (response.clients.length > 0) {
+        const newClient = response.clients[0];
+
+        // Vincula automaticamente ao card
+        await cardService.update(card.id, {
+          client_id: newClient.id,
+        });
+
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Erro ao vincular cliente recém-criado:", error);
+      alert("Cliente criado com sucesso, mas houve erro ao vincular. Você pode vincular manualmente.");
+    }
+  };
+
+  /**
    * Formata CPF ou CNPJ
    */
   const formatDocument = (document: string | undefined) => {
@@ -198,14 +221,24 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
               Nenhum cliente vinculado a este negócio
             </p>
 
-            {/* Botão para abrir modal */}
-            <button
-              onClick={handleOpenModal}
-              className="w-full px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              <ExternalLink size={16} />
-              Vincular cliente
-            </button>
+            {/* Botões de Vincular e Cadastrar */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={handleOpenModal}
+                className="px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <ExternalLink size={16} />
+                Vincular
+              </button>
+
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-4 py-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus size={16} />
+                Cadastrar
+              </button>
+            </div>
           </div>
         </ExpandableSection>
 
@@ -256,19 +289,19 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
               <div className="flex-1 overflow-y-auto p-4">
                 {isLoadingClients ? (
                   <div className="p-8 text-center text-sm text-slate-400">
-                    Carregando clientes...
+                    Buscando clientes...
                   </div>
-                ) : filteredClients.length === 0 ? (
+                ) : !searchTerm.trim() ? (
                   <div className="p-8 text-center text-sm text-slate-400">
-                    {searchTerm
-                      ? "Nenhum cliente encontrado com esse critério"
-                      : allClients.length === 0
-                      ? "Nenhum cliente cadastrado"
-                      : "Digite para buscar"}
+                    Digite o nome, CPF ou CNPJ para buscar
+                  </div>
+                ) : allClients.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-slate-400">
+                    Nenhum cliente encontrado com esse critério
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {filteredClients.map((c) => (
+                    {allClients.map((c) => (
                       <button
                         key={c.id}
                         onClick={() => handleLinkClient(c.id)}
@@ -288,6 +321,16 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
             </div>
           </div>,
           document.body
+        )}
+
+        {/* Modal de criar cliente */}
+        {showCreateModal && (
+          <ClientModal
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onSave={handleClientCreated}
+            client={null}
+          />
         )}
       </>
     );

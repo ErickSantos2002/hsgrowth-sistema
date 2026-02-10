@@ -21,7 +21,6 @@ import EditableField from "./EditableField";
 import EditableSelectField from "./EditableSelectField";
 import { Card, Board } from "../../types";
 import { User as UserType } from "../../types";
-import cardService from "../../services/cardService";
 import userService from "../../services/userService";
 import boardService from "../../services/boardService";
 import {
@@ -34,7 +33,7 @@ import {
 
 interface SummarySectionProps {
   card: Card;
-  onUpdate: () => void;
+  onUpdate: (updates: Partial<Card>) => Promise<void>;
   hasProducts?: boolean; // Se true, valor fica read-only
 }
 
@@ -85,8 +84,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
       alert("Valor inválido");
       return;
     }
-    await cardService.update(card.id, { value: numericValue });
-    onUpdate();
+    await onUpdate({ value: numericValue });
   };
 
   /**
@@ -98,13 +96,12 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
       alert("Probabilidade deve ser entre 0 e 100");
       return;
     }
-    await cardService.update(card.id, {
+    await onUpdate({
       contact_info: {
         ...card.contact_info,
         probability: probability,
       },
     });
-    onUpdate();
   };
 
   /**
@@ -112,24 +109,21 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
    */
   const handleUpdateDueDate = async (value: string) => {
     const dateStr = value.includes("T") ? value : `${value}T12:00:00`;
-    await cardService.update(card.id, { due_date: dateStr });
-    onUpdate();
+    await onUpdate({ due_date: dateStr });
   };
 
   /**
    * Atualiza o SDR responsável
    */
   const handleUpdateSDR = async (value: string) => {
-    await cardService.update(card.id, { sdr_id: value ? parseInt(value) : undefined });
-    onUpdate();
+    await onUpdate({ sdr_id: value ? parseInt(value) : undefined });
   };
 
   /**
    * Atualiza tipo de negócio
    */
   const handleUpdateDealType = async (value: string) => {
-    await cardService.update(card.id, { deal_type: value || undefined });
-    onUpdate();
+    await onUpdate({ deal_type: value || undefined });
   };
 
   /**
@@ -137,21 +131,19 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
    */
   const handleUpdateAcquisitionChannel = async (value: string) => {
     // Se mudar o canal, limpa o detalhamento
-    await cardService.update(card.id, {
+    await onUpdate({
       acquisition_channel: value || undefined,
       acquisition_channel_detail: undefined,
     });
-    onUpdate();
   };
 
   /**
    * Atualiza detalhamento do canal de aquisição
    */
   const handleUpdateAcquisitionChannelDetail = async (value: string) => {
-    await cardService.update(card.id, {
+    await onUpdate({
       acquisition_channel_detail: value || undefined,
     });
-    onUpdate();
   };
 
   /**
@@ -167,28 +159,25 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
    * Atualiza motivo da perda
    */
   const handleUpdateLossReason = async (value: string) => {
-    await cardService.update(card.id, { loss_reason: value || undefined });
-    onUpdate();
+    await onUpdate({ loss_reason: value || undefined });
   };
 
   /**
    * Atualiza campo "Tem Implementação?"
    */
   const handleUpdateHasImplementation = async (value: string) => {
-    await cardService.update(card.id, {
+    await onUpdate({
       has_implementation: value === "true" ? true : value === "false" ? false : undefined,
     });
-    onUpdate();
   };
 
   /**
    * Atualiza campo "Tem Pessoas para Manusear?"
    */
   const handleUpdateHasPersonnel = async (value: string) => {
-    await cardService.update(card.id, {
+    await onUpdate({
       has_personnel: value === "true" ? true : value === "false" ? false : undefined,
     });
-    onUpdate();
   };
 
   /**

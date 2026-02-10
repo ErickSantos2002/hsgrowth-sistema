@@ -5,14 +5,19 @@ import { Board } from "../types";
 import BoardCard from "../components/boards/BoardCard";
 import BoardModal from "../components/boards/BoardModal";
 import EmptyState from "../components/common/EmptyState";
+import { useAuth } from "../hooks/useAuth";
 
 const Boards: React.FC = () => {
+  const { user } = useAuth(); // Pegar usuário logado
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "archived">("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
+
+  // Permissões: Apenas Admin e Manager podem criar boards
+  const canCreateBoard = user?.role === "admin" || user?.role === "manager";
 
   // Carregar boards ao montar o componente
   useEffect(() => {
@@ -141,13 +146,16 @@ const Boards: React.FC = () => {
             Gerencie seus quadros Kanban e organize seus projetos
           </p>
         </div>
-        <button
-          onClick={handleCreateBoard}
-          className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl"
-        >
-          <Plus size={20} />
-          Novo Board
-        </button>
+        {/* Botão Novo Board - Apenas Admin e Manager */}
+        {canCreateBoard && (
+          <button
+            onClick={handleCreateBoard}
+            className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl"
+          >
+            <Plus size={20} />
+            Novo Board
+          </button>
+        )}
       </div>
 
       {/* Barra de filtros e busca */}
@@ -250,11 +258,13 @@ const Boards: React.FC = () => {
           title="Nenhum board encontrado"
           description={
             searchTerm || filterStatus !== "all"
-              ? "Tente ajustar os filtros ou criar um novo board"
-              : "Crie seu primeiro board para começar a organizar suas tarefas"
+              ? "Tente ajustar os filtros"
+              : canCreateBoard
+              ? "Crie seu primeiro board para começar a organizar suas tarefas"
+              : "Entre em contato com o administrador para criar boards"
           }
-          actionLabel="Criar Primeiro Board"
-          onAction={handleCreateBoard}
+          actionLabel={canCreateBoard ? "Criar Primeiro Board" : undefined}
+          onAction={canCreateBoard ? handleCreateBoard : undefined}
         />
       )}
 

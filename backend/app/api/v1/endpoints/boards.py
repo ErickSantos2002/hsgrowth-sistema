@@ -3,7 +3,7 @@ Endpoints de Boards e Lists.
 Rotas para gerenciamento de quadros e listas.
 """
 from typing import Any, Optional, List
-from fastapi import APIRouter, Depends, Query, Path, Request
+from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user
@@ -238,6 +238,14 @@ async def get_board(
                 }
             }
         },
+        403: {
+            "description": "Permissão negada - Apenas Admin e Manager podem criar boards",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Apenas administradores e gerentes podem criar boards"}
+                }
+            }
+        },
         422: _VALIDATION_ERROR_RESPONSE
     }
 )
@@ -250,11 +258,20 @@ async def create_board(
     """
     Cria um novo board.
 
+    **Permissão**: Apenas Admin e Manager podem criar boards.
+
     - **name**: Nome do board
     - **description**: Descrição (opcional)
     - **color**: Cor em hexadecimal (opcional)
     - **icon**: Ícone (opcional)
     """
+    # Verifica permissão: apenas Admin e Manager podem criar boards
+    if current_user.role.name.lower() not in ["admin", "manager"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores e gerentes podem criar boards"
+        )
+
     service = BoardService(db)
     board = service.create_board(board_data, current_user)
 

@@ -93,6 +93,35 @@ const CardDetails: React.FC = () => {
   };
 
   /**
+   * Atualização otimista - atualiza o card localmente e envia ao backend
+   * Se der erro, reverte a mudança e mostra mensagem
+   */
+  const handleOptimisticUpdate = async (updates: Partial<Card>) => {
+    if (!card) return;
+
+    // Guarda o estado anterior para poder reverter se der erro
+    const previousCard = { ...card };
+
+    try {
+      // 1. Atualiza localmente (otimista) - feedback instantâneo
+      setCard((prev) => (prev ? { ...prev, ...updates } : prev));
+
+      // 2. Envia para o backend em background
+      await cardService.update(card.id, updates);
+
+      // 3. Sucesso! Não precisa fazer nada, já atualizou localmente
+    } catch (error: any) {
+      // 4. Erro: reverte para o estado anterior
+      console.error("Erro ao atualizar card:", error);
+      setCard(previousCard);
+
+      // Mostra mensagem de erro
+      const errorMsg = error.response?.data?.detail || "Erro ao atualizar campo";
+      alert(errorMsg);
+    }
+  };
+
+  /**
    * Salva o título do card
    */
   const handleSaveTitle = async () => {
@@ -582,7 +611,7 @@ const CardDetails: React.FC = () => {
             {/* Seção: Resumo */}
             <SummarySection
               card={card}
-              onUpdate={loadCardData}
+              onUpdate={handleOptimisticUpdate}
               hasProducts={((card as any).products?.length || 0) > 0}
             />
 

@@ -250,6 +250,19 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
       return false;
     }
 
+    // Validação de CPF/CNPJ obrigatório
+    if (!formData.document.trim()) {
+      setError("CPF/CNPJ é obrigatório");
+      return false;
+    }
+
+    // Valida se o documento tem tamanho correto (11 para CPF ou 14 para CNPJ)
+    const documentNumbers = formData.document.replace(/\D/g, "");
+    if (documentNumbers.length !== 11 && documentNumbers.length !== 14) {
+      setError("CPF/CNPJ inválido. CPF deve ter 11 dígitos e CNPJ 14 dígitos");
+      return false;
+    }
+
     // Validação básica de email (se preenchido)
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       setError("Email inválido");
@@ -364,20 +377,20 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
             Dados Principais
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Nome */}
+            {/* Nome da Empresa */}
             <FormField
               label={
                 <span className="flex items-center gap-1">
-                  <User size={14} />
-                  Nome *
+                  <Building size={14} />
+                  Empresa *
                 </span>
               }
-              hint="Nome completo ou razão social"
+              hint="Razão social ou nome da empresa"
             >
               <Input
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="Ex: João Silva"
+                placeholder="Ex: Empresa LTDA"
                 autoFocus
               />
             </FormField>
@@ -440,10 +453,10 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
               label={
                 <span className="flex items-center gap-1">
                   <FileText size={14} />
-                  CPF/CNPJ
+                  CPF/CNPJ *
                 </span>
               }
-              hint="Documento de identificação"
+              hint="Documento de identificação (obrigatório)"
             >
               <Input
                 value={formData.document}
