@@ -53,68 +53,68 @@ export interface PersonListResponse {
 
 export interface CreatePersonRequest {
   name: string;
-  first_name?: string;
-  last_name?: string;
+  first_name?: string | null;
+  last_name?: string | null;
 
   // Emails
-  email?: string;
-  email_commercial?: string;
-  email_personal?: string;
-  email_alternative?: string;
+  email?: string | null;
+  email_commercial?: string | null;
+  email_personal?: string | null;
+  email_alternative?: string | null;
 
   // Telefones
-  phone?: string;
-  phone_commercial?: string;
-  phone_whatsapp?: string;
-  phone_alternative?: string;
+  phone?: string | null;
+  phone_commercial?: string | null;
+  phone_whatsapp?: string | null;
+  phone_alternative?: string | null;
 
   // Profissional
-  position?: string;
-  area?: string; // Campo do blueprint da consultora
-  organization_id?: number;
-  owner_id?: number;
+  position?: string | null;
+  area?: string | null; // Campo do blueprint da consultora
+  organization_id?: number | null;
+  owner_id?: number | null;
 
   // Redes sociais
-  linkedin?: string;
-  instagram?: string;
-  facebook?: string;
+  linkedin?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
 
   // Controle
   is_active?: boolean;
-  pipedrive_id?: number;
+  pipedrive_id?: number | null;
 }
 
 export interface UpdatePersonRequest {
   name?: string;
-  first_name?: string;
-  last_name?: string;
+  first_name?: string | null;
+  last_name?: string | null;
 
   // Emails
-  email?: string;
-  email_commercial?: string;
-  email_personal?: string;
-  email_alternative?: string;
+  email?: string | null;
+  email_commercial?: string | null;
+  email_personal?: string | null;
+  email_alternative?: string | null;
 
   // Telefones
-  phone?: string;
-  phone_commercial?: string;
-  phone_whatsapp?: string;
-  phone_alternative?: string;
+  phone?: string | null;
+  phone_commercial?: string | null;
+  phone_whatsapp?: string | null;
+  phone_alternative?: string | null;
 
   // Profissional
-  position?: string;
-  area?: string; // Campo do blueprint da consultora
-  organization_id?: number;
-  owner_id?: number;
+  position?: string | null;
+  area?: string | null; // Campo do blueprint da consultora
+  organization_id?: number | null;
+  owner_id?: number | null;
 
   // Redes sociais
-  linkedin?: string;
-  instagram?: string;
-  facebook?: string;
+  linkedin?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
 
   // Controle
   is_active?: boolean;
-  pipedrive_id?: number;
+  pipedrive_id?: number | null;
 }
 
 /**

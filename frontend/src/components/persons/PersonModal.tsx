@@ -214,25 +214,26 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
       setIsSaving(true);
       setError(null);
 
-      // Prepara dados para enviar (remove campos vazios)
+      // Prepara dados para enviar
+      // Envia null explicitamente para campos vazios (permite limpar no backend)
       const dataToSend: CreatePersonRequest = {
         name: formData.name.trim(),
-        first_name: formData.first_name.trim() || undefined,
-        last_name: formData.last_name.trim() || undefined,
-        email: formData.email.trim() || undefined,
-        email_commercial: formData.email_commercial.trim() || undefined,
-        email_personal: formData.email_personal.trim() || undefined,
-        email_alternative: formData.email_alternative.trim() || undefined,
-        phone: formData.phone.replace(/\D/g, "") || undefined, // Remove máscara
-        phone_commercial: formData.phone_commercial.replace(/\D/g, "") || undefined,
-        phone_whatsapp: formData.phone_whatsapp.replace(/\D/g, "") || undefined,
-        phone_alternative: formData.phone_alternative.replace(/\D/g, "") || undefined,
-        position: formData.position.trim() || undefined,
-        area: formData.area.trim() || undefined,
-        owner_id: formData.owner_id || undefined,
-        linkedin: formData.linkedin.trim() || undefined,
-        instagram: formData.instagram.trim() || undefined,
-        facebook: formData.facebook.trim() || undefined,
+        first_name: formData.first_name.trim() || null,
+        last_name: formData.last_name.trim() || null,
+        email: formData.email.trim() || null,
+        email_commercial: formData.email_commercial.trim() || null,
+        email_personal: formData.email_personal.trim() || null,
+        email_alternative: formData.email_alternative.trim() || null,
+        phone: formData.phone.replace(/\D/g, "") || null, // Remove máscara
+        phone_commercial: formData.phone_commercial.replace(/\D/g, "") || null,
+        phone_whatsapp: formData.phone_whatsapp.replace(/\D/g, "") || null,
+        phone_alternative: formData.phone_alternative.replace(/\D/g, "") || null,
+        position: formData.position.trim() || null,
+        area: formData.area.trim() || null,
+        owner_id: formData.owner_id || null,
+        linkedin: formData.linkedin.trim() || null,
+        instagram: formData.instagram.trim() || null,
+        facebook: formData.facebook.trim() || null,
         is_active: formData.is_active,
       };
 

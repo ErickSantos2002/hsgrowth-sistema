@@ -239,9 +239,19 @@ class PersonRepository:
         Returns:
             Person atualizado
         """
-        update_data = person_data.model_dump(exclude_unset=True)
+        # Usa exclude_unset=False para permitir valores None (limpar campos)
+        # Mas ainda exclui campos que não foram enviados no payload
+        update_data = person_data.model_dump(exclude_unset=False, exclude_none=False)
 
+        # Remove campos que não foram enviados (valor padrão do Pydantic)
+        # Mantém campos com valor None (permite limpar)
+        fields_to_update = {}
         for field, value in update_data.items():
+            # Se o campo foi definido no payload (mesmo que seja None), incluir
+            if field in person_data.model_fields_set:
+                fields_to_update[field] = value
+
+        for field, value in fields_to_update.items():
             setattr(person, field, value)
 
         self.db.commit()
