@@ -4,7 +4,7 @@ interface ActionButtonProps {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
-  variant?: "primary" | "secondary" | "success" | "danger";
+  variant?: "primary" | "secondary" | "success" | "danger" | "warning";
   disabled?: boolean;
   className?: string;
 }
@@ -29,6 +29,8 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         return "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border-emerald-500/50";
       case "danger":
         return "bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50";
+      case "warning":
+        return "bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border-yellow-500/50";
       case "secondary":
       default:
         return "bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 border-slate-700 hover:border-slate-600";

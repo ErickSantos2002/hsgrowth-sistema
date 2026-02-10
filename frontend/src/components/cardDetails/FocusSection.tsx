@@ -275,13 +275,13 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       return;
     }
 
-    // Verifica se tem número de WhatsApp
-    if (!person.phone_whatsapp) {
-      alert("A pessoa não possui número de WhatsApp cadastrado");
+    // Verifica se tem número principal
+    if (!person.phone) {
+      alert("A pessoa não possui número principal cadastrado");
       return;
     }
 
-    if (!confirm(`Ligar para ${person.name} no número ${person.phone_whatsapp}?`)) {
+    if (!confirm(`Ligar para ${person.name} no número ${person.phone}?`)) {
       return;
     }
 
@@ -289,7 +289,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       setCallingTaskId(activityId);
 
       const result = await api4comService.makeCall({
-        phone: person.phone_whatsapp,
+        phone: person.phone,
         card_id: card.id
       });
 
@@ -588,9 +588,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           {activity.task_type === "call" && (
                             <button
                               onClick={() => handleMakeCall(activity.id)}
-                              disabled={callingTaskId === activity.id || !person?.phone_whatsapp}
+                              disabled={callingTaskId === activity.id || !person?.phone}
                               className="flex-1 px-3 py-1.5 bg-blue-500/30 hover:bg-blue-500/45 text-blue-300 border border-blue-400/70 rounded font-medium text-sm transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
-                              title={!person?.phone_whatsapp ? "Pessoa sem WhatsApp cadastrado" : "Ligar agora"}
+                              title={!person?.phone ? "Pessoa sem número principal cadastrado" : "Ligar agora"}
                             >
                               {callingTaskId === activity.id ? (
                                 <Loader2 size={14} className="animate-spin" />

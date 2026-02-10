@@ -469,7 +469,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               icon={<ExternalLink size={16} />}
               label="Modificar cadastro da pessoa"
               onClick={() => setShowEditModal(true)}
-              variant="primary"
+              variant="warning"
               className="w-full"
             />
 

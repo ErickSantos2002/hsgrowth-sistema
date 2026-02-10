@@ -444,7 +444,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
               icon={<ExternalLink size={16} />}
               label="Modificar cadastro do cliente"
               onClick={() => setShowEditModal(true)}
-              variant="primary"
+              variant="warning"
               className="w-full"
             />
 
