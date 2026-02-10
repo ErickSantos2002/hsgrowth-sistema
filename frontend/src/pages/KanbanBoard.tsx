@@ -54,6 +54,9 @@ const KanbanBoard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth(); // Pegar usuário logado
 
+  // Permissões: Apenas Admin e Manager podem criar listas
+  const canCreateList = user?.role === "admin" || user?.role === "manager";
+
   // Estados
   const [board, setBoard] = useState<Board | null>(null);
   const [lists, setLists] = useState<List[]>([]);
@@ -999,16 +1002,18 @@ const KanbanBoard: React.FC = () => {
               <Filter size={20} className={showFilters ? "text-blue-400" : "text-slate-400"} />
             </button>
 
-            {/* Botão Nova Lista */}
-            <button
-              onClick={handleCreateList}
-              className="flex items-center justify-center gap-2 w-10 h-10 sm:w-auto sm:h-auto px-0 sm:px-4 py-0 sm:py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
-              title="Adicionar nova lista"
-              aria-label="Adicionar nova lista"
-            >
-              <Plus size={20} />
-              <span className="hidden sm:inline">Nova Lista</span>
-            </button>
+            {/* Botão Nova Lista - Apenas Admin e Manager */}
+            {canCreateList && (
+              <button
+                onClick={handleCreateList}
+                className="flex items-center justify-center gap-2 w-10 h-10 sm:w-auto sm:h-auto px-0 sm:px-4 py-0 sm:py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
+                title="Adicionar nova lista"
+                aria-label="Adicionar nova lista"
+              >
+                <Plus size={20} />
+                <span className="hidden sm:inline">Nova Lista</span>
+              </button>
+            )}
 
             {/* Menu do board */}
             <div className="relative">
@@ -1203,6 +1208,7 @@ const KanbanBoard: React.FC = () => {
                   onMoveRight={() => handleMoveListRight(list)}
                   isFirstList={isFirstList}
                   isLastList={isLastList}
+                  canManageLists={canCreateList}
                 />
               );
             })
@@ -1210,14 +1216,20 @@ const KanbanBoard: React.FC = () => {
             <div className="flex-shrink-0 w-80 bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4">
               <div className="text-center text-slate-400 py-8">
                 <p className="text-lg font-medium mb-2">Nenhuma lista encontrada</p>
-                <p className="text-sm mb-4">Crie sua primeira lista para começar</p>
-                <button
-                  onClick={handleCreateList}
-                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
-                >
-                  <Plus size={16} />
-                  Nova Lista
-                </button>
+                {canCreateList ? (
+                  <>
+                    <p className="text-sm mb-4">Crie sua primeira lista para começar</p>
+                    <button
+                      onClick={handleCreateList}
+                      className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                    >
+                      <Plus size={16} />
+                      Nova Lista
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-sm mb-4">Entre em contato com o administrador para criar listas</p>
+                )}
               </div>
             </div>
           )}

@@ -17,6 +17,7 @@ interface KanbanListProps {
   onMoveRight?: () => void; // Nova prop para mover lista para direita
   isFirstList?: boolean; // Se é a primeira lista (não pode ir mais para esquerda)
   isLastList?: boolean; // Se é a última lista (não pode ir mais para direita)
+  canManageLists?: boolean; // Permissão para gerenciar listas (Admin/Manager)
 }
 
 const KanbanList: React.FC<KanbanListProps> = ({
@@ -31,6 +32,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
   onMoveRight,
   isFirstList = false,
   isLastList = false,
+  canManageLists = true, // Default true para compatibilidade
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [cardLimit, setCardLimit] = useState(3);
@@ -202,8 +204,8 @@ const KanbanList: React.FC<KanbanListProps> = ({
 
       {/* Botão adicionar card + Setas de movimentação */}
       <div className="flex-shrink-0 flex items-center gap-2 mt-3">
-        {/* Seta esquerda - só aparece se não for a primeira lista */}
-        {!isFirstList && onMoveLeft && (
+        {/* Seta esquerda - apenas Admin/Manager */}
+        {canManageLists && !isFirstList && onMoveLeft && (
           <button
             onClick={onMoveLeft}
             className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/40 rounded-lg transition-colors"
@@ -222,8 +224,8 @@ const KanbanList: React.FC<KanbanListProps> = ({
           <span>Adicionar card</span>
         </button>
 
-        {/* Seta direita - só aparece se não for a última lista */}
-        {!isLastList && onMoveRight && (
+        {/* Seta direita - apenas Admin/Manager */}
+        {canManageLists && !isLastList && onMoveRight && (
           <button
             onClick={onMoveRight}
             className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/40 rounded-lg transition-colors"

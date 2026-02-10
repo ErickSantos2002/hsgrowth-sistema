@@ -604,11 +604,20 @@ async def create_list(
     """
     Cria uma nova lista em um board.
 
+    **Permissão**: Apenas Admin e Manager podem criar listas.
+
     - **board_id**: ID do board
     - **name**: Nome da lista
     - **color**: Cor em hexadecimal (opcional)
     - **position**: Posição da lista (opcional, se não informado vai para o final)
     """
+    # Verifica permissão: apenas Admin e Manager podem criar listas
+    if current_user.role.name.lower() not in ["admin", "manager"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores e gerentes podem criar listas"
+        )
+
     service = ListService(db)
     new_list = service.create_list(list_data, current_user)
 
