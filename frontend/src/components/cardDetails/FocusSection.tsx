@@ -589,7 +589,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                             <button
                               onClick={() => handleMakeCall(activity.id)}
                               disabled={callingTaskId === activity.id || !person?.phone_whatsapp}
-                              className="flex-1 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50 rounded font-medium text-sm transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                              className="flex-1 px-3 py-1.5 bg-blue-500/30 hover:bg-blue-500/45 text-blue-300 border border-blue-400/70 rounded font-medium text-sm transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
                               title={!person?.phone_whatsapp ? "Pessoa sem WhatsApp cadastrado" : "Ligar agora"}
                             >
                               {callingTaskId === activity.id ? (
