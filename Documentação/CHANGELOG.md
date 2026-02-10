@@ -7,6 +7,106 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.4] - 2026-02-10
+
+### ✨ Novas Funcionalidades
+
+#### Cadastro Rápido de Cliente/Pessoa no CardDetails
+- **Novos botões "Cadastrar"** nas seções de Cliente e Pessoa do CardDetails
+- Layout em grid 2 colunas: "Vincular" (azul) + "Cadastrar" (verde)
+- **Fluxo otimizado**:
+  - Clique em "Cadastrar" abre modal de criação
+  - Após salvar, automaticamente vincula ao card
+  - Não precisa sair da página de detalhes do card
+- **Vínculo automático**: Sistema busca o registro recém-criado e vincula ao card
+- Mensagem de erro amigável caso o vínculo automático falhe
+
+#### Atualização Otimista na Seção Resumo
+- **Feedback instantâneo**: Campos atualizam imediatamente na tela sem reload
+- **UX aprimorada**: Não fecha mais a seção ao editar campos
+- **Seção permanece aberta**: Usuário não perde contexto de onde estava
+- **Reversão automática**: Se houver erro, reverte a mudança e mostra mensagem
+- Aplicado em todos os campos editáveis da seção Resumo:
+  - Valor do negócio
+  - Probabilidade de fechamento
+  - Data esperada de fechamento
+  - SDR responsável
+  - Tipo de negócio
+  - Canal de aquisição e detalhamento
+  - Motivo da perda
+  - Tem implementação / Tem pessoas para manusear
+
+#### Busca Sob Demanda para Vincular Cliente/Pessoa
+- **Não carrega mais automaticamente** milhares de registros ao abrir o modal
+- **Busca dinâmica no backend** com debounce de 500ms
+- **Mensagens claras**: "Digite o nome, CPF ou CNPJ para buscar"
+- **Performance melhorada**: Limita resultados a 100 registros por busca
+- Aplicado tanto em ClientSection quanto ContactSection
+
+### 🔒 Melhorias de Segurança e Permissões
+
+#### Restrição de Criação de Boards
+- **Backend**: Apenas Admin e Manager podem criar novos boards
+- **Frontend**: Botão "Novo Board" visível apenas para Admin/Manager
+- **Resposta 403**: Endpoint retorna erro claro se vendedor tentar criar via API
+- EmptyState ajustado para mostrar mensagem apropriada
+
+#### Restrição de Criação e Reordenação de Listas
+- **Backend**: Apenas Admin e Manager podem criar listas
+- **Frontend**: Botão "Nova Lista" visível apenas para Admin/Manager
+- **Botões de reordenação**: Setas de mover lista (esquerda/direita) ocultas para vendedores
+- Prop `canManageLists` passada para KanbanList component
+- Documentação clara na API (resposta 403)
+
+### 🔧 Melhorias de Usabilidade
+
+#### Modal de Cliente
+- **Campo renomeado**: "Nome" → "Empresa" para maior clareza
+- **Ícone atualizado**: User → Building (ícone de prédio)
+- **Hint atualizado**: "Razão social ou nome da empresa"
+- **Placeholder atualizado**: "Ex: Empresa LTDA"
+- Reduz confusão entre nome da empresa e nome da pessoa
+
+#### CPF/CNPJ Obrigatório
+- **Campo CPF/CNPJ agora é obrigatório** no cadastro de clientes
+- **Validação de tamanho**: Verifica se tem 11 dígitos (CPF) ou 14 (CNPJ)
+- **Mensagens de erro claras**:
+  - "CPF/CNPJ é obrigatório"
+  - "CPF/CNPJ inválido. CPF deve ter 11 dígitos e CNPJ 14 dígitos"
+- Hint atualizado para "Documento de identificação (obrigatório)"
+
+### 🐛 Correções
+
+#### Atualização de Campos no CardDetails
+- **Problema**: Ao editar campo na seção Resumo, página recarregava e fechava a seção
+- **Solução**: Implementada atualização otimista com estado local
+- **Resultado**: Experiência fluida sem perda de contexto
+
+#### Performance na Busca de Clientes/Pessoas
+- **Problema**: Modal carregava 10.000 registros ao abrir, causando lentidão
+- **Solução**: Busca apenas quando usuário digita, com limite de 100 resultados
+- **Resultado**: Abertura instantânea do modal, busca rápida
+
+### 📝 Arquivos Modificados
+
+#### Backend
+- `app/api/v1/endpoints/boards.py` - Permissões de criação de board e lista
+- `app/repositories/person_repository.py` - Ajuste para permitir null values
+- `app/services/automation_service.py` - Proteção contra sobrescrever vendedores/SDRs
+
+#### Frontend
+- `src/pages/Boards.tsx` - Restrição de criação de boards
+- `src/pages/KanbanBoard.tsx` - Restrição de criação e reordenação de listas
+- `src/components/kanban/KanbanList.tsx` - Prop canManageLists
+- `src/pages/CardDetails.tsx` - Função handleOptimisticUpdate
+- `src/components/cardDetails/SummarySection.tsx` - Uso de atualização otimista
+- `src/components/cardDetails/ClientSection.tsx` - Botão cadastrar + busca sob demanda
+- `src/components/cardDetails/ContactSection.tsx` - Botão cadastrar + busca sob demanda
+- `src/components/clients/ClientModal.tsx` - CPF/CNPJ obrigatório + label "Empresa"
+- `src/layouts/MainLayout.tsx` - Versão atualizada para 1.1.4
+
+---
+
 ## [1.1.3] - 2026-02-09
 
 ### ✨ Novas Funcionalidades
