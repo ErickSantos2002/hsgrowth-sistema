@@ -84,7 +84,8 @@ const KanbanBoard: React.FC = () => {
   const [listFilter, setListFilter] = useState("");
   const [valueFilter, setValueFilter] = useState("");
   const [dueDateFilter, setDueDateFilter] = useState("");
-  const [assignedToFilter, setAssignedToFilter] = useState(""); // Novo filtro de vendedor
+  const [assignedToFilter, setAssignedToFilter] = useState(""); // Filtro de vendedor
+  const [sdrFilter, setSdrFilter] = useState(""); // Filtro de SDR
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
   const [availableUsers, setAvailableUsers] = useState<User[]>([]); // Lista de usuários
   const boardScrollRef = useRef<HTMLDivElement | null>(null);
@@ -124,6 +125,11 @@ const KanbanBoard: React.FC = () => {
         // Se o usuário logado é vendedor (salesperson), trava o filtro nele
         if (user && user.role === "salesperson") {
           setAssignedToFilter(String(user.id));
+        }
+
+        // Se o usuário logado é SDR, trava o filtro nele
+        if (user && user.role === "sdr") {
+          setSdrFilter(String(user.id));
         }
       } catch (error) {
         console.error("Erro ao carregar usuários:", error);
@@ -458,6 +464,14 @@ const KanbanBoard: React.FC = () => {
       if (assignedToFilter) {
         const filterId = Number(assignedToFilter);
         if (card.assigned_to_id !== filterId) {
+          return false;
+        }
+      }
+
+      // Filtro por SDR (sdr_id)
+      if (sdrFilter) {
+        const filterId = Number(sdrFilter);
+        if ((card as any).sdr_id !== filterId) {
           return false;
         }
       }
@@ -1118,13 +1132,33 @@ const KanbanBoard: React.FC = () => {
                 value={assignedToFilter}
                 options={[
                   { value: "", label: "Todos os vendedores" },
-                  ...availableUsers.map((u) => ({
-                    value: String(u.id),
-                    label: u.name,
-                  })),
+                  ...availableUsers
+                    .filter((u) => u.role !== "sdr") // Exclui SDRs da lista de vendedores
+                    .map((u) => ({
+                      value: String(u.id),
+                      label: u.name,
+                    })),
                 ]}
                 onChange={setAssignedToFilter}
                 disabled={user?.role === "salesperson"} // Trava se for vendedor
+              />
+            </div>
+
+            {/* Filtro por SDR */}
+            <div className="w-full sm:w-auto sm:min-w-[200px]">
+              <SelectMenu
+                value={sdrFilter}
+                options={[
+                  { value: "", label: "Todos os SDRs" },
+                  ...availableUsers
+                    .filter((u) => u.role === "sdr") // Apenas SDRs
+                    .map((u) => ({
+                      value: String(u.id),
+                      label: u.name,
+                    })),
+                ]}
+                onChange={setSdrFilter}
+                disabled={user?.role === "sdr"} // Trava se for SDR
               />
             </div>
 

@@ -52,8 +52,9 @@ const CardModal: React.FC<CardModalProps> = ({
   const [salespeople, setSalespeople] = useState<UserType[]>([]);
   const [sdrs, setSDRs] = useState<UserType[]>([]);
 
-  // Verifica se o usuário atual é vendedor
+  // Verifica se o usuário atual é vendedor ou SDR
   const isSalesperson = currentUser?.role?.toLowerCase() === "salesperson";
+  const isSDR = currentUser?.role?.toLowerCase() === "sdr";
 
   // Carregar usuários ativos e filtrar por role
   const loadUsers = async () => {
@@ -98,13 +99,16 @@ const CardModal: React.FC<CardModalProps> = ({
         // Se for vendedor, já seta automaticamente como responsável
         const defaultAssignedTo = isSalesperson ? currentUser?.id : undefined;
 
+        // Se for SDR, já seta automaticamente como responsável SDR
+        const defaultSDR = isSDR ? currentUser?.id : undefined;
+
         setFormData({
           list_id: currentListId,
           title: "",
           description: "",
           due_date: "",
           assigned_to_id: defaultAssignedTo,
-          sdr_id: undefined,
+          sdr_id: defaultSDR,
         });
       }
       setErrors({});
@@ -241,7 +245,13 @@ const CardModal: React.FC<CardModalProps> = ({
                 Responsável SDR
               </span>
             }
-            hint="SDR responsável pela prospecção"
+            hint={
+              isSDR
+                ? "Você será automaticamente o responsável SDR"
+                : isSalesperson
+                ? "Vendedor não pode atribuir SDR"
+                : "SDR responsável pela prospecção"
+            }
           >
             <Select
               value={formData.sdr_id || ""}
@@ -251,6 +261,7 @@ const CardModal: React.FC<CardModalProps> = ({
                   sdr_id: e.target.value ? Number(e.target.value) : undefined,
                 })
               }
+              disabled={isSalesperson || isSDR}
             >
               <option value="">Nenhum SDR</option>
               {sdrs.map((user) => (
@@ -271,6 +282,8 @@ const CardModal: React.FC<CardModalProps> = ({
             hint={
               isSalesperson
                 ? "Você será automaticamente o responsável"
+                : isSDR
+                ? "SDR não pode atribuir vendedor"
                 : "Vendedor responsável por este card"
             }
           >
@@ -282,7 +295,7 @@ const CardModal: React.FC<CardModalProps> = ({
                   assigned_to_id: e.target.value ? Number(e.target.value) : undefined,
                 })
               }
-              disabled={isSalesperson}
+              disabled={isSalesperson || isSDR}
             >
               <option value="">Sem vendedor</option>
               {salespeople.map((user) => (
