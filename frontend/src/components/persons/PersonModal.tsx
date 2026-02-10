@@ -29,13 +29,11 @@ interface PersonFormData {
   email: string;
   email_commercial: string;
   email_personal: string;
-  email_alternative: string;
 
   // Telefones
   phone: string;
   phone_commercial: string;
   phone_whatsapp: string;
-  phone_alternative: string;
 
   // Profissional
   position: string;
@@ -84,11 +82,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
     email: "",
     email_commercial: "",
     email_personal: "",
-    email_alternative: "",
     phone: "",
     phone_commercial: "",
     phone_whatsapp: "",
-    phone_alternative: "",
     position: "",
     area: "",
     owner_id: null,
@@ -132,11 +128,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         email: person.email || "",
         email_commercial: person.email_commercial || "",
         email_personal: person.email_personal || "",
-        email_alternative: person.email_alternative || "",
         phone: person.phone || "",
         phone_commercial: person.phone_commercial || "",
         phone_whatsapp: person.phone_whatsapp || "",
-        phone_alternative: person.phone_alternative || "",
         position: person.position || "",
         area: person.area || "",
         owner_id: person.owner_id || null,
@@ -154,11 +148,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         email: "",
         email_commercial: "",
         email_personal: "",
-        email_alternative: "",
         phone: "",
         phone_commercial: "",
         phone_whatsapp: "",
-        phone_alternative: "",
         position: "",
         area: "",
         owner_id: null,
@@ -185,7 +177,6 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
       formData.email,
       formData.email_commercial,
       formData.email_personal,
-      formData.email_alternative,
     ];
 
     for (const email of emails) {
@@ -223,11 +214,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         email: formData.email.trim() || null,
         email_commercial: formData.email_commercial.trim() || null,
         email_personal: formData.email_personal.trim() || null,
-        email_alternative: formData.email_alternative.trim() || null,
         phone: formData.phone.replace(/\D/g, "") || null, // Remove máscara
         phone_commercial: formData.phone_commercial.replace(/\D/g, "") || null,
         phone_whatsapp: formData.phone_whatsapp.replace(/\D/g, "") || null,
-        phone_alternative: formData.phone_alternative.replace(/\D/g, "") || null,
         position: formData.position.trim() || null,
         area: formData.area.trim() || null,
         owner_id: formData.owner_id || null,
@@ -448,25 +437,13 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
             <FormField
               label="Email Pessoal"
               hint="Email pessoal"
+              className="md:col-span-2"
             >
               <Input
                 type="email"
                 value={formData.email_personal}
                 onChange={(e) => handleChange("email_personal", e.target.value)}
                 placeholder="joao.pessoal@gmail.com"
-              />
-            </FormField>
-
-            {/* Email Alternativo */}
-            <FormField
-              label="Email Alternativo"
-              hint="Email alternativo"
-            >
-              <Input
-                type="email"
-                value={formData.email_alternative}
-                onChange={(e) => handleChange("email_alternative", e.target.value)}
-                placeholder="joao.alt@exemplo.com"
               />
             </FormField>
           </div>
@@ -479,14 +456,27 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
             Telefones
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* WhatsApp */}
+            {/* Telefone Principal */}
             <FormField
               label={
                 <span className="flex items-center gap-1">
                   <Phone size={14} />
-                  WhatsApp
+                  Telefone Principal
                 </span>
               }
+              hint="Telefone principal"
+            >
+              <Input
+                value={formData.phone}
+                onChange={(e) => handleChange("phone", maskPhone(e.target.value))}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+              />
+            </FormField>
+
+            {/* WhatsApp */}
+            <FormField
+              label="WhatsApp"
               hint="Número do WhatsApp"
             >
               <Input
@@ -501,36 +491,11 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
             <FormField
               label="Telefone Comercial"
               hint="Telefone corporativo"
+              className="md:col-span-2"
             >
               <Input
                 value={formData.phone_commercial}
                 onChange={(e) => handleChange("phone_commercial", maskPhone(e.target.value))}
-                placeholder="(00) 0000-0000"
-                maxLength={15}
-              />
-            </FormField>
-
-            {/* Telefone Principal */}
-            <FormField
-              label="Telefone Principal"
-              hint="Telefone principal"
-            >
-              <Input
-                value={formData.phone}
-                onChange={(e) => handleChange("phone", maskPhone(e.target.value))}
-                placeholder="(00) 00000-0000"
-                maxLength={15}
-              />
-            </FormField>
-
-            {/* Telefone Alternativo */}
-            <FormField
-              label="Telefone Alternativo"
-              hint="Telefone alternativo"
-            >
-              <Input
-                value={formData.phone_alternative}
-                onChange={(e) => handleChange("phone_alternative", maskPhone(e.target.value))}
                 placeholder="(00) 0000-0000"
                 maxLength={15}
               />

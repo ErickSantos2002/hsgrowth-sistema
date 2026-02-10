@@ -27,6 +27,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
   const [allClients, setAllClients] = useState<Client[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Carrega dados do cliente quando o card é carregado
   useEffect(() => {
@@ -176,6 +177,17 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
       console.error("Erro ao vincular cliente recém-criado:", error);
       alert("Cliente criado com sucesso, mas houve erro ao vincular. Você pode vincular manualmente.");
     }
+  };
+
+  /**
+   * Callback quando o cliente é editado
+   * Recarrega os dados do cliente e atualiza o card
+   */
+  const handleClientEdited = async () => {
+    setShowEditModal(false);
+    // Recarrega os dados do cliente e do card
+    await loadClientData();
+    onUpdate();
   };
 
   /**
@@ -338,11 +350,12 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
 
   // Se há cliente vinculado - exibir apenas read-only
   return (
-    <ExpandableSection
-      title="Cliente (Organização)"
-      defaultExpanded={false}
-      icon={<Building2 size={18} />}
-    >
+    <>
+      <ExpandableSection
+        title="Cliente (Organização)"
+        defaultExpanded={false}
+        icon={<Building2 size={18} />}
+      >
       {loading ? (
         <div className="text-center py-4">
           <p className="text-sm text-slate-400">Carregando...</p>
@@ -361,52 +374,56 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
           </div>
 
           {/* CPF/CNPJ */}
-          {client?.document && (
-            <div className="space-y-1">
-              <div className="text-sm font-medium text-slate-300">
-                {client.document.replace(/\D/g, "").length === 11 ? "CPF" : "CNPJ"}
-              </div>
-              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
-                <p className="text-white">{formatDocument(client.document)}</p>
-              </div>
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-slate-300">
+              {client?.document && client.document.replace(/\D/g, "").length === 11 ? "CPF" : "CNPJ"}
             </div>
-          )}
+            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+              <p className={client?.document ? "text-white" : "text-slate-500 italic"}>
+                {client?.document ? formatDocument(client.document) : "Não informado"}
+              </p>
+            </div>
+          </div>
 
           {/* Endereço */}
-          {client?.address && (
-            <div className="space-y-1">
-              <div className="text-sm font-medium text-slate-300">Endereço</div>
-              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
-                <p className="text-white text-sm">{client.address}</p>
-                {(client.city || client.state) && (
-                  <p className="text-slate-400 text-sm mt-1">
-                    {client.city}{client.city && client.state && " - "}{client.state}
-                  </p>
-                )}
-              </div>
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-slate-300">Endereço</div>
+            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+              <p className={client?.address ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                {client?.address || "Não informado"}
+              </p>
+              {(client?.city || client?.state) && (
+                <p className="text-slate-400 text-sm mt-1">
+                  {client.city}{client.city && client.state && " - "}{client.state}
+                </p>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Contato */}
-          {(client?.phone || client?.email) && (
-            <div className="space-y-1">
-              <div className="text-sm font-medium text-slate-300">Contato</div>
-              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-1">
-                {client?.phone && (
-                  <p className="text-white text-sm">{formatPhone(client.phone)}</p>
-                )}
-                {client?.email && (
-                  <p className="text-blue-400 text-sm">{client.email}</p>
-                )}
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-slate-300">Contato</div>
+            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-2">
+              <div>
+                <p className="text-xs text-slate-400">Telefone</p>
+                <p className={client?.phone ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                  {formatPhone(client?.phone)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Email</p>
+                <p className={client?.email ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
+                  {client?.email || "Não informado"}
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Website */}
-          {client?.website && (
-            <div className="space-y-1">
-              <div className="text-sm font-medium text-slate-300">Website</div>
-              <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-slate-300">Website</div>
+            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+              {client?.website ? (
                 <a
                   href={client.website}
                   target="_blank"
@@ -415,16 +432,18 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
                 >
                   {client.website}
                 </a>
-              </div>
+              ) : (
+                <p className="text-slate-500 italic text-sm">Não informado</p>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Ações */}
           <div className="pt-3 border-t border-slate-700/50 space-y-2">
             <ActionButton
               icon={<ExternalLink size={16} />}
-              label="Ver página completa do cliente"
-              onClick={() => alert(`Navegar para /clients/${client?.id} - será implementado`)}
+              label="Modificar cadastro do cliente"
+              onClick={() => setShowEditModal(true)}
               variant="primary"
               className="w-full"
             />
@@ -439,7 +458,18 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
           </div>
         </div>
       )}
-    </ExpandableSection>
+      </ExpandableSection>
+
+      {/* Modal de editar cliente */}
+      {showEditModal && client && (
+        <ClientModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleClientEdited}
+          client={client}
+        />
+      )}
+    </>
   );
 };
 

@@ -25,6 +25,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
   const [allPersons, setAllPersons] = useState<Person[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Carrega dados da pessoa quando o card é carregado
   useEffect(() => {
@@ -161,6 +162,17 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
       console.error("Erro ao vincular pessoa recém-criada:", error);
       alert("Pessoa criada com sucesso, mas houve erro ao vincular. Você pode vincular manualmente.");
     }
+  };
+
+  /**
+   * Callback quando a pessoa é editada
+   * Recarrega os dados da pessoa e atualiza o card
+   */
+  const handlePersonEdited = async () => {
+    setShowEditModal(false);
+    // Recarrega os dados da pessoa e do card
+    await loadPersonData();
+    onUpdate();
   };
 
   /**
@@ -315,11 +327,12 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
 
   // Se há pessoa vinculada - exibir read-only
   return (
-    <ExpandableSection
-      title="Informação de Contato (Pessoa)"
-      defaultExpanded={false}
-      icon={<User size={18} />}
-    >
+    <>
+      <ExpandableSection
+        title="Informação de Contato (Pessoa)"
+        defaultExpanded={false}
+        icon={<User size={18} />}
+      >
       {loading ? (
         <div className="text-center py-4">
           <p className="text-sm text-slate-400">Carregando...</p>
@@ -358,6 +371,12 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
             </div>
             <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-2">
               <div>
+                <p className="text-xs text-slate-400">Principal</p>
+                <p className={person?.email ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
+                  {person?.email || "Não informado"}
+                </p>
+              </div>
+              <div>
                 <p className="text-xs text-slate-400">Comercial</p>
                 <p className={person?.email_commercial ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
                   {person?.email_commercial || "Não informado"}
@@ -367,12 +386,6 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
                 <p className="text-xs text-slate-400">Pessoal</p>
                 <p className={person?.email_personal ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
                   {person?.email_personal || "Não informado"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Alternativo</p>
-                <p className={person?.email_alternative ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
-                  {person?.email_alternative || "Não informado"}
                 </p>
               </div>
             </div>
@@ -386,6 +399,12 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
             </div>
             <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-2">
               <div>
+                <p className="text-xs text-slate-400">Principal</p>
+                <p className={person?.phone ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                  {formatPhone(person?.phone)}
+                </p>
+              </div>
+              <div>
                 <p className="text-xs text-slate-400">WhatsApp</p>
                 <p className={person?.phone_whatsapp ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
                   {formatPhone(person?.phone_whatsapp)}
@@ -395,12 +414,6 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
                 <p className="text-xs text-slate-400">Comercial</p>
                 <p className={person?.phone_commercial ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
                   {formatPhone(person?.phone_commercial)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Alternativo</p>
-                <p className={person?.phone_alternative ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
-                  {formatPhone(person?.phone_alternative)}
                 </p>
               </div>
             </div>
@@ -454,8 +467,8 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
           <div className="pt-3 border-t border-slate-700/50 space-y-2">
             <ActionButton
               icon={<ExternalLink size={16} />}
-              label="Ver página completa da pessoa"
-              onClick={() => alert(`Navegar para /persons/${person?.id} - será implementado`)}
+              label="Modificar cadastro da pessoa"
+              onClick={() => setShowEditModal(true)}
               variant="primary"
               className="w-full"
             />
@@ -470,7 +483,18 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
           </div>
         </div>
       )}
-    </ExpandableSection>
+      </ExpandableSection>
+
+      {/* Modal de editar pessoa */}
+      {showEditModal && person && (
+        <PersonModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSave={handlePersonEdited}
+          person={person}
+        />
+      )}
+    </>
   );
 };
 

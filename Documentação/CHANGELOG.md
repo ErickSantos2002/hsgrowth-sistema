@@ -7,6 +7,56 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.5] - 2026-02-10
+
+### ✨ Novas Funcionalidades
+
+#### Edição Inline de Cliente e Pessoa no CardDetails
+- **Botões "Modificar cadastro"** substituem "Ver página completa"
+- **Edição direta no CardDetails**: Não precisa mais navegar para outra página
+- **Modal de edição inline**:
+  - Clique em "Modificar cadastro do cliente/pessoa" abre modal com dados preenchidos
+  - Edite os campos necessários
+  - Ao salvar, dados são atualizados automaticamente no CardDetails
+- **UX melhorada**: Experiência fluida sem sair da página do card
+- Aplicado em ClientSection e ContactSection
+
+### 🔧 Melhorias de Usabilidade
+
+#### Simplificação de Campos de Contato
+- **E-mails reduzidos de 4 para 3 campos**:
+  - Email Principal (novo)
+  - Email Comercial
+  - Email Pessoal
+  - ~~Email Alternativo~~ (removido do frontend)
+- **Telefones reduzidos de 4 para 3 campos**:
+  - Telefone Principal (novo)
+  - WhatsApp
+  - Telefone Comercial
+  - ~~Telefone Alternativo~~ (removido do frontend)
+- **Campos mantidos no banco de dados** para uso futuro
+- Interface mais limpa e fácil de usar
+- Aplicado em PersonModal, ContactSection e páginas de Pessoas
+
+#### Padronização da Seção Cliente no CardDetails
+- **Todos os campos sempre visíveis**: Não oculta mais campos vazios
+- **"Não informado" em campos vazios**: Mesmo padrão da seção de pessoa
+- **Seção de Contato reorganizada**:
+  - Subdividida em "Telefone" e "Email"
+  - Labels claros para cada subcampo
+- **Consistência visual**: Cliente e Pessoa agora seguem o mesmo padrão
+- Facilita identificar quais dados estão faltando
+
+### 📝 Arquivos Modificados
+
+#### Frontend
+- `src/components/cardDetails/ClientSection.tsx` - Botão de edição inline e padronização de campos
+- `src/components/cardDetails/ContactSection.tsx` - Botão de edição inline e remoção de campos alternativos
+- `src/components/persons/PersonModal.tsx` - Remoção de campos alternativos do formulário
+- `src/layouts/MainLayout.tsx` - Atualização de versão para 1.1.5
+
+---
+
 ## [1.1.4] - 2026-02-10
 
 ### ✨ Novas Funcionalidades
