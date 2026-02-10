@@ -503,6 +503,10 @@ class AutomationService:
             automation: Automação que contém o estado do rodízio
             card: Card a ser atribuído
         """
+        # REGRA: Não atribui vendedor se o card já tem um vendedor
+        if card.assigned_to_id:
+            return
+
         from app.models.user import User
         from app.models.role import Role
 
@@ -590,6 +594,10 @@ class AutomationService:
             automation: Automação que contém o estado do rodízio
             card: Card a ser atribuído
         """
+        # REGRA: Não atribui SDR se o card já tem um SDR
+        if card.sdr_id:
+            return
+
         from app.models.user import User
         from app.models.role import Role
 
