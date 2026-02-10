@@ -423,16 +423,40 @@ class AutomationService:
 
         # Verifica condição de from_list_id/to_list_id (para card_moved)
         if "from_list_id" in conditions and trigger_data:
-            if trigger_data.get("from_list_id") != conditions["from_list_id"]:
+            from_list_id_condition = conditions["from_list_id"]
+            # Converte para int se for string
+            if isinstance(from_list_id_condition, str):
+                from_list_id_condition = int(from_list_id_condition)
+            if trigger_data.get("from_list_id") != from_list_id_condition:
                 return False
 
         if "to_list_id" in conditions:
-            if card.list_id != conditions["to_list_id"]:
+            to_list_id_condition = conditions["to_list_id"]
+            # Converte para int se for string
+            if isinstance(to_list_id_condition, str):
+                to_list_id_condition = int(to_list_id_condition)
+            if card.list_id != to_list_id_condition:
                 return False
 
         # Verifica condição de assigned_to_id
         if "assigned_to_id" in conditions:
-            if card.assigned_to_id != conditions["assigned_to_id"]:
+            assigned_to_id_condition = conditions["assigned_to_id"]
+            # Converte para int se for string
+            if isinstance(assigned_to_id_condition, str):
+                assigned_to_id_condition = int(assigned_to_id_condition)
+            if card.assigned_to_id != assigned_to_id_condition:
+                return False
+
+        # Verifica condição de board_id
+        if "board_id" in conditions:
+            board_id_condition = conditions["board_id"]
+            # Converte para int se for string
+            if isinstance(board_id_condition, str):
+                board_id_condition = int(board_id_condition)
+            # Busca o board_id através da lista do card
+            from app.models.list import List as BoardList
+            card_list = self.db.query(BoardList).filter(BoardList.id == card.list_id).first()
+            if card_list and card_list.board_id != board_id_condition:
                 return False
 
         # Adicionar mais condições conforme necessário
