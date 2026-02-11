@@ -26,6 +26,24 @@ const NotificationDropdown: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  // Função para carregar notificações (definida antes dos useEffects)
+  const loadNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await notificationService.list(1, 10, true); // Últimas 10 não lidas
+      setNotifications(response.notifications);
+      setUnreadCount(response.unread_count);
+    } catch (error) {
+      console.error("Erro ao carregar notificações:", error);
+      // Mock de notificações para demonstração (filtra apenas não lidas)
+      const mockData = getMockNotifications().filter(n => !n.is_read);
+      setNotifications(mockData);
+      setUnreadCount(mockData.length);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Fecha dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -72,23 +90,6 @@ const NotificationDropdown: React.FC = () => {
       console.error("Erro ao carregar contador:", error);
     }
   };
-
-  const loadNotifications = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await notificationService.list(1, 10, true); // Últimas 10 não lidas
-      setNotifications(response.notifications);
-      setUnreadCount(response.unread_count);
-    } catch (error) {
-      console.error("Erro ao carregar notificações:", error);
-      // Mock de notificações para demonstração (filtra apenas não lidas)
-      const mockData = getMockNotifications().filter(n => !n.is_read);
-      setNotifications(mockData);
-      setUnreadCount(mockData.length);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const handleMarkAsRead = async (id: number) => {
     try {
