@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Search, Edit, Trash2, RefreshCw, Shield, UserCircle, Clock, Key, ChevronDown } from "lucide-react";
+import { Plus, Edit, Trash2, RefreshCw, Shield, UserCircle, Clock, Key, ChevronDown, Users as UsersIcon } from "lucide-react";
 import userService from "../services/userService";
 import { User } from "../types";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth, usePagination, useFilter, filterHelpers } from "../hooks";
 import UserModal from "../components/users/UserModal";
 import AdminPasswordResetModal from "../components/users/AdminPasswordResetModal";
 import { showSuccess, showError, showWarning } from "../utils/toast";
+import { SearchInput, Pagination } from "../components/common";
+import { PageHeader } from "../components/layout";
 
 const Users: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -13,13 +15,29 @@ const Users: React.FC = () => {
   // Estados
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterRole, setFilterRole] = useState<string>("all"); // all, admin, manager, salesperson, sdr
-  const [filterActive, setFilterActive] = useState<string>("all"); // all, active, inactive
 
   // Estados do modal
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  // Hook de filtros - substitui lógica manual de filtros
+  const {
+    filteredItems: filteredUsers,
+    searchTerm,
+    setSearchTerm,
+    customFilters,
+    setCustomFilter,
+  } = useFilter(users, {
+    search: filterHelpers.searchInFields(["name", "email", "username"]),
+    role: (user, role) => role === "all" || user.role === role,
+    status: (user, status) =>
+      status === "all" ||
+      (status === "active" && user.is_active) ||
+      (status === "inactive" && !user.is_active),
+  });
+
+  // Hook de paginação - adiciona paginação aos usuários filtrados
+  const pagination = usePagination(filteredUsers, 10);
 
   // Estados do modal de reset de senha
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
@@ -160,28 +178,8 @@ const Users: React.FC = () => {
     }
   };
 
-  /**
-   * Filtra usuários baseado na busca e filtros
-   */
-  const filteredUsers = users.filter((user) => {
-    // Filtro de busca
-    const matchesSearch =
-      !searchTerm ||
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.username?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    // Filtro de role
-    const matchesRole = filterRole === "all" || user.role === filterRole;
-
-    // Filtro de status
-    const matchesStatus =
-      filterActive === "all" ||
-      (filterActive === "active" && user.is_active) ||
-      (filterActive === "inactive" && !user.is_active);
-
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  // Filtros agora são gerenciados pelo hook useFilter
+  // Removido código duplicado de filtros
 
   // Formata data
   const formatDate = (date: string) => {
@@ -255,73 +253,63 @@ const Users: React.FC = () => {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6 space-y-4">
-        <div>
-          <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
-            <UserCircle className="text-white" size={32} />
-            Usuários
-          </h1>
-          <p className="mt-1 text-slate-400">Gerencie os usuários do sistema</p>
+      <PageHeader
+        title="Usuários"
+        description="Gerencie os usuários do sistema"
+        icon={UsersIcon}
+        actions={
+          <>
+            <button
+              onClick={loadUsers}
+              disabled={loading}
+              className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+            >
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              Atualizar
+            </button>
+            <button
+              onClick={handleCreate}
+              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700"
+            >
+              <Plus size={16} />
+              Novo Usuário
+            </button>
+          </>
+        }
+      />
+
+      {/* Filtros */}
+      <div className="mb-6 flex flex-col gap-3 md:flex-row">
+        <SearchInput
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Buscar por nome, email ou username..."
+        />
+
+        <div className="w-full md:w-56">
+          <SelectMenu
+            value={customFilters.role || "all"}
+            options={[
+              { value: "all", label: "Todos" },
+              { value: "admin", label: "Administrador" },
+              { value: "manager", label: "Gerente" },
+              { value: "salesperson", label: "Vendedor" },
+              { value: "sdr", label: "SDR" },
+            ]}
+            onChange={(value) => setCustomFilter("role", value)}
+          />
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
-          <button
-            onClick={loadUsers}
-            disabled={loading}
-            className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            Atualizar
-          </button>
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700"
-          >
-            <Plus size={16} />
-            Novo Usuário
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-3 md:flex-row">
-          <div className="relative flex-1">
-            <Search
-              size={20}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              type="text"
-              placeholder="Buscar por nome, email ou username..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
-
-          <div className="w-full md:w-56">
-            <SelectMenu
-              value={filterRole}
-              options={[
-                { value: "all", label: "Todos" },
-                { value: "admin", label: "Administrador" },
-                { value: "manager", label: "Gerente" },
-                { value: "salesperson", label: "Vendedor" },
-                { value: "sdr", label: "SDR" },
-              ]}
-              onChange={setFilterRole}
-            />
-          </div>
-
-          <div className="w-full md:w-56">
-            <SelectMenu
-              value={filterActive}
-              options={[
-                { value: "all", label: "Todos" },
-                { value: "active", label: "Ativos" },
-                { value: "inactive", label: "Inativos" },
-              ]}
-              onChange={setFilterActive}
-            />
-          </div>
+        <div className="w-full md:w-56">
+          <SelectMenu
+            value={customFilters.status || "all"}
+            options={[
+              { value: "all", label: "Todos" },
+              { value: "active", label: "Ativos" },
+              { value: "inactive", label: "Inativos" },
+            ]}
+            onChange={(value) => setCustomFilter("status", value)}
+          />
         </div>
       </div>
 
@@ -337,11 +325,11 @@ const Users: React.FC = () => {
       ) : filteredUsers.length === 0 ? (
         <div className="rounded-xl border border-slate-700 bg-slate-800/50 py-12 text-center">
           <p className="mb-4 text-slate-400">
-            {searchTerm || filterRole !== "all" || filterActive !== "all"
+            {searchTerm || (customFilters.role && customFilters.role !== "all") || (customFilters.status && customFilters.status !== "all")
               ? "Nenhum usuário encontrado com os filtros aplicados"
               : "Nenhum usuário cadastrado ainda"}
           </p>
-          {!searchTerm && filterRole === "all" && filterActive === "all" && (
+          {!searchTerm && (!customFilters.role || customFilters.role === "all") && (!customFilters.status || customFilters.status === "all") && (
             <button
               onClick={handleCreate}
               className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700"
@@ -381,7 +369,7 @@ const Users: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {filteredUsers.map((user) => (
+                {pagination.paginatedItems.map((user) => (
                   <tr
                     key={user.id}
                     className="transition-colors hover:bg-slate-700/30"
@@ -495,6 +483,15 @@ const Users: React.FC = () => {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Paginação */}
+      {!loading && filteredUsers.length > 0 && (
+        <Pagination
+          {...pagination}
+          totalItems={filteredUsers.length}
+          itemLabel="usuários"
+        />
       )}
 
       {/* Modal de Criar/Editar Usuário */}

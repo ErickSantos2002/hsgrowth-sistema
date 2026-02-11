@@ -11,17 +11,17 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Search,
   ChevronDown,
   Shield,
   Workflow,
 } from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth, usePagination, useFilter, filterHelpers } from "../hooks";
 import automationService, { Automation } from "../services/automationService";
 import boardService from "../services/boardService";
 import AutomationRoundRobinForm from "../components/AutomationRoundRobinForm";
 import { showSuccess, showError } from "../utils/toast";
-import { LoadingSpinner } from "../components/common";
+import { LoadingSpinner, SearchInput, Pagination } from "../components/common";
+import { PageHeader } from "../components/layout";
 
 interface Board {
   id: number;
@@ -34,11 +34,23 @@ const Automations: React.FC = () => {
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedBoard, setSelectedBoard] = useState<string>("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [showRoundRobinForm, setShowRoundRobinForm] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
+
+  // Hook de filtros
+  const {
+    filteredItems: filteredAutomations,
+    searchTerm,
+    setSearchTerm,
+    customFilters,
+    setCustomFilter,
+  } = useFilter<Automation>(automations, {
+    search: filterHelpers.searchInFields(["name", "description"]),
+    board: (auto, boardId) => !boardId || auto.board_id?.toString() === boardId,
+  });
+
+  // Hook de paginação
+  const pagination = usePagination(filteredAutomations, 4);
 
   // Verifica se o usuário é admin ou manager
   const isManagerOrAdmin = currentUser?.role === 'admin' || currentUser?.role === 'manager';
@@ -114,41 +126,6 @@ const Automations: React.FC = () => {
     }
   };
 
-  const filteredAutomations = automations.filter((auto) => {
-    const matchesSearch =
-      auto.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (auto.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-    const matchesBoard = !selectedBoard || auto.board_id?.toString() === selectedBoard;
-    return matchesSearch && matchesBoard;
-  });
-
-  const itemsPerPage = 4;
-  const totalItems = filteredAutomations.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const safePage = Math.min(currentPage, totalPages);
-  const startIndex = (safePage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const paginatedAutomations = filteredAutomations.slice(startIndex, endIndex);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedBoard, automations.length]);
-
-  const getPageNumbers = () => {
-    const maxButtons = 5;
-    let start = Math.max(1, safePage - Math.floor(maxButtons / 2));
-    let end = start + maxButtons - 1;
-
-    if (end > totalPages) {
-      end = totalPages;
-      start = Math.max(1, end - maxButtons + 1);
-    }
-
-    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
-  };
-
-  const pageNumbers = getPageNumbers();
-
   const successRate = (auto: Automation) => {
     if (auto.execution_count === 0) return 0;
     return ((auto.success_count / auto.execution_count) * 100).toFixed(1);
@@ -174,26 +151,22 @@ const Automations: React.FC = () => {
   return (
     <div className="p-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
-                <Zap className="text-white" size={32} />
-                Automações
-              </h1>
-              <p className="mt-1 text-slate-400">
-                Crie fluxos automáticos para otimizar seu trabalho
-              </p>
-            </div>
+        <PageHeader
+          title="Automações"
+          description="Crie fluxos automáticos para otimizar seu trabalho"
+          icon={Zap}
+          actions={
             <button
               onClick={() => setShowRoundRobinForm(true)}
-              className="hidden items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-medium text-white transition-colors hover:bg-emerald-700 md:flex"
+              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-medium text-white transition-colors hover:bg-emerald-700"
             >
               <Plus size={20} />
               Nova Automação
             </button>
-          </div>
+          }
+        />
 
+        <div className="mb-8">
           {/* Filtros */}
           <div className="flex flex-col gap-3 md:flex-row">
             <button
@@ -203,24 +176,19 @@ const Automations: React.FC = () => {
               <Plus size={20} />
               Nova Automação
             </button>
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-              <input
-                type="text"
-                placeholder="Buscar automações..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Buscar automações..."
+            />
             <div className="w-full md:w-64">
               <SelectMenu
-                value={selectedBoard}
+                value={customFilters.board || ""}
                 options={[
                   { value: "", label: "Todos os boards" },
                   ...boards.map((board) => ({ value: String(board.id), label: board.name })),
                 ]}
-                onChange={setSelectedBoard}
+                onChange={(value) => setCustomFilter("board", value)}
               />
             </div>
           </div>
@@ -247,7 +215,7 @@ const Automations: React.FC = () => {
               Nenhuma automação encontrada
             </h3>
             <p className="text-slate-400">
-              {searchTerm || selectedBoard
+              {searchTerm || customFilters.board
                 ? "Tente ajustar os filtros de busca"
                 : "Clique no botão 'Nova Automação' no topo para criar sua primeira automação"}
             </p>
@@ -257,7 +225,7 @@ const Automations: React.FC = () => {
         {!loading && filteredAutomations.length > 0 && (
           <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-4 backdrop-blur-sm sm:p-6">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {paginatedAutomations.map((automation) => (
+              {pagination.paginatedItems.map((automation) => (
                 <div
                   key={automation.id}
                   className="rounded-xl border border-slate-700 bg-slate-800/50 p-6 backdrop-blur transition-all hover:border-emerald-500/40"
@@ -375,82 +343,12 @@ const Automations: React.FC = () => {
               </div>
                 ))}
             </div>
-            <div className="mt-6 flex flex-col gap-4 border-t border-slate-700/60 pt-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-              <div className="text-sm text-slate-400">
-                Mostrando {totalItems === 0 ? 0 : startIndex + 1} a {endIndex} de {totalItems} registros
-              </div>
-              <div className="flex items-center justify-center gap-3 sm:justify-end">
-                <div className="flex items-center gap-2 sm:hidden">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                    disabled={safePage === 1}
-                    className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
-                      safePage === 1
-                        ? "border-slate-700 text-slate-600"
-                        : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
-                    }`}
-                  >
-                    {"<"}
-                  </button>
-                  <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
-                    {safePage}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                    disabled={safePage === totalPages}
-                    className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
-                      safePage === totalPages
-                        ? "border-slate-700 text-slate-600"
-                        : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
-                    }`}
-                  >
-                    {">"}
-                  </button>
-                </div>
-                <div className="hidden items-center gap-2 sm:flex">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                    disabled={safePage === 1}
-                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                      safePage === 1
-                        ? "border-slate-700 text-slate-600"
-                        : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
-                    }`}
-                  >
-                    Anterior
-                  </button>
-                  {pageNumbers.map((page) => (
-                    <button
-                      key={page}
-                      type="button"
-                      onClick={() => setCurrentPage(page)}
-                      className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
-                        page === safePage
-                          ? "border-emerald-500 bg-emerald-500 text-white"
-                          : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                    disabled={safePage === totalPages}
-                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                      safePage === totalPages
-                        ? "border-slate-700 text-slate-600"
-                        : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
-                    }`}
-                  >
-                    Próxima
-                  </button>
-                </div>
-              </div>
-            </div>
+            {/* Paginação */}
+            <Pagination
+              {...pagination}
+              totalItems={filteredAutomations.length}
+              itemLabel="automações"
+            />
           </div>
         )}
 

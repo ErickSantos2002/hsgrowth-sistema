@@ -10,6 +10,7 @@ import {
   EMPLOYEE_COUNTS,
   ANNUAL_REVENUES,
 } from "../../constants/blueprintOptions";
+import { maskCPF, maskCNPJ, maskDocument, maskPhone, maskCNAE } from "../../utils/formatters";
 
 /**
  * Props do componente ClientModal
@@ -80,74 +81,6 @@ const BRAZILIAN_STATES = [
   { value: "SE", label: "Sergipe" },
   { value: "TO", label: "Tocantins" },
 ];
-
-/**
- * Aplica máscara de CPF (000.000.000-00)
- */
-const maskCPF = (value: string): string => {
-  return value
-    .replace(/\D/g, "")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1,2})/, "$1-$2")
-    .replace(/(-\d{2})\d+?$/, "$1");
-};
-
-/**
- * Aplica máscara de CNPJ (00.000.000/0000-00)
- */
-const maskCNPJ = (value: string): string => {
-  return value
-    .replace(/\D/g, "")
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d)/, "$1-$2")
-    .replace(/(-\d{2})\d+?$/, "$1");
-};
-
-/**
- * Aplica máscara de CPF ou CNPJ baseado no tamanho
- */
-const maskDocument = (value: string): string => {
-  const cleaned = value.replace(/\D/g, "");
-
-  // Se tem mais de 11 dígitos, trata como CNPJ
-  if (cleaned.length > 11) {
-    return maskCNPJ(value);
-  }
-
-  // Senão, trata como CPF
-  return maskCPF(value);
-};
-
-/**
- * Aplica máscara de telefone brasileiro
- * (00) 0000-0000 ou (00) 00000-0000
- */
-const maskPhone = (value: string): string => {
-  return value
-    .replace(/\D/g, "")
-    .replace(/(\d{2})(\d)/, "($1) $2")
-    .replace(/(\d{4,5})(\d{4})/, "$1-$2")
-    .replace(/(-\d{4})\d+?$/, "$1");
-};
-
-/**
- * Aplica máscara de CNAE (0000-0/00)
- */
-const maskCNAE = (value: string): string => {
-  const onlyNumbers = value.replace(/\D/g, "");
-
-  // Formato: 0000-0/00 (4 dígitos, hífen, 1 dígito, barra, 2 dígitos)
-  if (onlyNumbers.length <= 4) {
-    return onlyNumbers;
-  } else if (onlyNumbers.length <= 5) {
-    return onlyNumbers.replace(/(\d{4})(\d{0,1})/, "$1-$2");
-  } else {
-    return onlyNumbers.replace(/(\d{4})(\d{1})(\d{0,2})/, "$1-$2/$3");
-  }
-};
 
 /**
  * Modal de Criar/Editar Cliente

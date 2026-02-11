@@ -1,6 +1,6 @@
 {
   "name": "hsgrowth-sistema",
-  "version": "1.0.0",
+  "version": "1.1.6",
   "main": "postcss.config.js",
   "scripts": {
     "dev": "vite",

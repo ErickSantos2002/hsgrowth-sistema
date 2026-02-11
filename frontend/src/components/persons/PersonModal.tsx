@@ -6,6 +6,7 @@ import personService, { Person, CreatePersonRequest } from "../../services/perso
 import userService from "../../services/userService";
 import { User as UserType } from "../../types";
 import { PERSON_AREAS } from "../../constants/blueprintOptions";
+import { maskPhone } from "../../utils/formatters";
 
 /**
  * Props do componente PersonModal
@@ -47,18 +48,6 @@ interface PersonFormData {
 
   is_active: boolean;
 }
-
-/**
- * Aplica máscara de telefone brasileiro
- * (00) 0000-0000 ou (00) 00000-0000
- */
-const maskPhone = (value: string): string => {
-  return value
-    .replace(/\D/g, "")
-    .replace(/(\d{2})(\d)/, "($1) $2")
-    .replace(/(\d{4,5})(\d{4})/, "$1-$2")
-    .replace(/(-\d{4})\d+?$/, "$1");
-};
 
 /**
  * Modal de Criar/Editar Pessoa
