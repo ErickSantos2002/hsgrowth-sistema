@@ -380,7 +380,7 @@ const Settings: React.FC = () => {
       await loadActionPoints();
     } catch (error) {
       console.error("Erro ao inicializar configurações:", error);
-      toast.error("Erro ao inicializar configurações padrão");
+      showError("Erro ao inicializar configurações padrão");
     } finally {
       setLoadingPoints(false);
     }
@@ -394,7 +394,7 @@ const Settings: React.FC = () => {
       setLoginHistory(data.logins);
     } catch (error) {
       console.error("Erro ao carregar histórico de logins:", error);
-      toast.error("Erro ao carregar histórico de logins");
+      showError("Erro ao carregar histórico de logins");
     } finally {
       setLoadingLoginHistory(false);
     }
@@ -419,7 +419,7 @@ const Settings: React.FC = () => {
       setLogsPage(1); // Reseta para primeira página
     } catch (error) {
       console.error("Erro ao carregar logs de auditoria:", error);
-      toast.error("Erro ao carregar logs de auditoria");
+      showError("Erro ao carregar logs de auditoria");
     } finally {
       setLoadingLogs(false);
     }
@@ -466,7 +466,7 @@ const Settings: React.FC = () => {
       if (error.response?.status === 404) {
         setShowApi4comConfigForm(true);
       } else {
-        toast.error('Erro ao carregar configuração');
+        showError('Erro ao carregar configuração');
       }
     } finally {
       setLoadingApi4comConfig(false);
@@ -483,7 +483,7 @@ const Settings: React.FC = () => {
       const users = await userService.listActive();
       setSalespeople(users.filter(u => u.role === "salesperson"));
     } catch (error) {
-      toast.error('Erro ao carregar ramais');
+      showError('Erro ao carregar ramais');
     } finally {
       setLoadingApi4comExtensions(false);
     }
@@ -493,7 +493,7 @@ const Settings: React.FC = () => {
     e.preventDefault();
 
     if (!api4comConfigForm.email || !api4comConfigForm.password) {
-      toast.error('Preencha todos os campos');
+      showError('Preencha todos os campos');
       return;
     }
 
@@ -503,10 +503,10 @@ const Settings: React.FC = () => {
       setApi4comConfig(data);
       setShowApi4comConfigForm(false);
       setApi4comConfigForm({ ...api4comConfigForm, password: '' });
-      toast.success('Configuração salva e token obtido com sucesso!');
+      showSuccess('Configuração salva e token obtido com sucesso!');
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Erro ao salvar configuração';
-      toast.error(message);
+      showError(message);
     } finally {
       setSavingApi4comConfig(false);
     }
@@ -518,14 +518,14 @@ const Settings: React.FC = () => {
       const result = await api4comService.testConnection();
 
       if (result.success) {
-        toast.success(result.message);
+        showSuccess(result.message);
         loadApi4comConfig();
       } else {
-        toast.error(result.message + (result.error ? `: ${result.error}` : ''));
+        showError(result.message + (result.error ? `: ${result.error}` : ''));
       }
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Erro ao testar conexão';
-      toast.error(message);
+      showError(message);
     } finally {
       setTestingApi4comConnection(false);
     }
@@ -535,7 +535,7 @@ const Settings: React.FC = () => {
     e.preventDefault();
 
     if (!api4comExtensionForm.user_id || !api4comExtensionForm.extension) {
-      toast.error('Selecione um vendedor e informe o ramal');
+      showError('Selecione um vendedor e informe o ramal');
       return;
     }
 
@@ -543,13 +543,13 @@ const Settings: React.FC = () => {
     try {
       await api4comService.saveExtension(api4comExtensionForm);
       const message = editingApi4comExtension ? 'Ramal atualizado com sucesso!' : 'Ramal vinculado com sucesso!';
-      toast.success(message);
+      showSuccess(message);
       setApi4comExtensionForm({ user_id: 0, extension: '' });
       setEditingApi4comExtension(null);
       loadApi4comExtensions();
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Erro ao vincular ramal';
-      toast.error(message);
+      showError(message);
     } finally {
       setSavingApi4comExtension(false);
     }
@@ -560,11 +560,11 @@ const Settings: React.FC = () => {
 
     try {
       await api4comService.deleteExtension(userId);
-      toast.success('Ramal removido com sucesso!');
+      showSuccess('Ramal removido com sucesso!');
       loadApi4comExtensions();
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Erro ao remover ramal';
-      toast.error(message);
+      showError(message);
     }
   };
 

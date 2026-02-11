@@ -24,7 +24,7 @@ const ListModal: React.FC<ListModalProps> = ({
   title,
 }) => {
   const [name, setName] = useState("");
-  const [color, setColor] = useState(COLORS.board.blue);
+  const [color, setColor] = useState<string>(COLORS.board.blue);
   const [errors, setErrors] = useState<{ name?: string }>({});
   const [isColorOpen, setIsColorOpen] = useState(false);
   const colorRef = useRef<HTMLDivElement | null>(null);

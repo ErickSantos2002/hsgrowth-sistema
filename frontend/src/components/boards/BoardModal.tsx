@@ -36,7 +36,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    color: COLORS.board.blue,
+    color: COLORS.board.blue as string,
     icon: "grid",
   });
 

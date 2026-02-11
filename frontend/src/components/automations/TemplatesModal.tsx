@@ -361,7 +361,6 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onSele
       title="Biblioteca de Templates"
       subtitle="Escolha um template pronto e personalize como quiser"
       size="xl"
-      icon={<Sparkles size={24} className="text-purple-400" />}
     >
       <div className="space-y-4">
         {/* Grid de templates */}

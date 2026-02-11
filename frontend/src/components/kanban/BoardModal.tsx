@@ -29,7 +29,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
 }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [color, setColor] = useState(COLORS.board.blue);
+  const [color, setColor] = useState<string>(COLORS.board.blue);
   const [icon, setIcon] = useState("⬜");
   const [errors, setErrors] = useState<{ name?: string }>({});
 

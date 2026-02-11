@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Plus, Filter, Edit, Trash2, RefreshCw, Users, ChevronDown, Briefcase, Mail, User } from "lucide-react";
 import personService, { Person } from "../services/personService";
 import { Button, Alert, SearchInput, Pagination } from "../components/common";

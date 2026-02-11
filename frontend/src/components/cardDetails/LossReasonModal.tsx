@@ -56,11 +56,6 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
       title="Motivo da Perda"
       subtitle={`Board: ${boardName}`}
       size="lg"
-      icon={
-        <div className="rounded-lg bg-red-500/20 p-2">
-          <AlertCircle className="text-red-400" size={24} />
-        </div>
-      }
       footer={
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" onClick={handleClose}>
