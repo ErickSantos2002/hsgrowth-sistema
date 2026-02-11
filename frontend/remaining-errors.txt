@@ -1,0 +1,115 @@
+  325:14  error    'value' is defined but never used                                                                                      no-unused-vars
+  6:15  error  '_novaSenha' is defined but never used  no-unused-vars
+   10:12  error    '_nodeId' is defined but never used       no-unused-vars
+   10:29  error    '_config' is defined but never used       no-unused-vars
+  614:14  error    'value' is defined but never used         no-unused-vars
+  134:17  error  'event' is defined but never used     no-unused-vars
+  134:41  error  'nodeType' is defined but never used  no-unused-vars
+  134:59  error  'category' is defined but never used  no-unused-vars
+  347:22  error  '_nodes' is defined but never used  no-unused-vars
+  347:38  error  '_edges' is defined but never used  no-unused-vars
+  28:12  error  '_board' is defined but never used  no-unused-vars
+  29:17  error  '_board' is defined but never used  no-unused-vars
+  30:21  error  '_board' is defined but never used  no-unused-vars
+  31:14  error  '_board' is defined but never used  no-unused-vars
+   7:12  error    '_value' is defined but never used        no-unused-vars
+  12:13  error    '_value' is defined but never used        no-unused-vars
+    7:12  error    '_value' is defined but never used        no-unused-vars
+   12:13  error    '_value' is defined but never used        no-unused-vars
+  142:14  error    'value' is defined but never used         no-unused-vars
+  125:9   error    '_mockData' is assigned a value but never used                                        no-unused-vars
+  293:9   error    'fileCount' is assigned a value but never used                                        no-unused-vars
+  8:15  error  '_reason' is defined but never used  no-unused-vars
+   9:16  error    '_listId' is defined but never used                                                                           no-unused-vars
+  63:11  error    'isFuture' is assigned a value but never used                                                                 no-unused-vars
+  37:9   error    'productsTotal' is assigned a value but never used                                        no-unused-vars
+   7:3  error    'Mail' is defined but never used                                            no-unused-vars
+   8:3  error    'Coffee' is defined but never used                                          no-unused-vars
+  12:3  error    'FileText' is defined but never used                                        no-unused-vars
+   14:11  error    'LinkIcon' is defined but never used                                                    no-unused-vars
+   36:14  error    'updates' is defined but never used                                                     no-unused-vars
+   48:10  error    'boards' is assigned a value but never used                                             no-unused-vars
+  254:9   error    'userOptions' is assigned a value but never used                                        no-unused-vars
+    4:28  error    'Select' is defined but never used                                        no-unused-vars
+  736:14  error    'value' is defined but never used                                         no-unused-vars
+  8:12  error  '_data' is defined but never used  no-unused-vars
+   13:3   error    'ArrowRight' is defined but never used                                                                        no-unused-vars
+   26:14  error    'cardId' is defined but never used                                                                            no-unused-vars
+   26:30  error    'data' is defined but never used                                                                              no-unused-vars
+   27:14  error    'cardId' is defined but never used                                                                            no-unused-vars
+   28:17  error    'cardId' is defined but never used                                                                            no-unused-vars
+   29:18  error    'cardId' is defined but never used                                                                            no-unused-vars
+   30:12  error    'cardId' is defined but never used                                                                            no-unused-vars
+   30:28  error    'targetListId' is defined but never used                                                                      no-unused-vars
+  136:62  error    '_' is defined but never used                                                                                 no-unused-vars
+   12:12  error    '_data' is defined but never used                                                                                                                   no-unused-vars
+   52:10  error    '_users' is assigned a value but never used                                                                                                         no-unused-vars
+  2:20  error    'User' is defined but never used                                              no-unused-vars
+  2:26  error    'DollarSign' is defined but never used                                        no-unused-vars
+  2:38  error    'Clock' is defined but never used                                             no-unused-vars
+  15:18  error  'card' is defined but never used  no-unused-vars
+  9:12  error  '_data' is defined but never used  no-unused-vars
+    4:28  error    'Textarea' is defined but never used                                        no-unused-vars
+  596:14  error    'value' is defined but never used                                           no-unused-vars
+  350:14  error    'value' is defined but never used         no-unused-vars
+  11:13  error    'badgeId' is defined but never used       no-unused-vars
+  11:30  error    'userIds' is defined but never used       no-unused-vars
+   10:12  error    'badgeData' is defined but never used     no-unused-vars
+  351:14  error    'value' is defined but never used         no-unused-vars
+  610:14  error    'value' is defined but never used                                                                                      no-unused-vars
+  9:15  error  'newPassword' is defined but never used  no-unused-vars
+  339:14  error    'value' is defined but never used         no-unused-vars
+   9:11  error    'email' is defined but never used         no-unused-vars
+   9:26  error    'password' is defined but never used      no-unused-vars
+  11:16  error    'updatedUser' is defined but never used   no-unused-vars
+  18:15  error    'period' is defined but never used                                                 no-unused-vars
+  40:11  error    'navigate' is assigned a value but never used                                        no-unused-vars
+   27:56  error    'validateAutomation' is defined but never used                                                                                                     no-unused-vars
+   61:10  error    'selectedNodesCount' is assigned a value but never used                                                                                            no-unused-vars
+  403:9   error    'handleDuplicateNode' is assigned a value but never used                                                                                           no-unused-vars
+  486:14  error    'value' is defined but never used         no-unused-vars
+   13:38  error    'UserBadge' is defined but never used                                        no-unused-vars
+   47:10  error    'isAutoAssigningSdr' is assigned a value but never used                                                          no-unused-vars
+  208:9   error    'handleAutoAssignSdr' is assigned a value but never used                                                         no-unused-vars
+  506:14  error  'value' is defined but never used  no-unused-vars
+  746:14  error    'value' is defined but never used                                                                                                   no-unused-vars
+   576:9   error    'handleEditCard' is assigned a value but never used                                                               no-unused-vars
+   667:17  error    'activeIndex' is assigned a value but never used                                                                  no-unused-vars
+   700:9   error    'calculateNewPosition' is assigned a value but never used                                                         no-unused-vars
+  1337:14  error    'value' is defined but never used                                                                                 no-unused-vars
+  12:11  error    'navigate' is assigned a value but never used                                        no-unused-vars
+   9:3   error    'X' is defined but never used                                                                                         no-unused-vars
+  19:3   error    'ChevronLeft' is defined but never used                                                                               no-unused-vars
+  20:3   error    'ChevronRight' is defined but never used                                                                              no-unused-vars
+  33:24  error    'setSelectedType' is assigned a value but never used                                                                  no-unused-vars
+  528:14  error  'value' is defined but never used  no-unused-vars
+  529:14  error  'value' is defined but never used  no-unused-vars
+  349:14  error    'value' is defined but never used                                                  no-unused-vars
+  410:15  error    'p' is defined but never used                                                      no-unused-vars
+  412:16  error    'id' is defined but never used                                                     no-unused-vars
+  414:15  error    'id' is defined but never used                                                     no-unused-vars
+  416:18  error    'd' is defined but never used                                                      no-unused-vars
+  418:16  error    'd' is defined but never used                                                      no-unused-vars
+  703:16  error    'id' is defined but never used                                                     no-unused-vars
+  705:15  error    'p' is defined but never used                                                      no-unused-vars
+  707:18  error    'd' is defined but never used                                                      no-unused-vars
+  709:16  error    'd' is defined but never used                                                      no-unused-vars
+  955:15  error    'p' is defined but never used                                                      no-unused-vars
+  957:19  error    'id' is defined but never used                                                     no-unused-vars
+  959:17  error    'id' is defined but never used                                                     no-unused-vars
+  961:18  error    'd' is defined but never used                                                      no-unused-vars
+  963:16  error    'd' is defined but never used                                                      no-unused-vars
+     2:72  error    'Activity' is defined but never used                                                                           no-unused-vars
+    65:10  error    'loadingApi4comConfig' is assigned a value but never used                                                      no-unused-vars
+   484:14  error    'error' is defined but never used                                                                              no-unused-vars
+   484:14  warning  'error' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+  2343:14  error    'value' is defined but never used                                                                              no-unused-vars
+   41:10  error    'totalPages' is assigned a value but never used                                                                                                                                                      no-unused-vars
+   41:22  error    'setTotalPages' is assigned a value but never used                                                                                                                                                   no-unused-vars
+   46:27  error    'setPendingPageSize' is assigned a value but never used                                                                                                                                              no-unused-vars
+   47:29  error    'setCompletedPageSize' is assigned a value but never used                                                                                                                                            no-unused-vars
+   50:32  error    'setAllTransfersPageSize' is assigned a value but never used                                                                                                                                         no-unused-vars
+  275:20  error    'page' is defined but never used                                                                                                                                                                     no-unused-vars
+  530:14  error    'value' is defined but never used         no-unused-vars
+  216:9   error    'unconfiguredNodes' is assigned a value but never used                                        no-unused-vars
+  217:11  error    'config' is assigned a value but never used                                                   no-unused-vars

@@ -42,9 +42,9 @@ const ActionButton: React.FC<ActionButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
       className={`
-        inline-flex items-center gap-2 px-3 py-2 border rounded-lg
-        font-medium text-sm transition-colors
-        disabled:opacity-50 disabled:cursor-not-allowed
+        inline-flex items-center gap-2 rounded-lg border px-3 py-2
+        text-sm font-medium transition-colors
+        disabled:cursor-not-allowed disabled:opacity-50
         ${getVariantClasses()}
         ${className}
       `}

@@ -147,11 +147,11 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
       <form onSubmit={handleSubmit} className="space-y-6">
           {/* Erro geral */}
           {errors.submit && (
-            <div className="flex items-start gap-3 p-4 bg-red-900/20 border border-red-700 rounded-lg">
-              <AlertCircle className="text-red-400 flex-shrink-0 mt-0.5" size={20} />
+            <div className="flex items-start gap-3 rounded-lg border border-red-700 bg-red-900/20 p-4">
+              <AlertCircle className="mt-0.5 flex-shrink-0 text-red-400" size={20} />
               <div>
-                <p className="text-red-400 font-medium">Erro ao salvar</p>
-                <p className="text-red-300 text-sm mt-1">{errors.submit}</p>
+                <p className="font-medium text-red-400">Erro ao salvar</p>
+                <p className="mt-1 text-sm text-red-300">{errors.submit}</p>
               </div>
             </div>
           )}
@@ -173,8 +173,8 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
               maxLength={50}
               disabled={loading}
             />
-            {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name}</p>}
-            <p className="text-slate-500 text-xs mt-1">{formData.name.length}/50 caracteres</p>
+            {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
+            <p className="mt-1 text-xs text-slate-500">{formData.name.length}/50 caracteres</p>
           </FormField>
 
           {/* Descrição */}
@@ -194,23 +194,23 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
               rows={3}
               disabled={loading}
             />
-            {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
-            <p className="text-slate-500 text-xs mt-1">{formData.description.length}/200 caracteres</p>
+            {errors.description && <p className="mt-1 text-sm text-red-400">{errors.description}</p>}
+            <p className="mt-1 text-xs text-slate-500">{formData.description.length}/200 caracteres</p>
           </FormField>
 
           {/* Ícones sugeridos */}
           <div>
-            <p className="text-sm font-medium text-slate-300 mb-2">Ícones sugeridos</p>
+            <p className="mb-2 text-sm font-medium text-slate-300">Ícones sugeridos</p>
             <div className="flex flex-wrap justify-center gap-2 md:grid md:grid-cols-7 md:justify-start">
               {suggestedIcons.map((icon) => (
                 <button
                   key={icon.emoji}
                   type="button"
                   onClick={() => setFormData({ ...formData, icon_url: icon.emoji })}
-                  className={`p-3 rounded-lg border transition-all ${
+                  className={`rounded-lg border p-3 transition-all ${
                     formData.icon_url === icon.emoji
                       ? "border-emerald-500 bg-emerald-600/20"
-                      : "border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-slate-600"
+                      : "border-slate-700 bg-slate-900 hover:border-slate-600 hover:bg-slate-800"
                   }`}
                   title={icon.label}
                   disabled={loading}
@@ -233,7 +233,7 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, criteria_type: "manual" })}
-                className={`p-4 rounded-lg border text-left transition-all ${
+                className={`rounded-lg border p-4 text-left transition-all ${
                   formData.criteria_type === "manual"
                     ? "border-emerald-500 bg-emerald-600/20"
                     : "border-slate-700 bg-slate-900 hover:bg-slate-800"
@@ -241,13 +241,13 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
                 disabled={loading}
               >
                 <p className="font-medium text-white">Manual</p>
-                <p className="text-xs text-slate-400 mt-1">Admin atribui manualmente</p>
+                <p className="mt-1 text-xs text-slate-400">Admin atribui manualmente</p>
               </button>
 
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, criteria_type: "automatic" })}
-                className={`p-4 rounded-lg border text-left transition-all ${
+                className={`rounded-lg border p-4 text-left transition-all ${
                   formData.criteria_type === "automatic"
                     ? "border-emerald-500 bg-emerald-600/20"
                     : "border-slate-700 bg-slate-900 hover:bg-slate-800"
@@ -255,20 +255,20 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
                 disabled={loading}
               >
                 <p className="font-medium text-white">Automático</p>
-                <p className="text-xs text-slate-400 mt-1">Sistema concede por regra</p>
+                <p className="mt-1 text-xs text-slate-400">Sistema concede por regra</p>
               </button>
             </div>
           </FormField>
 
           {/* Critérios Automáticos (se selecionado) */}
           {formData.criteria_type === "automatic" && (
-            <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg space-y-4">
+            <div className="space-y-4 rounded-lg border border-slate-700 bg-slate-900 p-4">
               <p className="text-sm font-medium text-slate-300">Regra de Concessão Automática</p>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 {/* Campo */}
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Campo</label>
+                  <label className="mb-1 block text-xs text-slate-400">Campo</label>
                   <SelectMenu
                     value={formData.criteria.field || ""}
                     options={[
@@ -283,7 +283,7 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
 
                 {/* Operador */}
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Operador</label>
+                  <label className="mb-1 block text-xs text-slate-400">Operador</label>
                   <SelectMenu
                     value={formData.criteria.operator || ""}
                     options={[
@@ -300,23 +300,23 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
 
                 {/* Valor */}
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Valor</label>
+                  <label className="mb-1 block text-xs text-slate-400">Valor</label>
                   <input
                     type="number"
                     value={formData.criteria.value || ""}
                     onChange={(e) => handleCriteriaChange("value", parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     placeholder="Ex: 1000"
                     disabled={loading}
                   />
                 </div>
               </div>
 
-              {errors.criteria && <p className="text-red-400 text-sm">{errors.criteria}</p>}
+              {errors.criteria && <p className="text-sm text-red-400">{errors.criteria}</p>}
 
               {/* Exemplo */}
               {formData.criteria.field && formData.criteria.operator && formData.criteria.value !== undefined && (
-                <div className="p-3 bg-blue-900/20 border border-blue-700 rounded-lg">
+                <div className="rounded-lg border border-blue-700 bg-blue-900/20 p-3">
                   <p className="text-xs text-blue-300">
                     <strong>Exemplo:</strong> Badge será concedida automaticamente quando{" "}
                     <strong>
@@ -375,7 +375,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="w-full flex items-center justify-between gap-3 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
           {selectedLabel}
@@ -386,7 +386,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value || option.label}

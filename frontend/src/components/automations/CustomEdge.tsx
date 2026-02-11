@@ -54,10 +54,10 @@ const CustomEdge: React.FC<EdgeProps> = ({
         >
           <button
             onClick={handleDelete}
-            className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors group"
+            className="group flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition-colors hover:bg-red-600"
             title="Deletar conexão"
           >
-            <X size={10} className="group-hover:scale-110 transition-transform" />
+            <X size={10} className="transition-transform group-hover:scale-110" />
           </button>
         </div>
       </EdgeLabelRenderer>

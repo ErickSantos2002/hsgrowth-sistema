@@ -352,10 +352,10 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
       subtitle={isEditing ? "Atualize os dados do cliente" : "Preencha os dados do novo cliente"}
       size="2xl"
       footer={
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <div>
             {error && (
-              <p className="text-red-400 text-sm">{error}</p>
+              <p className="text-sm text-red-400">{error}</p>
             )}
           </div>
           <div className="flex gap-3">
@@ -372,11 +372,11 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
       <div className="space-y-6">
         {/* Seção: Dados Principais */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
             <User size={20} className="text-emerald-400" />
             Dados Principais
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Nome da Empresa */}
             <FormField
               label={
@@ -470,11 +470,11 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
 
         {/* Seção: Informações da Empresa */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
             <Briefcase size={20} className="text-emerald-400" />
             Informações da Empresa
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* CNAE */}
             <FormField
               label={
@@ -606,11 +606,11 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
 
         {/* Seção: Endereço */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
             <MapPin size={20} className="text-emerald-400" />
             Endereço
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Logradouro */}
             <FormField
               label="Logradouro"
@@ -661,7 +661,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
 
         {/* Seção: Informações Adicionais */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
             <Globe size={20} className="text-emerald-400" />
             Informações Adicionais
           </h3>
@@ -708,9 +708,9 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 id="is_active"
                 checked={formData.is_active}
                 onChange={(e) => handleChange("is_active", e.target.checked)}
-                className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
+                className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
               />
-              <label htmlFor="is_active" className="text-sm text-slate-300 cursor-pointer">
+              <label htmlFor="is_active" className="cursor-pointer text-sm text-slate-300">
                 Cliente ativo (desmarque para inativar)
               </label>
             </div>
@@ -762,8 +762,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         type="button"
         onClick={() => !disabled && setIsOpen((open) => !open)}
         disabled={disabled}
-        className={`w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-          disabled ? "opacity-50 cursor-not-allowed" : ""
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "cursor-not-allowed opacity-50" : ""
         }`}
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
@@ -775,7 +775,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && !disabled && (
-        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value || option.label}

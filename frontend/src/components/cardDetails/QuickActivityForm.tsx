@@ -179,7 +179,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="w-full px-4 py-3 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 rounded-lg text-emerald-300 hover:text-emerald-200 transition-colors flex items-center justify-center gap-2"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-4 py-3 text-emerald-300 transition-colors hover:bg-emerald-500/25 hover:text-emerald-200"
       >
         <Plus size={18} />
         <span>Adicionar Atividades</span>
@@ -188,26 +188,26 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
   }
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-4">
+    <div className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
       {/* Título */}
       <input
         type="text"
         value={formData.title}
         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
         placeholder="Título da atividade..."
-        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+        className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
         autoFocus
       />
 
       {/* Tipos de atividade */}
       <div>
-        <label className="block text-xs font-medium text-slate-400 mb-2">Tipo de atividade</label>
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+        <label className="mb-2 block text-xs font-medium text-slate-400">Tipo de atividade</label>
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
           {activityTypes.map((activityType) => (
             <button
               key={activityType.type}
               onClick={() => setFormData({ ...formData, type: activityType.type })}
-              className={`px-3 py-2 border rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 ${getTypeColorClasses(
+              className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${getTypeColorClasses(
                 activityType.type,
                 formData.type === activityType.type
               )}`}
@@ -222,45 +222,45 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       {/* Data, Hora e Duração */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Data</label>
+          <label className="mb-1 block text-xs font-medium text-slate-400">Data</label>
           <input
             type="date"
             value={formData.date}
             onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Hora</label>
+          <label className="mb-1 block text-xs font-medium text-slate-400">Hora</label>
           <input
             type="time"
             value={formData.time}
             onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Duração (min)</label>
+          <label className="mb-1 block text-xs font-medium text-slate-400">Duração (min)</label>
           <input
             type="number"
             min="5"
             step="5"
             value={formData.duration}
             onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
           />
         </div>
       </div>
 
       {/* Prioridade */}
       <div>
-        <label className="block text-xs font-medium text-slate-400 mb-2">Prioridade</label>
+        <label className="mb-2 block text-xs font-medium text-slate-400">Prioridade</label>
         <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => setFormData({ ...formData, priority: "normal" })}
-            className={`px-3 py-2 border rounded-lg font-medium text-sm transition-colors ${getPriorityClasses(
+            className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${getPriorityClasses(
               "normal",
               formData.priority === "normal"
             )}`}
@@ -269,7 +269,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
           </button>
           <button
             onClick={() => setFormData({ ...formData, priority: "high" })}
-            className={`px-3 py-2 border rounded-lg font-medium text-sm transition-colors ${getPriorityClasses(
+            className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${getPriorityClasses(
               "high",
               formData.priority === "high"
             )}`}
@@ -278,7 +278,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
           </button>
           <button
             onClick={() => setFormData({ ...formData, priority: "urgent" })}
-            className={`px-3 py-2 border rounded-lg font-medium text-sm transition-colors ${getPriorityClasses(
+            className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${getPriorityClasses(
               "urgent",
               formData.priority === "urgent"
             )}`}
@@ -290,7 +290,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
 
       {/* Descrição (obrigatória) */}
       <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1">
+        <label className="mb-1 block text-xs font-medium text-slate-400">
           Descrição *
         </label>
         <textarea
@@ -298,13 +298,13 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Descreva a atividade..."
           rows={2}
-          className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+          className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
         />
       </div>
 
       {/* Notas (opcional) */}
       <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1">
+        <label className="mb-1 block text-xs font-medium text-slate-400">
           Notas adicionais (opcional)
         </label>
         <textarea
@@ -312,7 +312,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           placeholder="Adicionar notas extras..."
           rows={2}
-          className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+          className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
         />
       </div>
 
@@ -328,7 +328,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
             value={formData.location}
             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             placeholder="Adicionar localização..."
-            className="flex-1 px-3 py-1.5 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-sm"
+            className="flex-1 rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
           />
         </div>
 
@@ -340,23 +340,23 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
             value={formData.video_link}
             onChange={(e) => setFormData({ ...formData, video_link: e.target.value })}
             placeholder="Link da videochamada (Google Meet, Zoom, etc.)"
-            className="flex-1 px-3 py-1.5 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-sm"
+            className="flex-1 rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
           />
         </div>
       </div>
 
       {/* Botões de ação */}
-      <div className="flex gap-2 pt-2 border-t border-slate-700/50">
+      <div className="flex gap-2 border-t border-slate-700/50 pt-2">
         <button
           onClick={handleCancel}
-          className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
         >
           <X size={18} />
           Cancelar
         </button>
         <button
           onClick={handleSave}
-          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
         >
           <Save size={18} />
           Salvar atividade

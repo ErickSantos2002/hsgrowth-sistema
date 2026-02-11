@@ -134,15 +134,15 @@ const Boards: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header com título e botões */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+          <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
             <Trello className="text-white" size={32} />
             Boards
           </h1>
-          <p className="text-gray-400 mt-1">
+          <p className="mt-1 text-gray-400">
             Gerencie seus quadros Kanban e organize seus projetos
           </p>
         </div>
@@ -150,7 +150,7 @@ const Boards: React.FC = () => {
         {canCreateBoard && (
           <button
             onClick={handleCreateBoard}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2 text-white shadow-lg transition-all hover:from-blue-600 hover:to-cyan-600 hover:shadow-xl sm:w-auto"
           >
             <Plus size={20} />
             Novo Board
@@ -159,9 +159,9 @@ const Boards: React.FC = () => {
       </div>
 
       {/* Barra de filtros e busca */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row">
         {/* Campo de busca */}
-        <div className="flex-1 relative">
+        <div className="relative flex-1">
           <Search
             size={20}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -171,15 +171,15 @@ const Boards: React.FC = () => {
             placeholder="Buscar boards..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
         {/* Filtro por status + atualizar */}
-        <div className="flex gap-2 items-center w-full sm:w-auto">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <button
             onClick={() => setFilterStatus("all")}
-            className={`h-11 px-4 py-2 rounded-lg transition-colors flex items-center justify-center flex-1 sm:flex-none ${
+            className={`flex h-11 flex-1 items-center justify-center rounded-lg px-4 py-2 transition-colors sm:flex-none ${
               filterStatus === "all"
                 ? "bg-blue-500 text-white"
                 : "bg-gray-800/50 text-gray-400 hover:bg-gray-700"
@@ -190,7 +190,7 @@ const Boards: React.FC = () => {
           </button>
           <button
             onClick={() => setFilterStatus("active")}
-            className={`h-11 px-4 py-2 rounded-lg transition-colors flex items-center justify-center flex-1 sm:flex-none ${
+            className={`flex h-11 flex-1 items-center justify-center rounded-lg px-4 py-2 transition-colors sm:flex-none ${
               filterStatus === "active"
                 ? "bg-green-500 text-white"
                 : "bg-gray-800/50 text-gray-400 hover:bg-gray-700"
@@ -201,7 +201,7 @@ const Boards: React.FC = () => {
           </button>
           <button
             onClick={() => setFilterStatus("archived")}
-            className={`h-11 px-4 py-2 rounded-lg transition-colors flex items-center justify-center flex-1 sm:flex-none ${
+            className={`flex h-11 flex-1 items-center justify-center rounded-lg px-4 py-2 transition-colors sm:flex-none ${
               filterStatus === "archived"
                 ? "bg-yellow-500 text-white"
                 : "bg-gray-800/50 text-gray-400 hover:bg-gray-700"
@@ -215,7 +215,7 @@ const Boards: React.FC = () => {
           <button
             onClick={loadBoards}
             disabled={loading}
-            className="h-11 px-4 py-2 bg-gray-800/50 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
+            className="flex h-11 flex-1 items-center justify-center rounded-lg bg-gray-800/50 px-4 py-2 text-gray-300 transition-colors hover:bg-gray-700 disabled:opacity-50 sm:flex-none"
             title="Atualizar lista"
           >
             <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
@@ -225,11 +225,11 @@ const Boards: React.FC = () => {
 
       {/* Loading skeleton */}
       {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="h-48 bg-gray-800/30 backdrop-blur-sm rounded-xl animate-pulse"
+              className="h-48 animate-pulse rounded-xl bg-gray-800/30 backdrop-blur-sm"
             />
           ))}
         </div>
@@ -237,7 +237,7 @@ const Boards: React.FC = () => {
 
       {/* Grid de boards */}
       {!loading && boards.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {boards.map((board) => (
             <BoardCard
               key={board.id}

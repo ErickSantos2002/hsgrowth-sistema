@@ -161,8 +161,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4">Dados de Acesso</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h3 className="mb-4 text-lg font-semibold text-white">Dados de Acesso</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               label={
                 <span>
@@ -223,8 +223,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4">Dados Pessoais</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h3 className="mb-4 text-lg font-semibold text-white">Dados Pessoais</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               label={
                 <span>
@@ -266,8 +266,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4">Permissões</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h3 className="mb-4 text-lg font-semibold text-white">Permissões</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               label={
                 <span>
@@ -294,12 +294,12 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
             </FormField>
 
             <FormField label="Status">
-              <label className="flex items-center gap-3 p-3 bg-slate-800 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors">
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-700 bg-slate-800 p-3 transition-colors hover:bg-slate-700">
                 <input
                   type="checkbox"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 bg-slate-700 border-slate-600 rounded focus:ring-emerald-500"
+                  className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-600 focus:ring-emerald-500"
                   disabled={saving}
                 />
                 <span className="text-white">Usuário Ativo</span>
@@ -312,7 +312,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         </div>
 
         {isEditing && (
-          <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+          <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
             <p className="text-sm text-blue-400">
               <strong>Nota:</strong> Para alterar a senha, o usuário deve fazer isso através
               da página de configurações após fazer login.
@@ -363,7 +363,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="w-full flex items-center justify-between gap-3 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
           {selectedLabel}
@@ -374,7 +374,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value || option.label}

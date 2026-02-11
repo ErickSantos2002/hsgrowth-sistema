@@ -89,22 +89,22 @@ const BaseModal: React.FC<BaseModalProps> = ({
   // Renderiza o modal usando Portal para garantir que fique acima de tudo
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[3000] p-4"
+      className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       onClick={handleOverlayClick}
     >
       <div
-        className={`bg-slate-900 border border-slate-700 rounded-2xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col overflow-hidden ${className}`}
+        className={`w-full rounded-2xl border border-slate-700 bg-slate-900 ${sizeClasses[size]} flex max-h-[90vh] flex-col overflow-hidden ${className}`}
       >
         {/* Header fixo */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700 flex-shrink-0">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-700 p-6">
           <div>
             <h2 className={`text-2xl font-bold text-white ${titleClassName}`}>{title}</h2>
-            {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
+            {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
           </div>
           {showCloseButton && (
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-800"
+              className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
               type="button"
             >
               <X size={24} />
@@ -117,7 +117,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
 
         {/* Footer fixo (opcional) */}
         {footer && (
-          <div className="flex-shrink-0 p-6 border-t border-slate-700 bg-slate-900">
+          <div className="flex-shrink-0 border-t border-slate-700 bg-slate-900 p-6">
             {footer}
           </div>
         )}

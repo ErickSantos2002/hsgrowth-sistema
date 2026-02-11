@@ -4,12 +4,12 @@ import { Pencil, Check, X } from "lucide-react";
 interface EditableFieldProps {
   label: string;
   value: string | number | null | undefined;
-  onSave: (value: string) => Promise<void> | void;
+  onSave: (_value: string) => Promise<void> | void;
   type?: "text" | "number" | "email" | "tel" | "date" | "textarea";
   placeholder?: string;
   disabled?: boolean;
   icon?: React.ReactNode;
-  format?: (value: any) => string; // Função para formatar o valor na exibição
+  format?: (_value: any) => string; // Função para formatar o valor na exibição
 }
 
 /**
@@ -78,7 +78,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
       </div>
 
       {/* Campo editável */}
-      <div className="relative group">
+      <div className="group relative">
         {isEditing ? (
           <div className="flex items-center gap-2">
             {/* Input de edição */}
@@ -89,7 +89,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
                 onKeyDown={handleKeyDown}
                 autoFocus
                 rows={3}
-                className="flex-1 px-3 py-2 bg-slate-900/50 border border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-500"
+                className="flex-1 rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ) : (
               <input
@@ -98,7 +98,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                className="flex-1 px-3 py-2 bg-slate-900/50 border border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-500"
+                className="flex-1 rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             )}
 
@@ -106,7 +106,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              className="rounded-lg bg-emerald-600 p-2 text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
               title="Salvar"
             >
               <Check size={16} />
@@ -114,7 +114,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
             <button
               onClick={handleCancel}
               disabled={isSaving}
-              className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
+              className="rounded-lg bg-slate-700 p-2 text-slate-300 transition-colors hover:bg-slate-600"
               title="Cancelar"
             >
               <X size={16} />
@@ -123,23 +123,23 @@ const EditableField: React.FC<EditableFieldProps> = ({
         ) : (
           <div
             onClick={handleStartEdit}
-            className={`flex items-center justify-between px-3 py-2 border rounded-lg ${
+            className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
               disabled
-                ? "bg-slate-800/30 border-slate-700 cursor-not-allowed"
-                : "bg-slate-900/50 border-slate-700 hover:border-blue-500/50 hover:bg-slate-800/50 cursor-pointer"
+                ? "cursor-not-allowed border-slate-700 bg-slate-800/30"
+                : "cursor-pointer border-slate-700 bg-slate-900/50 hover:border-blue-500/50 hover:bg-slate-800/50"
             } transition-colors`}
           >
-            <span className={value ? "text-white" : "text-slate-500 italic"}>
+            <span className={value ? "text-white" : "italic text-slate-500"}>
               {displayValue}
             </span>
             {!disabled && (
               <Pencil
                 size={14}
-                className="text-slate-500 group-hover:text-blue-400 transition-colors"
+                className="text-slate-500 transition-colors group-hover:text-blue-400"
               />
             )}
             {disabled && (
-              <span className="text-xs text-slate-500 bg-slate-800/50 px-2 py-0.5 rounded border border-slate-700">
+              <span className="rounded border border-slate-700 bg-slate-800/50 px-2 py-0.5 text-xs text-slate-500">
                 Somente leitura
               </span>
             )}

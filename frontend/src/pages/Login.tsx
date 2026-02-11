@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/logo.png";
@@ -36,12 +36,12 @@ export default function Login() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4">
             <div className="w-full max-w-md">
-                <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-8">
+                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/50 p-8 shadow-2xl backdrop-blur-xl">
                     {/* Logo e Título */}
-                    <div className="flex flex-col items-center mb-8">
+                    <div className="mb-8 flex flex-col items-center">
                         <div className="relative mb-4">
-                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-300 rounded-full blur-lg opacity-50"></div>
-                            <div className="relative bg-gradient-to-br from-cyan-300 to-blue-200 rounded-full p-2">
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400 to-blue-300 opacity-50 blur-lg"></div>
+                            <div className="relative rounded-full bg-gradient-to-br from-cyan-300 to-blue-200 p-2">
                                 <img
                                     src={logo}
                                     alt="HSGrowth CRM"
@@ -49,10 +49,10 @@ export default function Login() {
                                 />
                             </div>
                         </div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                        <h1 className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-3xl font-bold text-transparent">
                             HSGrowth CRM
                         </h1>
-                        <p className="text-slate-400 mt-2">
+                        <p className="mt-2 text-slate-400">
                             Sistema de Gestão de Vendas
                         </p>
                     </div>
@@ -60,7 +60,7 @@ export default function Login() {
                     {/* Formulário */}
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {error && (
-                            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
+                            <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                                 {error}
                             </div>
                         )}
@@ -81,7 +81,7 @@ export default function Login() {
                                 disabled={isLoading}
                                 autoComplete="email"
                                 autoFocus
-                                className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 transition-all focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:cursor-not-allowed disabled:opacity-50"
                             />
                         </div>
 
@@ -100,18 +100,18 @@ export default function Login() {
                                 onChange={(e) => setSenha(e.target.value)}
                                 disabled={isLoading}
                                 autoComplete="current-password"
-                                className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 transition-all focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:cursor-not-allowed disabled:opacity-50"
                             />
                         </div>
 
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium rounded-lg shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:from-blue-600 hover:to-cyan-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-blue-500/20"
+                            className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-3 font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-cyan-600 hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-blue-500/20"
                         >
                             {isLoading ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                    <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
                                     Entrando...
                                 </span>
                             ) : (

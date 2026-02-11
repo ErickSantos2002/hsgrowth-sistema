@@ -4,7 +4,6 @@ import {
   Bell,
   Check,
   CheckCheck,
-  X,
   FileText,
   Edit,
   CheckCircle,
@@ -147,12 +146,12 @@ const NotificationDropdown: React.FC = () => {
       {/* Botão de Notificações */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+        className="relative rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
         title="Notificações"
       >
         <Bell size={20} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full">
+          <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -160,11 +159,11 @@ const NotificationDropdown: React.FC = () => {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="fixed left-4 right-4 top-16 sm:left-auto sm:right-4 sm:w-96 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[1000] max-h-[600px] flex flex-col">
+        <div className="fixed left-4 right-4 top-16 z-[1000] flex max-h-[600px] flex-col rounded-lg border border-slate-700 bg-slate-800 shadow-xl sm:left-auto sm:right-4 sm:w-96">
           {/* Header do Dropdown */}
-          <div className="flex items-center justify-between p-4 border-b border-slate-700">
+          <div className="flex items-center justify-between border-b border-slate-700 p-4">
             <div>
-              <h3 className="text-white font-semibold">Notificações</h3>
+              <h3 className="font-semibold text-white">Notificações</h3>
               {unreadCount > 0 && (
                 <p className="text-xs text-slate-400">{unreadCount} não lida{unreadCount > 1 ? "s" : ""}</p>
               )}
@@ -173,7 +172,7 @@ const NotificationDropdown: React.FC = () => {
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                  className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
                   title="Marcar todas como lidas"
                 >
                   <CheckCheck size={16} />
@@ -184,7 +183,7 @@ const NotificationDropdown: React.FC = () => {
                   navigate("/notifications");
                   setIsOpen(false);
                 }}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+                className="text-xs font-medium text-emerald-400 hover:text-emerald-300"
               >
                 Ver todas
               </button>
@@ -199,7 +198,7 @@ const NotificationDropdown: React.FC = () => {
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center">
-                <Bell size={48} className="mx-auto text-slate-600 mb-3" />
+                <Bell size={48} className="mx-auto mb-3 text-slate-600" />
                 <p className="text-slate-400">Nenhuma notificação</p>
               </div>
             ) : (
@@ -219,14 +218,14 @@ const NotificationDropdown: React.FC = () => {
                       </div>
 
                       {/* Conteúdo */}
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${notification.is_read ? "text-slate-300" : "text-white font-medium"}`}>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm ${notification.is_read ? "text-slate-300" : "font-medium text-white"}`}>
                           {notification.title}
                         </p>
-                        <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">
+                        <p className="mt-0.5 line-clamp-2 text-xs text-slate-400">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="mt-1 text-xs text-slate-500">
                           {notificationService.formatRelativeTime(notification.created_at)}
                         </p>
                       </div>
@@ -238,7 +237,7 @@ const NotificationDropdown: React.FC = () => {
                             e.stopPropagation();
                             handleMarkAsRead(notification.id);
                           }}
-                          className="flex-shrink-0 p-1 text-slate-400 hover:text-white hover:bg-slate-600 rounded transition-colors"
+                          className="flex-shrink-0 rounded p-1 text-slate-400 transition-colors hover:bg-slate-600 hover:text-white"
                           title="Marcar como lida"
                         >
                           <Check size={14} />

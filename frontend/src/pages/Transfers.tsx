@@ -380,9 +380,9 @@ const Transfers: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] items-center justify-center p-6">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-500"></div>
           <p className="text-slate-400">Carregando transferências...</p>
         </div>
       </div>
@@ -392,58 +392,58 @@ const Transfers: React.FC = () => {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6 flex flex-col items-center text-center gap-3 sm:flex-row sm:items-center sm:justify-between sm:text-left">
+      <div className="mb-6 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
         <div className="flex flex-col items-center sm:items-start">
-          <h1 className="text-xl sm:text-3xl font-bold text-white flex items-center justify-center gap-3 sm:justify-start">
+          <h1 className="flex items-center justify-center gap-3 text-xl font-bold text-white sm:justify-start sm:text-3xl">
             <ArrowRightLeft className="text-white" size={24} />
             Transferências de Cards
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="mt-1 text-slate-400">
             Gerencie solicitações de transferência de cards entre usuários
           </p>
         </div>
         <button
           onClick={() => setShowTransferModal(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-white transition-colors hover:bg-emerald-600"
         >
-          <Plus className="w-7 h-7 sm:w-5 sm:h-5" />
+          <Plus className="h-7 w-7 sm:h-5 sm:w-5" />
           Nova Transferência
         </button>
       </div>
 
       {/* Estatsticas */}
       {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-xl border border-blue-500/20 rounded-xl p-6 hover:border-blue-500/40 transition-all">
-            <div className="flex items-center gap-2 mb-1">
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <div className="rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6 backdrop-blur-xl transition-all hover:border-blue-500/40">
+            <div className="mb-1 flex items-center gap-2">
               <ArrowRightLeft size={16} className="text-blue-400" />
               <span className="text-xs text-slate-400">Total</span>
             </div>
             <div className="text-2xl font-bold text-white">{statistics.total_transfers}</div>
           </div>
-          <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 backdrop-blur-xl border border-yellow-500/20 rounded-xl p-6 hover:border-yellow-500/40 transition-all">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="rounded-xl border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 p-6 backdrop-blur-xl transition-all hover:border-yellow-500/40">
+            <div className="mb-1 flex items-center gap-2">
               <Clock size={16} className="text-yellow-400" />
               <span className="text-xs text-slate-400">Pendentes</span>
             </div>
             <div className="text-2xl font-bold text-white">{statistics.pending_approvals}</div>
           </div>
-          <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-xl border border-green-500/20 rounded-xl p-6 hover:border-green-500/40 transition-all">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-500/10 to-emerald-500/10 p-6 backdrop-blur-xl transition-all hover:border-green-500/40">
+            <div className="mb-1 flex items-center gap-2">
               <CheckCircle size={16} className="text-green-400" />
               <span className="text-xs text-slate-400">Hoje</span>
             </div>
             <div className="text-2xl font-bold text-white">{statistics.completed_today}</div>
           </div>
-          <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 backdrop-blur-xl border border-emerald-500/20 rounded-xl p-6 hover:border-emerald-500/40 transition-all">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-6 backdrop-blur-xl transition-all hover:border-emerald-500/40">
+            <div className="mb-1 flex items-center gap-2">
               <CheckCircle size={16} className="text-emerald-400" />
               <span className="text-xs text-slate-400">Esta Semana</span>
             </div>
             <div className="text-2xl font-bold text-white">{statistics.completed_this_week}</div>
           </div>
-          <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 backdrop-blur-xl border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-500/40 transition-all">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-6 backdrop-blur-xl transition-all hover:border-cyan-500/40">
+            <div className="mb-1 flex items-center gap-2">
               <CheckCircle size={16} className="text-cyan-400" />
               <span className="text-xs text-slate-400">Este Ms</span>
             </div>
@@ -453,15 +453,15 @@ const Transfers: React.FC = () => {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-slate-700">
+      <div className="mb-6 flex gap-2 border-b border-slate-700">
         {/* Tabs para VENDEDORES */}
         {!isManagerOrAdmin && (
           <>
             <button
               onClick={() => setActiveTab("pending")}
-              className={`px-4 py-3 font-medium transition-colors relative ${
+              className={`relative px-4 py-3 font-medium transition-colors ${
                 activeTab === "pending"
-                  ? "text-blue-400 border-b-2 border-blue-400"
+                  ? "border-b-2 border-blue-400 text-blue-400"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -469,7 +469,7 @@ const Transfers: React.FC = () => {
                 <Clock size={18} />
                 <span>Transferências Pendentes</span>
                 {pendingTransfers.length > 0 && (
-                  <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full">
+                  <span className="rounded-full bg-yellow-500 px-2 py-0.5 text-xs font-bold text-slate-900">
                     {pendingTransfers.length}
                   </span>
                 )}
@@ -478,9 +478,9 @@ const Transfers: React.FC = () => {
 
             <button
               onClick={() => setActiveTab("completed")}
-              className={`px-4 py-3 font-medium transition-colors relative ${
+              className={`relative px-4 py-3 font-medium transition-colors ${
                 activeTab === "completed"
-                  ? "text-blue-400 border-b-2 border-blue-400"
+                  ? "border-b-2 border-blue-400 text-blue-400"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -497,9 +497,9 @@ const Transfers: React.FC = () => {
           <>
             <button
               onClick={() => setActiveTab("received")}
-              className={`px-4 py-3 font-medium transition-colors relative ${
+              className={`relative px-4 py-3 font-medium transition-colors ${
                 activeTab === "received"
-                  ? "text-blue-400 border-b-2 border-blue-400"
+                  ? "border-b-2 border-blue-400 text-blue-400"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -507,7 +507,7 @@ const Transfers: React.FC = () => {
                 <Inbox size={18} />
                 <span>Aprovações Pendentes</span>
                 {pendingApprovals.length > 0 && (
-                  <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full">
+                  <span className="rounded-full bg-yellow-500 px-2 py-0.5 text-xs font-bold text-slate-900">
                     {pendingApprovalsTotal}
                   </span>
                 )}
@@ -516,9 +516,9 @@ const Transfers: React.FC = () => {
 
             <button
               onClick={() => setActiveTab("all")}
-              className={`px-4 py-3 font-medium transition-colors relative ${
+              className={`relative px-4 py-3 font-medium transition-colors ${
                 activeTab === "all"
-                  ? "text-blue-400 border-b-2 border-blue-400"
+                  ? "border-b-2 border-blue-400 text-blue-400"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -532,24 +532,24 @@ const Transfers: React.FC = () => {
       </div>
 
       {/* Conteúdo das Tabs */}
-      <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-6">
+      <div className="rounded-xl border border-slate-700 bg-slate-800/30 p-6">
         {/* Tab: Transferências Pendentes (Vendedor) */}
         {activeTab === "pending" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferências Pendentes</h2>
-            <p className="text-slate-400 mb-4">Aguardando aprovação do gerente</p>
+            <h2 className="mb-4 text-xl font-semibold text-white">Transferências Pendentes</h2>
+            <p className="mb-4 text-slate-400">Aguardando aprovação do gerente</p>
             {pendingTransfers.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">Nenhuma transferência pendente.</p>
+              <p className="py-8 text-center text-slate-400">Nenhuma transferência pendente.</p>
             ) : (
               <div className="space-y-3">
                 {paginatedPendingTransfers.map((transfer) => (
                   <div
                     key={transfer.id}
-                    className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors"
+                    className="rounded-lg border border-slate-700 bg-slate-900/50 p-4 transition-colors hover:border-slate-600"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="mb-2 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             {getStatusIcon(transfer.status)}
                             <h3 className="font-semibold text-white">
@@ -557,7 +557,7 @@ const Transfers: React.FC = () => {
                             </h3>
                           </div>
                           <span
-                            className={`text-xs px-2 py-1 rounded-full ${
+                            className={`rounded-full px-2 py-1 text-xs ${
                               transfer.status === "pending_approval"
                                 ? "bg-yellow-500 text-slate-900"
                                 : transfer.status === "completed"
@@ -568,7 +568,7 @@ const Transfers: React.FC = () => {
                             {transferService.formatStatus(transfer.status)}
                           </span>
                         </div>
-                        <div className="text-sm text-slate-400 space-y-1">
+                        <div className="space-y-1 text-sm text-slate-400">
                           <p>
                             <span className="font-medium">Para:</span> {transfer.to_user_name}
                           </p>
@@ -604,14 +604,14 @@ const Transfers: React.FC = () => {
         {/* Tab: Aprovações Pendentes (Admin/Gerente) */}
         {activeTab === "received" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Aprovações Pendentes</h2>
-            <p className="text-slate-400 mb-4">Transferências aguardando sua decisão</p>
+            <h2 className="mb-4 text-xl font-semibold text-white">Aprovações Pendentes</h2>
+            <p className="mb-4 text-slate-400">Transferências aguardando sua decisão</p>
 
             {pendingApprovals.length === 0 ? (
-              <p className="text-slate-400 text-center py-12">Nenhuma aprovação pendente.</p>
+              <p className="py-12 text-center text-slate-400">Nenhuma aprovação pendente.</p>
             ) : (
               <div>
-                <h3 className="text-lg font-medium text-yellow-400 mb-3 flex items-center gap-2">
+                <h3 className="mb-3 flex items-center gap-2 text-lg font-medium text-yellow-400">
                   <Clock size={20} />
                   {pendingApprovalsTotal} transferência{pendingApprovalsTotal > 1 ? "s" : ""} aguardando
                 </h3>
@@ -623,14 +623,14 @@ const Transfers: React.FC = () => {
                     return (
                       <div
                         key={approval.id}
-                        className="bg-yellow-900/20 border-2 border-yellow-500/50 rounded-lg p-4"
+                        className="rounded-lg border-2 border-yellow-500/50 bg-yellow-900/20 p-4"
                       >
-                        <div className="flex items-start justify-between mb-3">
+                        <div className="mb-3 flex items-start justify-between">
                           <div className="flex-1">
-                            <h4 className="font-semibold text-white mb-2">
+                            <h4 className="mb-2 font-semibold text-white">
                               {transfer.card_title || `Card #${transfer.card_id}`}
                             </h4>
-                            <div className="text-sm text-slate-300 space-y-1">
+                            <div className="space-y-1 text-sm text-slate-300">
                               <p>
                                 <span className="font-medium">De:</span> {transfer.from_user_name}
                               </p>
@@ -652,7 +652,7 @@ const Transfers: React.FC = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleApprove(approval.id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                            className="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-white transition-colors hover:bg-green-600"
                           >
                             <CheckCircle size={16} />
                             Aprovar
@@ -662,7 +662,7 @@ const Transfers: React.FC = () => {
                               const notes = prompt("Motivo da rejeio (opcional):");
                               handleReject(approval.id, notes || undefined);
                             }}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            className="flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-white transition-colors hover:bg-red-600"
                           >
                             <XCircle size={16} />
                             Rejeitar
@@ -687,20 +687,20 @@ const Transfers: React.FC = () => {
         {/* Tab: Transferências Finalizadas (Vendedor) */}
         {activeTab === "completed" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferências Finalizadas</h2>
-            <p className="text-slate-400 mb-4">Transferências aprovadas ou rejeitadas</p>
+            <h2 className="mb-4 text-xl font-semibold text-white">Transferências Finalizadas</h2>
+            <p className="mb-4 text-slate-400">Transferências aprovadas ou rejeitadas</p>
             {completedTransfers.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">Nenhuma transferência finalizada ainda.</p>
+              <p className="py-8 text-center text-slate-400">Nenhuma transferência finalizada ainda.</p>
             ) : (
               <div className="space-y-3">
                 {paginatedCompletedTransfers.map((transfer) => (
                   <div
                     key={transfer.id}
-                    className="bg-slate-900/50 border border-slate-700 rounded-lg p-4"
+                    className="rounded-lg border border-slate-700 bg-slate-900/50 p-4"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="mb-2 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             {getStatusIcon(transfer.status)}
                             <h4 className="font-semibold text-white">
@@ -708,7 +708,7 @@ const Transfers: React.FC = () => {
                             </h4>
                           </div>
                           <span
-                            className={`text-xs px-2 py-1 rounded-full ${
+                            className={`rounded-full px-2 py-1 text-xs ${
                               transfer.status === "completed"
                                 ? "bg-green-500 text-white"
                                 : transfer.status === "rejected"
@@ -719,7 +719,7 @@ const Transfers: React.FC = () => {
                             {transferService.formatStatus(transfer.status)}
                           </span>
                         </div>
-                        <div className="text-sm text-slate-400 space-y-1">
+                        <div className="space-y-1 text-sm text-slate-400">
                           <p>
                             <span className="font-medium">De:</span> {transfer.from_user_name} {" "}
                             <span className="font-medium">Para:</span> {transfer.to_user_name}
@@ -756,11 +756,11 @@ const Transfers: React.FC = () => {
         {/* Tab: Transferências Finalizadas (Admin/Gerente) */}
         {activeTab === "all" && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Transferências Finalizadas</h2>
-            <p className="text-slate-400 mb-4">Todas as transferências aprovadas ou rejeitadas do sistema</p>
+            <h2 className="mb-4 text-xl font-semibold text-white">Transferências Finalizadas</h2>
+            <p className="mb-4 text-slate-400">Todas as transferências aprovadas ou rejeitadas do sistema</p>
             {allTransfers.length === 0 ? (
-              <div className="text-center py-12">
-                <CheckCircle size={48} className="mx-auto text-slate-600 mb-3" />
+              <div className="py-12 text-center">
+                <CheckCircle size={48} className="mx-auto mb-3 text-slate-600" />
                 <p className="text-slate-400">Nenhuma transferência finalizada ainda</p>
               </div>
             ) : (
@@ -768,11 +768,11 @@ const Transfers: React.FC = () => {
               paginatedAllTransfers.map((transfer) => (
                 <div
                   key={transfer.id}
-                  className="bg-slate-900/50 border border-slate-700 rounded-lg p-4"
+                  className="rounded-lg border border-slate-700 bg-slate-900/50 p-4"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="mb-2 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(transfer.status)}
                           <h4 className="font-semibold text-white">
@@ -780,7 +780,7 @@ const Transfers: React.FC = () => {
                           </h4>
                         </div>
                         <span
-                          className={`text-xs px-2 py-1 rounded-full ${
+                          className={`rounded-full px-2 py-1 text-xs ${
                             transfer.status === "completed"
                               ? "bg-green-500 text-white"
                               : transfer.status === "rejected"
@@ -791,7 +791,7 @@ const Transfers: React.FC = () => {
                           {transferService.formatStatus(transfer.status)}
                         </span>
                       </div>
-                      <div className="text-sm text-slate-400 space-y-1">
+                      <div className="space-y-1 text-sm text-slate-400">
                         <p>
                           <span className="font-medium">De:</span> {transfer.from_user_name || "Desconhecido"} {" "}
                           <span className="font-medium">Para:</span> {transfer.to_user_name || "Desconhecido"}

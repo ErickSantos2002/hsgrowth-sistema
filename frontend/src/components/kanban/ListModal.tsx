@@ -6,7 +6,7 @@ import { BaseModal, FormField, Input, Button } from "../common";
 interface ListModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: { name: string; color: string }) => void;
+  onSave: (_data: { name: string; color: string }) => void;
   list?: List | null;
   title: string;
 }
@@ -101,7 +101,7 @@ const ListModal: React.FC<ListModalProps> = ({
       subtitle={list ? "Edite as informações da lista" : "Crie uma nova lista para organizar seus cards"}
       size="lg"
       footer={
-        <div className="flex gap-3 justify-end">
+        <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
@@ -137,13 +137,13 @@ const ListModal: React.FC<ListModalProps> = ({
             <button
               type="button"
               onClick={() => setIsColorOpen((open) => !open)}
-              className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-slate-700 bg-slate-800/50 text-slate-200 hover:bg-slate-700 transition-colors"
+              className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200 transition-colors hover:bg-slate-700"
               aria-haspopup="listbox"
               aria-expanded={isColorOpen}
             >
               <span className="flex items-center gap-3">
                 <span
-                  className="w-6 h-6 rounded-md border border-slate-600"
+                  className="h-6 w-6 rounded-md border border-slate-600"
                   style={{ backgroundColor: color }}
                 />
                 <span className="text-sm">{color}</span>
@@ -164,7 +164,7 @@ const ListModal: React.FC<ListModalProps> = ({
                       }}
                       className={`aspect-square rounded-lg transition-all hover:scale-105 ${
                         color === colorValue
-                          ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105"
+                          ? "scale-105 ring-2 ring-white ring-offset-2 ring-offset-slate-900"
                           : ""
                       }`}
                       style={{ backgroundColor: colorValue }}
@@ -172,7 +172,7 @@ const ListModal: React.FC<ListModalProps> = ({
                     >
                       {color === colorValue && (
                         <svg
-                          className="w-full h-full p-2 text-white drop-shadow-md"
+                          className="h-full w-full p-2 text-white drop-shadow-md"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -193,7 +193,7 @@ const ListModal: React.FC<ListModalProps> = ({
                     type="color"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    className="w-12 h-10 bg-slate-800 border border-slate-600 rounded-lg cursor-pointer"
+                    className="h-10 w-12 cursor-pointer rounded-lg border border-slate-600 bg-slate-800"
                   />
                   <Input
                     type="text"
@@ -209,8 +209,8 @@ const ListModal: React.FC<ListModalProps> = ({
         </FormField>
 
         {/* Preview da lista */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-          <p className="text-xs font-medium text-slate-400 mb-3">Preview:</p>
+        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+          <p className="mb-3 text-xs font-medium text-slate-400">Preview:</p>
           <div
             className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-4"
             style={{
@@ -220,16 +220,16 @@ const ListModal: React.FC<ListModalProps> = ({
           >
             <div className="flex items-center gap-3">
               <div
-                className="w-1 h-8 rounded-full"
+                className="h-8 w-1 rounded-full"
                 style={{ backgroundColor: color }}
               />
               <div className="flex-1">
-                <h4 className="text-white font-semibold">
+                <h4 className="font-semibold text-white">
                   {name.trim() || "Nome da Lista"}
                 </h4>
-                <p className="text-xs text-slate-400 mt-0.5">Lista de cards</p>
+                <p className="mt-0.5 text-xs text-slate-400">Lista de cards</p>
               </div>
-              <span className="px-2 py-0.5 bg-slate-800/70 text-slate-400 text-xs rounded-full">
+              <span className="rounded-full bg-slate-800/70 px-2 py-0.5 text-xs text-slate-400">
                 0 cards
               </span>
             </div>

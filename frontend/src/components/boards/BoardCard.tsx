@@ -25,10 +25,10 @@ import { useNavigate } from "react-router-dom";
 
 interface BoardCardProps {
   board: Board;
-  onEdit: (board: Board) => void;
-  onDuplicate: (board: Board) => void;
-  onToggleArchive: (board: Board) => void;
-  onDelete: (board: Board) => void;
+  onEdit: (_board: Board) => void;
+  onDuplicate: (_board: Board) => void;
+  onToggleArchive: (_board: Board) => void;
+  onDelete: (_board: Board) => void;
 }
 
 const BoardCard: React.FC<BoardCardProps> = ({
@@ -109,7 +109,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 
   return (
     <div
-      className={`group relative backdrop-blur-sm border-2 rounded-xl p-6 transition-all duration-300 hover:shadow-xl ${
+      className={`group relative rounded-xl border-2 p-6 backdrop-blur-sm transition-all duration-300 hover:shadow-xl ${
         showMenu ? "z-50" : "z-0"
       }`}
       style={{
@@ -119,13 +119,13 @@ const BoardCard: React.FC<BoardCardProps> = ({
       }}
     >
       {/* Badge de status */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute right-4 top-4">
         {!board.is_deleted ? (
-          <span className="px-2 py-1 text-xs font-medium bg-green-500/20 text-green-400 rounded-full">
+          <span className="rounded-full bg-green-500/20 px-2 py-1 text-xs font-medium text-green-400">
             Ativo
           </span>
         ) : (
-          <span className="px-2 py-1 text-xs font-medium bg-yellow-500/20 text-yellow-400 rounded-full">
+          <span className="rounded-full bg-yellow-500/20 px-2 py-1 text-xs font-medium text-yellow-400">
             Arquivado
           </span>
         )}
@@ -134,9 +134,9 @@ const BoardCard: React.FC<BoardCardProps> = ({
       {/* Conteúdo principal */}
       <div className="space-y-4">
         {/* Título com ícone */}
-        <div className="pr-20 flex items-center gap-3">
+        <div className="flex items-center gap-3 pr-20">
           <div
-            className="p-2 rounded-lg"
+            className="rounded-lg p-2"
             style={{
               backgroundColor: `${board.color || "#3B82F6"}20`,
             }}
@@ -147,7 +147,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
             />
           </div>
           <h3
-            className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors cursor-pointer flex-1"
+            className="flex-1 cursor-pointer text-xl font-bold text-white transition-colors group-hover:text-blue-400"
             onClick={handleViewBoard}
           >
             {board.name}
@@ -155,12 +155,12 @@ const BoardCard: React.FC<BoardCardProps> = ({
         </div>
 
         {/* Descrição */}
-        <p className="text-gray-400 text-sm line-clamp-2 min-h-[40px]">
+        <p className="line-clamp-2 min-h-[40px] text-sm text-gray-400">
           {board.description || "Sem descrição"}
         </p>
 
         {/* Data de criação */}
-        <div className="flex items-center gap-2 text-gray-500 text-xs">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
           <Calendar size={14} />
           <span>Criado em {formatDate(board.created_at)}</span>
         </div>
@@ -173,7 +173,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
           {/* Botão primário: Visualizar */}
           <button
             onClick={handleViewBoard}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-blue-500/10 px-4 py-2 text-blue-400 transition-colors hover:bg-blue-500/20"
           >
             <Eye size={16} />
             Visualizar
@@ -183,7 +183,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-2 hover:bg-gray-700/50 rounded-lg transition-colors"
+              className="rounded-lg p-2 transition-colors hover:bg-gray-700/50"
             >
               <MoreVertical size={20} className="text-gray-400" />
             </button>
@@ -192,13 +192,13 @@ const BoardCard: React.FC<BoardCardProps> = ({
             {showMenu && (
               <>
                 {/* Menu */}
-                <div className="absolute right-0 bottom-full mb-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                <div className="absolute bottom-full right-0 z-50 mb-2 w-48 overflow-hidden rounded-lg border border-gray-700 bg-gray-800 shadow-xl">
                   <button
                     onClick={() => {
                       setShowMenu(false);
                       onEdit(board);
                     }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-300 transition-colors hover:bg-gray-700"
                   >
                     <Edit size={16} />
                     Editar
@@ -209,7 +209,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
                       setShowMenu(false);
                       onDuplicate(board);
                     }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-300 transition-colors hover:bg-gray-700"
                   >
                     <Copy size={16} />
                     Duplicar
@@ -220,7 +220,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
                       setShowMenu(false);
                       onToggleArchive(board);
                     }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-300 transition-colors hover:bg-gray-700"
                   >
                     {!board.is_deleted ? (
                       <>
@@ -242,7 +242,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
                       setShowMenu(false);
                       onDelete(board);
                     }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-red-400 transition-colors hover:bg-red-500/10"
                   >
                     <Trash2 size={16} />
                     Deletar

@@ -6,8 +6,6 @@ import {
   MoveRight,
   Clock,
   Calendar,
-  FilePlus,
-  Mail,
   Bell,
   UserPlus,
   Tag,
@@ -141,15 +139,15 @@ const NodesSidebar: React.FC<NodesSidebarProps> = ({ onDragStart }) => {
   const actions = availableNodes.filter((n) => n.category === "action");
 
   return (
-    <div className="w-80 bg-slate-800/50 backdrop-blur border-l border-slate-700 p-4 overflow-y-auto overflow-x-hidden max-h-[85vh] sm:max-h-[calc(100vh-70px)]">
-      <h3 className="text-white font-semibold mb-4 text-lg">Blocos Disponíveis</h3>
-      <p className="text-slate-400 text-sm mb-6">
+    <div className="max-h-[85vh] w-80 overflow-y-auto overflow-x-hidden border-l border-slate-700 bg-slate-800/50 p-4 backdrop-blur sm:max-h-[calc(100vh-70px)]">
+      <h3 className="mb-4 text-lg font-semibold text-white">Blocos Disponíveis</h3>
+      <p className="mb-6 text-sm text-slate-400">
         Arraste os blocos para o canvas para criar sua automação
       </p>
 
       {/* TRIGGERS */}
       <div className="mb-6">
-        <h4 className="text-purple-400 font-medium text-sm mb-3 uppercase tracking-wide">
+        <h4 className="mb-3 text-sm font-medium uppercase tracking-wide text-purple-400">
           🎯 Triggers (Gatilhos)
         </h4>
         <div className="space-y-2">
@@ -158,10 +156,10 @@ const NodesSidebar: React.FC<NodesSidebarProps> = ({ onDragStart }) => {
               key={node.type}
               draggable
               onDragStart={(e) => onDragStart(e, node.type, node.category)}
-              className="flex items-center gap-3 p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 hover:border-purple-500 rounded-lg cursor-grab active:cursor-grabbing transition-all"
+              className="flex cursor-grab items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 p-3 transition-all hover:border-purple-500 hover:bg-slate-700 active:cursor-grabbing"
             >
               <div className={`text-${node.color}-400`}>{node.icon}</div>
-              <span className="text-white text-sm font-medium">{node.label}</span>
+              <span className="text-sm font-medium text-white">{node.label}</span>
             </div>
           ))}
         </div>
@@ -169,7 +167,7 @@ const NodesSidebar: React.FC<NodesSidebarProps> = ({ onDragStart }) => {
 
       {/* AÇÕES */}
       <div>
-        <h4 className="text-emerald-400 font-medium text-sm mb-3 uppercase tracking-wide">
+        <h4 className="mb-3 text-sm font-medium uppercase tracking-wide text-emerald-400">
           ⚡ Ações
         </h4>
         <div className="space-y-2">
@@ -178,18 +176,18 @@ const NodesSidebar: React.FC<NodesSidebarProps> = ({ onDragStart }) => {
               key={node.type}
               draggable
               onDragStart={(e) => onDragStart(e, node.type, node.category)}
-              className="flex items-center gap-3 p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 hover:border-emerald-500 rounded-lg cursor-grab active:cursor-grabbing transition-all"
+              className="flex cursor-grab items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 p-3 transition-all hover:border-emerald-500 hover:bg-slate-700 active:cursor-grabbing"
             >
               <div className={`text-${node.color}-400`}>{node.icon}</div>
-              <span className="text-white text-sm font-medium">{node.label}</span>
+              <span className="text-sm font-medium text-white">{node.label}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Dica */}
-      <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-        <p className="text-blue-300 text-xs">
+      <div className="mt-6 rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+        <p className="text-xs text-blue-300">
           💡 <strong>Dica:</strong> Conecte um trigger a uma ou mais ações para criar seu fluxo
           automático
         </p>

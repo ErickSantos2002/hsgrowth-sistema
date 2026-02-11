@@ -229,7 +229,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
           icon={<Building2 size={18} />}
         >
           <div className="space-y-3">
-            <p className="text-sm text-slate-400 text-center py-2">
+            <p className="py-2 text-center text-sm text-slate-400">
               Nenhum cliente vinculado a este negócio
             </p>
 
@@ -237,7 +237,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={handleOpenModal}
-                className="px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                className="flex items-center justify-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-3 font-medium text-blue-400 transition-colors hover:bg-blue-500/30"
               >
                 <ExternalLink size={16} />
                 Vincular
@@ -245,7 +245,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
 
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-4 py-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                className="flex items-center justify-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-3 font-medium text-green-400 transition-colors hover:bg-green-500/30"
               >
                 <Plus size={16} />
                 Cadastrar
@@ -257,25 +257,25 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
         {/* Modal de busca (renderizado no body via Portal) */}
         {showModal && ReactDOM.createPortal(
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
             onClick={handleCloseModal}
           >
             <div
-              className="bg-slate-800 border border-slate-700 rounded-lg w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl"
+              className="flex max-h-[600px] w-full max-w-lg flex-col rounded-lg border border-slate-700 bg-slate-800 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-slate-700 p-4">
                 <h3 className="font-semibold text-white">Vincular Cliente</h3>
                 <button
                   onClick={handleCloseModal}
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-400 transition-colors hover:text-white"
                 >
                   <X size={20} />
                 </button>
               </div>
 
               {/* Campo de busca dentro do modal */}
-              <div className="p-4 border-b border-slate-700">
+              <div className="border-b border-slate-700 p-4">
                 <div className="relative">
                   <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -283,7 +283,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar por nome, CPF ou CNPJ..."
-                    className="w-full pl-10 pr-10 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-10 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                     autoFocus
                   />
                   {searchTerm && (
@@ -317,11 +317,11 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
                       <button
                         key={c.id}
                         onClick={() => handleLinkClient(c.id)}
-                        className="w-full p-3 bg-slate-900/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-left transition-colors"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900/50 p-3 text-left transition-colors hover:bg-slate-700/50"
                       >
                         <p className="font-medium text-white">{c.company_name || c.name}</p>
                         {c.document && (
-                          <p className="text-xs text-slate-400 mt-1">
+                          <p className="mt-1 text-xs text-slate-400">
                             {formatDocument(c.document)}
                           </p>
                         )}
@@ -357,7 +357,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
         icon={<Building2 size={18} />}
       >
       {loading ? (
-        <div className="text-center py-4">
+        <div className="py-4 text-center">
           <p className="text-sm text-slate-400">Carregando...</p>
         </div>
       ) : (
@@ -368,7 +368,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
               <Building2 size={14} className="text-slate-400" />
               <span>Nome da empresa</span>
             </div>
-            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+            <div className="rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2">
               <p className="text-white">{client?.company_name || client?.name || "Não informado"}</p>
             </div>
           </div>
@@ -378,8 +378,8 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
             <div className="text-sm font-medium text-slate-300">
               {client?.document && client.document.replace(/\D/g, "").length === 11 ? "CPF" : "CNPJ"}
             </div>
-            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
-              <p className={client?.document ? "text-white" : "text-slate-500 italic"}>
+            <div className="rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2">
+              <p className={client?.document ? "text-white" : "italic text-slate-500"}>
                 {client?.document ? formatDocument(client.document) : "Não informado"}
               </p>
             </div>
@@ -388,12 +388,12 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
           {/* Endereço */}
           <div className="space-y-1">
             <div className="text-sm font-medium text-slate-300">Endereço</div>
-            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
-              <p className={client?.address ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+            <div className="rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2">
+              <p className={client?.address ? "text-sm text-white" : "text-sm italic text-slate-500"}>
                 {client?.address || "Não informado"}
               </p>
               {(client?.city || client?.state) && (
-                <p className="text-slate-400 text-sm mt-1">
+                <p className="mt-1 text-sm text-slate-400">
                   {client.city}{client.city && client.state && " - "}{client.state}
                 </p>
               )}
@@ -403,16 +403,16 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
           {/* Contato */}
           <div className="space-y-1">
             <div className="text-sm font-medium text-slate-300">Contato</div>
-            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-2">
+            <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2">
               <div>
                 <p className="text-xs text-slate-400">Telefone</p>
-                <p className={client?.phone ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                <p className={client?.phone ? "text-sm text-white" : "text-sm italic text-slate-500"}>
                   {formatPhone(client?.phone)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-slate-400">Email</p>
-                <p className={client?.email ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
+                <p className={client?.email ? "text-sm text-blue-400" : "text-sm italic text-slate-500"}>
                   {client?.email || "Não informado"}
                 </p>
               </div>
@@ -422,24 +422,24 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
           {/* Website */}
           <div className="space-y-1">
             <div className="text-sm font-medium text-slate-300">Website</div>
-            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+            <div className="rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2">
               {client?.website ? (
                 <a
                   href={client.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 text-sm hover:underline"
+                  className="text-sm text-blue-400 hover:underline"
                 >
                   {client.website}
                 </a>
               ) : (
-                <p className="text-slate-500 italic text-sm">Não informado</p>
+                <p className="text-sm italic text-slate-500">Não informado</p>
               )}
             </div>
           </div>
 
           {/* Ações */}
-          <div className="pt-3 border-t border-slate-700/50 space-y-2">
+          <div className="space-y-2 border-t border-slate-700/50 pt-3">
             <ActionButton
               icon={<ExternalLink size={16} />}
               label="Modificar cadastro do cliente"

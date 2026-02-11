@@ -5,7 +5,7 @@ import { LOSS_REASONS_BY_BOARD_ID } from "../../constants/blueprintOptions";
 interface LossReasonModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (reason: string) => void;
+  onConfirm: (_reason: string) => void;
   boardId: number;
   boardName: string;
 }
@@ -50,12 +50,12 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full border border-slate-700">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-800 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
+        <div className="flex items-center justify-between border-b border-slate-700 p-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-500/20 rounded-lg">
+            <div className="rounded-lg bg-red-500/20 p-2">
               <AlertCircle className="text-red-400" size={24} />
             </div>
             <div>
@@ -65,7 +65,7 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
           </div>
           <button
             onClick={handleClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-slate-400 transition-colors hover:text-white"
             aria-label="Fechar"
           >
             <X size={24} />
@@ -73,15 +73,15 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="space-y-4 p-6">
           <p className="text-slate-300">
             Por que este negócio foi perdido? Selecione o motivo abaixo:
           </p>
 
           {/* Lista de motivos */}
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="max-h-96 space-y-2 overflow-y-auto">
             {reasons.length === 0 ? (
-              <div className="text-center py-8 text-slate-400">
+              <div className="py-8 text-center text-slate-400">
                 <AlertCircle size={48} className="mx-auto mb-2 opacity-50" />
                 <p>Nenhum motivo cadastrado para este board</p>
               </div>
@@ -90,11 +90,11 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
                 <label
                   key={reason}
                   className={`
-                    flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all
+                    flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-all
                     ${
                       selectedReason === reason
-                        ? "bg-red-500/20 border-red-500/50 text-white"
-                        : "bg-slate-900/50 border-slate-700 text-slate-300 hover:bg-slate-900 hover:border-slate-600"
+                        ? "border-red-500/50 bg-red-500/20 text-white"
+                        : "border-slate-700 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:bg-slate-900"
                     }
                   `}
                 >
@@ -104,7 +104,7 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
                     value={reason}
                     checked={selectedReason === reason}
                     onChange={(e) => setSelectedReason(e.target.value)}
-                    className="w-4 h-4 text-red-500 focus:ring-red-500 focus:ring-offset-slate-800"
+                    className="h-4 w-4 text-red-500 focus:ring-red-500 focus:ring-offset-slate-800"
                   />
                   <span className="text-sm font-medium">{reason}</span>
                 </label>
@@ -113,8 +113,8 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
           </div>
 
           {/* Info box */}
-          <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-            <AlertCircle size={16} className="text-amber-400 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+            <AlertCircle size={16} className="mt-0.5 flex-shrink-0 text-amber-400" />
             <p className="text-xs text-amber-300">
               Esta ação marcará o negócio como perdido e não poderá ser desfeita facilmente.
               Certifique-se de selecionar o motivo correto.
@@ -123,10 +123,10 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-700">
+        <div className="flex items-center justify-end gap-3 border-t border-slate-700 p-6">
           <button
             onClick={handleClose}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+            className="rounded-lg bg-slate-700 px-4 py-2 font-medium text-white transition-colors hover:bg-slate-600"
           >
             Cancelar
           </button>
@@ -134,11 +134,11 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
             onClick={handleConfirm}
             disabled={!selectedReason}
             className={`
-              px-4 py-2 rounded-lg font-medium transition-all
+              rounded-lg px-4 py-2 font-medium transition-all
               ${
                 selectedReason
-                  ? "bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-lg shadow-red-500/20"
-                  : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                  ? "bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-500/20 hover:from-red-700 hover:to-red-600"
+                  : "cursor-not-allowed bg-slate-700 text-slate-500"
               }
             `}
           >

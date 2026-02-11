@@ -13,11 +13,6 @@ import {
   Building2,
   Calendar,
   Tag,
-  Phone,
-  Users,
-  CheckSquare,
-  Mail,
-  Coffee,
   MoreHorizontal,
   Download,
   Printer,
@@ -299,16 +294,16 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-white mb-3">Histórico</h3>
+      <h3 className="mb-3 text-lg font-semibold text-white">Histórico</h3>
 
       {/* Sub-abas do histórico */}
-      <div className="border-b border-slate-700/50 mb-4">
+      <div className="mb-4 border-b border-slate-700/50">
         <div className="flex gap-4 overflow-x-auto">
           <button
             onClick={() => setActiveTab("all")}
-            className={`pb-2 px-1 border-b-2 transition-colors whitespace-nowrap text-sm ${
+            className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "all"
-                ? "border-blue-500 text-blue-400 font-medium"
+                ? "border-blue-500 font-medium text-blue-400"
                 : "border-transparent text-slate-400 hover:text-white"
             }`}
           >
@@ -317,37 +312,37 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
 
           <button
             onClick={() => setActiveTab("activities")}
-            className={`pb-2 px-1 border-b-2 transition-colors whitespace-nowrap text-sm flex items-center gap-1 ${
+            className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "activities"
-                ? "border-blue-500 text-blue-400 font-medium"
+                ? "border-blue-500 font-medium text-blue-400"
                 : "border-transparent text-slate-400 hover:text-white"
             }`}
           >
             Atividades
-            <span className="ml-1 px-1.5 py-0.5 bg-slate-700/50 text-slate-400 text-xs rounded">
+            <span className="ml-1 rounded bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400">
               {activityCount}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab("notes")}
-            className={`pb-2 px-1 border-b-2 transition-colors whitespace-nowrap text-sm flex items-center gap-1 ${
+            className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "notes"
-                ? "border-blue-500 text-blue-400 font-medium"
+                ? "border-blue-500 font-medium text-blue-400"
                 : "border-transparent text-slate-400 hover:text-white"
             }`}
           >
             Anotações
-            <span className="ml-1 px-1.5 py-0.5 bg-slate-700/50 text-slate-400 text-xs rounded">
+            <span className="ml-1 rounded bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400">
               {noteCount}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab("files")}
-            className={`pb-2 px-1 border-b-2 transition-colors whitespace-nowrap text-sm ${
+            className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "files"
-                ? "border-blue-500 text-blue-400 font-medium"
+                ? "border-blue-500 font-medium text-blue-400"
                 : "border-transparent text-slate-400 hover:text-white"
             }`}
           >
@@ -356,9 +351,9 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
 
           <button
             onClick={() => setActiveTab("changes")}
-            className={`pb-2 px-1 border-b-2 transition-colors whitespace-nowrap text-sm ${
+            className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "changes"
-                ? "border-blue-500 text-blue-400 font-medium"
+                ? "border-blue-500 font-medium text-blue-400"
                 : "border-transparent text-slate-400 hover:text-white"
             }`}
           >
@@ -368,23 +363,23 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
       </div>
 
       {/* Barra de ferramentas */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="mb-4 flex items-center gap-2">
         {/* Campo de busca */}
-        <div className="flex-1 relative">
+        <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar no histórico..."
-            className="w-full pl-9 pr-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg border border-slate-700 bg-slate-800/50 py-2 pl-9 pr-3 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
           />
         </div>
 
         {/* Botões de ação */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+          className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
           title="Filtros"
         >
           <Filter size={16} />
@@ -392,7 +387,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
 
         <button
           onClick={() => alert("Exportar histórico - será implementado")}
-          className="px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+          className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
           title="Exportar"
         >
           <Download size={16} />
@@ -400,7 +395,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
 
         <button
           onClick={() => alert("Imprimir histórico - será implementado")}
-          className="px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+          className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
           title="Imprimir"
         >
           <Printer size={16} />
@@ -410,8 +405,8 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
       {/* Timeline de eventos */}
       <div className="space-y-3">
         {filteredEvents.length === 0 ? (
-          <div className="p-8 bg-slate-800/30 border border-slate-700/50 rounded-lg text-center">
-            <FileText size={32} className="mx-auto text-slate-600 mb-2" />
+          <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-8 text-center">
+            <FileText size={32} className="mx-auto mb-2 text-slate-600" />
             <p className="text-sm text-slate-400">
               {searchTerm ? "Nenhum evento encontrado" : "Nenhum evento nesta categoria"}
             </p>
@@ -420,21 +415,21 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
           filteredEvents.map((event) => (
             <div
               key={event.id}
-              className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg hover:bg-slate-700/30 transition-colors"
+              className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 transition-colors hover:bg-slate-700/30"
             >
               <div className="flex items-start gap-3">
                 {/* Ícone do tipo de evento */}
                 <div className="mt-0.5">{getEventIcon(event.type)}</div>
 
                 {/* Conteúdo do evento */}
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <p
-                    className="history-html font-medium text-white mb-1 break-words whitespace-pre-wrap overflow-wrap-anywhere"
+                    className="history-html overflow-wrap-anywhere mb-1 whitespace-pre-wrap break-words font-medium text-white"
                     dangerouslySetInnerHTML={{ __html: event.title }}
                   />
 
                   {event.description && (
-                    <p className="text-sm text-slate-400 mb-2 break-words whitespace-pre-wrap">
+                    <p className="mb-2 whitespace-pre-wrap break-words text-sm text-slate-400">
                       {event.description}
                     </p>
                   )}
@@ -453,7 +448,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
                 </div>
 
                 {/* Avatar do usuário */}
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-medium text-xs">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-xs font-medium text-white">
                   {event.user_name.substring(0, 2).toUpperCase()}
                 </div>
               </div>

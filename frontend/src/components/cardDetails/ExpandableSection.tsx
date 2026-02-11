@@ -25,11 +25,11 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="border border-slate-700/50 rounded-lg overflow-hidden bg-slate-800/30 backdrop-blur-sm">
+    <div className="overflow-hidden rounded-lg border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
       {/* Header da seção - clicável para expandir/recolher */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`w-full px-4 py-3 flex items-center justify-between hover:bg-slate-700/30 transition-colors ${headerClassName || ""}`}
+        className={`flex w-full items-center justify-between px-4 py-3 transition-colors hover:bg-slate-700/30 ${headerClassName || ""}`}
       >
         <div className="flex items-center gap-2">
           {/* Ícone de expand/collapse */}
@@ -47,7 +47,7 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
 
           {/* Badge opcional (ex: contagem) */}
           {badge !== undefined && (
-            <span className="ml-2 px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium border border-blue-500/30">
+            <span className="ml-2 rounded-full border border-blue-500/30 bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
               {badge}
             </span>
           )}
@@ -56,7 +56,7 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
 
       {/* Conteúdo da seção - visível apenas quando expandido */}
       {isExpanded && (
-        <div className="px-4 py-3 border-t border-slate-700/50 bg-slate-900/30">
+        <div className="border-t border-slate-700/50 bg-slate-900/30 px-4 py-3">
           {children}
         </div>
       )}

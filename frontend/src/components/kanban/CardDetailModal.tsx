@@ -238,9 +238,9 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
       size="2xl"
       showCloseButton={false}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* COLUNA PRINCIPAL (Esquerda) - 2/3 da largura */}
-        <div className="md:col-span-2 space-y-6">
+        <div className="space-y-6 md:col-span-2">
           {/* Cabeçalho com título */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -254,19 +254,19 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
                 />
               ) : (
                 <h2
-                  className="text-2xl font-bold text-white cursor-pointer hover:bg-slate-700/30 rounded px-2 py-1 -mx-2"
+                  className="-mx-2 cursor-pointer rounded px-2 py-1 text-2xl font-bold text-white hover:bg-slate-700/30"
                   onClick={() => setIsEditing(true)}
                 >
                   {card.title}
                 </h2>
               )}
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="mt-1 text-sm text-slate-400">
                 na lista <span className="font-medium">{card.list_name || "..."}</span>
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-white"
+              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
             >
               <X size={20} />
             </button>
@@ -286,7 +286,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
 
           {/* Descrição */}
           <div>
-            <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-white">
               Descrição
             </h3>
             {isEditing ? (
@@ -298,11 +298,11 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
               />
             ) : (
               <div
-                className="min-h-[80px] p-3 bg-slate-800/50 border border-slate-700 rounded-lg text-slate-300 cursor-pointer hover:bg-slate-700/30 transition-colors"
+                className="min-h-[80px] cursor-pointer rounded-lg border border-slate-700 bg-slate-800/50 p-3 text-slate-300 transition-colors hover:bg-slate-700/30"
                 onClick={() => setIsEditing(true)}
               >
                 {card.description || (
-                  <span className="text-slate-500 italic">
+                  <span className="italic text-slate-500">
                     Clique para adicionar uma descrição...
                   </span>
                 )}
@@ -311,7 +311,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
           </div>
 
           {/* Campos do card */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Responsável */}
             <FormField
               label={
@@ -340,7 +340,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
                 </Select>
               ) : (
                 <div
-                  className="p-2 bg-slate-800 border border-slate-600 rounded-lg text-white cursor-pointer hover:bg-slate-700 transition-colors"
+                  className="cursor-pointer rounded-lg border border-slate-600 bg-slate-800 p-2 text-white transition-colors hover:bg-slate-700"
                   onClick={() => setIsEditing(true)}
                 >
                   {assignedUser?.name || <span className="text-slate-500">Não atribuído</span>}
@@ -365,7 +365,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
                 />
               ) : (
                 <div
-                  className="p-2 bg-slate-800 border border-slate-600 rounded-lg text-white cursor-pointer hover:bg-slate-700 transition-colors"
+                  className="cursor-pointer rounded-lg border border-slate-600 bg-slate-800 p-2 text-white transition-colors hover:bg-slate-700"
                   onClick={() => setIsEditing(true)}
                 >
                   {card.due_date ? formatDate(card.due_date) : (
@@ -400,7 +400,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
                 />
               ) : (
                 <div
-                  className="p-2 bg-slate-800 border border-slate-600 rounded-lg text-white cursor-pointer hover:bg-slate-700 transition-colors"
+                  className="cursor-pointer rounded-lg border border-slate-600 bg-slate-800 p-2 text-white transition-colors hover:bg-slate-700"
                   onClick={() => setIsEditing(true)}
                 >
                   {card.value ? (
@@ -417,7 +417,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
 
           {/* Informações de Contato */}
           <div>
-            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
               Informações de Contato
             </h3>
             <div className="space-y-3">
@@ -446,7 +446,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
                   />
                 ) : (
                   <div
-                    className="p-2 bg-slate-800 border border-slate-600 rounded-lg text-white cursor-pointer hover:bg-slate-700 transition-colors"
+                    className="cursor-pointer rounded-lg border border-slate-600 bg-slate-800 p-2 text-white transition-colors hover:bg-slate-700"
                     onClick={() => setIsEditing(true)}
                   >
                     {card.contact_info?.name || <span className="text-slate-500">-</span>}
@@ -454,7 +454,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
                 )}
               </FormField>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <FormField
                   label={
                     <span className="flex items-center gap-1">
@@ -480,7 +480,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
                     />
                   ) : (
                     <div
-                      className="p-2 bg-slate-800 border border-slate-600 rounded-lg text-white cursor-pointer hover:bg-slate-700 transition-colors"
+                      className="cursor-pointer rounded-lg border border-slate-600 bg-slate-800 p-2 text-white transition-colors hover:bg-slate-700"
                       onClick={() => setIsEditing(true)}
                     >
                       {card.contact_info?.email || <span className="text-slate-500">-</span>}
@@ -513,7 +513,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
                     />
                   ) : (
                     <div
-                      className="p-2 bg-slate-800 border border-slate-600 rounded-lg text-white cursor-pointer hover:bg-slate-700 transition-colors"
+                      className="cursor-pointer rounded-lg border border-slate-600 bg-slate-800 p-2 text-white transition-colors hover:bg-slate-700"
                       onClick={() => setIsEditing(true)}
                     >
                       {card.contact_info?.phone || <span className="text-slate-500">-</span>}
@@ -547,7 +547,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
                   />
                 ) : (
                   <div
-                    className="p-2 bg-slate-800 border border-slate-600 rounded-lg text-white cursor-pointer hover:bg-slate-700 transition-colors"
+                    className="cursor-pointer rounded-lg border border-slate-600 bg-slate-800 p-2 text-white transition-colors hover:bg-slate-700"
                     onClick={() => setIsEditing(true)}
                   >
                     {card.contact_info?.company || <span className="text-slate-500">-</span>}
@@ -559,7 +559,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
 
           {/* Botões de salvar/cancelar quando está editando */}
           {isEditing && (
-            <div className="flex gap-3 pt-4 border-t border-slate-700">
+            <div className="flex gap-3 border-t border-slate-700 pt-4">
               <Button variant="secondary" onClick={resetForm} disabled={isSaving}>
                 Cancelar
               </Button>
@@ -571,10 +571,10 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
         </div>
 
         {/* SIDEBAR (Direita) - 1/3 da largura */}
-        <div className="md:col-span-1 space-y-4">
+        <div className="space-y-4 md:col-span-1">
           {/* Ações */}
           <div className="space-y-2">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
               Ações
             </h3>
 
@@ -614,7 +614,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
 
           {/* Mover para outra lista */}
           <div className="space-y-2">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
               Mover para
             </h3>
             <Select
@@ -631,8 +631,8 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
           </div>
 
           {/* Informações do card */}
-          <div className="space-y-3 pt-4 border-t border-slate-700">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+          <div className="space-y-3 border-t border-slate-700 pt-4">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
               Informações
             </h3>
 
@@ -641,15 +641,15 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
                 <Clock size={14} />
                 <span>Criado em:</span>
               </div>
-              <div className="text-white ml-6">{formatDateTime(card.created_at)}</div>
+              <div className="ml-6 text-white">{formatDateTime(card.created_at)}</div>
 
               {card.updated_at && card.updated_at !== card.created_at && (
                 <>
-                  <div className="flex items-center gap-2 text-slate-400 mt-3">
+                  <div className="mt-3 flex items-center gap-2 text-slate-400">
                     <Clock size={14} />
                     <span>Atualizado em:</span>
                   </div>
-                  <div className="text-white ml-6">{formatDateTime(card.updated_at)}</div>
+                  <div className="ml-6 text-white">{formatDateTime(card.updated_at)}</div>
                 </>
               )}
             </div>

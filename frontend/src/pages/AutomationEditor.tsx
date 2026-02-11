@@ -595,9 +595,9 @@ const AutomationEditorContent: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-slate-900">
+      <div className="flex h-screen items-center justify-center bg-slate-900">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mb-4"></div>
+          <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-purple-500 border-t-transparent"></div>
           <p className="text-slate-400">Carregando automação...</p>
         </div>
       </div>
@@ -605,14 +605,14 @@ const AutomationEditorContent: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-slate-900">
+    <div className="flex h-screen flex-col bg-slate-900">
       {/* Header */}
-      <div className="bg-slate-800 border-b border-slate-700 px-6 py-4">
+      <div className="border-b border-slate-700 bg-slate-800 px-6 py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4 min-w-0 flex-1">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
             <button
               onClick={() => navigate("/automations")}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              className="rounded-lg p-2 transition-colors hover:bg-slate-700"
               title="Voltar"
             >
               <ArrowLeft size={20} className="text-slate-400" />
@@ -631,37 +631,37 @@ const AutomationEditorContent: React.FC = () => {
                   }
                 }}
                 autoFocus
-                className="text-xl font-semibold text-white bg-slate-800/50 border-b-2 border-blue-500 focus:outline-none px-2 py-1 rounded flex-1 min-w-0"
+                className="min-w-0 flex-1 rounded border-b-2 border-blue-500 bg-slate-800/50 px-2 py-1 text-xl font-semibold text-white focus:outline-none"
                 placeholder="Nome da automação"
               />
             ) : (
               <h1
                 onClick={() => setIsTitleEditing(true)}
-                className="text-xl font-semibold text-white cursor-pointer hover:text-blue-400 transition-colors flex-1 min-w-0 truncate"
+                className="min-w-0 flex-1 cursor-pointer truncate text-xl font-semibold text-white transition-colors hover:text-blue-400"
                 title="Clique para editar"
               >
                 {automationName}
               </h1>
             )}
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 sm:justify-end">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end sm:gap-3">
             <button
               onClick={() => setShowTemplatesModal(true)}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-white transition-colors hover:bg-purple-700 sm:px-4"
             >
               <Sparkles size={16} />
               <span className="hidden sm:inline">Templates</span>
             </button>
             <button
               onClick={handleClear}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 rounded-lg bg-slate-700 px-3 py-2 text-white transition-colors hover:bg-slate-600 sm:px-4"
             >
               <Trash2 size={16} />
               <span className="hidden sm:inline">Limpar Tudo</span>
             </button>
             <button
               onClick={handleTest}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-white transition-colors hover:bg-blue-700 sm:px-4"
             >
               <Play size={16} />
               <span className="hidden sm:inline">Testar</span>
@@ -669,7 +669,7 @@ const AutomationEditorContent: React.FC = () => {
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-3 sm:px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 font-medium text-white shadow-lg shadow-purple-500/30 transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6"
             >
               <Save size={16} />
               <span className="hidden sm:inline">{isSaving ? "Salvando..." : "Salvar"}</span>
@@ -679,9 +679,9 @@ const AutomationEditorContent: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-auto sm:overflow-hidden">
+      <div className="flex flex-1 overflow-auto sm:overflow-hidden">
         {/* Canvas */}
-        <div className="flex-1 min-w-[900px] min-h-[600px] sm:min-w-0 sm:min-h-0" ref={reactFlowWrapper}>
+        <div className="min-h-[600px] min-w-[900px] flex-1 sm:min-h-0 sm:min-w-0" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -716,9 +716,9 @@ const AutomationEditorContent: React.FC = () => {
               size={1}
               color="#475569"
             />
-            <Controls className="!bg-slate-800 !border-slate-700" showInteractive={false} />
+            <Controls className="!border-slate-700 !bg-slate-800" showInteractive={false} />
             <MiniMap
-              className="!bg-slate-800 !border-slate-700"
+              className="!border-slate-700 !bg-slate-800"
               style={{ bottom: 10, right: -5}}
               nodeColor={(node) => {
                 if (node.type === "triggerNode") return "#a855f7";
@@ -729,7 +729,7 @@ const AutomationEditorContent: React.FC = () => {
           </ReactFlow>
         </div>
 
-        <div className="min-w-[280px] w-[320px] shrink-0">
+        <div className="w-[320px] min-w-[280px] shrink-0">
           {selectedNode ? (
             <NodeConfigPanel
               node={selectedNode}

@@ -167,22 +167,22 @@ const Persons: React.FC = () => {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
               <Users className="text-white" size={32} />
               Pessoas
             </h1>
-            <p className="text-slate-400 mt-1">Gerencie seus contatos e pessoas</p>
+            <p className="mt-1 text-slate-400">Gerencie seus contatos e pessoas</p>
           </div>
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden items-center gap-3 md:flex">
             <Button
               variant="secondary"
               size="sm"
               icon={<RefreshCw size={16} />}
               onClick={loadPersons}
               disabled={loading}
-              className="py-2.5 sm:py-2 sm:min-w-[140px]"
+              className="py-2.5 sm:min-w-[140px] sm:py-2"
             >
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
@@ -206,7 +206,7 @@ const Persons: React.FC = () => {
         )}
 
         {/* Busca e Filtros */}
-        <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex flex-col gap-3 md:flex-row">
           <div className="flex gap-3 md:hidden">
             <Button
               variant="secondary"
@@ -229,7 +229,7 @@ const Persons: React.FC = () => {
             </Button>
           </div>
           {/* Campo de busca */}
-          <div className="flex-1 relative">
+          <div className="relative flex-1">
             <Search
               size={20}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -239,17 +239,17 @@ const Persons: React.FC = () => {
               placeholder="Buscar por nome, email, telefone ou cargo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm sm:text-base text-white placeholder:text-sm placeholder:sm:text-base placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-sm text-white placeholder-slate-400 placeholder:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:text-base placeholder:sm:text-base"
             />
           </div>
 
           {/* Botão de filtros */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+            className={`flex items-center gap-2 rounded-lg border px-4 py-2 transition-colors ${
               showFilters
-                ? "bg-emerald-600 border-emerald-600 text-white"
-                : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"
+                ? "border-emerald-600 bg-emerald-600 text-white"
+                : "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
             }`}
           >
             <Filter size={16} />
@@ -259,10 +259,10 @@ const Persons: React.FC = () => {
 
         {/* Painel de filtros */}
         {showFilters && (
-          <div className="mt-3 p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
+          <div className="mt-3 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
             <div className="flex flex-wrap gap-3">
               <div>
-                <label className="text-sm text-slate-400 block mb-2">Status</label>
+                <label className="mb-2 block text-sm text-slate-400">Status</label>
                 <div className="min-w-[170px]">
                   <SelectMenu
                     value={filterActive}
@@ -288,10 +288,10 @@ const Persons: React.FC = () => {
 
       {/* Tabela de pessoas */}
       {loading ? (
-        <div className="text-center py-12 text-slate-400">Carregando pessoas...</div>
+        <div className="py-12 text-center text-slate-400">Carregando pessoas...</div>
       ) : filteredPersons.length === 0 ? (
-        <div className="text-center py-12 bg-slate-800/50 border border-slate-700 rounded-xl">
-          <p className="text-slate-400 mb-4">
+        <div className="rounded-xl border border-slate-700 bg-slate-800/50 py-12 text-center">
+          <p className="mb-4 text-slate-400">
             {searchTerm || filterActive !== "all"
               ? "Nenhuma pessoa encontrada com os filtros aplicados"
               : "Nenhuma pessoa cadastrada ainda"}
@@ -303,27 +303,27 @@ const Persons: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-800/50 border-b border-slate-700">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                <tr className="border-b border-slate-700 bg-slate-800/50">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Pessoa
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Cargo
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Contato
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Cadastro
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Ações
                   </th>
                 </tr>
@@ -332,12 +332,12 @@ const Persons: React.FC = () => {
                 {paginatedPersons.map((person) => (
                   <tr
                     key={person.id}
-                    className="hover:bg-slate-700/30 transition-colors"
+                    className="transition-colors hover:bg-slate-700/30"
                   >
                     {/* Pessoa */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500/20 text-blue-400">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
                           <User size={20} />
                         </div>
                         <div>
@@ -362,7 +362,7 @@ const Persons: React.FC = () => {
 
                     {/* Contato */}
                     <td className="px-6 py-4">
-                      <div className="text-sm space-y-1">
+                      <div className="space-y-1 text-sm">
                         {(person.email_commercial || person.email) && (
                           <div className="flex items-center gap-2 text-blue-400">
                             <Mail size={14} />
@@ -383,7 +383,7 @@ const Persons: React.FC = () => {
                     {/* Status */}
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
                           person.is_active
                             ? "bg-emerald-500/20 text-emerald-400"
                             : "bg-red-500/20 text-red-400"
@@ -403,14 +403,14 @@ const Persons: React.FC = () => {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleEdit(person)}
-                          className="p-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 transition-colors"
+                          className="rounded-lg bg-yellow-600/20 p-2 text-yellow-400 transition-colors hover:bg-yellow-600/30"
                           title="Editar"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(person)}
-                          className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
+                          className="rounded-lg bg-red-600/20 p-2 text-red-400 transition-colors hover:bg-red-600/30"
                           title="Deletar"
                         >
                           <Trash2 size={16} />
@@ -557,7 +557,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
           {selectedLabel}

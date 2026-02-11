@@ -326,7 +326,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
               return (
                 <div
                   key={product.id}
-                  className="p-3 bg-slate-900/50 border border-slate-700 rounded-lg space-y-3"
+                  className="space-y-3 rounded-lg border border-slate-700 bg-slate-900/50 p-3"
                 >
                   {/* Header do produto */}
                   <div className="flex items-start justify-between">
@@ -341,14 +341,14 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                         <>
                           <button
                             onClick={() => handleStartEdit(product)}
-                            className="p-1 hover:bg-blue-500/20 rounded text-blue-400 hover:text-blue-300 transition-colors"
+                            className="rounded p-1 text-blue-400 transition-colors hover:bg-blue-500/20 hover:text-blue-300"
                             title="Editar produto"
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => handleRemoveProduct(product.id)}
-                            className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
+                            className="rounded p-1 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300"
                             title="Remover produto"
                           >
                             <Trash2 size={16} />
@@ -368,10 +368,10 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                           min="1"
                           value={editValues.quantity}
                           onChange={(e) => setEditValues({ ...editValues, quantity: parseInt(e.target.value) || 1 })}
-                          className="w-full px-2 py-1.5 bg-slate-800 border border-blue-500 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full rounded border border-blue-500 bg-slate-800 px-2 py-1.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       ) : (
-                        <p className="px-2 py-1.5 bg-slate-800/30 border border-slate-700/50 rounded text-white">
+                        <p className="rounded border border-slate-700/50 bg-slate-800/30 px-2 py-1.5 text-white">
                           {product.quantity}
                         </p>
                       )}
@@ -379,7 +379,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
 
                     <div>
                       <label className="text-xs text-slate-400">Valor unitário</label>
-                      <p className="px-2 py-1.5 bg-slate-800/30 border border-slate-700/50 rounded text-white">
+                      <p className="rounded border border-slate-700/50 bg-slate-800/30 px-2 py-1.5 text-white">
                         {formatCurrency(product.unit_price)}
                       </p>
                     </div>
@@ -394,10 +394,10 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                           step="0.01"
                           value={editValues.discountPercent}
                           onChange={(e) => setEditValues({ ...editValues, discountPercent: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1.5 bg-slate-800 border border-blue-500 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full rounded border border-blue-500 bg-slate-800 px-2 py-1.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       ) : (
-                        <p className="px-2 py-1.5 bg-slate-800/30 border border-slate-700/50 rounded text-white">
+                        <p className="rounded border border-slate-700/50 bg-slate-800/30 px-2 py-1.5 text-white">
                           {currentDiscountPercent.toFixed(2)}%
                         </p>
                       )}
@@ -405,7 +405,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
 
                     <div>
                       <label className="text-xs text-slate-400">Total da linha</label>
-                      <p className="px-2 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded text-blue-400 font-medium">
+                      <p className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1.5 font-medium text-blue-400">
                         {formatCurrency(isEditing ? editTotal : product.total)}
                       </p>
                     </div>
@@ -413,11 +413,11 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
 
                   {/* Botões de edição */}
                   {isEditing && (
-                    <div className="flex gap-2 pt-2 border-t border-slate-700/50">
+                    <div className="flex gap-2 border-t border-slate-700/50 pt-2">
                       <button
                         onClick={() => handleSaveEdit(product)}
                         disabled={loading}
-                        className="flex-1 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="flex flex-1 items-center justify-center gap-2 rounded border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
                       >
                         <Check size={16} />
                         Salvar
@@ -425,7 +425,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                       <button
                         onClick={handleCancelEdit}
                         disabled={loading}
-                        className="flex-1 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 border border-slate-600 rounded font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="flex flex-1 items-center justify-center gap-2 rounded border border-slate-600 bg-slate-700/50 px-3 py-1.5 font-medium text-slate-300 transition-colors hover:bg-slate-700 disabled:opacity-50"
                       >
                         <X size={16} />
                         Cancelar
@@ -437,22 +437,22 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
             })}
 
             {/* Totalizadores */}
-            <div className="pt-3 border-t border-slate-700/50 space-y-2">
+            <div className="space-y-2 border-t border-slate-700/50 pt-3">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Subtotal:</span>
-                <span className="text-white font-medium">{formatCurrency(calculateSubtotal())}</span>
+                <span className="font-medium text-white">{formatCurrency(calculateSubtotal())}</span>
               </div>
 
               {calculateTotalDiscount() > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">Desconto total:</span>
-                  <span className="text-red-400 font-medium">- {formatCurrency(calculateTotalDiscount())}</span>
+                  <span className="font-medium text-red-400">- {formatCurrency(calculateTotalDiscount())}</span>
                 </div>
               )}
 
-              <div className="flex justify-between text-base pt-2 border-t border-slate-700/50">
-                <span className="text-white font-semibold">Valor total:</span>
-                <span className="text-emerald-400 font-semibold text-lg">
+              <div className="flex justify-between border-t border-slate-700/50 pt-2 text-base">
+                <span className="font-semibold text-white">Valor total:</span>
+                <span className="text-lg font-semibold text-emerald-400">
                   {formatCurrency(calculateTotal())}
                 </span>
               </div>
@@ -460,20 +460,20 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
 
             {/* Condições de pagamento (se existirem) */}
             {paymentInfo && (
-              <div className="pt-3 border-t border-slate-700/50 space-y-2">
+              <div className="space-y-2 border-t border-slate-700/50 pt-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-slate-300">Condições de Pagamento</h4>
                   <div className="flex gap-1">
                     <button
                       onClick={handleOpenPaymentModal}
-                      className="p-1 hover:bg-blue-500/20 rounded text-blue-400 hover:text-blue-300 transition-colors"
+                      className="rounded p-1 text-blue-400 transition-colors hover:bg-blue-500/20 hover:text-blue-300"
                       title="Editar condições"
                     >
                       <Edit2 size={14} />
                     </button>
                     <button
                       onClick={handleRemovePayment}
-                      className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
+                      className="rounded p-1 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300"
                       title="Remover condições"
                     >
                       <Trash2 size={14} />
@@ -481,9 +481,9 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                   </div>
                 </div>
 
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg space-y-2">
+                <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
                   <div className="flex items-center gap-2 text-sm">
-                    <CreditCard size={16} className="text-emerald-400 flex-shrink-0" />
+                    <CreditCard size={16} className="flex-shrink-0 text-emerald-400" />
                     <span className="text-slate-300">
                       <span className="font-medium text-emerald-400">{paymentInfo.payment_method}</span>
                       {paymentInfo.installments > 1 && (
@@ -493,15 +493,15 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                   </div>
 
                   {paymentInfo.notes && (
-                    <p className="text-xs text-slate-400 pl-6">{paymentInfo.notes}</p>
+                    <p className="pl-6 text-xs text-slate-400">{paymentInfo.notes}</p>
                   )}
                 </div>
               </div>
             )}
 
             {/* Info sobre sincronização com Resumo */}
-            <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-              <Info size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
+              <Info size={16} className="mt-0.5 flex-shrink-0 text-blue-400" />
               <p className="text-xs text-blue-300">
                 O valor total é sincronizado automaticamente com a seção "Resumo". Para editar
                 manualmente, remova todos os produtos.
@@ -509,16 +509,16 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
             </div>
           </div>
         ) : (
-          <div className="text-center py-6">
-            <Package size={32} className="mx-auto text-slate-600 mb-2" />
-            <p className="text-sm text-slate-400 mb-4">Nenhum produto adicionado</p>
+          <div className="py-6 text-center">
+            <Package size={32} className="mx-auto mb-2 text-slate-600" />
+            <p className="mb-4 text-sm text-slate-400">Nenhum produto adicionado</p>
           </div>
         )}
 
         {/* Botão adicionar produto */}
         <button
           onClick={() => setShowProductSearch(true)}
-          className="w-full px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-2 font-medium text-blue-400 transition-colors hover:bg-blue-500/30"
         >
           <Plus size={18} />
           Adicionar produto
@@ -528,10 +528,10 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
         <button
           onClick={handleOpenPaymentModal}
           disabled={products.length === 0}
-          className={`w-full px-4 py-2 border rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+          className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 font-medium transition-colors ${
             products.length > 0
-              ? "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border-emerald-500/50"
-              : "bg-slate-800/30 text-slate-600 border-slate-700/50 cursor-not-allowed"
+              ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+              : "cursor-not-allowed border-slate-700/50 bg-slate-800/30 text-slate-600"
           }`}
         >
           <CreditCard size={18} />
@@ -541,31 +541,31 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
         {/* Modal de busca de produtos (renderizado no body via Portal) */}
         {showProductSearch && ReactDOM.createPortal(
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
             onClick={() => {
               setShowProductSearch(false);
               setSearchTerm("");
             }}
           >
             <div
-              className="bg-slate-800 border border-slate-700 rounded-lg w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl"
+              className="flex max-h-[600px] w-full max-w-lg flex-col rounded-lg border border-slate-700 bg-slate-800 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-slate-700 p-4">
                 <h3 className="font-semibold text-white">Adicionar Produto</h3>
                 <button
                   onClick={() => {
                     setShowProductSearch(false);
                     setSearchTerm("");
                   }}
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-400 transition-colors hover:text-white"
                 >
                   <X size={20} />
                 </button>
               </div>
 
               {/* Campo de busca dentro do modal */}
-              <div className="p-4 border-b border-slate-700">
+              <div className="border-b border-slate-700 p-4">
                 <div className="relative">
                   <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -573,7 +573,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar por nome ou SKU..."
-                    className="w-full pl-10 pr-10 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-10 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                     autoFocus
                   />
                   {searchTerm && (
@@ -607,7 +607,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                       <button
                         key={product.id}
                         onClick={() => handleAddProduct(product.id)}
-                        className="w-full p-3 bg-slate-900/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-left transition-colors"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900/50 p-3 text-left transition-colors hover:bg-slate-700/50"
                       >
                         <div className="flex items-center justify-between">
                           <div>
@@ -631,18 +631,18 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
         {/* Modal de condições de pagamento (renderizado no body via Portal) */}
         {showPaymentModal && ReactDOM.createPortal(
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={() => setShowPaymentModal(false)}
           >
             <div
-              className="bg-slate-800 border border-slate-700 rounded-lg w-full max-w-md shadow-2xl"
+              className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-800 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-slate-700 p-4">
                 <h3 className="font-semibold text-white">Condições de Pagamento</h3>
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-400 transition-colors hover:text-white"
                 >
                   <X size={20} />
                 </button>
@@ -652,13 +652,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                 <div className="space-y-4">
                   {/* Forma de pagamento */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-slate-300">
                       Forma de pagamento *
                     </label>
                     <select
                       value={paymentForm.payment_method}
                       onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                      className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                     >
                       <option value="">Selecione...</option>
                       <option value="Boleto">Boleto</option>
@@ -672,7 +672,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
 
                   {/* Número de parcelas */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-slate-300">
                       Número de parcelas
                     </label>
                     <input
@@ -681,13 +681,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                       max="120"
                       value={paymentForm.installments}
                       onChange={(e) => setPaymentForm({ ...paymentForm, installments: parseInt(e.target.value) || 1 })}
-                      className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                      className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                     />
                   </div>
 
                   {/* Observações */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-slate-300">
                       Observações
                     </label>
                     <textarea
@@ -695,24 +695,24 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                       onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
                       placeholder="Ex: Primeira parcela em 30 dias, sem juros..."
                       rows={3}
-                      className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+                      className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Botões */}
-                <div className="flex gap-2 mt-6">
+                <div className="mt-6 flex gap-2">
                   <button
                     onClick={handleSavePayment}
                     disabled={loading}
-                    className="flex-1 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded-lg font-medium transition-colors disabled:opacity-50"
+                    className="flex-1 rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-4 py-2 font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
                   >
                     Salvar
                   </button>
                   <button
                     onClick={() => setShowPaymentModal(false)}
                     disabled={loading}
-                    className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                    className="flex-1 rounded-lg bg-slate-700 px-4 py-2 font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
                   >
                     Cancelar
                   </button>

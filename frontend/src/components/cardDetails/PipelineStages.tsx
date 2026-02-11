@@ -6,7 +6,7 @@ import listService from "../../services/listService";
 interface PipelineStagesProps {
   boardId: number;
   currentListId: number;
-  onMoveCard: (listId: number) => void;
+  onMoveCard: (_listId: number) => void;
   isMoving?: boolean;
 }
 
@@ -139,15 +139,15 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
     <div className="relative">
       {/* Overlay quando está movendo */}
       {isMoving && (
-        <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] rounded-lg z-10 flex items-center justify-center">
-          <div className="flex items-center gap-2 text-blue-400 font-medium">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-slate-900/50 backdrop-blur-[2px]">
+          <div className="flex items-center gap-2 font-medium text-blue-400">
             <Loader2 size={18} className="animate-spin" />
             <span className="text-sm">Movendo card...</span>
           </div>
         </div>
       )}
 
-      <div className={`flex items-center gap-1 overflow-x-auto py-2 px-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900 ${isMoving ? "pointer-events-none opacity-60" : ""}`}>
+      <div className={`scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900 flex items-center gap-1 overflow-x-auto px-1 py-2 ${isMoving ? "pointer-events-none opacity-60" : ""}`}>
       {lists.map((list, index) => {
         const classes = getStageClasses(list, index);
         const currentPosition = getCurrentPosition();
@@ -163,7 +163,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
               onMouseLeave={() => setHoveredListId(null)}
               disabled={isCurrent}
               className={`
-                relative flex items-center gap-2 px-3 py-2 rounded-lg border transition-all
+                relative flex items-center gap-2 rounded-lg border px-3 py-2 transition-all
                 ${classes.container}
                 ${isCurrent ? "cursor-default" : ""}
               `}
@@ -177,16 +177,16 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
               <div className="relative flex items-center justify-center">
                 {isPassed || isCurrent ? (
                   <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center ${classes.dot}`}
+                    className={`flex h-5 w-5 items-center justify-center rounded-full ${classes.dot}`}
                   >
                     {isPassed && <Check size={12} className="text-white" />}
                     {isCurrent && (
-                      <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                      <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
                     )}
                   </div>
                 ) : (
                   <div
-                    className={`w-4 h-4 rounded-full border-2 ${
+                    className={`h-4 w-4 rounded-full border-2 ${
                       hoveredListId === list.id ? "border-slate-400" : "border-slate-600"
                     }`}
                   />
@@ -194,18 +194,18 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
               </div>
 
               {/* Nome da lista */}
-              <span className={`text-sm whitespace-nowrap ${classes.text}`}>
+              <span className={`whitespace-nowrap text-sm ${classes.text}`}>
                 {list.name}
               </span>
 
               {/* Badge para stages especiais */}
               {list.is_done_stage && (
-                <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded border border-emerald-500/30">
+                <span className="ml-1 rounded border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-xs text-emerald-400">
                   Ganho
                 </span>
               )}
               {list.is_lost_stage && (
-                <span className="ml-1 px-1.5 py-0.5 bg-red-500/20 text-red-400 text-xs rounded border border-red-500/30">
+                <span className="ml-1 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-xs text-red-400">
                   Perdido
                 </span>
               )}

@@ -205,30 +205,30 @@ const Dashboard: React.FC = () => {
   // Renderiza loading skeleton
   if (loading) {
     return (
-      <div className="p-6 space-y-6 overflow-x-hidden">
+      <div className="space-y-6 overflow-x-hidden p-6">
         {/* Header Skeleton */}
-        <div className="flex justify-between items-center">
-          <div className="h-8 w-48 bg-slate-700/50 rounded animate-pulse" />
+        <div className="flex items-center justify-between">
+          <div className="h-8 w-48 animate-pulse rounded bg-slate-700/50" />
           <div className="flex gap-3">
-            <div className="h-10 w-32 bg-slate-700/50 rounded animate-pulse" />
-            <div className="h-10 w-32 bg-slate-700/50 rounded animate-pulse" />
+            <div className="h-10 w-32 animate-pulse rounded bg-slate-700/50" />
+            <div className="h-10 w-32 animate-pulse rounded bg-slate-700/50" />
           </div>
         </div>
 
         {/* KPI Cards Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6 h-32 animate-pulse"
+              className="h-32 animate-pulse rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl"
             />
           ))}
         </div>
 
         {/* Charts Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6 h-80 animate-pulse" />
-          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6 h-80 animate-pulse" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="h-80 animate-pulse rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl" />
+          <div className="h-80 animate-pulse rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl" />
         </div>
       </div>
     );
@@ -237,15 +237,15 @@ const Dashboard: React.FC = () => {
   // Renderiza erro
   if (error) {
     return (
-      <div className="p-6 overflow-x-hidden">
-        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6 text-center">
-          <div className="text-red-400 text-lg font-semibold mb-2">
+      <div className="overflow-x-hidden p-6">
+        <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-6 text-center">
+          <div className="mb-2 text-lg font-semibold text-red-400">
             Erro ao carregar dashboard
           </div>
-          <div className="text-slate-400 mb-4">{error}</div>
+          <div className="mb-4 text-slate-400">{error}</div>
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+            className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
           >
             Tentar Novamente
           </button>
@@ -256,20 +256,20 @@ const Dashboard: React.FC = () => {
 
   // Renderiza dashboard com dados
   return (
-    <div className="p-6 space-y-6 overflow-x-hidden">
+    <div className="space-y-6 overflow-x-hidden p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
         <div className="text-left">
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-white">
             <LayoutDashboard className="text-white" size={32} />
             Dashboard
           </h1>
-          <p className="text-slate-400 text-sm">
+          <p className="text-sm text-slate-400">
             Última atualização: {lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR") : "Carregando..."}
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3 w-full sm:w-auto justify-center sm:justify-start">
+        <div className="flex w-full flex-wrap justify-center gap-3 sm:w-auto sm:justify-start">
           {/* Filtro de Período */}
           <div className="min-w-[180px]">
             <SelectMenu
@@ -282,37 +282,37 @@ const Dashboard: React.FC = () => {
                 { value: "year", label: "Este Ano" },
               ]}
               onChange={(value) => setPeriod(value as PeriodType)}
-              icon={<Calendar className="w-4 h-4 text-slate-400" />}
+              icon={<Calendar className="h-4 w-4 text-slate-400" />}
             />
           </div>
 
           {/* Botão Refresh */}
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-white rounded-lg transition-all"
+            className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/80 px-4 py-2 text-white transition-all hover:bg-slate-700/80"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline">Atualizar</span>
           </button>
 
           {/* Botão Exportar */}
-          <div className="relative group">
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-400 rounded-lg transition-all">
-              <Download className="w-6 h-6 sm:w-4 sm:h-4" />
+          <div className="group relative">
+            <button className="flex items-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-2 text-blue-400 transition-all hover:bg-blue-500/30">
+              <Download className="h-6 w-6 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Exportar</span>
             </button>
 
             {/* Dropdown de exportação */}
-            <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+            <div className="invisible absolute right-0 z-10 mt-2 w-48 rounded-lg border border-slate-700 bg-slate-800 opacity-0 shadow-xl transition-all group-hover:visible group-hover:opacity-100">
               <button
                 onClick={handleExportPDF}
-                className="w-full text-left px-4 py-2 hover:bg-slate-700 text-white rounded-t-lg transition-colors"
+                className="w-full rounded-t-lg px-4 py-2 text-left text-white transition-colors hover:bg-slate-700"
               >
                 Exportar PDF
               </button>
               <button
                 onClick={handleExportExcel}
-                className="w-full text-left px-4 py-2 hover:bg-slate-700 text-white rounded-b-lg transition-colors"
+                className="w-full rounded-b-lg px-4 py-2 text-left text-white transition-colors hover:bg-slate-700"
               >
                 Exportar Excel
               </button>
@@ -322,12 +322,12 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {/* Card: Total de Cards */}
-        <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-xl border border-blue-500/20 rounded-xl p-6 hover:border-blue-500/40 transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-3 bg-blue-500/20 rounded-lg">
-              <Target className="w-6 h-6 text-blue-400" />
+        <div className="rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6 backdrop-blur-xl transition-all hover:border-blue-500/40">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="rounded-lg bg-blue-500/20 p-3">
+              <Target className="h-6 w-6 text-blue-400" />
             </div>
             <div className="text-right">
               <div className="text-sm text-slate-400">Total de Cards</div>
@@ -348,10 +348,10 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card: Valor Total */}
-        <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-xl border border-green-500/20 rounded-xl p-6 hover:border-green-500/40 transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-3 bg-green-500/20 rounded-lg">
-              <DollarSign className="w-6 h-6 text-green-400" />
+        <div className="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-500/10 to-emerald-500/10 p-6 backdrop-blur-xl transition-all hover:border-green-500/40">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="rounded-lg bg-green-500/20 p-3">
+              <DollarSign className="h-6 w-6 text-green-400" />
             </div>
             <div className="text-right">
               <div className="text-sm text-slate-400">Valor em Pipeline</div>
@@ -368,16 +368,16 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-400">
-            <TrendingUp className="w-4 h-4 text-green-400" />
+            <TrendingUp className="h-4 w-4 text-green-400" />
             Cards ativos
           </div>
         </div>
 
         {/* Card: Valor Ganho */}
-        <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6 hover:border-purple-500/40 transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-3 bg-purple-500/20 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-purple-400" />
+        <div className="rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-6 backdrop-blur-xl transition-all hover:border-purple-500/40">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="rounded-lg bg-purple-500/20 p-3">
+              <TrendingUp className="h-6 w-6 text-purple-400" />
             </div>
             <div className="text-right">
               <div className="text-sm text-slate-400">Ganho Este Mês</div>
@@ -401,10 +401,10 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card: Taxa de Conversão */}
-        <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 backdrop-blur-xl border border-orange-500/20 rounded-xl p-6 hover:border-orange-500/40 transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-3 bg-orange-500/20 rounded-lg">
-              <Users className="w-6 h-6 text-orange-400" />
+        <div className="rounded-xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-red-500/10 p-6 backdrop-blur-xl transition-all hover:border-orange-500/40">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="rounded-lg bg-orange-500/20 p-3">
+              <Users className="h-6 w-6 text-orange-400" />
             </div>
             <div className="text-right">
               <div className="text-sm text-slate-400">Taxa de Conversão</div>
@@ -430,16 +430,16 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Cards Ativos e Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* Card: Novos Este Mês */}
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Target className="w-5 h-5 text-blue-400" />
+        <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-lg bg-blue-500/20 p-2">
+              <Target className="h-5 w-5 text-blue-400" />
             </div>
             <h3 className="text-lg font-semibold text-white">Novos Este Mês</h3>
           </div>
-          <div className="text-3xl font-bold text-white mb-2">
+          <div className="mb-2 text-3xl font-bold text-white">
             <CountUp end={kpis?.new_cards_this_month || 0} duration={1.5} separator="." />
           </div>
           <div className="text-sm text-slate-400">
@@ -448,14 +448,14 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card: Cards Vencidos */}
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-red-500/20 rounded-lg">
-              <TrendingDown className="w-5 h-5 text-red-400" />
+        <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-lg bg-red-500/20 p-2">
+              <TrendingDown className="h-5 w-5 text-red-400" />
             </div>
             <h3 className="text-lg font-semibold text-white">Cards Vencidos</h3>
           </div>
-          <div className="text-3xl font-bold text-red-400 mb-2">
+          <div className="mb-2 text-3xl font-bold text-red-400">
             <CountUp end={kpis?.overdue_cards || 0} duration={1.5} separator="." />
           </div>
           <div className="text-sm text-slate-400">
@@ -464,14 +464,14 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card: Tempo Médio */}
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <Calendar className="w-5 h-5 text-purple-400" />
+        <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-lg bg-purple-500/20 p-2">
+              <Calendar className="h-5 w-5 text-purple-400" />
             </div>
             <h3 className="text-lg font-semibold text-white">Tempo Médio</h3>
           </div>
-          <div className="text-3xl font-bold text-white mb-2">
+          <div className="mb-2 text-3xl font-bold text-white">
             {kpis?.avg_time_to_win_days ? (
               <>
                 <CountUp
@@ -493,10 +493,10 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Top Performers */}
-      <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-lg">
-            <Trophy className="w-6 h-6 text-yellow-400" />
+      <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+        <div className="mb-6 flex items-center gap-3">
+          <div className="rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 p-2">
+            <Trophy className="h-6 w-6 text-yellow-400" />
           </div>
           <h3 className="text-lg font-semibold text-white">Top Performers</h3>
         </div>
@@ -509,13 +509,13 @@ const Dashboard: React.FC = () => {
               let badgeColor = "";
 
               if (index === 0) {
-                badgeIcon = <Trophy className="w-5 h-5" />;
+                badgeIcon = <Trophy className="h-5 w-5" />;
                 badgeColor = "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
               } else if (index === 1) {
-                badgeIcon = <Medal className="w-5 h-5" />;
+                badgeIcon = <Medal className="h-5 w-5" />;
                 badgeColor = "text-slate-300 bg-slate-500/10 border-slate-500/30";
               } else if (index === 2) {
-                badgeIcon = <Award className="w-5 h-5" />;
+                badgeIcon = <Award className="h-5 w-5" />;
                 badgeColor = "text-orange-400 bg-orange-500/10 border-orange-500/30";
               } else {
                 badgeColor = "text-slate-400 bg-slate-700/30 border-slate-600/30";
@@ -524,22 +524,22 @@ const Dashboard: React.FC = () => {
               return (
                 <div
                   key={`seller-${index}`}
-                  className="flex items-center justify-between p-4 bg-slate-700/30 border border-slate-600/30 rounded-lg hover:bg-slate-700/50 transition-all"
+                  className="flex items-center justify-between rounded-lg border border-slate-600/30 bg-slate-700/30 p-4 transition-all hover:bg-slate-700/50"
                 >
                   <div className="flex items-center gap-4">
                     {/* Posição/Badge */}
                     <div
-                      className={`flex items-center justify-center w-10 h-10 rounded-lg border ${badgeColor}`}
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg border ${badgeColor}`}
                     >
                       {badgeIcon ? badgeIcon : <span className="font-bold">#{index + 1}</span>}
                     </div>
 
                     {/* Nome */}
                     <div>
-                      <div className="text-white font-medium">
+                      <div className="font-medium text-white">
                         {seller.name || "Sem nome"}
                       </div>
-                      <div className="text-slate-400 text-sm">
+                      <div className="text-sm text-slate-400">
                         {seller.cards_won} deals fechados
                       </div>
                     </div>
@@ -547,37 +547,37 @@ const Dashboard: React.FC = () => {
 
                   {/* Valor Ganho */}
                   <div className="text-right">
-                    <div className="text-green-400 font-semibold">
+                    <div className="font-semibold text-green-400">
                       {formatCurrency(seller.total_value)}
                     </div>
-                    <div className="text-slate-500 text-xs">Valor Total</div>
+                    <div className="text-xs text-slate-500">Valor Total</div>
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="h-48 flex flex-col items-center justify-center text-slate-500">
-            <Users className="w-12 h-12 mb-3 opacity-50" />
+          <div className="flex h-48 flex-col items-center justify-center text-slate-500">
+            <Users className="mb-3 h-12 w-12 opacity-50" />
             <p>Nenhum dado de performance disponível</p>
           </div>
         )}
       </div>
 
       {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Gráfico: Cards por Estágio */}
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Target className="w-6 h-6 text-blue-400" />
+        <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="rounded-lg bg-blue-500/20 p-2">
+              <Target className="h-6 w-6 text-blue-400" />
             </div>
             <h3 className="text-lg font-semibold text-white">Cards por Estágio</h3>
           </div>
 
           {kpis && kpis.cards_by_stage && kpis.cards_by_stage.length > 0 ? (
             <>
-              <p className="text-xs text-slate-500 mb-3">
+              <p className="mb-3 text-xs text-slate-500">
                 Ajuste a visualizacao arrastando a barra para os lados.
               </p>
               <ResponsiveContainer width="100%" height={380}>
@@ -635,25 +635,25 @@ const Dashboard: React.FC = () => {
               </ResponsiveContainer>
             </>
           ) : (
-            <div className="h-80 flex flex-col items-center justify-center text-slate-500">
-              <Target className="w-12 h-12 mb-3 opacity-50" />
+            <div className="flex h-80 flex-col items-center justify-center text-slate-500">
+              <Target className="mb-3 h-12 w-12 opacity-50" />
               <p>Nenhum dado de cards por estágio disponível</p>
             </div>
           )}
         </div>
 
         {/* Gráfico: Evolução de Vendas */}
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-green-500/20 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-green-400" />
+        <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="rounded-lg bg-green-500/20 p-2">
+              <TrendingUp className="h-6 w-6 text-green-400" />
             </div>
             <h3 className="text-lg font-semibold text-white">Evolução de Vendas (Últimos 6 Meses)</h3>
           </div>
 
           {kpis && kpis.sales_evolution && kpis.sales_evolution.length > 0 ? (
             <>
-              <p className="text-xs text-slate-500 mb-3">
+              <p className="mb-3 text-xs text-slate-500">
                 Ajuste a visualizacao arrastando a barra para os lados.
               </p>
               <ResponsiveContainer width="100%" height={380}>
@@ -722,8 +722,8 @@ const Dashboard: React.FC = () => {
               </ResponsiveContainer>
             </>
           ) : (
-            <div className="h-80 flex flex-col items-center justify-center text-slate-500">
-              <TrendingUp className="w-12 h-12 mb-3 opacity-50" />
+            <div className="flex h-80 flex-col items-center justify-center text-slate-500">
+              <TrendingUp className="mb-3 h-12 w-12 opacity-50" />
               <p>Nenhum dado de evolução de vendas disponível</p>
             </div>
           )}
@@ -777,7 +777,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
       >
         <span className="flex items-center gap-2 truncate">
           {icon}

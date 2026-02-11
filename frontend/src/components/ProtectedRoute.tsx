@@ -11,8 +11,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <span className="text-gray-500 text-lg">Carregando...</span>
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="text-lg text-gray-500">Carregando...</span>
       </div>
     );
   }

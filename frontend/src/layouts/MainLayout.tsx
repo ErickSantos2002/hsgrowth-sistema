@@ -71,46 +71,46 @@ export default function MainLayout() {
             {/* Overlay para mobile quando sidebar está aberta */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm"
+                    className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
             {/* Sidebar */}
             <aside
-                className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 bg-gradient-to-b from-slate-900/95 to-slate-950/95 backdrop-blur-xl border-r border-slate-700/50 ${
+                className={`fixed left-0 top-0 z-40 h-screen border-r border-slate-700/50 bg-gradient-to-b from-slate-900/95 to-slate-950/95 backdrop-blur-xl transition-all duration-300 ${
                     sidebarOpen
                         ? "w-64 translate-x-0"
-                        : "w-20 lg:translate-x-0 -translate-x-full"
+                        : "w-20 -translate-x-full lg:translate-x-0"
                 }`}
             >
-                <div className={`h-full py-4 flex flex-col ${sidebarOpen ? "px-3" : "px-2"}`}>
+                <div className={`flex h-full flex-col py-4 ${sidebarOpen ? "px-3" : "px-2"}`}>
                     {/* Logo */}
-                    <div className={`flex items-center mb-8 ${sidebarOpen ? "justify-between px-3" : "justify-center px-0"}`}>
-                        <div className={`flex items-center flex-shrink-0 ${sidebarOpen ? "gap-3" : ""}`}>
-                            <div className={`relative flex items-center justify-center flex-shrink-0 ${sidebarOpen ? "w-12 h-12" : "w-10 h-10"}`}>
-                                <div className="absolute -inset-1 bg-gradient-to-br from-cyan-400 to-blue-300 rounded-full blur-sm"></div>
-                                <div className="relative bg-gradient-to-br from-cyan-300 to-blue-200 rounded-full p-1 overflow-hidden">
+                    <div className={`mb-8 flex items-center ${sidebarOpen ? "justify-between px-3" : "justify-center px-0"}`}>
+                        <div className={`flex flex-shrink-0 items-center ${sidebarOpen ? "gap-3" : ""}`}>
+                            <div className={`relative flex flex-shrink-0 items-center justify-center ${sidebarOpen ? "h-12 w-12" : "h-10 w-10"}`}>
+                                <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-cyan-400 to-blue-300 blur-sm"></div>
+                                <div className="relative overflow-hidden rounded-full bg-gradient-to-br from-cyan-300 to-blue-200 p-1">
                                     <img
                                         src={logo}
                                         alt="HSGrowth CRM"
-                                        className={`object-contain relative z-10 ${sidebarOpen ? "h-8 w-8" : "h-6 w-6"}`}
+                                        className={`relative z-10 object-contain ${sidebarOpen ? "h-8 w-8" : "h-6 w-6"}`}
                                     />
                                 </div>
                             </div>
                             {sidebarOpen && (
                                 <div>
-                                    <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                                    <h1 className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-xl font-bold text-transparent">
                                         HSGrowth
                                     </h1>
-                                    <p className="text-xs text-slate-500 mt-1">CRM & Sales</p>
+                                    <p className="mt-1 text-xs text-slate-500">CRM & Sales</p>
                                 </div>
                             )}
                         </div>
                         {sidebarOpen && (
                             <button
                                 onClick={() => setSidebarOpen(false)}
-                                className="lg:hidden text-slate-400 hover:text-white transition-colors"
+                                className="text-slate-400 transition-colors hover:text-white lg:hidden"
                             >
                                 <X size={24} />
                             </button>
@@ -118,7 +118,7 @@ export default function MainLayout() {
                     </div>
 
                     {/* Menu Items */}
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+                    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
                         <ul className="space-y-2 font-medium">
                             {menuItems.map((item) => {
                                 // Ocultar itens de admin se o usuário não for admin
@@ -151,7 +151,7 @@ export default function MainLayout() {
                                                     setSidebarOpen(false);
                                                 }
                                             }}
-                                            className={`flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
+                                            className={`group relative flex items-center rounded-xl p-3 transition-all duration-200 ${
                                                 isActive
                                                     ? "bg-slate-800 text-white shadow-lg shadow-slate-800/20"
                                                     : "text-slate-300 hover:bg-slate-800/50 hover:text-white"
@@ -160,7 +160,7 @@ export default function MainLayout() {
                                         >
                                             <Icon
                                                 size={20}
-                                                className={`${sidebarOpen ? "mr-3" : ""} ${isActive ? "" : "group-hover:scale-110 transition-transform"}`}
+                                                className={`${sidebarOpen ? "mr-3" : ""} ${isActive ? "" : "transition-transform group-hover:scale-110"}`}
                                             />
                                             {sidebarOpen && (
                                                 <>
@@ -168,10 +168,10 @@ export default function MainLayout() {
                                                     {/* Badge de Admin */}
                                                     {item.adminOnly && (
                                                         <span
-                                                            className={`ml-auto text-xs px-2 py-0.5 rounded border ${
+                                                            className={`ml-auto rounded border px-2 py-0.5 text-xs ${
                                                                 isActive
-                                                                    ? "bg-emerald-700 text-white border-emerald-600/60"
-                                                                    : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                                                    ? "border-emerald-600/60 bg-emerald-700 text-white"
+                                                                    : "border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
                                                             }`}
                                                         >
                                                             Admin
@@ -181,7 +181,7 @@ export default function MainLayout() {
                                             )}
                                             {/* Tooltip para modo mini */}
                                             {!sidebarOpen && (
-                                                <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-slate-700">
+                                                <div className="pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white opacity-0 transition-opacity group-hover:opacity-100">
                                                     {item.label}
                                                     {item.adminOnly && (
                                                         <span className="ml-2 text-xs text-orange-400">
@@ -199,9 +199,9 @@ export default function MainLayout() {
 
                     {/* Rodapé da Sidebar */}
                     {sidebarOpen && (
-                        <div className="mt-auto px-3 py-4 border-t border-slate-700/50">
-                            <div className="text-center space-y-1">
-                                <p className="text-xs text-slate-500 font-medium">
+                        <div className="mt-auto border-t border-slate-700/50 px-3 py-4">
+                            <div className="space-y-1 text-center">
+                                <p className="text-xs font-medium text-slate-500">
                                     HSGrowth CRM v1.1.5
                                 </p>
                                 <p className="text-[10px] text-slate-600">
@@ -214,13 +214,13 @@ export default function MainLayout() {
             </aside>
 
             {/* Main Content */}
-            <div className={`${sidebarOpen ? "lg:ml-64" : "lg:ml-20"} transition-all duration-300 h-screen flex flex-col`}>
+            <div className={`${sidebarOpen ? "lg:ml-64" : "lg:ml-20"} flex h-screen flex-col transition-all duration-300`}>
                 {/* Top Navbar */}
-                <nav className="flex-shrink-0 z-[2000] bg-slate-900/50 backdrop-blur-xl border-b border-slate-700/50 px-6 py-4">
+                <nav className="z-[2000] flex-shrink-0 border-b border-slate-700/50 bg-slate-900/50 px-6 py-4 backdrop-blur-xl">
                     <div className="flex items-center justify-between gap-4">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-2 text-slate-400 rounded-lg hover:bg-slate-800/50 hover:text-white transition-all flex-shrink-0"
+                            className="flex-shrink-0 rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-800/50 hover:text-white"
                         >
                             <Menu size={24} />
                         </button>
@@ -228,12 +228,12 @@ export default function MainLayout() {
                         {/* Busca Global */}
                         <GlobalSearch />
 
-                        <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="flex flex-shrink-0 items-center gap-3">
                             {/* Avatar + Info do Usuário */}
-                            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:bg-slate-800/70 transition-all">
+                            <div className="flex items-center gap-3 rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-2 transition-all hover:bg-slate-800/70">
                                 {/* Avatar com inicial do nome */}
                                 <div className="relative">
-                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg">
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-semibold text-white shadow-lg">
                                         {(user?.full_name || user?.username || "U")
                                             .split(" ")
                                             .map((n) => n[0])
@@ -242,12 +242,12 @@ export default function MainLayout() {
                                             .toUpperCase()}
                                     </div>
                                     {/* Indicador online */}
-                                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-slate-900 rounded-full"></div>
+                                    <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-slate-900 bg-green-400"></div>
                                 </div>
 
                                 {/* Nome e Role */}
-                                <div className="hidden md:flex flex-col">
-                                    <span className="text-sm text-white font-medium">
+                                <div className="hidden flex-col md:flex">
+                                    <span className="text-sm font-medium text-white">
                                         {user?.full_name || user?.username || "Usuário"}
                                     </span>
                                     <span className="text-xs text-slate-400">
@@ -266,7 +266,7 @@ export default function MainLayout() {
                             {/* Botão Sair (só ícone) */}
                             <button
                                 onClick={handleLogout}
-                                className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/30 transition-all"
+                                className="rounded-lg border border-red-500/20 bg-red-500/10 p-2.5 text-red-400 transition-all hover:border-red-500/30 hover:bg-red-500/20"
                                 title="Sair"
                             >
                                 <LogOut size={22} />

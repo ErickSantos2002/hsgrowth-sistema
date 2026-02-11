@@ -7,7 +7,7 @@ import userService from "../../services/userService";
 interface NodeConfigPanelProps {
   node: FlowNode | null;
   onClose: () => void;
-  onSave: (nodeId: string, config: any) => void;
+  onSave: (_nodeId: string, _config: any) => void;
 }
 
 const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave }) => {
@@ -97,7 +97,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
             {nodeType === "card_moved" && (
               <>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="mb-2 block text-sm font-medium text-slate-300">
                     Board
                   </label>
                   <SelectMenu
@@ -111,7 +111,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="mb-2 block text-sm font-medium text-slate-300">
                     Para a lista
                   </label>
                   <SelectMenu
@@ -123,7 +123,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                     ]}
                     disabled={!config.board_id}
                   />
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="mt-1 text-xs text-slate-400">
                     Deixe vazio para qualquer movimento de card
                   </p>
                 </div>
@@ -136,7 +136,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
         return (
           <>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Frequência
               </label>
               <SelectMenu
@@ -152,14 +152,14 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Horário
               </label>
               <input
                 type="time"
                 value={config.time || "09:00"}
                 onChange={(e) => updateConfig("time", e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white focus:border-transparent focus:ring-2 focus:ring-purple-500"
               />
             </div>
           </>
@@ -167,7 +167,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
       case "manual":
         return (
-          <div className="text-sm text-slate-400 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+          <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-slate-400">
             <p className="mb-2">👆 <strong>Trigger Manual</strong></p>
             <p>Esta automação será executada apenas quando um usuário clicar em um botão específico (ex: no card ou em uma lista).</p>
             <p className="mt-2 text-xs">Não requer configuração adicional.</p>
@@ -190,10 +190,10 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
         return (
           <>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Vendedores no rodízio
               </label>
-              <div className="space-y-2 max-h-60 overflow-y-auto bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+              <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-slate-600 bg-slate-700/50 p-3">
                 {users.filter(u => u.role === "salesperson").length === 0 ? (
                   <p className="text-sm text-slate-400">Nenhum vendedor encontrado</p>
                 ) : (
@@ -202,7 +202,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                     return (
                       <label
                         key={user.id}
-                        className="flex items-center gap-2 p-2 hover:bg-slate-700 rounded cursor-pointer transition-colors"
+                        className="flex cursor-pointer items-center gap-2 rounded p-2 transition-colors hover:bg-slate-700"
                       >
                         <input
                           type="checkbox"
@@ -217,7 +217,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                             }
                             updateConfig("user_ids", newIds);
                           }}
-                          className="w-4 h-4 bg-slate-700 border-slate-600 rounded focus:ring-2 focus:ring-purple-500"
+                          className="h-4 w-4 rounded border-slate-600 bg-slate-700 focus:ring-2 focus:ring-purple-500"
                         />
                         <span className="text-sm text-white">
                           {user.name}
@@ -227,14 +227,14 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                   })
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="mt-2 text-xs text-slate-400">
                 {(config.user_ids || []).length === 0
                   ? "⚠️ Nenhum vendedor selecionado. Todos os vendedores ativos participarão do rodízio."
                   : `✓ ${(config.user_ids || []).length} vendedor(es) selecionado(s)`}
               </p>
             </div>
 
-            <div className="text-sm text-slate-400 bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+            <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4 text-sm text-slate-400">
               <p className="mb-2">🔄 <strong>Como funciona:</strong></p>
               <p>Cards serão distribuídos automaticamente entre os vendedores selecionados em sistema de rodízio equilibrado.</p>
             </div>
@@ -245,10 +245,10 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
         return (
           <>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 SDRs no rodízio
               </label>
-              <div className="space-y-2 max-h-60 overflow-y-auto bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+              <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-slate-600 bg-slate-700/50 p-3">
                 {users.filter(u => u.role === "sdr").length === 0 ? (
                   <p className="text-sm text-slate-400">Nenhum SDR encontrado</p>
                 ) : (
@@ -257,7 +257,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                     return (
                       <label
                         key={user.id}
-                        className="flex items-center gap-2 p-2 hover:bg-slate-700 rounded cursor-pointer transition-colors"
+                        className="flex cursor-pointer items-center gap-2 rounded p-2 transition-colors hover:bg-slate-700"
                       >
                         <input
                           type="checkbox"
@@ -272,7 +272,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                             }
                             updateConfig("user_ids", newIds);
                           }}
-                          className="w-4 h-4 bg-slate-700 border-slate-600 rounded focus:ring-2 focus:ring-cyan-500"
+                          className="h-4 w-4 rounded border-slate-600 bg-slate-700 focus:ring-2 focus:ring-cyan-500"
                         />
                         <span className="text-sm text-white">
                           {user.name}
@@ -282,14 +282,14 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                   })
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="mt-2 text-xs text-slate-400">
                 {(config.user_ids || []).length === 0
                   ? "⚠️ Nenhum SDR selecionado. Todos os SDRs ativos participarão do rodízio."
                   : `✓ ${(config.user_ids || []).length} SDR(s) selecionado(s)`}
               </p>
             </div>
 
-            <div className="text-sm text-slate-400 bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+            <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-slate-400">
               <p className="mb-2">🔄 <strong>Como funciona:</strong></p>
               <p>Cards serão distribuídos automaticamente entre os SDRs selecionados em sistema de rodízio equilibrado.</p>
             </div>
@@ -300,7 +300,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
         return (
           <>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Atribuir para *
               </label>
               <SelectMenu
@@ -322,7 +322,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
         return (
           <>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Board de destino *
               </label>
               <SelectMenu
@@ -336,7 +336,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Lista de destino *
               </label>
               <SelectMenu
@@ -354,7 +354,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
       case "mark_won":
         return (
-          <div className="text-sm text-slate-400 bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+          <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-slate-400">
             <p className="mb-2">✅ <strong>Marcar como Ganho</strong></p>
             <p>Esta ação marca o card como ganho automaticamente.</p>
             <p className="mt-2 text-xs">Não requer configuração adicional.</p>
@@ -363,7 +363,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
       case "mark_lost":
         return (
-          <div className="text-sm text-slate-400 bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-slate-400">
             <p className="mb-2">❌ <strong>Marcar como Perdido</strong></p>
             <p>Esta ação marca o card como perdido automaticamente.</p>
             <p className="mt-2 text-xs">Não requer configuração adicional.</p>
@@ -374,7 +374,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
         return (
           <>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Destinatário *
               </label>
               <SelectMenu
@@ -388,7 +388,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Mensagem *
               </label>
               <textarea
@@ -396,9 +396,9 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 onChange={(e) => updateConfig("message", e.target.value)}
                 placeholder="Mensagem da notificação..."
                 rows={3}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                className="w-full resize-none rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white placeholder-slate-400 focus:border-transparent focus:ring-2 focus:ring-emerald-500"
               />
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="mt-1 text-xs text-slate-400">
                 Variáveis: {"{"}card_title{"}"}, {"{"}user_name{"}"}
               </p>
             </div>
@@ -409,7 +409,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
         return (
           <>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Campo do Cliente *
               </label>
               <SelectMenu
@@ -434,7 +434,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
             {config.field_name === "relationship_type" && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-slate-300">
                   Valor *
                 </label>
                 <SelectMenu
@@ -447,7 +447,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                     { value: "Cliente", label: "Cliente" },
                   ]}
                 />
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="mt-1 text-xs text-slate-400">
                   Nota: Cliente → Lead/Prospect é bloqueado pelo sistema
                 </p>
               </div>
@@ -455,7 +455,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
             {config.field_name === "commercial_activity" && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-slate-300">
                   Valor *
                 </label>
                 <SelectMenu
@@ -473,7 +473,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
             {config.field_name === "employee_count" && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-slate-300">
                   Valor *
                 </label>
                 <SelectMenu
@@ -494,7 +494,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
             {config.field_name === "annual_revenue" && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-slate-300">
                   Valor *
                 </label>
                 <SelectMenu
@@ -515,7 +515,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
             {config.field_name && !["relationship_type", "commercial_activity", "employee_count", "annual_revenue"].includes(config.field_name) && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-slate-300">
                   Valor *
                 </label>
                 <input
@@ -523,12 +523,12 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                   value={config.value || ""}
                   onChange={(e) => updateConfig("value", e.target.value)}
                   placeholder={`Digite o valor para ${config.field_name}`}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white placeholder-slate-400 focus:border-transparent focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             )}
 
-            <div className="text-sm text-slate-400 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+            <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-slate-400">
               <p className="mb-2">📝 <strong>Atualizar Campo do Cliente</strong></p>
               <p>Esta ação atualiza um campo do cliente vinculado ao card.</p>
               {config.field_name && (
@@ -551,26 +551,26 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
   };
 
   return (
-    <div className="w-80 h-[calc(100vh-70px)] bg-slate-800/50 backdrop-blur border-l border-slate-700 p-4 overflow-y-auto overflow-x-hidden flex flex-col">
+    <div className="flex h-[calc(100vh-70px)] w-80 flex-col overflow-y-auto overflow-x-hidden border-l border-slate-700 bg-slate-800/50 p-4 backdrop-blur">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-white">{node.data.label}</h3>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="mt-1 text-sm text-slate-400">
             {isTrigger ? "Configurar gatilho" : "Configurar ação"}
           </p>
         </div>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+          className="rounded-lg p-2 transition-colors hover:bg-slate-700"
         >
           <X size={20} className="text-slate-400" />
         </button>
       </div>
 
       {/* Alert de informação */}
-      <div className="mb-6 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex gap-3">
-        <AlertCircle size={18} className="text-blue-400 flex-shrink-0 mt-0.5" />
+      <div className="mb-6 flex gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
+        <AlertCircle size={18} className="mt-0.5 flex-shrink-0 text-blue-400" />
         <p className="text-xs text-blue-300">
           Configure os parâmetros necessários para este {isTrigger ? "gatilho" : "ação"}.
           Campos marcados com * são obrigatórios.
@@ -578,21 +578,21 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
       </div>
 
       {/* Form de configuração */}
-      <div className="flex-1 overflow-y-auto mb-6">
+      <div className="mb-6 flex-1 overflow-y-auto">
         {isTrigger ? renderTriggerConfig() : renderActionConfig()}
       </div>
 
       {/* Botões de ação */}
-      <div className="flex gap-3 flex-shrink-0">
+      <div className="flex flex-shrink-0 gap-3">
         <button
           onClick={onClose}
-          className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+          className="flex-1 rounded-lg bg-slate-700 px-4 py-2 text-white transition-colors hover:bg-slate-600"
         >
           Cancelar
         </button>
         <button
           onClick={handleSave}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white transition-colors hover:bg-emerald-700"
         >
           <Save size={16} />
           Salvar
@@ -640,8 +640,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         type="button"
         onClick={() => !disabled && setIsOpen((open) => !open)}
         disabled={disabled}
-        className={`w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-          disabled ? "opacity-50 cursor-not-allowed" : ""
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "cursor-not-allowed opacity-50" : ""
         }`}
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
@@ -653,7 +653,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && !disabled && (
-        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value || option.label}

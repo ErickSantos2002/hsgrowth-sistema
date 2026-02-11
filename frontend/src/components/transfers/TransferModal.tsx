@@ -273,7 +273,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+            className="rounded-lg bg-slate-700 px-4 py-2 text-white transition-colors hover:bg-slate-600"
             disabled={loading}
           >
             Cancelar
@@ -281,12 +281,12 @@ const TransferModal: React.FC<TransferModalProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-600"
             disabled={loading}
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
                 Criando...
               </>
             ) : (
@@ -302,8 +302,8 @@ const TransferModal: React.FC<TransferModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Modo de Transferência */}
         {!preSelectedCardId && (
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+            <label className="mb-2 block text-sm font-medium text-slate-300">
               Modo de Transferência
             </label>
             <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Modo de Transferência">
@@ -312,7 +312,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
                 role="radio"
                 aria-checked={transferMode === "single"}
                 onClick={() => setTransferMode("single")}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
                   transferMode === "single"
                     ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
                     : "border-slate-700 text-slate-200 hover:border-slate-500"
@@ -330,7 +330,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
                 role="radio"
                 aria-checked={transferMode === "batch"}
                 onClick={() => setTransferMode("batch")}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
                   transferMode === "batch"
                     ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
                     : "border-slate-700 text-slate-200 hover:border-slate-500"
@@ -349,7 +349,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Seleção de Board */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="mb-2 block text-sm font-medium text-slate-300">
             Board *
           </label>
           <SelectMenu
@@ -371,13 +371,13 @@ const TransferModal: React.FC<TransferModalProps> = ({
             disabled={loading}
           />
           {!selectedBoardId && (
-            <p className="text-slate-400 text-xs mt-1">
+            <p className="mt-1 text-xs text-slate-400">
               Selecione um board para ver os cards disponíveis
             </p>
           )}
           {loadingCards && (
-            <p className="text-emerald-400 text-xs mt-1 flex items-center gap-1">
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-emerald-400"></div>
+            <p className="mt-1 flex items-center gap-1 text-xs text-emerald-400">
+              <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-emerald-400"></div>
               Carregando cards...
             </p>
           )}
@@ -385,8 +385,8 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Mensagem quando nenhum board selecionado */}
         {!selectedBoardId && (
-          <div className="bg-blue-900/20 border border-blue-500/50 rounded-lg p-4">
-            <p className="text-blue-300 text-sm text-center">
+          <div className="rounded-lg border border-blue-500/50 bg-blue-900/20 p-4">
+            <p className="text-center text-sm text-blue-300">
               Selecione um board acima para visualizar os cards disponíveis
             </p>
           </div>
@@ -395,7 +395,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
         {/* Transferência Única */}
         {transferMode === "single" && selectedBoardId > 0 && (
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="mb-2 block text-sm font-medium text-slate-300">
               Card *
             </label>
             <select
@@ -403,7 +403,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
               onChange={(e) =>
                 setFormData({ ...formData, card_id: Number(e.target.value) })
               }
-              className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               disabled={!!preSelectedCardId || loading || loadingCards}
             >
               <option value={0}>
@@ -420,7 +420,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
               ))}
             </select>
             {errors.card_id && (
-              <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
+              <p className="mt-1 flex items-center gap-1 text-sm text-red-400">
                 <AlertCircle size={14} />
                 {errors.card_id}
               </p>
@@ -431,14 +431,14 @@ const TransferModal: React.FC<TransferModalProps> = ({
         {/* Transferência em Lote */}
         {transferMode === "batch" && selectedBoardId > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-2 flex items-center justify-between">
               <label className="block text-sm font-medium text-slate-300">
                 Cards * (máximo 50)
               </label>
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className="text-sm text-emerald-400 hover:text-emerald-300 disabled:text-slate-500 disabled:cursor-not-allowed"
+                className="text-sm text-emerald-400 hover:text-emerald-300 disabled:cursor-not-allowed disabled:text-slate-500"
                 disabled={loadingCards || myCards.length === 0}
               >
                 {batchFormData.card_ids.length === myCards.length
@@ -446,23 +446,23 @@ const TransferModal: React.FC<TransferModalProps> = ({
                   : "Selecionar Todos"}
               </button>
             </div>
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
+            <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 p-3">
               {loadingCards ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-400 mx-auto mb-2"></div>
-                  <p className="text-slate-400 text-sm">Carregando cards...</p>
+                <div className="py-8 text-center">
+                  <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-b-2 border-emerald-400"></div>
+                  <p className="text-sm text-slate-400">Carregando cards...</p>
                 </div>
               ) : myCards.length === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-4">
+                <p className="py-4 text-center text-sm text-slate-400">
                   Você não possui cards atribuídos neste board
                 </p>
               ) : (
                 myCards.map((card) => (
                   <label
                     key={card.id}
-                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-slate-700/50 transition-colors ${
+                    className={`flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-700/50 ${
                       batchFormData.card_ids.includes(card.id)
-                        ? "bg-emerald-900/30 border border-emerald-500/50"
+                        ? "border border-emerald-500/50 bg-emerald-900/30"
                         : ""
                     }`}
                   >
@@ -477,11 +477,11 @@ const TransferModal: React.FC<TransferModalProps> = ({
                       }
                     />
                     <div className="flex-1">
-                      <p className="text-white text-sm font-medium">
+                      <p className="text-sm font-medium text-white">
                         {card.title}
                       </p>
                       {card.list_name && (
-                        <p className="text-slate-400 text-xs">
+                        <p className="text-xs text-slate-400">
                           {card.list_name}
                         </p>
                       )}
@@ -490,11 +490,11 @@ const TransferModal: React.FC<TransferModalProps> = ({
                 ))
               )}
             </div>
-            <p className="text-slate-400 text-xs mt-1">
+            <p className="mt-1 text-xs text-slate-400">
               {batchFormData.card_ids.length} card(s) selecionado(s)
             </p>
             {errors.card_ids && (
-              <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
+              <p className="mt-1 flex items-center gap-1 text-sm text-red-400">
                 <AlertCircle size={14} />
                 {errors.card_ids}
               </p>
@@ -504,7 +504,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Usuário Destinatário */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="mb-2 block text-sm font-medium text-slate-300">
             Transferir para *
           </label>
           <SelectMenu
@@ -531,7 +531,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
             disabled={loading}
           />
           {errors.to_user_id && (
-            <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
+            <p className="mt-1 flex items-center gap-1 text-sm text-red-400">
               <AlertCircle size={14} />
               {errors.to_user_id}
             </p>
@@ -540,7 +540,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Motivo */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="mb-2 block text-sm font-medium text-slate-300">
             Motivo da Transferência *
           </label>
           <SelectMenu
@@ -563,7 +563,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Observações */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="mb-2 block text-sm font-medium text-slate-300">
             Observações (opcional)
           </label>
           <textarea
@@ -580,14 +580,14 @@ const TransferModal: React.FC<TransferModalProps> = ({
             }}
             rows={3}
             placeholder="Adicione detalhes sobre o motivo da transferência..."
-            className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+            className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             disabled={loading}
           />
         </div>
 
         {/* Alerta informativo */}
-        <div className="bg-blue-900/20 border border-blue-500/50 rounded-lg p-3">
-          <p className="text-blue-300 text-sm">
+        <div className="rounded-lg border border-blue-500/50 bg-blue-900/20 p-3">
+          <p className="text-sm text-blue-300">
             <strong>Importante:</strong> Após criar a transferência, ela pode
             precisar de aprovação dependendo das configurações do sistema.
           </p>
@@ -648,8 +648,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
         type="button"
         onClick={() => setIsOpen((open) => !open)}
         disabled={disabled}
-        className={`w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-          disabled ? "opacity-60 cursor-not-allowed" : ""
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "cursor-not-allowed opacity-60" : ""
         }`}
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>

@@ -69,19 +69,19 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
       {...listeners}
       data-kanban-card
       onClick={onClick}
-      className="bg-white/5 hover:bg-white/10 border border-slate-700/30 hover:border-slate-600 p-3.5 rounded-lg transition-all cursor-pointer group shadow-sm hover:shadow-md"
+      className="group cursor-pointer rounded-lg border border-slate-700/30 bg-white/5 p-3.5 shadow-sm transition-all hover:border-slate-600 hover:bg-white/10 hover:shadow-md"
     >
       {/* Título */}
-      <h4 className="text-white text-[15px] mb-2 line-clamp-2 leading-snug">
+      <h4 className="mb-2 line-clamp-2 text-[15px] leading-snug text-white">
         {card.title}
       </h4>
 
       {/* Badges compactos no topo (só mostrar se relevante) */}
-      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
         {/* Badge de status (só se ganho ou perdido) */}
         {(card.is_won || card.is_lost) && (
           <span
-            className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${getStatusColor()}`}
+            className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${getStatusColor()}`}
           >
             {getStatusText()}
           </span>
@@ -94,9 +94,9 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
               const { text, isOverdue } = formatDueDate(card.due_date);
               return (
                 <span
-                  className={`px-1.5 py-0.5 text-[10px] rounded flex items-center gap-0.5 ${
+                  className={`flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] ${
                     isOverdue
-                      ? "bg-red-500/20 text-red-400 font-medium"
+                      ? "bg-red-500/20 font-medium text-red-400"
                       : "bg-slate-700/50 text-slate-400"
                   }`}
                 >
@@ -113,7 +113,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
       <div className="flex items-center justify-between text-xs">
         {/* Valor compacto */}
         {card.value ? (
-          <span className="text-green-400 font-medium">
+          <span className="font-medium text-green-400">
             R$ {card.value.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </span>
         ) : (
@@ -123,7 +123,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
         {/* Avatar do responsável (menor e mais discreto) */}
         {card.assigned_to_name && (
           <div
-            className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-[10px] font-semibold"
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-[10px] font-semibold text-white"
             title={card.assigned_to_name}
           >
             {card.assigned_to_name

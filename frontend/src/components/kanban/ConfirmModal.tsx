@@ -42,7 +42,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       subtitle={isDanger ? "Esta ação não pode ser desfeita" : undefined}
       size="md"
       footer={
-        <div className="flex gap-3 justify-end">
+        <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
@@ -57,7 +57,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         {isDanger ? (
           <Alert type="error" title="Atenção!">
             <div className="flex items-start gap-2">
-              <AlertTriangle size={18} className="flex-shrink-0 mt-0.5" />
+              <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
               <span>Esta é uma ação destrutiva e permanente.</span>
             </div>
           </Alert>
@@ -68,8 +68,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         )}
 
         {/* Mensagem principal */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-          <p className="text-slate-200 leading-relaxed">{message}</p>
+        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+          <p className="leading-relaxed text-slate-200">{message}</p>
         </div>
       </div>
     </BaseModal>

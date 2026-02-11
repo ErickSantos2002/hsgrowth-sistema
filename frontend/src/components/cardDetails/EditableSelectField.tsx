@@ -4,12 +4,12 @@ import { Pencil, Check, X, ChevronDown } from "lucide-react";
 interface EditableSelectFieldProps {
   label: string;
   value: string | number | null | undefined;
-  onSave: (value: string) => Promise<void> | void;
+  onSave: (_value: string) => Promise<void> | void;
   options: Array<{ value: string; label: string }>;
   placeholder?: string;
   disabled?: boolean;
   icon?: React.ReactNode;
-  format?: (value: any) => string; // Função para formatar o valor na exibição
+  format?: (_value: any) => string; // Função para formatar o valor na exibição
 }
 
 /**
@@ -74,7 +74,7 @@ const EditableSelectField: React.FC<EditableSelectFieldProps> = ({
       </div>
 
       {/* Campo editável */}
-      <div className="relative group">
+      <div className="group relative">
         {isEditing ? (
           <div className="flex items-center gap-2">
             {/* Select de edição */}
@@ -90,14 +90,14 @@ const EditableSelectField: React.FC<EditableSelectFieldProps> = ({
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="p-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 rounded-lg transition-colors"
+              className="rounded-lg bg-emerald-600 p-2 transition-colors hover:bg-emerald-700 disabled:bg-slate-700"
             >
               <Check size={16} className="text-white" />
             </button>
             <button
               onClick={handleCancel}
               disabled={isSaving}
-              className="p-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 rounded-lg transition-colors"
+              className="rounded-lg bg-slate-700 p-2 transition-colors hover:bg-slate-600 disabled:bg-slate-800"
             >
               <X size={16} className="text-white" />
             </button>
@@ -105,10 +105,10 @@ const EditableSelectField: React.FC<EditableSelectFieldProps> = ({
         ) : (
           <div
             onClick={handleStartEdit}
-            className={`px-3 py-2 border rounded-lg transition-colors ${
+            className={`rounded-lg border px-3 py-2 transition-colors ${
               disabled
-                ? "border-slate-800 bg-slate-900/30 cursor-not-allowed"
-                : "border-slate-700 bg-slate-900/50 cursor-pointer hover:bg-slate-800/50 hover:border-slate-600"
+                ? "cursor-not-allowed border-slate-800 bg-slate-900/30"
+                : "cursor-pointer border-slate-700 bg-slate-900/50 hover:border-slate-600 hover:bg-slate-800/50"
             } flex items-center justify-between`}
           >
             <span className={`text-sm ${value ? "text-white" : "text-slate-500"}`}>
@@ -117,7 +117,7 @@ const EditableSelectField: React.FC<EditableSelectFieldProps> = ({
             {!disabled && (
               <Pencil
                 size={14}
-                className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-slate-400 opacity-0 transition-opacity group-hover:opacity-100"
               />
             )}
           </div>
@@ -183,8 +183,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
           setIsOpen((open) => !open);
         }}
         disabled={disabled}
-        className={`w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-          disabled ? "opacity-60 cursor-not-allowed" : ""
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "cursor-not-allowed opacity-60" : ""
         }`}
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
@@ -196,7 +196,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value || option.label}

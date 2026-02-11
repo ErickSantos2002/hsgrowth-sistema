@@ -1,0 +1,487 @@
+
+> hsgrowth-sistema@1.0.0 lint
+> eslint . --ext .ts,.tsx
+
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\AutomationRoundRobinForm.tsx
+   22:16  warning  Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+   67:6   warning  React Hook useEffect has a missing dependency: 'getInitialFormData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  154:73  warning  Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  156:58  warning  Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  160:19  warning  Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  325:14  error    'value' is defined but never used                                                                                      no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\ModalTrocarSenha.tsx
+  6:15  error  'novaSenha' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\NotificationDropdown.tsx
+   7:3  error    'X' is defined but never used                                                                                           no-unused-vars
+   7:3  warning  'X' is defined but never used. Allowed unused vars must match /^_/u                                                     @typescript-eslint/no-unused-vars
+  57:6  warning  React Hook useEffect has a missing dependency: 'previousUnreadCount'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\automations\ActionNode.tsx
+  10:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\automations\NodeConfigPanel.tsx
+   10:12  error    'nodeId' is defined but never used        no-unused-vars
+   10:28  error    'config' is defined but never used        no-unused-vars
+   10:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   14:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   15:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   16:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   17:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   84:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  614:14  error    'value' is defined but never used         no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\automations\NodesSidebar.tsx
+    9:3   error    'FilePlus' is defined but never used                                        no-unused-vars
+    9:3   warning  'FilePlus' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   10:3   error    'Mail' is defined but never used                                            no-unused-vars
+   10:3   warning  'Mail' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  136:17  error    'event' is defined but never used                                           no-unused-vars
+  136:41  error    'nodeType' is defined but never used                                        no-unused-vars
+  136:59  error    'category' is defined but never used                                        no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\automations\TemplatesModal.tsx
+  347:22  error  'nodes' is defined but never used  no-unused-vars
+  347:37  error  'edges' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\automations\TriggerNode.tsx
+  11:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\boards\BoardCard.tsx
+  28:12  error  'board' is defined but never used  no-unused-vars
+  29:17  error  'board' is defined but never used  no-unused-vars
+  30:21  error  'board' is defined but never used  no-unused-vars
+  31:14  error  'board' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\boards\BoardModal.tsx
+   81:6   warning  React Hook useEffect has a missing dependency: 'normalizeIcon'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  148:21  warning  Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\ClientSection.tsx
+  35:6  warning  React Hook useEffect has a missing dependency: 'loadClientData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\ContactSection.tsx
+   3:83  error    'MessageCircle' is defined but never used                                                                          no-unused-vars
+   3:83  warning  'MessageCircle' is defined but never used. Allowed unused vars must match /^_/u                                    @typescript-eslint/no-unused-vars
+  33:6   warning  React Hook useEffect has a missing dependency: 'loadPersonData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\CustomFieldsSection.tsx
+    4:33  error    'CardFieldValue' is defined but never used                                                                                                       no-unused-vars
+    4:33  warning  'CardFieldValue' is defined but never used. Allowed unused vars must match /^_/u                                                                 @typescript-eslint/no-unused-vars
+   18:65  warning  Unexpected any. Specify a different type                                                                                                         @typescript-eslint/no-explicit-any
+   20:46  warning  Unexpected any. Specify a different type                                                                                                         @typescript-eslint/no-explicit-any
+   27:6   warning  React Hook useEffect has missing dependencies: 'loadFieldDefinitions' and 'loadFieldValues'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   48:38  warning  Unexpected any. Specify a different type                                                                                                         @typescript-eslint/no-explicit-any
+   51:37  warning  Unexpected any. Specify a different type                                                                                                         @typescript-eslint/no-explicit-any
+   52:35  warning  Unexpected any. Specify a different type                                                                                                         @typescript-eslint/no-explicit-any
+   62:59  warning  Unexpected any. Specify a different type                                                                                                         @typescript-eslint/no-explicit-any
+  202:42  warning  Unexpected any. Specify a different type                                                                                                         @typescript-eslint/no-explicit-any
+  213:42  warning  Unexpected any. Specify a different type                                                                                                         @typescript-eslint/no-explicit-any
+  266:62  warning  Unexpected any. Specify a different type                                                                                                         @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\EditableField.tsx
+   7:12  error    'value' is defined but never used         no-unused-vars
+  12:13  error    'value' is defined but never used         no-unused-vars
+  12:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\EditableSelectField.tsx
+    7:12  error    'value' is defined but never used         no-unused-vars
+   12:13  error    'value' is defined but never used         no-unused-vars
+   12:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  142:14  error    'value' is defined but never used         no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\FocusSection.tsx
+   21:28  error    'ActivityStatus' is defined but never used                                        no-unused-vars
+   21:28  warning  'ActivityStatus' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   65:52  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+  301:21  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+  328:21  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\HistorySection.tsx
+   16:3   error    'Phone' is defined but never used                                                     no-unused-vars
+   16:3   warning  'Phone' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+   17:3   error    'Users' is defined but never used                                                     no-unused-vars
+   17:3   warning  'Users' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+   18:3   error    'CheckSquare' is defined but never used                                               no-unused-vars
+   18:3   warning  'CheckSquare' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+   19:3   error    'Mail' is defined but never used                                                      no-unused-vars
+   19:3   warning  'Mail' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+   20:3   error    'Coffee' is defined but never used                                                    no-unused-vars
+   20:3   warning  'Coffee' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+   30:15  warning  Unexpected any. Specify a different type                                              @typescript-eslint/no-explicit-any
+   31:11  warning  Unexpected any. Specify a different type                                              @typescript-eslint/no-explicit-any
+   70:29  warning  Unexpected any. Specify a different type                                              @typescript-eslint/no-explicit-any
+  105:71  warning  Unexpected any. Specify a different type                                              @typescript-eslint/no-explicit-any
+  115:63  warning  Unexpected any. Specify a different type                                              @typescript-eslint/no-explicit-any
+  130:9   error    '_mockData' is assigned a value but never used                                        no-unused-vars
+  298:9   error    'fileCount' is assigned a value but never used                                        no-unused-vars
+  298:9   warning  'fileCount' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\LossReasonModal.tsx
+  8:15  error  'reason' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\PipelineStages.tsx
+   9:16  error    'listId' is defined but never used                                                                            no-unused-vars
+  30:6   warning  React Hook useEffect has a missing dependency: 'loadLists'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  63:11  error    'isFuture' is assigned a value but never used                                                                 no-unused-vars
+  63:11  warning  'isFuture' is assigned a value but never used. Allowed unused vars must match /^_/u                           @typescript-eslint/no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\ProductSection.tsx
+  36:29  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  37:9   error    'productsTotal' is assigned a value but never used                                        no-unused-vars
+  37:9   warning  'productsTotal' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  37:34  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  41:62  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  60:32  warning  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\QuickActivityForm.tsx
+   7:3  error    'Mail' is defined but never used                                            no-unused-vars
+   7:3  warning  'Mail' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+   8:3  error    'Coffee' is defined but never used                                          no-unused-vars
+   8:3  warning  'Coffee' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  12:3  error    'FileText' is defined but never used                                        no-unused-vars
+  12:3  warning  'FileText' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\cardDetails\SummarySection.tsx
+   14:11  error    'LinkIcon' is defined but never used                                                    no-unused-vars
+   14:11  warning  'LinkIcon' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+   36:14  error    'updates' is defined but never used                                                     no-unused-vars
+   48:10  error    'boards' is assigned a value but never used                                             no-unused-vars
+   48:10  warning  'boards' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  186:34  warning  Unexpected any. Specify a different type                                                @typescript-eslint/no-explicit-any
+  254:9   error    'userOptions' is assigned a value but never used                                        no-unused-vars
+  254:9   warning  'userOptions' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\clients\ClientModal.tsx
+    4:28  error    'Select' is defined but never used                                        no-unused-vars
+    4:28  warning  'Select' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  328:19  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  736:14  error    'value' is defined but never used                                         no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\kanban\BoardModal.tsx
+  8:12  error  'data' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\kanban\CardDetailModal.tsx
+   13:3   error    'ArrowRight' is defined but never used                                                                        no-unused-vars
+   13:3   warning  'ArrowRight' is defined but never used. Allowed unused vars must match /^_/u                                  @typescript-eslint/no-unused-vars
+   26:14  error    'cardId' is defined but never used                                                                            no-unused-vars
+   26:30  error    'data' is defined but never used                                                                              no-unused-vars
+   27:14  error    'cardId' is defined but never used                                                                            no-unused-vars
+   28:17  error    'cardId' is defined but never used                                                                            no-unused-vars
+   29:18  error    'cardId' is defined but never used                                                                            no-unused-vars
+   30:12  error    'cardId' is defined but never used                                                                            no-unused-vars
+   30:28  error    'targetListId' is defined but never used                                                                      no-unused-vars
+   72:6   warning  React Hook useEffect has a missing dependency: 'resetForm'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  119:25  warning  Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  136:62  error    '_' is defined but never used                                                                                 no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\kanban\CardModal.tsx
+   12:12  error    'data' is defined but never used                                                                                                                    no-unused-vars
+   26:33  warning  Unexpected any. Specify a different type                                                                                                            @typescript-eslint/no-explicit-any
+   52:10  error    'users' is assigned a value but never used                                                                                                          no-unused-vars
+   52:10  warning  'users' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                    @typescript-eslint/no-unused-vars
+  117:6   warning  React Hook useEffect has missing dependencies: 'currentUser?.id', 'isSDR', and 'isSalesperson'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\kanban\KanbanCard.tsx
+  2:20  error    'User' is defined but never used                                              no-unused-vars
+  2:20  warning  'User' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  2:26  error    'DollarSign' is defined but never used                                        no-unused-vars
+  2:26  warning  'DollarSign' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  2:38  error    'Clock' is defined but never used                                             no-unused-vars
+  2:38  warning  'Clock' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\kanban\KanbanList.tsx
+  15:18  error  'card' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\kanban\ListModal.tsx
+  9:12  error  'data' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\persons\PersonModal.tsx
+    4:28  error    'Textarea' is defined but never used                                        no-unused-vars
+    4:28  warning  'Textarea' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  237:19  warning  Unexpected any. Specify a different type                                    @typescript-eslint/no-explicit-any
+  596:14  error    'value' is defined but never used                                           no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\products\ProductModal.tsx
+  146:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  350:14  error    'value' is defined but never used         no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\settings\AwardBadgeModal.tsx
+  11:13  error    'badgeId' is defined but never used       no-unused-vars
+  11:30  error    'userIds' is defined but never used       no-unused-vars
+  66:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\settings\BadgeModal.tsx
+   10:12  error    'badgeData' is defined but never used     no-unused-vars
+   20:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  351:14  error    'value' is defined but never used         no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\transfers\TransferModal.tsx
+   32:40  warning  Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+   75:6   warning  React Hook useEffect has a missing dependency: 'loadInitialData'. Either include it or remove the dependency array     react-hooks/exhaustive-deps
+  160:6   warning  React Hook useEffect has a missing dependency: 'loadCardsFromBoard'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  230:21  warning  Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  610:14  error    'value' is defined but never used                                                                                      no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\users\AdminPasswordResetModal.tsx
+  9:15  error  'newPassword' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\components\users\UserModal.tsx
+  128:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  339:14  error    'value' is defined but never used         no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\context\AuthContext.tsx
+   9:11  error    'email' is defined but never used         no-unused-vars
+   9:26  error    'password' is defined but never used      no-unused-vars
+  11:16  error    'updatedUser' is defined but never used   no-unused-vars
+  59:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\context\DashboardContext.tsx
+  18:15  error    'period' is defined but never used                                                 no-unused-vars
+  53:7   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  56:19  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\layouts\MainLayout.tsx
+  40:11  error    'navigate' is assigned a value but never used                                        no-unused-vars
+  40:11  warning  'navigate' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\AutomationEditor.tsx
+   27:56  error    'validateAutomation' is defined but never used                                                                                                     no-unused-vars
+   27:56  warning  'validateAutomation' is defined but never used. Allowed unused vars must match /^_/u                                                               @typescript-eslint/no-unused-vars
+   47:62  warning  Unexpected any. Specify a different type                                                                                                           @typescript-eslint/no-explicit-any
+   61:10  error    'selectedNodesCount' is assigned a value but never used                                                                                            no-unused-vars
+   61:10  warning  'selectedNodesCount' is assigned a value but never used. Allowed unused vars must match /^_/u                                                      @typescript-eslint/no-unused-vars
+  155:30  warning  Unexpected any. Specify a different type                                                                                                           @typescript-eslint/no-explicit-any
+  267:21  warning  Unexpected any. Specify a different type                                                                                                           @typescript-eslint/no-explicit-any
+  307:21  warning  Unexpected any. Specify a different type                                                                                                           @typescript-eslint/no-explicit-any
+  381:7   warning  Unexpected console statement. Only these console methods are allowed: warn, error                                                                  no-console
+  400:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error                                                                  no-console
+  403:9   error    'handleDuplicateNode' is assigned a value but never used                                                                                           no-unused-vars
+  403:9   warning  'handleDuplicateNode' is assigned a value but never used. Allowed unused vars must match /^_/u                                                     @typescript-eslint/no-unused-vars
+  486:6   warning  React Hook useEffect has missing dependencies: 'history', 'historyIndex', and 'saveToHistory'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  563:6   warning  React Hook useEffect has a missing dependency: 'loadAutomation'. Either include it or remove the dependency array                                  react-hooks/exhaustive-deps
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Automations.tsx
+   63:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  486:14  error    'value' is defined but never used         no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\BadgesAdmin.tsx
+   13:38  error    'UserBadge' is defined but never used                                        no-unused-vars
+   13:38  warning  'UserBadge' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   80:92  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  104:21  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  116:21  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  131:21  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Boards.tsx
+  25:6   warning  React Hook useEffect has a missing dependency: 'loadBoards'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  33:22  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\CardDetails.tsx
+   47:10  error    'isAutoAssigningSdr' is assigned a value but never used                                                          no-unused-vars
+   47:10  warning  'isAutoAssigningSdr' is assigned a value but never used. Allowed unused vars must match /^_/u                    @typescript-eslint/no-unused-vars
+   63:6   warning  React Hook useEffect has a missing dependency: 'loadCardData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  110:52  warning  Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  113:21  warning  Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  196:21  warning  Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  208:9   error    'handleAutoAssignSdr' is assigned a value but never used                                                         no-unused-vars
+  208:9   warning  'handleAutoAssignSdr' is assigned a value but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+  219:21  warning  Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  615:38  warning  Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Clients.tsx
+  506:14  error  'value' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Dashboard.tsx
+   36:6   warning  React Hook useEffect has missing dependencies: 'fetchDashboardData' and 'kpis'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   98:32  warning  Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+  606:38  warning  Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+  678:38  warning  Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+  746:14  error    'value' is defined but never used                                                                                                   no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Gamification.tsx
+  42:6  warning  React Hook useEffect has a missing dependency: 'loadInitialData'. Either include it or remove the dependency array                         react-hooks/exhaustive-deps
+  48:6  warning  React Hook useEffect has a missing dependency: 'loadRankings'. Either include it or remove the dependency array                            react-hooks/exhaustive-deps
+  71:6  warning  React Hook useEffect has missing dependencies: 'isManagerOrAdmin' and 'loadTeamStats'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\KanbanBoard.tsx
+   114:6   warning  React Hook useEffect has a missing dependency: 'loadBoardData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   474:22  warning  Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+   482:37  warning  Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+   539:13  error    Unexpected lexical declaration in case block                                                                      no-case-declarations
+   545:13  error    Unexpected lexical declaration in case block                                                                      no-case-declarations
+   576:9   error    'handleEditCard' is assigned a value but never used                                                               no-unused-vars
+   576:9   warning  'handleEditCard' is assigned a value but never used. Allowed unused vars must match /^_/u                         @typescript-eslint/no-unused-vars
+   588:23  warning  Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+   667:17  error    'activeIndex' is assigned a value but never used                                                                  no-unused-vars
+   667:17  warning  'activeIndex' is assigned a value but never used. Allowed unused vars must match /^_/u                            @typescript-eslint/no-unused-vars
+   700:9   error    'calculateNewPosition' is assigned a value but never used                                                         no-unused-vars
+   700:9   warning  'calculateNewPosition' is assigned a value but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+   871:7   warning  Unexpected console statement. Only these console methods are allowed: warn, error                                 no-console
+  1337:14  error    'value' is defined but never used                                                                                 no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Login.tsx
+  12:11  error    'navigate' is assigned a value but never used                                        no-unused-vars
+  12:11  warning  'navigate' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  14:36  error    'React' is not defined                                                               no-undef
+  29:25  warning  Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Notifications.tsx
+   9:3   error    'X' is defined but never used                                                                                         no-unused-vars
+   9:3   warning  'X' is defined but never used. Allowed unused vars must match /^_/u                                                   @typescript-eslint/no-unused-vars
+  19:3   error    'ChevronLeft' is defined but never used                                                                               no-unused-vars
+  19:3   warning  'ChevronLeft' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+  20:3   error    'ChevronRight' is defined but never used                                                                              no-unused-vars
+  20:3   warning  'ChevronRight' is defined but never used. Allowed unused vars must match /^_/u                                        @typescript-eslint/no-unused-vars
+  33:24  error    'setSelectedType' is assigned a value but never used                                                                  no-unused-vars
+  33:24  warning  'setSelectedType' is assigned a value but never used. Allowed unused vars must match /^_/u                            @typescript-eslint/no-unused-vars
+  40:6   warning  React Hook useEffect has a missing dependency: 'loadNotifications'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Persons.tsx
+  528:14  error  'value' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Products.tsx
+  529:14  error  'value' is defined but never used  no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Reports.tsx
+  114:7   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  134:21  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  147:7   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  167:21  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  180:7   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  199:21  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  349:14  error    'value' is defined but never used                                                  no-unused-vars
+  410:15  error    'p' is defined but never used                                                      no-unused-vars
+  412:16  error    'id' is defined but never used                                                     no-unused-vars
+  414:15  error    'id' is defined but never used                                                     no-unused-vars
+  416:18  error    'd' is defined but never used                                                      no-unused-vars
+  418:16  error    'd' is defined but never used                                                      no-unused-vars
+  703:16  error    'id' is defined but never used                                                     no-unused-vars
+  705:15  error    'p' is defined but never used                                                      no-unused-vars
+  707:18  error    'd' is defined but never used                                                      no-unused-vars
+  709:16  error    'd' is defined but never used                                                      no-unused-vars
+  955:15  error    'p' is defined but never used                                                      no-unused-vars
+  957:19  error    'id' is defined but never used                                                     no-unused-vars
+  959:17  error    'id' is defined but never used                                                     no-unused-vars
+  961:18  error    'd' is defined but never used                                                      no-unused-vars
+  963:16  error    'd' is defined but never used                                                      no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Settings.tsx
+     2:72  error    'Activity' is defined but never used                                                                           no-unused-vars
+     2:72  warning  'Activity' is defined but never used. Allowed unused vars must match /^_/u                                     @typescript-eslint/no-unused-vars
+    65:10  error    'loadingApi4comConfig' is assigned a value but never used                                                      no-unused-vars
+    65:10  warning  'loadingApi4comConfig' is assigned a value but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+   123:6   warning  React Hook useEffect has a missing dependency: 'loadBadges'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   153:6   warning  React Hook useEffect has a missing dependency: 'loadLogs'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+   209:21  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   220:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error                              no-console
+   266:21  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   317:21  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   464:21  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   484:14  error    'error' is defined but never used                                                                              no-unused-vars
+   484:14  warning  'error' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+   506:21  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   525:21  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   549:21  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   564:21  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   593:47  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  1387:66  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  1396:70  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  2343:14  error    'value' is defined but never used                                                                              no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Transfers.tsx
+   41:10  error    'totalPages' is assigned a value but never used                                                                                                                                                      no-unused-vars
+   41:10  warning  'totalPages' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                @typescript-eslint/no-unused-vars
+   41:22  error    'setTotalPages' is assigned a value but never used                                                                                                                                                   no-unused-vars
+   41:22  warning  'setTotalPages' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                             @typescript-eslint/no-unused-vars
+   46:27  error    'setPendingPageSize' is assigned a value but never used                                                                                                                                              no-unused-vars
+   46:27  warning  'setPendingPageSize' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                        @typescript-eslint/no-unused-vars
+   47:29  error    'setCompletedPageSize' is assigned a value but never used                                                                                                                                            no-unused-vars
+   47:29  warning  'setCompletedPageSize' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                      @typescript-eslint/no-unused-vars
+   50:32  error    'setAllTransfersPageSize' is assigned a value but never used                                                                                                                                         no-unused-vars
+   50:32  warning  'setAllTransfersPageSize' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                   @typescript-eslint/no-unused-vars
+   58:6   warning  React Hook useEffect has a missing dependency: 'loadInitialData'. Either include it or remove the dependency array                                                                                   react-hooks/exhaustive-deps
+   71:6   warning  React Hook useEffect has missing dependencies: 'loadAllTransfers', 'loadCompletedTransfers', 'loadPendingApprovals', and 'loadPendingTransfers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   77:6   warning  React Hook useEffect has missing dependencies: 'activeTab' and 'loadPendingApprovals'. Either include them or remove the dependency array                                                            react-hooks/exhaustive-deps
+  275:20  error    'page' is defined but never used                                                                                                                                                                     no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\pages\Users.tsx
+  152:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  530:14  error    'value' is defined but never used         no-unused-vars
+
+D:\GitHub\hsgrowth-sistema\frontend\src\services\automationService.ts
+   75:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  185:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  202:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  203:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\services\boardService.ts
+  77:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\services\cardService.ts
+  39:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\services\fieldService.ts
+  12:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  31:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\services\gamificationService.ts
+   27:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:78  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\services\notificationService.ts
+  22:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\services\reportService.ts
+  142:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\types\index.ts
+   84:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  124:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  128:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  205:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  217:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  241:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  255:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  256:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  285:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  342:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  344:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  345:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  638:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  736:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  758:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  793:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  887:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  910:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\GitHub\hsgrowth-sistema\frontend\src\utils\automationConverter.ts
+    6:51  warning  Unexpected any. Specify a different type                                                      @typescript-eslint/no-explicit-any
+   31:41  warning  Unexpected any. Specify a different type                                                      @typescript-eslint/no-explicit-any
+   67:4   warning  Unexpected any. Specify a different type                                                      @typescript-eslint/no-explicit-any
+   96:25  warning  Unexpected any. Specify a different type                                                      @typescript-eslint/no-explicit-any
+  216:9   error    'unconfiguredNodes' is assigned a value but never used                                        no-unused-vars
+  216:9   warning  'unconfiguredNodes' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  217:11  error    'config' is assigned a value but never used                                                   no-unused-vars
+  217:11  warning  'config' is assigned a value but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+
+✖ 350 problems (128 errors, 222 warnings)
+

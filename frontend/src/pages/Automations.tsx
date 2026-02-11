@@ -156,11 +156,11 @@ const Automations: React.FC = () => {
   if (!isManagerOrAdmin) {
     return (
       <div className="p-6">
-        <div className="max-w-2xl mx-auto text-center py-12">
+        <div className="mx-auto max-w-2xl py-12 text-center">
           <div className="mb-4">
             <Shield size={64} className="mx-auto text-red-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
+          <h2 className="mb-2 text-2xl font-bold text-white">Acesso Restrito</h2>
           <p className="text-slate-400">
             Apenas administradores e gerentes podem acessar automações.
           </p>
@@ -173,19 +173,19 @@ const Automations: React.FC = () => {
     <div className="p-6">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
+          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
                 <Zap className="text-white" size={32} />
                 Automações
               </h1>
-              <p className="text-slate-400 mt-1">
+              <p className="mt-1 text-slate-400">
                 Crie fluxos automáticos para otimizar seu trabalho
               </p>
             </div>
             <button
               onClick={() => setShowRoundRobinForm(true)}
-              className="hidden md:flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+              className="hidden items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-medium text-white transition-colors hover:bg-emerald-700 md:flex"
             >
               <Plus size={20} />
               Nova Automação
@@ -193,22 +193,22 @@ const Automations: React.FC = () => {
           </div>
 
           {/* Filtros */}
-          <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex flex-col gap-3 md:flex-row">
             <button
               onClick={() => setShowRoundRobinForm(true)}
-              className="md:hidden flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+              className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-medium text-white transition-colors hover:bg-emerald-700 md:hidden"
             >
               <Plus size={20} />
               Nova Automação
             </button>
-            <div className="flex-1 relative">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input
                 type="text"
                 placeholder="Buscar automações..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
             <div className="w-full md:w-64">
@@ -231,17 +231,17 @@ const Automations: React.FC = () => {
 
         {/* Loading */}
         {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
-            <p className="text-slate-400 mt-4">Carregando automações...</p>
+          <div className="py-12 text-center">
+            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent"></div>
+            <p className="mt-4 text-slate-400">Carregando automações...</p>
           </div>
         )}
 
         {/* Lista de Automações */}
         {!loading && filteredAutomations.length === 0 && (
-          <div className="text-center py-16">
-            <Zap size={64} className="mx-auto text-slate-600 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
+          <div className="py-16 text-center">
+            <Zap size={64} className="mx-auto mb-4 text-slate-600" />
+            <h3 className="mb-2 text-xl font-semibold text-white">
               Nenhuma automação encontrada
             </h3>
             <p className="text-slate-400">
@@ -253,31 +253,31 @@ const Automations: React.FC = () => {
         )}
 
         {!loading && filteredAutomations.length > 0 && (
-          <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 sm:p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-4 backdrop-blur-sm sm:p-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {paginatedAutomations.map((automation) => (
                 <div
                   key={automation.id}
-                  className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6 hover:border-emerald-500/40 transition-all"
+                  className="rounded-xl border border-slate-700 bg-slate-800/50 p-6 backdrop-blur transition-all hover:border-emerald-500/40"
                 >
                 {/* Header do Card */}
-                <div className="flex items-start justify-between mb-4">
+                <div className="mb-4 flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="mb-2 flex items-center gap-2">
                       <h3 className="text-lg font-semibold text-white">
                         {automation.name}
                       </h3>
                       {automation.is_active ? (
-                        <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">
+                        <span className="rounded-full bg-green-500/20 px-2 py-1 text-xs font-medium text-green-400">
                           Ativa
                         </span>
                       ) : (
-                        <span className="px-2 py-1 bg-slate-600/50 text-slate-400 text-xs font-medium rounded-full">
+                        <span className="rounded-full bg-slate-600/50 px-2 py-1 text-xs font-medium text-slate-400">
                           Inativa
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-slate-400 line-clamp-2">
+                    <p className="line-clamp-2 text-sm text-slate-400">
                       {automation.description}
                     </p>
                     {automation.board_name && (
@@ -291,33 +291,33 @@ const Automations: React.FC = () => {
                 </div>
 
                 {/* Estatísticas */}
-                <div className="grid grid-cols-3 gap-4 mb-4 py-3 border-y border-slate-700">
+                <div className="mb-4 grid grid-cols-3 gap-4 border-y border-slate-700 py-3">
                   <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-slate-400 text-xs mb-1">
+                    <div className="mb-1 flex items-center justify-center gap-1 text-xs text-slate-400">
                       <BarChart3 size={14} />
                       <span>Execuções</span>
                     </div>
-                    <p className="text-white font-semibold">{automation.execution_count}</p>
+                    <p className="font-semibold text-white">{automation.execution_count}</p>
                   </div>
                   <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-green-400 text-xs mb-1">
+                    <div className="mb-1 flex items-center justify-center gap-1 text-xs text-green-400">
                       <CheckCircle size={14} />
                       <span>Sucesso</span>
                     </div>
-                    <p className="text-white font-semibold">{successRate(automation)}%</p>
+                    <p className="font-semibold text-white">{successRate(automation)}%</p>
                   </div>
                   <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-red-400 text-xs mb-1">
+                    <div className="mb-1 flex items-center justify-center gap-1 text-xs text-red-400">
                       <XCircle size={14} />
                       <span>Erros</span>
                     </div>
-                    <p className="text-white font-semibold">{automation.error_count}</p>
+                    <p className="font-semibold text-white">{automation.error_count}</p>
                   </div>
                 </div>
 
                 {/* Última Execução */}
                 {automation.last_executed_at && (
-                  <div className="flex items-center gap-2 text-xs text-slate-400 mb-4">
+                  <div className="mb-4 flex items-center gap-2 text-xs text-slate-400">
                     <Clock size={12} />
                     <span>
                       Última execução:{" "}
@@ -330,10 +330,10 @@ const Automations: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleToggleActive(automation.id, automation.is_active)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-colors ${
                       automation.is_active
-                        ? "bg-slate-700 hover:bg-slate-600 text-white"
-                        : "bg-green-600 hover:bg-green-700 text-white"
+                        ? "bg-slate-700 text-white hover:bg-slate-600"
+                        : "bg-green-600 text-white hover:bg-green-700"
                     }`}
                   >
                     {automation.is_active ? (
@@ -350,21 +350,21 @@ const Automations: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setEditingAutomation(automation)}
-                    className="p-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 transition-colors"
+                    className="rounded-lg bg-yellow-600/20 p-2 text-yellow-400 transition-colors hover:bg-yellow-600/30"
                     title="Editar informações"
                   >
                     <Edit size={16} />
                   </button>
                   <button
                     onClick={() => navigate(`/automations/${automation.id}/edit`)}
-                    className="p-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 transition-colors"
+                    className="rounded-lg bg-purple-600/20 p-2 text-purple-400 transition-colors hover:bg-purple-600/30"
                     title="Construtor de automação"
                   >
                     <Workflow size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(automation.id)}
-                    className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
+                    className="rounded-lg bg-red-600/20 p-2 text-red-400 transition-colors hover:bg-red-600/30"
                     title="Deletar"
                   >
                     <Trash2 size={16} />
@@ -510,7 +510,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
           {selectedLabel}
@@ -521,7 +521,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value || option.label}

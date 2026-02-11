@@ -344,7 +344,7 @@ const templates: Template[] = [
 interface TemplatesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectTemplate: (nodes: Node[], edges: Edge[]) => void;
+  onSelectTemplate: (_nodes: Node[], _edges: Edge[]) => void;
 }
 
 const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onSelectTemplate }) => {
@@ -356,22 +356,22 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onSele
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
+        <div className="flex items-center justify-between border-b border-slate-700 p-6">
           <div>
-            <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-2xl font-semibold text-white">
               <Sparkles size={24} className="text-purple-400" />
               Biblioteca de Templates
             </h2>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="mt-1 text-sm text-slate-400">
               Escolha um template pronto e personalize como quiser
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            className="rounded-lg p-2 transition-colors hover:bg-slate-700"
           >
             <X size={20} className="text-slate-400" />
           </button>
@@ -379,30 +379,30 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onSele
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {templates.map((template) => (
               <div
                 key={template.id}
                 onClick={() => handleSelectTemplate(template)}
-                className="group bg-slate-900/50 border border-slate-700 hover:border-purple-500 rounded-lg p-5 cursor-pointer transition-all hover:shadow-lg hover:shadow-purple-500/10"
+                className="group cursor-pointer rounded-lg border border-slate-700 bg-slate-900/50 p-5 transition-all hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/10"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 p-3 bg-slate-800 rounded-lg group-hover:bg-slate-700 transition-colors">
+                  <div className="flex-shrink-0 rounded-lg bg-slate-800 p-3 transition-colors group-hover:bg-slate-700">
                     {template.icon}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-white font-medium group-hover:text-purple-400 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex items-center gap-2">
+                      <h3 className="font-medium text-white transition-colors group-hover:text-purple-400">
                         {template.name}
                       </h3>
-                      <span className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded">
+                      <span className="rounded bg-slate-700 px-2 py-0.5 text-xs text-slate-300">
                         {template.category}
                       </span>
                     </div>
-                    <p className="text-slate-400 text-sm leading-relaxed">
+                    <p className="text-sm leading-relaxed text-slate-400">
                       {template.description}
                     </p>
-                    <div className="flex items-center gap-3 mt-3 text-xs text-slate-500">
+                    <div className="mt-3 flex items-center gap-3 text-xs text-slate-500">
                       <span>{template.nodes.length} nodes</span>
                       <span>•</span>
                       <span>{template.edges.length} conexões</span>
@@ -415,7 +415,7 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onSele
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-700 bg-slate-900/50">
+        <div className="border-t border-slate-700 bg-slate-900/50 p-6">
           <div className="flex items-center gap-2 text-sm text-slate-400">
             <Sparkles size={16} className="text-purple-400" />
             <span>

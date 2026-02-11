@@ -99,26 +99,26 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
       <form onSubmit={handleSubmit} className="space-y-6">
           {/* Erro geral */}
           {error && (
-            <div className="flex items-start gap-3 p-4 bg-red-900/20 border border-red-700 rounded-lg">
-              <AlertCircle className="text-red-400 flex-shrink-0 mt-0.5" size={20} />
+            <div className="flex items-start gap-3 rounded-lg border border-red-700 bg-red-900/20 p-4">
+              <AlertCircle className="mt-0.5 flex-shrink-0 text-red-400" size={20} />
               <div>
-                <p className="text-red-400 font-medium">Erro</p>
-                <p className="text-red-300 text-sm mt-1">{error}</p>
+                <p className="font-medium text-red-400">Erro</p>
+                <p className="mt-1 text-sm text-red-300">{error}</p>
               </div>
             </div>
           )}
 
           {/* Selecionar Badge */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-3">
+            <label className="mb-3 block text-sm font-medium text-slate-300">
               Selecione a Badge <span className="text-red-400">*</span>
             </label>
 
             {badges.length === 0 ? (
-              <div className="text-center py-8 bg-slate-900 border border-slate-700 rounded-lg">
-                <Award className="mx-auto text-slate-600 mb-2" size={40} />
-                <p className="text-slate-400 text-sm">Nenhuma badge manual ativa disponível</p>
-                <p className="text-slate-500 text-xs mt-1">Crie badges manuais na aba Badges</p>
+              <div className="rounded-lg border border-slate-700 bg-slate-900 py-8 text-center">
+                <Award className="mx-auto mb-2 text-slate-600" size={40} />
+                <p className="text-sm text-slate-400">Nenhuma badge manual ativa disponível</p>
+                <p className="mt-1 text-xs text-slate-500">Crie badges manuais na aba Badges</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
@@ -127,17 +127,17 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
                     key={badge.id}
                     type="button"
                     onClick={() => setSelectedBadge(badge.id)}
-                    className={`p-4 rounded-lg border text-left transition-all ${
+                    className={`rounded-lg border p-4 text-left transition-all ${
                       selectedBadge === badge.id
                         ? "border-emerald-500 bg-emerald-600/20"
-                        : "border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-slate-600"
+                        : "border-slate-700 bg-slate-900 hover:border-slate-600 hover:bg-slate-800"
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <span className="text-3xl">{badge.icon_url || "🏆"}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white truncate">{badge.name}</p>
-                        <p className="text-xs text-slate-400 mt-1 line-clamp-2">{badge.description}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-white">{badge.name}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-slate-400">{badge.description}</p>
                       </div>
                     </div>
                   </button>
@@ -148,8 +148,8 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
 
           {/* Preview Badge Selecionada */}
           {selectedBadgeData && (
-            <div className="p-4 bg-emerald-600/10 border border-emerald-700 rounded-lg">
-              <p className="text-xs text-emerald-400 font-medium mb-2">Badge Selecionada:</p>
+            <div className="rounded-lg border border-emerald-700 bg-emerald-600/10 p-4">
+              <p className="mb-2 text-xs font-medium text-emerald-400">Badge Selecionada:</p>
               <div className="flex items-center gap-3">
                 <span className="text-4xl">{selectedBadgeData.icon_url || "🏆"}</span>
                 <div>
@@ -162,14 +162,14 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
 
           {/* Selecionar Vendedores */}
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="mb-3 flex items-center justify-between">
               <label className="text-sm font-medium text-slate-300">
                 Selecione os Vendedores <span className="text-red-400">*</span>
               </label>
               <button
                 type="button"
                 onClick={handleToggleAll}
-                className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="text-xs text-emerald-400 transition-colors hover:text-emerald-300"
                 disabled={loading}
               >
                 {selectedUsers.length === users.length ? "Desmarcar Todos" : "Selecionar Todos"}
@@ -177,16 +177,16 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
             </div>
 
             {users.length === 0 ? (
-              <div className="text-center py-8 bg-slate-900 border border-slate-700 rounded-lg">
-                <Users className="mx-auto text-slate-600 mb-2" size={40} />
-                <p className="text-slate-400 text-sm">Nenhum vendedor disponível</p>
+              <div className="rounded-lg border border-slate-700 bg-slate-900 py-8 text-center">
+                <Users className="mx-auto mb-2 text-slate-600" size={40} />
+                <p className="text-sm text-slate-400">Nenhum vendedor disponível</p>
               </div>
             ) : (
-              <div className="max-h-64 overflow-y-auto bg-slate-900 border border-slate-700 rounded-lg">
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900">
                 {users.map((user) => (
                   <label
                     key={user.id}
-                    className={`flex items-center gap-3 p-4 cursor-pointer transition-colors hover:bg-slate-800 ${
+                    className={`flex cursor-pointer items-center gap-3 p-4 transition-colors hover:bg-slate-800 ${
                       selectedUsers.includes(user.id) ? "bg-emerald-600/10" : ""
                     }`}
                   >
@@ -194,7 +194,7 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
                       type="checkbox"
                       checked={selectedUsers.includes(user.id)}
                       onChange={() => handleToggleUser(user.id)}
-                      className="w-4 h-4 text-emerald-600 bg-slate-800 border-slate-600 rounded focus:ring-emerald-500"
+                      className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-emerald-600 focus:ring-emerald-500"
                       disabled={loading}
                     />
                     <div className="flex-1">
@@ -208,7 +208,7 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
             )}
 
             {selectedUsers.length > 0 && (
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="mt-2 text-xs text-slate-400">
                 {selectedUsers.length} vendedor(es) selecionado(s)
               </p>
             )}

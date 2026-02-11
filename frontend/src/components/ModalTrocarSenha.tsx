@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface ModalTrocarSenhaProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (novaSenha: string) => void;
+  onConfirm: (_novaSenha: string) => void;
 }
 
 const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
@@ -26,17 +26,17 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 transition-opacity">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity">
       {/* 🔧 Ajuste principal: padding e espaçamento idêntico à modal dos logs */}
       <div
-        className="bg-white/95 dark:bg-[#1e1e1e]/95 
-                   border border-gray-200 dark:border-[#2d2d2d] 
-                   rounded-xl shadow-xl p-8 sm:p-6 
-                   max-w-md w-[90%] sm:w-full 
-                   mx-4 sm:mx-0 transition-colors"
+        className="mx-4 w-[90%] 
+                   max-w-md rounded-xl border 
+                   border-gray-200 bg-white/95 p-8 shadow-xl 
+                   transition-colors sm:mx-0 sm:w-full 
+                   sm:p-6 dark:border-[#2d2d2d] dark:bg-[#1e1e1e]/95"
       >
         {/* Cabeçalho */}
-        <h2 className="text-xl font-bold mb-6 text-center text-gray-900 dark:text-[#facc15] tracking-tight">
+        <h2 className="mb-6 text-center text-xl font-bold tracking-tight text-gray-900 dark:text-[#facc15]">
           Trocar Senha
         </h2>
 
@@ -50,12 +50,12 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
               type="password"
               value={novaSenha}
               onChange={(e) => setNovaSenha(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-lg
-                         bg-white dark:bg-[#181818]
-                         text-gray-800 dark:text-gray-200
-                         border-gray-300 dark:border-gray-600
-                         focus:outline-none focus:ring-2 focus:ring-blue-500
-                         transition-colors"
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white
+                         px-3 py-2
+                         text-gray-800 transition-colors
+                         focus:outline-none focus:ring-2
+                         focus:ring-blue-500 dark:border-gray-600 dark:bg-[#181818]
+                         dark:text-gray-200"
             />
           </div>
 
@@ -67,12 +67,12 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
               type="password"
               value={repitaSenha}
               onChange={(e) => setRepitaSenha(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-lg
-                         bg-white dark:bg-[#181818]
-                         text-gray-800 dark:text-gray-200
-                         border-gray-300 dark:border-gray-600
-                         focus:outline-none focus:ring-2 focus:ring-blue-500
-                         transition-colors"
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white
+                         px-3 py-2
+                         text-gray-800 transition-colors
+                         focus:outline-none focus:ring-2
+                         focus:ring-blue-500 dark:border-gray-600 dark:bg-[#181818]
+                         dark:text-gray-200"
             />
           </div>
         </div>
@@ -81,21 +81,21 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
         <div className="mt-8 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg font-medium
-                       bg-gray-300 hover:bg-gray-400
-                       dark:bg-[#2a2a2a] dark:hover:bg-[#3a3a3a]
-                       text-gray-800 dark:text-gray-100
-                       transition-colors"
+            className="rounded-lg bg-gray-300 px-4 py-2
+                       font-medium text-gray-800
+                       transition-colors hover:bg-gray-400
+                       dark:bg-[#2a2a2a] dark:text-gray-100
+                       dark:hover:bg-[#3a3a3a]"
           >
             Cancelar
           </button>
 
           <button
             onClick={handleConfirm}
-            className="px-4 py-2 rounded-lg font-medium
-                       bg-blue-600 hover:bg-blue-700
-                       text-white shadow-sm
-                       transition-colors"
+            className="rounded-lg bg-blue-600 px-4 py-2
+                       font-medium text-white
+                       shadow-sm transition-colors
+                       hover:bg-blue-700"
           >
             Confirmar
           </button>

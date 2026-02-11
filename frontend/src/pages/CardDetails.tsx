@@ -306,8 +306,8 @@ const CardDetails: React.FC = () => {
   // Loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-white text-xl">Carregando...</div>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <div className="text-xl text-white">Carregando...</div>
       </div>
     );
   }
@@ -315,23 +315,23 @@ const CardDetails: React.FC = () => {
   // Card não encontrado
   if (!card) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-white text-xl">Negócio não encontrado</div>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <div className="text-xl text-white">Negócio não encontrado</div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="flex h-full flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* ========== HEADER FIXO ========== */}
-      <div className="relative z-40 flex-shrink-0 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50">
+      <div className="relative z-40 flex-shrink-0 border-b border-slate-700/50 bg-slate-900/95 backdrop-blur-xl">
         <div className="px-6 py-4">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Lado Esquerdo: Botão Voltar + Título */}
-            <div className="flex flex-col items-center gap-2 flex-1 sm:flex-row sm:items-center sm:gap-3 sm:justify-start">
+            <div className="flex flex-1 flex-col items-center gap-2 sm:flex-row sm:items-center sm:justify-start sm:gap-3">
               <button
                 onClick={handleBack}
-                className="p-2 hover:bg-slate-800/80 rounded-lg transition-colors text-slate-400 hover:text-white"
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-800/80 hover:text-white"
                 title="Voltar ao board"
               >
                 <ArrowLeft size={20} />
@@ -352,12 +352,12 @@ const CardDetails: React.FC = () => {
                     }
                   }}
                   autoFocus
-                  className="text-2xl font-semibold text-white bg-slate-800/50 border-b-2 border-blue-500 focus:outline-none px-2 py-1 rounded"
+                  className="rounded border-b-2 border-blue-500 bg-slate-800/50 px-2 py-1 text-2xl font-semibold text-white focus:outline-none"
                 />
                 ) : (
                   <h1
                     onClick={() => setIsTitleEditing(true)}
-                    className="text-2xl font-semibold text-white cursor-pointer hover:text-blue-400 transition-colors text-center sm:text-left"
+                    className="cursor-pointer text-center text-2xl font-semibold text-white transition-colors hover:text-blue-400 sm:text-left"
                     title="Clique para editar"
                   >
                     {card.title}
@@ -374,9 +374,9 @@ const CardDetails: React.FC = () => {
                   <>
                     <button
                       onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-                      className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg hover:bg-slate-700/80 cursor-pointer transition-colors border border-slate-700/50"
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/80 px-3 py-2 transition-colors hover:bg-slate-700/80"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-medium text-sm">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-medium text-white">
                         {assignedUser?.name?.substring(0, 2).toUpperCase() || "?"}
                       </div>
                       <span className="text-sm font-medium text-white">{assignedUser?.name || "Não atribuído"}</span>
@@ -393,30 +393,30 @@ const CardDetails: React.FC = () => {
                         />
 
                         {/* Menu dropdown */}
-                        <div className="fixed left-4 right-4 top-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[60] max-h-80 overflow-y-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64 sm:z-[999]">
+                        <div className="fixed left-4 right-4 top-40 z-[60] max-h-80 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:z-[999] sm:mt-2 sm:w-64">
                           <div className="p-2">
-                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-2 py-1 mb-1">
+                            <p className="mb-1 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
                               Selecionar responsável
                             </p>
                             {users.map((user) => (
                               <button
                                 key={user.id}
                                 onClick={() => handleChangeAssignee(user.id)}
-                                className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-colors text-left ${
+                                className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors ${
                                   user.id === card?.assigned_to_id
                                     ? "bg-blue-500/20 text-blue-400"
-                                    : "hover:bg-slate-700 text-slate-300"
+                                    : "text-slate-300 hover:bg-slate-700"
                                 }`}
                               >
-                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-medium text-xs">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-xs font-medium text-white">
                                   {user.name.substring(0, 2).toUpperCase()}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{user.name}</p>
-                                  <p className="text-xs text-slate-500 truncate">{user.role_name}</p>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium">{user.name}</p>
+                                  <p className="truncate text-xs text-slate-500">{user.role_name}</p>
                                 </div>
                                 {user.id === card?.assigned_to_id && (
-                                  <CheckCircle2 size={16} className="text-blue-400 flex-shrink-0" />
+                                  <CheckCircle2 size={16} className="flex-shrink-0 text-blue-400" />
                                 )}
                               </button>
                             ))}
@@ -427,8 +427,8 @@ const CardDetails: React.FC = () => {
                   </>
                 ) : (
                   // Vendedor - apenas visualização (sem seta)
-                  <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg border border-slate-700/50">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-medium text-sm">
+                  <div className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/80 px-3 py-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-medium text-white">
                       {assignedUser?.name?.substring(0, 2).toUpperCase() || "?"}
                     </div>
                     <span className="text-sm font-medium text-white">{assignedUser?.name || "Não atribuído"}</span>
@@ -444,9 +444,9 @@ const CardDetails: React.FC = () => {
                     <>
                       <button
                         onClick={() => setShowSdrDropdown(!showSdrDropdown)}
-                        className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg hover:bg-slate-700/80 cursor-pointer transition-colors border border-slate-700/50"
+                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/80 px-3 py-2 transition-colors hover:bg-slate-700/80"
                       >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-medium text-sm">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-sm font-medium text-white">
                           {sdrUser?.name?.substring(0, 2).toUpperCase() || "SDR"}
                         </div>
                         <span className="text-sm font-medium text-white">{sdrUser?.name || "Sem SDR"}</span>
@@ -463,30 +463,30 @@ const CardDetails: React.FC = () => {
                           />
 
                           {/* Menu dropdown */}
-                          <div className="fixed left-4 right-4 top-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[60] max-h-80 overflow-y-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64 sm:z-[999]">
+                          <div className="fixed left-4 right-4 top-40 z-[60] max-h-80 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:z-[999] sm:mt-2 sm:w-64">
                             <div className="p-2">
-                              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-2 py-1 mb-1">
+                              <p className="mb-1 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
                                 Selecionar SDR
                               </p>
                               {sdrUsers.map((user) => (
                                 <button
                                   key={user.id}
                                   onClick={() => handleChangeSdr(user.id)}
-                                  className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-colors text-left ${
+                                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors ${
                                     user.id === card?.sdr_id
                                       ? "bg-cyan-500/20 text-cyan-400"
-                                      : "hover:bg-slate-700 text-slate-300"
+                                      : "text-slate-300 hover:bg-slate-700"
                                   }`}
                                 >
-                                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-medium text-xs">
+                                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-xs font-medium text-white">
                                     {user.name.substring(0, 2).toUpperCase()}
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{user.name}</p>
-                                    <p className="text-xs text-slate-500 truncate">{user.role_name}</p>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-medium">{user.name}</p>
+                                    <p className="truncate text-xs text-slate-500">{user.role_name}</p>
                                   </div>
                                   {user.id === card?.sdr_id && (
-                                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0" />
+                                    <CheckCircle2 size={16} className="flex-shrink-0 text-cyan-400" />
                                   )}
                                 </button>
                               ))}
@@ -497,8 +497,8 @@ const CardDetails: React.FC = () => {
                     </>
                   ) : (
                     // Vendedor - apenas visualização (sem seta)
-                    <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg border border-slate-700/50">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-medium text-sm">
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/80 px-3 py-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-sm font-medium text-white">
                         {sdrUser?.name?.substring(0, 2).toUpperCase() || "SDR"}
                       </div>
                       <span className="text-sm font-medium text-white">{sdrUser?.name || "Sem SDR"}</span>
@@ -511,7 +511,7 @@ const CardDetails: React.FC = () => {
               {!card.is_won && !card.is_lost && (
                 <button
                   onClick={handleMarkAsWon}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-lg font-medium transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 font-medium text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-700 hover:to-emerald-600"
                 >
                   <CheckCircle2 size={18} />
                   Ganho
@@ -522,7 +522,7 @@ const CardDetails: React.FC = () => {
               {!card.is_won && !card.is_lost && (
                 <button
                   onClick={handleMarkAsLost}
-                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-lg font-medium transition-all shadow-lg shadow-red-500/20 flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-500 px-4 py-2 font-medium text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-700 hover:to-red-600"
                 >
                   <XCircle size={18} />
                   Perdido
@@ -534,7 +534,7 @@ const CardDetails: React.FC = () => {
                 <button
                   onClick={handleAutoAssign}
                   disabled={isAutoAssigning}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white rounded-lg font-medium transition-all shadow-lg shadow-purple-500/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-2 font-medium text-white shadow-lg shadow-purple-500/20 transition-all hover:from-purple-700 hover:to-purple-600 disabled:cursor-not-allowed disabled:opacity-50"
                   title="Atribui automaticamente um vendedor via rodízio"
                 >
                   {isAutoAssigning ? (
@@ -575,13 +575,13 @@ const CardDetails: React.FC = () => {
 
               {/* Se já foi ganho ou perdido */}
               {card.is_won && (
-                <div className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 rounded-lg font-medium flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-4 py-2 font-medium text-emerald-400">
                   <CheckCircle2 size={18} />
                   Negócio Ganho
                 </div>
               )}
               {card.is_lost && (
-                <div className="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-400 rounded-lg font-medium flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 font-medium text-red-400">
                   <XCircle size={18} />
                   Negócio Perdido
                 </div>
@@ -604,10 +604,10 @@ const CardDetails: React.FC = () => {
       </div>
 
       {/* ========== LAYOUT PRINCIPAL: 30% + 70% (COM SCROLL INDEPENDENTE) ========== */}
-      <div className="relative z-0 flex flex-col flex-1 overflow-y-auto sm:overflow-hidden sm:flex-row sm:min-h-0">
+      <div className="relative z-0 flex flex-1 flex-col overflow-y-auto sm:min-h-0 sm:flex-row sm:overflow-hidden">
         {/* ========== COLUNA ESQUERDA: 30% - INFORMAÇÕES (SCROLL INDEPENDENTE) ========== */}
-        <div className="relative z-0 w-full flex-none border-b-0 overflow-visible sm:w-[30%] sm:border-b-0 sm:border-r sm:border-slate-700/50 sm:overflow-y-auto sm:overflow-x-hidden sm:min-h-0 sm:z-auto">
-          <div className="p-6 space-y-4 sm:min-h-full">
+        <div className="relative z-0 w-full flex-none overflow-visible border-b-0 sm:z-auto sm:min-h-0 sm:w-[30%] sm:overflow-y-auto sm:overflow-x-hidden sm:border-b-0 sm:border-r sm:border-slate-700/50">
+          <div className="space-y-4 p-6 sm:min-h-full">
             {/* Seção: Resumo */}
             <SummarySection
               card={card}
@@ -630,46 +630,46 @@ const CardDetails: React.FC = () => {
         </div>
 
         {/* ========== COLUNA DIREITA: 70% - ATIVIDADES E HISTÓRICO (SCROLL INDEPENDENTE) ========== */}
-        <div className="relative z-0 w-full flex-none overflow-visible sm:w-[70%] sm:overflow-y-auto sm:overflow-x-hidden sm:min-h-0 sm:z-auto">
+        <div className="relative z-0 w-full flex-none overflow-visible sm:z-auto sm:min-h-0 sm:w-[70%] sm:overflow-y-auto sm:overflow-x-hidden">
           <div className="p-6 sm:min-h-full">
             {/* Sistema de Abas */}
-            <div className="border-b border-slate-700/50 mb-6">
-              <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hidden sm:gap-6 sm:overflow-visible">
+            <div className="mb-6 border-b border-slate-700/50">
+              <div className="scrollbar-hidden flex flex-nowrap gap-4 overflow-x-auto sm:gap-6 sm:overflow-visible">
                 <button
                   onClick={() => setActiveTab("atividade")}
-                  className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 ${
+                  className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "atividade"
-                      ? "border-blue-500 text-blue-400 font-medium"
+                      ? "border-blue-500 font-medium text-blue-400"
                       : "border-transparent text-slate-400 hover:text-white"
                   }`}
                 >
                   <Calendar size={18} />
                   Atividade
-                  <span className="ml-1 px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium border border-blue-500/30">
+                  <span className="ml-1 rounded-full border border-blue-500/30 bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
                     {card.pending_tasks?.length || 0}
                   </span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab("anotacoes")}
-                  className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 ${
+                  className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "anotacoes"
-                      ? "border-blue-500 text-blue-400 font-medium"
+                      ? "border-blue-500 font-medium text-blue-400"
                       : "border-transparent text-slate-400 hover:text-white"
                   }`}
                 >
                   <FileText size={18} />
                   Anotações
-                  <span className="ml-1 px-2 py-0.5 bg-slate-700/50 text-slate-400 text-xs rounded-full font-medium border border-slate-700">
+                  <span className="ml-1 rounded-full border border-slate-700 bg-slate-700/50 px-2 py-0.5 text-xs font-medium text-slate-400">
                     {card.notes?.length || 0}
                   </span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab("agendador")}
-                  className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 ${
+                  className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "agendador"
-                      ? "border-blue-500 text-blue-400 font-medium"
+                      ? "border-blue-500 font-medium text-blue-400"
                       : "border-transparent text-slate-400 hover:text-white"
                   }`}
                 >
@@ -679,15 +679,15 @@ const CardDetails: React.FC = () => {
 
                 <button
                   onClick={() => setActiveTab("arquivos")}
-                  className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 ${
+                  className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "arquivos"
-                      ? "border-blue-500 text-blue-400 font-medium"
+                      ? "border-blue-500 font-medium text-blue-400"
                       : "border-transparent text-slate-400 hover:text-white"
                   }`}
                 >
                   <Paperclip size={18} />
                   Arquivos
-                  <span className="ml-1 px-2 py-0.5 bg-slate-700/50 text-slate-400 text-xs rounded-full font-medium border border-slate-700">
+                  <span className="ml-1 rounded-full border border-slate-700 bg-slate-700/50 px-2 py-0.5 text-xs font-medium text-slate-400">
                     0
                   </span>
                 </button>

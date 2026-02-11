@@ -197,9 +197,9 @@ const Gamification: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] items-center justify-center p-6">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-500"></div>
           <p className="text-slate-400">Carregando gamificação...</p>
         </div>
       </div>
@@ -210,11 +210,11 @@ const Gamification: React.FC = () => {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+          <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
             <Trophy className="text-white" size={32} />
             Gamificação
           </h1>
-        <p className="text-slate-400 mt-1">
+        <p className="mt-1 text-slate-400">
           {isManagerOrAdmin
             ? "Visualize o desempenho da equipe e de vendedores individuais"
             : "Acompanhe seu desempenho, conquistas e posição no ranking"}
@@ -223,15 +223,15 @@ const Gamification: React.FC = () => {
 
       {/* Seletor de usuário (apenas para gerente/admin) */}
       {isManagerOrAdmin && (
-        <div className="mb-6 bg-slate-800/50 border border-slate-700 rounded-xl p-4">
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+        <div className="mb-6 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+          <label className="mb-2 block text-sm font-medium text-slate-300">
             Visualizar dados de:
           </label>
           <div ref={userMenuRef} className="relative w-full md:w-80">
             <button
               type="button"
               onClick={() => setIsUserMenuOpen((open) => !open)}
-              className="w-full md:w-auto flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 md:w-auto"
             >
               <span className="flex items-center gap-2">
                 <img
@@ -255,7 +255,7 @@ const Gamification: React.FC = () => {
                     setSelectedUserId("team");
                     setIsUserMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${selectedUserId === "team" || selectedUserId === null ? "bg-slate-800/70" : ""}`}
+                  className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${selectedUserId === "team" || selectedUserId === null ? "bg-slate-800/70" : ""}`}
                 >
                   <img src={teamIconUrl} alt="" className="h-5 w-5" />
                   <span>Visão Geral da Equipe</span>
@@ -271,7 +271,7 @@ const Gamification: React.FC = () => {
                       setSelectedUserId(u.id);
                       setIsUserMenuOpen(false);
                     }}
-                    className={`w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${selectedUserId === u.id ? "bg-slate-800/70" : ""}`}
+                    className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${selectedUserId === u.id ? "bg-slate-800/70" : ""}`}
                   >
                     <img src={userIconUrl} alt="" className="h-5 w-5" style={userIconStyle} />
                     <span className="truncate">{u.name}</span>
@@ -284,13 +284,13 @@ const Gamification: React.FC = () => {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-slate-700">
+      <div className="mb-6 flex gap-2 border-b border-slate-700">
         <button
           onClick={() => setActiveTab("profile")}
-          className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+          className={`border-b-2 px-4 py-2 font-medium transition-colors ${
             activeTab === "profile"
-              ? "text-emerald-400 border-emerald-400"
-              : "text-slate-400 border-transparent hover:text-white"
+              ? "border-emerald-400 text-emerald-400"
+              : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
           <div className="flex items-center gap-2">
@@ -300,10 +300,10 @@ const Gamification: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab("rankings")}
-          className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+          className={`border-b-2 px-4 py-2 font-medium transition-colors ${
             activeTab === "rankings"
-              ? "text-emerald-400 border-emerald-400"
-              : "text-slate-400 border-transparent hover:text-white"
+              ? "border-emerald-400 text-emerald-400"
+              : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
           <div className="flex items-center gap-2">
@@ -313,10 +313,10 @@ const Gamification: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab("badges")}
-          className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+          className={`border-b-2 px-4 py-2 font-medium transition-colors ${
             activeTab === "badges"
-              ? "text-emerald-400 border-emerald-400"
-              : "text-slate-400 border-transparent hover:text-white"
+              ? "border-emerald-400 text-emerald-400"
+              : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
           <div className="flex items-center gap-2">
@@ -329,9 +329,9 @@ const Gamification: React.FC = () => {
       {/* Visão Geral da Equipe (apenas para gerente/admin quando selecionado "team") */}
       {isManagerOrAdmin && selectedUserId === "team" && activeTab === "profile" && teamStats && (
         <div className="space-y-6">
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-6 text-white">
+          <div className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
                 <UsersIcon size={40} />
               </div>
               <div>
@@ -342,54 +342,54 @@ const Gamification: React.FC = () => {
           </div>
 
           {/* Cards de estatísticas da equipe */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Total de pontos da equipe */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+            <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+              <div className="mb-2 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/20">
                   <Zap className="text-yellow-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm">Pontos Totais</p>
+                  <p className="text-sm text-slate-400">Pontos Totais</p>
                   <p className="text-3xl font-bold text-white">{Math.round(teamStats.totalPoints)}</p>
                 </div>
               </div>
             </div>
 
             {/* Média de pontos */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+            <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+              <div className="mb-2 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
                   <TrendingUp className="text-blue-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm">Média por Vendedor</p>
+                  <p className="text-sm text-slate-400">Média por Vendedor</p>
                   <p className="text-3xl font-bold text-white">{Math.round(teamStats.averagePoints)}</p>
                 </div>
               </div>
             </div>
 
             {/* Top performer */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+            <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+              <div className="mb-2 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20">
                   <Crown className="text-emerald-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm">Top Performer</p>
-                  <p className="text-lg font-bold text-white truncate">{teamStats.topPerformer || "-"}</p>
+                  <p className="text-sm text-slate-400">Top Performer</p>
+                  <p className="truncate text-lg font-bold text-white">{teamStats.topPerformer || "-"}</p>
                 </div>
               </div>
             </div>
 
             {/* Total de badges */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+            <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+              <div className="mb-2 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
                   <Award className="text-purple-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm">Badges Conquistados</p>
+                  <p className="text-sm text-slate-400">Badges Conquistados</p>
                   <p className="text-3xl font-bold text-white">{teamStats.totalBadges}</p>
                 </div>
               </div>
@@ -397,8 +397,8 @@ const Gamification: React.FC = () => {
           </div>
 
           {/* Mensagem informativa */}
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-            <p className="text-blue-400 text-sm">
+          <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
+            <p className="text-sm text-blue-400">
               💡 <strong>Dica:</strong> Selecione um vendedor específico no menu acima para ver detalhes individuais de desempenho, badges e ranking.
             </p>
           </div>
@@ -415,14 +415,14 @@ const Gamification: React.FC = () => {
               : "bg-gradient-to-r from-emerald-600 to-cyan-600"
           }`}>
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 text-2xl font-bold backdrop-blur-sm">
                 {getInitials(summary.user_name)}
               </div>
               <div>
                 <h2 className="text-2xl font-bold">{summary.user_name}</h2>
                 {isManagerOrAdmin && selectedUserId !== "team" && (
                   <div className="mt-2">
-                    <span className="text-sm px-3 py-1 bg-white/20 rounded-full">
+                    <span className="rounded-full bg-white/20 px-3 py-1 text-sm">
                       Visualizando vendedor
                     </span>
                   </div>
@@ -437,54 +437,54 @@ const Gamification: React.FC = () => {
           </div>
 
           {/* Cards de estatísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Total de pontos */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+            <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+              <div className="mb-2 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/20">
                   <Zap className="text-yellow-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm">Total de Pontos</p>
+                  <p className="text-sm text-slate-400">Total de Pontos</p>
                   <p className="text-3xl font-bold text-white">{summary.total_points}</p>
                 </div>
               </div>
             </div>
 
             {/* Pontos esta semana */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+            <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+              <div className="mb-2 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
                   <Target className="text-blue-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm">Esta Semana</p>
+                  <p className="text-sm text-slate-400">Esta Semana</p>
                   <p className="text-3xl font-bold text-white">{summary.current_week_points}</p>
                 </div>
               </div>
             </div>
 
             {/* Pontos este mês */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+            <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+              <div className="mb-2 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20">
                   <TrendingUp className="text-emerald-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm">Este Mês</p>
+                  <p className="text-sm text-slate-400">Este Mês</p>
                   <p className="text-3xl font-bold text-white">{summary.current_month_points}</p>
                 </div>
               </div>
             </div>
 
             {/* Badges conquistados */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+            <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+              <div className="mb-2 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
                   <Award className="text-purple-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm">Badges</p>
+                  <p className="text-sm text-slate-400">Badges</p>
                   <p className="text-3xl font-bold text-white">{myBadges.length}</p>
                 </div>
               </div>
@@ -492,9 +492,9 @@ const Gamification: React.FC = () => {
           </div>
 
           {/* Posição nos rankings */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Posição nos Rankings</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+            <h3 className="mb-4 text-lg font-semibold text-white">Posição nos Rankings</h3>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {[
                 { label: "Semanal", rank: summary.weekly_rank },
                 { label: "Mensal", rank: summary.monthly_rank },
@@ -502,7 +502,7 @@ const Gamification: React.FC = () => {
                 { label: "Anual", rank: summary.annual_rank },
               ].map((item) => (
                 <div key={item.label} className="text-center">
-                  <p className="text-slate-400 text-sm mb-1">{item.label}</p>
+                  <p className="mb-1 text-sm text-slate-400">{item.label}</p>
                   <p className="text-2xl font-bold text-white">
                     {item.rank ? `${item.rank}º` : "-"}
                   </p>
@@ -513,14 +513,14 @@ const Gamification: React.FC = () => {
 
           {/* Badges recentes */}
           {myBadges.length > 0 && (
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Badges Conquistados Recentemente</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+              <h3 className="mb-4 text-lg font-semibold text-white">Badges Conquistados Recentemente</h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {myBadges.slice(0, 3).map((userBadge) => {
                   const badge = allBadges.find((b) => b.id === userBadge.badge_id);
                   return (
-                    <div key={userBadge.id} className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
-                      <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                    <div key={userBadge.id} className="flex items-center gap-3 rounded-lg bg-slate-700/30 p-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-500/20">
                         <Award className="text-yellow-400" size={24} />
                       </div>
                       <div>
@@ -542,12 +542,12 @@ const Gamification: React.FC = () => {
       {activeTab === "rankings" && (
         <div className="space-y-6">
           {/* Filtro de período */}
-          <div className="flex justify-center sm:justify-start gap-2">
+          <div className="flex justify-center gap-2 sm:justify-start">
             {(["weekly", "monthly", "quarterly", "annual"] as const).map((period) => (
               <button
                 key={period}
                 onClick={() => setRankingPeriod(period)}
-                className={`px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base rounded-lg font-medium transition-colors ${
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:px-4 md:py-2 md:text-base ${
                   rankingPeriod === period
                     ? "bg-emerald-600 text-white"
                     : "bg-slate-800 text-slate-300 hover:bg-slate-700"
@@ -560,26 +560,26 @@ const Gamification: React.FC = () => {
 
           {/* Lista de rankings */}
           {rankings.length === 0 ? (
-            <div className="text-center py-12 bg-slate-800/50 border border-slate-700 rounded-xl">
-              <Trophy className="mx-auto text-slate-600 mb-4" size={48} />
+            <div className="rounded-xl border border-slate-700 bg-slate-800/50 py-12 text-center">
+              <Trophy className="mx-auto mb-4 text-slate-600" size={48} />
               <p className="text-slate-400">Nenhum ranking disponível para este período</p>
-              <p className="text-sm text-slate-500 mt-2">
+              <p className="mt-2 text-sm text-slate-500">
                 Os rankings são calculados automaticamente com base nos pontos conquistados
               </p>
             </div>
           ) : (
-            <div className="bg-slate-800/30 border border-slate-700 rounded-xl overflow-hidden">
+            <div className="overflow-hidden rounded-xl border border-slate-700 bg-slate-800/30">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-800/50 border-b border-slate-700">
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold text-slate-300 uppercase sm:px-6 sm:py-3 sm:text-xs">
+                    <tr className="border-b border-slate-700 bg-slate-800/50">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase text-slate-300 sm:px-6 sm:py-3 sm:text-xs">
                         Posição
                       </th>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold text-slate-300 uppercase sm:px-6 sm:py-3 sm:text-xs">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase text-slate-300 sm:px-6 sm:py-3 sm:text-xs">
                         Usuário
                       </th>
-                      <th className="px-3 py-2 text-right text-[11px] font-semibold text-slate-300 uppercase sm:px-6 sm:py-3 sm:text-xs">
+                      <th className="px-3 py-2 text-right text-[11px] font-semibold uppercase text-slate-300 sm:px-6 sm:py-3 sm:text-xs">
                         Pontos
                       </th>
                     </tr>
@@ -599,11 +599,11 @@ const Gamification: React.FC = () => {
                           <td className="px-3 py-2 sm:px-6 sm:py-4">
                             <div className="flex items-center gap-2">
                               {medal ? (
-                                <div className={`${medal.bg} ${medal.color} p-1.5 sm:p-2 rounded-lg`}>
+                                <div className={`${medal.bg} ${medal.color} rounded-lg p-1.5 sm:p-2`}>
                                   {medal.icon}
                                 </div>
                               ) : (
-                                <span className="text-lg sm:text-2xl font-bold text-slate-400 w-8 sm:w-10 text-center">
+                                <span className="w-8 text-center text-lg font-bold text-slate-400 sm:w-10 sm:text-2xl">
                                   {ranking.rank_position}
                                 </span>
                               )}
@@ -611,14 +611,14 @@ const Gamification: React.FC = () => {
                           </td>
                           <td className="px-3 py-2 sm:px-6 sm:py-4">
                             <div className="flex items-center gap-2 sm:gap-3">
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-xs sm:text-sm text-white font-semibold">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-xs font-semibold text-white sm:h-10 sm:w-10 sm:text-sm">
                                 {getInitials(ranking.user_name)}
                               </div>
                               <div>
-                                <p className="text-sm sm:text-base font-medium text-white flex items-center gap-2">
+                                <p className="flex items-center gap-2 text-sm font-medium text-white sm:text-base">
                                   {ranking.user_name}
                                   {isCurrentUser && (
-                                    <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full">
+                                    <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-400">
                                       Você
                                     </span>
                                   )}
@@ -627,8 +627,8 @@ const Gamification: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-3 py-2 text-right sm:px-6 sm:py-4">
-                            <span className="text-lg sm:text-xl font-bold text-white">{ranking.total_points}</span>
-                            <span className="text-slate-400 ml-1">pts</span>
+                            <span className="text-lg font-bold text-white sm:text-xl">{ranking.total_points}</span>
+                            <span className="ml-1 text-slate-400">pts</span>
                           </td>
                         </tr>
                       );
@@ -648,7 +648,7 @@ const Gamification: React.FC = () => {
             {myBadges.length} de {allBadges.length} badges conquistados
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {allBadges.map((badge) => {
               const userBadge = myBadges.find((ub) => ub.badge_id === badge.id);
               const isEarned = !!userBadge;
@@ -656,15 +656,15 @@ const Gamification: React.FC = () => {
               return (
                 <div
                   key={badge.id}
-                  className={`p-6 border rounded-xl transition-all ${
+                  className={`rounded-xl border p-6 transition-all ${
                     isEarned
-                      ? "bg-yellow-500/10 border-yellow-500/30"
-                      : "bg-slate-800/30 border-slate-700 opacity-60"
+                      ? "border-yellow-500/30 bg-yellow-500/10"
+                      : "border-slate-700 bg-slate-800/30 opacity-60"
                   }`}
                 >
                   <div className="flex items-start gap-4">
                     <div
-                      className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                      className={`flex h-16 w-16 items-center justify-center rounded-full ${
                         isEarned ? "bg-yellow-500/20" : "bg-slate-700/30"
                       }`}
                     >
@@ -674,14 +674,14 @@ const Gamification: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1">
-                      <h3 className={`font-semibold mb-1 ${isEarned ? "text-white" : "text-slate-500"}`}>
+                      <h3 className={`mb-1 font-semibold ${isEarned ? "text-white" : "text-slate-500"}`}>
                         {badge.name}
                       </h3>
-                      <p className={`text-sm mb-2 ${isEarned ? "text-slate-300" : "text-slate-600"}`}>
+                      <p className={`mb-2 text-sm ${isEarned ? "text-slate-300" : "text-slate-600"}`}>
                         {badge.description}
                       </p>
                       {isEarned && userBadge && (
-                        <p className="text-xs text-emerald-400 flex items-center gap-1">
+                        <p className="flex items-center gap-1 text-xs text-emerald-400">
                           <Trophy size={12} />
                           Conquistado em {new Date(userBadge.awarded_at).toLocaleDateString("pt-BR")}
                         </p>

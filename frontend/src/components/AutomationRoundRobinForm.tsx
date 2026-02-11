@@ -201,8 +201,8 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
       }
       size="2xl"
       footer={
-        <div className="flex justify-between items-center">
-          <div>{error && <p className="text-red-400 text-sm">{error}</p>}</div>
+        <div className="flex items-center justify-between">
+          <div>{error && <p className="text-sm text-red-400">{error}</p>}</div>
           <div className="flex gap-3">
             <Button variant="secondary" onClick={onClose} disabled={loading}>
               Cancelar
@@ -217,11 +217,11 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
       <div className="space-y-6">
         {/* Seção: Dados da Automação */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
             <Zap size={20} className="text-emerald-400" />
             Dados da Automação
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField label="Nome da Automação" required className="md:col-span-2">
               <Input
                 value={formData.name}
@@ -244,11 +244,11 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
 
         {/* Seção: Configuração do Trigger */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
             <List size={20} className="text-emerald-400" />
             Configuração do Trigger
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               label="Board"
               required
@@ -275,27 +275,27 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
 
         {/* Seção: Status */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4">Status</h3>
+          <h3 className="mb-4 text-lg font-semibold text-white">Status</h3>
           <div className="flex items-center gap-3">
             <input
               type="checkbox"
               id="is_active"
               checked={formData.is_active}
               onChange={(e) => handleChange("is_active", e.target.checked)}
-              className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
+              className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
             />
-            <label htmlFor="is_active" className="text-sm text-slate-300 cursor-pointer">
+            <label htmlFor="is_active" className="cursor-pointer text-sm text-slate-300">
               Automação ativa (começar a executar imediatamente)
             </label>
           </div>
         </div>
 
         {/* Info Box */}
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
           <div className="flex gap-3">
-            <Zap className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+            <Zap className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-400" />
             <div className="text-sm text-emerald-200">
-              <p className="font-medium mb-1">Como funciona:</p>
+              <p className="mb-1 font-medium">Como funciona:</p>
               <ul className="space-y-1 text-emerald-300">
                 <li>• Escolha uma lista específica ou deixe vazio para aplicar em todas as listas</li>
                 <li>• Cards movidos serão distribuídos automaticamente em rodízio</li>
@@ -366,8 +366,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
           setIsOpen((open) => !open);
         }}
         disabled={disabled}
-        className={`w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-          disabled ? "opacity-60 cursor-not-allowed" : ""
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled ? "cursor-not-allowed opacity-60" : ""
         }`}
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
@@ -379,7 +379,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value || option.label}

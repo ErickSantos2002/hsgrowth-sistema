@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Settings, Check, X } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
-import { Card, FieldDefinition, CardFieldValue } from "../../types";
+import { Card, FieldDefinition } from "../../types";
 import fieldService from "../../services/fieldService";
 
 interface CustomFieldsSectionProps {
@@ -109,12 +109,12 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
       return (
         <div
           onClick={() => handleStartEdit(field.id, value)}
-          className="flex items-center justify-between px-3 py-2 border border-slate-700 rounded-lg bg-slate-900/50 hover:border-blue-500/50 hover:bg-slate-800/50 cursor-pointer transition-colors"
+          className="flex cursor-pointer items-center justify-between rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 transition-colors hover:border-blue-500/50 hover:bg-slate-800/50"
         >
-          <span className={value ? "text-white" : "text-slate-500 italic"}>
+          <span className={value ? "text-white" : "italic text-slate-500"}>
             {formatDisplayValue(field, value)}
           </span>
-          <span className="text-xs text-slate-500 bg-slate-800/50 px-2 py-0.5 rounded border border-slate-700">
+          <span className="rounded border border-slate-700 bg-slate-800/50 px-2 py-0.5 text-xs text-slate-500">
             {field.is_required ? "Obrigatório" : "Opcional"}
           </span>
         </div>
@@ -131,7 +131,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
           <button
             onClick={() => handleSaveField(field.id)}
             disabled={loading}
-            className="flex-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+            className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
           >
             <Check size={14} />
             Salvar
@@ -139,7 +139,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
           <button
             onClick={handleCancelEdit}
             disabled={loading}
-            className="flex-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg font-medium text-sm transition-colors"
+            className="flex-1 rounded-lg bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-600"
           >
             <X size={14} />
             Cancelar
@@ -164,7 +164,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             autoFocus
-            className="w-full px-3 py-2 bg-slate-900/50 border border-blue-500 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         );
 
@@ -175,7 +175,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             autoFocus
-            className="w-full px-3 py-2 bg-slate-900/50 border border-blue-500 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         );
 
@@ -186,7 +186,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             autoFocus
-            className="w-full px-3 py-2 bg-slate-900/50 border border-blue-500 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         );
 
@@ -196,7 +196,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             autoFocus
-            className="w-full px-3 py-2 bg-slate-900/50 border border-blue-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Selecione...</option>
             {field.options?.map((option: any) => (
@@ -211,7 +211,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
         return (
           <div className="space-y-2">
             {field.options?.map((option: any) => (
-              <label key={option} className="flex items-center gap-2 cursor-pointer">
+              <label key={option} className="flex cursor-pointer items-center gap-2">
                 <input
                   type="checkbox"
                   checked={Array.isArray(editValue) && editValue.includes(option)}
@@ -223,7 +223,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
                       setEditValue(currentArray.filter((v: string) => v !== option));
                     }
                   }}
-                  className="w-4 h-4 rounded bg-slate-900/50 border-slate-700"
+                  className="h-4 w-4 rounded border-slate-700 bg-slate-900/50"
                 />
                 <span className="text-sm text-slate-300">{option}</span>
               </label>
@@ -233,13 +233,13 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
 
       case "boolean":
         return (
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
               checked={!!editValue}
               onChange={(e) => setEditValue(e.target.checked)}
               autoFocus
-              className="w-5 h-5 rounded bg-slate-900/50 border-slate-700"
+              className="h-5 w-5 rounded border-slate-700 bg-slate-900/50"
             />
             <span className="text-sm text-slate-300">
               {editValue ? "Sim" : "Não"}
@@ -254,7 +254,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             autoFocus
-            className="w-full px-3 py-2 bg-slate-900/50 border border-blue-500 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         );
     }
@@ -282,7 +282,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             href={value}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 underline"
+            className="text-blue-400 underline hover:text-blue-300"
             onClick={(e) => e.stopPropagation()}
           >
             {value}
@@ -293,7 +293,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
         return (
           <a
             href={`mailto:${value}`}
-            className="text-blue-400 hover:text-blue-300 underline"
+            className="text-blue-400 underline hover:text-blue-300"
             onClick={(e) => e.stopPropagation()}
           >
             {value}

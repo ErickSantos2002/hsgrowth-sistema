@@ -18,7 +18,7 @@ import {
   FileText,
   Loader2,
 } from "lucide-react";
-import StatusBadge, { type ActivityStatus } from "./StatusBadge";
+import StatusBadge from "./StatusBadge";
 import cardTaskService from "../../services/cardTaskService";
 import api4comService from "../../services/api4comService";
 import personService, { Person } from "../../services/personService";
@@ -376,19 +376,19 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
 
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-white">Foco</h3>
         <button
           onClick={toggleExpandAll}
-          className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+          className="text-sm text-blue-400 transition-colors hover:text-blue-300"
         >
           {expandAll ? "Recolher todos" : "Expandir todos"}
         </button>
       </div>
 
       {pendingActivities.length === 0 ? (
-        <div className="p-6 bg-slate-800/30 border border-slate-700/50 rounded-lg text-center">
-          <CheckSquare size={32} className="mx-auto text-slate-600 mb-2" />
+        <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-6 text-center">
+          <CheckSquare size={32} className="mx-auto mb-2 text-slate-600" />
           <p className="text-sm text-slate-400">Nenhuma atividade pendente</p>
         </div>
       ) : (
@@ -401,22 +401,22 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
             return (
               <div
                 key={activity.id}
-                className={`bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden hover:bg-slate-700/30 transition-colors ${getPriorityBorderClass(
+                className={`overflow-hidden rounded-lg border border-slate-700 bg-slate-800/50 transition-colors hover:bg-slate-700/30 ${getPriorityBorderClass(
                   activity.priority
                 )}`}
               >
                 {/* Header da atividade */}
-                <div className="p-3 flex items-start gap-3">
+                <div className="flex items-start gap-3 p-3">
                   {/* Conteúdo */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start gap-2 mb-1">
-                      <span className="text-slate-400 mt-0.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-start gap-2">
+                      <span className="mt-0.5 text-slate-400">
                         {getActivityIcon(activity.task_type)}
                       </span>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="mb-1 flex items-center gap-2">
                           <p className="font-medium text-white">{activity.title}</p>
-                          <span className="px-2 py-0.5 bg-slate-700/50 text-slate-300 text-xs rounded border border-slate-600">
+                          <span className="rounded border border-slate-600 bg-slate-700/50 px-2 py-0.5 text-xs text-slate-300">
                             {getActivityTypeName(activity.task_type)}
                           </span>
                         </div>
@@ -438,7 +438,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => toggleActivity(activity.id)}
-                      className="p-1 hover:bg-slate-600 rounded transition-colors text-slate-400"
+                      className="rounded p-1 text-slate-400 transition-colors hover:bg-slate-600"
                       title={isExpanded ? "Recolher" : "Expandir"}
                     >
                       {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
@@ -448,70 +448,70 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
 
                 {/* Detalhes expandidos */}
                 {isExpanded && (
-                  <div className="px-3 pb-3 pt-0 border-t border-slate-700/50 space-y-3">
+                  <div className="space-y-3 border-t border-slate-700/50 px-3 pb-3 pt-0">
                     {/* Modo de edição */}
                     {editingTaskId === activity.id ? (
                       <div className="space-y-3 pt-3">
                         <div>
-                          <label className="block text-xs font-medium text-slate-400 mb-1">
+                          <label className="mb-1 block text-xs font-medium text-slate-400">
                             Título *
                           </label>
                           <input
                             type="text"
                             value={editFormData.title}
                             onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Digite o título"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-slate-400 mb-1">
+                          <label className="mb-1 block text-xs font-medium text-slate-400">
                             Descrição
                           </label>
                           <textarea
                             value={editFormData.description}
                             onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                             rows={3}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            className="w-full resize-none rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Adicione uma descrição"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-slate-400 mb-1">
+                          <label className="mb-1 block text-xs font-medium text-slate-400">
                             Anotações
                           </label>
                           <textarea
                             value={editFormData.notes}
                             onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
                             rows={3}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            className="w-full resize-none rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Adicione anotações da reunião"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-slate-400 mb-1">
+                          <label className="mb-1 block text-xs font-medium text-slate-400">
                             Link da gravação
                           </label>
                           <input
                             type="url"
                             value={editFormData.video_link}
                             onChange={(e) => setEditFormData({ ...editFormData, video_link: e.target.value })}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="https://meet.google.com/... ou link da gravação"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-slate-400 mb-1">
+                          <label className="mb-1 block text-xs font-medium text-slate-400">
                             Prioridade
                           </label>
                           <select
                             value={editFormData.priority}
                             onChange={(e) => setEditFormData({ ...editFormData, priority: e.target.value })}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <option value="normal">Normal</option>
                             <option value="high">Alta</option>
@@ -523,7 +523,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={handleSaveEdit}
                             disabled={loadingTaskId === activity.id}
-                            className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                            className="flex flex-1 items-center justify-center gap-1 rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
                           >
                             {loadingTaskId === activity.id ? (
                               <Loader2 size={14} className="animate-spin" />
@@ -535,7 +535,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={handleCancelEdit}
                             disabled={loadingTaskId === activity.id}
-                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-medium text-sm transition-colors disabled:opacity-50"
+                            className="rounded bg-slate-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
                           >
                             Cancelar
                           </button>
@@ -546,7 +546,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                         {/* Descrição */}
                         {activity.description && (
                           <div className="flex items-start gap-2 text-sm">
-                            <FileText size={16} className="text-slate-500 mt-0.5 flex-shrink-0" />
+                            <FileText size={16} className="mt-0.5 flex-shrink-0 text-slate-500" />
                             <p className="text-slate-300">{activity.description}</p>
                           </div>
                         )}
@@ -554,7 +554,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                         {/* Localização */}
                         {activity.location && (
                           <div className="flex items-start gap-2 text-sm">
-                            <MapPin size={16} className="text-slate-500 mt-0.5 flex-shrink-0" />
+                            <MapPin size={16} className="mt-0.5 flex-shrink-0 text-slate-500" />
                             <p className="text-slate-300">{activity.location}</p>
                           </div>
                         )}
@@ -562,12 +562,12 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                         {/* Link de vídeo */}
                         {activity.video_link && (
                           <div className="flex items-start gap-2 text-sm">
-                            <Video size={16} className="text-slate-500 mt-0.5 flex-shrink-0" />
+                            <Video size={16} className="mt-0.5 flex-shrink-0 text-slate-500" />
                             <a
                               href={activity.video_link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-400 hover:text-blue-300 underline"
+                              className="text-blue-400 underline hover:text-blue-300"
                             >
                               Entrar na videochamada
                             </a>
@@ -576,8 +576,8 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
 
                         {/* Notas */}
                         {activity.notes && (
-                          <div className="p-2 bg-slate-900/50 border border-slate-700 rounded text-sm text-slate-300">
-                            <p className="text-xs text-slate-500 mb-1">Notas:</p>
+                          <div className="rounded border border-slate-700 bg-slate-900/50 p-2 text-sm text-slate-300">
+                            <p className="mb-1 text-xs text-slate-500">Notas:</p>
                             {activity.notes}
                           </div>
                         )}
@@ -589,7 +589,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                             <button
                               onClick={() => handleMakeCall(activity.id)}
                               disabled={callingTaskId === activity.id || !person?.phone}
-                              className="flex-1 px-3 py-1.5 bg-blue-500/30 hover:bg-blue-500/45 text-blue-300 border border-blue-400/70 rounded font-medium text-sm transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                              className="flex flex-1 items-center justify-center gap-1 rounded border border-blue-400/70 bg-blue-500/30 px-3 py-1.5 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/45 disabled:opacity-50"
                               title={!person?.phone ? "Pessoa sem número principal cadastrado" : "Ligar agora"}
                             >
                               {callingTaskId === activity.id ? (
@@ -606,7 +606,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                             <button
                               onClick={() => handleNoShow(activity.id)}
                               disabled={noShowTaskId === activity.id || loadingTaskId === activity.id}
-                              className="flex-1 px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/50 rounded font-medium text-sm transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                              className="flex flex-1 items-center justify-center gap-1 rounded border border-orange-500/50 bg-orange-500/20 px-3 py-1.5 text-sm font-medium text-orange-400 transition-colors hover:bg-orange-500/30 disabled:opacity-50"
                               title="Cliente não compareceu - move para Reagendamento"
                             >
                               {noShowTaskId === activity.id ? (
@@ -621,7 +621,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={() => handleToggleComplete(activity.id)}
                             disabled={loadingTaskId === activity.id}
-                            className="flex-1 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 rounded font-medium text-sm transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                            className="flex flex-1 items-center justify-center gap-1 rounded border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
                           >
                             {loadingTaskId === activity.id ? (
                               <Loader2 size={14} className="animate-spin" />
@@ -633,7 +633,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={() => handleStartEdit(activity)}
                             disabled={loadingTaskId === activity.id}
-                            className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded font-medium text-sm transition-colors disabled:opacity-50"
+                            className="rounded border border-blue-500/50 bg-blue-500/20 px-3 py-1.5 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/30 disabled:opacity-50"
                             title="Editar"
                           >
                             <Edit size={14} />
@@ -641,7 +641,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={() => handleOpenReschedule(activity)}
                             disabled={loadingTaskId === activity.id}
-                            className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/50 rounded font-medium text-sm transition-colors disabled:opacity-50"
+                            className="rounded border border-yellow-500/50 bg-yellow-500/20 px-3 py-1.5 text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/30 disabled:opacity-50"
                             title="Reagendar"
                           >
                             <Calendar size={14} />
@@ -649,7 +649,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={() => handleDeleteTask(activity.id)}
                             disabled={loadingTaskId === activity.id}
-                            className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50 rounded font-medium text-sm transition-colors disabled:opacity-50"
+                            className="rounded border border-red-500/50 bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
                             title="Excluir"
                           >
                             {loadingTaskId === activity.id ? (
@@ -671,37 +671,37 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
 
       {/* Modal de reagendamento */}
       {rescheduleTaskId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-4 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-800 shadow-xl">
+            <div className="border-b border-slate-700 p-4">
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
                 <Calendar size={20} className="text-yellow-400" />
                 Reagendar Atividade
               </h3>
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="space-y-4 p-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-slate-300">
                   Nova Data *
                 </label>
                 <input
                   type="date"
                   value={rescheduleDate}
                   onChange={(e) => setRescheduleDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-slate-300">
                   Horário (opcional)
                 </label>
                 <input
                   type="time"
                   value={rescheduleTime}
                   onChange={(e) => setRescheduleTime(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 />
               </div>
 
@@ -710,11 +710,11 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
               </p>
             </div>
 
-            <div className="p-4 border-t border-slate-700 flex gap-2">
+            <div className="flex gap-2 border-t border-slate-700 p-4">
               <button
                 onClick={handleSaveReschedule}
                 disabled={loadingTaskId === rescheduleTaskId}
-                className="flex-1 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-slate-900 rounded font-medium text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex flex-1 items-center justify-center gap-2 rounded bg-yellow-500 px-4 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-yellow-600 disabled:opacity-50"
               >
                 {loadingTaskId === rescheduleTaskId ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -726,7 +726,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
               <button
                 onClick={handleCancelReschedule}
                 disabled={loadingTaskId === rescheduleTaskId}
-                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-medium text-sm transition-colors disabled:opacity-50"
+                className="rounded bg-slate-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
               >
                 Cancelar
               </button>

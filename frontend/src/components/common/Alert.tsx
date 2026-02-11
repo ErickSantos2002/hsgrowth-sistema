@@ -88,7 +88,7 @@ const Alert: React.FC<AlertProps> = ({
       className={`${config.bgClass} border ${config.borderClass} rounded-xl p-4 ${className}`}
     >
       <div className="flex items-start gap-3">
-        <div className={`${config.iconClass} flex-shrink-0 mt-0.5`}>
+        <div className={`${config.iconClass} mt-0.5 flex-shrink-0`}>
           {config.icon}
         </div>
         <div className="flex-1">

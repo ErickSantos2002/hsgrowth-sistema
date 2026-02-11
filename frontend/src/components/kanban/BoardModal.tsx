@@ -5,7 +5,7 @@ import { BaseModal, FormField, Input, Textarea, Button } from "../common";
 interface BoardModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: {
+  onSave: (_data: {
     name: string;
     description?: string;
     color: string;
@@ -109,7 +109,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
       }
       size="lg"
       footer={
-        <div className="flex gap-3 justify-end">
+        <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
@@ -160,10 +160,10 @@ const BoardModal: React.FC<BoardModalProps> = ({
                 key={iconOption}
                 type="button"
                 onClick={() => setIcon(iconOption)}
-                className={`aspect-square rounded-lg transition-all text-2xl flex items-center justify-center ${
+                className={`flex aspect-square items-center justify-center rounded-lg text-2xl transition-all ${
                   icon === iconOption
-                    ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110 bg-slate-700"
-                    : "hover:scale-105 bg-slate-800/50 hover:bg-slate-700"
+                    ? "scale-110 bg-slate-700 ring-2 ring-white ring-offset-2 ring-offset-slate-900"
+                    : "bg-slate-800/50 hover:scale-105 hover:bg-slate-700"
                 }`}
                 title={`Ícone ${iconOption}`}
                 aria-label={`Selecionar ícone ${iconOption}`}
@@ -185,9 +185,9 @@ const BoardModal: React.FC<BoardModalProps> = ({
                 key={option.value}
                 type="button"
                 onClick={() => setColor(option.value)}
-                className={`w-full aspect-square rounded-lg transition-all hover:scale-105 ${
+                className={`aspect-square w-full rounded-lg transition-all hover:scale-105 ${
                   color === option.value
-                    ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110"
+                    ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-slate-900"
                     : ""
                 }`}
                 style={{ backgroundColor: option.value }}
@@ -196,7 +196,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
               >
                 {color === option.value && (
                   <svg
-                    className="w-full h-full p-2 text-white drop-shadow-md"
+                    className="h-full w-full p-2 text-white drop-shadow-md"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -215,25 +215,25 @@ const BoardModal: React.FC<BoardModalProps> = ({
         </FormField>
 
         {/* Preview do board */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-          <p className="text-xs font-medium text-slate-400 mb-3">Preview:</p>
+        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+          <p className="mb-3 text-xs font-medium text-slate-400">Preview:</p>
           <div className="flex items-center gap-4">
             <div
-              className="p-3 rounded-lg"
+              className="rounded-lg p-3"
               style={{
                 backgroundColor: `${color}20`,
               }}
             >
-              <div className="w-8 h-8 text-2xl" style={{ color: color }}>
+              <div className="h-8 w-8 text-2xl" style={{ color: color }}>
                 {icon}
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-white font-bold text-lg">
+              <h3 className="text-lg font-bold text-white">
                 {name.trim() || "Nome do Board"}
               </h3>
               {(description.trim() || !board) && (
-                <p className="text-sm text-slate-400 mt-0.5">
+                <p className="mt-0.5 text-sm text-slate-400">
                   {description.trim() || "Sem descrição"}
                 </p>
               )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, User } from "lucide-react";
+import { Calendar, User as UserIcon } from "lucide-react";
 import { Card, List } from "../../types";
 import { BaseModal, FormField, Input, Select, Textarea, Button, Alert } from "../common";
 import userService from "../../services/userService";
@@ -9,7 +9,7 @@ import { useAuth } from "../../hooks/useAuth";
 interface CardModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: CardFormData) => void;
+  onSave: (_data: CardFormData) => void;
   card?: Card | null;
   lists: List[];
   currentListId: number;
@@ -49,7 +49,7 @@ const CardModal: React.FC<CardModalProps> = ({
     sdr_id: undefined,
   });
   const [errors, setErrors] = useState<{ title?: string }>({});
-  const [users, setUsers] = useState<UserType[]>([]);
+  const [_users, setUsers] = useState<UserType[]>([]);
   const [salespeople, setSalespeople] = useState<UserType[]>([]);
   const [sdrs, setSDRs] = useState<UserType[]>([]);
 
@@ -159,7 +159,7 @@ const CardModal: React.FC<CardModalProps> = ({
       }
       size="xl"
       footer={
-        <div className="flex gap-3 justify-end">
+        <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
@@ -222,7 +222,7 @@ const CardModal: React.FC<CardModalProps> = ({
         </FormField>
 
         {/* Data e Responsáveis */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <FormField
             label={
               <span className="flex items-center gap-1">
@@ -242,7 +242,7 @@ const CardModal: React.FC<CardModalProps> = ({
           <FormField
             label={
               <span className="flex items-center gap-1">
-                <User size={14} />
+                <UserIcon size={14} />
                 Responsável SDR
               </span>
             }
@@ -276,7 +276,7 @@ const CardModal: React.FC<CardModalProps> = ({
           <FormField
             label={
               <span className="flex items-center gap-1">
-                <User size={14} />
+                <UserIcon size={14} />
                 Responsável Vendedor
               </span>
             }
@@ -310,12 +310,12 @@ const CardModal: React.FC<CardModalProps> = ({
 
         {/* Preview do card (apenas se tiver título) */}
         {formData.title.trim() && (
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-            <p className="text-xs font-medium text-slate-400 mb-3">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+            <p className="mb-3 text-xs font-medium text-slate-400">
               Preview do Card:
             </p>
-            <div className="bg-slate-700/30 backdrop-blur-sm border border-slate-600/30 p-3 rounded-lg">
-              <h4 className="text-white font-medium text-sm mb-2">
+            <div className="rounded-lg border border-slate-600/30 bg-slate-700/30 p-3 backdrop-blur-sm">
+              <h4 className="mb-2 text-sm font-medium text-white">
                 {formData.title}
               </h4>
               <div className="flex items-center gap-3 text-xs">

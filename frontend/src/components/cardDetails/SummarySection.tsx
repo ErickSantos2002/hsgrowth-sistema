@@ -261,7 +261,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
       <div className="space-y-6">
         {/* ======== SEÇÃO: VALORES E PREVISÕES ======== */}
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
             <DollarSign size={16} />
             Valores e Previsões
           </h4>
@@ -279,8 +279,8 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
           />
 
           {hasProducts && (
-            <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-              <Info size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
+              <Info size={16} className="mt-0.5 flex-shrink-0 text-blue-400" />
               <p className="text-xs text-blue-300">
                 O valor é calculado automaticamente com base nos produtos cadastrados. Para editar
                 manualmente, remova todos os produtos primeiro.
@@ -312,8 +312,8 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
         </div>
 
         {/* ======== SEÇÃO: RESPONSÁVEIS ======== */}
-        <div className="space-y-4 pt-4 border-t border-slate-700/50">
-          <h4 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
+        <div className="space-y-4 border-t border-slate-700/50 pt-4">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
             <Users size={16} />
             Responsáveis
           </h4>
@@ -334,7 +334,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
               <Briefcase size={14} className="text-slate-400" />
               <span>Vendedor Responsável</span>
             </div>
-            <div className="px-3 py-2 border border-slate-700 bg-slate-900/50 rounded-lg">
+            <div className="rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2">
               <span className="text-sm text-white">
                 {card.assigned_to_name || "Não atribuído"}
               </span>
@@ -346,8 +346,8 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
         </div>
 
         {/* ======== SEÇÃO: TRACKING DE BOARDS (READ-ONLY) ======== */}
-        <div className="space-y-4 pt-4 border-t border-slate-700/50">
-          <h4 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
+        <div className="space-y-4 border-t border-slate-700/50 pt-4">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
             <Target size={16} />
             Tracking de Boards
           </h4>
@@ -421,8 +421,8 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
             </div>
           </div>
 
-          <div className="flex items-start gap-2 p-2 bg-slate-800/30 border border-slate-700/50 rounded-lg">
-            <Info size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-2 rounded-lg border border-slate-700/50 bg-slate-800/30 p-2">
+            <Info size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
             <p className="text-xs text-slate-400">
               Essas datas são preenchidas automaticamente quando o card muda de board.
             </p>
@@ -430,8 +430,8 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
         </div>
 
         {/* ======== SEÇÃO: INFORMAÇÕES DE NEGÓCIO ======== */}
-        <div className="space-y-4 pt-4 border-t border-slate-700/50">
-          <h4 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
+        <div className="space-y-4 border-t border-slate-700/50 pt-4">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
             <Briefcase size={16} />
             Informações de Negócio
           </h4>
@@ -509,8 +509,8 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
 
         {/* ======== SEÇÃO: MOTIVO DA PERDA (CONDICIONAL) ======== */}
         {isLost && (
-          <div className="space-y-4 pt-4 border-t border-red-900/30">
-            <h4 className="text-sm font-semibold text-red-400 flex items-center gap-2">
+          <div className="space-y-4 border-t border-red-900/30 pt-4">
+            <h4 className="flex items-center gap-2 text-sm font-semibold text-red-400">
               <AlertCircle size={16} />
               Motivo da Perda
             </h4>
@@ -525,8 +525,8 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
             />
 
             {!currentBoard && (
-              <div className="flex items-start gap-2 p-2 bg-amber-900/10 border border-amber-700/50 rounded-lg">
-                <Info size={14} className="text-amber-400 mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-2 rounded-lg border border-amber-700/50 bg-amber-900/10 p-2">
+                <Info size={14} className="mt-0.5 flex-shrink-0 text-amber-400" />
                 <p className="text-xs text-amber-400">
                   Não foi possível identificar o board. As opções podem estar limitadas.
                 </p>
@@ -536,7 +536,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
         )}
 
         {/* ======== INFORMAÇÕES SOMENTE LEITURA ======== */}
-        <div className="pt-4 border-t border-slate-700/50 space-y-3">
+        <div className="space-y-3 border-t border-slate-700/50 pt-4">
           <h4 className="text-sm font-semibold text-slate-400">Informações Gerais</h4>
 
           {/* Data de Criação */}
@@ -562,7 +562,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
           {/* ID do Card */}
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-400">ID:</span>
-            <span className="text-sm font-mono font-medium text-slate-300">#{card.id}</span>
+            <span className="font-mono text-sm font-medium text-slate-300">#{card.id}</span>
           </div>
         </div>
       </div>

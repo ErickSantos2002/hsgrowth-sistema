@@ -237,11 +237,11 @@ const Users: React.FC = () => {
   if (!isAdmin) {
     return (
       <div className="p-6">
-        <div className="max-w-2xl mx-auto text-center py-12">
+        <div className="mx-auto max-w-2xl py-12 text-center">
           <div className="mb-4">
             <Shield size={64} className="mx-auto text-red-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
+          <h2 className="mb-2 text-2xl font-bold text-white">Acesso Restrito</h2>
           <p className="text-slate-400">
             Apenas administradores podem gerenciar usuários.
           </p>
@@ -255,33 +255,33 @@ const Users: React.FC = () => {
       {/* Header */}
       <div className="mb-6 space-y-4">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+          <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
             <UserCircle className="text-white" size={32} />
             Usuários
           </h1>
-          <p className="text-slate-400 mt-1">Gerencie os usuários do sistema</p>
+          <p className="mt-1 text-slate-400">Gerencie os usuários do sistema</p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
           <button
             onClick={loadUsers}
             disabled={loading}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-white transition-colors flex items-center gap-2 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
             Atualizar
           </button>
           <button
             onClick={handleCreate}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white transition-colors flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700"
           >
             <Plus size={16} />
             Novo Usuário
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="flex-1 relative">
+        <div className="flex flex-col gap-3 md:flex-row">
+          <div className="relative flex-1">
             <Search
               size={20}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -291,7 +291,7 @@ const Users: React.FC = () => {
               placeholder="Buscar por nome, email ou username..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
 
@@ -331,10 +331,10 @@ const Users: React.FC = () => {
 
       {/* Tabela de usuários */}
       {loading ? (
-        <div className="text-center py-12 text-slate-400">Carregando usuários...</div>
+        <div className="py-12 text-center text-slate-400">Carregando usuários...</div>
       ) : filteredUsers.length === 0 ? (
-        <div className="text-center py-12 bg-slate-800/50 border border-slate-700 rounded-xl">
-          <p className="text-slate-400 mb-4">
+        <div className="rounded-xl border border-slate-700 bg-slate-800/50 py-12 text-center">
+          <p className="mb-4 text-slate-400">
             {searchTerm || filterRole !== "all" || filterActive !== "all"
               ? "Nenhum usuário encontrado com os filtros aplicados"
               : "Nenhum usuário cadastrado ainda"}
@@ -342,7 +342,7 @@ const Users: React.FC = () => {
           {!searchTerm && filterRole === "all" && filterActive === "all" && (
             <button
               onClick={handleCreate}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white transition-colors inline-flex items-center gap-2"
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700"
             >
               <Plus size={16} />
               Cadastrar Primeiro Usuário
@@ -350,30 +350,30 @@ const Users: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-800/50 border-b border-slate-700">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                <tr className="border-b border-slate-700 bg-slate-800/50">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Usuário
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Contato
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Role
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Último Login
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Cadastro
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-300">
                     Ações
                   </th>
                 </tr>
@@ -382,20 +382,20 @@ const Users: React.FC = () => {
                 {filteredUsers.map((user) => (
                   <tr
                     key={user.id}
-                    className="hover:bg-slate-700/30 transition-colors"
+                    className="transition-colors hover:bg-slate-700/30"
                   >
                     {/* Usuário */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
-                        <div className="w-10 h-10 min-w-10 min-h-10 rounded-full shrink-0 bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold">
+                        <div className="flex h-10 min-h-10 w-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 font-semibold text-white">
                           {getInitials(user.name)}
                         </div>
                         <div>
-                          <div className="font-medium text-white flex items-center gap-2">
+                          <div className="flex items-center gap-2 font-medium text-white">
                             {user.name}
                             {user.id === currentUser?.id && (
-                              <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">
+                              <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400">
                                 Você
                               </span>
                             )}
@@ -420,7 +420,7 @@ const Users: React.FC = () => {
                     {/* Role */}
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${getRoleBadgeColor(
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${getRoleBadgeColor(
                           user.role
                         )}`}
                       >
@@ -432,7 +432,7 @@ const Users: React.FC = () => {
                     {/* Status */}
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
                           user.is_active
                             ? "bg-emerald-500/20 text-emerald-400"
                             : "bg-red-500/20 text-red-400"
@@ -464,14 +464,14 @@ const Users: React.FC = () => {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleEdit(user)}
-                          className="p-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 transition-colors"
+                          className="rounded-lg bg-yellow-600/20 p-2 text-yellow-400 transition-colors hover:bg-yellow-600/30"
                           title="Editar"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleResetPassword(user)}
-                          className="p-2 rounded-lg bg-slate-600/20 hover:bg-slate-600/30 text-slate-300 transition-colors"
+                          className="rounded-lg bg-slate-600/20 p-2 text-slate-300 transition-colors hover:bg-slate-600/30"
                           title="Trocar Senha"
                         >
                           <Key size={16} />
@@ -479,7 +479,7 @@ const Users: React.FC = () => {
                         {user.id !== currentUser?.id && (
                           <button
                             onClick={() => handleDelete(user)}
-                            className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
+                            className="rounded-lg bg-red-600/20 p-2 text-red-400 transition-colors hover:bg-red-600/30"
                             title="Deletar"
                           >
                             <Trash2 size={16} />
@@ -554,7 +554,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
           {selectedLabel}
@@ -565,7 +565,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value || option.label}

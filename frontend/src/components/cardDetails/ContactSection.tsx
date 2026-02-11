@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
-import { User, ExternalLink, Search, X, Trash2, Mail, Phone, Briefcase, Linkedin, MessageCircle, Plus } from "lucide-react";
+import { User, ExternalLink, Search, X, Trash2, Mail, Phone, Briefcase, Linkedin, Plus } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
 import ActionButton from "./ActionButton";
 import { Card } from "../../types";
@@ -203,7 +203,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
           icon={<User size={18} />}
         >
           <div className="space-y-3">
-            <p className="text-sm text-slate-400 text-center py-2">
+            <p className="py-2 text-center text-sm text-slate-400">
               Nenhuma pessoa vinculada a este negócio
             </p>
 
@@ -211,7 +211,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={handleOpenModal}
-                className="px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                className="flex items-center justify-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-3 font-medium text-blue-400 transition-colors hover:bg-blue-500/30"
               >
                 <ExternalLink size={16} />
                 Vincular
@@ -219,7 +219,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
 
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-4 py-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                className="flex items-center justify-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-3 font-medium text-green-400 transition-colors hover:bg-green-500/30"
               >
                 <Plus size={16} />
                 Cadastrar
@@ -231,25 +231,25 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
         {/* Modal de busca (renderizado no body via Portal) */}
         {showModal && ReactDOM.createPortal(
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
             onClick={handleCloseModal}
           >
             <div
-              className="bg-slate-800 border border-slate-700 rounded-lg w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl"
+              className="flex max-h-[600px] w-full max-w-lg flex-col rounded-lg border border-slate-700 bg-slate-800 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-slate-700 p-4">
                 <h3 className="font-semibold text-white">Vincular Pessoa</h3>
                 <button
                   onClick={handleCloseModal}
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-400 transition-colors hover:text-white"
                 >
                   <X size={20} />
                 </button>
               </div>
 
               {/* Campo de busca dentro do modal */}
-              <div className="p-4 border-b border-slate-700">
+              <div className="border-b border-slate-700 p-4">
                 <div className="relative">
                   <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -257,7 +257,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar por nome, email, telefone ou cargo..."
-                    className="w-full pl-10 pr-10 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-10 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                     autoFocus
                   />
                   {searchTerm && (
@@ -291,14 +291,14 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
                       <button
                         key={p.id}
                         onClick={() => handleLinkPerson(p.id)}
-                        className="w-full p-3 bg-slate-900/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-left transition-colors"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900/50 p-3 text-left transition-colors hover:bg-slate-700/50"
                       >
                         <p className="font-medium text-white">{p.name}</p>
                         {p.position && (
-                          <p className="text-xs text-slate-400 mt-1">{p.position}</p>
+                          <p className="mt-1 text-xs text-slate-400">{p.position}</p>
                         )}
                         {(p.email_commercial || p.email) && (
-                          <p className="text-xs text-blue-400 mt-1">
+                          <p className="mt-1 text-xs text-blue-400">
                             {p.email_commercial || p.email}
                           </p>
                         )}
@@ -334,7 +334,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
         icon={<User size={18} />}
       >
       {loading ? (
-        <div className="text-center py-4">
+        <div className="py-4 text-center">
           <p className="text-sm text-slate-400">Carregando...</p>
         </div>
       ) : (
@@ -345,7 +345,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               <User size={14} className="text-slate-400" />
               <span>Nome completo</span>
             </div>
-            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
+            <div className="rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2">
               <p className="text-white">{person?.name || "Não informado"}</p>
             </div>
           </div>
@@ -356,8 +356,8 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               <Briefcase size={14} className="text-slate-400" />
               <span>Cargo/Posição</span>
             </div>
-            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg">
-              <p className={person?.position ? "text-white" : "text-slate-500 italic"}>
+            <div className="rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2">
+              <p className={person?.position ? "text-white" : "italic text-slate-500"}>
                 {person?.position || "Não informado"}
               </p>
             </div>
@@ -369,22 +369,22 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               <Mail size={14} className="text-slate-400" />
               <span>E-mails</span>
             </div>
-            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-2">
+            <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2">
               <div>
                 <p className="text-xs text-slate-400">Principal</p>
-                <p className={person?.email ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
+                <p className={person?.email ? "text-sm text-blue-400" : "text-sm italic text-slate-500"}>
                   {person?.email || "Não informado"}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-slate-400">Comercial</p>
-                <p className={person?.email_commercial ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
+                <p className={person?.email_commercial ? "text-sm text-blue-400" : "text-sm italic text-slate-500"}>
                   {person?.email_commercial || "Não informado"}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-slate-400">Pessoal</p>
-                <p className={person?.email_personal ? "text-blue-400 text-sm" : "text-slate-500 italic text-sm"}>
+                <p className={person?.email_personal ? "text-sm text-blue-400" : "text-sm italic text-slate-500"}>
                   {person?.email_personal || "Não informado"}
                 </p>
               </div>
@@ -397,22 +397,22 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               <Phone size={14} className="text-slate-400" />
               <span>Telefones</span>
             </div>
-            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-2">
+            <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2">
               <div>
                 <p className="text-xs text-slate-400">Principal</p>
-                <p className={person?.phone ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                <p className={person?.phone ? "text-sm text-white" : "text-sm italic text-slate-500"}>
                   {formatPhone(person?.phone)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-slate-400">WhatsApp</p>
-                <p className={person?.phone_whatsapp ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                <p className={person?.phone_whatsapp ? "text-sm text-white" : "text-sm italic text-slate-500"}>
                   {formatPhone(person?.phone_whatsapp)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-slate-400">Comercial</p>
-                <p className={person?.phone_commercial ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                <p className={person?.phone_commercial ? "text-sm text-white" : "text-sm italic text-slate-500"}>
                   {formatPhone(person?.phone_commercial)}
                 </p>
               </div>
@@ -422,7 +422,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
           {/* Redes Sociais */}
           <div className="space-y-1">
             <div className="text-sm font-medium text-slate-300">Redes Sociais</div>
-            <div className="px-3 py-2 bg-slate-900/30 border border-slate-700 rounded-lg space-y-2">
+            <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-900/30 px-3 py-2">
               <div>
                 <p className="text-xs text-slate-400">LinkedIn</p>
                 {person?.linkedin ? (
@@ -430,18 +430,18 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
                     href={person.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-400 text-sm hover:underline flex items-center gap-1"
+                    className="flex items-center gap-1 text-sm text-blue-400 hover:underline"
                   >
                     <Linkedin size={14} />
                     Ver perfil
                   </a>
                 ) : (
-                  <p className="text-slate-500 italic text-sm">Não informado</p>
+                  <p className="text-sm italic text-slate-500">Não informado</p>
                 )}
               </div>
               <div>
                 <p className="text-xs text-slate-400">Instagram</p>
-                <p className={person?.instagram ? "text-white text-sm" : "text-slate-500 italic text-sm"}>
+                <p className={person?.instagram ? "text-sm text-white" : "text-sm italic text-slate-500"}>
                   {person?.instagram || "Não informado"}
                 </p>
               </div>
@@ -452,19 +452,19 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
                     href={person.facebook}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-400 text-sm hover:underline"
+                    className="text-sm text-blue-400 hover:underline"
                   >
                     Ver perfil
                   </a>
                 ) : (
-                  <p className="text-slate-500 italic text-sm">Não informado</p>
+                  <p className="text-sm italic text-slate-500">Não informado</p>
                 )}
               </div>
             </div>
           </div>
 
           {/* Ações */}
-          <div className="pt-3 border-t border-slate-700/50 space-y-2">
+          <div className="space-y-2 border-t border-slate-700/50 pt-3">
             <ActionButton
               icon={<ExternalLink size={16} />}
               label="Modificar cadastro da pessoa"

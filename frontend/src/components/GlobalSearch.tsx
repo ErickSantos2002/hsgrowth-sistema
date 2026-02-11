@@ -103,7 +103,7 @@ const GlobalSearch: React.FC = () => {
   };
 
   return (
-    <div ref={searchRef} className="relative flex-1 max-w-2xl">
+    <div ref={searchRef} className="relative max-w-2xl flex-1">
       {/* Input de busca */}
       <div className="relative">
         <Search
@@ -120,12 +120,12 @@ const GlobalSearch: React.FC = () => {
           }}
           onFocus={() => setIsOpen(true)}
           placeholder="Buscar cards em todos os boards... (Ctrl+K)"
-          className="w-full pl-10 pr-10 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          className="w-full rounded-lg border border-slate-700 bg-slate-800/50 py-2.5 pl-10 pr-10 text-white placeholder-slate-400 transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {query && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-white"
           >
             <X size={18} />
           </button>
@@ -134,7 +134,7 @@ const GlobalSearch: React.FC = () => {
 
       {/* Dropdown de resultados */}
       {isOpen && query.length >= 2 && (
-        <div className="absolute top-full mt-2 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-2xl z-50 max-h-96 overflow-y-auto">
+        <div className="absolute top-full z-50 mt-2 max-h-96 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-2xl">
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
               <Loader2 size={20} className="animate-spin" />
@@ -146,19 +146,19 @@ const GlobalSearch: React.FC = () => {
                 <button
                   key={result.id}
                   onClick={() => handleSelectCard(result.id)}
-                  className="w-full px-4 py-3 hover:bg-slate-700 transition-colors text-left flex items-start gap-3 border-b border-slate-700/50 last:border-0"
+                  className="flex w-full items-start gap-3 border-b border-slate-700/50 px-4 py-3 text-left transition-colors last:border-0 hover:bg-slate-700"
                 >
-                  <FileText size={18} className="text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="text-white font-medium truncate">{result.title}</h4>
+                  <FileText size={18} className="mt-0.5 flex-shrink-0 text-blue-400" />
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center gap-2">
+                      <h4 className="truncate font-medium text-white">{result.title}</h4>
                       {result.is_won && (
-                        <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded border border-green-500/30">
+                        <span className="rounded border border-green-500/30 bg-green-500/20 px-2 py-0.5 text-xs text-green-400">
                           Ganho
                         </span>
                       )}
                       {result.is_lost && (
-                        <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded border border-red-500/30">
+                        <span className="rounded border border-red-500/30 bg-red-500/20 px-2 py-0.5 text-xs text-red-400">
                           Perdido
                         </span>
                       )}
@@ -186,7 +186,7 @@ const GlobalSearch: React.FC = () => {
             <div className="py-8 text-center text-slate-400">
               <FileText size={32} className="mx-auto mb-2 opacity-50" />
               <p>Nenhum card encontrado</p>
-              <p className="text-xs mt-1">Tente outro termo de busca</p>
+              <p className="mt-1 text-xs">Tente outro termo de busca</p>
             </div>
           )}
         </div>

@@ -145,7 +145,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
       {!isCreating && (
         <button
           onClick={() => setIsCreating(true)}
-          className="w-full px-4 py-3 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 rounded-lg text-emerald-300 hover:text-emerald-200 transition-colors flex items-center justify-center gap-2"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-4 py-3 text-emerald-300 transition-colors hover:bg-emerald-500/25 hover:text-emerald-200"
         >
           <Plus size={18} />
           <span>Adicionar anotação</span>
@@ -154,21 +154,21 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
 
       {/* Formulário de criação */}
       {isCreating && (
-        <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg space-y-3">
+        <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
           <textarea
             value={newNoteContent}
             onChange={(e) => setNewNoteContent(e.target.value)}
             placeholder="Digite sua anotação aqui..."
             rows={4}
             autoFocus
-            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+            className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
           />
 
           <div className="flex gap-2">
             <button
               onClick={handleCreateNote}
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
             >
               <Save size={18} />
               Salvar
@@ -179,7 +179,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                 setNewNoteContent("");
               }}
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
             >
               <X size={18} />
               Cancelar
@@ -190,10 +190,10 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
 
       {/* Lista de notas */}
       {notes.length === 0 ? (
-        <div className="p-8 bg-slate-800/30 border border-slate-700/50 rounded-lg text-center">
-          <FileText size={32} className="mx-auto text-slate-600 mb-2" />
+        <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-8 text-center">
+          <FileText size={32} className="mx-auto mb-2 text-slate-600" />
           <p className="text-sm text-slate-400">Nenhuma anotação ainda</p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="mt-1 text-xs text-slate-500">
             Adicione observações, lembretes ou informações importantes
           </p>
         </div>
@@ -202,7 +202,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
           {notes.map((note) => (
             <div
               key={note.id}
-              className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg hover:bg-slate-700/30 transition-colors"
+              className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 transition-colors hover:bg-slate-700/30"
             >
               {editingNoteId === note.id ? (
                 // Modo de edição
@@ -212,14 +212,14 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                     onChange={(e) => setEditContent(e.target.value)}
                     rows={4}
                     autoFocus
-                    className="w-full px-3 py-2 bg-slate-900/50 border border-blue-500 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full resize-none rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
 
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleSaveEdit(note.id)}
                       disabled={loading}
-                      className="flex-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
                     >
                       <Save size={14} />
                       Salvar
@@ -227,7 +227,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                     <button
                       onClick={handleCancelEdit}
                       disabled={loading}
-                      className="flex-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-1"
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700"
                     >
                       <X size={14} />
                       Cancelar
@@ -237,9 +237,9 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
               ) : (
                 // Modo de visualização
                 <>
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="mb-2 flex items-start justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium text-xs">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-xs font-medium text-white">
                         {note.user_name.substring(0, 2).toUpperCase()}
                       </div>
                       <div>
@@ -252,7 +252,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                       <button
                         onClick={() => handleStartEdit(note)}
                         disabled={loading}
-                        className="p-1.5 hover:bg-slate-600 rounded text-slate-400 hover:text-blue-400 transition-colors"
+                        className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-600 hover:text-blue-400"
                         title="Editar"
                       >
                         <Edit size={14} />
@@ -260,7 +260,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                       <button
                         onClick={() => handleDeleteNote(note.id)}
                         disabled={loading}
-                        className="p-1.5 hover:bg-slate-600 rounded text-slate-400 hover:text-red-400 transition-colors"
+                        className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-600 hover:text-red-400"
                         title="Excluir"
                       >
                         <Trash2 size={14} />
@@ -271,7 +271,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                   <NoteRenderer content={note.content} />
 
                   {note.updated_at !== note.created_at && (
-                    <p className="text-xs text-slate-500 mt-2 italic">
+                    <p className="mt-2 text-xs italic text-slate-500">
                       Editado em {formatRelativeTime(note.updated_at)}
                     </p>
                   )}
