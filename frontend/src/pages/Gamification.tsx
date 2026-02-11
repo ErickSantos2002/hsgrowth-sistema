@@ -4,6 +4,7 @@ import gamificationService, { GamificationSummary, Badge, UserBadge, Ranking } f
 import { useAuth } from "../hooks/useAuth";
 import userService from "../services/userService";
 import { User } from "../types";
+import { LoadingSpinner } from "../components/common";
 
 const Gamification: React.FC = () => {
   const { user } = useAuth();
@@ -199,7 +200,7 @@ const Gamification: React.FC = () => {
     return (
       <div className="flex min-h-[60vh] items-center justify-center p-6">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-500"></div>
+          <LoadingSpinner size="lg" />
           <p className="text-slate-400">Carregando gamificação...</p>
         </div>
       </div>

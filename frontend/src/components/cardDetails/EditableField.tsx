@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Pencil, Check, X } from "lucide-react";
+import { showError } from "../../utils/toast";
 
 interface EditableFieldProps {
   label: string;
@@ -47,7 +48,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
       setIsEditing(false);
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar alterações");
+      showError("Erro ao salvar alterações");
     } finally {
       setIsSaving(false);
     }

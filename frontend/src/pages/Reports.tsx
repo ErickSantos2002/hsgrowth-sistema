@@ -19,6 +19,8 @@ import {
   Shield,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { COLORS } from '../constants/colors';
+import { showError, showWarning } from '../utils/toast';
 import {
   ResponsiveContainer,
   BarChart,
@@ -133,7 +135,7 @@ const Reports: React.FC = () => {
       });
     } catch (error: any) {
       console.error('Erro ao gerar relatório de vendas:', error);
-      alert('Erro inesperado ao gerar relatório.');
+      showError('Erro inesperado ao gerar relatório.');
     } finally {
       setLoading(false);
     }
@@ -166,7 +168,7 @@ const Reports: React.FC = () => {
       });
     } catch (error: any) {
       console.error('Erro ao gerar relatório de conversão:', error);
-      alert('Erro inesperado ao gerar relatório.');
+      showError('Erro inesperado ao gerar relatório.');
     } finally {
       setLoading(false);
     }
@@ -198,14 +200,14 @@ const Reports: React.FC = () => {
       });
     } catch (error: any) {
       console.error('Erro ao gerar relatório de transferências:', error);
-      alert('Erro inesperado ao gerar relatório.');
+      showError('Erro inesperado ao gerar relatório.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleExportExcel = () => {
-    alert('TODO: Implementar exportação para Excel');
+    showWarning('Exportação para Excel - Funcionalidade em desenvolvimento');
   };
 
   // Verifica permissão de acesso
@@ -569,22 +571,22 @@ const SalesTab: React.FC<SalesTabProps> = ({
             <ChartCard title="Cards por vendedor">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={report.details || []}>
-                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
-                  <XAxis dataKey="user_name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="user_name" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
+                      backgroundColor: COLORS.surface.base,
+                      border: `1px solid ${COLORS.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: '#e2e8f0' }}
-                    itemStyle={{ color: '#e2e8f0' }}
+                    labelStyle={{ color: COLORS.content.secondary }}
+                    itemStyle={{ color: COLORS.content.secondary }}
                   />
                   <Legend />
-                  <Bar dataKey="cards_created" name="Criados" fill="#60a5fa" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="cards_won" name="Ganhos" fill="#34d399" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="cards_lost" name="Perdidos" fill="#f87171" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="cards_created" name="Criados" fill={COLORS.status.info} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="cards_won" name="Ganhos" fill={COLORS.status.success} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="cards_lost" name="Perdidos" fill={COLORS.status.error} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -592,24 +594,24 @@ const SalesTab: React.FC<SalesTabProps> = ({
             <ChartCard title="Valor ganho por vendedor">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={report.details || []}>
-                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
-                  <XAxis dataKey="user_name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="user_name" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
+                      backgroundColor: COLORS.surface.base,
+                      border: `1px solid ${COLORS.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: '#e2e8f0' }}
-                    itemStyle={{ color: '#e2e8f0' }}
+                    labelStyle={{ color: COLORS.content.secondary }}
+                    itemStyle={{ color: COLORS.content.secondary }}
                     formatter={(value) => reportService.formatCurrency(Number(value))}
                   />
                   <Legend />
                   <Bar
                     dataKey="value_won"
                     name="Valor ganho"
-                    fill="#22c55e"
+                    fill={COLORS.board.green}
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -835,20 +837,20 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
             <ChartCard title="Cards por etapa">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={report.stages || []}>
-                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
-                  <XAxis dataKey="stage_name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="stage_name" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
+                      backgroundColor: COLORS.surface.base,
+                      border: `1px solid ${COLORS.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: '#e2e8f0' }}
-                    itemStyle={{ color: '#e2e8f0' }}
+                    labelStyle={{ color: COLORS.content.secondary }}
+                    itemStyle={{ color: COLORS.content.secondary }}
                   />
                   <Legend />
-                  <Bar dataKey="card_count" name="Quantidade" fill="#60a5fa" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="card_count" name="Quantidade" fill={COLORS.status.info} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -856,24 +858,24 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
             <ChartCard title="Valor total por etapa">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={report.stages || []}>
-                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
-                  <XAxis dataKey="stage_name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="stage_name" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
+                      backgroundColor: COLORS.surface.base,
+                      border: `1px solid ${COLORS.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: '#e2e8f0' }}
-                    itemStyle={{ color: '#e2e8f0' }}
+                    labelStyle={{ color: COLORS.content.secondary }}
+                    itemStyle={{ color: COLORS.content.secondary }}
                     formatter={(value) => reportService.formatCurrency(Number(value))}
                   />
                   <Legend />
                   <Bar
                     dataKey="total_value"
                     name="Valor total"
-                    fill="#22c55e"
+                    fill={COLORS.board.green}
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -1112,20 +1114,20 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
                     pair_label: `${item.from_user_name} -> ${item.to_user_name}`,
                   }))}
                 >
-                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
-                  <XAxis dataKey="pair_label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="pair_label" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
+                      backgroundColor: COLORS.surface.base,
+                      border: `1px solid ${COLORS.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: '#e2e8f0' }}
-                    itemStyle={{ color: '#e2e8f0' }}
+                    labelStyle={{ color: COLORS.content.secondary }}
+                    itemStyle={{ color: COLORS.content.secondary }}
                   />
                   <Legend />
-                  <Bar dataKey="transfer_count" name="Transferencias" fill="#60a5fa" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="transfer_count" name="Transferencias" fill={COLORS.status.info} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -1138,17 +1140,17 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
                     pair_label: `${item.from_user_name} -> ${item.to_user_name}`,
                   }))}
                 >
-                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
-                  <XAxis dataKey="pair_label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="pair_label" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
+                      backgroundColor: COLORS.surface.base,
+                      border: `1px solid ${COLORS.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: '#e2e8f0' }}
-                    itemStyle={{ color: '#e2e8f0' }}
+                    labelStyle={{ color: COLORS.content.secondary }}
+                    itemStyle={{ color: COLORS.content.secondary }}
                     formatter={(value) => `${Number(value).toFixed(1)} dias`}
                   />
                   <Legend />
@@ -1156,7 +1158,7 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
                     type="monotone"
                     dataKey="avg_days_to_won"
                     name="Dias"
-                    stroke="#a855f7"
+                    stroke={COLORS.board.purple}
                     strokeWidth={2}
                     dot={{ r: 3 }}
                   />

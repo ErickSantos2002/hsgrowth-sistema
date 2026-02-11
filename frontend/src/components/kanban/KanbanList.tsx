@@ -3,6 +3,7 @@ import { Plus, MoreVertical, Edit, Archive, Trash2, ChevronUp, ChevronDown, Chev
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { List, Card } from "../../types";
+import { COLORS } from "../../constants/colors";
 import KanbanCard from "./KanbanCard";
 
 interface KanbanListProps {
@@ -81,7 +82,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
           {/* Indicador de cor da lista */}
           <div
             className="h-6 w-1 rounded-full"
-            style={{ backgroundColor: list.color || "#94A3B8" }}
+            style={{ backgroundColor: list.color || COLORS.content.tertiary }}
           />
 
           <h3 className="truncate font-semibold text-white">{list.name}</h3>

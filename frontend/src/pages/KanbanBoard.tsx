@@ -41,7 +41,10 @@ import listService from "../services/listService";
 import cardService from "../services/cardService";
 import userService from "../services/userService";
 import { Board, List, Card, User } from "../types";
+import { COLORS } from "../constants/colors";
 import KanbanList from "../components/kanban/KanbanList";
+import { showSuccess, showError, showWarning } from "../utils/toast";
+import { LoadingSpinner } from "../components/common";
 import KanbanCard from "../components/kanban/KanbanCard";
 import ListModal from "../components/kanban/ListModal";
 import ConfirmModal from "../components/kanban/ConfirmModal";
@@ -219,7 +222,7 @@ const KanbanBoard: React.FC = () => {
       setCards(sortedCards);
     } catch (error) {
       console.error("Erro ao carregar board:", error);
-      alert("Erro ao carregar board");
+      showError("Erro ao carregar board");
       navigate("/boards");
     } finally {
       setLoading(false);
@@ -252,7 +255,7 @@ const KanbanBoard: React.FC = () => {
       await loadBoardData();
     } catch (error) {
       console.error("Erro ao salvar board:", error);
-      alert("Erro ao salvar board");
+      showError("Erro ao salvar board");
     }
   };
 
@@ -265,11 +268,11 @@ const KanbanBoard: React.FC = () => {
 
     try {
       await boardService.duplicate(board.id, `${board.name} - Cópia`);
-      alert("Board duplicado com sucesso!");
+      showSuccess("Board duplicado com sucesso!");
       navigate("/boards");
     } catch (error) {
       console.error("Erro ao duplicar board:", error);
-      alert("Erro ao duplicar board");
+      showError("Erro ao duplicar board");
     }
   };
 
@@ -288,11 +291,11 @@ const KanbanBoard: React.FC = () => {
 
     try {
       await boardService.update(board.id, { is_deleted: true });
-      alert("Board arquivado com sucesso!");
+      showSuccess("Board arquivado com sucesso!");
       navigate("/boards");
     } catch (error) {
       console.error("Erro ao arquivar board:", error);
-      alert("Erro ao arquivar board");
+      showError("Erro ao arquivar board");
     }
   };
 
@@ -302,7 +305,7 @@ const KanbanBoard: React.FC = () => {
   const handleExportCards = () => {
     setShowBoardMenu(false);
     // TODO: Implementar exportação
-    alert("Exportar cards - TODO");
+    showWarning("Exportar cards - Funcionalidade em desenvolvimento");
   };
 
   /**
@@ -340,7 +343,7 @@ const KanbanBoard: React.FC = () => {
       await loadBoardData();
     } catch (error) {
       console.error("Erro ao salvar lista:", error);
-      alert("Erro ao salvar lista");
+      showError("Erro ao salvar lista");
     }
   };
 
@@ -363,7 +366,7 @@ const KanbanBoard: React.FC = () => {
       await loadBoardData();
     } catch (error) {
       console.error("Erro ao deletar lista:", error);
-      alert("Erro ao deletar lista");
+      showError("Erro ao deletar lista");
     }
   };
 
@@ -378,7 +381,7 @@ const KanbanBoard: React.FC = () => {
       await loadBoardData();
     } catch (error) {
       console.error("Erro ao arquivar lista:", error);
-      alert("Erro ao arquivar lista");
+      showError("Erro ao arquivar lista");
     }
   };
 
@@ -403,7 +406,7 @@ const KanbanBoard: React.FC = () => {
       await loadBoardData();
     } catch (error) {
       console.error("Erro ao mover lista para esquerda:", error);
-      alert("Erro ao mover lista");
+      showError("Erro ao mover lista");
     }
   };
 
@@ -428,7 +431,7 @@ const KanbanBoard: React.FC = () => {
       await loadBoardData();
     } catch (error) {
       console.error("Erro ao mover lista para direita:", error);
-      alert("Erro ao mover lista");
+      showError("Erro ao mover lista");
     }
   };
 
@@ -615,7 +618,7 @@ const KanbanBoard: React.FC = () => {
       await loadBoardData();
     } catch (error) {
       console.error("Erro ao salvar card:", error);
-      alert("Erro ao salvar card");
+      showError("Erro ao salvar card");
     }
   };
 
@@ -885,7 +888,7 @@ const KanbanBoard: React.FC = () => {
         return revertedCards.sort((a, b) => (a.position || 0) - (b.position || 0));
       });
 
-      alert("Erro ao mover card. A mudança foi revertida.");
+      showError("Erro ao mover card. A mudança foi revertida.");
     }
   };
 
@@ -894,8 +897,8 @@ const KanbanBoard: React.FC = () => {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-500"></div>
-          <p className="text-slate-400">Carregando board...</p>
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-slate-400">Carregando board...</p>
         </div>
       </div>
     );
@@ -947,12 +950,12 @@ const KanbanBoard: React.FC = () => {
               <div
                 className="rounded-lg p-2"
                 style={{
-                  backgroundColor: `${board.color || "#3B82F6"}20`,
+                  backgroundColor: `${board.color || COLORS.board.blue}20`,
                 }}
               >
                 <IconComponent
                   size={24}
-                  style={{ color: board.color || "#3B82F6" }}
+                  style={{ color: board.color || COLORS.board.blue }}
                 />
               </div>
 

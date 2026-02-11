@@ -12,6 +12,8 @@ import transferService from "../services/transferService";
 import { CardTransfer, TransferApproval, TransferStatistics } from "../types";
 import { useAuth } from "../hooks/useAuth";
 import TransferModal from "../components/transfers/TransferModal";
+import { showSuccess, showError } from "../utils/toast";
+import { LoadingSpinner } from "../components/common";
 
 const Transfers: React.FC = () => {
   const { user } = useAuth();
@@ -206,10 +208,10 @@ const Transfers: React.FC = () => {
       await loadPendingApprovals();
       await loadInitialData();
 
-      alert("Transferncia aprovada com sucesso!");
+      showSuccess("Transferência aprovada com sucesso!");
     } catch (error) {
       console.error("Erro ao aprovar transferência:", error);
-      alert("Erro ao aprovar transferência");
+      showError("Erro ao aprovar transferência");
     }
   };
 
@@ -224,10 +226,10 @@ const Transfers: React.FC = () => {
       await loadPendingApprovals();
       await loadInitialData();
 
-      alert("Transferncia rejeitada com sucesso!");
+      showSuccess("Transferência rejeitada com sucesso!");
     } catch (error) {
       console.error("Erro ao rejeitar transferência:", error);
-      alert("Erro ao rejeitar transferência");
+      showError("Erro ao rejeitar transferência");
     }
   };
 
@@ -382,8 +384,8 @@ const Transfers: React.FC = () => {
     return (
       <div className="flex min-h-[60vh] items-center justify-center p-6">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-500"></div>
-          <p className="text-slate-400">Carregando transferências...</p>
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-slate-400">Carregando transferências...</p>
         </div>
       </div>
     );

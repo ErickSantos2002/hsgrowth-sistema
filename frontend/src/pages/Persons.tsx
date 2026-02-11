@@ -3,6 +3,7 @@ import { Plus, Search, Filter, Edit, Trash2, RefreshCw, User, Users, ChevronDown
 import personService, { Person } from "../services/personService";
 import { Button, Alert } from "../components/common";
 import PersonModal from "../components/persons/PersonModal";
+import { showError } from "../utils/toast";
 
 const Persons: React.FC = () => {
   // Estados
@@ -77,7 +78,7 @@ const Persons: React.FC = () => {
         await loadPersons();
       } catch (error) {
         console.error("Erro ao deletar pessoa:", error);
-        alert("Erro ao deletar pessoa");
+        showError("Erro ao deletar pessoa");
       }
     }
   };

@@ -19,6 +19,7 @@ import {
 import ExpandableSection from "./ExpandableSection";
 import EditableField from "./EditableField";
 import EditableSelectField from "./EditableSelectField";
+import { showWarning } from "../../utils/toast";
 import { Card, Board } from "../../types";
 import { User as UserType } from "../../types";
 import userService from "../../services/userService";
@@ -81,7 +82,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
   const handleUpdateValue = async (value: string) => {
     const numericValue = parseFloat(value.replace(/[^0-9.-]/g, ""));
     if (isNaN(numericValue)) {
-      alert("Valor inválido");
+      showWarning("Valor inválido");
       return;
     }
     await onUpdate({ value: numericValue });
@@ -93,7 +94,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
   const handleUpdateProbability = async (value: string) => {
     const probability = parseInt(value);
     if (isNaN(probability) || probability < 0 || probability > 100) {
-      alert("Probabilidade deve ser entre 0 e 100");
+      showWarning("Probabilidade deve ser entre 0 e 100");
       return;
     }
     await onUpdate({

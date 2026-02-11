@@ -5,6 +5,7 @@ import { User } from "../types";
 import { useAuth } from "../hooks/useAuth";
 import UserModal from "../components/users/UserModal";
 import AdminPasswordResetModal from "../components/users/AdminPasswordResetModal";
+import { showSuccess, showError, showWarning } from "../utils/toast";
 
 const Users: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -46,10 +47,10 @@ const Users: React.FC = () => {
         page_size: 100,
       });
 
-      setUsers(response.items || []);
+      setUsers(response.users || []);
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
-      alert("Erro ao carregar usuários");
+      showError("Erro ao carregar usuários");
       setUsers([]);
     } finally {
       setLoading(false);
@@ -61,7 +62,7 @@ const Users: React.FC = () => {
    */
   const handleCreate = () => {
     if (!isAdmin) {
-      alert("Apenas administradores podem criar usuários");
+      showWarning("Apenas administradores podem criar usuários");
       return;
     }
     setEditingUser(null);
@@ -73,7 +74,7 @@ const Users: React.FC = () => {
    */
   const handleEdit = (user: User) => {
     if (!isAdmin) {
-      alert("Apenas administradores podem editar usuários");
+      showWarning("Apenas administradores podem editar usuários");
       return;
     }
     setEditingUser(user);
@@ -85,12 +86,12 @@ const Users: React.FC = () => {
    */
   const handleDelete = async (user: User) => {
     if (!isAdmin) {
-      alert("Apenas administradores podem deletar usuários");
+      showWarning("Apenas administradores podem deletar usuários");
       return;
     }
 
     if (user.id === currentUser?.id) {
-      alert("Você não pode deletar seu próprio usuário");
+      showWarning("Você não pode deletar seu próprio usuário");
       return;
     }
 
@@ -98,10 +99,10 @@ const Users: React.FC = () => {
       try {
         await userService.delete(user.id);
         await loadUsers();
-        alert("Usuário deletado com sucesso!");
+        showSuccess("Usuário deletado com sucesso!");
       } catch (error) {
         console.error("Erro ao deletar usuário:", error);
-        alert("Erro ao deletar usuário");
+        showError("Erro ao deletar usuário");
       }
     }
   };
@@ -119,7 +120,7 @@ const Users: React.FC = () => {
    */
   const handleResetPassword = (user: User) => {
     if (!isAdmin) {
-      alert("Apenas administradores podem resetar senhas");
+      showWarning("Apenas administradores podem resetar senhas");
       return;
     }
     setResetPasswordUser(user);
@@ -140,18 +141,19 @@ const Users: React.FC = () => {
 
       // Se gerou senha temporária, exibe para o admin
       if (response.temporary_password) {
-        alert(
-          `Senha resetada com sucesso!\n\nSenha temporária gerada:\n${response.temporary_password}\n\nCopie esta senha e envie para o usuário ${resetPasswordUser.name}.`
+        showSuccess(
+          `Senha resetada! Senha temporária: ${response.temporary_password} - Copie e envie para ${resetPasswordUser.name}.`,
+          8000
         );
       } else {
-        alert(`Senha de ${resetPasswordUser.name} foi resetada com sucesso!`);
+        showSuccess(`Senha de ${resetPasswordUser.name} foi resetada com sucesso!`);
       }
 
       setShowPasswordResetModal(false);
       setResetPasswordUser(null);
     } catch (error: any) {
       console.error("Erro ao resetar senha:", error);
-      alert(
+      showError(
         error.response?.data?.detail ||
           "Erro ao resetar senha. Tente novamente."
       );

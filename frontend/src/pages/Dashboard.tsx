@@ -23,6 +23,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, R
 import CountUp from "react-countup";
 import toast from "react-hot-toast";
 import { useDashboard, PeriodType } from "../context/DashboardContext";
+import { COLORS } from "../constants/colors";
 
 const Dashboard: React.FC = () => {
   // Usa o contexto do Dashboard
@@ -585,24 +586,24 @@ const Dashboard: React.FC = () => {
                   data={kpis.cards_by_stage}
                   margin={{ top: 50, right: 10, left: 0, bottom: 40 }}
                 >
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border.default} />
                 <XAxis
                   dataKey="stage_name"
-                  stroke="#94a3b8"
-                  tick={{ fill: "#94a3b8" }}
+                  stroke={COLORS.content.tertiary}
+                  tick={{ fill: COLORS.content.tertiary }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
-                <YAxis stroke="#94a3b8" tick={{ fill: "#94a3b8" }} />
+                <YAxis stroke={COLORS.content.tertiary} tick={{ fill: COLORS.content.tertiary }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#1e293b",
-                    border: "1px solid #475569",
+                    backgroundColor: COLORS.surface.elevated,
+                    border: `1px solid ${COLORS.border.light}`,
                     borderRadius: "0.5rem"
                   }}
-                  labelStyle={{ color: "#f1f5f9" }}
-                  itemStyle={{ color: "#3b82f6" }}
+                  labelStyle={{ color: COLORS.content.primary }}
+                  itemStyle={{ color: COLORS.board.blue }}
                   formatter={(value: any, name: string) => {
                     if (name === "card_count") return [value, "Cards"];
                     if (name === "total_value") return [formatCurrency(value), "Valor Total"];
@@ -618,15 +619,15 @@ const Dashboard: React.FC = () => {
                     return value;
                   }}
                 />
-                <Bar dataKey="card_count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="card_count" fill={COLORS.board.blue} radius={[8, 8, 0, 0]} />
                 {/* Brush para zoom/pan - só aparece se houver muitos estágios */}
                 {kpis.cards_by_stage.length > 4 && (
                   <Brush
                     dataKey="stage_name"
                     height={24}
                     y={0}
-                    stroke="#3b82f6"
-                    fill="#1e293b"
+                    stroke={COLORS.board.blue}
+                    fill={COLORS.surface.elevated}
                     travellerWidth={10}
                     tickFormatter={() => ""}
                   />
@@ -661,20 +662,20 @@ const Dashboard: React.FC = () => {
                   data={kpis.sales_evolution}
                   margin={{ top: 50, right: 10, left: 0, bottom: 40 }}
                 >
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border.default} />
                 <XAxis
                   dataKey="period"
-                  stroke="#94a3b8"
-                  tick={{ fill: "#94a3b8" }}
+                  stroke={COLORS.content.tertiary}
+                  tick={{ fill: COLORS.content.tertiary }}
                 />
-                <YAxis stroke="#94a3b8" tick={{ fill: "#94a3b8" }} />
+                <YAxis stroke={COLORS.content.tertiary} tick={{ fill: COLORS.content.tertiary }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#1e293b",
-                    border: "1px solid #475569",
+                    backgroundColor: COLORS.surface.elevated,
+                    border: `1px solid ${COLORS.border.light}`,
                     borderRadius: "0.5rem"
                   }}
-                  labelStyle={{ color: "#f1f5f9" }}
+                  labelStyle={{ color: COLORS.content.primary }}
                   formatter={(value: any, name: string) => {
                     if (name === "won_count") return [value, "Cards Ganhos"];
                     if (name === "won_value") return [formatCurrency(value), "Valor Ganho"];
@@ -695,17 +696,17 @@ const Dashboard: React.FC = () => {
                 <Line
                   type="monotone"
                   dataKey="won_count"
-                  stroke="#10b981"
+                  stroke={COLORS.board.green}
                   strokeWidth={2}
-                  dot={{ fill: "#10b981", r: 4 }}
+                  dot={{ fill: COLORS.board.green, r: 4 }}
                   activeDot={{ r: 6 }}
                 />
                 <Line
                   type="monotone"
                   dataKey="lost_count"
-                  stroke="#ef4444"
+                  stroke={COLORS.board.red}
                   strokeWidth={2}
-                  dot={{ fill: "#ef4444", r: 4 }}
+                  dot={{ fill: COLORS.board.red, r: 4 }}
                   activeDot={{ r: 6 }}
                 />
                 {/* Brush para zoom/pan - permite navegar pela timeline */}
@@ -713,8 +714,8 @@ const Dashboard: React.FC = () => {
                   dataKey="period"
                   height={24}
                   y={0}
-                  stroke="#10b981"
-                  fill="#1e293b"
+                  stroke={COLORS.board.green}
+                  fill={COLORS.surface.elevated}
                   travellerWidth={10}
                   tickFormatter={() => ""}
                 />

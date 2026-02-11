@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Board } from "../../types";
 import { useNavigate } from "react-router-dom";
+import { COLORS } from "../../constants/colors";
 
 interface BoardCardProps {
   board: Board;
@@ -113,9 +114,9 @@ const BoardCard: React.FC<BoardCardProps> = ({
         showMenu ? "z-50" : "z-0"
       }`}
       style={{
-        borderColor: board.color || "#3B82F6",
-        backgroundColor: `${board.color || "#3B82F6"}20`,
-        boxShadow: `0 0 20px ${board.color || "#3B82F6"}10`,
+        borderColor: board.color || COLORS.board.blue,
+        backgroundColor: `${board.color || COLORS.board.blue}20`,
+        boxShadow: `0 0 20px ${board.color || COLORS.board.blue}10`,
       }}
     >
       {/* Badge de status */}
@@ -138,12 +139,12 @@ const BoardCard: React.FC<BoardCardProps> = ({
           <div
             className="rounded-lg p-2"
             style={{
-              backgroundColor: `${board.color || "#3B82F6"}20`,
+              backgroundColor: `${board.color || COLORS.board.blue}20`,
             }}
           >
             <IconComponent
               size={24}
-              style={{ color: board.color || "#3B82F6" }}
+              style={{ color: board.color || COLORS.board.blue }}
             />
           </div>
           <h3

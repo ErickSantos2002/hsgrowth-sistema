@@ -5,6 +5,7 @@ import ExpandableSection from "./ExpandableSection";
 import { Card } from "../../types";
 import productService from "../../services/productService";
 import cardService from "../../services/cardService";
+import { showError, showWarning } from "../../utils/toast";
 
 interface ProductSectionProps {
   card: Card;
@@ -76,7 +77,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
       setAvailableProducts(response.products);
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
-      alert("Erro ao carregar lista de produtos");
+      showError("Erro ao carregar lista de produtos");
     } finally {
       setLoading(false);
     }
@@ -124,7 +125,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
       onUpdate();
     } catch (error) {
       console.error("Erro ao adicionar produto:", error);
-      alert("Erro ao adicionar produto");
+      showError("Erro ao adicionar produto");
     } finally {
       setLoading(false);
     }
@@ -142,7 +143,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
       onUpdate();
     } catch (error) {
       console.error("Erro ao remover produto:", error);
-      alert("Erro ao remover produto");
+      showError("Erro ao remover produto");
     } finally {
       setLoading(false);
     }
@@ -178,12 +179,12 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
    */
   const handleSaveEdit = async (product: ProductItem) => {
     if (editValues.quantity < 1) {
-      alert("Quantidade deve ser maior que 0");
+      showWarning("Quantidade deve ser maior que 0");
       return;
     }
 
     if (editValues.discountPercent < 0 || editValues.discountPercent > 100) {
-      alert("Desconto deve estar entre 0% e 100%");
+      showWarning("Desconto deve estar entre 0% e 100%");
       return;
     }
 
@@ -203,7 +204,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
       onUpdate();
     } catch (error) {
       console.error("Erro ao atualizar produto:", error);
-      alert("Erro ao atualizar produto");
+      showError("Erro ao atualizar produto");
     } finally {
       setLoading(false);
     }
@@ -243,7 +244,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
    */
   const handleSavePayment = async () => {
     if (!paymentForm.payment_method) {
-      alert("Selecione a forma de pagamento");
+      showWarning("Selecione a forma de pagamento");
       return;
     }
 
@@ -260,7 +261,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
       onUpdate();
     } catch (error) {
       console.error("Erro ao salvar condições de pagamento:", error);
-      alert("Erro ao salvar condições de pagamento");
+      showError("Erro ao salvar condições de pagamento");
     } finally {
       setLoading(false);
     }
@@ -280,7 +281,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
       onUpdate();
     } catch (error) {
       console.error("Erro ao remover condições de pagamento:", error);
-      alert("Erro ao remover condições de pagamento");
+      showError("Erro ao remover condições de pagamento");
     } finally {
       setLoading(false);
     }

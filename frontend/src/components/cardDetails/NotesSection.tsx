@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FileText, Plus, Trash2, Edit, Save, X } from "lucide-react";
 import cardNoteService from "../../services/cardNoteService";
 import NoteRenderer from "./NoteRenderer";
+import { showError, showWarning } from "../../utils/toast";
 
 interface Note {
   id: number;
@@ -33,7 +34,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
    */
   const handleCreateNote = async () => {
     if (!newNoteContent.trim()) {
-      alert("Digite o conteúdo da anotação");
+      showWarning("Digite o conteúdo da anotação");
       return;
     }
 
@@ -50,7 +51,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
       onUpdate();
     } catch (error) {
       console.error("Erro ao criar nota:", error);
-      alert("Erro ao criar anotação");
+      showError("Erro ao criar anotação");
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
    */
   const handleSaveEdit = async (noteId: number) => {
     if (!editContent.trim()) {
-      alert("O conteúdo não pode estar vazio");
+      showWarning("O conteúdo não pode estar vazio");
       return;
     }
 
@@ -85,7 +86,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
       onUpdate();
     } catch (error) {
       console.error("Erro ao atualizar nota:", error);
-      alert("Erro ao atualizar anotação");
+      showError("Erro ao atualizar anotação");
     } finally {
       setLoading(false);
     }
@@ -113,7 +114,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
       onUpdate();
     } catch (error) {
       console.error("Erro ao deletar nota:", error);
-      alert("Erro ao deletar anotação");
+      showError("Erro ao deletar anotação");
     } finally {
       setLoading(false);
     }

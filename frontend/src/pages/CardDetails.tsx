@@ -24,6 +24,7 @@ import NotesSection from "../components/cardDetails/NotesSection";
 import SchedulerSection from "../components/cardDetails/SchedulerSection";
 import FilesSection from "../components/cardDetails/FilesSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
+import { showSuccess, showError } from "../utils/toast";
 
 /**
  * Página de detalhes do Card - Layout estilo Pipedrive com tema escuro
@@ -73,7 +74,7 @@ const CardDetails: React.FC = () => {
       setTitleValue(cardData.title);
     } catch (error) {
       console.error("Erro ao carregar card:", error);
-      alert("Erro ao carregar card");
+      showError("Erro ao carregar card");
       navigate(-1);
     } finally {
       setLoading(false);
@@ -117,7 +118,7 @@ const CardDetails: React.FC = () => {
 
       // Mostra mensagem de erro
       const errorMsg = error.response?.data?.detail || "Erro ao atualizar campo";
-      alert(errorMsg);
+      showError(errorMsg);
     }
   };
 
@@ -133,7 +134,7 @@ const CardDetails: React.FC = () => {
       setIsTitleEditing(false);
     } catch (error) {
       console.error("Erro ao salvar título:", error);
-      alert("Erro ao salvar título");
+      showError("Erro ao salvar título");
     }
   };
 
@@ -148,7 +149,7 @@ const CardDetails: React.FC = () => {
         await loadCardData();
       } catch (error) {
         console.error("Erro ao marcar como ganho:", error);
-        alert("Erro ao marcar negócio como ganho");
+        showError("Erro ao marcar negócio como ganho");
       }
     }
   };
@@ -176,7 +177,7 @@ const CardDetails: React.FC = () => {
       await loadCardData();
     } catch (error) {
       console.error("Erro ao marcar como perdido:", error);
-      alert("Erro ao marcar negócio como perdido");
+      showError("Erro ao marcar negócio como perdido");
     }
   };
 
@@ -192,10 +193,10 @@ const CardDetails: React.FC = () => {
       await automationService.trigger(6, card.id, { manual_trigger: true });
       // Recarrega o card para mostrar o vendedor atribuído
       await loadCardData();
-      alert("Vendedor atribuído automaticamente com sucesso!");
+      showSuccess("Vendedor atribuído automaticamente com sucesso!");
     } catch (error: any) {
       console.error("Erro ao atribuir vendedor automaticamente:", error);
-      alert(error.response?.data?.detail || "Erro ao atribuir vendedor automaticamente");
+      showError(error.response?.data?.detail || "Erro ao atribuir vendedor automaticamente");
     } finally {
       setIsAutoAssigning(false);
     }
@@ -215,10 +216,10 @@ const CardDetails: React.FC = () => {
       await automationService.trigger(7, card.id, { manual_trigger: true });
       // Recarrega o card para mostrar o SDR atribuído
       await loadCardData();
-      alert("SDR atribuído automaticamente com sucesso!");
+      showSuccess("SDR atribuído automaticamente com sucesso!");
     } catch (error: any) {
       console.error("Erro ao atribuir SDR automaticamente:", error);
-      alert(error.response?.data?.detail || "Erro ao atribuir SDR automaticamente");
+      showError(error.response?.data?.detail || "Erro ao atribuir SDR automaticamente");
     } finally {
       setIsAutoAssigningSdr(false);
     }
@@ -247,7 +248,7 @@ const CardDetails: React.FC = () => {
       setShowAssigneeDropdown(false);
     } catch (error) {
       console.error("Erro ao atualizar responsável:", error);
-      alert("Erro ao atualizar responsável");
+      showError("Erro ao atualizar responsável");
     }
   };
 
@@ -263,7 +264,7 @@ const CardDetails: React.FC = () => {
       setShowSdrDropdown(false);
     } catch (error) {
       console.error("Erro ao atualizar SDR:", error);
-      alert("Erro ao atualizar SDR");
+      showError("Erro ao atualizar SDR");
     }
   };
 
@@ -285,7 +286,7 @@ const CardDetails: React.FC = () => {
       await loadCardData();
     } catch (error) {
       console.error("Erro ao mover card:", error);
-      alert("Erro ao mover card para nova lista");
+      showError("Erro ao mover card para nova lista");
     } finally {
       setIsMovingCard(false);
     }

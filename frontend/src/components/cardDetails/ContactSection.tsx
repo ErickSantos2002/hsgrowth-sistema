@@ -7,6 +7,7 @@ import { Card } from "../../types";
 import { Person } from "../../services/personService";
 import personService from "../../services/personService";
 import PersonModal from "../persons/PersonModal";
+import { showError } from "../../utils/toast";
 
 interface ContactSectionProps {
   card: Card;
@@ -107,7 +108,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
       onUpdate(); // Atualiza o card no pai
     } catch (error) {
       console.error("Erro ao vincular pessoa:", error);
-      alert("Erro ao vincular pessoa. Verifique o console para mais detalhes.");
+      showError("Erro ao vincular pessoa");
     } finally {
       setLoading(false);
     }
@@ -132,7 +133,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
       onUpdate();
     } catch (error) {
       console.error("Erro ao desvincular pessoa:", error);
-      alert("Erro ao desvincular pessoa");
+      showError("Erro ao desvincular pessoa");
     }
   };
 
@@ -160,7 +161,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
       }
     } catch (error) {
       console.error("Erro ao vincular pessoa recém-criada:", error);
-      alert("Pessoa criada com sucesso, mas houve erro ao vincular. Você pode vincular manualmente.");
+      showError("Pessoa criada, mas houve erro ao vincular. Vincule manualmente");
     }
   };
 

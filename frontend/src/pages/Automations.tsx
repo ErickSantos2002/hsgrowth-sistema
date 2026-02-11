@@ -20,6 +20,8 @@ import { useAuth } from "../hooks/useAuth";
 import automationService, { Automation } from "../services/automationService";
 import boardService from "../services/boardService";
 import AutomationRoundRobinForm from "../components/AutomationRoundRobinForm";
+import { showSuccess, showError } from "../utils/toast";
+import { LoadingSpinner } from "../components/common";
 
 interface Board {
   id: number;
@@ -96,7 +98,7 @@ const Automations: React.FC = () => {
       );
     } catch (error) {
       console.error("Erro ao ativar/desativar automação:", error);
-      alert("Erro ao alterar status da automação");
+      showError("Erro ao alterar status da automação");
     }
   };
 
@@ -108,7 +110,7 @@ const Automations: React.FC = () => {
       setAutomations((prev) => prev.filter((auto) => auto.id !== id));
     } catch (error) {
       console.error("Erro ao deletar automação:", error);
-      alert("Erro ao deletar automação");
+      showError("Erro ao deletar automação");
     }
   };
 
@@ -232,7 +234,7 @@ const Automations: React.FC = () => {
         {/* Loading */}
         {loading && (
           <div className="py-12 text-center">
-            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent"></div>
+            <LoadingSpinner size="lg" />
             <p className="mt-4 text-slate-400">Carregando automações...</p>
           </div>
         )}

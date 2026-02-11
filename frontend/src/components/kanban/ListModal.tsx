@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
 import { List } from "../../types";
 import { BaseModal, FormField, Input, Button } from "../common";
+import { COLORS } from "../../constants/colors";
 
 interface ListModalProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ const ListModal: React.FC<ListModalProps> = ({
   title,
 }) => {
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#3B82F6");
+  const [color, setColor] = useState(COLORS.board.blue);
   const [errors, setErrors] = useState<{ name?: string }>({});
   const [isColorOpen, setIsColorOpen] = useState(false);
   const colorRef = useRef<HTMLDivElement | null>(null);
@@ -33,10 +34,10 @@ const ListModal: React.FC<ListModalProps> = ({
     if (isOpen) {
       if (list) {
         setName(list.name);
-        setColor(list.color || "#3B82F6");
+        setColor(list.color || COLORS.board.blue);
       } else {
         setName("");
-        setColor("#3B82F6");
+        setColor(COLORS.board.blue);
       }
       setErrors({});
     }
@@ -81,15 +82,15 @@ const ListModal: React.FC<ListModalProps> = ({
     onClose();
   };
 
-  // Opções de cores para as listas
+  // Opções de cores para as listas (usando cores centralizadas)
   const colorOptions = [
-    { value: "#3B82F6", label: "Azul" },
-    { value: "#10B981", label: "Verde" },
-    { value: "#F59E0B", label: "Amarelo" },
-    { value: "#EF4444", label: "Vermelho" },
-    { value: "#8B5CF6", label: "Roxo" },
-    { value: "#EC4899", label: "Rosa" },
-    { value: "#6B7280", label: "Cinza" },
+    { value: COLORS.board.blue, label: "Azul" },
+    { value: COLORS.board.green, label: "Verde" },
+    { value: COLORS.board.amber, label: "Amarelo" },
+    { value: COLORS.board.red, label: "Vermelho" },
+    { value: COLORS.board.purple, label: "Roxo" },
+    { value: COLORS.board.pink, label: "Rosa" },
+    { value: COLORS.board.gray, label: "Cinza" },
   ];
   const colorPresets = colorOptions.map((option) => option.value);
 
@@ -199,7 +200,7 @@ const ListModal: React.FC<ListModalProps> = ({
                     type="text"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    placeholder="#3B82F6"
+                    placeholder={COLORS.board.blue}
                     className="flex-1"
                   />
                 </div>

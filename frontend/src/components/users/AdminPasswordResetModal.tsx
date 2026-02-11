@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Key, AlertCircle } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import { User } from "../../types";
+import { LoadingSpinner } from "../common";
 
 interface AdminPasswordResetModalProps {
   isOpen: boolean;
@@ -113,7 +114,7 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
           >
             {loading ? (
               <>
-                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                <LoadingSpinner size="sm" />
                 Resetando...
               </>
             ) : (

@@ -3,6 +3,7 @@ import { Settings, Check, X } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
 import { Card, FieldDefinition } from "../../types";
 import fieldService from "../../services/fieldService";
+import { showError } from "../../utils/toast";
 
 interface CustomFieldsSectionProps {
   card: Card;
@@ -83,7 +84,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
       onUpdate();
     } catch (error) {
       console.error("Erro ao salvar campo:", error);
-      alert("Erro ao salvar campo");
+      showError("Erro ao salvar campo");
     } finally {
       setLoading(false);
     }

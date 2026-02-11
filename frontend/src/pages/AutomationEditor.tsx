@@ -25,6 +25,9 @@ import CustomEdge from "../components/automations/CustomEdge";
 import TemplatesModal from "../components/automations/TemplatesModal";
 import automationService from "../services/automationService";
 import { convertApiToReactFlow, convertReactFlowToApi, validateAutomation } from "../utils/automationConverter";
+import { COLORS } from "../constants/colors";
+import { showSuccess, showError, showWarning, showInfo } from "../utils/toast";
+import { LoadingSpinner } from "../components/common";
 
 // Tipos de nodes customizados
 const nodeTypes = {
@@ -233,16 +236,15 @@ const AutomationEditorContent: React.FC = () => {
     const validation = validateAutomation();
 
     if (!validation.valid) {
-      const errorMessage = validation.errors.join("\n• ");
-      alert(`Não é possível salvar a automação:\n\n• ${errorMessage}`);
+      const errorMessage = validation.errors.join("; ");
+      showError(`Não é possível salvar: ${errorMessage}`);
       return;
     }
 
     // Verifica se tem boardId
     if (!boardId) {
-      alert(
-        "Esta automação não está vinculada a um board.\n\n" +
-        "Para criar uma nova automação, use o botão 'Nova Automação' na página de Automações e escolha o board."
+      showWarning(
+        "Esta automação não está vinculada a um board. Use 'Nova Automação' na página de Automações."
       );
       return;
     }
@@ -256,18 +258,18 @@ const AutomationEditorContent: React.FC = () => {
       if (id && id !== "new") {
         // Atualiza automação existente
         await automationService.update(Number(id), automationData);
-        alert("Automação atualizada com sucesso!");
+        showSuccess("Automação atualizada com sucesso!");
       } else {
         // Cria nova automação
         await automationService.create(automationData);
-        alert("Automação criada com sucesso!");
+        showSuccess("Automação criada com sucesso!");
       }
 
       navigate("/automations");
     } catch (error: any) {
       console.error("Erro ao salvar automação:", error);
       const errorMessage = error.response?.data?.detail || error.message || "Erro desconhecido";
-      alert(`Erro ao salvar automação:\n\n${errorMessage}`);
+      showError(`Erro ao salvar: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
@@ -278,16 +280,15 @@ const AutomationEditorContent: React.FC = () => {
     const validation = validateAutomation();
 
     if (!validation.valid) {
-      const errorMessage = validation.errors.join("\n• ");
-      alert(`Não é possível testar a automação:\n\n• ${errorMessage}`);
+      const errorMessage = validation.errors.join("; ");
+      showError(`Não é possível testar: ${errorMessage}`);
       return;
     }
 
     // Verifica se é uma automação existente (salva)
     if (!id || id === "new") {
-      alert(
-        "Para testar a automação, você precisa salvá-la primeiro.\n\n" +
-        "Clique no botão 'Salvar' e depois poderá testá-la."
+      showWarning(
+        "Para testar, você precisa salvar a automação primeiro."
       );
       return;
     }
@@ -298,18 +299,15 @@ const AutomationEditorContent: React.FC = () => {
       // Executa trigger manual
       const result = await automationService.trigger(Number(id));
 
-      alert(
-        "Teste executado com sucesso!\n\n" +
-        `Status: ${result.status}\n` +
-        `Duração: ${result.duration_ms ? Math.round(result.duration_ms) + "ms" : "N/A"}\n\n` +
-        "Verifique os logs de execução para mais detalhes."
+      showSuccess(
+        `Teste executado! Status: ${result.status}, Duração: ${result.duration_ms ? Math.round(result.duration_ms) + "ms" : "N/A"}`,
+        6000
       );
     } catch (error: any) {
       console.error("Erro ao testar automação:", error);
       const errorMessage = error.response?.data?.detail || error.message || "Erro desconhecido";
-      alert(
-        `Erro ao testar automação:\n\n${errorMessage}\n\n` +
-        "Verifique se a automação está configurada corretamente e se há cards disponíveis para processar."
+      showError(
+        `Erro ao testar: ${errorMessage}. Verifique a configuração.`
       );
     } finally {
       setIsSaving(false);
@@ -585,7 +583,7 @@ const AutomationEditorContent: React.FC = () => {
       }, 100);
     } catch (error) {
       console.error("Erro ao carregar automação:", error);
-      alert("Erro ao carregar automação. Verifique se ela existe.");
+      showError("Erro ao carregar automação. Verifique se ela existe.");
       navigate("/automations");
     } finally {
       setIsLoading(false);
@@ -597,8 +595,8 @@ const AutomationEditorContent: React.FC = () => {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-900">
         <div className="text-center">
-          <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-purple-500 border-t-transparent"></div>
-          <p className="text-slate-400">Carregando automação...</p>
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-slate-400">Carregando automação...</p>
         </div>
       </div>
     );
@@ -707,23 +705,23 @@ const AutomationEditorContent: React.FC = () => {
             className="bg-slate-900"
             defaultEdgeOptions={{
               animated: true,
-              style: { stroke: "#8b5cf6", strokeWidth: 2 },
+              style: { stroke: COLORS.board.purple, strokeWidth: 2 },
             }}
           >
             <Background
               variant={BackgroundVariant.Dots}
               gap={20}
               size={1}
-              color="#475569"
+              color={COLORS.border.light}
             />
             <Controls className="!border-slate-700 !bg-slate-800" showInteractive={false} />
             <MiniMap
               className="!border-slate-700 !bg-slate-800"
               style={{ bottom: 10, right: -5}}
               nodeColor={(node) => {
-                if (node.type === "triggerNode") return "#a855f7";
-                if (node.type === "actionNode") return "#10b981";
-                return "#6b7280";
+                if (node.type === "triggerNode") return COLORS.board.purple;
+                if (node.type === "actionNode") return COLORS.board.green;
+                return COLORS.board.gray;
               }}
             />
           </ReactFlow>

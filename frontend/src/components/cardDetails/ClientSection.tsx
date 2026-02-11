@@ -8,6 +8,7 @@ import { Client } from "../../services/clientService";
 import clientService from "../../services/clientService";
 import cardService from "../../services/cardService";
 import ClientModal from "../clients/ClientModal";
+import { showError } from "../../utils/toast";
 
 interface ClientSectionProps {
   card: Card;
@@ -118,7 +119,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
       onUpdate();
     } catch (error) {
       console.error("Erro ao vincular cliente:", error);
-      alert("Erro ao vincular cliente. Verifique o console para mais detalhes.");
+      showError("Erro ao vincular cliente");
     } finally {
       setLoading(false);
     }
@@ -145,7 +146,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
       onUpdate();
     } catch (error) {
       console.error("Erro ao desvincular cliente:", error);
-      alert("Erro ao desvincular cliente");
+      showError("Erro ao desvincular cliente");
     }
   };
 
@@ -175,7 +176,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
       }
     } catch (error) {
       console.error("Erro ao vincular cliente recém-criado:", error);
-      alert("Cliente criado com sucesso, mas houve erro ao vincular. Você pode vincular manualmente.");
+      showError("Cliente criado, mas houve erro ao vincular. Vincule manualmente");
     }
   };
 

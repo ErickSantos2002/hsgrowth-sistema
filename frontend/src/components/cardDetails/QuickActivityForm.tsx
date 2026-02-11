@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import cardTaskService from "../../services/cardTaskService";
 import { convertBrazilToUTC } from "../../utils/timezone";
+import { showError, showWarning } from "../../utils/toast";
 
 interface QuickActivityFormProps {
   cardId: number;
@@ -113,17 +114,17 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
    */
   const handleSave = async () => {
     if (!formData.title.trim()) {
-      alert("Por favor, preencha o título da atividade");
+      showWarning("Por favor, preencha o título da atividade");
       return;
     }
 
     if (!formData.description.trim()) {
-      alert("Por favor, preencha a descrição da atividade");
+      showWarning("Por favor, preencha a descrição da atividade");
       return;
     }
 
     if (!formData.date) {
-      alert("Por favor, selecione uma data");
+      showWarning("Por favor, selecione uma data");
       return;
     }
 
@@ -163,7 +164,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       onSave();
     } catch (error) {
       console.error("Erro ao criar atividade:", error);
-      alert("Erro ao criar atividade");
+      showError("Erro ao criar atividade");
     }
   };
 

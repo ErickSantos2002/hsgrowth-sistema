@@ -7,6 +7,8 @@ import cardService from "../../services/cardService";
 import boardService from "../../services/boardService";
 import { TransferReason, User, Card } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
+import { showSuccess, showError, showWarning } from "../../utils/toast";
+import { LoadingSpinner } from "../common";
 
 interface TransferModalProps {
   isOpen: boolean;
@@ -168,7 +170,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
     // Valida seleção de board
     if (!selectedBoardId) {
-      alert("Por favor, selecione um board primeiro");
+      showWarning("Por favor, selecione um board primeiro");
       return false;
     }
 
@@ -212,7 +214,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
           reason: formData.reason,
           notes: formData.notes || undefined,
         });
-        alert("Transferência criada com sucesso!");
+        showSuccess("Transferência criada com sucesso!");
       } else {
         await transferService.createBatchTransfer({
           card_ids: batchFormData.card_ids,
@@ -220,8 +222,8 @@ const TransferModal: React.FC<TransferModalProps> = ({
           reason: batchFormData.reason,
           notes: batchFormData.notes || undefined,
         });
-        alert(
-          `Transferência em lote criada com sucesso! ${batchFormData.card_ids.length} cards transferidos.`
+        showSuccess(
+          `Transferência em lote criada! ${batchFormData.card_ids.length} cards transferidos`
         );
       }
 
@@ -229,9 +231,8 @@ const TransferModal: React.FC<TransferModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Erro ao criar transferência:", error);
-      alert(
-        error.response?.data?.detail ||
-          "Erro ao criar transferência. Tente novamente."
+      showError(
+        error.response?.data?.detail || "Erro ao criar transferência"
       );
     } finally {
       setLoading(false);
@@ -286,7 +287,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
           >
             {loading ? (
               <>
-                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                <LoadingSpinner size="sm" />
                 Criando...
               </>
             ) : (
@@ -377,7 +378,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
           )}
           {loadingCards && (
             <p className="mt-1 flex items-center gap-1 text-xs text-emerald-400">
-              <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-emerald-400"></div>
+              <LoadingSpinner size="sm" />
               Carregando cards...
             </p>
           )}
@@ -449,7 +450,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
             <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 p-3">
               {loadingCards ? (
                 <div className="py-8 text-center">
-                  <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-b-2 border-emerald-400"></div>
+                  <LoadingSpinner size="md" />
                   <p className="text-sm text-slate-400">Carregando cards...</p>
                 </div>
               ) : myCards.length === 0 ? (

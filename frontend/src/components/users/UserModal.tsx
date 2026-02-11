@@ -4,6 +4,7 @@ import BaseModal from "../common/BaseModal";
 import { FormField, Input, Button } from "../common";
 import userService from "../../services/userService";
 import { User, CreateUserRequest, UpdateUserRequest } from "../../types";
+import { showSuccess, showError, showWarning } from "../../utils/toast";
 
 interface UserModalProps {
   isOpen: boolean;
@@ -53,33 +54,33 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
 
   const validateForm = (): boolean => {
     if (!email.trim()) {
-      alert("Email é obrigatório");
+      showWarning("Email é obrigatório");
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      alert("Email inválido");
+      showWarning("Email inválido");
       return false;
     }
 
     if (!name.trim()) {
-      alert("Nome é obrigatório");
+      showWarning("Nome é obrigatório");
       return false;
     }
 
     if (!isEditing && !password.trim()) {
-      alert("Senha é obrigatória ao criar usuário");
+      showWarning("Senha é obrigatória ao criar usuário");
       return false;
     }
 
     if (!isEditing && password.length < 6) {
-      alert("Senha deve ter pelo menos 6 caracteres");
+      showWarning("Senha deve ter pelo menos 6 caracteres");
       return false;
     }
 
     if (!isEditing && password !== confirmPassword) {
-      alert("As senhas não coincidem");
+      showWarning("As senhas não coincidem");
       return false;
     }
 
@@ -107,7 +108,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         };
 
         await userService.update(user.id, data);
-        alert("Usuário atualizado com sucesso!");
+        showSuccess("Usuário atualizado com sucesso!");
       } else {
         const data: CreateUserRequest = {
           email: email.trim(),
@@ -120,7 +121,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         };
 
         await userService.create(data);
-        alert("Usuário criado com sucesso!");
+        showSuccess("Usuário criado com sucesso!");
       }
 
       resetForm();
@@ -128,7 +129,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
     } catch (error: any) {
       console.error("Erro ao salvar usuário:", error);
       const message = error?.response?.data?.detail || "Erro ao salvar usuário";
-      alert(message);
+      showError(message);
     } finally {
       setSaving(false);
     }

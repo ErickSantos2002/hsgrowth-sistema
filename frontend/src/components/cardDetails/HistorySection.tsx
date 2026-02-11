@@ -20,6 +20,7 @@ import {
   Filter,
 } from "lucide-react";
 import { convertUTCToBrazil } from "../../utils/timezone";
+import { showInfo } from "../../utils/toast";
 
 interface HistorySectionProps {
   activities: any[];
@@ -386,7 +387,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
         </button>
 
         <button
-          onClick={() => alert("Exportar histórico - será implementado")}
+          onClick={() => showInfo("Exportar histórico - Funcionalidade em desenvolvimento")}
           className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
           title="Exportar"
         >
@@ -394,7 +395,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
         </button>
 
         <button
-          onClick={() => alert("Imprimir histórico - será implementado")}
+          onClick={() => showInfo("Imprimir histórico - Funcionalidade em desenvolvimento")}
           className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
           title="Imprimir"
         >

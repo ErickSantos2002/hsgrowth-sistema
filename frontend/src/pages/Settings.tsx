@@ -8,8 +8,9 @@ import BadgeModal, { BadgeFormData } from "../components/settings/BadgeModal";
 import AwardBadgeModal from "../components/settings/AwardBadgeModal";
 import api4comService, { API4ComConfig, UserExtension, API4ComConfigCreate, UserExtensionCreate } from "../services/api4comService";
 import auditLogService, { AuditLog } from "../services/auditLogService";
-import { toast } from "react-hot-toast";
+import { showSuccess, showError, showWarning } from "../utils/toast";
 import type { User } from "../types";
+import { LoadingSpinner } from "../components/common";
 
 type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs";
 
@@ -205,10 +206,10 @@ const Settings: React.FC = () => {
       // Atualiza o contexto de autenticação
       updateUser(updatedUser);
 
-      alert("Perfil atualizado com sucesso!");
+      showSuccess("Perfil atualizado com sucesso!");
     } catch (error: any) {
       console.error("Erro ao atualizar perfil:", error);
-      alert(error.response?.data?.detail || "Erro ao atualizar perfil");
+      showError(error.response?.data?.detail || "Erro ao atualizar perfil");
     } finally {
       setLoading(false);
     }
@@ -216,7 +217,7 @@ const Settings: React.FC = () => {
 
   const handleSaveNotifications = () => {
     // TODO: Salvar notificações no backend (endpoint não existe ainda)
-    alert("Preferências de notificações salvas com sucesso! (Mock)");
+    showWarning("Preferências de notificações salvas (Mock - endpoint não implementado)");
     console.log("Notificações:", notificationSettings);
   };
 
@@ -234,7 +235,7 @@ const Settings: React.FC = () => {
       }
     } catch (error) {
       console.error("Erro ao carregar badges:", error);
-      alert("Erro ao carregar badges");
+      showError("Erro ao carregar badges");
     } finally {
       setLoadingBadges(false);
     }
@@ -256,10 +257,10 @@ const Settings: React.FC = () => {
     try {
       if (badgeModalMode === "create") {
         await gamificationService.createBadge(badgeData);
-        alert("Badge criada com sucesso!");
+        showSuccess("Badge criada com sucesso!");
       } else if (selectedBadge) {
         await gamificationService.updateBadge(selectedBadge.id, badgeData);
-        alert("Badge atualizada com sucesso!");
+        showSuccess("Badge atualizada com sucesso!");
       }
       await loadBadges();
       setIsBadgeModalOpen(false);
@@ -274,11 +275,11 @@ const Settings: React.FC = () => {
       await gamificationService.updateBadge(badge.id, {
         is_active: !badge.is_active,
       });
-      alert(`Badge ${!badge.is_active ? "ativada" : "desativada"} com sucesso!`);
+      showSuccess(`Badge ${!badge.is_active ? "ativada" : "desativada"} com sucesso!`);
       await loadBadges();
     } catch (error) {
       console.error("Erro ao alterar status da badge:", error);
-      alert("Erro ao alterar status da badge");
+      showError("Erro ao alterar status da badge");
     }
   };
 
@@ -289,11 +290,11 @@ const Settings: React.FC = () => {
 
     try {
       await gamificationService.deleteBadge(badge.id);
-      alert("Badge deletada com sucesso!");
+      showSuccess("Badge deletada com sucesso!");
       await loadBadges();
     } catch (error) {
       console.error("Erro ao deletar badge:", error);
-      alert("Erro ao deletar badge");
+      showError("Erro ao deletar badge");
     }
   };
 
@@ -313,7 +314,7 @@ const Settings: React.FC = () => {
       const badgeName = badges.find(b => b.id === badgeId)?.name || "Badge";
       const usersCount = userIds.length;
 
-      alert(`Badge "${badgeName}" atribuída com sucesso a ${usersCount} vendedor(es)!`);
+      showSuccess(`Badge "${badgeName}" atribuída com sucesso a ${usersCount} vendedor(es)!`);
     } catch (error: any) {
       console.error("Erro ao atribuir badge:", error);
       throw error; // Propaga erro para o modal tratar
@@ -334,7 +335,7 @@ const Settings: React.FC = () => {
       setEditingPoints(initialEditing);
     } catch (error) {
       console.error("Erro ao carregar pontos:", error);
-      alert("Erro ao carregar configurações de pontos");
+      showError("Erro ao carregar configurações de pontos");
     } finally {
       setLoadingPoints(false);
     }
@@ -346,11 +347,11 @@ const Settings: React.FC = () => {
       if (newPoints === undefined) return;
 
       await gamificationService.updateActionPoints(actionType, { points: newPoints });
-      alert("Pontos atualizados com sucesso!");
+      showSuccess("Pontos atualizados com sucesso!");
       await loadActionPoints();
     } catch (error) {
       console.error("Erro ao atualizar pontos:", error);
-      alert("Erro ao atualizar pontos");
+      showError("Erro ao atualizar pontos");
     }
   };
 
@@ -359,11 +360,11 @@ const Settings: React.FC = () => {
       await gamificationService.updateActionPoints(action.action_type, {
         is_active: !action.is_active,
       });
-      alert(`Ação ${!action.is_active ? "ativada" : "desativada"} com sucesso!`);
+      showSuccess(`Ação ${!action.is_active ? "ativada" : "desativada"} com sucesso!`);
       await loadActionPoints();
     } catch (error) {
       console.error("Erro ao alterar status da ação:", error);
-      alert("Erro ao alterar status da ação");
+      showError("Erro ao alterar status da ação");
     }
   };
 
@@ -375,7 +376,7 @@ const Settings: React.FC = () => {
     try {
       setLoadingPoints(true);
       await gamificationService.initializeActionPoints();
-      toast.success("Configurações padrão inicializadas com sucesso!");
+      showSuccess("Configurações padrão inicializadas com sucesso!");
       await loadActionPoints();
     } catch (error) {
       console.error("Erro ao inicializar configurações:", error);
@@ -754,7 +755,7 @@ const Settings: React.FC = () => {
                     <button
                       className="absolute bottom-0 right-0 rounded-full bg-emerald-600 p-2 text-white transition-colors hover:bg-emerald-700"
                       title="Upload de avatar (não implementado)"
-                      onClick={() => alert("Upload de avatar será implementado no futuro")}
+                      onClick={() => showWarning("Upload de avatar - Funcionalidade em desenvolvimento")}
                     >
                       <Upload size={16} />
                     </button>
@@ -1139,7 +1140,7 @@ const Settings: React.FC = () => {
                     {loadingLoginHistory ? (
                       // Loading state
                       <div className="flex items-center justify-center py-12">
-                        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+                        <LoadingSpinner size="md" />
                       </div>
                     ) : loginHistory.length === 0 ? (
                       // Empty state
@@ -1426,7 +1427,7 @@ const Settings: React.FC = () => {
                 {/* Lista de Badges */}
                 {loadingBadges ? (
                   <div className="py-12 text-center">
-                    <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-500"></div>
+                    <LoadingSpinner size="lg" />
                     <p className="mt-4 text-slate-400">Carregando badges...</p>
                   </div>
                 ) : filteredBadges.length === 0 ? (
@@ -1597,7 +1598,7 @@ const Settings: React.FC = () => {
                 {/* Lista de Ações */}
                 {loadingPoints ? (
                   <div className="py-12 text-center">
-                    <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-500"></div>
+                    <LoadingSpinner size="lg" />
                     <p className="mt-4 text-slate-400">Carregando configurações...</p>
                   </div>
                 ) : actionPoints.length === 0 ? (

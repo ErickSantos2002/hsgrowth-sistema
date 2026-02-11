@@ -4,6 +4,7 @@ import boardService from "../services/boardService";
 import { Board } from "../types";
 import BoardCard from "../components/boards/BoardCard";
 import BoardModal from "../components/boards/BoardModal";
+import { showSuccess, showError } from "../utils/toast";
 import EmptyState from "../components/common/EmptyState";
 import { useAuth } from "../hooks/useAuth";
 
@@ -75,11 +76,11 @@ const Boards: React.FC = () => {
       await boardService.duplicate(board.id, `${board.name} - Cópia`);
       loadBoards();
       // TODO: Adicionar toast de sucesso
-      alert("Board duplicado com sucesso!");
+      showSuccess("Board duplicado com sucesso!");
     } catch (error) {
       console.error("Erro ao duplicar board:", error);
       // TODO: Adicionar toast de erro
-      alert("Erro ao duplicar board");
+      showError("Erro ao duplicar board");
     }
   };
 
@@ -94,11 +95,11 @@ const Boards: React.FC = () => {
       loadBoards();
       // TODO: Adicionar toast de sucesso
       const action = board.is_deleted ? "restaurado" : "arquivado";
-      alert(`Board ${action} com sucesso!`);
+      showSuccess(`Board ${action} com sucesso!`);
     } catch (error) {
       console.error("Erro ao arquivar/ativar board:", error);
       // TODO: Adicionar toast de erro
-      alert("Erro ao atualizar status do board");
+      showError("Erro ao atualizar status do board");
     }
   };
 
@@ -116,11 +117,11 @@ const Boards: React.FC = () => {
       await boardService.delete(board.id);
       loadBoards();
       // TODO: Adicionar toast de sucesso
-      alert("Board deletado com sucesso!");
+      showSuccess("Board deletado com sucesso!");
     } catch (error) {
       console.error("Erro ao deletar board:", error);
       // TODO: Adicionar toast de erro
-      alert("Erro ao deletar board");
+      showError("Erro ao deletar board");
     }
   };
 

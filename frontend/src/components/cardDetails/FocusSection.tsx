@@ -24,6 +24,7 @@ import api4comService from "../../services/api4comService";
 import personService, { Person } from "../../services/personService";
 import automationService from "../../services/automationService";
 import { Card } from "../../types";
+import { showSuccess, showError, showWarning } from "../../utils/toast";
 import {
   formatBrazilDate,
   extractBrazilDateForInput,
@@ -133,7 +134,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       onUpdate();
     } catch (error) {
       console.error("Erro ao completar atividade:", error);
-      alert("Erro ao completar atividade");
+      showError("Erro ao completar atividade");
     } finally {
       setLoadingTaskId(null);
     }
@@ -151,7 +152,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       onUpdate();
     } catch (error) {
       console.error("Erro ao deletar atividade:", error);
-      alert("Erro ao deletar atividade");
+      showError("Erro ao deletar atividade");
     } finally {
       setLoadingTaskId(null);
     }
@@ -177,7 +178,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
    */
   const handleSaveEdit = async () => {
     if (!editingTaskId || !editFormData.title.trim()) {
-      alert("O título é obrigatório");
+      showWarning("O título é obrigatório");
       return;
     }
 
@@ -196,7 +197,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       onUpdate();
     } catch (error) {
       console.error("Erro ao atualizar tarefa:", error);
-      alert("Erro ao atualizar tarefa");
+      showError("Erro ao atualizar tarefa");
     } finally {
       setLoadingTaskId(null);
     }
@@ -230,7 +231,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
    */
   const handleSaveReschedule = async () => {
     if (!rescheduleTaskId || !rescheduleDate) {
-      alert("Selecione uma data");
+      showWarning("Selecione uma data");
       return;
     }
 
@@ -250,7 +251,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       onUpdate();
     } catch (error) {
       console.error("Erro ao reagendar tarefa:", error);
-      alert("Erro ao reagendar tarefa");
+      showError("Erro ao reagendar tarefa");
     } finally {
       setLoadingTaskId(null);
     }
@@ -271,13 +272,13 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
   const handleMakeCall = async (activityId: number) => {
     // Verifica se tem pessoa vinculada
     if (!person) {
-      alert("Não há pessoa vinculada a este card");
+      showWarning("Não há pessoa vinculada a este card");
       return;
     }
 
     // Verifica se tem número principal
     if (!person.phone) {
-      alert("A pessoa não possui número principal cadastrado");
+      showWarning("A pessoa não possui número principal cadastrado");
       return;
     }
 
@@ -294,13 +295,13 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       });
 
       if (result.success) {
-        alert("Chamada iniciada! O webphone abrirá automaticamente.");
+        showSuccess("Chamada iniciada! O webphone abrirá automaticamente.");
       } else {
-        alert(`Erro ao iniciar chamada: ${result.error || result.message}`);
+        showError(`Erro ao iniciar chamada: ${result.error || result.message}`);
       }
     } catch (error: any) {
       console.error("Erro ao fazer chamada:", error);
-      alert(`Erro ao iniciar chamada: ${error.response?.data?.detail || error.message}`);
+      showError(`Erro ao iniciar chamada: ${error.response?.data?.detail || error.message}`);
     } finally {
       setCallingTaskId(null);
     }
@@ -324,10 +325,10 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       // Marca a atividade como concluída
       await cardTaskService.toggleComplete(activityId, true);
       onUpdate();
-      alert("Reunião marcada como NoShow e card movido para Reagendamento");
+      showSuccess("Reunião marcada como NoShow e card movido para Reagendamento");
     } catch (error: any) {
       console.error("Erro ao marcar NoShow:", error);
-      alert(error.response?.data?.detail || "Erro ao marcar NoShow");
+      showError(error.response?.data?.detail || "Erro ao marcar NoShow");
     } finally {
       setNoShowTaskId(null);
     }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Board } from "../../types";
 import { BaseModal, FormField, Input, Textarea, Button } from "../common";
+import { COLORS } from "../../constants/colors";
 
 interface BoardModalProps {
   isOpen: boolean;
@@ -28,7 +29,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
 }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [color, setColor] = useState("#3B82F6");
+  const [color, setColor] = useState(COLORS.board.blue);
   const [icon, setIcon] = useState("⬜");
   const [errors, setErrors] = useState<{ name?: string }>({});
 
@@ -38,12 +39,12 @@ const BoardModal: React.FC<BoardModalProps> = ({
       if (board) {
         setName(board.name);
         setDescription(board.description || "");
-        setColor(board.color || "#3B82F6");
+        setColor(board.color || COLORS.board.blue);
         setIcon(board.icon || "⬜");
       } else {
         setName("");
         setDescription("");
-        setColor("#3B82F6");
+        setColor(COLORS.board.blue);
         setIcon("⬜");
       }
       setErrors({});
@@ -83,15 +84,15 @@ const BoardModal: React.FC<BoardModalProps> = ({
     onClose();
   };
 
-  // Opções de cores para o board
+  // Opções de cores para o board (usando cores centralizadas)
   const colorOptions = [
-    { value: "#3B82F6", label: "Azul" },
-    { value: "#10B981", label: "Verde" },
-    { value: "#F59E0B", label: "Amarelo" },
-    { value: "#EF4444", label: "Vermelho" },
-    { value: "#8B5CF6", label: "Roxo" },
-    { value: "#EC4899", label: "Rosa" },
-    { value: "#6B7280", label: "Cinza" },
+    { value: COLORS.board.blue, label: "Azul" },
+    { value: COLORS.board.green, label: "Verde" },
+    { value: COLORS.board.amber, label: "Amarelo" },
+    { value: COLORS.board.red, label: "Vermelho" },
+    { value: COLORS.board.purple, label: "Roxo" },
+    { value: COLORS.board.pink, label: "Rosa" },
+    { value: COLORS.board.gray, label: "Cinza" },
   ];
 
   // Opções de ícones para o board

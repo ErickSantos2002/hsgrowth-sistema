@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { BaseModal, FormField, Input, Button } from './common';
+import { showError } from '../utils/toast';
 
 interface ModalTrocarSenhaProps {
   isOpen: boolean;
@@ -6,6 +8,10 @@ interface ModalTrocarSenhaProps {
   onConfirm: (_novaSenha: string) => void;
 }
 
+/**
+ * Modal para trocar senha do usuário
+ * Valida se as senhas coincidem antes de confirmar
+ */
 const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
   isOpen,
   onClose,
@@ -13,95 +19,104 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
 }) => {
   const [novaSenha, setNovaSenha] = useState('');
   const [repitaSenha, setRepitaSenha] = useState('');
+  const [errors, setErrors] = useState<{ novaSenha?: string; repitaSenha?: string }>({});
 
-  if (!isOpen) return null;
+  /**
+   * Valida os campos do formulário
+   */
+  const validate = (): boolean => {
+    const newErrors: { novaSenha?: string; repitaSenha?: string } = {};
 
+    if (!novaSenha.trim()) {
+      newErrors.novaSenha = 'Nova senha é obrigatória';
+    } else if (novaSenha.length < 6) {
+      newErrors.novaSenha = 'Senha deve ter pelo menos 6 caracteres';
+    }
+
+    if (!repitaSenha.trim()) {
+      newErrors.repitaSenha = 'Confirmação de senha é obrigatória';
+    } else if (novaSenha !== repitaSenha) {
+      newErrors.repitaSenha = 'As senhas não coincidem';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+   * Handler de confirmação
+   */
   const handleConfirm = () => {
-    if (novaSenha !== repitaSenha) {
-      alert('As senhas não coincidem!');
+    if (!validate()) {
       return;
     }
+
     onConfirm(novaSenha);
+
+    // Reset form
+    setNovaSenha('');
+    setRepitaSenha('');
+    setErrors({});
+    onClose();
+  };
+
+  /**
+   * Handler de fechamento (reset form)
+   */
+  const handleClose = () => {
+    setNovaSenha('');
+    setRepitaSenha('');
+    setErrors({});
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity">
-      {/* 🔧 Ajuste principal: padding e espaçamento idêntico à modal dos logs */}
-      <div
-        className="mx-4 w-[90%] 
-                   max-w-md rounded-xl border 
-                   border-gray-200 bg-white/95 p-8 shadow-xl 
-                   transition-colors sm:mx-0 sm:w-full 
-                   sm:p-6 dark:border-[#2d2d2d] dark:bg-[#1e1e1e]/95"
-      >
-        {/* Cabeçalho */}
-        <h2 className="mb-6 text-center text-xl font-bold tracking-tight text-gray-900 dark:text-[#facc15]">
-          Trocar Senha
-        </h2>
-
-        {/* Campos */}
-        <div className="flex flex-col gap-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Nova senha:
-            </label>
-            <input
-              type="password"
-              value={novaSenha}
-              onChange={(e) => setNovaSenha(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-300 bg-white
-                         px-3 py-2
-                         text-gray-800 transition-colors
-                         focus:outline-none focus:ring-2
-                         focus:ring-blue-500 dark:border-gray-600 dark:bg-[#181818]
-                         dark:text-gray-200"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Repita nova senha:
-            </label>
-            <input
-              type="password"
-              value={repitaSenha}
-              onChange={(e) => setRepitaSenha(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-300 bg-white
-                         px-3 py-2
-                         text-gray-800 transition-colors
-                         focus:outline-none focus:ring-2
-                         focus:ring-blue-500 dark:border-gray-600 dark:bg-[#181818]
-                         dark:text-gray-200"
-            />
-          </div>
-        </div>
-
-        {/* Botões */}
-        <div className="mt-8 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="rounded-lg bg-gray-300 px-4 py-2
-                       font-medium text-gray-800
-                       transition-colors hover:bg-gray-400
-                       dark:bg-[#2a2a2a] dark:text-gray-100
-                       dark:hover:bg-[#3a3a3a]"
-          >
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Trocar Senha"
+      subtitle="Defina uma nova senha para sua conta"
+      size="md"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={handleClose}>
             Cancelar
-          </button>
-
-          <button
+          </Button>
+          <Button
+            variant="primary"
             onClick={handleConfirm}
-            className="rounded-lg bg-blue-600 px-4 py-2
-                       font-medium text-white
-                       shadow-sm transition-colors
-                       hover:bg-blue-700"
+            disabled={!novaSenha.trim() || !repitaSenha.trim()}
           >
             Confirmar
-          </button>
+          </Button>
         </div>
+      }
+    >
+      <div className="space-y-4">
+        {/* Nova senha */}
+        <FormField label="Nova senha" required error={errors.novaSenha}>
+          <Input
+            type="password"
+            value={novaSenha}
+            onChange={(e) => setNovaSenha(e.target.value)}
+            placeholder="Digite a nova senha"
+            error={!!errors.novaSenha}
+            autoFocus
+          />
+        </FormField>
+
+        {/* Repetir senha */}
+        <FormField label="Repetir nova senha" required error={errors.repitaSenha}>
+          <Input
+            type="password"
+            value={repitaSenha}
+            onChange={(e) => setRepitaSenha(e.target.value)}
+            placeholder="Digite a senha novamente"
+            error={!!errors.repitaSenha}
+          />
+        </FormField>
       </div>
-    </div>
+    </BaseModal>
   );
 };
 

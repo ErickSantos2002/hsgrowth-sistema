@@ -16,6 +16,8 @@ import {
 import { Board, CreateBoardRequest, UpdateBoardRequest } from "../../types";
 import boardService from "../../services/boardService";
 import { BaseModal, FormField, Input, Textarea, Button, Alert } from "../common";
+import { COLORS } from "../../constants/colors";
+import { showError } from "../../utils/toast";
 
 interface BoardModalProps {
   board?: Board | null;
@@ -34,7 +36,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    color: "#3B82F6",
+    color: COLORS.board.blue,
     icon: "grid",
   });
 
@@ -65,7 +67,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
       setFormData({
         name: board.name,
         description: board.description || "",
-        color: board.color || "#3B82F6",
+        color: board.color || COLORS.board.blue,
         icon: normalizeIcon(board.icon),
       });
     } else {
@@ -73,7 +75,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
       setFormData({
         name: "",
         description: "",
-        color: "#3B82F6",
+        color: COLORS.board.blue,
         icon: "grid",
       });
     }
@@ -152,9 +154,9 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
 
       // Tratar erros de validação do backend
       if (error.response?.data?.detail) {
-        alert(`Erro: ${error.response.data.detail}`);
+        showError(error.response.data.detail);
       } else {
-        alert("Erro ao salvar board. Tente novamente.");
+        showError("Erro ao salvar board");
       }
     } finally {
       setLoading(false);
@@ -175,15 +177,15 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
     { value: "heart", label: "Coracao", icon: Heart },
   ];
 
-  // Opções de cores predefinidas
+  // Opções de cores predefinidas (usando cores centralizadas)
   const colorPresets = [
-    "#3B82F6", // Azul
-    "#10B981", // Verde
-    "#F59E0B", // Amarelo
-    "#EF4444", // Vermelho
-    "#8B5CF6", // Roxo
-    "#EC4899", // Rosa
-    "#6B7280", // Cinza
+    COLORS.board.blue,    // Azul
+    COLORS.board.green,   // Verde
+    COLORS.board.amber,   // Amarelo
+    COLORS.board.red,     // Vermelho
+    COLORS.board.purple,  // Roxo
+    COLORS.board.pink,    // Rosa
+    COLORS.board.gray,    // Cinza
   ];
   const selectedIconOption =
     iconOptions.find((option) => option.value === formData.icon) || iconOptions[0];
@@ -386,7 +388,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                       type="text"
                       value={formData.color}
                       onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                      placeholder="#3B82F6"
+                      placeholder={COLORS.board.blue}
                       disabled={loading}
                       className="flex-1"
                     />

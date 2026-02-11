@@ -3,6 +3,7 @@ import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Building, User, Users, C
 import clientService, { Client } from "../services/clientService";
 import { Button, Alert } from "../components/common";
 import ClientModal from "../components/clients/ClientModal";
+import { showError } from "../utils/toast";
 
 const Clients: React.FC = () => {
   // Estados
@@ -77,7 +78,7 @@ const Clients: React.FC = () => {
         await loadClients();
       } catch (error) {
         console.error("Erro ao deletar cliente:", error);
-        alert("Erro ao deletar cliente");
+        showError("Erro ao deletar cliente");
       }
     }
   };

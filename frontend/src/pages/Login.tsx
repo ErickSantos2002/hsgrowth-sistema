@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/logo.png";
+import { LoadingSpinner } from "../components/common";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -111,7 +112,7 @@ export default function Login() {
                         >
                             {isLoading ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
+                                    <LoadingSpinner size="sm" />
                                     Entrando...
                                 </span>
                             ) : (

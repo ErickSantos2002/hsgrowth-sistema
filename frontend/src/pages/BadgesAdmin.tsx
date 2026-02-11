@@ -13,6 +13,8 @@ import {
 import gamificationService, { Badge, UserBadge } from "../services/gamificationService";
 import userService from "../services/userService";
 import { User } from "../types";
+import { showSuccess, showError, showWarning } from "../utils/toast";
+import { LoadingSpinner } from "../components/common";
 
 const BadgesAdmin: React.FC = () => {
   const [badges, setBadges] = useState<Badge[]>([]);
@@ -94,15 +96,15 @@ const BadgesAdmin: React.FC = () => {
     try {
       if (isEditMode && selectedBadge) {
         await gamificationService.updateBadge(selectedBadge.id, formData);
-        alert("Badge atualizado com sucesso!");
+        showSuccess("Badge atualizado com sucesso!");
       } else {
         await gamificationService.createBadge(formData);
-        alert("Badge criado com sucesso!");
+        showSuccess("Badge criado com sucesso!");
       }
       setIsModalOpen(false);
       loadData();
     } catch (error: any) {
-      alert(`Erro: ${error.response?.data?.detail || "Erro ao salvar badge"}`);
+      showError(error.response?.data?.detail || "Erro ao salvar badge");
     }
   };
 
@@ -111,25 +113,25 @@ const BadgesAdmin: React.FC = () => {
 
     try {
       await gamificationService.deleteBadge(badgeId);
-      alert("Badge deletado com sucesso!");
+      showSuccess("Badge deletado com sucesso!");
       loadData();
     } catch (error: any) {
-      alert(`Erro: ${error.response?.data?.detail || "Erro ao deletar badge"}`);
+      showError(error.response?.data?.detail || "Erro ao deletar badge");
     }
   };
 
   const handleAwardBadge = async () => {
     if (!selectedBadge || !selectedUserId) {
-      alert("Selecione um usuário!");
+      showWarning("Selecione um usuário!");
       return;
     }
 
     try {
       await gamificationService.awardBadge(selectedBadge.id, selectedUserId);
-      alert("Badge atribuído com sucesso!");
+      showSuccess("Badge atribuído com sucesso!");
       setIsAwardModalOpen(false);
     } catch (error: any) {
-      alert(`Erro: ${error.response?.data?.detail || "Erro ao atribuir badge"}`);
+      showError(error.response?.data?.detail || "Erro ao atribuir badge");
     }
   };
 
@@ -141,8 +143,8 @@ const BadgesAdmin: React.FC = () => {
     return (
       <div className="flex min-h-[60vh] items-center justify-center p-6">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-500"></div>
-          <p className="text-slate-400">Carregando badges...</p>
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-slate-400">Carregando badges...</p>
         </div>
       </div>
     );

@@ -17,6 +17,7 @@ import { Card, List } from "../../types";
 import { BaseModal, FormField, Input, Select, Textarea, Button, Alert } from "../common";
 import userService from "../../services/userService";
 import { User as UserType } from "../../types";
+import { showError } from "../../utils/toast";
 
 interface CardDetailModalProps {
   isOpen: boolean;
@@ -143,7 +144,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
       setIsEditing(false);
     } catch (error) {
       console.error("Erro ao salvar card:", error);
-      alert("Erro ao salvar alterações");
+      showError("Erro ao salvar alterações");
     } finally {
       setIsSaving(false);
     }
@@ -159,7 +160,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
         onClose();
       } catch (error) {
         console.error("Erro ao marcar como ganho:", error);
-        alert("Erro ao marcar card como ganho");
+        showError("Erro ao marcar card como ganho");
       }
     }
   };
@@ -174,7 +175,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
         onClose();
       } catch (error) {
         console.error("Erro ao marcar como perdido:", error);
-        alert("Erro ao marcar card como perdido");
+        showError("Erro ao marcar card como perdido");
       }
     }
   };
@@ -189,7 +190,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
         onClose();
       } catch (error) {
         console.error("Erro ao deletar card:", error);
-        alert("Erro ao deletar card");
+        showError("Erro ao deletar card");
       }
     }
   };
@@ -202,7 +203,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
       await onMove(card.id, targetListId);
     } catch (error) {
       console.error("Erro ao mover card:", error);
-      alert("Erro ao mover card");
+      showError("Erro ao mover card");
     }
   };
 

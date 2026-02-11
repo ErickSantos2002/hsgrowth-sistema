@@ -2,12 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global scrollbar styles */
+/* Global scrollbar styles e cores do sistema */
 :root {
+  /* Scrollbar */
   --scrollbar-size: 6px;
   --scrollbar-track: transparent;
   --scrollbar-thumb: rgba(148, 163, 184, 0.45);
   --scrollbar-thumb-hover: rgba(148, 163, 184, 0.7);
+
+  /* Cores do sistema (sincronizadas com constants/colors.ts e tailwind.config.js) */
+  --color-primary: #10b981;
+  --color-board-blue: #3B82F6;
+  --color-surface-elevated: #1e293b;
+  --color-border: #334155;
 }
 
 * {
@@ -117,23 +124,23 @@
 /* Estilos para React Flow - Nodes Selecionados */
 .react-flow__node.selected {
   /* Adiciona um outline azul brilhante quando selecionado */
-  outline: 3px solid #3b82f6 !important;
+  outline: 3px solid var(--color-board-blue) !important;
   outline-offset: 2px !important;
 }
 
 .react-flow__node.selected > div {
   /* Aumenta ligeiramente o brilho do node selecionado */
-  box-shadow: 0 0 0 2px #3b82f6, 0 20px 40px -12px rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 0 0 2px var(--color-board-blue), 0 20px 40px -12px rgba(59, 130, 246, 0.5) !important;
 }
 
 /* Caixa de seleção */
 .react-flow__selection {
   background: rgba(59, 130, 246, 0.08);
-  border: 2px solid #3b82f6;
+  border: 2px solid var(--color-board-blue);
 }
 
 /* Nodes durante seleção múltipla */
 .react-flow__nodesselection-rect {
   background: rgba(59, 130, 246, 0.08);
-  border: 2px dashed #3b82f6;
+  border: 2px dashed var(--color-board-blue);
 }

@@ -3,6 +3,7 @@ import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Package, ChevronDown } f
 import productService, { Product } from "../services/productService";
 import { Button, Alert } from "../components/common";
 import ProductModal from "../components/products/ProductModal";
+import { showError } from "../utils/toast";
 
 const Products: React.FC = () => {
   // Estados
@@ -78,7 +79,7 @@ const Products: React.FC = () => {
         await loadProducts();
       } catch (error) {
         console.error("Erro ao deletar produto:", error);
-        alert("Erro ao deletar produto");
+        showError("Erro ao deletar produto");
       }
     }
   };
