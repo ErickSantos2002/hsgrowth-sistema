@@ -245,7 +245,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
   /**
    * Handler para mudança nos campos do formulário
    */
-  const handleChange = (field: keyof PersonFormData, value: string | boolean) => {
+  const handleChange = (field: keyof PersonFormData, value: string | boolean | number | null) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,

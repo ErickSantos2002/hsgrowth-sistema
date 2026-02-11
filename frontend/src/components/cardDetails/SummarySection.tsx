@@ -248,7 +248,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
   const probability = card.contact_info?.probability || 0;
 
   // Verifica se o card está perdido
-  const isLost = card.is_lost === true || card.is_won === -1;
+  const isLost = card.is_lost === true;
 
   // Opções de usuários para dropdowns
   const userOptions = users.map((u) => ({ value: u.id.toString(), label: u.name }));

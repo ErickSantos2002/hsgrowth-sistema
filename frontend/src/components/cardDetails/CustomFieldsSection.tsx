@@ -199,7 +199,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             className="w-full px-3 py-2 bg-slate-900/50 border border-blue-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Selecione...</option>
-            {field.options?.map((option) => (
+            {field.options?.map((option: any) => (
               <option key={option} value={option}>
                 {option}
               </option>
@@ -210,7 +210,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
       case "multiselect":
         return (
           <div className="space-y-2">
-            {field.options?.map((option) => (
+            {field.options?.map((option: any) => (
               <label key={option} className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"

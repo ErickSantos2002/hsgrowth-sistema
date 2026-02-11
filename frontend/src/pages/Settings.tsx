@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { User, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe, FileText, Filter, Calendar } from "lucide-react";
+import { User as UserIcon, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe, FileText, Filter, Calendar } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 import authService from "../services/authService";
@@ -9,6 +9,7 @@ import AwardBadgeModal from "../components/settings/AwardBadgeModal";
 import api4comService, { API4ComConfig, UserExtension, API4ComConfigCreate, UserExtensionCreate } from "../services/api4comService";
 import auditLogService, { AuditLog } from "../services/auditLogService";
 import { toast } from "react-hot-toast";
+import type { User } from "../types";
 
 type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs";
 
@@ -590,7 +591,7 @@ const Settings: React.FC = () => {
 
   // Tabs - adiciona "Badges" e "Pontos" para admin/gerente
   const tabs: { id: Tab; label: string; icon: any }[] = [
-    { id: "profile" as Tab, label: "Perfil", icon: User },
+    { id: "profile" as Tab, label: "Perfil", icon: UserIcon },
     { id: "notifications" as Tab, label: "Notificações", icon: Bell },
   ];
 

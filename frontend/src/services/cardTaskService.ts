@@ -9,7 +9,7 @@ export interface CardTask {
   assigned_to_id?: number;
   title: string;
   description?: string;
-  task_type: "call" | "meeting" | "task" | "deadline" | "email" | "lunch" | "other";
+  task_type: "call" | "meeting" | "task" | "follow_up" | "other";
   priority: "normal" | "high" | "urgent";
   due_date?: string;
   duration_minutes?: number;
@@ -31,7 +31,7 @@ export interface CreateCardTaskRequest {
   assigned_to_id?: number;
   title: string;
   description?: string;
-  task_type?: "call" | "meeting" | "task" | "deadline" | "email" | "lunch" | "other";
+  task_type?: "call" | "meeting" | "task" | "follow_up" | "other";
   priority?: "normal" | "high" | "urgent";
   due_date?: string;
   duration_minutes?: number;
@@ -45,7 +45,7 @@ export interface CreateCardTaskRequest {
 export interface UpdateCardTaskRequest {
   title?: string;
   description?: string;
-  task_type?: "call" | "meeting" | "task" | "deadline" | "email" | "lunch" | "other";
+  task_type?: "call" | "meeting" | "task" | "follow_up" | "other";
   priority?: "normal" | "high" | "urgent";
   due_date?: string;
   duration_minutes?: number;

@@ -10,6 +10,8 @@ export interface FieldDefinition {
   field_type: "text" | "textarea" | "number" | "date" | "datetime" | "select" | "multiselect" | "boolean" | "url" | "email" | "phone";
   is_required: boolean;
   options?: any;
+  position: number;
+  is_deleted: boolean;
   created_at: string;
   updated_at: string;
 }

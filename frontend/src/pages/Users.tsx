@@ -46,7 +46,7 @@ const Users: React.FC = () => {
         page_size: 100,
       });
 
-      setUsers(response.users || []);
+      setUsers(response.items || []);
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
       alert("Erro ao carregar usuários");

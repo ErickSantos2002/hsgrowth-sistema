@@ -291,8 +291,8 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
    */
   const filteredProducts = availableProducts.filter(p =>
     !products.some((prod: ProductItem) => prod.product_id === p.id) &&
-    (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     p.sku.toLowerCase().includes(searchTerm.toLowerCase()))
+    (p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     p.sku?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (

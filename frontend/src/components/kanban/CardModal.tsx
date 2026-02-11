@@ -19,10 +19,11 @@ interface CardModalProps {
 export interface CardFormData {
   list_id: number;
   title: string;
-  description?: string;
-  due_date?: string;
-  assigned_to_id?: number;
-  sdr_id?: number;
+  description?: string | null;
+  due_date?: string | null;
+  assigned_to_id?: number | null;
+  sdr_id?: number | null;
+  contact_info?: Record<string, any> | null; // Informações de contato
 }
 
 /**
@@ -213,7 +214,7 @@ const CardModal: React.FC<CardModalProps> = ({
           hint="Detalhes sobre a oportunidade, histórico, observações..."
         >
           <Textarea
-            value={formData.description}
+            value={formData.description ?? ""}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Ex: Cliente interessado em nosso serviço premium. Reunião agendada para próxima semana..."
             rows={4}
@@ -233,7 +234,7 @@ const CardModal: React.FC<CardModalProps> = ({
           >
             <Input
               type="date"
-              value={formData.due_date}
+              value={formData.due_date ?? ""}
               onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
             />
           </FormField>

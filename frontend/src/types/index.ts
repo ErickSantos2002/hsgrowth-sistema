@@ -5,6 +5,7 @@ export interface User {
   email: string;
   username: string | null;
   name: string; // Nome completo do usuário
+  full_name: string; // Alias para name (compatibilidade)
   avatar_url: string | null;
   phone: string | null;
   role_id: number;
@@ -74,6 +75,7 @@ export interface Card {
   list_id: number;
   client_id: number | null;
   assigned_to_id: number | null;
+  person_id: number | null; // ID da pessoa de contato (usado em ContactSection)
   title: string;
   description: string | null;
   position: number;
@@ -109,6 +111,7 @@ export interface Card {
   assigned_to_name: string | null;
   list_name: string | null;
   board_id: number | null;
+  board_name: string | null; // Nome do board (usado em CardDetails)
   client_name: string | null;
   sdr_name?: string | null;
 
@@ -162,14 +165,44 @@ export interface Client {
   annual_revenue?: string | null;
 }
 
+export interface Person {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  position: string | null;
+  client_id: number | null;
+  notes: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+
+  // Campos adicionais de contato
+  email_commercial: string | null;
+  email_personal: string | null;
+  email_alternative: string | null;
+  phone_commercial: string | null;
+  phone_whatsapp: string | null;
+  phone_alternative: string | null;
+  linkedin_url: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
+  area: string | null; // Área/Departamento (blueprint da consultora)
+
+  // Relacionamento opcional
+  client?: Client;
+  client_name?: string | null;
+}
+
 // ==================== CUSTOM FIELDS ====================
 
 export interface FieldDefinition {
   id: number;
   board_id: number;
   name: string;
-  field_type: "text" | "number" | "date" | "select" | "multiselect" | "boolean" | "url" | "email" | "phone";
-  options: string[] | null;
+  field_type: "text" | "textarea" | "number" | "date" | "datetime" | "select" | "multiselect" | "boolean" | "url" | "email" | "phone";
+  options?: string[] | null | any; // Opcional - usado para select/multiselect
   is_required: boolean;
   position: number;
   is_deleted: boolean;
@@ -190,6 +223,14 @@ export interface CardFieldValue {
 }
 
 // ==================== ACTIVITY & AUDIT ====================
+
+// Tipos de atividades/tarefas
+export type ActivityType =
+  | "call"        // Ligação
+  | "meeting"     // Reunião
+  | "task"        // Tarefa
+  | "follow_up"   // Acompanhamento/Retorno
+  | "other";      // Outro
 
 export interface Activity {
   id: number;
@@ -707,33 +748,58 @@ export interface CreateCardRequest {
 
 export interface UpdateCardRequest {
   title?: string;
-  description?: string;
-  client_id?: number;
-  assigned_to_id?: number;
-  value?: number;
+  description?: string | null; // Aceita null
+  client_id?: number | null;
+  assigned_to_id?: number | null;
+  person_id?: number | null;
+  value?: number | null;
   currency?: string;
-  due_date?: string;
-  contact_info?: Record<string, any>;
+  due_date?: string | null;
+  contact_info?: Record<string, any> | null;
   payment_info?: {
     payment_method: string;
     installments: number;
     notes?: string;
   } | null;
 
+  // Campos de status
+  is_won?: boolean;
+  is_lost?: boolean;
+
   // Campos do blueprint da consultora
-  sdr_id?: number;
-  deal_type?: string;
-  acquisition_channel?: string;
-  acquisition_channel_detail?: string;
-  utm_params?: string;
-  loss_reason?: string;
-  has_implementation?: boolean;
-  has_personnel?: boolean;
+  sdr_id?: number | null;
+  deal_type?: string | null;
+  acquisition_channel?: string | null;
+  acquisition_channel_detail?: string | null;
+  utm_params?: string | null;
+  loss_reason?: string | null;
+  has_implementation?: boolean | null;
+  has_personnel?: boolean | null;
 }
 
 export interface MoveCardRequest {
   target_list_id: number;
   position?: number;
+}
+
+export interface CardFormData {
+  title: string;
+  description?: string | null;
+  client_id?: number | null;
+  assigned_to_id?: number | null;
+  person_id?: number | null;
+  value?: number | null;
+  due_date?: string | null;
+  contact_info?: Record<string, any> | null;
+
+  // Campos do blueprint
+  sdr_id?: number | null;
+  deal_type?: string | null;
+  acquisition_channel?: string | null;
+  acquisition_channel_detail?: string | null;
+  loss_reason?: string | null;
+  has_implementation?: boolean | null;
+  has_personnel?: boolean | null;
 }
 
 export interface CreateClientRequest {

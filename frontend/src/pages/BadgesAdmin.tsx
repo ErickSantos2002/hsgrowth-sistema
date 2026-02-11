@@ -77,7 +77,7 @@ const BadgesAdmin: React.FC = () => {
       description: badge.description || "",
       icon_url: badge.icon_url || "",
       criteria_type: badge.criteria_type,
-      criteria: badge.criteria || { field: "total_points", operator: ">=", value: 0 },
+      criteria: (badge.criteria || { field: "total_points", operator: ">=", value: 0 }) as any,
     });
     setIsEditMode(true);
     setSelectedBadge(badge);

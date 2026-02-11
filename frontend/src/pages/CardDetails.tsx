@@ -107,7 +107,7 @@ const CardDetails: React.FC = () => {
       setCard((prev) => (prev ? { ...prev, ...updates } : prev));
 
       // 2. Envia para o backend em background
-      await cardService.update(card.id, updates);
+      await cardService.update(card.id, updates as any);
 
       // 3. Sucesso! Não precisa fazer nada, já atualizou localmente
     } catch (error: any) {
@@ -733,7 +733,7 @@ const CardDetails: React.FC = () => {
       </div>
 
       {/* Modal de Motivo da Perda */}
-      {card && (
+      {card && card.board_id && (
         <LossReasonModal
           isOpen={showLossReasonModal}
           onClose={() => setShowLossReasonModal(false)}

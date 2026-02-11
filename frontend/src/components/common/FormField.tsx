@@ -4,7 +4,7 @@ import React from "react";
  * Props do componente FormField
  */
 interface FormFieldProps {
-  label: string;
+  label: string | React.ReactNode; // Aceita string ou JSX elements (com ícones, etc)
   required?: boolean;
   error?: string;
   hint?: string;

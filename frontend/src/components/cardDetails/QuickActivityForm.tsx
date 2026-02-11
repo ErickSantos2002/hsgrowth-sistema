@@ -138,10 +138,10 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         due_date: dueDateTimeUTC,
         priority: formData.priority,
         description: formData.description,
-        notes: formData.notes || null,
-        location: formData.location || null,
+        notes: formData.notes || undefined,
+        location: formData.location || undefined,
         duration_minutes: parseInt(formData.duration),
-        video_link: formData.video_link || null,
+        video_link: formData.video_link || undefined,
         status: "free", // Define como "free" por padrão (campo mantido no backend)
       });
 

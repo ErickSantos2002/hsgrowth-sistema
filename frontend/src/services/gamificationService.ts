@@ -190,6 +190,7 @@ class GamificationService {
       icon_url?: string;
       criteria_type?: "automatic" | "manual";
       criteria?: Record<string, any>;
+      is_active?: boolean;
     }
   ): Promise<Badge> {
     const response = await api.put<Badge>(`/api/v1/gamification/badges/${badgeId}`, data);
