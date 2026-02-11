@@ -483,7 +483,7 @@ const AutomationEditorContent: React.FC = () => {
     }, 500); // Debounce de 500ms
 
     return () => clearTimeout(timeoutId);
-  }, [nodes, edges]); // Removido saveToHistory das deps para evitar loop
+  }, [nodes, edges, history, historyIndex, saveToHistory]);
 
   // Atalhos de teclado (Ctrl+C, Ctrl+V, Ctrl+Z, Ctrl+Shift+Z, Zoom)
   useEffect(() => {

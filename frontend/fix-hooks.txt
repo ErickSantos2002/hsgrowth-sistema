@@ -1,0 +1,14 @@
+# Lista de arquivos e funções que precisam de useCallback:
+
+1. ClientSection.tsx - loadClientData
+2. ContactSection.tsx - loadPersonData
+3. CustomFieldsSection.tsx - loadFieldDefinitions, loadFieldValues  
+4. PipelineStages.tsx - loadLists
+5. CardModal.tsx - resetForm, loadLists
+6. TransferModal.tsx - loadInitialData
+7. Boards.tsx - loadBoards
+8. CardDetails.tsx - loadCardData, loadCardsFromBoard
+9. Dashboard.tsx - fetchDashboardData
+10. Gamification.tsx - loadInitialData, loadRankings, loadTeamStats
+11. KanbanBoard.tsx - loadBoardData
+12. BoardModal.tsx - normalizeIcon

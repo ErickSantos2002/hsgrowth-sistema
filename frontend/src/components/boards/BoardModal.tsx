@@ -78,6 +78,8 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
       });
     }
     setErrors({});
+    // normalizeIcon é uma função estável que não precisa estar nas dependências
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [board]);
 
   useEffect(() => {

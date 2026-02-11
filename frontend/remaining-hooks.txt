@@ -1,0 +1,22 @@
+   81:6   warning  React Hook useEffect has a missing dependency: 'normalizeIcon'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  35:6  warning  React Hook useEffect has a missing dependency: 'loadClientData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  33:6  warning  React Hook useEffect has a missing dependency: 'loadPersonData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   27:6   warning  React Hook useEffect has missing dependencies: 'loadFieldDefinitions' and 'loadFieldValues'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  30:6   warning  React Hook useEffect has a missing dependency: 'loadLists'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   72:6   warning  React Hook useEffect has a missing dependency: 'resetForm'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   75:6   warning  React Hook useEffect has a missing dependency: 'loadInitialData'. Either include it or remove the dependency array     react-hooks/exhaustive-deps
+  160:6   warning  React Hook useEffect has a missing dependency: 'loadCardsFromBoard'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  563:6   warning  React Hook useEffect has a missing dependency: 'loadAutomation'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  25:6   warning  React Hook useEffect has a missing dependency: 'loadBoards'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   63:6   warning  React Hook useEffect has a missing dependency: 'loadCardData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   36:6   warning  React Hook useEffect has missing dependencies: 'fetchDashboardData' and 'kpis'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  42:6  warning  React Hook useEffect has a missing dependency: 'loadInitialData'. Either include it or remove the dependency array                         react-hooks/exhaustive-deps
+  48:6  warning  React Hook useEffect has a missing dependency: 'loadRankings'. Either include it or remove the dependency array                            react-hooks/exhaustive-deps
+  71:6  warning  React Hook useEffect has missing dependencies: 'isManagerOrAdmin' and 'loadTeamStats'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  114:6   warning  React Hook useEffect has a missing dependency: 'loadBoardData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  40:6   warning  React Hook useEffect has a missing dependency: 'loadNotifications'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   123:6   warning  React Hook useEffect has a missing dependency: 'loadBadges'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   153:6   warning  React Hook useEffect has a missing dependency: 'loadLogs'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+  58:6   warning  React Hook useEffect has a missing dependency: 'loadInitialData'. Either include it or remove the dependency array                                                                                   react-hooks/exhaustive-deps
+  71:6   warning  React Hook useEffect has missing dependencies: 'loadAllTransfers', 'loadCompletedTransfers', 'loadPendingApprovals', and 'loadPendingTransfers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  77:6   warning  React Hook useEffect has missing dependencies: 'activeTab' and 'loadPendingApprovals'. Either include them or remove the dependency array                                                            react-hooks/exhaustive-deps

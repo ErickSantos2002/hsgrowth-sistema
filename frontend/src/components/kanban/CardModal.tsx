@@ -114,7 +114,7 @@ const CardModal: React.FC<CardModalProps> = ({
       }
       setErrors({});
     }
-  }, [card, currentListId, isOpen]);
+  }, [card, currentListId, isOpen, currentUser?.id, isSDR, isSalesperson]);
 
   /**
    * Valida o formulário antes de salvar

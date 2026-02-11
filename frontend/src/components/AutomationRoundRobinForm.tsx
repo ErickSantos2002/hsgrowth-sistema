@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { List, Zap, ChevronDown } from "lucide-react";
 import BaseModal from "./common/BaseModal";
 import { FormField, Input, Textarea, Button } from "./common";
@@ -37,7 +37,7 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
 
   const isEditing = !!automation;
 
-  const getInitialFormData = () => ({
+  const getInitialFormData = useCallback(() => ({
     name: automation?.name || "",
     description: automation?.description || "",
     board_id: automation?.board_id ? String(automation.board_id) : "",
@@ -45,9 +45,9 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
       ? String(automation.trigger_conditions.to_list_id)
       : "",
     is_active: automation?.is_active !== undefined ? automation.is_active : true,
-  });
+  }), [automation]);
 
-  const [formData, setFormData] = useState(getInitialFormData());
+  const [formData, setFormData] = useState(() => getInitialFormData());
 
   useEffect(() => {
     loadBoards();
@@ -64,7 +64,7 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
   useEffect(() => {
     setFormData(getInitialFormData());
     setError(null);
-  }, [automation, isOpen]);
+  }, [automation, isOpen, getInitialFormData]);
 
   const loadBoards = async () => {
     try {

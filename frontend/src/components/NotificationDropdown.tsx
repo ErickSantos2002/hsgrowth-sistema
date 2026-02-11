@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -53,14 +53,16 @@ const NotificationDropdown: React.FC = () => {
       loadNotifications();
     }
     setPreviousUnreadCount(unreadCount);
-  }, [unreadCount]);
+    // previousUnreadCount não é incluído nas dependências intencionalmente para evitar loop infinito
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unreadCount, loadNotifications]);
 
   // Sempre recarrega notificações quando abre o dropdown
   useEffect(() => {
     if (isOpen) {
       loadNotifications();
     }
-  }, [isOpen]);
+  }, [isOpen, loadNotifications]);
 
   const loadUnreadCount = async () => {
     try {
@@ -71,7 +73,7 @@ const NotificationDropdown: React.FC = () => {
     }
   };
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const response = await notificationService.list(1, 10, true); // Últimas 10 não lidas
@@ -86,7 +88,7 @@ const NotificationDropdown: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleMarkAsRead = async (id: number) => {
     try {
