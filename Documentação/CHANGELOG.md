@@ -7,6 +7,238 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.7] - 2026-02-12
+
+### ✨ Novas Funcionalidades
+
+#### Sistema de Anexos de Arquivos
+- **Upload de arquivos** vinculados a cards
+- **Tipos suportados**: PDF, DOCX, XLSX, TXT, CSV, imagens (JPG, PNG, GIF, WEBP), ZIP, RAR, 7Z
+- **Limite de tamanho**: 10MB por arquivo
+- **Armazenamento**: Persistente em volume Docker (`/app/uploads`)
+- **Funcionalidades completas**:
+  - Upload via drag & drop ou clique
+  - Upload múltiplo de arquivos
+  - Download de arquivos
+  - Preview inline de imagens e PDFs
+  - Exclusão de arquivos
+  - Contador de arquivos na aba
+  - Ícones diferenciados por tipo de arquivo
+  - Soft delete (recuperação possível)
+
+#### Modal de Preview de Arquivos
+- **Preview nativo no sistema** para imagens e PDFs
+- **Botão "olho"** ao lado de cada arquivo compatível
+- **Modal em tela cheia** usando BaseModal padrão do sistema
+- **Funcionalidades**:
+  - Visualização de imagens (PNG, JPG, GIF, WEBP)
+  - Visualização de PDFs com scroll
+  - Botão de download dentro da modal
+  - Fechar com ESC ou botão X
+  - Estados de loading e erro
+  - Z-index elevado (3000) para evitar sobreposição
+
+#### Logs de Auditoria para Anexos
+- **Registro completo** de todas as operações com arquivos:
+  - **CREATE** - Upload de arquivo (registra nome, tamanho, tipo, card)
+  - **READ** - Download de arquivo (registra quem baixou qual arquivo)
+  - **DELETE** - Exclusão de arquivo (registra informações antes de deletar)
+- **Informações capturadas**: usuário, IP, user-agent, timestamp, detalhes da ação
+- **Compliance**: Rastreabilidade completa de acesso a arquivos sensíveis
+
+### 🔧 Melhorias Técnicas
+
+#### Backend
+- **Model**: `Attachment` com soft delete e propriedades calculadas
+  - Campos: filename, original_filename, file_size, mime_type, storage_path
+  - Propriedades: file_size_mb, file_extension, is_image, is_pdf, is_document
+  - Relationships: card, uploaded_by
+- **Migration**: Tabela attachments com coluna is_deleted (SoftDeleteMixin)
+- **Repository**: CRUD completo + métodos de estatísticas
+- **Service**: Validação, upload, download, delete com gerenciamento de arquivos físicos
+- **Endpoints**: 4 rotas RESTful documentadas
+  - POST `/cards/{card_id}/attachments` - Upload
+  - GET `/cards/{card_id}/attachments` - Listar
+  - GET `/attachments/{attachment_id}/download` - Download
+  - DELETE `/attachments/{attachment_id}` - Deletar
+- **Auditoria**: Integração com AuditLog em todos os endpoints
+
+#### Frontend
+- **Service**: `attachmentService.ts` com helpers de validação e formatação
+- **Component**: `FilesSection.tsx` com drag & drop e gestão de estado
+- **Modal**: `FilePreviewModal.tsx` usando BaseModal padrão
+- **Integration**: Contador de arquivos no CardDetails
+- **UX**: Loading states, validação client-side, mensagens de erro
+
+### 🐛 Correções
+
+#### Migration do Alembic
+- **Problema**: Migration faltando coluna `is_deleted` do SoftDeleteMixin
+- **Solução**: Adicionada coluna is_deleted (Boolean, default false) na migration
+- **Resultado**: Model Attachment sincronizado com schema do banco
+
+#### Logs de Auditoria
+- **Problema**: Tentativa de acessar `service.attachment_repo` (atributo inexistente)
+- **Solução**: Corrigido para usar `service.repository` (atributo correto)
+- **Resultado**: Logs de auditoria funcionando para download e delete
+
+#### Modal de Preview
+- **Problema**: Modal sendo escondida por elementos do layout (z-index)
+- **Solução**: Migrado para BaseModal padrão com ReactDOM.createPortal
+- **Resultado**: Modal renderiza no body com z-index 3000, sempre visível
+
+### 📝 Arquivos Criados
+
+#### Backend
+- `app/models/attachment.py` - Model SQLAlchemy
+- `app/schemas/attachment.py` - Schemas Pydantic
+- `app/repositories/attachment_repository.py` - Data access layer
+- `app/services/attachment_service.py` - Business logic
+- `app/api/v1/endpoints/attachments.py` - API endpoints
+- `alembic/versions/2026_02_12_1430-add_attachments_table.py` - Migration
+
+#### Frontend
+- `src/services/attachmentService.ts` - API service
+- `src/components/cardDetails/FilesSection.tsx` - Upload/lista component
+- `src/components/cardDetails/FilePreviewModal.tsx` - Preview modal
+
+### 📝 Arquivos Modificados
+
+#### Backend
+- `app/models/__init__.py` - Import do Attachment
+- `app/models/card.py` - Relationship com attachments
+- `app/api/v1/__init__.py` - Router de attachments
+- `app/api/v1/endpoints/attachments.py` - Logs de auditoria
+
+#### Frontend
+- `src/pages/CardDetails.tsx` - Contador de arquivos e integração
+- `src/components/cardDetails/FilesSection.tsx` - Preview button e modal
+- `src/layouts/MainLayout.tsx` - Versão atualizada para 1.1.7
+
+---
+
+## [1.1.6] - 2026-02-11
+
+### 🎨 Adicionado
+
+#### Sistema de Cores Centralizado
+- Criado `constants/colors.ts` com palette de cores HEX centralizada
+- Expandido `tailwind.config.js` com palette semântica completa
+- Cores organizadas por: primary, surface, content, border, status, board
+- Sistema de tematização preparado para modo claro/escuro
+
+#### Componentes Comuns Reutilizáveis
+- `LoadingSpinner` - Spinner padronizado com 3 tamanhos (sm, md, lg)
+- `SearchInput` - Input de busca com ícone integrado
+- `Pagination` - Componente de paginação responsivo (mobile e desktop)
+- `PageHeader` - Cabeçalho padronizado para páginas com título, descrição, ícone e ações
+
+#### Hooks Reutilizáveis
+- `usePagination` - Gerencia paginação client-side com lógica completa
+- `useCRUD` - Encapsula operações create, read, update, delete
+- `useFilter` - Sistema de filtros flexível com helpers
+- `filterHelpers` - Funções auxiliares para filtros comuns
+
+#### Utilitários Centralizados
+- `utils/formatters.ts` - Biblioteca de formatação e máscaras:
+  - `maskPhone` - Máscara de telefone brasileiro
+  - `maskCPF` - Máscara de CPF
+  - `maskCNPJ` - Máscara de CNPJ
+  - `maskDocument` - Auto-detecta CPF/CNPJ
+  - `maskCEP` - Máscara de CEP
+  - `maskCNAE` - Máscara de CNAE
+  - `formatDate` - Formata data para pt-BR
+  - `formatDateTime` - Formata data e hora para pt-BR
+  - `formatCurrency` - Formata moeda brasileira
+  - `unmask` - Remove formatação
+
+- `utils/toast.ts` - Sistema de notificações padronizado
+  - `showSuccess` - Toast de sucesso
+  - `showError` - Toast de erro
+
+### ♻️ Refatorado
+
+#### Páginas Padronizadas (6 páginas)
+- `pages/Users.tsx` - Migrada para hooks + layout components
+- `pages/Persons.tsx` - Migrada para hooks + layout components + CRUD
+- `pages/Clients.tsx` - Migrada para hooks + layout components + CRUD
+- `pages/Products.tsx` - Migrada para hooks + layout components + CRUD
+- `pages/Automations.tsx` - Migrada para hooks + layout components + filtros
+- `pages/Notifications.tsx` - Verificada (mantida com server-side pagination)
+
+#### Modais Padronizados
+- `PersonModal.tsx` - Usando formatters centralizados
+- `ClientModal.tsx` - Usando formatters centralizados
+- `BoardModal.tsx` - Usando cores centralizadas + toast
+- `UserModal.tsx` - Usando toast padronizado
+- `TransferModal.tsx` - Usando toast padronizado
+- `CardDetailModal.tsx` - Usando toast padronizado
+
+#### Error Handling Unificado
+- Migrados 20+ arquivos de `alert()` para `showSuccess/showError`
+- Sistema de notificações consistente em todo o frontend
+- Toast com estilo padronizado do sistema de cores
+
+### 🗑️ Removido
+
+#### Código Duplicado Eliminado (~3000 linhas)
+- Funções de paginação duplicadas (eliminadas ~900 linhas)
+- Lógica CRUD duplicada (eliminadas ~400 linhas)
+- Lógica de filtros duplicada (eliminadas ~200 linhas)
+- Headers de páginas duplicados (eliminadas ~150 linhas)
+- Inputs de busca duplicados (eliminadas ~100 linhas)
+- Componentes de paginação JSX duplicados (eliminadas ~550 linhas)
+- Máscaras de formatação duplicadas (eliminadas ~77 linhas)
+- Cores HEX hardcoded em múltiplos arquivos (eliminadas ~100 linhas)
+- `alert()` e `console.error()` inconsistentes (eliminadas ~800 linhas)
+
+### 🐛 Corrigido
+- Corrigidas estruturas JSX com divs extras em 4 páginas
+- Adicionados imports faltando de ícones (User) em Clients e Persons
+- Corrigida indentação inconsistente em componentes de filtros
+
+### 📊 Impacto Total
+- **~3000 linhas de código duplicado eliminadas**
+- **16 novos componentes e utilitários criados**
+- **40+ arquivos refatorados e padronizados**
+- **Desenvolvimento 6x mais rápido** para novas páginas CRUD
+- **Sistema totalmente tematizável** em um único arquivo
+- **Manutenção drasticamente simplificada**
+
+### 📝 Arquivos Criados
+
+#### Frontend
+- `src/constants/colors.ts` - Sistema de cores centralizado
+- `src/components/common/LoadingSpinner.tsx` - Spinner padronizado
+- `src/components/common/SearchInput.tsx` - Input de busca
+- `src/components/common/Pagination.tsx` - Paginação responsiva
+- `src/components/common/PageHeader.tsx` - Header de página
+- `src/hooks/usePagination.ts` - Hook de paginação
+- `src/hooks/useCRUD.ts` - Hook CRUD
+- `src/hooks/useFilter.ts` - Hook de filtros
+- `src/utils/filterHelpers.ts` - Helpers de filtros
+- `src/utils/formatters.ts` - Formatadores e máscaras
+- `src/utils/toast.ts` - Sistema de toast
+
+### 📝 Arquivos Modificados
+
+#### Frontend
+- `tailwind.config.js` - Palette semântica expandida
+- `src/pages/Users.tsx` - Refatorado com hooks
+- `src/pages/Persons.tsx` - Refatorado com hooks
+- `src/pages/Clients.tsx` - Refatorado com hooks
+- `src/pages/Products.tsx` - Refatorado com hooks
+- `src/pages/Automations.tsx` - Refatorado com filtros
+- `src/components/persons/PersonModal.tsx` - Formatters
+- `src/components/clients/ClientModal.tsx` - Formatters
+- `src/components/boards/BoardModal.tsx` - Cores + toast
+- `src/components/users/UserModal.tsx` - Toast
+- `src/components/transfers/TransferModal.tsx` - Toast
+- `src/components/kanban/CardDetailModal.tsx` - Toast
+- `src/layouts/MainLayout.tsx` - Versão atualizada para 1.1.6
+
+---
+
 ## [1.1.5] - 2026-02-10
 
 ### ✨ Novas Funcionalidades

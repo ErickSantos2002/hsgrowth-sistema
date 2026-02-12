@@ -94,6 +94,9 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     # Anotações
     notes = relationship("CardNote", back_populates="card", lazy="dynamic", cascade="all, delete-orphan")
 
+    # Arquivos anexados
+    attachments = relationship("Attachment", back_populates="card", lazy="dynamic", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Card(id={self.id}, title='{self.title}')>"
 

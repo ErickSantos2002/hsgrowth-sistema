@@ -18,6 +18,7 @@ from app.models.field_definition import FieldDefinition
 from app.models.card import Card
 from app.models.card_field_value import CardFieldValue
 from app.models.card_note import CardNote
+from app.models.attachment import Attachment
 
 # Modelos de auditoria e atividades
 from app.models.activity import Activity
@@ -64,6 +65,7 @@ __all__ = [
     "Card",
     "CardFieldValue",
     "CardNote",
+    "Attachment",
     "Activity",
     "AuditLog",
     "CardTask",

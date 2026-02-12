@@ -25,6 +25,7 @@ import SchedulerSection from "../components/cardDetails/SchedulerSection";
 import FilesSection from "../components/cardDetails/FilesSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import { showSuccess, showError } from "../utils/toast";
+import attachmentService from "../services/attachmentService";
 
 /**
  * Página de detalhes do Card - Layout estilo Pipedrive com tema escuro
@@ -53,6 +54,9 @@ const CardDetails: React.FC = () => {
   // Estado da modal de motivo da perda
   const [showLossReasonModal, setShowLossReasonModal] = useState(false);
 
+  // Estado da contagem de arquivos
+  const [attachmentsCount, setAttachmentsCount] = useState<number>(0);
+
   /**
    * Carrega dados do card ao montar o componente
    */
@@ -60,6 +64,7 @@ const CardDetails: React.FC = () => {
     if (cardId) {
       loadCardData();
       loadUsers();
+      loadAttachmentsCount();
     }
   }, [cardId]);
 
@@ -90,6 +95,19 @@ const CardDetails: React.FC = () => {
       setUsers(activeUsers);
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
+    }
+  };
+
+  /**
+   * Carrega contagem de arquivos anexados ao card
+   */
+  const loadAttachmentsCount = async () => {
+    try {
+      const response = await attachmentService.listFiles(Number(cardId));
+      setAttachmentsCount(response.total);
+    } catch (error) {
+      console.error("Erro ao carregar contagem de arquivos:", error);
+      setAttachmentsCount(0);
     }
   };
 
@@ -689,7 +707,7 @@ const CardDetails: React.FC = () => {
                   <Paperclip size={18} />
                   Arquivos
                   <span className="ml-1 rounded-full border border-slate-700 bg-slate-700/50 px-2 py-0.5 text-xs font-medium text-slate-400">
-                    0
+                    {attachmentsCount}
                   </span>
                 </button>
               </div>
@@ -727,7 +745,7 @@ const CardDetails: React.FC = () => {
 
               {activeTab === "agendador" && <SchedulerSection />}
 
-              {activeTab === "arquivos" && <FilesSection />}
+              {activeTab === "arquivos" && cardId && <FilesSection cardId={Number(cardId)} />}
             </div>
           </div>
         </div>
