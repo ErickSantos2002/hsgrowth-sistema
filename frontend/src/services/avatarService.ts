@@ -28,7 +28,8 @@ const avatarService = {
    * @returns URL completa do avatar
    */
   getAvatarUrl(userId: number): string {
-    return `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/v1/users/${userId}/avatar`;
+    const baseURL = api.defaults.baseURL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    return `${baseURL}/api/v1/users/${userId}/avatar`;
   },
 
   /**
