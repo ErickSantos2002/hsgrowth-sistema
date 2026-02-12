@@ -73,6 +73,7 @@ const UserAvatar = ({
         <img
           src={avatarSrc}
           alt={userName}
+          title={userName}
           className={`${sizeClass} rounded-full object-cover border-2 border-slate-700`}
           onError={(e) => {
             // Fallback para iniciais se a imagem não carregar
@@ -83,6 +84,7 @@ const UserAvatar = ({
               const fallback = document.createElement("div");
               fallback.className = `${sizeClass} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 font-bold text-white border-2 border-slate-700`;
               fallback.textContent = getInitials(userName);
+              fallback.title = userName;
               parent.appendChild(fallback);
             }
           }}
@@ -90,6 +92,7 @@ const UserAvatar = ({
       ) : (
         <div
           className={`${sizeClass} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 font-bold text-white border-2 border-slate-700`}
+          title={userName}
         >
           {getInitials(userName)}
         </div>

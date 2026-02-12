@@ -7,6 +7,148 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.8] - 2026-02-12
+
+### ✨ Novas Funcionalidades
+
+#### Sistema de Avatares de Usuário
+- **Upload de avatar pessoal** na página de Configurações
+- **Exclusão de avatar** com confirmação
+- **Componente reutilizável UserAvatar**:
+  - Exibe foto do usuário ou fallback com iniciais do nome
+  - Tamanhos configuráveis (xs, sm, md, lg, xl)
+  - Indicador de status online opcional
+  - Tratamento automático de erro de carregamento
+  - Gradiente azul/cyan nas iniciais
+- **Backend completo**:
+  - Upload: POST `/api/v1/users/me/avatar`
+  - Download: GET `/api/v1/users/{user_id}/avatar`
+  - Exclusão: DELETE `/api/v1/users/me/avatar`
+  - Validação de tipo (JPG, PNG, GIF, WEBP)
+  - Limite de 5MB por arquivo
+  - Armazenamento em `/app/uploads/avatars/`
+  - Soft delete para recuperação
+- **Integração visual**:
+  - Avatar no header do MainLayout
+  - Avatar na página de Usuários
+  - Avatar no CardDetails (Responsável e SDR)
+  - Avatar no KanbanCard (lado a lado: SDR à esquerda, Vendedor à direita)
+
+#### Badge Inteligente de Atividades Pendentes
+- **Novo badge visual** no canto superior direito de cada card do Kanban
+- **Sistema de cores inteligente** baseado em prioridade:
+  - 🔴 **Vermelho**: Atividades atrasadas (overdue)
+  - 🟢 **Verde**: Atividades para hoje
+  - 🟣 **Roxo**: Atividades futuras
+  - ⚫ **Cinza**: Sem atividades (não clicável)
+- **Ícone CheckSquare** sem número (design mais limpo)
+- **Backend otimizado**:
+  - Query única para todas as atividades pendentes de todos os cards
+  - Cálculo inteligente de status em UTC timezone
+  - Campos adicionados ao CardMinimalResponse: `pending_tasks_count`, `pending_tasks_status`
+
+#### Modal de Atividades Pendentes
+- **Modal com lazy loading**: Carrega atividades apenas ao clicar no badge
+- **Tamanho fixo igual às listas do Kanban** (320px x tela cheia)
+- **Visual consistente** com FocusSection do CardDetails:
+  - Ícones por tipo de atividade (Phone, Users, CheckSquare, Clock, Mail, Coffee)
+  - Badges coloridos por tipo
+  - StatusBadge mostrando se é HOJE, VENCIDO ou data futura
+  - Badges de prioridade (Normal, Alta, Urgente)
+  - Nome do responsável
+- **Navegação integrada**: Clicar em uma atividade abre o CardDetails
+- **Scroll automático**: Quando tem muitas atividades
+
+#### Tooltips nos Avatares
+- **Hover mostra o nome do usuário** em todos os avatares
+- **Implementado em**:
+  - CardDetails: Responsável e SDR (admin/manager e vendedor views)
+  - KanbanCard: Todos os avatares via componente UserAvatar
+  - Dropdowns de seleção de usuários
+- **Nativo HTML**: Usa atributo `title` para tooltip do navegador
+
+### 🎨 Padronização de Cores
+
+#### StatusBadge Atualizado
+- **Verde**: Status "HOJE" (era amarelo)
+- **Roxo**: Status "FUTURO" (era amarelo)
+- **Vermelho**: Status "VENCIDO" (mantido)
+- **Verde escuro**: Status "CONCLUÍDO" (mantido)
+
+#### Badges de Prioridade Padronizados
+- **Azul**: Prioridade "Normal" (era cinza)
+- **Amarelo**: Prioridade "Alta" (mantido)
+- **Vermelho**: Prioridade "Urgente" (mantido)
+
+### 🔧 Melhorias Técnicas
+
+#### Backend
+- **Model**: `User.avatar_url` (String nullable)
+- **Service**: `AvatarService` com upload, download, delete e validação
+- **Repository**: `UserRepository.update()` para atualizar avatar_url
+- **Endpoints**: 3 rotas RESTful documentadas
+  - POST `/users/me/avatar` - Upload
+  - GET `/users/{user_id}/avatar` - Download
+  - DELETE `/users/me/avatar` - Exclusão
+- **CardService**: Otimização de query para buscar atividades pendentes de múltiplos cards em uma única consulta SQL
+- **Schemas**: Campos `sdr_name`, `sdr_avatar_url`, `pending_tasks_count`, `pending_tasks_status` adicionados
+
+#### Frontend
+- **Service**: `avatarService.ts` com helpers de validação e URL
+- **Component**: `UserAvatar.tsx` reutilizável e totalmente configurável
+- **Modal**: `CardActivitiesModal.tsx` com navegação e visual padronizado
+- **Integration**: Avatar integrado em 5+ componentes diferentes
+- **UX**: Estados de loading, validação client-side, confirmação de exclusão
+
+### 🐛 Correções
+
+#### Avatar Upload
+- **Problema**: Avatar aparece salvo mas não mostra em lugar nenhum
+- **Solução**:
+  - Backend retornando URL relativa correta
+  - Frontend usando avatarService.getAvatarUrl() para gerar URL completa
+  - UserAvatar component com fallback para iniciais
+- **Resultado**: Avatar visível em todos os lugares do sistema
+
+#### Modal de Atividades
+- **Problema**: Tamanho da modal diferente das listas do Kanban
+- **Solução**: Largura fixa `w-80` (320px) igual às listas, altura `h-full` com scroll interno
+- **Resultado**: Modal visualmente consistente com as colunas do board
+
+### 📝 Arquivos Criados
+
+#### Backend
+- `app/services/avatar_service.py` - Serviço de gestão de avatares
+- `app/api/v1/endpoints/avatars.py` - Endpoints de avatar (integrado em users.py)
+
+#### Frontend
+- `src/components/common/UserAvatar.tsx` - Componente reutilizável de avatar
+- `src/components/kanban/CardActivitiesModal.tsx` - Modal de atividades pendentes
+- `src/services/avatarService.ts` - API service para avatares
+
+### 📝 Arquivos Modificados
+
+#### Backend
+- `app/models/user.py` - Adicionada coluna avatar_url
+- `app/schemas/card.py` - Campos sdr_name, sdr_avatar_url, pending_tasks_count, pending_tasks_status
+- `app/repositories/user_repository.py` - Método update() para avatar
+- `app/services/card_service.py` - Query otimizada para atividades pendentes
+- `app/api/v1/endpoints/users.py` - Rotas de avatar adicionadas
+
+#### Frontend
+- `src/pages/Settings.tsx` - Upload e exclusão de avatar
+- `src/pages/CardDetails.tsx` - Tooltips nos avatares
+- `src/layouts/MainLayout.tsx` - Avatar no header + versão 1.1.8
+- `src/components/kanban/KanbanCard.tsx` - Badge de atividades + avatares com tooltip
+- `src/components/cardDetails/StatusBadge.tsx` - Cores atualizadas
+- `src/components/cardDetails/FocusSection.tsx` - Prioridade Normal azul
+- `src/components/cardDetails/QuickActivityForm.tsx` - Prioridade Normal azul
+- `src/components/common/UserAvatar.tsx` - Tooltips adicionados
+- `src/components/common/index.ts` - Export de UserAvatar
+- `src/pages/Users.tsx` - Integração com UserAvatar
+
+---
+
 ## [1.1.7] - 2026-02-12
 
 ### ✨ Novas Funcionalidades

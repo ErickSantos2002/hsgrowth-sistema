@@ -272,13 +272,40 @@ const Settings: React.FC = () => {
   };
 
   /**
-   * Remove avatar
+   * Cancela seleção de novo avatar (apenas limpa preview)
    */
-  const handleRemoveAvatar = () => {
+  const handleCancelAvatarChange = () => {
     setAvatarFile(null);
     setAvatarPreview(null);
     if (avatarInputRef.current) {
       avatarInputRef.current.value = "";
+    }
+  };
+
+  /**
+   * Remove avatar do servidor
+   */
+  const handleDeleteAvatar = async () => {
+    if (!user?.avatar_url) return;
+
+    if (!confirm("Tem certeza que deseja remover sua foto de perfil?")) {
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+      await avatarService.deleteAvatar();
+
+      // Atualiza o contexto removendo o avatar_url
+      const updatedUser = { ...user, avatar_url: null };
+      updateUser(updatedUser);
+
+      showSuccess("Foto de perfil removida com sucesso!");
+    } catch (error: any) {
+      console.error("Erro ao remover avatar:", error);
+      showError(error.response?.data?.detail || "Erro ao remover foto de perfil");
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -871,7 +898,7 @@ const Settings: React.FC = () => {
                     </span>
 
                     {/* Botões de Ação do Avatar */}
-                    {avatarFile && (
+                    {avatarFile ? (
                       <div className="mt-3 flex gap-2">
                         <button
                           onClick={handleUploadAvatar}
@@ -881,18 +908,28 @@ const Settings: React.FC = () => {
                           {uploadingAvatar ? "Enviando..." : "Salvar Foto"}
                         </button>
                         <button
-                          onClick={handleRemoveAvatar}
+                          onClick={handleCancelAvatarChange}
                           disabled={uploadingAvatar}
                           className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
                         >
                           Cancelar
                         </button>
                       </div>
-                    )}
-                    {!avatarFile && (
-                      <p className="mt-2 text-xs text-slate-500">
-                        Clique no ícone para alterar sua foto
-                      </p>
+                    ) : (
+                      <div className="mt-3 flex flex-col gap-2">
+                        <p className="text-xs text-slate-500">
+                          Clique no ícone para alterar sua foto
+                        </p>
+                        {user?.avatar_url && (
+                          <button
+                            onClick={handleDeleteAvatar}
+                            disabled={uploadingAvatar}
+                            className="w-fit rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-1.5 text-xs text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+                          >
+                            Remover Foto
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

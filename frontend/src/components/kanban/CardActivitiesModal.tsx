@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { X, Phone, Users, CheckSquare, Clock, Mail, Coffee, MoreHorizontal } from "lucide-react";
 import api from "../../services/api";
 import StatusBadge from "../cardDetails/StatusBadge";
@@ -29,6 +30,7 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
   cardTitle,
   onClose,
 }) => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<CardTask[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,6 +54,14 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Navega para a página de detalhes do card ao clicar em uma atividade
+   */
+  const handleActivityClick = () => {
+    onClose();
+    navigate(`/cards/${cardId}`);
   };
 
   /**
@@ -151,15 +161,15 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-800 shadow-xl"
+        className="flex h-full w-80 flex-shrink-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-700 p-4">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-700 p-4">
           <div>
             <h3 className="font-semibold text-white">Atividades Pendentes</h3>
             <p className="text-sm text-slate-400">{cardTitle}</p>
@@ -173,7 +183,7 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="max-h-96 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700 border-t-blue-500"></div>
@@ -191,7 +201,8 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
                 return (
                   <div
                     key={task.id}
-                    className={`overflow-hidden rounded-lg border border-slate-700 transition-colors ${getActivityTypeCardClasses(
+                    onClick={handleActivityClick}
+                    className={`cursor-pointer overflow-hidden rounded-lg border border-slate-700 transition-colors hover:border-slate-600 hover:brightness-110 ${getActivityTypeCardClasses(
                       task.task_type
                     )}`}
                   >
