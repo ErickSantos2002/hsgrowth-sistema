@@ -6,7 +6,7 @@ import { useAuth, usePagination, useFilter, filterHelpers } from "../hooks";
 import UserModal from "../components/users/UserModal";
 import AdminPasswordResetModal from "../components/users/AdminPasswordResetModal";
 import { showSuccess, showError, showWarning } from "../utils/toast";
-import { SearchInput, Pagination } from "../components/common";
+import { SearchInput, Pagination, UserAvatar } from "../components/common";
 import { PageHeader } from "../components/layout";
 
 const Users: React.FC = () => {
@@ -224,15 +224,6 @@ const Users: React.FC = () => {
     }
   };
 
-  // Gera iniciais do nome
-  const getInitials = (name: string) => {
-    const parts = name.trim().split(" ");
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-
   // Verifica se não é admin e retorna mensagem
   if (!isAdmin) {
     return (
@@ -378,9 +369,12 @@ const Users: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
-                        <div className="flex h-10 min-h-10 w-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 font-semibold text-white">
-                          {getInitials(user.name)}
-                        </div>
+                        <UserAvatar
+                          userId={user.id}
+                          userName={user.name}
+                          avatarUrl={user.avatar_url}
+                          size="md"
+                        />
                         <div>
                           <div className="flex items-center gap-2 font-medium text-white">
                             {user.name}

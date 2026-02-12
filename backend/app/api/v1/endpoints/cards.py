@@ -28,6 +28,9 @@ router = APIRouter()
 def card_to_response(
     card: Card,
     assigned_to_name: Optional[str] = None,
+    assigned_to_avatar_url: Optional[str] = None,
+    sdr_name: Optional[str] = None,
+    sdr_avatar_url: Optional[str] = None,
     list_name: Optional[str] = None,
     board_id: Optional[int] = None
 ) -> CardResponse:
@@ -52,6 +55,9 @@ def card_to_response(
         created_at=card.created_at,
         updated_at=card.updated_at,
         assigned_to_name=assigned_to_name,
+        assigned_to_avatar_url=assigned_to_avatar_url,
+        sdr_name=sdr_name,
+        sdr_avatar_url=sdr_avatar_url,
         list_name=list_name,
         board_id=board_id,
         # Campos do blueprint da consultora
@@ -176,11 +182,13 @@ async def get_card(
 
     # Busca informações relacionadas
     assigned_to_name = None
+    assigned_to_avatar_url = None
     if card.assigned_to_id:
         from app.models.user import User
         assigned_user = db.query(User).filter(User.id == card.assigned_to_id).first()
         if assigned_user:
             assigned_to_name = assigned_user.name
+            assigned_to_avatar_url = assigned_user.avatar_url
 
     from app.repositories.list_repository import ListRepository
     list_repo = ListRepository(db)
@@ -188,7 +196,7 @@ async def get_card(
     list_name = list_obj.name if list_obj else None
     board_id = list_obj.board_id if list_obj else None
 
-    return card_to_response(card, assigned_to_name, list_name, board_id)
+    return card_to_response(card, assigned_to_name, assigned_to_avatar_url, list_name, board_id)
 
 
 @router.post(
@@ -536,6 +544,9 @@ async def add_or_update_field(
         created_at=card.created_at,
         updated_at=card.updated_at,
         assigned_to_name=assigned_to_name,
+        assigned_to_avatar_url=assigned_to_avatar_url,
+        sdr_name=sdr_name,
+        sdr_avatar_url=sdr_avatar_url,
         list_name=list_name,
         board_id=board_id,
         custom_fields=[cf.model_dump() for cf in custom_fields]
@@ -695,15 +706,19 @@ async def global_search_cards(
             board = db.query(Board).filter(Board.id == board_id).first()
             board_name = board.name if board else None
 
-        # Busca nome do responsável
+        # Busca nome e avatar do responsável
         assigned_to_name = None
+        assigned_to_avatar_url = None
         if card.assigned_to_id:
             assigned_user = db.query(User).filter(User.id == card.assigned_to_id).first()
-            assigned_to_name = assigned_user.name if assigned_user else None
+            if assigned_user:
+                assigned_to_name = assigned_user.name
+                assigned_to_avatar_url = assigned_user.avatar_url
 
         result = card_to_response(
             card=card,
             assigned_to_name=assigned_to_name,
+            assigned_to_avatar_url=assigned_to_avatar_url,
             list_name=f"{board_name} / {list_name}" if board_name and list_name else list_name,
             board_id=board_id
         )

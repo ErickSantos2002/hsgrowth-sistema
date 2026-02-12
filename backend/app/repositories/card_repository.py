@@ -74,9 +74,10 @@ class CardRepository:
         from app.models.list import List
         from sqlalchemy.orm import joinedload
 
-        # Otimização: Eager loading do usuário responsável (evita problema N+1)
+        # Otimização: Eager loading dos usuários responsáveis (evita problema N+1)
         query = self.db.query(Card).join(List).options(
-            joinedload(Card.assigned_to)  # Carrega o usuário em uma única query
+            joinedload(Card.assigned_to),  # Carrega o vendedor em uma única query
+            joinedload(Card.sdr)  # Carrega o SDR em uma única query
         ).filter(
             List.board_id == board_id,
             Card.deleted_at.is_(None)  # Filtrar apenas cards não deletados

@@ -11,6 +11,7 @@ import auditLogService, { AuditLog } from "../services/auditLogService";
 import { showSuccess, showError, showWarning } from "../utils/toast";
 import type { User } from "../types";
 import { LoadingSpinner } from "../components/common";
+import avatarService from "../services/avatarService";
 
 type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs";
 
@@ -26,6 +27,12 @@ const Settings: React.FC = () => {
     email: user?.email || "",
     phone: user?.phone || "",
   });
+
+  // Estados do Avatar
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Estados das Notificações
   const [notificationSettings, setNotificationSettings] = useState({
@@ -212,6 +219,66 @@ const Settings: React.FC = () => {
       showError(error.response?.data?.detail || "Erro ao atualizar perfil");
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Manipula seleção de arquivo de avatar
+   */
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar arquivo
+    const validation = avatarService.validateAvatar(file);
+    if (!validation.valid) {
+      showWarning(validation.error || "Arquivo inválido");
+      return;
+    }
+
+    // Criar preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    setAvatarFile(file);
+  };
+
+  /**
+   * Faz upload do avatar
+   */
+  const handleUploadAvatar = async () => {
+    if (!avatarFile || !user) return;
+
+    try {
+      setUploadingAvatar(true);
+      const response = await avatarService.uploadAvatar(avatarFile);
+
+      // Atualiza o contexto de autenticação com novo avatar_url
+      const updatedUser = { ...user, avatar_url: response.avatar_url };
+      updateUser(updatedUser);
+
+      showSuccess("Avatar atualizado com sucesso!");
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    } catch (error: any) {
+      console.error("Erro ao fazer upload de avatar:", error);
+      showError(error.response?.data?.detail || "Erro ao fazer upload do avatar");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  /**
+   * Remove avatar
+   */
+  const handleRemoveAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = "";
     }
   };
 
@@ -749,18 +816,52 @@ const Settings: React.FC = () => {
                 {/* Avatar */}
                 <div className="flex items-center gap-6">
                   <div className="relative">
-                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-2xl font-bold text-white">
-                      {user?.name ? getInitials(user.name) : "?"}
-                    </div>
+                    {/* Preview do Avatar */}
+                    {avatarPreview || user?.avatar_url ? (
+                      <div className="h-24 w-24 overflow-hidden rounded-full border-2 border-slate-700">
+                        <img
+                          src={avatarPreview || (user ? avatarService.getAvatarUrl(user.id) : '')}
+                          alt={user?.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            // Fallback para iniciais se a imagem não carregar
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent && user) {
+                              parent.innerHTML = `
+                                <div class="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-2xl font-bold text-white">
+                                  ${getInitials(user.name)}
+                                </div>
+                              `;
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-2xl font-bold text-white">
+                        {user?.name ? getInitials(user.name) : "?"}
+                      </div>
+                    )}
+
+                    {/* Botão de Upload */}
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                    />
                     <button
                       className="absolute bottom-0 right-0 rounded-full bg-emerald-600 p-2 text-white transition-colors hover:bg-emerald-700"
-                      title="Upload de avatar (não implementado)"
-                      onClick={() => showWarning("Upload de avatar - Funcionalidade em desenvolvimento")}
+                      title="Upload de avatar"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={uploadingAvatar}
                     >
                       <Upload size={16} />
                     </button>
                   </div>
-                  <div className="min-w-0">
+
+                  <div className="min-w-0 flex-1">
                     <h3 className="text-lg font-semibold text-white">{user?.name}</h3>
                     <p className="max-w-[180px] truncate text-sm text-slate-400 sm:max-w-none sm:text-base">
                       {user?.email}
@@ -768,6 +869,31 @@ const Settings: React.FC = () => {
                     <span className="mt-2 inline-block rounded-full bg-emerald-600/20 px-3 py-1 text-sm font-medium text-emerald-400">
                       {user?.role_name || "Usuário"}
                     </span>
+
+                    {/* Botões de Ação do Avatar */}
+                    {avatarFile && (
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          onClick={handleUploadAvatar}
+                          disabled={uploadingAvatar}
+                          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          {uploadingAvatar ? "Enviando..." : "Salvar Foto"}
+                        </button>
+                        <button
+                          onClick={handleRemoveAvatar}
+                          disabled={uploadingAvatar}
+                          className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    )}
+                    {!avatarFile && (
+                      <p className="mt-2 text-xs text-slate-500">
+                        Clique no ícone para alterar sua foto
+                      </p>
+                    )}
                   </div>
                 </div>
 

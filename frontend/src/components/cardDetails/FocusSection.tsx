@@ -166,7 +166,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
    */
   const getPriorityBadgeClasses = (priority: string) => {
     const classes = {
-      normal: "border-slate-600 bg-slate-700/40 text-slate-200",
+      normal: "border-blue-500/40 bg-blue-500/15 text-blue-300",
       high: "border-yellow-500/40 bg-yellow-500/15 text-yellow-300",
       urgent: "border-red-500/40 bg-red-500/15 text-red-300",
     };

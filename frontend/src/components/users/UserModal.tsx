@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Upload, X, User as UserIcon } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import { FormField, Input, Button } from "../common";
 import userService from "../../services/userService";
+import avatarService from "../../services/avatarService";
 import { User, CreateUserRequest, UpdateUserRequest } from "../../types";
 import { showSuccess, showError, showWarning } from "../../utils/toast";
 
@@ -23,6 +24,12 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
   const [roleId, setRoleId] = useState(3);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Estados do avatar
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isEditing = !!user;
 
@@ -50,6 +57,64 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
     setConfirmPassword("");
     setRoleId(3);
     setIsActive(true);
+    setAvatarFile(null);
+    setAvatarPreview(null);
+  };
+
+  /**
+   * Manipula seleção de arquivo de avatar
+   */
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar arquivo
+    const validation = avatarService.validateAvatar(file);
+    if (!validation.valid) {
+      showWarning(validation.error || "Arquivo inválido");
+      return;
+    }
+
+    // Criar preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    setAvatarFile(file);
+  };
+
+  /**
+   * Remove avatar selecionado
+   */
+  const handleRemoveAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  /**
+   * Faz upload do avatar (apenas para usuários editados)
+   */
+  const handleUploadAvatar = async () => {
+    if (!avatarFile || !isEditing || !user) return;
+
+    try {
+      setUploadingAvatar(true);
+      await avatarService.uploadAvatar(avatarFile);
+      showSuccess("Avatar atualizado com sucesso!");
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      onSave(); // Recarrega lista de usuários
+    } catch (error: any) {
+      console.error("Erro ao fazer upload de avatar:", error);
+      showError(error.response?.data?.detail || "Erro ao fazer upload do avatar");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const validateForm = (): boolean => {
@@ -161,6 +226,86 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
       }
     >
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Seção de Avatar (apenas para edição) */}
+        {isEditing && user && (
+          <div>
+            <h3 className="mb-4 text-lg font-semibold text-white">Foto de Perfil</h3>
+            <div className="flex items-center gap-6">
+              {/* Preview do Avatar */}
+              <div className="relative">
+                {avatarPreview || user.avatar_url ? (
+                  <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-slate-700">
+                    <img
+                      src={avatarPreview || avatarService.getAvatarUrl(user.id)}
+                      alt={user.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        // Fallback se a imagem não carregar
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-500">
+                              <span class="text-2xl font-semibold text-white">${user.name.substring(0, 2).toUpperCase()}</span>
+                            </div>
+                          `;
+                        }
+                      }}
+                    />
+                    {avatarPreview && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white transition-colors hover:bg-red-600"
+                        title="Remover foto"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500">
+                    <UserIcon size={40} className="text-white" />
+                  </div>
+                )}
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white transition-colors hover:bg-slate-700"
+                  disabled={saving || uploadingAvatar}
+                >
+                  <Upload size={16} />
+                  Selecionar Foto
+                </button>
+                {avatarFile && (
+                  <button
+                    type="button"
+                    onClick={handleUploadAvatar}
+                    className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white transition-colors hover:bg-emerald-700"
+                    disabled={saving || uploadingAvatar}
+                  >
+                    {uploadingAvatar ? "Enviando..." : "Salvar Foto"}
+                  </button>
+                )}
+                <p className="text-xs text-slate-400">
+                  JPG, PNG, GIF ou WEBP. Máximo 5MB.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div>
           <h3 className="mb-4 text-lg font-semibold text-white">Dados de Acesso</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

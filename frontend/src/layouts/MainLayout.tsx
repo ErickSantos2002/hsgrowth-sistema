@@ -20,6 +20,7 @@ import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/logo.png";
 import NotificationDropdown from "../components/NotificationDropdown";
 import GlobalSearch from "../components/GlobalSearch";
+import { UserAvatar } from "../components/common";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false },
@@ -231,19 +232,15 @@ export default function MainLayout() {
                         <div className="flex flex-shrink-0 items-center gap-3">
                             {/* Avatar + Info do Usuário */}
                             <div className="flex items-center gap-3 rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-2 transition-all hover:bg-slate-800/70">
-                                {/* Avatar com inicial do nome */}
-                                <div className="relative">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-semibold text-white shadow-lg">
-                                        {(user?.full_name || user?.username || "U")
-                                            .split(" ")
-                                            .map((n) => n[0])
-                                            .slice(0, 2)
-                                            .join("")
-                                            .toUpperCase()}
-                                    </div>
-                                    {/* Indicador online */}
-                                    <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-slate-900 bg-green-400"></div>
-                                </div>
+                                {/* Avatar com indicador online */}
+                                <UserAvatar
+                                    userId={user?.id}
+                                    userName={user?.name || user?.full_name || user?.username || "Usuário"}
+                                    avatarUrl={user?.avatar_url}
+                                    size="sm"
+                                    showOnlineIndicator={true}
+                                    isOnline={true}
+                                />
 
                                 {/* Nome e Role */}
                                 <div className="hidden flex-col md:flex">

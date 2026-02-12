@@ -167,11 +167,81 @@ class CardService:
         # Modo MINIMAL: Retorna apenas campos essenciais (otimizado para Kanban)
         if minimal:
             cards_response = []
+            # Busca contagem e status de tasks pendentes para todos os cards de uma vez (otimizado)
+            from app.models.card_task import CardTask
+            from sqlalchemy import func
+            from datetime import datetime, timezone
+
+            card_ids = [card.id for card in cards]
+            pending_tasks_counts = {}
+            pending_tasks_statuses = {}
+
+            if card_ids:
+                # Busca todas as tasks pendentes com suas datas
+                pending_tasks = self.db.query(CardTask).filter(
+                    CardTask.card_id.in_(card_ids),
+                    CardTask.is_completed == False
+                ).all()
+
+                # Agrupa por card_id e determina contagem e status
+                from collections import defaultdict
+                tasks_by_card = defaultdict(list)
+                for task in pending_tasks:
+                    tasks_by_card[task.card_id].append(task)
+
+                now = datetime.now(timezone.utc)
+                today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+                for card_id, tasks in tasks_by_card.items():
+                    pending_tasks_counts[card_id] = len(tasks)
+
+                    # Determina o status baseado nas datas das tasks
+                    has_overdue = False
+                    has_today = False
+                    has_future = False
+
+                    for task in tasks:
+                        if task.due_date:
+                            task_date = task.due_date
+                            # Garante que está em UTC
+                            if task_date.tzinfo is None:
+                                task_date = task_date.replace(tzinfo=timezone.utc)
+
+                            if task_date < today_start:
+                                has_overdue = True
+                            elif today_start <= task_date <= today_end:
+                                has_today = True
+                            else:
+                                has_future = True
+
+                    # Prioridade: overdue > today > future
+                    if has_overdue:
+                        pending_tasks_statuses[card_id] = "overdue"
+                    elif has_today:
+                        pending_tasks_statuses[card_id] = "today"
+                    elif has_future:
+                        pending_tasks_statuses[card_id] = "future"
+                    else:
+                        pending_tasks_statuses[card_id] = "none"
+
             for card in cards:
                 # Usa o usuário já carregado via eager loading (sem query adicional)
                 assigned_to_name = None
+                assigned_to_avatar_url = None
                 if card.assigned_to:
                     assigned_to_name = card.assigned_to.name
+                    assigned_to_avatar_url = card.assigned_to.avatar_url
+
+                sdr_name = None
+                sdr_avatar_url = None
+                if card.sdr:
+                    sdr_name = card.sdr.name
+                    sdr_avatar_url = card.sdr.avatar_url
+
+                # Pega a contagem e status de tasks pendentes
+                pending_count = pending_tasks_counts.get(card.id, 0)
+                pending_status = pending_tasks_statuses.get(card.id, "none" if pending_count == 0 else None)
 
                 cards_response.append(
                     CardMinimalResponse(
@@ -181,6 +251,12 @@ class CardService:
                         position=card.position,
                         assigned_to_id=card.assigned_to_id,
                         assigned_to_name=assigned_to_name,
+                        assigned_to_avatar_url=assigned_to_avatar_url,
+                        sdr_id=card.sdr_id,
+                        sdr_name=sdr_name,
+                        sdr_avatar_url=sdr_avatar_url,
+                        pending_tasks_count=pending_count,
+                        pending_tasks_status=pending_status,
                         value=card.value,
                         due_date=card.due_date,
                         is_won=card.is_won,
@@ -197,15 +273,85 @@ class CardService:
             )
 
         # Modo COMPLETO: Retorna todos os campos
+        # Busca contagem e status de tasks pendentes para todos os cards de uma vez (otimizado)
+        from app.models.card_task import CardTask
+        from sqlalchemy import func
+        from datetime import datetime, timezone
+
+        card_ids = [card.id for card in cards]
+        pending_tasks_counts = {}
+        pending_tasks_statuses = {}
+
+        if card_ids:
+            # Busca todas as tasks pendentes com suas datas
+            pending_tasks = self.db.query(CardTask).filter(
+                CardTask.card_id.in_(card_ids),
+                CardTask.is_completed == False
+            ).all()
+
+            # Agrupa por card_id e determina contagem e status
+            from collections import defaultdict
+            tasks_by_card = defaultdict(list)
+            for task in pending_tasks:
+                tasks_by_card[task.card_id].append(task)
+
+            now = datetime.now(timezone.utc)
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+            for card_id, tasks in tasks_by_card.items():
+                pending_tasks_counts[card_id] = len(tasks)
+
+                # Determina o status baseado nas datas das tasks
+                has_overdue = False
+                has_today = False
+                has_future = False
+
+                for task in tasks:
+                    if task.due_date:
+                        task_date = task.due_date
+                        # Garante que está em UTC
+                        if task_date.tzinfo is None:
+                            task_date = task_date.replace(tzinfo=timezone.utc)
+
+                        if task_date < today_start:
+                            has_overdue = True
+                        elif today_start <= task_date <= today_end:
+                            has_today = True
+                        else:
+                            has_future = True
+
+                # Prioridade: overdue > today > future
+                if has_overdue:
+                    pending_tasks_statuses[card_id] = "overdue"
+                elif has_today:
+                    pending_tasks_statuses[card_id] = "today"
+                elif has_future:
+                    pending_tasks_statuses[card_id] = "future"
+                else:
+                    pending_tasks_statuses[card_id] = "none"
+
         cards_response = []
         for card in cards:
             # Usa o usuário já carregado via eager loading (sem query adicional)
             assigned_to_name = None
+            assigned_to_avatar_url = None
             if card.assigned_to:
                 assigned_to_name = card.assigned_to.name
+                assigned_to_avatar_url = card.assigned_to.avatar_url
+
+            sdr_name = None
+            sdr_avatar_url = None
+            if card.sdr:
+                sdr_name = card.sdr.name
+                sdr_avatar_url = card.sdr.avatar_url
 
             list_obj = self.list_repository.find_by_id(card.list_id)
             list_name = list_obj.name if list_obj else None
+
+            # Pega a contagem e status de tasks pendentes
+            pending_count = pending_tasks_counts.get(card.id, 0)
+            pending_status = pending_tasks_statuses.get(card.id, "none" if pending_count == 0 else None)
 
             cards_response.append(
                 CardResponse(
@@ -214,6 +360,7 @@ class CardService:
                     description=card.description,
                     list_id=card.list_id,
                     assigned_to_id=card.assigned_to_id,
+                    sdr_id=card.sdr_id,
                     value=card.value,
                     due_date=card.due_date,
                     is_won=card.is_won,
@@ -224,6 +371,11 @@ class CardService:
                     created_at=card.created_at,
                     updated_at=card.updated_at,
                     assigned_to_name=assigned_to_name,
+                    assigned_to_avatar_url=assigned_to_avatar_url,
+                    sdr_name=sdr_name,
+                    sdr_avatar_url=sdr_avatar_url,
+                    pending_tasks_count=pending_count,
+                    pending_tasks_status=pending_status,
                     list_name=list_name,
                     board_id=board_id
                 )

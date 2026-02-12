@@ -109,6 +109,11 @@ export interface Card {
 
   // Campos relacionados (retornados pelo backend)
   assigned_to_name: string | null;
+  assigned_to_avatar_url: string | null;
+  sdr_name: string | null;
+  sdr_avatar_url: string | null;
+  pending_tasks_count: number | null;
+  pending_tasks_status: string | null;
   list_name: string | null;
   board_id: number | null;
   board_name: string | null; // Nome do board (usado em CardDetails)

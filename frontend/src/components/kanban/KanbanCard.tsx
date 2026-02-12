@@ -1,8 +1,10 @@
-import React from "react";
-import { Calendar, User, DollarSign, Clock } from "lucide-react";
+import React, { useState } from "react";
+import { Calendar, User, DollarSign, Clock, CheckSquare } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "../../types";
+import { UserAvatar } from "../common";
+import CardActivitiesModal from "./CardActivitiesModal";
 
 interface KanbanCardProps {
   card: Card;
@@ -10,6 +12,8 @@ interface KanbanCardProps {
 }
 
 const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
+  const [showActivitiesModal, setShowActivitiesModal] = useState(false);
+
   // Tornar o card draggable
   const {
     attributes,
@@ -69,10 +73,42 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
       {...listeners}
       data-kanban-card
       onClick={onClick}
-      className="group cursor-pointer rounded-lg border border-slate-700/30 bg-white/5 p-3.5 shadow-sm transition-all hover:border-slate-600 hover:bg-white/10 hover:shadow-md"
+      className="group relative cursor-pointer rounded-lg border border-slate-700/30 bg-white/5 p-3.5 shadow-sm transition-all hover:border-slate-600 hover:bg-white/10 hover:shadow-md"
     >
+      {/* Badge de atividades pendentes (canto superior direito) */}
+      {card.pending_tasks_status && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (card.pending_tasks_count > 0) {
+              setShowActivitiesModal(true);
+            }
+          }}
+          className={`absolute right-2 top-2 rounded-full p-1.5 transition-all ${
+            card.pending_tasks_status === "overdue"
+              ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+              : card.pending_tasks_status === "today"
+              ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+              : card.pending_tasks_status === "future"
+              ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
+              : "bg-slate-700/40 text-slate-500 cursor-default"
+          }`}
+          title={
+            card.pending_tasks_status === "overdue"
+              ? `${card.pending_tasks_count} atividade(s) atrasada(s)`
+              : card.pending_tasks_status === "today"
+              ? `${card.pending_tasks_count} atividade(s) para hoje`
+              : card.pending_tasks_status === "future"
+              ? `${card.pending_tasks_count} atividade(s) futura(s)`
+              : "Sem atividades"
+          }
+        >
+          <CheckSquare className="h-3.5 w-3.5" />
+        </button>
+      )}
+
       {/* Título */}
-      <h4 className="mb-2 line-clamp-2 text-[15px] leading-snug text-white">
+      <h4 className="mb-2 line-clamp-2 pr-14 text-[15px] leading-snug text-white">
         {card.title}
       </h4>
 
@@ -120,21 +156,37 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
           <span></span>
         )}
 
-        {/* Avatar do responsável (menor e mais discreto) */}
-        {card.assigned_to_name && (
-          <div
-            className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-[10px] font-semibold text-white"
-            title={card.assigned_to_name}
-          >
-            {card.assigned_to_name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase()}
-          </div>
-        )}
+        {/* Avatares dos responsáveis (SDR à esquerda, Vendedor à direita) */}
+        <div className="flex items-center gap-1">
+          {card.sdr_name && (
+            <UserAvatar
+              userId={card.sdr_id || undefined}
+              userName={card.sdr_name}
+              avatarUrl={card.sdr_avatar_url}
+              size="xs"
+              className="shrink-0"
+            />
+          )}
+          {card.assigned_to_name && (
+            <UserAvatar
+              userId={card.assigned_to_id || undefined}
+              userName={card.assigned_to_name}
+              avatarUrl={card.assigned_to_avatar_url}
+              size="xs"
+              className="shrink-0"
+            />
+          )}
+        </div>
       </div>
+
+      {/* Modal de atividades */}
+      {showActivitiesModal && (
+        <CardActivitiesModal
+          cardId={card.id}
+          cardTitle={card.title}
+          onClose={() => setShowActivitiesModal(false)}
+        />
+      )}
     </div>
   );
 };
