@@ -71,22 +71,23 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
    * Retorna classes CSS para o tipo de atividade selecionado
    */
   const getTypeColorClasses = (type: ActivityType, isSelected: boolean) => {
+    const unselected = "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700";
     const configs = {
       call: isSelected
         ? "bg-blue-500/30 text-blue-400 border-blue-500"
-        : "bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20",
+        : unselected,
       meeting: isSelected
         ? "bg-purple-500/30 text-purple-400 border-purple-500"
-        : "bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20",
+        : unselected,
       task: isSelected
         ? "bg-green-500/30 text-green-400 border-green-500"
-        : "bg-green-500/10 text-green-400 border-green-500/30 hover:bg-green-500/20",
+        : unselected,
       follow_up: isSelected
         ? "bg-yellow-500/30 text-yellow-400 border-yellow-500"
-        : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/20",
+        : unselected,
       other: isSelected
         ? "bg-slate-500/30 text-slate-400 border-slate-500"
-        : "bg-slate-500/10 text-slate-400 border-slate-500/30 hover:bg-slate-500/20",
+        : unselected,
     };
     return configs[type];
   };
@@ -97,7 +98,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
   const getPriorityClasses = (priority: string, isSelected: boolean) => {
     const configs = {
       normal: isSelected
-        ? "bg-slate-500/30 text-slate-300 border-slate-500"
+        ? "bg-blue-500/30 text-blue-300 border-blue-500"
         : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700",
       high: isSelected
         ? "bg-yellow-500/30 text-yellow-400 border-yellow-500"
@@ -191,14 +192,17 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
   return (
     <div className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
       {/* Título */}
-      <input
-        type="text"
-        value={formData.title}
-        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-        placeholder="Título da atividade..."
-        className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-        autoFocus
-      />
+      <div>
+        <label className="mb-2 block text-xs font-medium text-slate-400">Título da atividade</label>
+        <input
+          type="text"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          placeholder="Título da atividade..."
+          className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+          autoFocus
+        />
+      </div>
 
       {/* Tipos de atividade */}
       <div>
