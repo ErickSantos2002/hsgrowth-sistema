@@ -36,7 +36,7 @@ import {
 interface PendingTask {
   id: number;
   title: string;
-  task_type: "call" | "meeting" | "task" | "deadline" | "email" | "lunch" | "other";
+  task_type: "call" | "meeting" | "task" | "follow_up" | "deadline" | "email" | "lunch" | "other";
   priority: "normal" | "high" | "urgent";
   due_date?: string;
   assigned_to_name?: string;
@@ -116,12 +116,74 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       call: "Ligação",
       meeting: "Reunião",
       task: "Tarefa",
+      follow_up: "Follow Up",
       deadline: "Prazo",
       email: "E-mail",
       lunch: "Almoço",
       other: "Outro",
     };
     return names[type as keyof typeof names] || "Outro";
+  };
+
+  /**
+   * Retorna classes CSS para o badge do tipo de atividade
+   */
+  const getActivityTypeBadgeClasses = (type: string) => {
+    const classes = {
+      call: "border-blue-500/40 bg-blue-500/15 text-blue-300",
+      meeting: "border-purple-500/40 bg-purple-500/15 text-purple-300",
+      task: "border-green-500/40 bg-green-500/15 text-green-300",
+      follow_up: "border-yellow-500/40 bg-yellow-500/15 text-yellow-300",
+      deadline: "border-yellow-500/40 bg-yellow-500/15 text-yellow-300",
+      email: "border-blue-500/40 bg-blue-500/15 text-blue-300",
+      lunch: "border-purple-500/40 bg-purple-500/15 text-purple-300",
+      other: "border-slate-600 bg-slate-700/40 text-slate-300",
+    };
+
+    return classes[type as keyof typeof classes] || classes.other;
+  };
+
+  /**
+   * Retorna classes CSS para o fundo do card por tipo de atividade
+   */
+  const getActivityTypeCardClasses = (type: string) => {
+    const classes = {
+      call: "bg-blue-500/10 hover:bg-blue-500/20",
+      meeting: "bg-purple-500/10 hover:bg-purple-500/20",
+      task: "bg-green-500/10 hover:bg-green-500/20",
+      follow_up: "bg-yellow-500/10 hover:bg-yellow-500/20",
+      deadline: "bg-yellow-500/10 hover:bg-yellow-500/20",
+      email: "bg-blue-500/10 hover:bg-blue-500/20",
+      lunch: "bg-purple-500/10 hover:bg-purple-500/20",
+      other: "bg-slate-800/50 hover:bg-slate-700/30",
+    };
+
+    return classes[type as keyof typeof classes] || classes.other;
+  };
+
+  /**
+   * Retorna classes CSS para o badge de prioridade
+   */
+  const getPriorityBadgeClasses = (priority: string) => {
+    const classes = {
+      normal: "border-slate-600 bg-slate-700/40 text-slate-200",
+      high: "border-yellow-500/40 bg-yellow-500/15 text-yellow-300",
+      urgent: "border-red-500/40 bg-red-500/15 text-red-300",
+    };
+
+    return classes[priority as keyof typeof classes] || classes.normal;
+  };
+
+  /**
+   * Retorna label da prioridade
+   */
+  const getPriorityLabel = (priority: string) => {
+    const labels = {
+      normal: "Normal",
+      high: "Alta",
+      urgent: "Urgente",
+    };
+    return labels[priority as keyof typeof labels] || "Normal";
   };
 
   /**
@@ -402,7 +464,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
             return (
               <div
                 key={activity.id}
-                className={`overflow-hidden rounded-lg border border-slate-700 bg-slate-800/50 transition-colors hover:bg-slate-700/30 ${getPriorityBorderClass(
+                className={`overflow-hidden rounded-lg border border-slate-700 transition-colors ${getActivityTypeCardClasses(
+                  activity.task_type
+                )} ${getPriorityBorderClass(
                   activity.priority
                 )}`}
               >
@@ -417,7 +481,11 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                       <div className="flex-1">
                         <div className="mb-1 flex items-center gap-2">
                           <p className="font-medium text-white">{activity.title}</p>
-                          <span className="rounded border border-slate-600 bg-slate-700/50 px-2 py-0.5 text-xs text-slate-300">
+                          <span
+                            className={`hidden rounded border px-2 py-0.5 text-xs font-medium ${getActivityTypeBadgeClasses(
+                              activity.task_type
+                            )}`}
+                          >
                             {getActivityTypeName(activity.task_type)}
                           </span>
                         </div>
@@ -436,7 +504,23 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                   </div>
 
                   {/* Botões de ação */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`rounded border px-2 py-0.5 text-xs font-medium ${getActivityTypeBadgeClasses(
+                          activity.task_type
+                        )}`}
+                      >
+                        {getActivityTypeName(activity.task_type)}
+                      </span>
+                      <span
+                        className={`rounded border px-2 py-0.5 text-xs font-medium ${getPriorityBadgeClasses(
+                          activity.priority
+                        )}`}
+                      >
+                        {getPriorityLabel(activity.priority)}
+                      </span>
+                    </div>
                     <button
                       onClick={() => toggleActivity(activity.id)}
                       className="rounded p-1 text-slate-400 transition-colors hover:bg-slate-600"
