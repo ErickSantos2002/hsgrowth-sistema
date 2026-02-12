@@ -466,8 +466,6 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                 key={activity.id}
                 className={`overflow-hidden rounded-lg border border-slate-700 transition-colors ${getActivityTypeCardClasses(
                   activity.task_type
-                )} ${getPriorityBorderClass(
-                  activity.priority
                 )}`}
               >
                 {/* Header da atividade */}
@@ -482,7 +480,14 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                         <div className="mb-1 flex items-center gap-2">
                           <p className="font-medium text-white">{activity.title}</p>
                           <span
-                            className={`hidden rounded border px-2 py-0.5 text-xs font-medium ${getActivityTypeBadgeClasses(
+                            className={`inline-flex min-w-[64px] items-center justify-center rounded border px-1.5 py-0.5 text-xs font-medium ${getPriorityBadgeClasses(
+                              activity.priority
+                            )}`}
+                          >
+                            {getPriorityLabel(activity.priority)}
+                          </span>
+                          <span
+                            className={`hidden min-w-[80px] items-center justify-center rounded border px-1.5 py-0.5 text-xs font-medium ${getActivityTypeBadgeClasses(
                               activity.task_type
                             )}`}
                           >
@@ -507,18 +512,11 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`rounded border px-2 py-0.5 text-xs font-medium ${getActivityTypeBadgeClasses(
+                        className={`inline-flex min-w-[80px] items-center justify-center rounded border px-1.5 py-0.5 text-xs font-medium ${getActivityTypeBadgeClasses(
                           activity.task_type
                         )}`}
                       >
                         {getActivityTypeName(activity.task_type)}
-                      </span>
-                      <span
-                        className={`rounded border px-2 py-0.5 text-xs font-medium ${getPriorityBadgeClasses(
-                          activity.priority
-                        )}`}
-                      >
-                        {getPriorityLabel(activity.priority)}
                       </span>
                     </div>
                     <button
