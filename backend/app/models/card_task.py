@@ -17,6 +17,7 @@ class TaskType(str, enum.Enum):
     CALL = "call"  # Ligação
     MEETING = "meeting"  # Reunião
     TASK = "task"  # Tarefa
+    FOLLOW_UP = "follow_up"  # Acompanhamento/Retorno
     DEADLINE = "deadline"  # Prazo
     EMAIL = "email"  # E-mail
     LUNCH = "lunch"  # Almoço
