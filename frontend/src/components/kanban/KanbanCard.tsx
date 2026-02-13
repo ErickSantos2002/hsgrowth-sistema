@@ -84,7 +84,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
               setShowActivitiesModal(true);
             }
           }}
-          className={`absolute right-2 top-2 rounded-full p-1.5 transition-all ${
+          className={`absolute right-3.5 top-3.5 rounded-full p-1.5 transition-all ${
             card.pending_tasks_status === "overdue"
               ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
               : card.pending_tasks_status === "today"
