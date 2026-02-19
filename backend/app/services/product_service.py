@@ -8,6 +8,7 @@ import math
 
 from app.repositories.product_repository import ProductRepository
 from app.repositories.card_repository import CardRepository
+from app.repositories.activity_repository import ActivityRepository
 from app.models.product import Product
 from app.models.card_product import CardProduct
 from app.models.user import User
@@ -29,6 +30,7 @@ class ProductService:
     def __init__(self, db: Session):
         self.db = db
         self.repository = ProductRepository(db)
+        self.activity_repository = ActivityRepository(db)
 
     # ========== PRODUCT CATALOG ==========
 
@@ -186,7 +188,22 @@ class ProductService:
 
         card_product = self.repository.add_product_to_card(card_id, card_product_data)
 
-        # TODO: Criar evento de auditoria
+        # Registra no histórico de atividades do card
+        try:
+            self.activity_repository.create(
+                card_id=card_id,
+                user_id=current_user.id,
+                activity_type="product_added",
+                description=f"Produto adicionado: <strong>{product.name}</strong>",
+                activity_metadata={
+                    "product_id": product.id,
+                    "product_name": product.name,
+                    "quantity": card_product_data.quantity,
+                    "unit_price": card_product_data.unit_price
+                }
+            )
+        except Exception as e:
+            print(f"[ACTIVITY] Erro ao registrar adição de produto no histórico: {e}")
 
         # Atualiza o valor total do card
         self._sync_card_value_with_products(card_id)
@@ -253,8 +270,10 @@ class ProductService:
 
         # TODO: Verificar permissões
 
-        # Guarda o card_id antes de remover
+        # Guarda informações antes de remover (para o log)
         card_id = card_product.card_id
+        product_for_log = self.repository.get_product_by_id(card_product.product_id)
+        product_name_for_log = product_for_log.name if product_for_log else f"Produto #{card_product.product_id}"
 
         success = self.repository.remove_product_from_card(card_product_id)
 
@@ -264,7 +283,17 @@ class ProductService:
                 detail="Erro ao remover produto do card"
             )
 
-        # TODO: Criar evento de auditoria
+        # Registra no histórico de atividades do card
+        try:
+            self.activity_repository.create(
+                card_id=card_id,
+                user_id=current_user.id,
+                activity_type="product_removed",
+                description=f"Produto removido: <strong>{product_name_for_log}</strong>",
+                activity_metadata={"product_name": product_name_for_log}
+            )
+        except Exception as e:
+            print(f"[ACTIVITY] Erro ao registrar remoção de produto no histórico: {e}")
 
         # Atualiza o valor total do card
         self._sync_card_value_with_products(card_id)

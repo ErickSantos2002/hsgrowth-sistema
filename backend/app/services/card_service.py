@@ -473,6 +473,14 @@ class CardService:
         old_is_won = card.is_won
         old_is_lost = card.is_lost
 
+        # Captura snapshot dos campos alteráveis para registrar mudanças no histórico
+        update_data_fields = card_data.model_dump(exclude_unset=True)
+        changes_snapshot = {
+            field: getattr(card, field, None)
+            for field in ["title", "value", "assigned_to_id", "due_date"]
+            if field in update_data_fields
+        }
+
         # Atualiza o card
         updated_card = self.card_repository.update(card, card_data)
 
@@ -512,6 +520,85 @@ class CardService:
             print(f"[AUTOMATION] Erro ao disparar automações no update_card: {e}")
             import traceback
             traceback.print_exc()
+
+        # Registra no histórico as alterações realizadas nos campos do card
+        try:
+            activities_to_log = []
+
+            # Verifica cada campo do snapshot e registra o que mudou
+            if "title" in changes_snapshot and changes_snapshot["title"] != updated_card.title:
+                old_val = changes_snapshot["title"] or ""
+                activities_to_log.append({
+                    "type": "card_title_changed",
+                    "description": f"Título alterado: <strong>{old_val}</strong> → <strong>{updated_card.title}</strong>",
+                    "metadata": {"old_title": old_val, "new_title": updated_card.title}
+                })
+
+            if "value" in changes_snapshot and changes_snapshot["value"] != updated_card.value:
+                # Converte para float pois o PostgreSQL retorna NUMERIC como Decimal (não serializável em JSON)
+                old_val = float(changes_snapshot["value"] or 0)
+                new_val = float(updated_card.value or 0)
+                # Formata no padrão brasileiro (R$ 1.234,56)
+                old_str = f"R$ {old_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                new_str = f"R$ {new_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                activities_to_log.append({
+                    "type": "card_value_changed",
+                    "description": f"Valor alterado: <strong>{old_str}</strong> → <strong>{new_str}</strong>",
+                    "metadata": {"old_value": old_val, "new_value": new_val}
+                })
+
+            if "assigned_to_id" in changes_snapshot and changes_snapshot["assigned_to_id"] != updated_card.assigned_to_id:
+                old_uid = changes_snapshot["assigned_to_id"]
+                new_uid = updated_card.assigned_to_id
+                old_user_obj = self.db.query(User).filter(User.id == old_uid).first() if old_uid else None
+                new_user_obj = self.db.query(User).filter(User.id == new_uid).first() if new_uid else None
+                old_name = old_user_obj.name if old_user_obj else "Ninguém"
+                new_name = new_user_obj.name if new_user_obj else "Ninguém"
+                activities_to_log.append({
+                    "type": "card_assigned_changed",
+                    "description": f"Responsável alterado: <strong>{old_name}</strong> → <strong>{new_name}</strong>",
+                    "metadata": {"old_user": old_name, "new_user": new_name}
+                })
+
+            if "due_date" in changes_snapshot and changes_snapshot["due_date"] != updated_card.due_date:
+                old_date = changes_snapshot["due_date"]
+                new_date = updated_card.due_date
+                old_str = old_date.strftime("%d/%m/%Y") if old_date else "Não definida"
+                new_str = new_date.strftime("%d/%m/%Y") if new_date else "Removida"
+                activities_to_log.append({
+                    "type": "card_due_date_changed",
+                    "description": f"Data de vencimento: <strong>{old_str}</strong> → <strong>{new_str}</strong>",
+                    "metadata": {}
+                })
+
+            if not old_is_won and updated_card.is_won:
+                activities_to_log.append({
+                    "type": "card_won",
+                    "description": "Card marcado como <strong>Ganho</strong>",
+                    "metadata": {}
+                })
+
+            if not old_is_lost and updated_card.is_lost:
+                activities_to_log.append({
+                    "type": "card_lost",
+                    "description": "Card marcado como <strong>Perdido</strong>",
+                    "metadata": {}
+                })
+
+            for act in activities_to_log:
+                self.activity_repository.create(
+                    card_id=card_id,
+                    user_id=current_user.id,
+                    activity_type=act["type"],
+                    description=act["description"],
+                    activity_metadata=act["metadata"]
+                )
+
+        except Exception as e:
+            # Rollback necessário: se o insert de Activity falhou, a sessão fica em estado
+            # "needs rollback" no SQLAlchemy, o que causaria 500 ao serializar updated_card
+            self.db.rollback()
+            print(f"[ACTIVITY] Erro ao registrar alterações no histórico: {e}")
 
         return updated_card
 
@@ -691,6 +778,31 @@ class CardService:
             print(f"Erro ao disparar automações: {e}")
             import traceback
             traceback.print_exc()
+
+        # Registra no histórico de atividades do card
+        try:
+            if target_list.is_done_stage:
+                act_type = "card_won"
+                act_desc = f"Card ganho: movido para <strong>{target_list.name}</strong>"
+            elif target_list.is_lost_stage:
+                act_type = "card_lost"
+                act_desc = f"Card perdido: movido para <strong>{target_list.name}</strong>"
+            else:
+                act_type = "card_moved"
+                act_desc = f"Etapa alterada: <strong>{source_list_name}</strong> → <strong>{target_list.name}</strong>"
+
+            self.activity_repository.create(
+                card_id=card_id,
+                user_id=current_user.id,
+                activity_type=act_type,
+                description=act_desc,
+                activity_metadata={
+                    "from_list": source_list_name,
+                    "to_list": target_list.name
+                }
+            )
+        except Exception as e:
+            print(f"[ACTIVITY] Erro ao registrar movimento de card no histórico: {e}")
 
         return moved_card
 

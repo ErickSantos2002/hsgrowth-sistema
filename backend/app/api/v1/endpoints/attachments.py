@@ -17,6 +17,7 @@ from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.services.attachment_service import AttachmentService
 from app.schemas.attachment import AttachmentResponse, AttachmentListResponse
+from app.repositories.activity_repository import ActivityRepository
 
 
 router = APIRouter()
@@ -96,6 +97,21 @@ async def upload_file(
     )
     db.add(audit_log)
     db.commit()
+
+    # Registra no histórico de atividades do card (visível para o usuário)
+    activity_repo = ActivityRepository(db)
+    activity_repo.create(
+        card_id=card_id,
+        user_id=current_user.id,
+        activity_type="file_attached",
+        description=f"Arquivo anexado: {attachment.original_filename} ({attachment.file_size_mb:.2f} MB)",
+        activity_metadata={
+            "filename": attachment.original_filename,
+            "file_size_mb": round(attachment.file_size_mb, 2),
+            "mime_type": attachment.mime_type,
+            "attachment_id": attachment.id
+        }
+    )
 
     return attachment
 
@@ -264,5 +280,19 @@ def delete_file(
     )
     db.add(audit_log)
     db.commit()
+
+    # Registra no histórico de atividades do card (visível para o usuário)
+    activity_repo = ActivityRepository(db)
+    activity_repo.create(
+        card_id=attachment_info["card_id"],
+        user_id=current_user.id,
+        activity_type="file_deleted",
+        description=f"Arquivo removido: {attachment_info['filename']} ({attachment_info['file_size_mb']:.2f} MB)",
+        activity_metadata={
+            "filename": attachment_info["filename"],
+            "file_size_mb": attachment_info["file_size_mb"],
+            "mime_type": attachment_info["mime_type"]
+        }
+    )
 
     return None  # FastAPI retorna 204 automaticamente

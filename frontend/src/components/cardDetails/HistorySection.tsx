@@ -18,6 +18,11 @@ import {
   Printer,
   Search,
   Filter,
+  Award,
+  XCircle,
+  Type,
+  UserPlus,
+  UserMinus,
 } from "lucide-react";
 import { convertUTCToBrazil } from "../../utils/timezone";
 import { showInfo } from "../../utils/toast";
@@ -42,11 +47,17 @@ type EventType =
   | "activity_deleted"
   | "note_added"
   | "file_attached"
+  | "file_deleted"
   | "value_changed"
   | "product_added"
   | "product_removed"
   | "stage_moved"
+  | "card_won"
+  | "card_lost"
+  | "title_changed"
   | "assigned_changed"
+  | "person_linked"
+  | "person_unlinked"
   | "organization_changed"
   | "due_date_changed"
   | "tag_added"
@@ -78,19 +89,38 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
   // Usa os dados que vem do backend e mapeia os tipos corretamente
   const mapActivityType = (backendType: string): EventType => {
     const typeMap: Record<string, EventType> = {
+      // Atividades (tarefas)
       task_created: "activity_created",
       task_completed: "activity_completed",
       task_edited: "activity_edited",
       task_deleted: "activity_deleted",
       task_reopened: "activity_created",
+      // Anotações
       note_added: "note_added",
+      note_edited: "note_added",
+      note_deleted: "activity_deleted",
+      // Arquivos
       file_attached: "file_attached",
-      value_changed: "value_changed",
+      file_deleted: "file_deleted",
+      // Alterações no card
+      card_moved: "stage_moved",
+      card_won: "card_won",
+      card_lost: "card_lost",
+      card_title_changed: "title_changed",
+      card_value_changed: "value_changed",
+      card_assigned_changed: "assigned_changed",
+      card_due_date_changed: "due_date_changed",
+      // Vínculos de pessoas e organizações
+      person_linked: "person_linked",
+      person_unlinked: "person_unlinked",
+      organization_changed: "organization_changed",
+      // Produtos
       product_added: "product_added",
       product_removed: "product_removed",
+      // Outros tipos legados (mantidos por compatibilidade)
+      value_changed: "value_changed",
       stage_moved: "stage_moved",
       assigned_changed: "assigned_changed",
-      organization_changed: "organization_changed",
       due_date_changed: "due_date_changed",
       tag_added: "tag_added",
       tag_removed: "tag_removed",
@@ -191,19 +221,33 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
    */
   const getEventIcon = (type: EventType) => {
     const iconMap: Record<EventType, React.ReactNode> = {
+      // Atividades (tarefas)
       activity_completed: <CheckCircle2 size={18} className="text-emerald-400" />,
       activity_created: <Clock size={18} className="text-blue-400" />,
       activity_edited: <Edit size={18} className="text-yellow-400" />,
       activity_deleted: <Trash2 size={18} className="text-red-400" />,
+      // Anotações
       note_added: <FileText size={18} className="text-purple-400" />,
+      // Arquivos
       file_attached: <Paperclip size={18} className="text-cyan-400" />,
+      file_deleted: <Paperclip size={18} className="text-red-400" />,
+      // Alterações financeiras e de valor
       value_changed: <DollarSign size={18} className="text-green-400" />,
+      // Produtos
       product_added: <Package size={18} className="text-blue-400" />,
       product_removed: <Package size={18} className="text-red-400" />,
+      // Movimentação de etapas e status
       stage_moved: <ArrowRight size={18} className="text-indigo-400" />,
+      card_won: <Award size={18} className="text-yellow-400" />,
+      card_lost: <XCircle size={18} className="text-red-400" />,
+      // Alterações de campos
+      title_changed: <Type size={18} className="text-orange-400" />,
       assigned_changed: <User size={18} className="text-orange-400" />,
+      person_linked: <UserPlus size={18} className="text-emerald-400" />,
+      person_unlinked: <UserMinus size={18} className="text-red-400" />,
       organization_changed: <Building2 size={18} className="text-slate-400" />,
       due_date_changed: <Calendar size={18} className="text-yellow-400" />,
+      // Tags
       tag_added: <Tag size={18} className="text-pink-400" />,
       tag_removed: <Tag size={18} className="text-red-400" />,
     };
@@ -250,16 +294,22 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
         filtered = filtered.filter((e) => e.type === "note_added");
         break;
       case "files":
-        filtered = filtered.filter((e) => e.type === "file_attached");
+        filtered = filtered.filter((e) => e.type === "file_attached" || e.type === "file_deleted");
         break;
       case "changes":
+        // Todos os eventos que representam mudanças no card (não tarefas, notas nem arquivos)
         filtered = filtered.filter((e) =>
           [
             "value_changed",
+            "title_changed",
             "product_added",
             "product_removed",
             "stage_moved",
+            "card_won",
+            "card_lost",
             "assigned_changed",
+            "person_linked",
+            "person_unlinked",
             "organization_changed",
             "due_date_changed",
             "tag_added",
@@ -286,12 +336,32 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
 
   const filteredEvents = getFilteredEvents();
 
-  // Contagem de eventos por tipo
+  // Contagem de eventos por tipo (para badges das abas)
   const activityCount = historyEvents.filter((e) =>
     ["activity_completed", "activity_created", "activity_edited", "activity_deleted"].includes(e.type)
   ).length;
   const noteCount = historyEvents.filter((e) => e.type === "note_added").length;
-  const fileCount = historyEvents.filter((e) => e.type === "file_attached").length;
+  const fileCount = historyEvents.filter(
+    (e) => e.type === "file_attached" || e.type === "file_deleted"
+  ).length;
+  const changesCount = historyEvents.filter((e) =>
+    [
+      "value_changed",
+      "title_changed",
+      "product_added",
+      "product_removed",
+      "stage_moved",
+      "card_won",
+      "card_lost",
+      "assigned_changed",
+      "person_linked",
+      "person_unlinked",
+      "organization_changed",
+      "due_date_changed",
+      "tag_added",
+      "tag_removed",
+    ].includes(e.type)
+  ).length;
 
   return (
     <div>
@@ -341,24 +411,30 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
 
           <button
             onClick={() => setActiveTab("files")}
-            className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
+            className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "files"
                 ? "border-blue-500 font-medium text-blue-400"
                 : "border-transparent text-slate-400 hover:text-white"
             }`}
           >
             Arquivos
+            <span className="ml-1 rounded bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400">
+              {fileCount}
+            </span>
           </button>
 
           <button
             onClick={() => setActiveTab("changes")}
-            className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
+            className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "changes"
                 ? "border-blue-500 font-medium text-blue-400"
                 : "border-transparent text-slate-400 hover:text-white"
             }`}
           >
             Alterações
+            <span className="ml-1 rounded bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400">
+              {changesCount}
+            </span>
           </button>
         </div>
       </div>
