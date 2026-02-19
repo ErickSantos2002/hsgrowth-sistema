@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { FileText, Plus, Trash2, Edit, Save, X } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { FileText, Plus, Trash2, Edit, Save, X, Image } from "lucide-react";
 import cardNoteService from "../../services/cardNoteService";
 import NoteRenderer from "./NoteRenderer";
 import { showError, showWarning } from "../../utils/toast";
@@ -20,20 +20,170 @@ interface NotesSectionProps {
 
 /**
  * Seção de Anotações - Lista e gerencia notas do card
- * Exibida na aba "Anotações" da coluna direita
+ * Suporta texto livre e imagens coladas (Ctrl+V)
+ * Imagens são comprimidas e armazenadas como base64 na nota
  */
 const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) => {
   const [isCreating, setIsCreating] = useState(false);
-  const [newNoteContent, setNewNoteContent] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
-  const [editContent, setEditContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isPastingImage, setIsPastingImage] = useState(false);
+
+  // Refs para os divs contentEditable (criação e edição)
+  const newNoteRef = useRef<HTMLDivElement>(null);
+  const editNoteRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Quando inicia o modo de edição, popula o contenteditable com o conteúdo da nota
+   */
+  useEffect(() => {
+    if (editingNoteId !== null && editNoteRef.current) {
+      const note = notes.find((n) => n.id === editingNoteId);
+      if (note) {
+        editNoteRef.current.innerHTML = note.content;
+      }
+    }
+  }, [editingNoteId]);
+
+  /**
+   * Comprime e redimensiona uma imagem via canvas
+   * Limita a 800px de largura e comprime como JPEG qualidade 80%
+   * Reduz drasticamente o tamanho do base64 armazenado no banco
+   */
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        const img = new window.Image();
+
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const maxWidth = 800;
+          let { width, height } = img;
+
+          // Redimensiona proporcionalmente se largura > 800px
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Canvas não suportado"));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Comprime como JPEG com qualidade 80%
+          resolve(canvas.toDataURL("image/jpeg", 0.8));
+        };
+
+        img.onerror = () => reject(new Error("Erro ao carregar imagem"));
+        img.src = event.target?.result as string;
+      };
+
+      reader.onerror = () => reject(new Error("Erro ao ler arquivo"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  /**
+   * Insere uma imagem base64 no cursor atual do contenteditable
+   */
+  const insertImageAtCursor = (base64: string, divRef: React.RefObject<HTMLDivElement | null>) => {
+    if (!divRef.current) return;
+
+    divRef.current.focus();
+    const selection = window.getSelection();
+
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+
+      const imgEl = document.createElement("img");
+      imgEl.src = base64;
+      imgEl.alt = "Imagem colada";
+      imgEl.style.cssText =
+        "max-width: 100%; border-radius: 8px; margin: 6px 0; display: block;";
+
+      range.insertNode(imgEl);
+
+      // Move o cursor para depois da imagem
+      range.setStartAfter(imgEl);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } else {
+      // Fallback: adiciona no final se não houver seleção
+      divRef.current.appendChild(document.createElement("br"));
+      const imgEl = document.createElement("img");
+      imgEl.src = base64;
+      imgEl.alt = "Imagem colada";
+      imgEl.style.cssText =
+        "max-width: 100%; border-radius: 8px; margin: 6px 0; display: block;";
+      divRef.current.appendChild(imgEl);
+    }
+  };
+
+  /**
+   * Handler de paste para o contenteditable
+   * Intercepta imagens do clipboard, comprime e insere como base64
+   * Texto puro passa pelo comportamento padrão do navegador
+   */
+  const handlePaste = async (
+    e: React.ClipboardEvent<HTMLDivElement>,
+    divRef: React.RefObject<HTMLDivElement | null>
+  ) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItem = items.find((item) => item.type.startsWith("image/"));
+
+    // Sem imagem no clipboard: deixa o comportamento padrão (colar texto)
+    if (!imageItem) return;
+
+    e.preventDefault();
+    setIsPastingImage(true);
+
+    try {
+      const file = imageItem.getAsFile();
+      if (!file) return;
+
+      const base64 = await compressImage(file);
+      insertImageAtCursor(base64, divRef);
+    } catch (error) {
+      console.error("Erro ao processar imagem colada:", error);
+      showError("Não foi possível processar a imagem. Tente novamente.");
+    } finally {
+      setIsPastingImage(false);
+    }
+  };
+
+  /**
+   * Lê o HTML do contenteditable para salvar no banco
+   */
+  const getContent = (divRef: React.RefObject<HTMLDivElement | null>): string => {
+    return divRef.current?.innerHTML.trim() ?? "";
+  };
+
+  /**
+   * Verifica se o contenteditable tem conteúdo real (texto ou imagem)
+   */
+  const hasContent = (divRef: React.RefObject<HTMLDivElement | null>): boolean => {
+    if (!divRef.current) return false;
+    const hasText = divRef.current.innerText.trim().length > 0;
+    const hasImages = divRef.current.querySelectorAll("img").length > 0;
+    return hasText || hasImages;
+  };
 
   /**
    * Cria uma nova anotação
    */
   const handleCreateNote = async () => {
-    if (!newNoteContent.trim()) {
+    if (!hasContent(newNoteRef)) {
       showWarning("Digite o conteúdo da anotação");
       return;
     }
@@ -43,10 +193,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
 
       await cardNoteService.create({
         card_id: cardId,
-        content: newNoteContent,
+        content: getContent(newNoteRef),
       });
 
-      setNewNoteContent("");
+      // Limpa o editor após salvar
+      if (newNoteRef.current) {
+        newNoteRef.current.innerHTML = "";
+      }
       setIsCreating(false);
       onUpdate();
     } catch (error) {
@@ -62,14 +215,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
    */
   const handleStartEdit = (note: Note) => {
     setEditingNoteId(note.id);
-    setEditContent(note.content);
   };
 
   /**
    * Salva edição da nota
    */
   const handleSaveEdit = async (noteId: number) => {
-    if (!editContent.trim()) {
+    if (!hasContent(editNoteRef)) {
       showWarning("O conteúdo não pode estar vazio");
       return;
     }
@@ -78,11 +230,10 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
       setLoading(true);
 
       await cardNoteService.update(noteId, {
-        content: editContent,
+        content: getContent(editNoteRef),
       });
 
       setEditingNoteId(null);
-      setEditContent("");
       onUpdate();
     } catch (error) {
       console.error("Erro ao atualizar nota:", error);
@@ -97,7 +248,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
    */
   const handleCancelEdit = () => {
     setEditingNoteId(null);
-    setEditContent("");
   };
 
   /**
@@ -108,9 +258,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
 
     try {
       setLoading(true);
-
       await cardNoteService.delete(noteId);
-
       onUpdate();
     } catch (error) {
       console.error("Erro ao deletar nota:", error);
@@ -137,7 +285,11 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
     if (diffDays === 1) return "Ontem";
     if (diffDays < 7) return `${diffDays} dias atrás`;
 
-    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   return (
@@ -145,7 +297,11 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
       {/* Botão para criar nova nota */}
       {!isCreating && (
         <button
-          onClick={() => setIsCreating(true)}
+          onClick={() => {
+            setIsCreating(true);
+            // Foca o editor após renderizar
+            setTimeout(() => newNoteRef.current?.focus(), 50);
+          }}
           className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-4 py-3 text-emerald-300 transition-colors hover:bg-emerald-500/25 hover:text-emerald-200"
         >
           <Plus size={18} />
@@ -156,19 +312,34 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
       {/* Formulário de criação */}
       {isCreating && (
         <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <textarea
-            value={newNoteContent}
-            onChange={(e) => setNewNoteContent(e.target.value)}
-            placeholder="Digite sua anotação aqui..."
-            rows={4}
-            autoFocus
-            className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+          {/* Indicador de processamento de imagem */}
+          {isPastingImage && (
+            <div className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-400">
+              <Image size={14} className="animate-pulse" />
+              Processando imagem...
+            </div>
+          )}
+
+          {/* Editor contentEditable */}
+          <div
+            ref={newNoteRef}
+            contentEditable
+            suppressContentEditableWarning
+            onPaste={(e) => handlePaste(e, newNoteRef)}
+            data-placeholder="Digite sua anotação aqui... (Cole imagens com Ctrl+V)"
+            className="note-editor min-h-[100px] w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
           />
+
+          {/* Dica de imagem */}
+          <p className="flex items-center gap-1 text-xs text-slate-500">
+            <Image size={11} />
+            Cole prints e imagens diretamente com Ctrl+V
+          </p>
 
           <div className="flex gap-2">
             <button
               onClick={handleCreateNote}
-              disabled={loading}
+              disabled={loading || isPastingImage}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
             >
               <Save size={18} />
@@ -177,7 +348,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
             <button
               onClick={() => {
                 setIsCreating(false);
-                setNewNoteContent("");
+                if (newNoteRef.current) newNoteRef.current.innerHTML = "";
               }}
               disabled={loading}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
@@ -208,18 +379,31 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
               {editingNoteId === note.id ? (
                 // Modo de edição
                 <div className="space-y-3">
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    rows={4}
-                    autoFocus
-                    className="w-full resize-none rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  {/* Indicador de processamento de imagem na edição */}
+                  {isPastingImage && (
+                    <div className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-400">
+                      <Image size={14} className="animate-pulse" />
+                      Processando imagem...
+                    </div>
+                  )}
+
+                  <div
+                    ref={editNoteRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onPaste={(e) => handlePaste(e, editNoteRef)}
+                    className="note-editor min-h-[80px] w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+
+                  <p className="flex items-center gap-1 text-xs text-slate-500">
+                    <Image size={11} />
+                    Cole prints e imagens diretamente com Ctrl+V
+                  </p>
 
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleSaveEdit(note.id)}
-                      disabled={loading}
+                      disabled={loading || isPastingImage}
                       className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
                     >
                       <Save size={14} />
@@ -245,7 +429,9 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                       </div>
                       <div>
                         <p className="text-sm font-medium text-white">{note.user_name}</p>
-                        <p className="text-xs text-slate-500">{formatRelativeTime(note.created_at)}</p>
+                        <p className="text-xs text-slate-500">
+                          {formatRelativeTime(note.created_at)}
+                        </p>
                       </div>
                     </div>
 

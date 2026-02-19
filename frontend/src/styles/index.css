@@ -40,6 +40,26 @@
   background-color: var(--scrollbar-thumb-hover);
 }
 
+/* Editor de anotações (contenteditable) - placeholder e estilos de imagem */
+.note-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #64748b; /* slate-500 */
+  pointer-events: none;
+}
+
+.note-editor img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 6px 0;
+  display: block;
+  cursor: pointer;
+}
+
+.note-editor img:hover {
+  outline: 2px solid #3b82f6; /* blue-500 - feedback visual ao hover */
+  outline-offset: 2px;
+}
+
 @layer utilities {
   .overflow-wrap-anywhere {
     overflow-wrap: anywhere;
