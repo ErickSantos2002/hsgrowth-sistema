@@ -330,6 +330,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
 
   /**
    * Faz chamada telefônica via API4COM
+   * Prioridade de número: Principal → WhatsApp → Comercial
    */
   const handleMakeCall = async (activityId: number) => {
     // Verifica se tem pessoa vinculada
@@ -338,13 +339,22 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       return;
     }
 
-    // Verifica se tem número principal
-    if (!person.phone) {
-      showWarning("A pessoa não possui número principal cadastrado");
+    // Seleciona o número por ordem de prioridade
+    const phoneNumber = person.phone || person.phone_whatsapp || person.phone_commercial;
+
+    if (!phoneNumber) {
+      showWarning("A pessoa não possui nenhum número de telefone cadastrado");
       return;
     }
 
-    if (!confirm(`Ligar para ${person.name} no número ${person.phone}?`)) {
+    // Indica qual campo está sendo usado na confirmação
+    const phoneLabel = person.phone
+      ? "Principal"
+      : person.phone_whatsapp
+      ? "WhatsApp"
+      : "Comercial";
+
+    if (!confirm(`Ligar para ${person.name} no número ${phoneNumber} (${phoneLabel})?`)) {
       return;
     }
 
@@ -352,7 +362,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       setCallingTaskId(activityId);
 
       const result = await api4comService.makeCall({
-        phone: person.phone,
+        phone: phoneNumber,
         card_id: card.id
       });
 
@@ -671,9 +681,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           {activity.task_type === "call" && (
                             <button
                               onClick={() => handleMakeCall(activity.id)}
-                              disabled={callingTaskId === activity.id || !person?.phone}
+                              disabled={callingTaskId === activity.id || (!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial)}
                               className="flex flex-1 items-center justify-center gap-1 rounded border border-blue-400/70 bg-blue-500/30 px-3 py-1.5 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/45 disabled:opacity-50"
-                              title={!person?.phone ? "Pessoa sem número principal cadastrado" : "Ligar agora"}
+                              title={!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial ? "Pessoa sem nenhum número cadastrado" : "Ligar agora"}
                             >
                               {callingTaskId === activity.id ? (
                                 <Loader2 size={14} className="animate-spin" />
