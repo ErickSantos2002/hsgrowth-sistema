@@ -203,7 +203,7 @@ export default function MainLayout() {
                         <div className="mt-auto border-t border-slate-700/50 px-3 py-4">
                             <div className="space-y-1 text-center">
                                 <p className="text-xs font-medium text-slate-500">
-                                    HSGrowth CRM v1.1.8
+                                    HSGrowth CRM v1.1.9
                                 </p>
                                 <p className="text-[10px] text-slate-600">
                                     © 2026 Health & Safety Tech

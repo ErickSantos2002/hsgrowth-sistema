@@ -7,6 +7,66 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.9] - 2026-02-19
+
+### ✨ Novas Funcionalidades
+
+#### Histórico de Arquivos no CardDetails
+- **Aba "Arquivos"** no Histórico registra eventos de upload e exclusão de anexos
+- **Upload de arquivo** (`file_attached`): nome e tamanho em MB registrados no histórico
+- **Exclusão de arquivo** (`file_deleted`): nome e tamanho registrados com ícone vermelho
+- Badge com contagem de eventos de arquivo na aba
+
+#### Aba "Alterações" no Histórico do Card
+- **Nova aba dedicada** para mudanças diretas no card, separando de atividades de tarefa
+- Eventos rastreados:
+  - **Etapa alterada** (`card_moved`): de qual lista para qual lista
+  - **Card ganho** (`card_won`): qual lista marcada como fechado/ganho
+  - **Card perdido** (`card_lost`): qual lista marcada como perdido
+  - **Valor alterado** (`card_value_changed`): valor anterior e novo formatados em R$
+  - **Título alterado** (`card_title_changed`): título anterior e novo
+  - **Responsável alterado** (`card_assigned_changed`): nome anterior e novo
+  - **Data limite alterada** (`card_due_date_changed`): data anterior e nova
+  - **Pessoa vinculada** (`person_linked`): nome da pessoa
+  - **Pessoa desvinculada** (`person_unlinked`): nome da pessoa
+  - **Produto adicionado** (`product_added`): nome do produto
+  - **Produto removido** (`product_removed`): nome do produto
+- Badge com contagem de alterações na aba
+- Aba "Atividades" filtrada para exibir apenas eventos de tarefas (`task_*`)
+
+#### Planilha Padronizada de Importação para SDRs
+- **Script Python** `backend/scripts/create_import_sheet.py` para gerar a planilha
+- **47 colunas** em 8 seções coloridas: Empresa, Telefones/Emails, Contato Principal, Contato 2, Contato 3, Card/Negócio, Atividades (3 slots), Anotações
+- **Dropdowns com bloqueio** (`errorStyle="stop"`) para todos os campos fixos:
+  - Canal de Aquisição: Inbound, Outbound, Indicação, Parcerias, Eventos, Base
+  - Canal de Aquisição - Detalhe: 22 opções (ex: "Outbound - Cold call")
+  - Tipo de Negócio: Nova Venda, Cross Sell, Up Sell
+  - Tipo de Atividade: 8 opções (Ligação, WhatsApp, Email, etc.)
+  - Faixa de Funcionários: 6 faixas exatas do CRM
+  - Faixa de Faturamento: 6 faixas exatas do CRM
+  - Estado (UF): 27 estados brasileiros
+- **Contato 2 e 3**: mantidos para coleta, salvos nas Anotações do card (CRM vincula apenas 1 pessoa por card)
+- **Aba de Referência oculta** com todas as listas para os dropdowns
+- Painéis congelados (linhas 1-4 e colunas A-B) para navegação facilitada
+
+### 🐛 Correções
+
+#### Decimal não serializável em JSON (card_value_changed)
+- **Problema**: PostgreSQL retorna `Decimal` para campos NUMERIC, causando `TypeError: Object of type Decimal is not JSON serializable` ao tentar salvar no `activity_metadata`
+- **Solução**: conversão explícita para `float()` antes de armazenar o valor no metadata da atividade
+
+#### Sessão SQLAlchemy corrompida após exceção no histórico
+- **Problema**: Quando o registro de atividade falhava com exceção, a sessão entrava em estado "needs rollback", fazendo o endpoint retornar 500 mesmo com o card já salvo com sucesso
+- **Solução**: adicionado `self.db.rollback()` no bloco `except` para resetar o estado da sessão sem desfazer o commit anterior do card
+
+### 🔧 Melhorias Técnicas
+- `ActivityRepository.create()` adicionado nos endpoints de anexos (`attachments.py`) para registrar upload e exclusão no histórico visível ao usuário
+- `ProductService` passou a registrar eventos de produto no `ActivityRepository` (antes só ia para `AuditLog`)
+- `CardService.update_card()` captura snapshot dos campos antes do update para comparação e geração dos eventos de alteração
+- `CardService.move_card()` registra evento de movimentação, ganho ou perda de card automaticamente
+
+---
+
 ## [1.1.8] - 2026-02-12
 
 ### ✨ Novas Funcionalidades
