@@ -1,7 +1,7 @@
 import api from "./api";
 import {
   User,
-  PaginatedResponse,
+  UserListResponse,
   UserFilters,
   CreateUserRequest,
   UpdateUserRequest,
@@ -16,8 +16,8 @@ class UserService {
   /**
    * Lista usuários com paginação e filtros
    */
-  async list(filters?: UserFilters): Promise<PaginatedResponse<User>> {
-    const response = await api.get<PaginatedResponse<User>>("/api/v1/users", {
+  async list(filters?: UserFilters): Promise<UserListResponse> {
+    const response = await api.get<UserListResponse>("/api/v1/users", {
       params: filters,
     });
 

@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { Calendar, User, DollarSign, Clock, CheckSquare } from "lucide-react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { Card } from "../../types";
 import { UserAvatar } from "../common";
 import CardActivitiesModal from "./CardActivitiesModal";
@@ -13,22 +11,6 @@ interface KanbanCardProps {
 
 const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
   const [showActivitiesModal, setShowActivitiesModal] = useState(false);
-
-  // Tornar o card draggable
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: card.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
 
   /**
    * Formata a data de vencimento
@@ -67,10 +49,6 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
       data-kanban-card
       onClick={onClick}
       className="group relative cursor-pointer rounded-lg border border-slate-700/30 bg-white/5 p-3.5 shadow-sm transition-all hover:border-slate-600 hover:bg-white/10 hover:shadow-md"
@@ -80,7 +58,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (card.pending_tasks_count > 0) {
+            if ((card.pending_tasks_count ?? 0) > 0) {
               setShowActivitiesModal(true);
             }
           }}

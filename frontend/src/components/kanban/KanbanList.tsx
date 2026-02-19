@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Plus, MoreVertical, Edit, Archive, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { List, Card } from "../../types";
 import { COLORS } from "../../constants/colors";
 import KanbanCard from "./KanbanCard";
@@ -38,14 +36,6 @@ const KanbanList: React.FC<KanbanListProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [cardLimit, setCardLimit] = useState(3);
   const cardsContainerRef = useRef<HTMLDivElement | null>(null);
-
-  // Tornar a lista droppable
-  const { setNodeRef } = useDroppable({
-    id: `droppable-list-${list.id}`,
-  });
-
-  // IDs dos cards para o SortableContext
-  const cardIds = cards.map((card) => card.id);
 
   useEffect(() => {
     const updateCardLimit = () => {
@@ -154,54 +144,49 @@ const KanbanList: React.FC<KanbanListProps> = ({
       </div>
 
       {/* Cards da lista - com scroll vertical */}
-      <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-        <div className="relative min-h-0 flex-1">
-          <div
-            ref={(node) => {
-              setNodeRef(node);
-              cardsContainerRef.current = node;
-            }}
-            className="scrollbar-desktop h-full touch-pan-y space-y-3 overflow-y-auto overscroll-contain pr-10 sm:pr-1"
-            style={{ WebkitOverflowScrolling: "touch" }}
-          >
-          {cards.length > 0 ? (
-            cards.map((card) => (
-              <KanbanCard
-                key={card.id}
-                card={card}
-                onClick={() => onCardClick?.(card)}
-              />
-            ))
-          ) : (
-            <div className="py-8 text-center text-sm text-slate-400">
-              Nenhum card nesta lista
-            </div>
-          )}
-
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={cardsContainerRef}
+          className="scrollbar-desktop h-full touch-pan-y space-y-3 overflow-y-auto overscroll-contain pr-10 sm:pr-1"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+        {cards.length > 0 ? (
+          cards.map((card) => (
+            <KanbanCard
+              key={card.id}
+              card={card}
+              onClick={() => onCardClick?.(card)}
+            />
+          ))
+        ) : (
+          <div className="py-8 text-center text-sm text-slate-400">
+            Nenhum card nesta lista
           </div>
+        )}
 
-          {cards.length > cardLimit && (
-            <div className="pointer-events-none absolute bottom-2 right-0 top-2 flex w-7 flex-col justify-between sm:hidden">
-              <button
-                type="button"
-                onClick={() => scrollCards("up")}
-                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/80 text-slate-200 transition-colors hover:bg-slate-700/80"
-                aria-label="Subir lista"
-              >
-                <ChevronUp size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollCards("down")}
-                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/80 text-slate-200 transition-colors hover:bg-slate-700/80"
-                aria-label="Descer lista"
-              >
-                <ChevronDown size={16} />
-              </button>
-            </div>
-          )}
         </div>
-      </SortableContext>
+
+        {cards.length > cardLimit && (
+          <div className="pointer-events-none absolute bottom-2 right-0 top-2 flex w-7 flex-col justify-between sm:hidden">
+            <button
+              type="button"
+              onClick={() => scrollCards("up")}
+              className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/80 text-slate-200 transition-colors hover:bg-slate-700/80"
+              aria-label="Subir lista"
+            >
+              <ChevronUp size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollCards("down")}
+              className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/80 text-slate-200 transition-colors hover:bg-slate-700/80"
+              aria-label="Descer lista"
+            >
+              <ChevronDown size={16} />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Botão adicionar card + Setas de movimentação */}
       <div className="mt-3 flex flex-shrink-0 items-center gap-2">

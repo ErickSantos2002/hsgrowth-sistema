@@ -17,6 +17,16 @@ export interface User {
   updated_at: string;
 }
 
+// Resposta paginada específica do endpoint /api/v1/users
+// O backend retorna a lista com a chave "users" (não "items")
+export interface UserListResponse {
+  users: User[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -118,7 +128,6 @@ export interface Card {
   board_id: number | null;
   board_name: string | null; // Nome do board (usado em CardDetails)
   client_name: string | null;
-  sdr_name?: string | null;
 
   // Relacionamentos opcionais (quando expandido)
   list?: List;

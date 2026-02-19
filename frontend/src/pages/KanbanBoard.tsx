@@ -24,18 +24,6 @@ import {
   ChevronDown,
   LucideIcon,
 } from "lucide-react";
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  DragOverEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  closestCorners,
-} from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
 import boardService from "../services/boardService";
 import listService from "../services/listService";
 import cardService from "../services/cardService";
@@ -67,7 +55,6 @@ const KanbanBoard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showBoardMenu, setShowBoardMenu] = useState(false);
   const [showBoardModal, setShowBoardModal] = useState(false);
-  const [activeCard, setActiveCard] = useState<Card | null>(null);
 
   // Estados dos modais de lista
   const [showListModal, setShowListModal] = useState(false);
@@ -95,17 +82,6 @@ const KanbanBoard: React.FC = () => {
   const [isDraggingBoard, setIsDraggingBoard] = useState(false);
   const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
 
-  // Ref para rastrear requisições pendentes de movimento
-  const pendingMovesRef = useRef<Set<number>>(new Set());
-
-  // Configuração do sensor de drag (apenas pointer, mais responsivo)
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Precisa arrastar 8px para ativar
-      },
-    })
-  );
 
   /**
    * Carrega os dados do board ao montar o componente
@@ -629,267 +605,16 @@ const KanbanBoard: React.FC = () => {
     navigate(`/cards/${card.id}`);
   };
 
-
   /**
-   * Handler quando inicia o drag de um card
+   * Retorna a prioridade de ordenação baseada no status das atividades pendentes.
+   * Quanto menor o número, mais ao topo o card aparece.
+   * Ordem: vencidas → hoje → futuras → sem atividades
    */
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const cardId = Number(active.id);
-    const card = cards.find((c) => c.id === cardId);
-    if (card) {
-      setActiveCard(card);
-    }
-  };
-
-  /**
-   * Handler durante o drag (para feedback visual em tempo real)
-   * Necessário para preview entre listas diferentes
-   */
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const activeId = Number(active.id);
-    const overId = over.id;
-
-    // Se está sobre ele mesmo, não faz nada
-    if (activeId === overId) return;
-
-    const activeCard = cards.find((c) => c.id === activeId);
-    if (!activeCard) return;
-
-    // Se está sobre outro card
-    if (typeof overId === "number") {
-      const overCard = cards.find((c) => c.id === overId);
-      if (!overCard) return;
-
-      // IMPORTANTE: Só fazer preview se mudou de lista
-      // Se é a mesma lista, deixa o SortableContext lidar (mais fluido)
-      if (activeCard.list_id !== overCard.list_id) {
-        setCards((currentCards) => {
-          const activeIndex = currentCards.findIndex((c) => c.id === activeId);
-          const overIndex = currentCards.findIndex((c) => c.id === overId);
-
-          // Criar nova array sem o card ativo
-          const withoutActive = currentCards.filter((c) => c.id !== activeId);
-
-          // Inserir o card ativo na posição do overCard
-          const result = [...withoutActive];
-          result.splice(overIndex, 0, { ...activeCard, list_id: overCard.list_id });
-
-          return result;
-        });
-      }
-    }
-    // Se está sobre uma lista vazia
-    else if (typeof overId === "string" && overId.startsWith("droppable-list-")) {
-      const targetListId = Number(overId.replace("droppable-list-", ""));
-
-      if (activeCard.list_id !== targetListId) {
-        setCards((currentCards) => {
-          const activeIndex = currentCards.findIndex((c) => c.id === activeId);
-          const newCards = [...currentCards];
-          newCards[activeIndex] = { ...activeCard, list_id: targetListId };
-          return newCards;
-        });
-      }
-    }
-  };
-
-  /**
-   * Calcula a nova posição fracionária para um card (estilo Trello)
-   * Isso evita recalcular todas as posições quando move um card
-   */
-  const calculateNewPosition = (
-    targetListId: number,
-    overCardId: number | null
-  ): number => {
-    // Pegar todos os cards da lista de destino ordenados por posição
-    const targetListCards = cards
-      .filter((c) => c.list_id === targetListId)
-      .sort((a, b) => a.position - b.position);
-
-    // Se a lista está vazia, começar com 1000
-    if (targetListCards.length === 0) {
-      return 1000;
-    }
-
-    // Se não especificou card (dropou na lista vazia), colocar no final
-    if (!overCardId) {
-      const lastCard = targetListCards[targetListCards.length - 1];
-      return lastCard.position + 1000;
-    }
-
-    // Encontrar o card sobre o qual dropou
-    const overIndex = targetListCards.findIndex((c) => c.id === overCardId);
-
-    if (overIndex === -1) {
-      // Card não encontrado, colocar no final
-      const lastCard = targetListCards[targetListCards.length - 1];
-      return lastCard.position + 1000;
-    }
-
-    // Se está dropando no primeiro card
-    if (overIndex === 0) {
-      const firstCard = targetListCards[0];
-      return firstCard.position / 2; // Metade da posição do primeiro
-    }
-
-    // Se está dropando entre dois cards, usar a média
-    const prevCard = targetListCards[overIndex - 1];
-    const nextCard = targetListCards[overIndex];
-    return (prevCard.position + nextCard.position) / 2;
-  };
-
-  /**
-   * Handler quando termina o drag de um card
-   * SIMPLIFICADO: Por enquanto só move entre listas, reordenação virá depois
-   */
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    setActiveCard(null);
-
-    if (!over) return;
-
-    const activeId = Number(active.id);
-    const overId = over.id;
-
-    // Pegar informações do card que está sendo movido
-    const activeCard = cards.find((c) => c.id === activeId);
-    if (!activeCard) return;
-
-    // Se dropou sobre ele mesmo, não faz nada
-    if (activeId === overId) return;
-
-    // Se já tem uma requisição pendente para este card, aguarda (previne race condition)
-    if (pendingMovesRef.current.has(activeId)) {
-      console.warn(`Card ${activeId} já tem movimento pendente. Aguarde...`);
-      return;
-    }
-
-    // Determinar a lista de destino e posição
-    let targetListId: number;
-    let targetPosition: number | undefined;
-
-    // Se dropou sobre outro card
-    if (typeof overId === "number") {
-      const overCard = cards.find((c) => c.id === overId);
-      if (!overCard) return;
-
-      targetListId = overCard.list_id;
-
-      // Se está na mesma lista
-      if (activeCard.list_id === targetListId) {
-        // Calcular posição: pegar todos os cards da lista (incluindo o ativo)
-        const targetListCards = cards
-          .filter((c) => c.list_id === targetListId)
-          .sort((a, b) => (a.position || 0) - (b.position || 0));
-
-        const activeIndex = targetListCards.findIndex((c) => c.id === activeId);
-        const overIndex = targetListCards.findIndex((c) => c.id === overId);
-
-        // Se moveu dentro da mesma lista
-        if (activeIndex !== overIndex) {
-          // Reordenar localmente
-          const reordered = arrayMove(targetListCards, activeIndex, overIndex);
-
-          // Atualizar state local otimisticamente
-          setCards((currentCards) => {
-            const otherCards = currentCards.filter((c) => c.list_id !== targetListId);
-            return [...otherCards, ...reordered];
-          });
-
-          // Calcular nova posição (índice do card no destino)
-          targetPosition = overIndex;
-        } else {
-          // Mesma posição, não faz nada
-          return;
-        }
-      } else {
-        // Movendo para outra lista: pegar cards EXCLUINDO o ativo
-        const targetListCards = cards
-          .filter((c) => c.list_id === targetListId && c.id !== activeId)
-          .sort((a, b) => (a.position || 0) - (b.position || 0));
-
-        // Encontrar a posição do overCard na lista de destino
-        const overIndex = targetListCards.findIndex((c) => c.id === overId);
-
-        // Inserir na posição do overCard
-        targetPosition = overIndex >= 0 ? overIndex : 0;
-
-        // Atualizar state local otimisticamente
-        setCards((currentCards) => {
-          const withoutActive = currentCards.filter((c) => c.id !== activeId);
-          const result = [...withoutActive];
-          const insertIndex = result.findIndex((c) => c.id === overId);
-
-          if (insertIndex >= 0) {
-            result.splice(insertIndex, 0, { ...activeCard, list_id: targetListId });
-          } else {
-            result.push({ ...activeCard, list_id: targetListId });
-          }
-
-          return result;
-        });
-      }
-    }
-    // Se dropou sobre uma lista vazia (droppable-list-{id})
-    else if (typeof overId === "string" && overId.startsWith("droppable-list-")) {
-      targetListId = Number(overId.replace("droppable-list-", ""));
-      // Posição 0 (primeira posição na lista vazia)
-      targetPosition = 0;
-
-      // Atualizar state local otimisticamente
-      setCards((currentCards) => {
-        const withoutActive = currentCards.filter((c) => c.id !== activeId);
-        return [...withoutActive, { ...activeCard, list_id: targetListId }];
-      });
-    } else {
-      return;
-    }
-
-    // Persistir a mudança no backend (não bloqueante)
-    // Adiciona à lista de requisições pendentes
-    pendingMovesRef.current.add(activeId);
-
-    try {
-      const movedCard = await cardService.move(activeId, {
-        target_list_id: targetListId,
-        position: targetPosition,
-      });
-
-      // Remove da lista de pendentes
-      pendingMovesRef.current.delete(activeId);
-
-      // Atualizar apenas o card movido com dados do backend
-      setCards((currentCards) =>
-        currentCards.map((c) =>
-          c.id === activeId
-            ? { ...c, ...movedCard, list_id: targetListId }
-            : c
-        )
-      );
-
-      console.log(`Card ${activeId} movido com sucesso. Pendentes: ${pendingMovesRef.current.size}`);
-    } catch (error) {
-      console.error("Erro ao mover card:", error);
-
-      // Remove da lista de pendentes mesmo em erro
-      pendingMovesRef.current.delete(activeId);
-
-      // Reverter mudança localmente (voltar card para posição original)
-      setCards((currentCards) => {
-        const revertedCards = currentCards.map((c) =>
-          c.id === activeId ? { ...activeCard } : c
-        );
-        return revertedCards.sort((a, b) => (a.position || 0) - (b.position || 0));
-      });
-
-      showError("Erro ao mover card. A mudança foi revertida.");
-    }
+  const getActivitySortPriority = (status: string | null | undefined): number => {
+    if (status === "overdue") return 0;
+    if (status === "today") return 1;
+    if (status === "future") return 2;
+    return 3; // sem atividades
   };
 
   // Loading state
@@ -924,14 +649,7 @@ const KanbanBoard: React.FC = () => {
   const IconComponent = getIconComponent(board.icon || "grid");
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex h-full flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="flex h-full flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
         {/* Header fixo */}
       <div className="relative z-20 flex-shrink-0 border-b border-slate-700/50 bg-slate-900/50 px-6 py-4 backdrop-blur-sm lg:z-50">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -1223,11 +941,14 @@ const KanbanBoard: React.FC = () => {
           {/* Renderizar listas */}
           {lists.length > 0 ? (
             lists.map((list, index) => {
-              // Filtrar cards da lista, ordenar por position e aplicar busca
-              const listCards = cards
-                .filter((card) => card.list_id === list.id)
-                .sort((a, b) => (a.position || 0) - (b.position || 0));
-              const filteredCards = filterCards(listCards);
+              // Filtrar cards da lista, aplicar busca e ordenar por status de atividade
+              // Ordem: vencidas → hoje → futuras → sem atividades
+              const listCards = cards.filter((card) => card.list_id === list.id);
+              const filteredCards = filterCards(listCards).sort(
+                (a, b) =>
+                  getActivitySortPriority((a as any).pending_tasks_status) -
+                  getActivitySortPriority((b as any).pending_tasks_status)
+              );
 
               // Verificar se é primeira ou última lista
               const isFirstList = index === 0;
@@ -1275,16 +996,6 @@ const KanbanBoard: React.FC = () => {
           <div className="w-1 flex-shrink-0" aria-hidden="true" />
         </div>
       </div>
-      </div>
-
-      {/* Overlay que mostra o card sendo arrastado */}
-      <DragOverlay>
-        {activeCard ? (
-          <div className="rotate-3 scale-105 opacity-90">
-            <KanbanCard card={activeCard} />
-          </div>
-        ) : null}
-      </DragOverlay>
 
       {/* Modal de criar/editar lista */}
       <ListModal
@@ -1325,7 +1036,7 @@ const KanbanBoard: React.FC = () => {
         board={board}
         title="Editar Board"
       />
-    </DndContext>
+    </div>
   );
 };
 
