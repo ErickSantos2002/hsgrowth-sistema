@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ArrowRightLeft, AlertCircle, ChevronDown } from "lucide-react";
+import { ArrowRightLeft, AlertCircle, ChevronDown, Search } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import transferService from "../../services/transferService";
 import userService from "../../services/userService";
@@ -54,6 +54,9 @@ const TransferModal: React.FC<TransferModalProps> = ({
     notes: "",
   });
 
+  // Busca textual para filtrar cards no modo batch
+  const [batchSearchTerm, setBatchSearchTerm] = useState("");
+
   const [errors, setErrors] = useState<{
     card_id?: string;
     to_user_id?: string;
@@ -98,7 +101,11 @@ const TransferModal: React.FC<TransferModalProps> = ({
         }),
       ]);
 
-      setUsers(activeUsers);
+      // Filtra apenas vendedores (salesperson) e exclui o próprio usuário logado
+      const salespeople = activeUsers.filter(
+        (u) => u.role === "salesperson" && u.id !== user?.id
+      );
+      setUsers(salespeople);
       setBoards(boardsResponse.boards || []);
 
       // Reset do formulário
@@ -119,6 +126,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
       setErrors({});
       setSelectedBoardId(0);
       setMyCards([]);
+      setBatchSearchTerm("");
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     } finally {
@@ -139,8 +147,9 @@ const TransferModal: React.FC<TransferModalProps> = ({
       const cardsResponse = await cardService.list({
         board_id: boardId,
         assigned_to_id: user.id, // Apenas cards atribuídos ao usuário logado
-        page: 1,
-        size: 100,
+        is_won: false,            // is_won=0 no banco = abertos; exclui ganhos (1) e perdidos (-1)
+        all: true,                // Sem paginação (lista já é pequena com os filtros acima)
+        minimal: true,            // Retorna apenas campos essenciais para não sobrecarregar
       });
 
       setMyCards(cardsResponse.cards || []);
@@ -377,10 +386,10 @@ const TransferModal: React.FC<TransferModalProps> = ({
             </p>
           )}
           {loadingCards && (
-            <p className="mt-1 flex items-center gap-1 text-xs text-emerald-400">
+            <div className="mt-1 flex items-center gap-1 text-xs text-emerald-400">
               <LoadingSpinner size="sm" />
               Carregando cards...
-            </p>
+            </div>
           )}
         </div>
 
@@ -399,27 +408,13 @@ const TransferModal: React.FC<TransferModalProps> = ({
             <label className="mb-2 block text-sm font-medium text-slate-300">
               Card *
             </label>
-            <select
+            <SearchableCardSelect
               value={formData.card_id}
-              onChange={(e) =>
-                setFormData({ ...formData, card_id: Number(e.target.value) })
-              }
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              disabled={!!preSelectedCardId || loading || loadingCards}
-            >
-              <option value={0}>
-                {loadingCards
-                  ? "Carregando cards..."
-                  : myCards.length === 0
-                  ? "Nenhum card disponível neste board"
-                  : "Selecione um card"}
-              </option>
-              {myCards.map((card) => (
-                <option key={card.id} value={card.id}>
-                  {card.title} {card.list_name ? `(${card.list_name})` : ""}
-                </option>
-              ))}
-            </select>
+              cards={myCards}
+              onChange={(cardId) => setFormData({ ...formData, card_id: cardId })}
+              disabled={!!preSelectedCardId || loading}
+              loading={loadingCards}
+            />
             {errors.card_id && (
               <p className="mt-1 flex items-center gap-1 text-sm text-red-400">
                 <AlertCircle size={14} />
@@ -447,6 +442,20 @@ const TransferModal: React.FC<TransferModalProps> = ({
                   : "Selecionar Todos"}
               </button>
             </div>
+            {/* Campo de busca para filtrar os cards no modo batch */}
+            {!loadingCards && myCards.length > 0 && (
+              <div className="relative mb-2">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={batchSearchTerm}
+                  onChange={(e) => setBatchSearchTerm(e.target.value)}
+                  placeholder="Pesquisar card..."
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-8 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            )}
+
             <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 p-3">
               {loadingCards ? (
                 <div className="py-8 text-center">
@@ -457,8 +466,18 @@ const TransferModal: React.FC<TransferModalProps> = ({
                 <p className="py-4 text-center text-sm text-slate-400">
                   Você não possui cards atribuídos neste board
                 </p>
+              ) : myCards.filter((c) =>
+                  c.title.toLowerCase().includes(batchSearchTerm.toLowerCase()) ||
+                  (c.list_name && c.list_name.toLowerCase().includes(batchSearchTerm.toLowerCase()))
+                ).length === 0 ? (
+                <p className="py-4 text-center text-sm text-slate-400">
+                  Nenhum card encontrado para "{batchSearchTerm}"
+                </p>
               ) : (
-                myCards.map((card) => (
+                myCards.filter((c) =>
+                  c.title.toLowerCase().includes(batchSearchTerm.toLowerCase()) ||
+                  (c.list_name && c.list_name.toLowerCase().includes(batchSearchTerm.toLowerCase()))
+                ).map((card) => (
                   <label
                     key={card.id}
                     className={`flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-700/50 ${
@@ -595,6 +614,155 @@ const TransferModal: React.FC<TransferModalProps> = ({
         </div>
       </form>
     </BaseModal>
+  );
+};
+
+// ==================== COMPONENTE AUXILIAR: SELECT DE CARD COM BUSCA ====================
+
+interface SearchableCardSelectProps {
+  value: number;
+  cards: Card[];
+  onChange: (cardId: number) => void;
+  disabled?: boolean;
+  loading?: boolean;
+}
+
+/**
+ * Select de card com campo de pesquisa embutido.
+ * Essencial para listas grandes (centenas ou milhares de cards).
+ */
+const SearchableCardSelect: React.FC<SearchableCardSelectProps> = ({
+  value,
+  cards,
+  onChange,
+  disabled = false,
+  loading = false,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Fecha o dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Foca no input de busca ao abrir o dropdown
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  const selectedCard = cards.find((c) => c.id === value);
+
+  // Filtra cards pelo termo de busca (título ou nome da lista)
+  const filteredCards = cards.filter(
+    (card) =>
+      card.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (card.list_name &&
+        card.list_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const handleSelect = (cardId: number) => {
+    onChange(cardId);
+    setIsOpen(false);
+    setSearchTerm("");
+  };
+
+  const displayLabel = loading
+    ? "Carregando cards..."
+    : cards.length === 0
+    ? "Nenhum card disponível neste board"
+    : selectedCard
+    ? `${selectedCard.title}${selectedCard.list_name ? ` (${selectedCard.list_name})` : ""}`
+    : "Selecione um card";
+
+  return (
+    <div ref={menuRef} className="relative">
+      {/* Botão principal que abre o dropdown */}
+      <button
+        type="button"
+        onClick={() => !disabled && !loading && setIsOpen((open) => !open)}
+        disabled={disabled || loading || cards.length === 0}
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          disabled || loading || cards.length === 0
+            ? "cursor-not-allowed opacity-60 text-slate-400"
+            : "text-white"
+        }`}
+      >
+        <span className={`truncate ${selectedCard ? "text-white" : "text-slate-400"}`}>
+          {displayLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`flex-shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {/* Dropdown com busca */}
+      {isOpen && (
+        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-xl">
+          {/* Campo de busca */}
+          <div className="border-b border-slate-700 p-2">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Pesquisar por título ou lista..."
+                className="w-full rounded-md border border-slate-600 bg-slate-800 py-1.5 pl-8 pr-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+            </div>
+          </div>
+
+          {/* Lista de resultados */}
+          <div className="max-h-60 overflow-y-auto">
+            {filteredCards.length === 0 ? (
+              <p className="px-4 py-3 text-center text-sm text-slate-400">
+                {searchTerm
+                  ? `Nenhum card encontrado para "${searchTerm}"`
+                  : "Nenhum card disponível"}
+              </p>
+            ) : (
+              filteredCards.map((card) => (
+                <button
+                  key={card.id}
+                  type="button"
+                  onClick={() => handleSelect(card.id)}
+                  className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-slate-800 ${
+                    card.id === value ? "bg-slate-800/70" : ""
+                  }`}
+                >
+                  <p className="truncate font-medium text-white">{card.title}</p>
+                  {card.list_name && (
+                    <p className="text-xs text-slate-400">{card.list_name}</p>
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+
+          {/* Rodapé com contagem */}
+          <div className="border-t border-slate-700 px-3 py-1.5">
+            <p className="text-xs text-slate-500">
+              {filteredCards.length} de {cards.length} card(s)
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -484,6 +484,26 @@ class AutomationService:
             if action_type == "move_card" and card:
                 target_list_id = params.get("target_list_id")
                 if target_list_id:
+                    # Verifica mudança de board para preencher datas de entrada automaticamente
+                    source_list = self.list_repository.find_by_id(card.list_id)
+                    target_list = self.list_repository.find_by_id(target_list_id)
+
+                    if source_list and target_list and source_list.board_id != target_list.board_id:
+                        source_board = self.board_repository.find_by_id(source_list.board_id)
+                        target_board = self.board_repository.find_by_id(target_list.board_id)
+
+                        if source_board and target_board:
+                            now = datetime.now()
+
+                            # Só preenche se ainda não tiver data (evita sobrescrever primeira entrada)
+                            # move_to_list chama db.commit() e vai incluir essas mudanças automaticamente
+                            if target_board.id == 6 and not card.prospection_entry_date:  # Prospecção
+                                card.prospection_entry_date = now
+                            elif target_board.id == 7 and not card.acquisition_entry_date:  # Aquisição
+                                card.acquisition_entry_date = now
+                            elif target_board.id == 8 and not card.expansion_entry_date:  # Expansão
+                                card.expansion_entry_date = now
+
                     self.card_repository.move_to_list(card, target_list_id)
 
             elif action_type == "assign_card" and card:

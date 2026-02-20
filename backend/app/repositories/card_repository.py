@@ -90,10 +90,16 @@ class CardRepository:
             query = query.filter(Card.person_id == person_id)
 
         if is_won is not None:
-            query = query.filter(Card.is_won == is_won)
+            # is_won no banco é INTEGER: 1=ganho, -1=perdido, 0=aberto
+            # Converte o bool recebido para o valor inteiro correto
+            query = query.filter(Card.is_won == (1 if is_won else 0))
 
         if is_lost is not None:
-            query = query.filter(Card.is_lost == is_lost)
+            # is_lost=True → is_won == -1; is_lost=False → is_won != -1
+            if is_lost:
+                query = query.filter(Card.is_won == -1)
+            else:
+                query = query.filter(Card.is_won != -1)
 
         return query.order_by(Card.list_id, Card.position).offset(skip).limit(limit).all()
 
@@ -130,10 +136,15 @@ class CardRepository:
             query = query.filter(Card.person_id == person_id)
 
         if is_won is not None:
-            query = query.filter(Card.is_won == is_won)
+            # is_won no banco é INTEGER: 1=ganho, -1=perdido, 0=aberto
+            query = query.filter(Card.is_won == (1 if is_won else 0))
 
         if is_lost is not None:
-            query = query.filter(Card.is_lost == is_lost)
+            # is_lost=True → is_won == -1; is_lost=False → is_won != -1
+            if is_lost:
+                query = query.filter(Card.is_won == -1)
+            else:
+                query = query.filter(Card.is_won != -1)
 
         return query.count()
 

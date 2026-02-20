@@ -7,6 +7,47 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.10] - 2026-02-20
+
+### ✨ Novas Funcionalidades
+
+#### Reabertura de Negócio Perdido
+- **Botão "Reabrir Negócio"** aparece no CardDetails quando o negócio está perdido, ao lado do badge vermelho
+- **Modal de reabertura** com dois campos: título editável (pré-preenchido com o título original) e seleção do detalhamento do canal (Base - Resgate ou Base - Levantada de mão)
+- **Clone completo do card original**: copia cliente, pessoa vinculada, informações de contato, responsável, SDR, valor, descrição, tipo de negócio, campos customizados, tarefas/atividades, anotações, arquivos e produtos
+- Canal de aquisição do novo card é sempre definido como **Base** com o detalhamento escolhido pelo vendedor
+- Novo card criado na lista de Prospecção (list_id=22, board_id=6)
+- Card original permanece inalterado (continua como perdido)
+- Histórico do card original registra entrada `card_reopened` com link para o novo card
+- Após criação, redireciona automaticamente para o novo card
+- Endpoint: `POST /api/v1/cards/{card_id}/reopen`
+
+### 🔧 Melhorias
+
+#### Valor do Negócio calculado por Produtos
+- Campo **"Valor do negócio"** no Resumo do CardDetails agora é sempre somente leitura
+- Valor calculado automaticamente com base nos produtos vinculados (`products_total`)
+- Quando não há produtos: valor exibido em cinza com hint "Adicione produtos na seção Produtos para calcular o valor automaticamente"
+- Quando há produtos: valor exibido em verde com texto "Calculado automaticamente com base nos produtos vinculados"
+
+#### Atualização das opções de Canal de Aquisição - Detalhamento
+- **Indicação**: substituídas opções antigas por `Ex-cliente` e `Networking pessoal`
+- **Parcerias**: substituídas por `Consultorias`, `Integradores`, `Representantes` e `Outras empresas`
+- **Eventos**: removido `Webinar`, `Workshop` virou `Workshop próprio`, adicionado `Palestra`
+- **Base**: substituídas todas as opções por `Resgate`, `Levantada de mão`, `e-mail marketing` e `Disparo whats`
+
+### 🐛 Correções
+
+#### Erro ao salvar configuração API4COM
+- **Problema**: endpoint `POST /api/v1/api4com/config` lançava `AttributeError: type object 'API4ComConfig' has no attribute 'is_deleted'` pois o modelo não possui esse campo
+- **Solução**: removidos os filtros `is_deleted == False` incorretos dos endpoints de config e ramais (API4ComConfig e UserExtension não implementam soft delete)
+
+#### Arquivos duplicados na reabertura de negócio
+- **Problema**: ao reabrir um negócio, arquivos deletados (soft delete) eram copiados junto com os ativos, pois o filtro usava `is_deleted == False` — mas o soft delete de attachments é feito via `deleted_at`, não `is_deleted`
+- **Solução**: filtro corrigido para `deleted_at.is_(None)`, alinhado com o `AttachmentRepository`
+
+---
+
 ## [1.1.9] - 2026-02-19
 
 ### ✨ Novas Funcionalidades
