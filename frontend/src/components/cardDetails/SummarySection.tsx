@@ -35,7 +35,6 @@ import {
 interface SummarySectionProps {
   card: Card;
   onUpdate: (updates: Partial<Card>) => Promise<void>;
-  hasProducts?: boolean; // Se true, valor fica read-only
 }
 
 /**
@@ -43,7 +42,7 @@ interface SummarySectionProps {
  * Primeira seção da coluna esquerda, expandida por padrão
  * ATUALIZADO: Incluindo campos do blueprint da consultora
  */
-const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProducts = false }) => {
+const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [sdrUsers, setSDRUsers] = useState<UserType[]>([]);
   const [boards, setBoards] = useState<Board[]>([]);
@@ -75,18 +74,6 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
     };
     loadData();
   }, [card.board_id]);
-
-  /**
-   * Atualiza o valor do card
-   */
-  const handleUpdateValue = async (value: string) => {
-    const numericValue = parseFloat(value.replace(/[^0-9.-]/g, ""));
-    if (isNaN(numericValue)) {
-      showWarning("Valor inválido");
-      return;
-    }
-    await onUpdate({ value: numericValue });
-  };
 
   /**
    * Atualiza a probabilidade
@@ -267,27 +254,27 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, hasProd
             Valores e Previsões
           </h4>
 
-          {/* Valor do Negócio */}
-          <EditableField
-            label="Valor do negócio"
-            value={card.value}
-            onSave={handleUpdateValue}
-            type="number"
-            placeholder="R$ 0,00"
-            disabled={hasProducts}
-            icon={<DollarSign size={14} />}
-            format={formatCurrency}
-          />
-
-          {hasProducts && (
-            <div className="flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
-              <Info size={16} className="mt-0.5 flex-shrink-0 text-blue-400" />
-              <p className="text-xs text-blue-300">
-                O valor é calculado automaticamente com base nos produtos cadastrados. Para editar
-                manualmente, remova todos os produtos primeiro.
-              </p>
+          {/* Valor do Negócio - sempre read-only, calculado a partir dos produtos */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
+              <DollarSign size={14} className="text-slate-400" />
+              <span>Valor do negócio</span>
             </div>
-          )}
+            <div className="rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2">
+              <span className={`text-sm font-semibold ${(card.products_total ?? 0) > 0 ? "text-emerald-400" : "text-slate-500"}`}>
+                {formatCurrency(card.products_total ?? 0)}
+              </span>
+            </div>
+            {(card.products_total ?? 0) === 0 ? (
+              <p className="text-xs text-slate-500">
+                Adicione produtos na seção <strong className="text-slate-400">Produtos</strong> para calcular o valor automaticamente.
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500">
+                Calculado automaticamente com base nos produtos vinculados.
+              </p>
+            )}
+          </div>
 
           {/* Probabilidade de Fechamento */}
           <EditableField

@@ -672,7 +672,6 @@ const CardDetails: React.FC = () => {
             <SummarySection
               card={card}
               onUpdate={handleOptimisticUpdate}
-              hasProducts={((card as any).products?.length || 0) > 0}
             />
 
             {/* Seção: Cliente (Organização) */}
