@@ -107,24 +107,26 @@ export const ACQUISITION_CHANNEL_DETAILS: Record<string, string[]> = {
   ],
   "Indicação": [
     "Indicação - Cliente",
-    "Indicação - Parceiro",
-    "Indicação - Network pessoal",
+    "Indicação - Ex-cliente",
+    "Indicação - Networking pessoal",
   ],
   "Parcerias": [
-    "Parcerias - Co-marketing",
-    "Parcerias - Integração tecnológica",
-    "Parcerias - Revenda",
+    "Parcerias - Consultorias",
+    "Parcerias - Integradores",
+    "Parcerias - Representantes",
+    "Parcerias - Outras empresas",
   ],
   "Eventos": [
     "Eventos - Feira",
-    "Eventos - Webinar",
-    "Eventos - Workshop",
+    "Eventos - Workshop próprio",
+    "Eventos - Palestra",
     "Eventos - Meetup",
   ],
   "Base": [
-    "Base - Reativação",
-    "Base - Cross-sell",
-    "Base - Up-sell",
+    "Base - Resgate",
+    "Base - Levantada de mão",
+    "Base - e-mail marketing",
+    "Base - Disparo whats",
   ],
 };
 

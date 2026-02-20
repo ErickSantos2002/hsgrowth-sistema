@@ -15,7 +15,9 @@ from app.schemas.card import (
     CardListResponse,
     CardMoveRequest,
     CardAssignRequest,
-    CardExpandedResponse
+    CardExpandedResponse,
+    CardReopenRequest,
+    CardReopenResponse
 )
 from app.schemas.field import CardFieldValueCreate, CardFieldValueResponse
 from app.models.audit_log import AuditLog
@@ -472,6 +474,82 @@ async def assign_card(
     db.commit()
 
     return card_to_response(card)
+
+
+# ========== ENDPOINT DE REABERTURA ==========
+
+@router.post(
+    "/{card_id}/reopen",
+    response_model=CardReopenResponse,
+    summary="Reabrir negócio perdido",
+    responses={
+        200: {
+            "description": "Negócio reaberto com sucesso - novo card criado",
+            "content": {"application/json": {"example": {
+                "new_card_id": 245,
+                "new_card_title": "Retomada - Empresa XYZ",
+                "original_card_id": 152,
+                "message": "Negócio reaberto com sucesso"
+            }}}
+        },
+        400: {
+            "description": "Card não está perdido",
+            "content": {"application/json": {"example": {
+                "detail": "Apenas negócios perdidos podem ser reabertos"
+            }}}
+        },
+        404: {
+            "description": "Card não encontrado",
+            "content": {"application/json": {"example": {
+                "detail": "Card não encontrado"
+            }}}
+        }
+    }
+)
+async def reopen_card(
+    request: Request,
+    card_id: int = Path(..., description="ID do card perdido a ser reaberto"),
+    reopen_data: CardReopenRequest = ...,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Reabre um negócio perdido criando um clone na lista de Prospecção (list_id=22).
+
+    O card original **não é modificado** - continua como perdido.
+    Um novo card é criado com:
+    - Canal de Aquisição = "Base"
+    - Canal de Aquisição Detalhamento = escolha do vendedor
+    - Título editado pelo vendedor
+    - Lista de destino = Prospecção (list_id=22, board_id=6)
+
+    **Permissões:** Qualquer usuário autenticado
+    """
+    service = CardService(db)
+    new_card = service.reopen_card(card_id, reopen_data, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="REOPEN",
+        entity_type="Card",
+        entity_id=card_id,
+        description=f"Negócio reaberto: card #{card_id} gerou novo card #{new_card.id} ({reopen_data.title})",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return CardReopenResponse(
+        new_card_id=new_card.id,
+        new_card_title=new_card.title,
+        original_card_id=card_id,
+        message="Negócio reaberto com sucesso"
+    )
 
 
 # ========== ENDPOINTS DE CAMPOS CUSTOMIZADOS ==========

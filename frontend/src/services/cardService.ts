@@ -99,6 +99,18 @@ class CardService {
   }
 
   /**
+   * Reabre um negócio perdido criando um clone na lista de Prospecção
+   * O card original permanece inalterado (continua perdido)
+   */
+  async reopen(
+    id: number,
+    data: { title: string; acquisition_channel_detail: string }
+  ): Promise<{ new_card_id: number; new_card_title: string; original_card_id: number; message: string }> {
+    const response = await api.post(`/api/v1/cards/${id}/reopen`, data);
+    return response.data;
+  }
+
+  /**
    * Busca global de cards por título
    * Busca em todos os boards que o usuário tem acesso
    */

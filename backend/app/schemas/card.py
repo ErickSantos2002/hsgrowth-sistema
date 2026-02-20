@@ -523,6 +523,53 @@ class CardMinimalListResponse(BaseModel):
     total_pages: int = Field(..., description="Total de páginas")
 
 
+class CardReopenRequest(BaseModel):
+    """
+    Schema para reabertura de negócio perdido.
+    Cria uma cópia do card com canal de aquisição Base e move para a lista de destino.
+    """
+    title: str = Field(..., min_length=1, max_length=500, description="Título do novo negócio")
+    acquisition_channel_detail: str = Field(
+        ...,
+        description="Detalhamento do canal Base: 'Base - Resgate' ou 'Base - Levantada de mão'"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "title": "Retomada - Empresa XYZ",
+                    "acquisition_channel_detail": "Base - Resgate"
+                }
+            ]
+        }
+    }
+
+
+class CardReopenResponse(BaseModel):
+    """
+    Schema de resposta da reabertura de negócio.
+    Retorna o novo card criado como clone do card perdido.
+    """
+    new_card_id: int = Field(..., description="ID do novo card criado")
+    new_card_title: str = Field(..., description="Título do novo card")
+    original_card_id: int = Field(..., description="ID do card original (perdido)")
+    message: str = Field(..., description="Mensagem de confirmação")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "new_card_id": 245,
+                    "new_card_title": "Retomada - Empresa XYZ",
+                    "original_card_id": 152,
+                    "message": "Negócio reaberto com sucesso"
+                }
+            ]
+        }
+    }
+
+
 class CardExpandedResponse(CardResponse):
     """
     Schema expandido de card com todos os relacionamentos carregados.

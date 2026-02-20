@@ -149,7 +149,7 @@ async def save_api4com_config(
 
     # Verifica se já existe configuração
     from app.models.api4com import API4ComConfig
-    existing_config = db.query(API4ComConfig).filter(API4ComConfig.is_deleted == False).first()
+    existing_config = db.query(API4ComConfig).first()
     is_update = existing_config is not None
 
     service = API4ComService(db)
@@ -380,8 +380,7 @@ def save_extension(
     # Verifica se já existe extension para esse usuário
     from app.models.api4com import UserExtension
     existing_extension = db.query(UserExtension).filter(
-        UserExtension.user_id == extension_data.user_id,
-        UserExtension.is_deleted == False
+        UserExtension.user_id == extension_data.user_id
     ).first()
     is_update = existing_extension is not None
 
@@ -470,8 +469,7 @@ def delete_extension(
     # Busca informações antes de deletar para o log
     from app.models.api4com import UserExtension
     user_extension = db.query(UserExtension).filter(
-        UserExtension.user_id == user_id,
-        UserExtension.is_deleted == False
+        UserExtension.user_id == user_id
     ).first()
 
     extension_number = user_extension.extension if user_extension else "desconhecido"

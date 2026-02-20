@@ -1159,6 +1159,225 @@ class CardService:
 
         return response_data
 
+    def reopen_card(self, card_id: int, reopen_data, current_user: User) -> Card:
+        """
+        Reabre um negócio perdido criando um clone na lista de destino (list_id=22, board_id=6).
+
+        O card original permanece inalterado (continua perdido).
+        O clone herda os dados completos do original:
+        - Dados básicos: cliente, pessoa, responsável, SDR, valor, descrição, deal_type
+        - Informações de contato (contact_info)
+        - Campos customizados (card_field_values)
+        - Tarefas/atividades (card_tasks)
+        - Anotações (card_notes)
+        - Arquivos/anexos (attachments - os registros apontam para os mesmos arquivos físicos)
+
+        Canal de aquisição é sempre "Base" com detalhamento escolhido pelo vendedor.
+
+        Args:
+            card_id: ID do card perdido (original)
+            reopen_data: CardReopenRequest com title e acquisition_channel_detail
+            current_user: Usuário autenticado
+
+        Returns:
+            Novo card criado (clone)
+
+        Raises:
+            HTTPException: Se o card não existir ou não estiver perdido
+        """
+        from app.schemas.card import CardCreate
+        from app.models.card_field_value import CardFieldValue
+        from app.models.card_task import CardTask
+        from app.models.card_note import CardNote
+        from app.models.attachment import Attachment
+        from app.models.card_product import CardProduct
+
+        # ID fixo da lista de destino (Prospecção - board_id=6)
+        TARGET_LIST_ID = 22
+
+        # Busca e valida o card original
+        original_card = self.get_card_by_id(card_id)
+
+        if not original_card.is_lost:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Apenas negócios perdidos podem ser reabertos"
+            )
+
+        # Verifica se a lista de destino existe
+        target_list = self.list_repository.find_by_id(TARGET_LIST_ID)
+        if not target_list:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lista de destino (ID {TARGET_LIST_ID}) não encontrada"
+            )
+
+        # Monta os dados do clone copiando campos relevantes do original
+        clone_data = CardCreate(
+            title=reopen_data.title,
+            list_id=TARGET_LIST_ID,
+            client_id=original_card.client_id,
+            assigned_to_id=original_card.assigned_to_id,
+            sdr_id=original_card.sdr_id,
+            value=float(original_card.value) if original_card.value else None,
+            due_date=None,  # Zera o vencimento - o negócio está recomeçando
+            description=original_card.description,
+            deal_type=original_card.deal_type,
+            # Canal de aquisição sempre "Base" na reabertura
+            acquisition_channel="Base",
+            acquisition_channel_detail=reopen_data.acquisition_channel_detail,
+            has_implementation=original_card.has_implementation,
+            has_personnel=original_card.has_personnel,
+        )
+
+        # Cria o clone (create_card já preenche prospection_entry_date automaticamente)
+        new_card = self.create_card(clone_data, current_user)
+
+        # Copia campos que não estão no CardCreate mas existem no model
+        # contact_info e person_id precisam ser setados diretamente após a criação
+        try:
+            if original_card.contact_info:
+                new_card.contact_info = original_card.contact_info
+            if original_card.person_id:
+                new_card.person_id = original_card.person_id
+            self.db.commit()
+            self.db.refresh(new_card)
+        except Exception as e:
+            self.db.rollback()
+            print(f"[REOPEN] Aviso: erro ao copiar contact_info/person_id: {e}")
+
+        # Copia os campos customizados do card original para o clone
+        try:
+            original_field_values = self.db.query(CardFieldValue).filter(
+                CardFieldValue.card_id == card_id
+            ).all()
+
+            for fv in original_field_values:
+                self.db.add(CardFieldValue(
+                    card_id=new_card.id,
+                    field_definition_id=fv.field_definition_id,
+                    value=fv.value
+                ))
+
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"[REOPEN] Aviso: erro ao copiar campos customizados: {e}")
+
+        # Copia as tarefas/atividades do card original para o clone
+        # Preserva o histórico completo (inclusive tarefas já concluídas)
+        try:
+            original_tasks = self.db.query(CardTask).filter(
+                CardTask.card_id == card_id
+            ).all()
+
+            for task in original_tasks:
+                self.db.add(CardTask(
+                    card_id=new_card.id,
+                    assigned_to_id=task.assigned_to_id,
+                    title=task.title,
+                    description=task.description,
+                    task_type=task.task_type,
+                    priority=task.priority,
+                    due_date=task.due_date,
+                    duration_minutes=task.duration_minutes,
+                    is_completed=task.is_completed,
+                    completed_at=task.completed_at,
+                    location=task.location,
+                    video_link=task.video_link,
+                    notes=task.notes,
+                    contact_name=task.contact_name,
+                    status=task.status,
+                ))
+
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"[REOPEN] Aviso: erro ao copiar tarefas: {e}")
+
+        # Copia as anotações do card original para o clone
+        try:
+            original_notes = self.db.query(CardNote).filter(
+                CardNote.card_id == card_id
+            ).all()
+
+            for note in original_notes:
+                self.db.add(CardNote(
+                    card_id=new_card.id,
+                    user_id=note.user_id,
+                    content=note.content,
+                ))
+
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"[REOPEN] Aviso: erro ao copiar anotações: {e}")
+
+        # Copia os registros de anexos do card original para o clone
+        # Filtra por deleted_at IS NULL (soft delete dos attachments usa deleted_at, não is_deleted)
+        # Os registros apontam para os mesmos arquivos físicos em disco
+        try:
+            original_attachments = self.db.query(Attachment).filter(
+                Attachment.card_id == card_id,
+                Attachment.deleted_at.is_(None)
+            ).all()
+
+            for att in original_attachments:
+                self.db.add(Attachment(
+                    card_id=new_card.id,
+                    uploaded_by_id=att.uploaded_by_id,
+                    filename=att.filename,
+                    original_filename=att.original_filename,
+                    file_size=att.file_size,
+                    mime_type=att.mime_type,
+                    storage_path=att.storage_path,
+                ))
+
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"[REOPEN] Aviso: erro ao copiar anexos: {e}")
+
+        # Copia os produtos do card original para o clone
+        try:
+            original_products = self.db.query(CardProduct).filter(
+                CardProduct.card_id == card_id
+            ).all()
+
+            for cp in original_products:
+                self.db.add(CardProduct(
+                    card_id=new_card.id,
+                    product_id=cp.product_id,
+                    quantity=cp.quantity,
+                    unit_price=cp.unit_price,
+                    discount=cp.discount,
+                    notes=cp.notes,
+                ))
+
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"[REOPEN] Aviso: erro ao copiar produtos: {e}")
+
+        # Registra no histórico do card ORIGINAL que ele gerou uma reabertura
+        try:
+            self.activity_repository.create(
+                card_id=card_id,
+                user_id=current_user.id,
+                activity_type="card_reopened",
+                description=f"Negócio reaberto como card <strong>#{new_card.id}</strong>: \"{reopen_data.title}\"",
+                activity_metadata={
+                    "new_card_id": new_card.id,
+                    "new_card_title": reopen_data.title,
+                    "acquisition_channel_detail": reopen_data.acquisition_channel_detail
+                }
+            )
+        except Exception as e:
+            self.db.rollback()
+            print(f"[REOPEN] Aviso: erro ao registrar histórico no card original: {e}")
+
+        return new_card
+
     def link_person_to_card(self, card_id: int, person_id: int, current_user: User) -> Card:
         """
         Vincula uma pessoa a um card.

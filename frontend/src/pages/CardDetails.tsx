@@ -11,6 +11,7 @@ import {
   Users,
   UserPlus,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { Card } from "../types";
 import cardService from "../services/cardService";
@@ -24,6 +25,7 @@ import NotesSection from "../components/cardDetails/NotesSection";
 import SchedulerSection from "../components/cardDetails/SchedulerSection";
 import FilesSection from "../components/cardDetails/FilesSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
+import ReopenModal from "../components/cardDetails/ReopenModal";
 import { showSuccess, showError } from "../utils/toast";
 import attachmentService from "../services/attachmentService";
 
@@ -53,6 +55,10 @@ const CardDetails: React.FC = () => {
 
   // Estado da modal de motivo da perda
   const [showLossReasonModal, setShowLossReasonModal] = useState(false);
+
+  // Estado da modal de reabertura de negócio
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
 
   // Estado da contagem de arquivos
   const [attachmentsCount, setAttachmentsCount] = useState<number>(0);
@@ -196,6 +202,30 @@ const CardDetails: React.FC = () => {
     } catch (error) {
       console.error("Erro ao marcar como perdido:", error);
       showError("Erro ao marcar negócio como perdido");
+    }
+  };
+
+  /**
+   * Confirma a reabertura do negócio perdido
+   * Cria um clone na lista de Prospecção e navega para o novo card
+   */
+  const handleConfirmReopen = async (title: string, acquisitionChannelDetail: string) => {
+    if (!card) return;
+    setIsReopening(true);
+    try {
+      const result = await cardService.reopen(card.id, {
+        title,
+        acquisition_channel_detail: acquisitionChannelDetail,
+      });
+      setShowReopenModal(false);
+      showSuccess(`Negócio reaberto com sucesso! Redirecionando para o novo card...`);
+      // Navega para o novo card criado
+      navigate(`/cards/${result.new_card_id}`);
+    } catch (error) {
+      console.error("Erro ao reabrir negócio:", error);
+      showError("Erro ao reabrir negócio. Tente novamente.");
+    } finally {
+      setIsReopening(false);
     }
   };
 
@@ -600,10 +630,21 @@ const CardDetails: React.FC = () => {
                 </div>
               )}
               {card.is_lost && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 font-medium text-red-400">
-                  <XCircle size={18} />
-                  Negócio Perdido
-                </div>
+                <>
+                  <div className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 font-medium text-red-400">
+                    <XCircle size={18} />
+                    Negócio Perdido
+                  </div>
+                  {/* Botão de reabertura - aparece somente para negócios perdidos */}
+                  <button
+                    onClick={() => setShowReopenModal(true)}
+                    className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-blue-600"
+                    title="Cria um novo card a partir deste negócio perdido"
+                  >
+                    <RefreshCw size={18} />
+                    Reabrir Negócio
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -759,6 +800,17 @@ const CardDetails: React.FC = () => {
           onConfirm={handleConfirmLoss}
           boardId={card.board_id}
           boardName={card.board_name || "Board"}
+        />
+      )}
+
+      {/* Modal de Reabertura de Negócio */}
+      {card && (
+        <ReopenModal
+          isOpen={showReopenModal}
+          onClose={() => setShowReopenModal(false)}
+          onConfirm={handleConfirmReopen}
+          originalTitle={card.title}
+          isLoading={isReopening}
         />
       )}
     </div>
