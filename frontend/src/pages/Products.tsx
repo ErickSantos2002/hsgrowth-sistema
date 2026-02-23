@@ -88,7 +88,11 @@ const Products: React.FC = () => {
     };
 
     const symbol = currencySymbols[currency] || currency;
-    return `${symbol} ${price.toFixed(2).replace(".", ",")}`;
+    const formatted = price.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return `${symbol} ${formatted}`;
   };
 
   return (
