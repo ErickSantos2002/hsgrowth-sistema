@@ -7,6 +7,51 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.2.0] - 2026-02-23
+
+### 🎨 Novas Funcionalidades
+
+#### Modo Claro (Light Mode) - Sistema de Temas Completo
+- **Toggle de tema** no header do MainLayout: alterna entre modo claro e escuro com persistência no `localStorage`
+- **Estratégia Tailwind `darkMode: 'class'`**: classe `dark` no `<html>`, prefixo `dark:` em todos os componentes
+- **ThemeContext**: contexto React global com hook `useTheme()` expondo `darkMode` e `toggleTheme`
+- **~1.600 classes `dark:` adicionadas** em todos os componentes e páginas do frontend
+- **Cores programáticas tema-aware**: função `getChartColors(darkMode: boolean)` em `constants/colors.ts` para Recharts, React Flow e outros componentes que não suportam prefixo `dark:` do Tailwind
+- **Sem regressões**: modo escuro mantém aparência idêntica à versão anterior
+
+#### Componente Pagination Responsivo Light/Dark
+- **Mobile-first**: navegação simplificada (Anterior / Página X de Y / Próxima) em telas pequenas
+- **Desktop**: navegação completa com contador de registros, botões numéricos e Anterior/Próxima
+- **Suporte total a modo claro**: `border-gray-200 bg-white text-slate-900` com variantes `dark:*`
+
+### 🔧 Melhorias Técnicas
+
+#### Frontend
+- `tailwind.config.js`: habilitado `darkMode: 'class'`
+- `ThemeContext.tsx`: contexto com persistência no `localStorage`
+- `constants/colors.ts`: adicionado `getChartColors(darkMode)` para cores HEX tema-aware
+- `main.tsx`: aplicação da classe `dark` no `<html>` via ThemeContext na inicialização
+- **Dashboard, Reports, AutomationEditor, KanbanList**: substituídos `COLORS.surface.*`, `COLORS.content.*`, `COLORS.border.*` por `chartColors.*` via `getChartColors(darkMode)`
+- **~100 arquivos atualizados**: todas as páginas, layouts, componentes comuns, modais, kanban, settings, gamification, automations
+
+### 📝 Arquivos Modificados
+
+#### Frontend
+- `tailwind.config.js` - darkMode class habilitado
+- `src/context/ThemeContext.tsx` - ThemeContext com localStorage
+- `src/main.tsx` - inicialização do tema no html
+- `src/layouts/MainLayout.tsx` - toggle de tema no header + versão 1.2.0
+- `src/constants/colors.ts` - getChartColors adicionado
+- `src/pages/Dashboard.tsx` - chartColors tema-aware
+- `src/pages/Reports.tsx` - chartColors tema-aware
+- `src/pages/AutomationEditor.tsx` - chartColors tema-aware
+- `src/components/kanban/KanbanList.tsx` - chartColors tema-aware
+- `src/components/common/Pagination.tsx` - light/dark mode + mobile-first responsivo
+- `src/pages/Notifications.tsx` - usa componente Pagination ao invés de inline
+- _~90 arquivos adicionais com classes `dark:` adicionadas_
+
+---
+
 ## [1.1.10] - 2026-02-20
 
 ### ✨ Novas Funcionalidades
