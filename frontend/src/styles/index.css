@@ -60,6 +60,15 @@
   outline-offset: 2px;
 }
 
+/* QuickActivityForm: hide native picker icons so custom white icons can be used */
+.activity-picker-input {
+  color-scheme: dark;
+}
+
+.activity-picker-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
 @layer utilities {
   .overflow-wrap-anywhere {
     overflow-wrap: anywhere;

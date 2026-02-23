@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
+  Calendar,
   Phone,
   Users,
   CheckSquare,
@@ -42,6 +43,8 @@ interface ActivityTypeConfig {
  */
 const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, onCancel }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
+  const timeInputRef = useRef<HTMLInputElement | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     type: "call" as ActivityType,
@@ -228,22 +231,50 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-400">Data</label>
-          <input
-            type="date"
-            value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
-          />
+          <div className="relative">
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className="activity-picker-input w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 pr-10 text-white focus:border-blue-500 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                dateInputRef.current?.showPicker?.();
+                dateInputRef.current?.focus();
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white"
+              aria-label="Selecionar data"
+            >
+              <Calendar size={16} />
+            </button>
+          </div>
         </div>
 
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-400">Hora</label>
-          <input
-            type="time"
-            value={formData.time}
-            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
-          />
+          <div className="relative">
+            <input
+              ref={timeInputRef}
+              type="time"
+              value={formData.time}
+              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+              className="activity-picker-input w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 pr-10 text-white focus:border-blue-500 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                timeInputRef.current?.showPicker?.();
+                timeInputRef.current?.focus();
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white"
+              aria-label="Selecionar hora"
+            >
+              <Clock size={16} />
+            </button>
+          </div>
         </div>
 
         <div>
