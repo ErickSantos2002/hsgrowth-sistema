@@ -35,9 +35,9 @@ export default function Login() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4">
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
             <div className="w-full max-w-md">
-                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/50 p-8 shadow-2xl backdrop-blur-xl">
+                <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50">
                     {/* Logo e Título */}
                     <div className="mb-8 flex flex-col items-center">
                         <div className="relative mb-4">
@@ -53,7 +53,7 @@ export default function Login() {
                         <h1 className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-3xl font-bold text-transparent">
                             HSGrowth CRM
                         </h1>
-                        <p className="mt-2 text-slate-400">
+                        <p className="mt-2 text-slate-500 dark:text-slate-400">
                             Sistema de Gestão de Vendas
                         </p>
                     </div>
@@ -69,7 +69,7 @@ export default function Login() {
                         <div className="space-y-2">
                             <label
                                 htmlFor="email"
-                                className="block text-sm font-medium text-slate-300"
+                                className="block text-sm font-medium text-slate-700 dark:text-slate-300"
                             >
                                 Email
                             </label>
@@ -82,14 +82,14 @@ export default function Login() {
                                 disabled={isLoading}
                                 autoComplete="email"
                                 autoFocus
-                                className="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 transition-all focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 transition-all focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700/50 dark:bg-slate-800/50 dark:text-white dark:placeholder-slate-500"
                             />
                         </div>
 
                         <div className="space-y-2">
                             <label
                                 htmlFor="senha"
-                                className="block text-sm font-medium text-slate-300"
+                                className="block text-sm font-medium text-slate-700 dark:text-slate-300"
                             >
                                 Senha
                             </label>
@@ -101,7 +101,7 @@ export default function Login() {
                                 onChange={(e) => setSenha(e.target.value)}
                                 disabled={isLoading}
                                 autoComplete="current-password"
-                                className="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 transition-all focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 transition-all focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700/50 dark:bg-slate-800/50 dark:text-white dark:placeholder-slate-500"
                             />
                         </div>
 

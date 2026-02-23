@@ -23,7 +23,7 @@ const NoteRenderer: React.FC<NoteRendererProps> = ({ content }) => {
 
   if (!isHTML) {
     // Conteúdo texto simples - renderiza normalmente
-    return <p className="whitespace-pre-wrap text-sm text-slate-300">{content}</p>;
+    return <p className="whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{content}</p>;
   }
 
   // Conteúdo HTML - faz parsing e renderiza organizado
@@ -32,7 +32,7 @@ const NoteRenderer: React.FC<NoteRendererProps> = ({ content }) => {
   if (messages.length === 0) {
     // Se não conseguiu parsear, renderiza como texto simples (fallback)
     return (
-      <div className="text-sm text-slate-300">
+      <div className="text-sm text-slate-600 dark:text-slate-300">
         <div className="mb-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
           ⚠️ Nota importada (HTML) - visualização limitada
         </div>
@@ -68,17 +68,17 @@ const NoteRenderer: React.FC<NoteRendererProps> = ({ content }) => {
  */
 const WhatsAppMessage: React.FC<{ message: ParsedMessage }> = ({ message }) => {
   return (
-    <div className="rounded-lg border border-slate-700/50 bg-slate-800/70 p-3 transition-colors hover:bg-slate-700/40">
+    <div className="rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/70 dark:bg-slate-800/70 p-3 transition-colors hover:bg-slate-700/40">
       {/* Header: Nome + Horário */}
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-xs font-semibold text-emerald-400">{message.author}</span>
         {message.time && (
-          <span className="text-xs text-slate-500">{message.time}</span>
+          <span className="text-xs text-slate-400 dark:text-slate-500">{message.time}</span>
         )}
       </div>
 
       {/* Conteúdo da mensagem */}
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
+      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600 dark:text-slate-300">
         {message.content}
       </p>
 
@@ -96,7 +96,7 @@ const WhatsAppMessage: React.FC<{ message: ParsedMessage }> = ({ message }) => {
                 <img
                   src={imgUrl}
                   alt="Imagem anexada"
-                  className="h-auto max-w-full rounded-lg border border-slate-700 transition-colors group-hover:border-blue-500"
+                  className="h-auto max-w-full rounded-lg border border-gray-200 dark:border-slate-700 transition-colors group-hover:border-blue-500"
                   loading="lazy"
                   onError={(e) => {
                     // Se imagem não carregar, mostra placeholder
@@ -107,7 +107,7 @@ const WhatsAppMessage: React.FC<{ message: ParsedMessage }> = ({ message }) => {
                     placeholder?.classList.add("flex");
                   }}
                 />
-                <div className="hidden items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 p-3 text-xs text-slate-400">
+                <div className="hidden items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-3 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
                   <ImageIcon size={16} />
                   <span>Imagem não disponível</span>
                 </div>

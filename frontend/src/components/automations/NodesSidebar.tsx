@@ -139,9 +139,9 @@ const NodesSidebar: React.FC<NodesSidebarProps> = ({ onDragStart }) => {
   const actions = availableNodes.filter((n) => n.category === "action");
 
   return (
-    <div className="max-h-[85vh] w-80 overflow-y-auto overflow-x-hidden border-l border-slate-700 bg-slate-800/50 p-4 backdrop-blur sm:max-h-[calc(100vh-70px)]">
-      <h3 className="mb-4 text-lg font-semibold text-white">Blocos Disponíveis</h3>
-      <p className="mb-6 text-sm text-slate-400">
+    <div className="max-h-[85vh] w-80 overflow-y-auto overflow-x-hidden border-l border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4 backdrop-blur sm:max-h-[calc(100vh-70px)]">
+      <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Blocos Disponíveis</h3>
+      <p className="mb-6 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
         Arraste os blocos para o canvas para criar sua automação
       </p>
 
@@ -156,10 +156,10 @@ const NodesSidebar: React.FC<NodesSidebarProps> = ({ onDragStart }) => {
               key={node.type}
               draggable
               onDragStart={(e) => onDragStart(e, node.type, node.category)}
-              className="flex cursor-grab items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 p-3 transition-all hover:border-purple-500 hover:bg-slate-700 active:cursor-grabbing"
+              className="flex cursor-grab items-center gap-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-200/50 dark:bg-slate-700/50 p-3 transition-all hover:border-purple-500 hover:bg-gray-200 dark:hover:bg-slate-700 active:cursor-grabbing"
             >
               <div className={`text-${node.color}-400`}>{node.icon}</div>
-              <span className="text-sm font-medium text-white">{node.label}</span>
+              <span className="text-sm font-medium text-slate-900 dark:text-white">{node.label}</span>
             </div>
           ))}
         </div>
@@ -176,10 +176,10 @@ const NodesSidebar: React.FC<NodesSidebarProps> = ({ onDragStart }) => {
               key={node.type}
               draggable
               onDragStart={(e) => onDragStart(e, node.type, node.category)}
-              className="flex cursor-grab items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 p-3 transition-all hover:border-emerald-500 hover:bg-slate-700 active:cursor-grabbing"
+              className="flex cursor-grab items-center gap-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-200/50 dark:bg-slate-700/50 p-3 transition-all hover:border-emerald-500 hover:bg-gray-200 dark:hover:bg-slate-700 active:cursor-grabbing"
             >
               <div className={`text-${node.color}-400`}>{node.icon}</div>
-              <span className="text-sm font-medium text-white">{node.label}</span>
+              <span className="text-sm font-medium text-slate-900 dark:text-white">{node.label}</span>
             </div>
           ))}
         </div>

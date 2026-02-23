@@ -22,14 +22,14 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /**
- * Mapa de classes CSS para cada variante
+ * Mapa de classes CSS para cada variante (suporte a modo claro e escuro)
  */
 const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-emerald-600 hover:bg-emerald-700 text-white",
-  secondary: "bg-slate-700 hover:bg-slate-600 text-white",
+  secondary: "bg-gray-200 hover:bg-gray-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white",
   success: "bg-emerald-600 hover:bg-emerald-700 text-white",
   danger: "bg-red-600 hover:bg-red-700 text-white",
-  ghost: "bg-transparent hover:bg-slate-800 text-slate-300 hover:text-white",
+  ghost: "bg-transparent hover:bg-gray-100 text-slate-600 hover:text-slate-900 dark:hover:bg-slate-800 dark:text-slate-300 dark:hover:text-white",
 };
 
 /**

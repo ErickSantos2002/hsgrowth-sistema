@@ -25,7 +25,7 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
+    <div className="overflow-hidden rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 backdrop-blur-sm">
       {/* Header da seção - clicável para expandir/recolher */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -34,16 +34,16 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
         <div className="flex items-center gap-2">
           {/* Ícone de expand/collapse */}
           {isExpanded ? (
-            <ChevronDown size={18} className="text-slate-400" />
+            <ChevronDown size={18} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
           ) : (
-            <ChevronRight size={18} className="text-slate-400" />
+            <ChevronRight size={18} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
           )}
 
           {/* Ícone opcional da seção */}
-          {icon && <span className="text-slate-400">{icon}</span>}
+          {icon && <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400">{icon}</span>}
 
           {/* Título da seção */}
-          <span className="font-semibold text-white">{title}</span>
+          <span className="font-semibold text-slate-900 dark:text-white">{title}</span>
 
           {/* Badge opcional (ex: contagem) */}
           {badge !== undefined && (
@@ -56,7 +56,7 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
 
       {/* Conteúdo da seção - visível apenas quando expandido */}
       {isExpanded && (
-        <div className="border-t border-slate-700/50 bg-slate-900/30 px-4 py-3">
+        <div className="border-t border-gray-200/50 dark:border-slate-700/50 bg-gray-50/30 dark:bg-slate-900/30 px-4 py-3">
           {children}
         </div>
       )}

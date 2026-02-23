@@ -74,7 +74,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
    * Retorna classes CSS para o tipo de atividade selecionado
    */
   const getTypeColorClasses = (type: ActivityType, isSelected: boolean) => {
-    const unselected = "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700";
+    const unselected = "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700";
     const configs = {
       call: isSelected
         ? "bg-blue-500/30 text-blue-400 border-blue-500"
@@ -89,7 +89,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         ? "bg-yellow-500/30 text-yellow-400 border-yellow-500"
         : unselected,
       other: isSelected
-        ? "bg-slate-500/30 text-slate-400 border-slate-500"
+        ? "bg-slate-500/30 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-gray-400 dark:border-slate-500"
         : unselected,
     };
     return configs[type];
@@ -102,13 +102,13 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     const configs = {
       normal: isSelected
         ? "bg-blue-500/30 text-blue-300 border-blue-500"
-        : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700",
+        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
       high: isSelected
         ? "bg-yellow-500/30 text-yellow-400 border-yellow-500"
-        : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700",
+        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
       urgent: isSelected
         ? "bg-red-500/30 text-red-400 border-red-500"
-        : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700",
+        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
     };
     return configs[priority as keyof typeof configs];
   };
@@ -193,23 +193,23 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+    <div className="space-y-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
       {/* Título */}
       <div>
-        <label className="mb-2 block text-xs font-medium text-slate-400">Título da atividade</label>
+        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Título da atividade</label>
         <input
           type="text"
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           placeholder="Título da atividade..."
-          className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
           autoFocus
         />
       </div>
 
       {/* Tipos de atividade */}
       <div>
-        <label className="mb-2 block text-xs font-medium text-slate-400">Tipo de atividade</label>
+        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Tipo de atividade</label>
         <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
           {activityTypes.map((activityType) => (
             <button
@@ -230,14 +230,14 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       {/* Data, Hora e Duração */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-400">Data</label>
+          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Data</label>
           <div className="relative">
             <input
               ref={dateInputRef}
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="activity-picker-input w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 pr-10 text-white focus:border-blue-500 focus:outline-none"
+              className="activity-picker-input w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 pr-10 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
             />
             <button
               type="button"
@@ -245,7 +245,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
                 dateInputRef.current?.showPicker?.();
                 dateInputRef.current?.focus();
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 dark:text-white/80 dark:hover:text-white"
               aria-label="Selecionar data"
             >
               <Calendar size={16} />
@@ -254,14 +254,14 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-400">Hora</label>
+          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Hora</label>
           <div className="relative">
             <input
               ref={timeInputRef}
               type="time"
               value={formData.time}
               onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              className="activity-picker-input w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 pr-10 text-white focus:border-blue-500 focus:outline-none"
+              className="activity-picker-input w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 pr-10 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
             />
             <button
               type="button"
@@ -269,7 +269,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
                 timeInputRef.current?.showPicker?.();
                 timeInputRef.current?.focus();
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 dark:text-white/80 dark:hover:text-white"
               aria-label="Selecionar hora"
             >
               <Clock size={16} />
@@ -278,21 +278,21 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-400">Duração (min)</label>
+          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Duração (min)</label>
           <input
             type="number"
             min="5"
             step="5"
             value={formData.duration}
             onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
           />
         </div>
       </div>
 
       {/* Prioridade */}
       <div>
-        <label className="mb-2 block text-xs font-medium text-slate-400">Prioridade</label>
+        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Prioridade</label>
         <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => setFormData({ ...formData, priority: "normal" })}
@@ -326,7 +326,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
 
       {/* Descrição (obrigatória) */}
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-400">
+        <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
           Descrição *
         </label>
         <textarea
@@ -334,13 +334,13 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Descreva a atividade..."
           rows={2}
-          className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+          className="w-full resize-none rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
         />
       </div>
 
       {/* Notas (opcional) */}
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-400">
+        <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
           Notas adicionais (opcional)
         </label>
         <textarea
@@ -348,51 +348,51 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           placeholder="Adicionar notas extras..."
           rows={2}
-          className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+          className="w-full resize-none rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
         />
       </div>
 
       {/* Opções adicionais */}
       <div className="space-y-2">
-        <label className="block text-xs font-medium text-slate-400">Opções adicionais</label>
+        <label className="block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Opções adicionais</label>
 
         {/* Localização */}
         <div className="flex items-center gap-2">
-          <MapPin size={16} className="text-slate-500" />
+          <MapPin size={16} className="text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             value={formData.location}
             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             placeholder="Adicionar localização..."
-            className="flex-1 rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+            className="flex-1 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-1.5 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
           />
         </div>
 
         {/* Link de videochamada */}
         <div className="flex items-center gap-2">
-          <Video size={16} className="text-slate-500" />
+          <Video size={16} className="text-slate-400 dark:text-slate-500" />
           <input
             type="url"
             value={formData.video_link}
             onChange={(e) => setFormData({ ...formData, video_link: e.target.value })}
             placeholder="Link da videochamada (Google Meet, Zoom, etc.)"
-            className="flex-1 rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+            className="flex-1 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-1.5 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
           />
         </div>
       </div>
 
       {/* Botões de ação */}
-      <div className="flex gap-2 border-t border-slate-700/50 pt-2">
+      <div className="flex gap-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-2">
         <button
           onClick={handleCancel}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-slate-900 dark:text-white transition-colors hover:bg-red-700"
         >
           <X size={18} />
           Cancelar
         </button>
         <button
           onClick={handleSave}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-slate-900 dark:text-white transition-colors hover:bg-blue-700"
         >
           <Save size={18} />
           Salvar atividade

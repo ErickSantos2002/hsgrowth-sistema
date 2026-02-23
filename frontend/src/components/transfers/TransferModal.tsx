@@ -283,7 +283,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-slate-700 px-4 py-2 text-white transition-colors hover:bg-slate-600"
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
             disabled={loading}
           >
             Cancelar
@@ -291,7 +291,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-600"
+            className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-400 dark:disabled:bg-slate-600"
             disabled={loading}
           >
             {loading ? (
@@ -312,8 +312,8 @@ const TransferModal: React.FC<TransferModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Modo de Transferência */}
         {!preSelectedCardId && (
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <label className="mb-2 block text-sm font-medium text-slate-300">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Modo de Transferência
             </label>
             <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Modo de Transferência">
@@ -325,12 +325,12 @@ const TransferModal: React.FC<TransferModalProps> = ({
                 className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
                   transferMode === "single"
                     ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
-                    : "border-slate-700 text-slate-200 hover:border-slate-500"
+                    : "border-gray-300 text-slate-700 hover:border-gray-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500"
                 }`}
               >
                 <span
                   className={`h-2.5 w-2.5 rounded-full ${
-                    transferMode === "single" ? "bg-emerald-400" : "bg-slate-600"
+                    transferMode === "single" ? "bg-emerald-400" : "bg-gray-300 dark:bg-slate-600"
                   }`}
                 />
                 Card Único
@@ -343,12 +343,12 @@ const TransferModal: React.FC<TransferModalProps> = ({
                 className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
                   transferMode === "batch"
                     ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
-                    : "border-slate-700 text-slate-200 hover:border-slate-500"
+                    : "border-gray-300 text-slate-700 hover:border-gray-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500"
                 }`}
               >
                 <span
                   className={`h-2.5 w-2.5 rounded-full ${
-                    transferMode === "batch" ? "bg-emerald-400" : "bg-slate-600"
+                    transferMode === "batch" ? "bg-emerald-400" : "bg-gray-300 dark:bg-slate-600"
                   }`}
                 />
                 Transferência em Lote
@@ -359,7 +359,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Seleção de Board */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-300">
+          <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Board *
           </label>
           <SelectMenu
@@ -405,7 +405,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
         {/* Transferência Única */}
         {transferMode === "single" && selectedBoardId > 0 && (
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Card *
             </label>
             <SearchableCardSelect
@@ -428,7 +428,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
         {transferMode === "batch" && selectedBoardId > 0 && (
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="block text-sm font-medium text-slate-300">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Cards * (máximo 50)
               </label>
               <button
@@ -451,12 +451,12 @@ const TransferModal: React.FC<TransferModalProps> = ({
                   value={batchSearchTerm}
                   onChange={(e) => setBatchSearchTerm(e.target.value)}
                   placeholder="Pesquisar card..."
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-8 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-8 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
                 />
               </div>
             )}
 
-            <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 p-3">
+            <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-slate-700 dark:bg-slate-800">
               {loadingCards ? (
                 <div className="py-8 text-center">
                   <LoadingSpinner size="md" />
@@ -497,11 +497,11 @@ const TransferModal: React.FC<TransferModalProps> = ({
                       }
                     />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
                         {card.title}
                       </p>
                       {card.list_name && (
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
                           {card.list_name}
                         </p>
                       )}
@@ -510,7 +510,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
                 ))
               )}
             </div>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
               {batchFormData.card_ids.length} card(s) selecionado(s)
             </p>
             {errors.card_ids && (
@@ -524,7 +524,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Usuário Destinatário */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-300">
+          <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Transferir para *
           </label>
           <SelectMenu
@@ -560,7 +560,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Motivo */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-300">
+          <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Motivo da Transferência *
           </label>
           <SelectMenu
@@ -583,7 +583,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Observações */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-300">
+          <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Observações (opcional)
           </label>
           <textarea
@@ -600,14 +600,14 @@ const TransferModal: React.FC<TransferModalProps> = ({
             }}
             rows={3}
             placeholder="Adicione detalhes sobre o motivo da transferência..."
-            className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
             disabled={loading}
           />
         </div>
 
         {/* Alerta informativo */}
-        <div className="rounded-lg border border-blue-500/50 bg-blue-900/20 p-3">
-          <p className="text-sm text-blue-300">
+        <div className="rounded-lg border border-blue-500/50 bg-blue-50 p-3 dark:bg-blue-900/20">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
             <strong>Importante:</strong> Após criar a transferência, ela pode
             precisar de aprovação dependendo das configurações do sistema.
           </p>
@@ -694,13 +694,13 @@ const SearchableCardSelect: React.FC<SearchableCardSelectProps> = ({
         type="button"
         onClick={() => !disabled && !loading && setIsOpen((open) => !open)}
         disabled={disabled || loading || cards.length === 0}
-        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 ${
           disabled || loading || cards.length === 0
             ? "cursor-not-allowed opacity-60 text-slate-400"
-            : "text-white"
+            : "text-slate-900 dark:text-white"
         }`}
       >
-        <span className={`truncate ${selectedCard ? "text-white" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedCard ? "text-slate-900 dark:text-white" : "text-slate-400"}`}>
           {displayLabel}
         </span>
         <ChevronDown
@@ -711,9 +711,9 @@ const SearchableCardSelect: React.FC<SearchableCardSelectProps> = ({
 
       {/* Dropdown com busca */}
       {isOpen && (
-        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-xl">
+        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
           {/* Campo de busca */}
-          <div className="border-b border-slate-700 p-2">
+          <div className="border-b border-gray-200 p-2 dark:border-slate-700">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -722,7 +722,7 @@ const SearchableCardSelect: React.FC<SearchableCardSelectProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Pesquisar por título ou lista..."
-                className="w-full rounded-md border border-slate-600 bg-slate-800 py-1.5 pl-8 pr-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="w-full rounded-md border border-gray-300 bg-white py-1.5 pl-8 pr-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
               />
             </div>
           </div>
@@ -730,7 +730,7 @@ const SearchableCardSelect: React.FC<SearchableCardSelectProps> = ({
           {/* Lista de resultados */}
           <div className="max-h-60 overflow-y-auto">
             {filteredCards.length === 0 ? (
-              <p className="px-4 py-3 text-center text-sm text-slate-400">
+              <p className="px-4 py-3 text-center text-sm text-slate-600 dark:text-slate-400">
                 {searchTerm
                   ? `Nenhum card encontrado para "${searchTerm}"`
                   : "Nenhum card disponível"}
@@ -741,13 +741,13 @@ const SearchableCardSelect: React.FC<SearchableCardSelectProps> = ({
                   key={card.id}
                   type="button"
                   onClick={() => handleSelect(card.id)}
-                  className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-slate-800 ${
-                    card.id === value ? "bg-slate-800/70" : ""
+                  className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-slate-800 ${
+                    card.id === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
                   }`}
                 >
-                  <p className="truncate font-medium text-white">{card.title}</p>
+                  <p className="truncate font-medium text-slate-900 dark:text-white">{card.title}</p>
                   {card.list_name && (
-                    <p className="text-xs text-slate-400">{card.list_name}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">{card.list_name}</p>
                   )}
                 </button>
               ))
@@ -755,8 +755,8 @@ const SearchableCardSelect: React.FC<SearchableCardSelectProps> = ({
           </div>
 
           {/* Rodapé com contagem */}
-          <div className="border-t border-slate-700 px-3 py-1.5">
-            <p className="text-xs text-slate-500">
+          <div className="border-t border-gray-200 px-3 py-1.5 dark:border-slate-700">
+            <p className="text-xs text-slate-500 dark:text-slate-500">
               {filteredCards.length} de {cards.length} card(s)
             </p>
           </div>
@@ -817,11 +817,11 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
         type="button"
         onClick={() => setIsOpen((open) => !open)}
         disabled={disabled}
-        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white ${
           disabled ? "cursor-not-allowed opacity-60" : ""
         }`}
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
@@ -830,7 +830,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
         />
       </button>
       {isOpen && !disabled && (
-        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -839,8 +839,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

@@ -1,5 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // Ativa o modo escuro via classe CSS na tag <html>
+  // Quando a classe "dark" está presente no <html>, os prefixos dark: são aplicados
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",

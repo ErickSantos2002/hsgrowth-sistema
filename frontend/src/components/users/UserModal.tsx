@@ -229,12 +229,12 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         {/* Seção de Avatar (apenas para edição) */}
         {isEditing && user && (
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-white">Foto de Perfil</h3>
+            <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Foto de Perfil</h3>
             <div className="flex items-center gap-6">
               {/* Preview do Avatar */}
               <div className="relative">
                 {avatarPreview || user.avatar_url ? (
-                  <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-slate-700">
+                  <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-gray-300 dark:border-slate-700">
                     <img
                       src={avatarPreview || avatarService.getAvatarUrl(user.id)}
                       alt={user.name}
@@ -282,7 +282,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white transition-colors hover:bg-slate-700"
+                  className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
                   disabled={saving || uploadingAvatar}
                 >
                   <Upload size={16} />
@@ -307,7 +307,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         )}
 
         <div>
-          <h3 className="mb-4 text-lg font-semibold text-white">Dados de Acesso</h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Dados de Acesso</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               label={
@@ -369,7 +369,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         </div>
 
         <div>
-          <h3 className="mb-4 text-lg font-semibold text-white">Dados Pessoais</h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Dados Pessoais</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               label={
@@ -412,7 +412,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         </div>
 
         <div>
-          <h3 className="mb-4 text-lg font-semibold text-white">Permissões</h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Permissões</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               label={
@@ -431,7 +431,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                 ]}
                 onChange={(value) => setRoleId(Number(value))}
               />
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 {roleId === 1 && "Acesso total ao sistema"}
                 {roleId === 2 && "Gerencia equipes e relatórios"}
                 {roleId === 3 && "Gerencia apenas seus próprios cards"}
@@ -440,7 +440,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
             </FormField>
 
             <FormField label="Status">
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-700 bg-slate-800 p-3 transition-colors hover:bg-slate-700">
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">
                 <input
                   type="checkbox"
                   checked={isActive}
@@ -448,9 +448,9 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                   className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-600 focus:ring-emerald-500"
                   disabled={saving}
                 />
-                <span className="text-white">Usuário Ativo</span>
+                <span className="text-slate-900 dark:text-white">Usuário Ativo</span>
               </label>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Usuários inativos não podem fazer login
               </p>
             </FormField>
@@ -509,9 +509,9 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
@@ -520,7 +520,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -529,8 +529,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

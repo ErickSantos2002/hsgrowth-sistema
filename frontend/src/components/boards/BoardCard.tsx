@@ -148,7 +148,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
             />
           </div>
           <h3
-            className="flex-1 cursor-pointer text-xl font-bold text-white transition-colors group-hover:text-blue-400"
+            className="flex-1 cursor-pointer text-xl font-bold text-slate-900 dark:text-white transition-colors group-hover:text-blue-400"
             onClick={handleViewBoard}
           >
             {board.name}
@@ -156,12 +156,12 @@ const BoardCard: React.FC<BoardCardProps> = ({
         </div>
 
         {/* Descrição */}
-        <p className="line-clamp-2 min-h-[40px] text-sm text-gray-400">
+        <p className="line-clamp-2 min-h-[40px] text-sm text-slate-500 dark:text-gray-400">
           {board.description || "Sem descrição"}
         </p>
 
         {/* Data de criação */}
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500">
           <Calendar size={14} />
           <span>Criado em {formatDate(board.created_at)}</span>
         </div>
@@ -186,20 +186,20 @@ const BoardCard: React.FC<BoardCardProps> = ({
               onClick={() => setShowMenu(!showMenu)}
               className="rounded-lg p-2 transition-colors hover:bg-gray-700/50"
             >
-              <MoreVertical size={20} className="text-gray-400" />
+              <MoreVertical size={20} className="text-slate-500 dark:text-gray-400" />
             </button>
 
             {/* Dropdown menu */}
             {showMenu && (
               <>
                 {/* Menu */}
-                <div className="absolute bottom-full right-0 z-50 mb-2 w-48 overflow-hidden rounded-lg border border-gray-700 bg-gray-800 shadow-xl">
+                <div className="absolute bottom-full right-0 z-50 mb-2 w-48 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 shadow-xl">
                   <button
                     onClick={() => {
                       setShowMenu(false);
                       onEdit(board);
                     }}
-                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-300 transition-colors hover:bg-gray-700"
+                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <Edit size={16} />
                     Editar
@@ -210,7 +210,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
                       setShowMenu(false);
                       onDuplicate(board);
                     }}
-                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-300 transition-colors hover:bg-gray-700"
+                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <Copy size={16} />
                     Duplicar
@@ -221,7 +221,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
                       setShowMenu(false);
                       onToggleArchive(board);
                     }}
-                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-300 transition-colors hover:bg-gray-700"
+                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     {!board.is_deleted ? (
                       <>
@@ -236,7 +236,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
                     )}
                   </button>
 
-                  <div className="border-t border-gray-700"></div>
+                  <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
                   <button
                     onClick={() => {

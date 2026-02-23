@@ -623,7 +623,7 @@ const KanbanBoard: React.FC = () => {
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-slate-400">Carregando board...</p>
+          <p className="mt-4 text-slate-500 dark:text-slate-400">Carregando board...</p>
         </div>
       </div>
     );
@@ -634,7 +634,7 @@ const KanbanBoard: React.FC = () => {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <p className="mb-4 text-lg text-slate-400">Board não encontrado</p>
+          <p className="mb-4 text-lg text-slate-500 dark:text-slate-400">Board não encontrado</p>
           <button
             onClick={handleBack}
             className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
@@ -649,18 +649,18 @@ const KanbanBoard: React.FC = () => {
   const IconComponent = getIconComponent(board.icon || "grid");
 
   return (
-    <div className="flex h-full flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
         {/* Header fixo */}
-      <div className="relative z-20 flex-shrink-0 border-b border-slate-700/50 bg-slate-900/50 px-6 py-4 backdrop-blur-sm lg:z-50">
+      <div className="relative z-20 flex-shrink-0 border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700/50 dark:bg-slate-900/50 lg:z-50">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           {/* Lado esquerdo: Voltar + Nome do Board */}
           <div className="flex w-full items-center gap-4 sm:w-auto">
             <button
               onClick={handleBack}
-              className="rounded-lg p-2 transition-colors hover:bg-slate-800/50"
+              className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50"
               title="Voltar para Boards"
             >
-              <ArrowLeft size={20} className="text-slate-400" />
+              <ArrowLeft size={20} className="text-slate-500 dark:text-slate-400" />
             </button>
 
             <div className="flex items-center gap-3">
@@ -678,9 +678,9 @@ const KanbanBoard: React.FC = () => {
               </div>
 
               <div>
-                <h1 className="text-2xl font-bold text-white">{board.name}</h1>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{board.name}</h1>
                 {board.description && (
-                  <p className="text-sm text-slate-400">{board.description}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{board.description}</p>
                 )}
               </div>
             </div>
@@ -690,14 +690,14 @@ const KanbanBoard: React.FC = () => {
           <div className="mt-1 flex w-full items-center justify-end gap-2 sm:mt-0 sm:w-auto sm:gap-3">
             {/* Barra de busca (expansível) */}
             {showSearchBar ? (
-              <div className="animate-fadeIn flex w-full items-center gap-2 rounded-lg bg-slate-800/50 px-3 py-2 sm:w-auto">
-                <Search size={18} className="text-slate-400" />
+              <div className="animate-fadeIn flex w-full items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 dark:bg-slate-800/50 sm:w-auto">
+                <Search size={18} className="text-slate-400 dark:text-slate-400" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar cards..."
-                  className="min-w-0 flex-1 bg-transparent text-white placeholder-slate-400 outline-none sm:w-64"
+                  className="min-w-0 flex-1 bg-transparent text-slate-900 placeholder-slate-400 outline-none dark:text-white sm:w-64"
                   autoFocus
                   onBlur={() => {
                     // Fechar se não houver termo de busca
@@ -710,7 +710,7 @@ const KanbanBoard: React.FC = () => {
                       setSearchTerm("");
                       setShowSearchBar(false);
                     }}
-                    className="text-slate-400 hover:text-white"
+                    className="text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   >
                     <X size={16} />
                   </button>
@@ -719,24 +719,24 @@ const KanbanBoard: React.FC = () => {
             ) : (
               <button
                 onClick={() => setShowSearchBar(true)}
-                className={`rounded-lg p-2 transition-colors hover:bg-slate-800/50 ${
+                className={`rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50 ${
                   searchTerm ? "bg-blue-500/20 text-blue-400" : ""
                 }`}
                 title="Buscar cards"
               >
-                <Search size={20} className={searchTerm ? "text-blue-400" : "text-slate-400"} />
+                <Search size={20} className={searchTerm ? "text-blue-400" : "text-slate-500 dark:text-slate-400"} />
               </button>
             )}
 
             {/* Botão de filtros */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`rounded-lg p-2 transition-colors hover:bg-slate-800/50 ${
+              className={`rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50 ${
                 showFilters ? "bg-blue-500/20" : ""
               }`}
               title="Filtrar cards"
             >
-              <Filter size={20} className={showFilters ? "text-blue-400" : "text-slate-400"} />
+              <Filter size={20} className={showFilters ? "text-blue-400" : "text-slate-500 dark:text-slate-400"} />
             </button>
 
             {/* Botão Nova Lista - Apenas Admin e Manager */}
@@ -756,10 +756,10 @@ const KanbanBoard: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setShowBoardMenu(!showBoardMenu)}
-                className="rounded-lg p-2 transition-colors hover:bg-slate-800/50"
+                className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50"
                 title="Opções do board"
               >
-                <MoreVertical size={20} className="text-slate-400" />
+                <MoreVertical size={20} className="text-slate-500 dark:text-slate-400" />
               </button>
 
               {/* Dropdown menu */}
@@ -772,10 +772,10 @@ const KanbanBoard: React.FC = () => {
                   />
 
                   {/* Menu */}
-                  <div className="absolute right-0 z-[110] mt-2 w-56 overflow-hidden rounded-lg border border-slate-700/50 bg-slate-900 shadow-xl">
+                  <div className="absolute right-0 z-[110] mt-2 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700/50 dark:bg-slate-900">
                     <button
                       onClick={handleEditBoard}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       <Edit size={16} />
                       Editar Board
@@ -783,7 +783,7 @@ const KanbanBoard: React.FC = () => {
 
                     <button
                       onClick={handleDuplicateBoard}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       <Copy size={16} />
                       Duplicar Board
@@ -791,17 +791,17 @@ const KanbanBoard: React.FC = () => {
 
                     <button
                       onClick={handleArchiveBoard}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       <Archive size={16} />
                       Arquivar Board
                     </button>
 
-                    <div className="border-t border-slate-700/50"></div>
+                    <div className="border-t border-gray-200 dark:border-slate-700/50"></div>
 
                     <button
                       onClick={handleExportCards}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       <Download size={16} />
                       Exportar Cards
@@ -816,9 +816,9 @@ const KanbanBoard: React.FC = () => {
 
       {/* Painel de Filtros (expansível) */}
       {showFilters && (
-        <div className="relative z-10 flex-shrink-0 border-b border-slate-700/50 bg-slate-900/50 px-6 py-3 backdrop-blur-sm lg:z-40">
+        <div className="relative z-10 flex-shrink-0 border-b border-gray-200 bg-white px-6 py-3 dark:border-slate-700/50 dark:bg-slate-900/50 lg:z-40">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <span className="text-sm font-medium text-slate-300">Filtros:</span>
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Filtros:</span>
 
             {/* Filtro por lista */}
             <div className="w-full sm:w-auto sm:min-w-[190px]">
@@ -918,7 +918,7 @@ const KanbanBoard: React.FC = () => {
             {/* Limpar filtros */}
             <button
               onClick={() => setShowFilters(false)}
-              className="px-3 py-1.5 text-sm text-slate-400 transition-colors hover:text-white sm:ml-auto"
+              className="px-3 py-1.5 text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white sm:ml-auto"
             >
               Fechar
             </button>
@@ -973,8 +973,8 @@ const KanbanBoard: React.FC = () => {
               );
             })
           ) : (
-            <div className="w-80 flex-shrink-0 rounded-xl border border-slate-700/50 bg-slate-800/30 p-4 backdrop-blur-sm">
-              <div className="py-8 text-center text-slate-400">
+            <div className="w-80 flex-shrink-0 rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700/50 dark:bg-slate-800/30">
+              <div className="py-8 text-center text-slate-500 dark:text-slate-400">
                 <p className="mb-2 text-lg font-medium">Nenhuma lista encontrada</p>
                 {canCreateList ? (
                   <>
@@ -1085,11 +1085,11 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
         type="button"
         onClick={() => !disabled && setIsOpen((open) => !open)}
         disabled={disabled}
-        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white ${
           disabled ? "cursor-not-allowed opacity-60" : ""
         }`}
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
@@ -1098,7 +1098,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
         />
       </button>
       {isOpen && !disabled && (
-        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -1107,8 +1107,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

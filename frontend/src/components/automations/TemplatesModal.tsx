@@ -369,25 +369,25 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onSele
             <div
               key={template.id}
               onClick={() => handleSelectTemplate(template)}
-              className="group cursor-pointer rounded-lg border border-slate-700 bg-slate-900/50 p-5 transition-all hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/10"
+              className="group cursor-pointer rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-5 transition-all hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/10"
             >
               <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 rounded-lg bg-slate-800 p-3 transition-colors group-hover:bg-slate-700">
+                <div className="flex-shrink-0 rounded-lg bg-gray-100 dark:bg-slate-800 p-3 transition-colors group-hover:bg-gray-200 dark:hover:bg-slate-700">
                   {template.icon}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="mb-2 flex items-center gap-2">
-                    <h3 className="font-medium text-white transition-colors group-hover:text-purple-400">
+                    <h3 className="font-medium text-slate-900 dark:text-white transition-colors group-hover:text-purple-400">
                       {template.name}
                     </h3>
-                    <span className="rounded bg-slate-700 px-2 py-0.5 text-xs text-slate-300">
+                    <span className="rounded bg-gray-200 dark:bg-slate-700 px-2 py-0.5 text-xs text-slate-600 dark:text-slate-300">
                       {template.category}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed text-slate-400">
+                  <p className="text-sm leading-relaxed text-slate-400 dark:text-slate-500 dark:text-slate-400">
                     {template.description}
                   </p>
-                  <div className="mt-3 flex items-center gap-3 text-xs text-slate-500">
+                  <div className="mt-3 flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
                     <span>{template.nodes.length} nodes</span>
                     <span>•</span>
                     <span>{template.edges.length} conexões</span>

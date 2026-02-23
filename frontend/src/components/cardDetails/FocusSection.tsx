@@ -137,7 +137,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       deadline: "border-yellow-500/40 bg-yellow-500/15 text-yellow-300",
       email: "border-blue-500/40 bg-blue-500/15 text-blue-300",
       lunch: "border-purple-500/40 bg-purple-500/15 text-purple-300",
-      other: "border-slate-600 bg-slate-700/40 text-slate-300",
+      other: "border-gray-300 dark:border-slate-600 bg-slate-700/40 text-slate-600 dark:text-slate-300",
     };
 
     return classes[type as keyof typeof classes] || classes.other;
@@ -155,7 +155,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       deadline: "bg-yellow-500/10 hover:bg-yellow-500/20",
       email: "bg-blue-500/10 hover:bg-blue-500/20",
       lunch: "bg-purple-500/10 hover:bg-purple-500/20",
-      other: "bg-slate-800/50 hover:bg-slate-700/30",
+      other: "bg-gray-100/50 dark:bg-slate-800/50 hover:bg-slate-700/30",
     };
 
     return classes[type as keyof typeof classes] || classes.other;
@@ -450,7 +450,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
   return (
     <div className="mb-6">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Foco</h3>
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Foco</h3>
         <button
           onClick={toggleExpandAll}
           className="text-sm text-blue-400 transition-colors hover:text-blue-300"
@@ -460,9 +460,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       </div>
 
       {pendingActivities.length === 0 ? (
-        <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-6 text-center">
+        <div className="rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-6 text-center">
           <CheckSquare size={32} className="mx-auto mb-2 text-slate-600" />
-          <p className="text-sm text-slate-400">Nenhuma atividade pendente</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhuma atividade pendente</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -474,7 +474,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
             return (
               <div
                 key={activity.id}
-                className={`overflow-hidden rounded-lg border border-slate-700 transition-colors ${getActivityTypeCardClasses(
+                className={`overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700 transition-colors ${getActivityTypeCardClasses(
                   activity.task_type
                 )}`}
               >
@@ -483,12 +483,12 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                   {/* Conteúdo */}
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-start gap-2">
-                      <span className="mt-0.5 text-slate-400">
+                      <span className="mt-0.5 text-slate-400 dark:text-slate-500 dark:text-slate-400">
                         {getActivityIcon(activity.task_type)}
                       </span>
                       <div className="flex-1">
                         <div className="mb-1 flex items-center gap-2">
-                          <p className="font-medium text-white">{activity.title}</p>
+                          <p className="font-medium text-slate-900 dark:text-white">{activity.title}</p>
                           <span
                             className={`inline-flex min-w-[64px] items-center justify-center rounded border px-1.5 py-0.5 text-xs font-medium ${getPriorityBadgeClasses(
                               activity.priority
@@ -504,7 +504,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                             {getActivityTypeName(activity.task_type)}
                           </span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
                           <StatusBadge status={status} />
                           {activity.due_date && <span>{formatBrazilDate(activity.due_date)}</span>}
                           {activity.assigned_to_name && (
@@ -531,7 +531,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                     </div>
                     <button
                       onClick={() => toggleActivity(activity.id)}
-                      className="rounded p-1 text-slate-400 transition-colors hover:bg-slate-600"
+                      className="rounded p-1 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-600"
                       title={isExpanded ? "Recolher" : "Expandir"}
                     >
                       {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
@@ -541,70 +541,70 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
 
                 {/* Detalhes expandidos */}
                 {isExpanded && (
-                  <div className="space-y-3 border-t border-slate-700/50 px-3 pb-3 pt-0">
+                  <div className="space-y-3 border-t border-gray-200/50 dark:border-slate-700/50 px-3 pb-3 pt-0">
                     {/* Modo de edição */}
                     {editingTaskId === activity.id ? (
                       <div className="space-y-3 pt-3">
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-400">
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
                             Título *
                           </label>
                           <input
                             type="text"
                             value={editFormData.title}
                             onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                            className="w-full rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Digite o título"
                           />
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-400">
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
                             Descrição
                           </label>
                           <textarea
                             value={editFormData.description}
                             onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                             rows={3}
-                            className="w-full resize-none rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full resize-none rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Adicione uma descrição"
                           />
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-400">
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
                             Anotações
                           </label>
                           <textarea
                             value={editFormData.notes}
                             onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
                             rows={3}
-                            className="w-full resize-none rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full resize-none rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Adicione anotações da reunião"
                           />
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-400">
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
                             Link da gravação
                           </label>
                           <input
                             type="url"
                             value={editFormData.video_link}
                             onChange={(e) => setEditFormData({ ...editFormData, video_link: e.target.value })}
-                            className="w-full rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="https://meet.google.com/... ou link da gravação"
                           />
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-400">
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
                             Prioridade
                           </label>
                           <select
                             value={editFormData.priority}
                             onChange={(e) => setEditFormData({ ...editFormData, priority: e.target.value })}
-                            className="w-full rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <option value="normal">Normal</option>
                             <option value="high">Alta</option>
@@ -616,7 +616,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={handleSaveEdit}
                             disabled={loadingTaskId === activity.id}
-                            className="flex flex-1 items-center justify-center gap-1 rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+                            className="flex flex-1 items-center justify-center gap-1 rounded bg-blue-500 px-3 py-2 text-sm font-medium text-slate-900 dark:text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
                           >
                             {loadingTaskId === activity.id ? (
                               <Loader2 size={14} className="animate-spin" />
@@ -628,7 +628,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={handleCancelEdit}
                             disabled={loadingTaskId === activity.id}
-                            className="rounded bg-slate-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
+                            className="rounded bg-gray-200 dark:bg-slate-700 px-3 py-2 text-sm font-medium text-slate-900 dark:text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
                           >
                             Cancelar
                           </button>
@@ -639,23 +639,23 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                         {/* Descrição */}
                         {activity.description && (
                           <div className="flex items-start gap-2 text-sm">
-                            <FileText size={16} className="mt-0.5 flex-shrink-0 text-slate-500" />
-                            <p className="text-slate-300">{activity.description}</p>
+                            <FileText size={16} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-500" />
+                            <p className="text-slate-600 dark:text-slate-300">{activity.description}</p>
                           </div>
                         )}
 
                         {/* Localização */}
                         {activity.location && (
                           <div className="flex items-start gap-2 text-sm">
-                            <MapPin size={16} className="mt-0.5 flex-shrink-0 text-slate-500" />
-                            <p className="text-slate-300">{activity.location}</p>
+                            <MapPin size={16} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-500" />
+                            <p className="text-slate-600 dark:text-slate-300">{activity.location}</p>
                           </div>
                         )}
 
                         {/* Link de vídeo */}
                         {activity.video_link && (
                           <div className="flex items-start gap-2 text-sm">
-                            <Video size={16} className="mt-0.5 flex-shrink-0 text-slate-500" />
+                            <Video size={16} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-500" />
                             <a
                               href={activity.video_link}
                               target="_blank"
@@ -669,8 +669,8 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
 
                         {/* Notas */}
                         {activity.notes && (
-                          <div className="rounded border border-slate-700 bg-slate-900/50 p-2 text-sm text-slate-300">
-                            <p className="mb-1 text-xs text-slate-500">Notas:</p>
+                          <div className="rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-2 text-sm text-slate-600 dark:text-slate-300">
+                            <p className="mb-1 text-xs text-slate-400 dark:text-slate-500">Notas:</p>
                             {activity.notes}
                           </div>
                         )}
@@ -765,9 +765,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       {/* Modal de reagendamento */}
       {rescheduleTaskId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-800 shadow-xl">
-            <div className="border-b border-slate-700 p-4">
-              <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
+          <div className="w-full max-w-md rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-xl">
+            <div className="border-b border-gray-200 dark:border-slate-700 p-4">
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
                 <Calendar size={20} className="text-yellow-400" />
                 Reagendar Atividade
               </h3>
@@ -775,35 +775,35 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
 
             <div className="space-y-4 p-4">
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">
+                <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
                   Nova Data *
                 </label>
                 <input
                   type="date"
                   value={rescheduleDate}
                   onChange={(e) => setRescheduleDate(e.target.value)}
-                  className="w-full rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">
+                <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
                   Horário (opcional)
                 </label>
                 <input
                   type="time"
                   value={rescheduleTime}
                   onChange={(e) => setRescheduleTime(e.target.value)}
-                  className="w-full rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 />
               </div>
 
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
                 Se não definir um horário, será usado 12:00 como padrão.
               </p>
             </div>
 
-            <div className="flex gap-2 border-t border-slate-700 p-4">
+            <div className="flex gap-2 border-t border-gray-200 dark:border-slate-700 p-4">
               <button
                 onClick={handleSaveReschedule}
                 disabled={loadingTaskId === rescheduleTaskId}
@@ -819,7 +819,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
               <button
                 onClick={handleCancelReschedule}
                 disabled={loadingTaskId === rescheduleTaskId}
-                className="rounded bg-slate-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
+                className="rounded bg-gray-200 dark:bg-slate-700 px-4 py-2 text-sm font-medium text-slate-900 dark:text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
               >
                 Cancelar
               </button>

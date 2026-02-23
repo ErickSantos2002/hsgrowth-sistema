@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Plus, MoreVertical, Edit, Archive, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { List, Card } from "../../types";
-import { COLORS } from "../../constants/colors";
+import { COLORS, getChartColors } from "../../constants/colors";
+import { useTheme } from "../../context/ThemeContext";
 import KanbanCard from "./KanbanCard";
 
 interface KanbanListProps {
@@ -36,6 +37,9 @@ const KanbanList: React.FC<KanbanListProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [cardLimit, setCardLimit] = useState(3);
   const cardsContainerRef = useRef<HTMLDivElement | null>(null);
+  // Cor do indicador de lista adaptada ao tema atual
+  const { darkMode } = useTheme();
+  const chartColors = getChartColors(darkMode);
 
   useEffect(() => {
     const updateCardLimit = () => {
@@ -63,7 +67,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
 
   return (
     <div
-      className="flex h-full w-80 flex-shrink-0 flex-col overflow-visible rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 backdrop-blur-sm sm:w-80"
+      className="flex h-full w-80 flex-shrink-0 flex-col overflow-visible rounded-xl border border-gray-200 bg-gray-50/80 p-4 backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-800/40 sm:w-80"
       style={listSurfaceStyle}
     >
       {/* Header da lista */}
@@ -72,13 +76,13 @@ const KanbanList: React.FC<KanbanListProps> = ({
           {/* Indicador de cor da lista */}
           <div
             className="h-6 w-1 rounded-full"
-            style={{ backgroundColor: list.color || COLORS.content.tertiary }}
+            style={{ backgroundColor: list.color || chartColors.content.tertiary }}
           />
 
-          <h3 className="truncate font-semibold text-white">{list.name}</h3>
+          <h3 className="truncate font-semibold text-slate-900 dark:text-white">{list.name}</h3>
 
           {/* Contador de cards */}
-          <span className="rounded-full bg-slate-800/70 px-2 py-0.5 text-xs font-medium text-slate-400">
+          <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800/70 dark:text-slate-400">
             {cards.length}
           </span>
         </div>
@@ -87,9 +91,9 @@ const KanbanList: React.FC<KanbanListProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="rounded p-1 transition-colors hover:bg-slate-800/60"
+            className="rounded p-1 transition-colors hover:bg-gray-200 dark:hover:bg-slate-800/60"
           >
-            <MoreVertical size={16} className="text-slate-400" />
+            <MoreVertical size={16} className="text-slate-500 dark:text-slate-400" />
           </button>
 
           {/* Dropdown menu */}
@@ -102,13 +106,13 @@ const KanbanList: React.FC<KanbanListProps> = ({
               />
 
               {/* Menu */}
-              <div className="absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-lg border border-slate-700/50 bg-slate-900 shadow-xl">
+              <div className="absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700/50 dark:bg-slate-900">
                 <button
                   onClick={() => {
                     setShowMenu(false);
                     onEditList?.();
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   <Edit size={14} />
                   Editar lista
@@ -119,13 +123,13 @@ const KanbanList: React.FC<KanbanListProps> = ({
                     setShowMenu(false);
                     onArchiveList?.();
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   <Archive size={14} />
                   Arquivar lista
                 </button>
 
-                <div className="border-t border-slate-700/50"></div>
+                <div className="border-t border-gray-200 dark:border-slate-700/50"></div>
 
                 <button
                   onClick={() => {
@@ -159,7 +163,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
             />
           ))
         ) : (
-          <div className="py-8 text-center text-sm text-slate-400">
+          <div className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
             Nenhum card nesta lista
           </div>
         )}
@@ -171,7 +175,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
             <button
               type="button"
               onClick={() => scrollCards("up")}
-              className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/80 text-slate-200 transition-colors hover:bg-slate-700/80"
+              className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 bg-white text-slate-600 transition-colors hover:bg-gray-100 dark:border-slate-700/60 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-700/80"
               aria-label="Subir lista"
             >
               <ChevronUp size={16} />
@@ -179,7 +183,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
             <button
               type="button"
               onClick={() => scrollCards("down")}
-              className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/80 text-slate-200 transition-colors hover:bg-slate-700/80"
+              className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 bg-white text-slate-600 transition-colors hover:bg-gray-100 dark:border-slate-700/60 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-700/80"
               aria-label="Descer lista"
             >
               <ChevronDown size={16} />
@@ -194,7 +198,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
         {canManageLists && !isFirstList && onMoveLeft && (
           <button
             onClick={onMoveLeft}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-800/40 hover:text-white"
+            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white"
             title="Mover lista para esquerda"
           >
             <ChevronLeft size={16} />
@@ -204,7 +208,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
         {/* Botão adicionar card */}
         <button
           onClick={onAddCard}
-          className="group flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800/40 hover:text-white"
+          className="group flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white"
         >
           <Plus size={16} className="transition-transform group-hover:scale-110" />
           <span>Adicionar card</span>
@@ -214,7 +218,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
         {canManageLists && !isLastList && onMoveRight && (
           <button
             onClick={onMoveRight}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-800/40 hover:text-white"
+            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white"
             title="Mover lista para direita"
           >
             <ChevronRight size={16} />

@@ -327,13 +327,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
               return (
                 <div
                   key={product.id}
-                  className="space-y-3 rounded-lg border border-slate-700 bg-slate-900/50 p-3"
+                  className="space-y-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3"
                 >
                   {/* Header do produto */}
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="font-medium text-white">{product.product_name || "Produto sem nome"}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="font-medium text-slate-900 dark:text-white">{product.product_name || "Produto sem nome"}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
                         SKU: {product.product_sku || "N/A"}
                       </p>
                     </div>
@@ -362,31 +362,31 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                   {/* Campos de quantidade e valores */}
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
-                      <label className="text-xs text-slate-400">Quantidade</label>
+                      <label className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Quantidade</label>
                       {isEditing ? (
                         <input
                           type="number"
                           min="1"
                           value={editValues.quantity}
                           onChange={(e) => setEditValues({ ...editValues, quantity: parseInt(e.target.value) || 1 })}
-                          className="w-full rounded border border-blue-500 bg-slate-800 px-2 py-1.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full rounded border border-blue-500 bg-gray-100 dark:bg-slate-800 px-2 py-1.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       ) : (
-                        <p className="rounded border border-slate-700/50 bg-slate-800/30 px-2 py-1.5 text-white">
+                        <p className="rounded border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 px-2 py-1.5 text-slate-900 dark:text-white">
                           {product.quantity}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="text-xs text-slate-400">Valor unitário</label>
-                      <p className="rounded border border-slate-700/50 bg-slate-800/30 px-2 py-1.5 text-white">
+                      <label className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Valor unitário</label>
+                      <p className="rounded border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 px-2 py-1.5 text-slate-900 dark:text-white">
                         {formatCurrency(product.unit_price)}
                       </p>
                     </div>
 
                     <div>
-                      <label className="text-xs text-slate-400">Desconto (%)</label>
+                      <label className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Desconto (%)</label>
                       {isEditing ? (
                         <input
                           type="number"
@@ -395,17 +395,17 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                           step="0.01"
                           value={editValues.discountPercent}
                           onChange={(e) => setEditValues({ ...editValues, discountPercent: parseFloat(e.target.value) || 0 })}
-                          className="w-full rounded border border-blue-500 bg-slate-800 px-2 py-1.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full rounded border border-blue-500 bg-gray-100 dark:bg-slate-800 px-2 py-1.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       ) : (
-                        <p className="rounded border border-slate-700/50 bg-slate-800/30 px-2 py-1.5 text-white">
+                        <p className="rounded border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 px-2 py-1.5 text-slate-900 dark:text-white">
                           {currentDiscountPercent.toFixed(2)}%
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="text-xs text-slate-400">Total da linha</label>
+                      <label className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Total da linha</label>
                       <p className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1.5 font-medium text-blue-400">
                         {formatCurrency(isEditing ? editTotal : product.total)}
                       </p>
@@ -414,7 +414,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
 
                   {/* Botões de edição */}
                   {isEditing && (
-                    <div className="flex gap-2 border-t border-slate-700/50 pt-2">
+                    <div className="flex gap-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-2">
                       <button
                         onClick={() => handleSaveEdit(product)}
                         disabled={loading}
@@ -426,7 +426,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                       <button
                         onClick={handleCancelEdit}
                         disabled={loading}
-                        className="flex flex-1 items-center justify-center gap-2 rounded border border-slate-600 bg-slate-700/50 px-3 py-1.5 font-medium text-slate-300 transition-colors hover:bg-slate-700 disabled:opacity-50"
+                        className="flex flex-1 items-center justify-center gap-2 rounded border border-gray-300 dark:border-slate-600 bg-gray-200/50 dark:bg-slate-700/50 px-3 py-1.5 font-medium text-slate-600 dark:text-slate-300 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700 disabled:opacity-50"
                       >
                         <X size={16} />
                         Cancelar
@@ -438,21 +438,21 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
             })}
 
             {/* Totalizadores */}
-            <div className="space-y-2 border-t border-slate-700/50 pt-3">
+            <div className="space-y-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-3">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-400">Subtotal:</span>
-                <span className="font-medium text-white">{formatCurrency(calculateSubtotal())}</span>
+                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Subtotal:</span>
+                <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(calculateSubtotal())}</span>
               </div>
 
               {calculateTotalDiscount() > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Desconto total:</span>
+                  <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Desconto total:</span>
                   <span className="font-medium text-red-400">- {formatCurrency(calculateTotalDiscount())}</span>
                 </div>
               )}
 
-              <div className="flex justify-between border-t border-slate-700/50 pt-2 text-base">
-                <span className="font-semibold text-white">Valor total:</span>
+              <div className="flex justify-between border-t border-gray-200/50 dark:border-slate-700/50 pt-2 text-base">
+                <span className="font-semibold text-slate-900 dark:text-white">Valor total:</span>
                 <span className="text-lg font-semibold text-emerald-400">
                   {formatCurrency(calculateTotal())}
                 </span>
@@ -461,9 +461,9 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
 
             {/* Condições de pagamento (se existirem) */}
             {paymentInfo && (
-              <div className="space-y-2 border-t border-slate-700/50 pt-3">
+              <div className="space-y-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-slate-300">Condições de Pagamento</h4>
+                  <h4 className="text-sm font-semibold text-slate-600 dark:text-slate-300">Condições de Pagamento</h4>
                   <div className="flex gap-1">
                     <button
                       onClick={handleOpenPaymentModal}
@@ -485,16 +485,16 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                 <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
                   <div className="flex items-center gap-2 text-sm">
                     <CreditCard size={16} className="flex-shrink-0 text-emerald-400" />
-                    <span className="text-slate-300">
+                    <span className="text-slate-600 dark:text-slate-300">
                       <span className="font-medium text-emerald-400">{paymentInfo.payment_method}</span>
                       {paymentInfo.installments > 1 && (
-                        <span className="text-slate-400"> - {paymentInfo.installments}x</span>
+                        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400"> - {paymentInfo.installments}x</span>
                       )}
                     </span>
                   </div>
 
                   {paymentInfo.notes && (
-                    <p className="pl-6 text-xs text-slate-400">{paymentInfo.notes}</p>
+                    <p className="pl-6 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">{paymentInfo.notes}</p>
                   )}
                 </div>
               </div>
@@ -512,7 +512,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
         ) : (
           <div className="py-6 text-center">
             <Package size={32} className="mx-auto mb-2 text-slate-600" />
-            <p className="mb-4 text-sm text-slate-400">Nenhum produto adicionado</p>
+            <p className="mb-4 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhum produto adicionado</p>
           </div>
         )}
 
@@ -532,7 +532,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
           className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 font-medium transition-colors ${
             products.length > 0
               ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-              : "cursor-not-allowed border-slate-700/50 bg-slate-800/30 text-slate-600"
+              : "cursor-not-allowed border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 text-slate-600"
           }`}
         >
           <CreditCard size={18} />
@@ -549,38 +549,38 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
             }}
           >
             <div
-              className="flex max-h-[600px] w-full max-w-lg flex-col rounded-lg border border-slate-700 bg-slate-800 shadow-2xl"
+              className="flex max-h-[600px] w-full max-w-lg flex-col rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-slate-700 p-4">
-                <h3 className="font-semibold text-white">Adicionar Produto</h3>
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 p-4">
+                <h3 className="font-semibold text-slate-900 dark:text-white">Adicionar Produto</h3>
                 <button
                   onClick={() => {
                     setShowProductSearch(false);
                     setSearchTerm("");
                   }}
-                  className="text-slate-400 transition-colors hover:text-white"
+                  className="text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
                 >
                   <X size={20} />
                 </button>
               </div>
 
               {/* Campo de busca dentro do modal */}
-              <div className="border-b border-slate-700 p-4">
+              <div className="border-b border-gray-200 dark:border-slate-700 p-4">
                 <div className="relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400" />
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar por nome ou SKU..."
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-10 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 py-3 pl-10 pr-10 text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                     autoFocus
                   />
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >
                       <X size={18} />
                     </button>
@@ -591,11 +591,11 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
               {/* Resultados */}
               <div className="flex-1 overflow-y-auto p-4">
                 {loading ? (
-                  <div className="p-8 text-center text-sm text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
                     Carregando produtos...
                   </div>
                 ) : filteredProducts.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
                     {searchTerm
                       ? "Nenhum produto encontrado com esse critério"
                       : availableProducts.length === 0
@@ -608,12 +608,12 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                       <button
                         key={product.id}
                         onClick={() => handleAddProduct(product.id)}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900/50 p-3 text-left transition-colors hover:bg-slate-700/50"
+                        className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3 text-left transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50"
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-white">{product.name}</p>
-                            <p className="text-xs text-slate-500">SKU: {product.sku}</p>
+                            <p className="font-medium text-slate-900 dark:text-white">{product.name}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">SKU: {product.sku}</p>
                           </div>
                           <p className="text-sm font-medium text-emerald-400">
                             {formatCurrency(parseFloat(product.unit_price))}
@@ -636,14 +636,14 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
             onClick={() => setShowPaymentModal(false)}
           >
             <div
-              className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-800 shadow-2xl"
+              className="w-full max-w-md rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-slate-700 p-4">
-                <h3 className="font-semibold text-white">Condições de Pagamento</h3>
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 p-4">
+                <h3 className="font-semibold text-slate-900 dark:text-white">Condições de Pagamento</h3>
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="text-slate-400 transition-colors hover:text-white"
+                  className="text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
                 >
                   <X size={20} />
                 </button>
@@ -653,13 +653,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                 <div className="space-y-4">
                   {/* Forma de pagamento */}
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
                       Forma de pagamento *
                     </label>
                     <select
                       value={paymentForm.payment_method}
                       onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
                     >
                       <option value="">Selecione...</option>
                       <option value="Boleto">Boleto</option>
@@ -673,7 +673,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
 
                   {/* Número de parcelas */}
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
                       Número de parcelas
                     </label>
                     <input
@@ -682,13 +682,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                       max="120"
                       value={paymentForm.installments}
                       onChange={(e) => setPaymentForm({ ...paymentForm, installments: parseInt(e.target.value) || 1 })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
                     />
                   </div>
 
                   {/* Observações */}
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
                       Observações
                     </label>
                     <textarea
@@ -696,7 +696,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                       onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
                       placeholder="Ex: Primeira parcela em 30 dias, sem juros..."
                       rows={3}
-                      className="w-full resize-none rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                      className="w-full resize-none rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -713,7 +713,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                   <button
                     onClick={() => setShowPaymentModal(false)}
                     disabled={loading}
-                    className="flex-1 rounded-lg bg-slate-700 px-4 py-2 font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
+                    className="flex-1 rounded-lg bg-gray-200 dark:bg-slate-700 px-4 py-2 font-medium text-slate-900 dark:text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
                   >
                     Cancelar
                   </button>

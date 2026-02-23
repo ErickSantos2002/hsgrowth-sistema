@@ -67,12 +67,12 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ attachment, onClose
   // Footer com botão de download e dica
   const footer = (
     <div className="flex items-center justify-between">
-      <p className="text-xs text-slate-500">
-        Pressione <kbd className="rounded bg-slate-800 px-2 py-1">ESC</kbd> para fechar
+      <p className="text-xs text-slate-400 dark:text-slate-500">
+        Pressione <kbd className="rounded bg-gray-100 dark:bg-slate-800 px-2 py-1">ESC</kbd> para fechar
       </p>
       <button
         onClick={handleDownload}
-        className="flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-cyan-700"
+        className="flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-slate-900 dark:text-white transition-all hover:bg-cyan-700"
       >
         <Download size={16} />
         Baixar arquivo
@@ -95,7 +95,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ attachment, onClose
         {loading ? (
           <div className="flex flex-col items-center gap-3">
             <Loader2 size={40} className="animate-spin text-cyan-400" />
-            <p className="text-sm text-slate-400">Carregando arquivo...</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Carregando arquivo...</p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-3">
@@ -105,12 +105,12 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ attachment, onClose
         ) : !canPreview ? (
           <div className="flex flex-col items-center gap-3">
             <AlertCircle size={40} className="text-yellow-400" />
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               Preview não disponível para este tipo de arquivo
             </p>
             <button
               onClick={handleDownload}
-              className="mt-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-cyan-700"
+              className="mt-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-slate-900 dark:text-white transition-all hover:bg-cyan-700"
             >
               Baixar arquivo
             </button>
@@ -130,7 +130,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ attachment, onClose
             {attachment.is_pdf && (
               <iframe
                 src={blobUrl}
-                className="h-full w-full rounded-lg border border-slate-700"
+                className="h-full w-full rounded-lg border border-gray-200 dark:border-slate-700"
                 title={attachment.original_filename}
               />
             )}

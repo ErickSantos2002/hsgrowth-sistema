@@ -173,17 +173,17 @@ const Notifications: React.FC = () => {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-white">
-          <Bell className="text-white" size={32} />
+        <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
+          <Bell className="text-slate-900 dark:text-white" size={32} />
           Notificações
         </h1>
-        <p className="text-slate-400">
+        <p className="text-slate-600 dark:text-slate-400">
           Veja todas as suas notificações e mantenha-se atualizado
         </p>
       </div>
 
       {/* Filtros e Ações */}
-      <div className="mb-6 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+      <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           {/* Filtros */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
@@ -194,7 +194,7 @@ const Notifications: React.FC = () => {
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-colors md:flex-none ${
                     filterUnread
                       ? "bg-blue-600 text-white"
-                      : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                      : "bg-gray-200 text-slate-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
                   }`}
                 >
                   <Filter size={16} />
@@ -247,32 +247,32 @@ const Notifications: React.FC = () => {
 
       {/* Lista de Notificações */}
       {loading ? (
-        <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-12 text-center">
-          <Bell size={48} className="mx-auto mb-4 animate-pulse text-slate-600" />
-          <p className="text-slate-400">Carregando notificações...</p>
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-12 text-center dark:border-slate-700 dark:bg-slate-800/50">
+          <Bell size={48} className="mx-auto mb-4 animate-pulse text-slate-400 dark:text-slate-600" />
+          <p className="text-slate-600 dark:text-slate-400">Carregando notificações...</p>
         </div>
       ) : filteredNotifications.length === 0 ? (
-        <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-12 text-center">
-          <Bell size={48} className="mx-auto mb-4 text-slate-600" />
-          <p className="mb-2 text-lg text-slate-400">
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-12 text-center dark:border-slate-700 dark:bg-slate-800/50">
+          <Bell size={48} className="mx-auto mb-4 text-slate-400 dark:text-slate-600" />
+          <p className="mb-2 text-lg text-slate-600 dark:text-slate-400">
             {filterUnread ? "Nenhuma notificação não lida" : "Nenhuma notificação"}
           </p>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-500">
             {filterUnread
               ? "Todas as suas notificações estão marcadas como lidas"
               : "Você não tem notificações no momento"}
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-800/30">
           <div className="space-y-3 p-4 sm:p-6">
             {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`rounded-xl border border-slate-700 bg-slate-800/50 p-4 transition-all ${
-                  notification.link ? "cursor-pointer hover:border-slate-600 hover:bg-slate-700/50" : ""
-                } ${!notification.is_read ? "border-blue-500/30 bg-slate-700/50" : ""}`}
+                className={`rounded-xl border border-gray-200 bg-gray-50 p-4 transition-all dark:border-slate-700 dark:bg-slate-800/50 ${
+                  notification.link ? "cursor-pointer hover:border-gray-300 hover:bg-white dark:hover:border-slate-600 dark:hover:bg-slate-700/50" : ""
+                } ${!notification.is_read ? "border-blue-500/30 bg-blue-50/50 dark:bg-slate-700/50" : ""}`}
               >
                 <div className="flex items-start gap-4">
                   {/* Ícone */}
@@ -283,17 +283,17 @@ const Notifications: React.FC = () => {
                   {/* Conteúdo */}
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex items-start justify-between gap-3">
-                      <h3 className={`text-base ${notification.is_read ? "text-slate-300" : "font-semibold text-white"}`}>
+                      <h3 className={`text-base ${notification.is_read ? "text-slate-600 dark:text-slate-300" : "font-semibold text-slate-900 dark:text-white"}`}>
                         {notification.title}
                       </h3>
-                      <span className="flex-shrink-0 text-xs text-slate-500">
+                      <span className="flex-shrink-0 text-xs text-slate-400 dark:text-slate-500">
                         {notificationService.formatRelativeTime(notification.created_at)}
                       </span>
                     </div>
-                    <p className="mb-2 text-sm text-slate-400">{notification.message}</p>
+                    <p className="mb-2 text-sm text-slate-600 dark:text-slate-400">{notification.message}</p>
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
-                        <span className="rounded bg-slate-700/50 px-2 py-1 text-xs text-slate-400">
+                        <span className="rounded bg-gray-200 px-2 py-1 text-xs text-slate-600 dark:bg-slate-700/50 dark:text-slate-400">
                           {notificationService.formatType(notification.type)}
                         </span>
                         {!notification.is_read && (
@@ -349,7 +349,6 @@ const Notifications: React.FC = () => {
             goToPrevPage={goToPrevPage}
             itemLabel="notificações"
           />
-
         </div>
       )}
     </div>

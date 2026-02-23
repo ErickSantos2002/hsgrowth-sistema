@@ -10,7 +10,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 
 /**
  * Componente de Textarea padronizado
- * Segue o padrão visual do sistema
+ * Segue o padrão visual do sistema com suporte a modo claro e escuro
  */
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ error = false, fullWidth = true, className = "", ...props }, ref) => {
@@ -19,9 +19,11 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         ref={ref}
         className={`${
           fullWidth ? "w-full" : ""
-        } border bg-slate-800 px-4 py-3 ${
-          error ? "border-red-500" : "border-slate-600"
-        } resize-none rounded-lg text-white placeholder-slate-400 transition-colors focus:border-transparent focus:ring-2 focus:ring-emerald-500 ${className}`}
+        } border bg-white px-4 py-3 text-slate-900 placeholder-slate-400 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400 ${
+          error
+            ? "border-red-500"
+            : "border-gray-300 dark:border-slate-600"
+        } resize-none rounded-lg transition-colors focus:border-transparent focus:ring-2 focus:ring-emerald-500 ${className}`}
         {...props}
       />
     );

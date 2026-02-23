@@ -163,8 +163,8 @@ const BoardModal: React.FC<BoardModalProps> = ({
                 onClick={() => setIcon(iconOption)}
                 className={`flex aspect-square items-center justify-center rounded-lg text-2xl transition-all ${
                   icon === iconOption
-                    ? "scale-110 bg-slate-700 ring-2 ring-white ring-offset-2 ring-offset-slate-900"
-                    : "bg-slate-800/50 hover:scale-105 hover:bg-slate-700"
+                    ? "scale-110 bg-gray-200 dark:bg-slate-700 ring-2 ring-white ring-offset-2 ring-offset-white dark:ring-offset-slate-900"
+                    : "bg-gray-100/50 dark:bg-slate-800/50 hover:scale-105 hover:bg-gray-200 dark:hover:bg-slate-700"
                 }`}
                 title={`Ícone ${iconOption}`}
                 aria-label={`Selecionar ícone ${iconOption}`}
@@ -188,7 +188,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
                 onClick={() => setColor(option.value)}
                 className={`aspect-square w-full rounded-lg transition-all hover:scale-105 ${
                   color === option.value
-                    ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-slate-900"
+                    ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-white dark:ring-offset-slate-900"
                     : ""
                 }`}
                 style={{ backgroundColor: option.value }}
@@ -197,7 +197,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
               >
                 {color === option.value && (
                   <svg
-                    className="h-full w-full p-2 text-white drop-shadow-md"
+                    className="h-full w-full p-2 text-slate-900 dark:text-white drop-shadow-md"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -216,8 +216,8 @@ const BoardModal: React.FC<BoardModalProps> = ({
         </FormField>
 
         {/* Preview do board */}
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <p className="mb-3 text-xs font-medium text-slate-400">Preview:</p>
+        <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
+          <p className="mb-3 text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Preview:</p>
           <div className="flex items-center gap-4">
             <div
               className="rounded-lg p-3"
@@ -230,11 +230,11 @@ const BoardModal: React.FC<BoardModalProps> = ({
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 {name.trim() || "Nome do Board"}
               </h3>
               {(description.trim() || !board) && (
-                <p className="mt-0.5 text-sm text-slate-400">
+                <p className="mt-0.5 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
                   {description.trim() || "Sem descrição"}
                 </p>
               )}

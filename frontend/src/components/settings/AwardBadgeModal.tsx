@@ -110,15 +110,15 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
 
           {/* Selecionar Badge */}
           <div>
-            <label className="mb-3 block text-sm font-medium text-slate-300">
+            <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Selecione a Badge <span className="text-red-400">*</span>
             </label>
 
             {badges.length === 0 ? (
-              <div className="rounded-lg border border-slate-700 bg-slate-900 py-8 text-center">
-                <Award className="mx-auto mb-2 text-slate-600" size={40} />
-                <p className="text-sm text-slate-400">Nenhuma badge manual ativa disponível</p>
-                <p className="mt-1 text-xs text-slate-500">Crie badges manuais na aba Badges</p>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 py-8 text-center dark:border-slate-700 dark:bg-slate-900">
+                <Award className="mx-auto mb-2 text-slate-400 dark:text-slate-600" size={40} />
+                <p className="text-sm text-slate-600 dark:text-slate-400">Nenhuma badge manual ativa disponível</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">Crie badges manuais na aba Badges</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
@@ -130,14 +130,14 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
                     className={`rounded-lg border p-4 text-left transition-all ${
                       selectedBadge === badge.id
                         ? "border-emerald-500 bg-emerald-600/20"
-                        : "border-slate-700 bg-slate-900 hover:border-slate-600 hover:bg-slate-800"
+                        : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600 dark:hover:bg-slate-800"
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <span className="text-3xl">{badge.icon_url || "🏆"}</span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-white">{badge.name}</p>
-                        <p className="mt-1 line-clamp-2 text-xs text-slate-400">{badge.description}</p>
+                        <p className="truncate font-medium text-slate-900 dark:text-white">{badge.name}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-slate-600 dark:text-slate-400">{badge.description}</p>
                       </div>
                     </div>
                   </button>
@@ -153,8 +153,8 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
               <div className="flex items-center gap-3">
                 <span className="text-4xl">{selectedBadgeData.icon_url || "🏆"}</span>
                 <div>
-                  <p className="font-semibold text-white">{selectedBadgeData.name}</p>
-                  <p className="text-sm text-slate-300">{selectedBadgeData.description}</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">{selectedBadgeData.name}</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300">{selectedBadgeData.description}</p>
                 </div>
               </div>
             </div>
@@ -163,7 +163,7 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
           {/* Selecionar Vendedores */}
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <label className="text-sm font-medium text-slate-300">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Selecione os Vendedores <span className="text-red-400">*</span>
               </label>
               <button
@@ -177,16 +177,16 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
             </div>
 
             {users.length === 0 ? (
-              <div className="rounded-lg border border-slate-700 bg-slate-900 py-8 text-center">
-                <Users className="mx-auto mb-2 text-slate-600" size={40} />
-                <p className="text-sm text-slate-400">Nenhum vendedor disponível</p>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 py-8 text-center dark:border-slate-700 dark:bg-slate-900">
+                <Users className="mx-auto mb-2 text-slate-400 dark:text-slate-600" size={40} />
+                <p className="text-sm text-slate-600 dark:text-slate-400">Nenhum vendedor disponível</p>
               </div>
             ) : (
-              <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900">
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                 {users.map((user) => (
                   <label
                     key={user.id}
-                    className={`flex cursor-pointer items-center gap-3 p-4 transition-colors hover:bg-slate-800 ${
+                    className={`flex cursor-pointer items-center gap-3 p-4 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800 ${
                       selectedUsers.includes(user.id) ? "bg-emerald-600/10" : ""
                     }`}
                   >
@@ -194,12 +194,12 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
                       type="checkbox"
                       checked={selectedUsers.includes(user.id)}
                       onChange={() => handleToggleUser(user.id)}
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-emerald-600 focus:ring-emerald-500"
+                      className="h-4 w-4 rounded border-gray-300 bg-white text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800"
                       disabled={loading}
                     />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-white">{user.name}</p>
-                      <p className="text-xs text-slate-400">{user.email}</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">{user.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
                     </div>
                     {selectedUsers.includes(user.id) && <CheckCircle className="text-emerald-400" size={18} />}
                   </label>
@@ -208,7 +208,7 @@ const AwardBadgeModal: React.FC<AwardBadgeModalProps> = ({ isOpen, onClose, onAw
             )}
 
             {selectedUsers.length > 0 && (
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
                 {selectedUsers.length} vendedor(es) selecionado(s)
               </p>
             )}

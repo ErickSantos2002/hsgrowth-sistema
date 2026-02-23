@@ -110,12 +110,12 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
       return (
         <div
           onClick={() => handleStartEdit(field.id, value)}
-          className="flex cursor-pointer items-center justify-between rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 transition-colors hover:border-blue-500/50 hover:bg-slate-800/50"
+          className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 transition-colors hover:border-blue-500/50 hover:bg-gray-100 dark:hover:bg-slate-800/50"
         >
-          <span className={value ? "text-white" : "italic text-slate-500"}>
+          <span className={value ? "text-slate-900 dark:text-white" : "italic text-slate-400 dark:text-slate-500"}>
             {formatDisplayValue(field, value)}
           </span>
-          <span className="rounded border border-slate-700 bg-slate-800/50 px-2 py-0.5 text-xs text-slate-500">
+          <span className="rounded border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-2 py-0.5 text-xs text-slate-400 dark:text-slate-500">
             {field.is_required ? "Obrigatório" : "Opcional"}
           </span>
         </div>
@@ -140,7 +140,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
           <button
             onClick={handleCancelEdit}
             disabled={loading}
-            className="flex-1 rounded-lg bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-600"
+            className="flex-1 rounded-lg bg-gray-200 dark:bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 transition-colors hover:bg-slate-600"
           >
             <X size={14} />
             Cancelar
@@ -165,7 +165,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             autoFocus
-            className="w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-blue-500 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         );
 
@@ -176,7 +176,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             autoFocus
-            className="w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-blue-500 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         );
 
@@ -187,7 +187,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             autoFocus
-            className="w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-blue-500 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         );
 
@@ -197,7 +197,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             autoFocus
-            className="w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-blue-500 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Selecione...</option>
             {field.options?.map((option: any) => (
@@ -224,9 +224,9 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
                       setEditValue(currentArray.filter((v: string) => v !== option));
                     }
                   }}
-                  className="h-4 w-4 rounded border-slate-700 bg-slate-900/50"
+                  className="h-4 w-4 rounded border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50"
                 />
-                <span className="text-sm text-slate-300">{option}</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">{option}</span>
               </label>
             ))}
           </div>
@@ -240,9 +240,9 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
               checked={!!editValue}
               onChange={(e) => setEditValue(e.target.checked)}
               autoFocus
-              className="h-5 w-5 rounded border-slate-700 bg-slate-900/50"
+              className="h-5 w-5 rounded border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50"
             />
-            <span className="text-sm text-slate-300">
+            <span className="text-sm text-slate-600 dark:text-slate-300">
               {editValue ? "Sim" : "Não"}
             </span>
           </label>
@@ -255,7 +255,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             autoFocus
-            className="w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-blue-500 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         );
     }
@@ -324,7 +324,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
         {fieldDefinitions.map((field) => (
           <div key={field.id} className="space-y-1">
             {/* Label do campo */}
-            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
               <span>{field.name}</span>
               {field.is_required && <span className="text-red-400">*</span>}
             </div>

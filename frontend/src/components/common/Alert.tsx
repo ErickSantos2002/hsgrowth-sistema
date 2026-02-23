@@ -17,7 +17,8 @@ interface AlertProps {
 }
 
 /**
- * Configuração de ícones e estilos por tipo
+ * Configuração de ícones e estilos por tipo com suporte a modo claro e escuro.
+ * Textos são mais escuros no light mode para manter contraste e legibilidade.
  */
 const alertConfig: Record<
   AlertType,
@@ -33,36 +34,36 @@ const alertConfig: Record<
     icon: <Info size={18} />,
     bgClass: "bg-blue-500/10",
     borderClass: "border-blue-500/30",
-    textClass: "text-blue-200",
-    iconClass: "text-blue-400",
+    textClass: "text-blue-700 dark:text-blue-200",
+    iconClass: "text-blue-500 dark:text-blue-400",
   },
   success: {
     icon: <CheckCircle2 size={18} />,
     bgClass: "bg-emerald-500/10",
     borderClass: "border-emerald-500/30",
-    textClass: "text-emerald-200",
-    iconClass: "text-emerald-400",
+    textClass: "text-emerald-700 dark:text-emerald-200",
+    iconClass: "text-emerald-500 dark:text-emerald-400",
   },
   warning: {
     icon: <AlertCircle size={18} />,
     bgClass: "bg-orange-500/10",
     borderClass: "border-orange-500/30",
-    textClass: "text-orange-200",
-    iconClass: "text-orange-400",
+    textClass: "text-orange-700 dark:text-orange-200",
+    iconClass: "text-orange-500 dark:text-orange-400",
   },
   error: {
     icon: <XCircle size={18} />,
     bgClass: "bg-red-500/10",
     borderClass: "border-red-500/30",
-    textClass: "text-red-200",
-    iconClass: "text-red-400",
+    textClass: "text-red-700 dark:text-red-200",
+    iconClass: "text-red-500 dark:text-red-400",
   },
   help: {
     icon: <HelpCircle size={18} />,
     bgClass: "bg-indigo-500/10",
     borderClass: "border-indigo-500/30",
-    textClass: "text-indigo-200",
-    iconClass: "text-indigo-400",
+    textClass: "text-indigo-700 dark:text-indigo-200",
+    iconClass: "text-indigo-500 dark:text-indigo-400",
   },
 };
 

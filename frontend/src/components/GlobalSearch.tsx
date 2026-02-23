@@ -108,7 +108,7 @@ const GlobalSearch: React.FC = () => {
       <div className="relative">
         <Search
           size={18}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400"
         />
         <input
           ref={inputRef}
@@ -120,12 +120,12 @@ const GlobalSearch: React.FC = () => {
           }}
           onFocus={() => setIsOpen(true)}
           placeholder="Buscar cards em todos os boards... (Ctrl+K)"
-          className="w-full rounded-lg border border-slate-700 bg-slate-800/50 py-2.5 pl-10 pr-10 text-white placeholder-slate-400 transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 py-2.5 pl-10 pr-10 text-slate-900 dark:text-white placeholder-slate-400 transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {query && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-white"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
           >
             <X size={18} />
           </button>
@@ -134,9 +134,9 @@ const GlobalSearch: React.FC = () => {
 
       {/* Dropdown de resultados */}
       {isOpen && query.length >= 2 && (
-        <div className="absolute top-full z-50 mt-2 max-h-96 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-2xl">
+        <div className="absolute top-full z-50 mt-2 max-h-96 w-full overflow-y-auto rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-2xl">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
+            <div className="flex items-center justify-center gap-2 py-8 text-slate-400 dark:text-slate-500 dark:text-slate-400">
               <Loader2 size={20} className="animate-spin" />
               <span>Buscando...</span>
             </div>
@@ -146,12 +146,12 @@ const GlobalSearch: React.FC = () => {
                 <button
                   key={result.id}
                   onClick={() => handleSelectCard(result.id)}
-                  className="flex w-full items-start gap-3 border-b border-slate-700/50 px-4 py-3 text-left transition-colors last:border-0 hover:bg-slate-700"
+                  className="flex w-full items-start gap-3 border-b border-gray-200/50 dark:border-slate-700/50 px-4 py-3 text-left transition-colors last:border-0 hover:bg-gray-200 dark:hover:bg-slate-700"
                 >
                   <FileText size={18} className="mt-0.5 flex-shrink-0 text-blue-400" />
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-center gap-2">
-                      <h4 className="truncate font-medium text-white">{result.title}</h4>
+                      <h4 className="truncate font-medium text-slate-900 dark:text-white">{result.title}</h4>
                       {result.is_won && (
                         <span className="rounded border border-green-500/30 bg-green-500/20 px-2 py-0.5 text-xs text-green-400">
                           Ganho
@@ -163,7 +163,7 @@ const GlobalSearch: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                    <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
                       {result.list_name && <span>{result.list_name}</span>}
                       {result.assigned_to_name && (
                         <>
@@ -183,7 +183,7 @@ const GlobalSearch: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center text-slate-400">
+            <div className="py-8 text-center text-slate-400 dark:text-slate-500 dark:text-slate-400">
               <FileText size={32} className="mx-auto mb-2 opacity-50" />
               <p>Nenhum card encontrado</p>
               <p className="mt-1 text-xs">Tente outro termo de busca</p>

@@ -138,22 +138,22 @@ const ListModal: React.FC<ListModalProps> = ({
             <button
               type="button"
               onClick={() => setIsColorOpen((open) => !open)}
-              className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200 transition-colors hover:bg-slate-700"
+              className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200 dark:hover:bg-slate-700"
               aria-haspopup="listbox"
               aria-expanded={isColorOpen}
             >
               <span className="flex items-center gap-3">
                 <span
-                  className="h-6 w-6 rounded-md border border-slate-600"
+                  className="h-6 w-6 rounded-md border border-gray-300 dark:border-slate-600"
                   style={{ backgroundColor: color }}
                 />
                 <span className="text-sm">{color}</span>
               </span>
-              <ChevronDown size={18} className="text-slate-400" />
+              <ChevronDown size={18} className="text-slate-500 dark:text-slate-400" />
             </button>
 
             {isColorOpen && (
-              <div className="absolute z-20 mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
+              <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                 <div className="grid grid-cols-7 gap-2">
                   {colorPresets.map((colorValue) => (
                     <button
@@ -165,7 +165,7 @@ const ListModal: React.FC<ListModalProps> = ({
                       }}
                       className={`aspect-square rounded-lg transition-all hover:scale-105 ${
                         color === colorValue
-                          ? "scale-105 ring-2 ring-white ring-offset-2 ring-offset-slate-900"
+                          ? "scale-105 ring-2 ring-white ring-offset-2 ring-offset-gray-50 dark:ring-offset-slate-900"
                           : ""
                       }`}
                       style={{ backgroundColor: colorValue }}
@@ -194,7 +194,7 @@ const ListModal: React.FC<ListModalProps> = ({
                     type="color"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    className="h-10 w-12 cursor-pointer rounded-lg border border-slate-600 bg-slate-800"
+                    className="h-10 w-12 cursor-pointer rounded-lg border border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-800"
                   />
                   <Input
                     type="text"
@@ -210,10 +210,10 @@ const ListModal: React.FC<ListModalProps> = ({
         </FormField>
 
         {/* Preview da lista */}
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <p className="mb-3 text-xs font-medium text-slate-400">Preview:</p>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+          <p className="mb-3 text-xs font-medium text-slate-600 dark:text-slate-400">Preview:</p>
           <div
-            className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-4"
+            className="rounded-lg border border-gray-200 bg-gray-100/50 p-4 dark:border-slate-700/50 dark:bg-slate-900/40"
             style={{
               borderColor: `${color}50`,
               backgroundColor: `${color}14`,
@@ -225,12 +225,12 @@ const ListModal: React.FC<ListModalProps> = ({
                 style={{ backgroundColor: color }}
               />
               <div className="flex-1">
-                <h4 className="font-semibold text-white">
+                <h4 className="font-semibold text-slate-900 dark:text-white">
                   {name.trim() || "Nome da Lista"}
                 </h4>
-                <p className="mt-0.5 text-xs text-slate-400">Lista de cards</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Lista de cards</p>
               </div>
-              <span className="rounded-full bg-slate-800/70 px-2 py-0.5 text-xs text-slate-400">
+              <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800/70 dark:text-slate-400">
                 0 cards
               </span>
             </div>

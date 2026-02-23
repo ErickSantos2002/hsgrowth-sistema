@@ -51,7 +51,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
     <div
       data-kanban-card
       onClick={onClick}
-      className="group relative cursor-pointer rounded-lg border border-slate-700/30 bg-white/5 p-3.5 shadow-sm transition-all hover:border-slate-600 hover:bg-white/10 hover:shadow-md"
+      className="group relative cursor-pointer rounded-lg border border-gray-200 bg-white p-3.5 shadow-sm transition-all hover:border-gray-300 hover:bg-gray-50 hover:shadow-md dark:border-slate-700/30 dark:bg-white/5 dark:hover:border-slate-600 dark:hover:bg-white/10"
     >
       {/* Badge de atividades pendentes (canto superior direito) */}
       {card.pending_tasks_status && (
@@ -69,7 +69,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
               ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
               : card.pending_tasks_status === "future"
               ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
-              : "bg-slate-700/40 text-slate-500 cursor-default"
+              : "bg-gray-100 text-slate-400 cursor-default dark:bg-slate-700/40 dark:text-slate-500"
           }`}
           title={
             card.pending_tasks_status === "overdue"
@@ -86,7 +86,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
       )}
 
       {/* Título */}
-      <h4 className="mb-2 line-clamp-2 pr-14 text-[15px] leading-snug text-white">
+      <h4 className="mb-2 line-clamp-2 pr-14 text-[15px] leading-snug text-slate-900 dark:text-white">
         {card.title}
       </h4>
 
@@ -111,7 +111,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
                   className={`flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] ${
                     isOverdue
                       ? "bg-red-500/20 font-medium text-red-400"
-                      : "bg-slate-700/50 text-slate-400"
+                      : "bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400"
                   }`}
                 >
                   <Calendar size={10} />

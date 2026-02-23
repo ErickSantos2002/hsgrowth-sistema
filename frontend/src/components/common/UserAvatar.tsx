@@ -26,7 +26,7 @@ interface UserAvatarProps {
 }
 
 /**
- * Componente reutilizável para exibir avatar de usuário
+ * Componente reutilizável para exibir avatar de usuário com suporte a modo claro e escuro
  *
  * Funcionalidades:
  * - Exibe foto do usuário se disponível
@@ -74,7 +74,7 @@ const UserAvatar = ({
           src={avatarSrc}
           alt={userName}
           title={userName}
-          className={`${sizeClass} rounded-full object-cover border-2 border-slate-700`}
+          className={`${sizeClass} rounded-full border-2 border-gray-200 object-cover dark:border-slate-700`}
           onError={(e) => {
             // Fallback para iniciais se a imagem não carregar
             const target = e.currentTarget;
@@ -82,7 +82,7 @@ const UserAvatar = ({
             if (parent) {
               target.style.display = "none";
               const fallback = document.createElement("div");
-              fallback.className = `${sizeClass} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 font-bold text-white border-2 border-slate-700`;
+              fallback.className = `${sizeClass} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 font-bold text-white border-2 border-gray-200`;
               fallback.textContent = getInitials(userName);
               fallback.title = userName;
               parent.appendChild(fallback);
@@ -91,7 +91,7 @@ const UserAvatar = ({
         />
       ) : (
         <div
-          className={`${sizeClass} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 font-bold text-white border-2 border-slate-700`}
+          className={`${sizeClass} flex items-center justify-center rounded-full border-2 border-gray-200 bg-gradient-to-br from-blue-500 to-cyan-500 font-bold text-white dark:border-slate-700`}
           title={userName}
         >
           {getInitials(userName)}
@@ -101,8 +101,8 @@ const UserAvatar = ({
       {/* Indicador de status online */}
       {showOnlineIndicator && (
         <span
-          className={`absolute bottom-0 right-0 ${indicatorClass} rounded-full border-slate-800 ${
-            isOnline ? "bg-green-500" : "bg-slate-500"
+          className={`absolute bottom-0 right-0 ${indicatorClass} rounded-full border-white dark:border-slate-800 ${
+            isOnline ? "bg-green-500" : "bg-slate-400"
           }`}
           title={isOnline ? "Online" : "Offline"}
         />

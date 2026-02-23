@@ -139,11 +139,11 @@ const Boards: React.FC = () => {
       {/* Header com título e botões */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
-            <Trello className="text-white" size={32} />
+          <h1 className="flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
+            <Trello className="text-slate-900 dark:text-white" size={32} />
             Boards
           </h1>
-          <p className="mt-1 text-gray-400">
+          <p className="mt-1 text-slate-500 dark:text-gray-400">
             Gerencie seus quadros Kanban e organize seus projetos
           </p>
         </div>
@@ -172,7 +172,7 @@ const Boards: React.FC = () => {
             placeholder="Buscar boards..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400"
           />
         </div>
 
@@ -183,7 +183,7 @@ const Boards: React.FC = () => {
             className={`flex h-11 flex-1 items-center justify-center rounded-lg px-4 py-2 transition-colors sm:flex-none ${
               filterStatus === "all"
                 ? "bg-blue-500 text-white"
-                : "bg-gray-800/50 text-gray-400 hover:bg-gray-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-700"
             }`}
           >
             <Grid3x3 size={20} className="inline sm:mr-2" />
@@ -194,7 +194,7 @@ const Boards: React.FC = () => {
             className={`flex h-11 flex-1 items-center justify-center rounded-lg px-4 py-2 transition-colors sm:flex-none ${
               filterStatus === "active"
                 ? "bg-green-500 text-white"
-                : "bg-gray-800/50 text-gray-400 hover:bg-gray-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-700"
             }`}
           >
             <CheckCircle size={20} className="inline sm:mr-2" />
@@ -205,7 +205,7 @@ const Boards: React.FC = () => {
             className={`flex h-11 flex-1 items-center justify-center rounded-lg px-4 py-2 transition-colors sm:flex-none ${
               filterStatus === "archived"
                 ? "bg-yellow-500 text-white"
-                : "bg-gray-800/50 text-gray-400 hover:bg-gray-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-700"
             }`}
           >
             <Archive size={20} className="inline sm:mr-2" />
@@ -216,7 +216,7 @@ const Boards: React.FC = () => {
           <button
             onClick={loadBoards}
             disabled={loading}
-            className="flex h-11 flex-1 items-center justify-center rounded-lg bg-gray-800/50 px-4 py-2 text-gray-300 transition-colors hover:bg-gray-700 disabled:opacity-50 sm:flex-none"
+            className="flex h-11 flex-1 items-center justify-center rounded-lg bg-gray-100 px-4 py-2 text-gray-600 transition-colors hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-800/50 dark:text-gray-300 dark:hover:bg-gray-700 sm:flex-none"
             title="Atualizar lista"
           >
             <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
@@ -230,7 +230,7 @@ const Boards: React.FC = () => {
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="h-48 animate-pulse rounded-xl bg-gray-800/30 backdrop-blur-sm"
+              className="h-48 animate-pulse rounded-xl bg-gray-200/80 backdrop-blur-sm dark:bg-gray-800/30"
             />
           ))}
         </div>

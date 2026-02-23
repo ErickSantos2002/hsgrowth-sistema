@@ -11,7 +11,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 /**
  * Componente de Select padronizado
- * Segue o padrão visual do sistema
+ * Segue o padrão visual do sistema com suporte a modo claro e escuro
  */
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   (
@@ -23,9 +23,9 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         ref={ref}
         className={`${
           fullWidth ? "w-full" : ""
-        } border bg-slate-800 px-4 py-3 ${
-          error ? "border-red-500" : "border-slate-600"
-        } rounded-lg text-white transition-colors focus:border-transparent focus:ring-2 focus:ring-emerald-500 ${className}`}
+        } border bg-white px-4 py-3 text-slate-900 dark:bg-slate-800 dark:text-white ${
+          error ? "border-red-500" : "border-gray-300 dark:border-slate-600"
+        } rounded-lg transition-colors focus:border-transparent focus:ring-2 focus:ring-emerald-500 ${className}`}
         {...props}
       >
         {children}

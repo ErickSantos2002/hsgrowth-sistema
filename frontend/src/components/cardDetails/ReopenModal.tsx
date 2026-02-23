@@ -99,14 +99,14 @@ const ReopenModal: React.FC<ReopenModalProps> = ({
       <div className="space-y-5">
         {/* Campo de título */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-300">
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
             Título do novo negócio
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-3 text-sm text-white placeholder-slate-500 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-500 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="Digite o título do negócio"
             disabled={isLoading}
             autoFocus
@@ -115,11 +115,11 @@ const ReopenModal: React.FC<ReopenModalProps> = ({
 
         {/* Seleção do detalhamento do canal */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-300">
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
             Canal de Aquisição - Detalhamento
           </label>
-          <p className="text-xs text-slate-500">
-            O canal será definido como <strong className="text-slate-400">Base</strong>. Selecione o detalhamento:
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            O canal será definido como <strong className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Base</strong>. Selecione o detalhamento:
           </p>
           <div className="space-y-2">
             {REOPEN_DETAIL_OPTIONS.map((option) => (
@@ -129,8 +129,8 @@ const ReopenModal: React.FC<ReopenModalProps> = ({
                   flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-all
                   ${
                     selectedDetail === option
-                      ? "border-blue-500/50 bg-blue-500/20 text-white"
-                      : "border-slate-700 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:bg-slate-900"
+                      ? "border-blue-500/50 bg-blue-500/20 text-slate-900 dark:text-white"
+                      : "border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-900"
                   }
                   ${isLoading ? "cursor-not-allowed opacity-60" : ""}
                 `}

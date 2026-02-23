@@ -270,7 +270,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
       <div className="space-y-6">
         {/* Seção: Identificação */}
         <div>
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
             <User size={20} className="text-emerald-400" />
             Identificação
           </h3>
@@ -322,7 +322,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
 
         {/* Seção: Informações Profissionais */}
         <div>
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
             <Briefcase size={20} className="text-emerald-400" />
             Informações Profissionais
           </h3>
@@ -386,7 +386,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
 
         {/* Seção: Emails */}
         <div>
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
             <Mail size={20} className="text-emerald-400" />
             Emails
           </h3>
@@ -440,7 +440,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
 
         {/* Seção: Telefones */}
         <div>
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
             <Phone size={20} className="text-emerald-400" />
             Telefones
           </h3>
@@ -494,7 +494,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
 
         {/* Seção: Redes Sociais */}
         <div>
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
             <Linkedin size={20} className="text-emerald-400" />
             Redes Sociais
           </h3>
@@ -557,9 +557,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
                 id="is_active"
                 checked={formData.is_active}
                 onChange={(e) => handleChange("is_active", e.target.checked)}
-                className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
+                className="h-4 w-4 rounded border-gray-300 bg-white text-emerald-600 focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800"
               />
-              <label htmlFor="is_active" className="cursor-pointer text-sm text-slate-300">
+              <label htmlFor="is_active" className="cursor-pointer text-sm text-slate-700 dark:text-slate-300">
                 Pessoa ativa (desmarque para inativar)
               </label>
             </div>
@@ -626,11 +626,11 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
           setIsOpen((open) => !open);
         }}
         disabled={disabled}
-        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white ${
           disabled ? "cursor-not-allowed opacity-60" : ""
         }`}
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
@@ -639,7 +639,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -648,8 +648,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

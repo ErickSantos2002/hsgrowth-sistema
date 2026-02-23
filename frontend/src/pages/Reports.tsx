@@ -19,7 +19,8 @@ import {
   Shield,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { COLORS } from '../constants/colors';
+import { COLORS, getChartColors } from '../constants/colors';
+import { useTheme } from '../context/ThemeContext';
 import { showError, showWarning } from '../utils/toast';
 import {
   ResponsiveContainer,
@@ -56,6 +57,9 @@ interface User {
 
 const Reports: React.FC = () => {
   const { user: currentUser } = useAuth();
+  // Cores dos graficos adaptadas ao tema atual (Recharts nao suporta dark: do Tailwind)
+  const { darkMode } = useTheme();
+  const chartColors = getChartColors(darkMode);
   const [activeTab, setActiveTab] = useState<TabType>('sales');
   const [loading, setLoading] = useState(false);
 
@@ -218,8 +222,8 @@ const Reports: React.FC = () => {
           <div className="mb-4">
             <Shield size={64} className="mx-auto text-red-400" />
           </div>
-          <h2 className="mb-2 text-2xl font-bold text-white">Acesso Restrito</h2>
-          <p className="text-slate-400">
+          <h2 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">Acesso Restrito</h2>
+          <p className="text-slate-500 dark:text-slate-400">
             Apenas administradores e gerentes podem acessar relatórios.
           </p>
         </div>
@@ -231,21 +235,21 @@ const Reports: React.FC = () => {
     <div className="overflow-x-hidden p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-white">
-            <FileText className="text-white" size={32} />
+          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
+            <FileText className="text-slate-900 dark:text-white" size={32} />
             Relatórios
           </h1>
-          <p className="text-slate-400">Análise detalhada de vendas, conversão e transferências</p>
+          <p className="text-slate-500 dark:text-slate-400">Análise detalhada de vendas, conversão e transferências</p>
         </div>
 
         {/* Tabs */}
-        <div className="mb-6 flex w-full max-w-full justify-center gap-1 overflow-x-hidden border-b border-slate-700 sm:justify-start sm:gap-4">
+        <div className="mb-6 flex w-full max-w-full justify-center gap-1 overflow-x-hidden border-b border-gray-200 sm:justify-start sm:gap-4 dark:border-slate-700">
           <button
             onClick={() => setActiveTab('sales')}
             className={`flex min-w-0 flex-1 items-center justify-center gap-2 px-2 py-3 text-base font-medium transition-colors sm:flex-none sm:px-6 sm:text-base ${
               activeTab === 'sales'
                 ? 'border-b-2 border-emerald-400 text-emerald-400'
-                : 'text-slate-400 hover:text-slate-300'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
             }`}
           >
             <TrendingUp size={20} />
@@ -256,7 +260,7 @@ const Reports: React.FC = () => {
             className={`flex min-w-0 flex-1 items-center justify-center gap-2 px-2 py-3 text-base font-medium transition-colors sm:flex-none sm:px-6 sm:text-base ${
               activeTab === 'conversion'
                 ? 'border-b-2 border-emerald-400 text-emerald-400'
-                : 'text-slate-400 hover:text-slate-300'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
             }`}
           >
             <BarChart3 size={20} />
@@ -267,7 +271,7 @@ const Reports: React.FC = () => {
             className={`flex min-w-0 flex-1 items-center justify-center gap-2 px-2 py-3 text-base font-medium transition-colors sm:flex-none sm:px-6 sm:text-base ${
               activeTab === 'transfers'
                 ? 'border-b-2 border-emerald-400 text-emerald-400'
-                : 'text-slate-400 hover:text-slate-300'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
             }`}
           >
             <ArrowRightLeft size={20} />
@@ -375,7 +379,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
       >
         <span className={`truncate ${selectedOption ? '' : 'text-slate-400'}`}>{selectedLabel}</span>
         <ChevronDown
@@ -384,7 +388,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -393,8 +397,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? 'bg-slate-800/70' : ''
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? 'bg-gray-100 dark:bg-slate-800/70' : ''
               }`}
             >
               <span className="truncate">{option.label}</span>
@@ -469,12 +473,12 @@ const SalesTab: React.FC<SalesTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-white">Filtros</h2>
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
+        <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Filtros</h2>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Período</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Período</label>
             <SelectMenu
               value={period}
               options={periodOptions}
@@ -483,7 +487,7 @@ const SalesTab: React.FC<SalesTabProps> = ({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Board (Opcional)</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Board (Opcional)</label>
             <SelectMenu
               value={boardId}
               options={boardOptions}
@@ -492,7 +496,7 @@ const SalesTab: React.FC<SalesTabProps> = ({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Vendedor (Opcional)</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Vendedor (Opcional)</label>
             <SelectMenu
               value={userId}
               options={userOptions}
@@ -503,21 +507,21 @@ const SalesTab: React.FC<SalesTabProps> = ({
           {period === 'custom' && (
             <>
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">Data Inicial</label>
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Inicial</label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">Data Final</label>
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Final</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
               </div>
             </>
@@ -571,17 +575,17 @@ const SalesTab: React.FC<SalesTabProps> = ({
             <ChartCard title="Cards por vendedor">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={report.details || []}>
-                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="user_name" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="user_name" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: COLORS.surface.base,
-                      border: `1px solid ${COLORS.border.default}`,
+                      backgroundColor: chartColors.surface.base,
+                      border: `1px solid ${chartColors.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: COLORS.content.secondary }}
-                    itemStyle={{ color: COLORS.content.secondary }}
+                    labelStyle={{ color: chartColors.content.secondary }}
+                    itemStyle={{ color: chartColors.content.secondary }}
                   />
                   <Legend />
                   <Bar dataKey="cards_created" name="Criados" fill={COLORS.status.info} radius={[4, 4, 0, 0]} />
@@ -594,17 +598,17 @@ const SalesTab: React.FC<SalesTabProps> = ({
             <ChartCard title="Valor ganho por vendedor">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={report.details || []}>
-                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="user_name" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="user_name" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: COLORS.surface.base,
-                      border: `1px solid ${COLORS.border.default}`,
+                      backgroundColor: chartColors.surface.base,
+                      border: `1px solid ${chartColors.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: COLORS.content.secondary }}
-                    itemStyle={{ color: COLORS.content.secondary }}
+                    labelStyle={{ color: chartColors.content.secondary }}
+                    itemStyle={{ color: chartColors.content.secondary }}
                     formatter={(value) => reportService.formatCurrency(Number(value))}
                   />
                   <Legend />
@@ -620,9 +624,9 @@ const SalesTab: React.FC<SalesTabProps> = ({
           </div>
 
           {/* Tabela */}
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur">
+          <div className="rounded-lg border border-gray-200 bg-white p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Detalhamento</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Detalhamento</h3>
               <button
                 onClick={onExport}
                 className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
@@ -635,34 +639,34 @@ const SalesTab: React.FC<SalesTabProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">
+                  <tr className="border-b border-gray-200 dark:border-slate-700">
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
                       Vendedor/Período
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Cards Criados
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Cards Ganhos
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Cards Perdidos
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Valor Ganho
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Taxa
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.details?.map((item, index) => (
-                    <tr key={index} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                      <td className="px-4 py-3 text-white">
+                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 dark:border-slate-700/50 dark:hover:bg-slate-700/30">
+                      <td className="px-4 py-3 text-slate-900 dark:text-white">
                         {item.user_name || (item.period ? reportService.formatPeriod(item.period as PeriodType) : '-')}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-300">
+                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
                         {item.cards_created}
                       </td>
                       <td className="px-4 py-3 text-right text-emerald-400">
@@ -674,7 +678,7 @@ const SalesTab: React.FC<SalesTabProps> = ({
                       <td className="px-4 py-3 text-right text-emerald-400">
                         {reportService.formatCurrency(item.value_won)}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-300">
+                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
                         {reportService.formatPercentage(item.conversion_rate)}
                       </td>
                     </tr>
@@ -688,7 +692,7 @@ const SalesTab: React.FC<SalesTabProps> = ({
 
       {/* Empty State */}
       {!report && !loading && (
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-12 text-center backdrop-blur">
+        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
           <FileText size={48} className="mx-auto mb-4 text-slate-600" />
           <p className="text-lg text-slate-400">
             Selecione os filtros e clique em "Gerar Relatório" para visualizar os dados
@@ -752,12 +756,12 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-white">Filtros</h2>
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
+        <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Filtros</h2>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Board <span className="text-red-400">*</span>
             </label>
             <SelectMenu
@@ -768,7 +772,7 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Período</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Período</label>
             <SelectMenu
               value={period}
               options={periodOptions}
@@ -779,21 +783,21 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
           {period === 'custom' && (
             <>
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">Data Inicial</label>
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Inicial</label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">Data Final</label>
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Final</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
               </div>
             </>
@@ -837,17 +841,17 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
             <ChartCard title="Cards por etapa">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={report.stages || []}>
-                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="stage_name" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="stage_name" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: COLORS.surface.base,
-                      border: `1px solid ${COLORS.border.default}`,
+                      backgroundColor: chartColors.surface.base,
+                      border: `1px solid ${chartColors.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: COLORS.content.secondary }}
-                    itemStyle={{ color: COLORS.content.secondary }}
+                    labelStyle={{ color: chartColors.content.secondary }}
+                    itemStyle={{ color: chartColors.content.secondary }}
                   />
                   <Legend />
                   <Bar dataKey="card_count" name="Quantidade" fill={COLORS.status.info} radius={[4, 4, 0, 0]} />
@@ -858,17 +862,17 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
             <ChartCard title="Valor total por etapa">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={report.stages || []}>
-                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="stage_name" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="stage_name" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: COLORS.surface.base,
-                      border: `1px solid ${COLORS.border.default}`,
+                      backgroundColor: chartColors.surface.base,
+                      border: `1px solid ${chartColors.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: COLORS.content.secondary }}
-                    itemStyle={{ color: COLORS.content.secondary }}
+                    labelStyle={{ color: chartColors.content.secondary }}
+                    itemStyle={{ color: chartColors.content.secondary }}
                     formatter={(value) => reportService.formatCurrency(Number(value))}
                   />
                   <Legend />
@@ -884,9 +888,9 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
           </div>
 
           {/* Tabela */}
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur">
+          <div className="rounded-lg border border-gray-200 bg-white p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Funil de Conversão</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Funil de Conversão</h3>
               <button
                 onClick={onExport}
                 className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
@@ -899,34 +903,34 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Etapa</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                  <tr className="border-b border-gray-200 dark:border-slate-700">
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">Etapa</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Quantidade
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Valor Total
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Taxa de Conversão
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Tempo Médio (dias)
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.stages?.map((stage, index) => (
-                    <tr key={index} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                      <td className="px-4 py-3 text-white">{stage.stage_name}</td>
-                      <td className="px-4 py-3 text-right text-slate-300">{stage.card_count}</td>
+                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 dark:border-slate-700/50 dark:hover:bg-slate-700/30">
+                      <td className="px-4 py-3 text-slate-900 dark:text-white">{stage.stage_name}</td>
+                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">{stage.card_count}</td>
                       <td className="px-4 py-3 text-right text-emerald-400">
                         {reportService.formatCurrency(stage.total_value)}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-300">
+                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
                         {reportService.formatPercentage(stage.conversion_rate)}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-300">
+                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
                         {stage.avg_time_in_stage?.toFixed(1) || '0.0'}
                       </td>
                     </tr>
@@ -940,7 +944,7 @@ const ConversionTab: React.FC<ConversionTabProps> = ({
 
       {/* Empty State */}
       {!report && !loading && (
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-12 text-center backdrop-blur">
+        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
           <BarChart3 size={48} className="mx-auto mb-4 text-slate-600" />
           <p className="text-lg text-slate-400">
             Selecione um board e clique em "Gerar Relatório" para visualizar o funil de conversão
@@ -1012,12 +1016,12 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-white">Filtros</h2>
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
+        <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Filtros</h2>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Período</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Período</label>
             <SelectMenu
               value={period}
               options={periodOptions}
@@ -1026,7 +1030,7 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">De (Opcional)</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">De (Opcional)</label>
             <SelectMenu
               value={fromUserId}
               options={fromUserOptions}
@@ -1035,7 +1039,7 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Para (Opcional)</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Para (Opcional)</label>
             <SelectMenu
               value={toUserId}
               options={toUserOptions}
@@ -1046,21 +1050,21 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
           {period === 'custom' && (
             <>
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">Data Inicial</label>
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Inicial</label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">Data Final</label>
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Final</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
               </div>
             </>
@@ -1114,17 +1118,17 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
                     pair_label: `${item.from_user_name} -> ${item.to_user_name}`,
                   }))}
                 >
-                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="pair_label" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="pair_label" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: COLORS.surface.base,
-                      border: `1px solid ${COLORS.border.default}`,
+                      backgroundColor: chartColors.surface.base,
+                      border: `1px solid ${chartColors.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: COLORS.content.secondary }}
-                    itemStyle={{ color: COLORS.content.secondary }}
+                    labelStyle={{ color: chartColors.content.secondary }}
+                    itemStyle={{ color: chartColors.content.secondary }}
                   />
                   <Legend />
                   <Bar dataKey="transfer_count" name="Transferencias" fill={COLORS.status.info} radius={[4, 4, 0, 0]} />
@@ -1140,17 +1144,17 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
                     pair_label: `${item.from_user_name} -> ${item.to_user_name}`,
                   }))}
                 >
-                  <CartesianGrid stroke={COLORS.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="pair_label" tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: COLORS.content.tertiary, fontSize: 12 }} />
+                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
+                  <XAxis dataKey="pair_label" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
+                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: COLORS.surface.base,
-                      border: `1px solid ${COLORS.border.default}`,
+                      backgroundColor: chartColors.surface.base,
+                      border: `1px solid ${chartColors.border.default}`,
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: COLORS.content.secondary }}
-                    itemStyle={{ color: COLORS.content.secondary }}
+                    labelStyle={{ color: chartColors.content.secondary }}
+                    itemStyle={{ color: chartColors.content.secondary }}
                     formatter={(value) => `${Number(value).toFixed(1)} dias`}
                   />
                   <Legend />
@@ -1168,9 +1172,9 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
           </div>
 
           {/* Tabela */}
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur">
+          <div className="rounded-lg border border-gray-200 bg-white p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Detalhamento de Transferências</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Detalhamento de Transferências</h3>
               <button
                 onClick={onExport}
                 className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
@@ -1183,31 +1187,31 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">
+                  <tr className="border-b border-gray-200 dark:border-slate-700">
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
                       De → Para
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Transferências
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Cards Ganhos
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Valor Ganho
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
                       Tempo Médio
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.details?.map((item, index) => (
-                    <tr key={index} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                      <td className="px-4 py-3 text-white">
+                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 dark:border-slate-700/50 dark:hover:bg-slate-700/30">
+                      <td className="px-4 py-3 text-slate-900 dark:text-white">
                         {item.from_user_name} → {item.to_user_name}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-300">
+                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
                         {item.transfer_count}
                       </td>
                       <td className="px-4 py-3 text-right text-emerald-400">
@@ -1216,7 +1220,7 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
                       <td className="px-4 py-3 text-right text-emerald-400">
                         {reportService.formatCurrency(item.total_value_won)}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-300">
+                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
                         {item.avg_days_to_won?.toFixed(1) || '0.0'} dias
                       </td>
                     </tr>
@@ -1230,7 +1234,7 @@ const TransfersTab: React.FC<TransfersTabProps> = ({
 
       {/* Empty State */}
       {!report && !loading && (
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-12 text-center backdrop-blur">
+        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
           <ArrowRightLeft size={48} className="mx-auto mb-4 text-slate-600" />
           <p className="text-lg text-slate-400">
             Selecione os filtros e clique em "Gerar Relatório" para visualizar as transferências
@@ -1255,8 +1259,8 @@ interface ChartCardProps {
 
 const ChartCard: React.FC<ChartCardProps> = ({ title, children }) => {
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 backdrop-blur">
-      <h4 className="mb-3 text-base font-semibold text-white">{title}</h4>
+    <div className="rounded-lg border border-gray-200 bg-white p-4 backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
+      <h4 className="mb-3 text-base font-semibold text-slate-900 dark:text-white">{title}</h4>
       {children}
     </div>
   );
@@ -1264,12 +1268,12 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, children }) => {
 
 const MetricCard: React.FC<MetricCardProps> = ({ icon, label, value }) => {
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur">
+    <div className="rounded-lg border border-gray-200 bg-white p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
       <div className="mb-2 flex items-center gap-3">
         {icon}
         <span className="text-sm text-slate-400">{label}</span>
       </div>
-      <div className="text-2xl font-bold text-white">{value}</div>
+      <div className="text-2xl font-bold text-slate-900 dark:text-white">{value}</div>
     </div>
   );
 };

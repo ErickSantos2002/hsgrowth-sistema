@@ -68,8 +68,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         )}
 
         {/* Mensagem principal */}
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <p className="leading-relaxed text-slate-200">{message}</p>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+          <p className="leading-relaxed text-slate-700 dark:text-slate-200">{message}</p>
         </div>
       </div>
     </BaseModal>

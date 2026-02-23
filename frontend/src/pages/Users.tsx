@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { Plus, Edit, Trash2, RefreshCw, Shield, UserCircle, Clock, Key, ChevronDown, Users as UsersIcon } from "lucide-react";
 import userService from "../services/userService";
 import { User } from "../types";
@@ -232,8 +232,8 @@ const Users: React.FC = () => {
           <div className="mb-4">
             <Shield size={64} className="mx-auto text-red-400" />
           </div>
-          <h2 className="mb-2 text-2xl font-bold text-white">Acesso Restrito</h2>
-          <p className="text-slate-400">
+          <h2 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">Acesso Restrito</h2>
+          <p className="text-slate-500 dark:text-slate-400">
             Apenas administradores podem gerenciar usuários.
           </p>
         </div>
@@ -253,7 +253,7 @@ const Users: React.FC = () => {
             <button
               onClick={loadUsers}
               disabled={loading}
-              className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
             >
               <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
               Atualizar
@@ -305,17 +305,17 @@ const Users: React.FC = () => {
       </div>
 
       {/* Contador */}
-      <div className="mb-4 text-sm text-slate-400">
+      <div className="mb-4 text-sm text-slate-600 dark:text-slate-400">
         {filteredUsers.length} usuário{filteredUsers.length !== 1 ? "s" : ""} encontrado
         {filteredUsers.length !== 1 ? "s" : ""}
       </div>
 
       {/* Tabela de usuários */}
       {loading ? (
-        <div className="py-12 text-center text-slate-400">Carregando usuários...</div>
+        <div className="py-12 text-center text-slate-500 dark:text-slate-400">Carregando usuários...</div>
       ) : filteredUsers.length === 0 ? (
-        <div className="rounded-xl border border-slate-700 bg-slate-800/50 py-12 text-center">
-          <p className="mb-4 text-slate-400">
+        <div className="rounded-xl border border-gray-200 bg-gray-50 py-12 text-center dark:border-slate-700 dark:bg-slate-800/50">
+          <p className="mb-4 text-slate-500 dark:text-slate-400">
             {searchTerm || (customFilters.role && customFilters.role !== "all") || (customFilters.status && customFilters.status !== "all")
               ? "Nenhum usuário encontrado com os filtros aplicados"
               : "Nenhum usuário cadastrado ainda"}
@@ -331,39 +331,39 @@ const Users: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-800/30">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-700 bg-slate-800/50">
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Usuário
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Contato
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Role
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Último Login
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Cadastro
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-700/50">
                 {pagination.paginatedItems.map((user) => (
                   <tr
                     key={user.id}
-                    className="transition-colors hover:bg-slate-700/30"
+                    className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/30"
                   >
                     {/* Usuário */}
                     <td className="px-6 py-4">
@@ -376,7 +376,7 @@ const Users: React.FC = () => {
                           size="md"
                         />
                         <div>
-                          <div className="flex items-center gap-2 font-medium text-white">
+                          <div className="flex items-center gap-2 font-medium text-slate-900 dark:text-white">
                             {user.name}
                             {user.id === currentUser?.id && (
                               <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400">
@@ -385,7 +385,7 @@ const Users: React.FC = () => {
                             )}
                           </div>
                           {user.username && (
-                            <div className="text-sm text-slate-400">@{user.username}</div>
+                            <div className="text-sm text-slate-500 dark:text-slate-400">@{user.username}</div>
                           )}
                         </div>
                       </div>
@@ -394,9 +394,9 @@ const Users: React.FC = () => {
                     {/* Contato */}
                     <td className="px-6 py-4">
                       <div className="text-sm">
-                        <div className="text-white">{user.email}</div>
+                        <div className="text-slate-900 dark:text-white">{user.email}</div>
                         {user.phone && (
-                          <div className="text-slate-400">{user.phone}</div>
+                          <div className="text-slate-500 dark:text-slate-400">{user.phone}</div>
                         )}
                       </div>
                     </td>
@@ -427,7 +427,7 @@ const Users: React.FC = () => {
                     </td>
 
                     {/* Último Login */}
-                    <td className="px-6 py-4 text-sm text-slate-400">
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
                       {user.last_login_at ? (
                         <div className="flex items-center gap-1.5">
                           <Clock size={14} />
@@ -439,7 +439,7 @@ const Users: React.FC = () => {
                     </td>
 
                     {/* Data de cadastro */}
-                    <td className="px-6 py-4 text-sm text-slate-400">
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
                       {formatDate(user.created_at)}
                     </td>
 
@@ -455,7 +455,7 @@ const Users: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleResetPassword(user)}
-                          className="rounded-lg bg-slate-600/20 p-2 text-slate-300 transition-colors hover:bg-slate-600/30"
+                          className="rounded-lg bg-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-300 dark:bg-slate-600/20 dark:text-slate-300 dark:hover:bg-slate-600/30"
                           title="Trocar Senha"
                         >
                           <Key size={16} />
@@ -547,9 +547,9 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
@@ -558,7 +558,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -567,8 +567,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

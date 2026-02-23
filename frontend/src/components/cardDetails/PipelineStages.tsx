@@ -88,11 +88,11 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
     // Stages futuras (cinza)
     return {
       container: isHovered
-        ? "bg-slate-600/30 border-slate-500 cursor-pointer"
-        : "bg-slate-800/50 border-slate-700 hover:bg-slate-700/50 cursor-pointer",
-      text: isHovered ? "text-slate-300 font-medium" : "text-slate-400",
+        ? "bg-slate-600/30 border-gray-400 dark:border-slate-500 cursor-pointer"
+        : "bg-gray-100/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 hover:bg-gray-200/50 dark:hover:bg-slate-700/50 cursor-pointer",
+      text: isHovered ? "text-slate-600 dark:text-slate-300 font-medium" : "text-slate-400 dark:text-slate-500 dark:text-slate-400",
       dot: "bg-slate-600",
-      icon: "text-slate-500",
+      icon: "text-slate-400 dark:text-slate-500",
     };
   };
 
@@ -110,7 +110,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
       return "bg-gradient-to-r from-emerald-500 to-slate-700";
     } else {
       // Linha entre stages futuras (cinza)
-      return "bg-slate-700";
+      return "bg-gray-200 dark:bg-slate-700";
     }
   };
 
@@ -125,7 +125,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-slate-400">
+      <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
         <div className="animate-pulse">Carregando pipeline...</div>
       </div>
     );
@@ -139,7 +139,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
     <div className="relative">
       {/* Overlay quando está movendo */}
       {isMoving && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-slate-900/50 backdrop-blur-[2px]">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px]">
           <div className="flex items-center gap-2 font-medium text-blue-400">
             <Loader2 size={18} className="animate-spin" />
             <span className="text-sm">Movendo card...</span>
@@ -179,7 +179,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
                   <div
                     className={`flex h-5 w-5 items-center justify-center rounded-full ${classes.dot}`}
                   >
-                    {isPassed && <Check size={12} className="text-white" />}
+                    {isPassed && <Check size={12} className="text-slate-900 dark:text-white" />}
                     {isCurrent && (
                       <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
                     )}
@@ -187,7 +187,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
                 ) : (
                   <div
                     className={`h-4 w-4 rounded-full border-2 ${
-                      hoveredListId === list.id ? "border-slate-400" : "border-slate-600"
+                      hoveredListId === list.id ? "border-slate-400" : "border-gray-300 dark:border-slate-600"
                     }`}
                   />
                 )}

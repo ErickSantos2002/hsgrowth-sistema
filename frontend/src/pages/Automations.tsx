@@ -139,8 +139,8 @@ const Automations: React.FC = () => {
           <div className="mb-4">
             <Shield size={64} className="mx-auto text-red-400" />
           </div>
-          <h2 className="mb-2 text-2xl font-bold text-white">Acesso Restrito</h2>
-          <p className="text-slate-400">
+          <h2 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">Acesso Restrito</h2>
+          <p className="text-slate-500 dark:text-slate-400">
             Apenas administradores e gerentes podem acessar automações.
           </p>
         </div>
@@ -194,7 +194,7 @@ const Automations: React.FC = () => {
           </div>
         </div>
 
-        <div className="mb-4 text-sm text-slate-400">
+        <div className="mb-4 text-sm text-slate-500 dark:text-slate-400">
           {filteredAutomations.length} automaç{filteredAutomations.length !== 1 ? "ões" : "ão"} encontrada
           {filteredAutomations.length !== 1 ? "s" : ""}
         </div>
@@ -203,18 +203,18 @@ const Automations: React.FC = () => {
         {loading && (
           <div className="py-12 text-center">
             <LoadingSpinner size="lg" />
-            <p className="mt-4 text-slate-400">Carregando automações...</p>
+            <p className="mt-4 text-slate-500 dark:text-slate-400">Carregando automações...</p>
           </div>
         )}
 
         {/* Lista de Automações */}
         {!loading && filteredAutomations.length === 0 && (
           <div className="py-16 text-center">
-            <Zap size={64} className="mx-auto mb-4 text-slate-600" />
-            <h3 className="mb-2 text-xl font-semibold text-white">
+            <Zap size={64} className="mx-auto mb-4 text-slate-400 dark:text-slate-600" />
+            <h3 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">
               Nenhuma automação encontrada
             </h3>
-            <p className="text-slate-400">
+            <p className="text-slate-500 dark:text-slate-400">
               {searchTerm || customFilters.board
                 ? "Tente ajustar os filtros de busca"
                 : "Clique no botão 'Nova Automação' no topo para criar sua primeira automação"}
@@ -223,18 +223,18 @@ const Automations: React.FC = () => {
         )}
 
         {!loading && filteredAutomations.length > 0 && (
-          <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-4 backdrop-blur-sm sm:p-6">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700/50 dark:bg-slate-800/30 sm:p-6">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {pagination.paginatedItems.map((automation) => (
                 <div
                   key={automation.id}
-                  className="rounded-xl border border-slate-700 bg-slate-800/50 p-6 backdrop-blur transition-all hover:border-emerald-500/40"
+                  className="rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-emerald-500/40 dark:border-slate-700 dark:bg-slate-800/50"
                 >
                 {/* Header do Card */}
                 <div className="mb-4 flex items-start justify-between">
                   <div className="flex-1">
                     <div className="mb-2 flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-white">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                         {automation.name}
                       </h3>
                       {automation.is_active ? (
@@ -242,12 +242,12 @@ const Automations: React.FC = () => {
                           Ativa
                         </span>
                       ) : (
-                        <span className="rounded-full bg-slate-600/50 px-2 py-1 text-xs font-medium text-slate-400">
+                        <span className="rounded-full bg-gray-200 px-2 py-1 text-xs font-medium text-slate-500 dark:bg-slate-600/50 dark:text-slate-400">
                           Inativa
                         </span>
                       )}
                     </div>
-                    <p className="line-clamp-2 text-sm text-slate-400">
+                    <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
                       {automation.description}
                     </p>
                     {automation.board_name && (
@@ -261,33 +261,33 @@ const Automations: React.FC = () => {
                 </div>
 
                 {/* Estatísticas */}
-                <div className="mb-4 grid grid-cols-3 gap-4 border-y border-slate-700 py-3">
+                <div className="mb-4 grid grid-cols-3 gap-4 border-y border-gray-200 py-3 dark:border-slate-700">
                   <div className="text-center">
-                    <div className="mb-1 flex items-center justify-center gap-1 text-xs text-slate-400">
+                    <div className="mb-1 flex items-center justify-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                       <BarChart3 size={14} />
                       <span>Execuções</span>
                     </div>
-                    <p className="font-semibold text-white">{automation.execution_count}</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">{automation.execution_count}</p>
                   </div>
                   <div className="text-center">
                     <div className="mb-1 flex items-center justify-center gap-1 text-xs text-green-400">
                       <CheckCircle size={14} />
                       <span>Sucesso</span>
                     </div>
-                    <p className="font-semibold text-white">{successRate(automation)}%</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">{successRate(automation)}%</p>
                   </div>
                   <div className="text-center">
                     <div className="mb-1 flex items-center justify-center gap-1 text-xs text-red-400">
                       <XCircle size={14} />
                       <span>Erros</span>
                     </div>
-                    <p className="font-semibold text-white">{automation.error_count}</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">{automation.error_count}</p>
                   </div>
                 </div>
 
                 {/* Última Execução */}
                 {automation.last_executed_at && (
-                  <div className="mb-4 flex items-center gap-2 text-xs text-slate-400">
+                  <div className="mb-4 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <Clock size={12} />
                     <span>
                       Última execução:{" "}
@@ -302,7 +302,7 @@ const Automations: React.FC = () => {
                     onClick={() => handleToggleActive(automation.id, automation.is_active)}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-colors ${
                       automation.is_active
-                        ? "bg-slate-700 text-white hover:bg-slate-600"
+                        ? "bg-gray-200 text-slate-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
                         : "bg-green-600 text-white hover:bg-green-700"
                     }`}
                   >
@@ -410,9 +410,9 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
@@ -421,7 +421,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -430,8 +430,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

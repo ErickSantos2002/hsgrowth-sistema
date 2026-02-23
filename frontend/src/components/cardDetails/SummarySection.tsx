@@ -256,21 +256,21 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
 
           {/* Valor do Negócio - sempre read-only, calculado a partir dos produtos */}
           <div className="space-y-1">
-            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
-              <DollarSign size={14} className="text-slate-400" />
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <DollarSign size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
               <span>Valor do negócio</span>
             </div>
-            <div className="rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2">
-              <span className={`text-sm font-semibold ${(card.products_total ?? 0) > 0 ? "text-emerald-400" : "text-slate-500"}`}>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
+              <span className={`text-sm font-semibold ${(card.products_total ?? 0) > 0 ? "text-emerald-400" : "text-slate-400 dark:text-slate-500"}`}>
                 {formatCurrency(card.products_total ?? 0)}
               </span>
             </div>
             {(card.products_total ?? 0) === 0 ? (
-              <p className="text-xs text-slate-500">
-                Adicione produtos na seção <strong className="text-slate-400">Produtos</strong> para calcular o valor automaticamente.
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Adicione produtos na seção <strong className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Produtos</strong> para calcular o valor automaticamente.
               </p>
             ) : (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-400 dark:text-slate-500">
                 Calculado automaticamente com base nos produtos vinculados.
               </p>
             )}
@@ -300,7 +300,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
         </div>
 
         {/* ======== SEÇÃO: RESPONSÁVEIS ======== */}
-        <div className="space-y-4 border-t border-slate-700/50 pt-4">
+        <div className="space-y-4 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
             <Users size={16} />
             Responsáveis
@@ -318,23 +318,23 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
 
           {/* Vendedor Responsável (campo já existe como assigned_to_id) */}
           <div className="space-y-1">
-            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
-              <Briefcase size={14} className="text-slate-400" />
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <Briefcase size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
               <span>Vendedor Responsável</span>
             </div>
-            <div className="rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2">
-              <span className="text-sm text-white">
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
+              <span className="text-sm text-slate-900 dark:text-white">
                 {card.assigned_to_name || "Não atribuído"}
               </span>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
               O vendedor vai ser atribuido automaticamente pelo sistema ou por um Gerente
             </p>
           </div>
         </div>
 
         {/* ======== SEÇÃO: TRACKING DE BOARDS (READ-ONLY) ======== */}
-        <div className="space-y-4 border-t border-slate-700/50 pt-4">
+        <div className="space-y-4 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
             <Target size={16} />
             Tracking de Boards
@@ -342,22 +342,22 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
 
           {/* Data de Entrada - Prospecção */}
           <div className="space-y-1">
-            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
-              <Clock size={14} className="text-slate-400" />
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <Clock size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
               <span>Data de Entrada - Prospecção</span>
             </div>
             <div className="flex items-center gap-2">
               {card.prospection_entry_date ? (
                 <>
                   <CheckCircle size={16} className="text-emerald-400" />
-                  <span className="text-sm text-slate-300">
+                  <span className="text-sm text-slate-600 dark:text-slate-300">
                     {formatDateTime(card.prospection_entry_date)}
                   </span>
                 </>
               ) : (
                 <>
-                  <XCircle size={16} className="text-slate-500" />
-                  <span className="text-sm text-slate-500">Não registrado</span>
+                  <XCircle size={16} className="text-slate-400 dark:text-slate-500" />
+                  <span className="text-sm text-slate-400 dark:text-slate-500">Não registrado</span>
                 </>
               )}
             </div>
@@ -365,22 +365,22 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
 
           {/* Data de Entrada - Aquisição */}
           <div className="space-y-1">
-            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
-              <Clock size={14} className="text-slate-400" />
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <Clock size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
               <span>Data de Entrada - Aquisição</span>
             </div>
             <div className="flex items-center gap-2">
               {card.acquisition_entry_date ? (
                 <>
                   <CheckCircle size={16} className="text-emerald-400" />
-                  <span className="text-sm text-slate-300">
+                  <span className="text-sm text-slate-600 dark:text-slate-300">
                     {formatDateTime(card.acquisition_entry_date)}
                   </span>
                 </>
               ) : (
                 <>
-                  <XCircle size={16} className="text-slate-500" />
-                  <span className="text-sm text-slate-500">Não registrado</span>
+                  <XCircle size={16} className="text-slate-400 dark:text-slate-500" />
+                  <span className="text-sm text-slate-400 dark:text-slate-500">Não registrado</span>
                 </>
               )}
             </div>
@@ -388,37 +388,37 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
 
           {/* Data de Entrada - Expansão */}
           <div className="space-y-1">
-            <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
-              <Clock size={14} className="text-slate-400" />
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <Clock size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
               <span>Data de Entrada - Expansão</span>
             </div>
             <div className="flex items-center gap-2">
               {card.expansion_entry_date ? (
                 <>
                   <CheckCircle size={16} className="text-emerald-400" />
-                  <span className="text-sm text-slate-300">
+                  <span className="text-sm text-slate-600 dark:text-slate-300">
                     {formatDateTime(card.expansion_entry_date)}
                   </span>
                 </>
               ) : (
                 <>
-                  <XCircle size={16} className="text-slate-500" />
-                  <span className="text-sm text-slate-500">Não registrado</span>
+                  <XCircle size={16} className="text-slate-400 dark:text-slate-500" />
+                  <span className="text-sm text-slate-400 dark:text-slate-500">Não registrado</span>
                 </>
               )}
             </div>
           </div>
 
-          <div className="flex items-start gap-2 rounded-lg border border-slate-700/50 bg-slate-800/30 p-2">
-            <Info size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
-            <p className="text-xs text-slate-400">
+          <div className="flex items-start gap-2 rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-2">
+            <Info size={14} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+            <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
               Essas datas são preenchidas automaticamente quando o card muda de board.
             </p>
           </div>
         </div>
 
         {/* ======== SEÇÃO: INFORMAÇÕES DE NEGÓCIO ======== */}
-        <div className="space-y-4 border-t border-slate-700/50 pt-4">
+        <div className="space-y-4 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
             <Briefcase size={16} />
             Informações de Negócio
@@ -524,33 +524,33 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
         )}
 
         {/* ======== INFORMAÇÕES SOMENTE LEITURA ======== */}
-        <div className="space-y-3 border-t border-slate-700/50 pt-4">
-          <h4 className="text-sm font-semibold text-slate-400">Informações Gerais</h4>
+        <div className="space-y-3 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
+          <h4 className="text-sm font-semibold text-slate-400 dark:text-slate-500 dark:text-slate-400">Informações Gerais</h4>
 
           {/* Data de Criação */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm text-slate-400">
+            <div className="flex items-center gap-1 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
               <Clock size={14} />
               <span>Criado em:</span>
             </div>
-            <span className="text-sm font-medium text-white">
+            <span className="text-sm font-medium text-slate-900 dark:text-white">
               {card.created_at ? formatDate(card.created_at) : "-"}
             </span>
           </div>
 
           {/* Tempo no Funil */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm text-slate-400">
+            <div className="flex items-center gap-1 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
               <Clock size={14} />
               <span>Tempo no funil:</span>
             </div>
-            <span className="text-sm font-medium text-white">{calculateAge()}</span>
+            <span className="text-sm font-medium text-slate-900 dark:text-white">{calculateAge()}</span>
           </div>
 
           {/* ID do Card */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-400">ID:</span>
-            <span className="font-mono text-sm font-medium text-slate-300">#{card.id}</span>
+            <span className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">ID:</span>
+            <span className="font-mono text-sm font-medium text-slate-600 dark:text-slate-300">#{card.id}</span>
           </div>
         </div>
       </div>

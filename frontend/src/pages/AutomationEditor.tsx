@@ -25,7 +25,8 @@ import CustomEdge from "../components/automations/CustomEdge";
 import TemplatesModal from "../components/automations/TemplatesModal";
 import automationService from "../services/automationService";
 import { convertApiToReactFlow, convertReactFlowToApi, validateAutomation } from "../utils/automationConverter";
-import { COLORS } from "../constants/colors";
+import { COLORS, getChartColors } from "../constants/colors";
+import { useTheme } from "../context/ThemeContext";
 import { showSuccess, showError, showWarning, showInfo } from "../utils/toast";
 import { LoadingSpinner } from "../components/common";
 
@@ -48,6 +49,9 @@ const AutomationEditorContent: React.FC = () => {
   const { id } = useParams();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  // Cores adaptadas ao tema (React Flow nao suporta dark: do Tailwind em props programaticas)
+  const { darkMode } = useTheme();
+  const chartColors = getChartColors(darkMode);
   const [automationName, setAutomationName] = useState(
     id === "new" ? "Nova Automação" : "Carregando..."
   );
@@ -593,27 +597,27 @@ const AutomationEditorContent: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-900">
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-slate-900">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-slate-400">Carregando automação...</p>
+          <p className="mt-4 text-slate-500 dark:text-slate-400">Carregando automação...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen flex-col bg-slate-900">
+    <div className="flex h-screen flex-col bg-gray-50 dark:bg-slate-900">
       {/* Header */}
-      <div className="border-b border-slate-700 bg-slate-800 px-6 py-4">
+      <div className="border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700 dark:bg-slate-800">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-1 items-center gap-4">
             <button
               onClick={() => navigate("/automations")}
-              className="rounded-lg p-2 transition-colors hover:bg-slate-700"
+              className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-700"
               title="Voltar"
             >
-              <ArrowLeft size={20} className="text-slate-400" />
+              <ArrowLeft size={20} className="text-slate-500 dark:text-slate-400" />
             </button>
             {isTitleEditing ? (
               <input
@@ -629,13 +633,13 @@ const AutomationEditorContent: React.FC = () => {
                   }
                 }}
                 autoFocus
-                className="min-w-0 flex-1 rounded border-b-2 border-blue-500 bg-slate-800/50 px-2 py-1 text-xl font-semibold text-white focus:outline-none"
+                className="min-w-0 flex-1 rounded border-b-2 border-blue-500 bg-white px-2 py-1 text-xl font-semibold text-slate-900 focus:outline-none dark:bg-slate-800/50 dark:text-white"
                 placeholder="Nome da automação"
               />
             ) : (
               <h1
                 onClick={() => setIsTitleEditing(true)}
-                className="min-w-0 flex-1 cursor-pointer truncate text-xl font-semibold text-white transition-colors hover:text-blue-400"
+                className="min-w-0 flex-1 cursor-pointer truncate text-xl font-semibold text-slate-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
                 title="Clique para editar"
               >
                 {automationName}
@@ -652,7 +656,7 @@ const AutomationEditorContent: React.FC = () => {
             </button>
             <button
               onClick={handleClear}
-              className="flex items-center gap-2 rounded-lg bg-slate-700 px-3 py-2 text-white transition-colors hover:bg-slate-600 sm:px-4"
+              className="flex items-center gap-2 rounded-lg bg-gray-200 px-3 py-2 text-slate-700 transition-colors hover:bg-gray-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 sm:px-4"
             >
               <Trash2 size={16} />
               <span className="hidden sm:inline">Limpar Tudo</span>
@@ -702,7 +706,7 @@ const AutomationEditorContent: React.FC = () => {
             panOnDrag={isCtrlPressed ? true : [1, 2]}
             panOnScroll={true}
             selectionMode={SelectionMode.Partial}
-            className="bg-slate-900"
+            className="bg-gray-50 dark:bg-slate-900"
             defaultEdgeOptions={{
               animated: true,
               style: { stroke: COLORS.board.purple, strokeWidth: 2 },
@@ -712,11 +716,11 @@ const AutomationEditorContent: React.FC = () => {
               variant={BackgroundVariant.Dots}
               gap={20}
               size={1}
-              color={COLORS.border.light}
+              color={chartColors.border.light}
             />
-            <Controls className="!border-slate-700 !bg-slate-800" showInteractive={false} />
+            <Controls className="!border-gray-200 !bg-white dark:!border-slate-700 dark:!bg-slate-800" showInteractive={false} />
             <MiniMap
-              className="!border-slate-700 !bg-slate-800"
+              className="!border-gray-200 !bg-white dark:!border-slate-700 dark:!bg-slate-800"
               style={{ bottom: 10, right: -5}}
               nodeColor={(node) => {
                 if (node.type === "triggerNode") return COLORS.board.purple;

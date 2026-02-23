@@ -110,7 +110,7 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
       deadline: "border-yellow-500/40 bg-yellow-500/15 text-yellow-300",
       email: "border-blue-500/40 bg-blue-500/15 text-blue-300",
       lunch: "border-purple-500/40 bg-purple-500/15 text-purple-300",
-      other: "border-slate-600 bg-slate-700/40 text-slate-300",
+      other: "border-gray-300 bg-gray-100 text-slate-600 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-300",
     };
 
     return classes[type as keyof typeof classes] || classes.other;
@@ -128,7 +128,7 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
       deadline: "bg-yellow-500/10",
       email: "bg-blue-500/10",
       lunch: "bg-purple-500/10",
-      other: "bg-slate-800/50",
+      other: "bg-gray-50 dark:bg-slate-800/50",
     };
 
     return classes[type as keyof typeof classes] || classes.other;
@@ -165,18 +165,18 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="flex h-full w-80 flex-shrink-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-xl"
+        className="flex h-full w-80 flex-shrink-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-700 p-4">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 p-4 dark:border-slate-700">
           <div>
-            <h3 className="font-semibold text-white">Atividades Pendentes</h3>
-            <p className="text-sm text-slate-400">{cardTitle}</p>
+            <h3 className="font-semibold text-slate-900 dark:text-white">Atividades Pendentes</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">{cardTitle}</p>
           </div>
           <button
             onClick={onClose}
-            className="rounded p-1 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+            className="rounded p-1 text-slate-500 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
@@ -186,12 +186,12 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700 border-t-blue-500"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500 dark:border-slate-700"></div>
             </div>
           ) : tasks.length === 0 ? (
             <div className="py-8 text-center">
-              <CheckSquare size={32} className="mx-auto mb-2 text-slate-600" />
-              <p className="text-sm text-slate-400">Nenhuma atividade pendente</p>
+              <CheckSquare size={32} className="mx-auto mb-2 text-slate-400 dark:text-slate-600" />
+              <p className="text-sm text-slate-600 dark:text-slate-400">Nenhuma atividade pendente</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -208,14 +208,14 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
                   >
                     <div className="flex items-start gap-3 p-3">
                       {/* Ícone */}
-                      <span className="mt-0.5 text-slate-400">
+                      <span className="mt-0.5 text-slate-500 dark:text-slate-400">
                         {getActivityIcon(task.task_type)}
                       </span>
 
                       {/* Conteúdo */}
                       <div className="min-w-0 flex-1">
                         <div className="mb-1 flex items-center gap-2">
-                          <p className="font-medium text-white">{task.title}</p>
+                          <p className="font-medium text-slate-900 dark:text-white">{task.title}</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           {/* Badges */}
@@ -236,7 +236,7 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
                             </span>
                           )}
                         </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                           <StatusBadge status={status} />
                           {task.due_date && <span>{formatBrazilDate(task.due_date)}</span>}
                           {task.assigned_to_name && (

@@ -9,7 +9,7 @@ const SchedulerSection: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Estado em desenvolvimento */}
-      <div className="rounded-lg border-2 border-dashed border-slate-700 bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-8">
+      <div className="rounded-lg border-2 border-dashed border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-8">
         <div className="space-y-4 text-center">
           {/* Ícone */}
           <div className="relative inline-block">
@@ -23,38 +23,38 @@ const SchedulerSection: React.FC = () => {
 
           {/* Título */}
           <div>
-            <h3 className="mb-1 text-lg font-semibold text-white">
+            <h3 className="mb-1 text-lg font-semibold text-slate-900 dark:text-white">
               Agendador de Reuniões
             </h3>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
               Funcionalidade em desenvolvimento
             </p>
           </div>
 
           {/* Descrição */}
           <div className="mx-auto max-w-md space-y-2">
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               Em breve você poderá agendar reuniões diretamente do card, com integração a:
             </p>
 
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+              <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-3">
                 <Calendar size={20} className="mb-1 text-blue-400" />
-                <p className="text-xs font-medium text-white">Google Calendar</p>
+                <p className="text-xs font-medium text-slate-900 dark:text-white">Google Calendar</p>
               </div>
-              <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+              <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-3">
                 <Users size={20} className="mb-1 text-purple-400" />
-                <p className="text-xs font-medium text-white">Microsoft Teams</p>
+                <p className="text-xs font-medium text-slate-900 dark:text-white">Microsoft Teams</p>
               </div>
             </div>
           </div>
 
           {/* Recursos planejados */}
-          <div className="mt-6 rounded-lg border border-slate-700 bg-slate-900/50 p-4 text-left">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <div className="mt-6 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-4 text-left">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 dark:text-slate-400">
               Recursos Planejados:
             </p>
-            <ul className="space-y-1.5 text-xs text-slate-300">
+            <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
               <li className="flex items-center gap-2">
                 <div className="h-1 w-1 rounded-full bg-blue-400" />
                 Agendamento com disponibilidade automática

@@ -73,8 +73,8 @@ const EditableField: React.FC<EditableFieldProps> = ({
   return (
     <div className="space-y-1">
       {/* Label */}
-      <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
-        {icon && <span className="text-slate-400">{icon}</span>}
+      <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+        {icon && <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400">{icon}</span>}
         <span>{label}</span>
       </div>
 
@@ -90,7 +90,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
                 onKeyDown={handleKeyDown}
                 autoFocus
                 rows={3}
-                className="flex-1 rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 rounded-lg border border-blue-500 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ) : (
               <input
@@ -99,7 +99,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                className="flex-1 rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 rounded-lg border border-blue-500 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             )}
 
@@ -115,7 +115,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
             <button
               onClick={handleCancel}
               disabled={isSaving}
-              className="rounded-lg bg-slate-700 p-2 text-slate-300 transition-colors hover:bg-slate-600"
+              className="rounded-lg bg-gray-200 dark:bg-slate-700 p-2 text-slate-600 dark:text-slate-300 transition-colors hover:bg-slate-600"
               title="Cancelar"
             >
               <X size={16} />
@@ -126,21 +126,21 @@ const EditableField: React.FC<EditableFieldProps> = ({
             onClick={handleStartEdit}
             className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
               disabled
-                ? "cursor-not-allowed border-slate-700 bg-slate-800/30"
-                : "cursor-pointer border-slate-700 bg-slate-900/50 hover:border-blue-500/50 hover:bg-slate-800/50"
+                ? "cursor-not-allowed border-gray-200 dark:border-slate-700 bg-gray-100/30 dark:bg-slate-800/30"
+                : "cursor-pointer border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 hover:border-blue-500/50 hover:bg-gray-100 dark:hover:bg-slate-800/50"
             } transition-colors`}
           >
-            <span className={value ? "text-white" : "italic text-slate-500"}>
+            <span className={value ? "text-slate-900 dark:text-white" : "italic text-slate-400 dark:text-slate-500"}>
               {displayValue}
             </span>
             {!disabled && (
               <Pencil
                 size={14}
-                className="text-slate-500 transition-colors group-hover:text-blue-400"
+                className="text-slate-400 dark:text-slate-500 transition-colors group-hover:text-blue-400"
               />
             )}
             {disabled && (
-              <span className="rounded border border-slate-700 bg-slate-800/50 px-2 py-0.5 text-xs text-slate-500">
+              <span className="rounded border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-2 py-0.5 text-xs text-slate-400 dark:text-slate-500">
                 Somente leitura
               </span>
             )}

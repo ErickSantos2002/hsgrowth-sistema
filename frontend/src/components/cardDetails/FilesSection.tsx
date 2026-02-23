@@ -149,7 +149,7 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
     if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return <FileSpreadsheet {...iconProps} className="text-emerald-400" />;
     if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('7z')) return <FileArchive {...iconProps} className="text-yellow-400" />;
 
-    return <File {...iconProps} className="text-slate-400" />;
+    return <File {...iconProps} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />;
   };
 
   // Handlers de drag & drop
@@ -185,7 +185,7 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
       <div
         className={`
           rounded-lg border-2 border-dashed transition-all
-          ${isDragging ? 'border-cyan-500 bg-cyan-500/10' : 'border-slate-700 bg-slate-800/30'}
+          ${isDragging ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-200 dark:border-slate-700 bg-gray-100/30 dark:bg-slate-800/30'}
           ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer hover:border-cyan-600'}
         `}
         onDragEnter={handleDragEnter}
@@ -198,15 +198,15 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
           {uploading ? (
             <div className="space-y-2">
               <Loader2 size={32} className="mx-auto animate-spin text-cyan-400" />
-              <p className="text-sm text-slate-300">Enviando arquivo...</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Enviando arquivo...</p>
             </div>
           ) : (
             <div className="space-y-2">
               <Upload size={32} className="mx-auto text-cyan-400" />
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 Arraste arquivos aqui ou clique para selecionar
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-400 dark:text-slate-500">
                 PDF, DOCX, XLSX, TXT, CSV, imagens (JPG, PNG, GIF, WEBP), ZIP, RAR, 7Z - Máximo 10MB
               </p>
             </div>
@@ -242,18 +242,18 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
       {loading ? (
         <div className="py-8 text-center">
           <Loader2 size={24} className="mx-auto animate-spin text-cyan-400" />
-          <p className="mt-2 text-sm text-slate-400">Carregando arquivos...</p>
+          <p className="mt-2 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Carregando arquivos...</p>
         </div>
       ) : attachments.length === 0 ? (
-        <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-6 text-center">
+        <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/30 dark:bg-slate-800/30 p-6 text-center">
           <File size={32} className="mx-auto text-slate-600" />
-          <p className="mt-2 text-sm text-slate-400">Nenhum arquivo anexado</p>
+          <p className="mt-2 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhum arquivo anexado</p>
         </div>
       ) : (
         <div className="space-y-2">
           {/* Header */}
           <div className="flex items-center justify-between px-1">
-            <p className="text-sm font-medium text-slate-300">
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
               {attachments.length} arquivo{attachments.length !== 1 ? 's' : ''} ({totalSize.toFixed(2)} MB)
             </p>
           </div>
@@ -263,7 +263,7 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
             {attachments.map((attachment) => (
               <div
                 key={attachment.id}
-                className="flex items-center gap-3 rounded-lg border border-slate-700 bg-slate-800/50 p-3 transition-all hover:border-slate-600 hover:bg-slate-800"
+                className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-3 transition-all hover:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-800"
               >
                 {/* Ícone do tipo de arquivo */}
                 <div className="flex-shrink-0">
@@ -272,10 +272,10 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
 
                 {/* Informações do arquivo */}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-white">
+                  <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
                     {attachment.original_filename}
                   </p>
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
                     <span>{attachmentService.formatFileSize(attachment.file_size)}</span>
                     <span>•</span>
                     <span>{attachment.uploader_name || 'Desconhecido'}</span>

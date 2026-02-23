@@ -285,8 +285,8 @@ const Transfers: React.FC = () => {
     const pageNumbers = getPageNumbers(safePage, total);
 
     return (
-      <div className="flex flex-col gap-4 border-t border-slate-700/60 pt-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-        <div className="text-sm text-slate-400">
+      <div className="flex flex-col gap-4 border-t border-gray-200 pt-4 text-center dark:border-slate-700/60 sm:flex-row sm:items-center sm:justify-between sm:text-left">
+        <div className="text-sm text-slate-500 dark:text-slate-400">
           Mostrando {startIndex} a {endIndex} de {totalItems} registros
         </div>
         <div className="flex items-center justify-center gap-3 sm:justify-end">
@@ -297,13 +297,13 @@ const Transfers: React.FC = () => {
               disabled={safePage === 1}
               className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
                 safePage === 1
-                  ? "border-slate-700 text-slate-600"
-                  : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                  ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                  : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-200 dark:hover:text-white"
               }`}
             >
               {"<"}
             </button>
-            <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
+            <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-gray-300 px-2 py-2 text-sm text-slate-900 dark:border-slate-600 dark:text-white">
               {safePage}
             </div>
             <button
@@ -312,8 +312,8 @@ const Transfers: React.FC = () => {
               disabled={safePage === total}
               className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
                 safePage === total
-                  ? "border-slate-700 text-slate-600"
-                  : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                  ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                  : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-200 dark:hover:text-white"
               }`}
             >
               {">"}
@@ -326,8 +326,8 @@ const Transfers: React.FC = () => {
               disabled={safePage === 1}
               className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
                 safePage === 1
-                  ? "border-slate-700 text-slate-600"
-                  : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                  ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                  : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:text-white"
               }`}
             >
               Anterior
@@ -340,7 +340,7 @@ const Transfers: React.FC = () => {
                 className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
                   page === safePage
                     ? "border-emerald-500 bg-emerald-500 text-white"
-                    : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                    : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:text-white"
                 }`}
               >
                 {page}
@@ -352,8 +352,8 @@ const Transfers: React.FC = () => {
               disabled={safePage === total}
               className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
                 safePage === total
-                  ? "border-slate-700 text-slate-600"
-                  : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                  ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                  : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:text-white"
               }`}
             >
               Proxima
@@ -385,7 +385,7 @@ const Transfers: React.FC = () => {
       <div className="flex min-h-[60vh] items-center justify-center p-6">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-slate-400">Carregando transferências...</p>
+          <p className="mt-4 text-slate-500 dark:text-slate-400">Carregando transferências...</p>
         </div>
       </div>
     );
@@ -396,11 +396,11 @@ const Transfers: React.FC = () => {
       {/* Header */}
       <div className="mb-6 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
         <div className="flex flex-col items-center sm:items-start">
-          <h1 className="flex items-center justify-center gap-3 text-xl font-bold text-white sm:justify-start sm:text-3xl">
-            <ArrowRightLeft className="text-white" size={24} />
+          <h1 className="flex items-center justify-center gap-3 text-xl font-bold text-slate-900 sm:justify-start sm:text-3xl dark:text-white">
+            <ArrowRightLeft className="text-slate-900 dark:text-white" size={24} />
             Transferências de Cards
           </h1>
-          <p className="mt-1 text-slate-400">
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
             Gerencie solicitações de transferência de cards entre usuários
           </p>
         </div>
@@ -419,43 +419,43 @@ const Transfers: React.FC = () => {
           <div className="rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6 backdrop-blur-xl transition-all hover:border-blue-500/40">
             <div className="mb-1 flex items-center gap-2">
               <ArrowRightLeft size={16} className="text-blue-400" />
-              <span className="text-xs text-slate-400">Total</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Total</span>
             </div>
-            <div className="text-2xl font-bold text-white">{statistics.total_transfers}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{statistics.total_transfers}</div>
           </div>
           <div className="rounded-xl border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 p-6 backdrop-blur-xl transition-all hover:border-yellow-500/40">
             <div className="mb-1 flex items-center gap-2">
               <Clock size={16} className="text-yellow-400" />
-              <span className="text-xs text-slate-400">Pendentes</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Pendentes</span>
             </div>
-            <div className="text-2xl font-bold text-white">{statistics.pending_approvals}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{statistics.pending_approvals}</div>
           </div>
           <div className="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-500/10 to-emerald-500/10 p-6 backdrop-blur-xl transition-all hover:border-green-500/40">
             <div className="mb-1 flex items-center gap-2">
               <CheckCircle size={16} className="text-green-400" />
-              <span className="text-xs text-slate-400">Hoje</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Hoje</span>
             </div>
-            <div className="text-2xl font-bold text-white">{statistics.completed_today}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{statistics.completed_today}</div>
           </div>
           <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-6 backdrop-blur-xl transition-all hover:border-emerald-500/40">
             <div className="mb-1 flex items-center gap-2">
               <CheckCircle size={16} className="text-emerald-400" />
-              <span className="text-xs text-slate-400">Esta Semana</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Esta Semana</span>
             </div>
-            <div className="text-2xl font-bold text-white">{statistics.completed_this_week}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{statistics.completed_this_week}</div>
           </div>
           <div className="rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-6 backdrop-blur-xl transition-all hover:border-cyan-500/40">
             <div className="mb-1 flex items-center gap-2">
               <CheckCircle size={16} className="text-cyan-400" />
-              <span className="text-xs text-slate-400">Este Ms</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Este Ms</span>
             </div>
-            <div className="text-2xl font-bold text-white">{statistics.completed_this_month}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{statistics.completed_this_month}</div>
           </div>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-2 border-b border-slate-700">
+      <div className="mb-6 flex gap-2 border-b border-gray-200 dark:border-slate-700">
         {/* Tabs para VENDEDORES */}
         {!isManagerOrAdmin && (
           <>
@@ -464,7 +464,7 @@ const Transfers: React.FC = () => {
               className={`relative px-4 py-3 font-medium transition-colors ${
                 activeTab === "pending"
                   ? "border-b-2 border-blue-400 text-blue-400"
-                  : "text-slate-400 hover:text-white"
+                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -483,7 +483,7 @@ const Transfers: React.FC = () => {
               className={`relative px-4 py-3 font-medium transition-colors ${
                 activeTab === "completed"
                   ? "border-b-2 border-blue-400 text-blue-400"
-                  : "text-slate-400 hover:text-white"
+                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -502,7 +502,7 @@ const Transfers: React.FC = () => {
               className={`relative px-4 py-3 font-medium transition-colors ${
                 activeTab === "received"
                   ? "border-b-2 border-blue-400 text-blue-400"
-                  : "text-slate-400 hover:text-white"
+                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -521,7 +521,7 @@ const Transfers: React.FC = () => {
               className={`relative px-4 py-3 font-medium transition-colors ${
                 activeTab === "all"
                   ? "border-b-2 border-blue-400 text-blue-400"
-                  : "text-slate-400 hover:text-white"
+                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -534,27 +534,27 @@ const Transfers: React.FC = () => {
       </div>
 
       {/* Conteúdo das Tabs */}
-      <div className="rounded-xl border border-slate-700 bg-slate-800/30 p-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/30">
         {/* Tab: Transferências Pendentes (Vendedor) */}
         {activeTab === "pending" && (
           <div>
-            <h2 className="mb-4 text-xl font-semibold text-white">Transferências Pendentes</h2>
-            <p className="mb-4 text-slate-400">Aguardando aprovação do gerente</p>
+            <h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-white">Transferências Pendentes</h2>
+            <p className="mb-4 text-slate-500 dark:text-slate-400">Aguardando aprovação do gerente</p>
             {pendingTransfers.length === 0 ? (
-              <p className="py-8 text-center text-slate-400">Nenhuma transferência pendente.</p>
+              <p className="py-8 text-center text-slate-500 dark:text-slate-400">Nenhuma transferência pendente.</p>
             ) : (
               <div className="space-y-3">
                 {paginatedPendingTransfers.map((transfer) => (
                   <div
                     key={transfer.id}
-                    className="rounded-lg border border-slate-700 bg-slate-900/50 p-4 transition-colors hover:border-slate-600"
+                    className="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-gray-300 dark:border-slate-700 dark:bg-slate-900/50 dark:hover:border-slate-600"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="mb-2 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             {getStatusIcon(transfer.status)}
-                            <h3 className="font-semibold text-white">
+                            <h3 className="font-semibold text-slate-900 dark:text-white">
                               {transfer.card_title || `Card #${transfer.card_id}`}
                             </h3>
                           </div>
@@ -570,7 +570,7 @@ const Transfers: React.FC = () => {
                             {transferService.formatStatus(transfer.status)}
                           </span>
                         </div>
-                        <div className="space-y-1 text-sm text-slate-400">
+                        <div className="space-y-1 text-sm text-slate-500 dark:text-slate-400">
                           <p>
                             <span className="font-medium">Para:</span> {transfer.to_user_name}
                           </p>
@@ -583,7 +583,7 @@ const Transfers: React.FC = () => {
                               <span className="font-medium">Observações:</span> {transfer.notes}
                             </p>
                           )}
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-slate-400 dark:text-slate-500">
                             Criada em {formatDate(transfer.created_at)}
                           </p>
                         </div>
@@ -606,11 +606,11 @@ const Transfers: React.FC = () => {
         {/* Tab: Aprovações Pendentes (Admin/Gerente) */}
         {activeTab === "received" && (
           <div>
-            <h2 className="mb-4 text-xl font-semibold text-white">Aprovações Pendentes</h2>
-            <p className="mb-4 text-slate-400">Transferências aguardando sua decisão</p>
+            <h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-white">Aprovações Pendentes</h2>
+            <p className="mb-4 text-slate-500 dark:text-slate-400">Transferências aguardando sua decisão</p>
 
             {pendingApprovals.length === 0 ? (
-              <p className="py-12 text-center text-slate-400">Nenhuma aprovação pendente.</p>
+              <p className="py-12 text-center text-slate-500 dark:text-slate-400">Nenhuma aprovação pendente.</p>
             ) : (
               <div>
                 <h3 className="mb-3 flex items-center gap-2 text-lg font-medium text-yellow-400">
@@ -625,14 +625,14 @@ const Transfers: React.FC = () => {
                     return (
                       <div
                         key={approval.id}
-                        className="rounded-lg border-2 border-yellow-500/50 bg-yellow-900/20 p-4"
+                        className="rounded-lg border-2 border-yellow-500/50 bg-yellow-50 p-4 dark:bg-yellow-900/20"
                       >
                         <div className="mb-3 flex items-start justify-between">
                           <div className="flex-1">
-                            <h4 className="mb-2 font-semibold text-white">
+                            <h4 className="mb-2 font-semibold text-slate-900 dark:text-white">
                               {transfer.card_title || `Card #${transfer.card_id}`}
                             </h4>
-                            <div className="space-y-1 text-sm text-slate-300">
+                            <div className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
                               <p>
                                 <span className="font-medium">De:</span> {transfer.from_user_name}
                               </p>
@@ -645,7 +645,7 @@ const Transfers: React.FC = () => {
                                   <span className="font-medium">Observações:</span> {transfer.notes}
                                 </p>
                               )}
-                              <p className="text-xs text-slate-400">
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
                                 Expira em {formatDate(approval.expires_at)}
                               </p>
                             </div>
@@ -689,23 +689,23 @@ const Transfers: React.FC = () => {
         {/* Tab: Transferências Finalizadas (Vendedor) */}
         {activeTab === "completed" && (
           <div>
-            <h2 className="mb-4 text-xl font-semibold text-white">Transferências Finalizadas</h2>
-            <p className="mb-4 text-slate-400">Transferências aprovadas ou rejeitadas</p>
+            <h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-white">Transferências Finalizadas</h2>
+            <p className="mb-4 text-slate-500 dark:text-slate-400">Transferências aprovadas ou rejeitadas</p>
             {completedTransfers.length === 0 ? (
-              <p className="py-8 text-center text-slate-400">Nenhuma transferência finalizada ainda.</p>
+              <p className="py-8 text-center text-slate-500 dark:text-slate-400">Nenhuma transferência finalizada ainda.</p>
             ) : (
               <div className="space-y-3">
                 {paginatedCompletedTransfers.map((transfer) => (
                   <div
                     key={transfer.id}
-                    className="rounded-lg border border-slate-700 bg-slate-900/50 p-4"
+                    className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/50"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="mb-2 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             {getStatusIcon(transfer.status)}
-                            <h4 className="font-semibold text-white">
+                            <h4 className="font-semibold text-slate-900 dark:text-white">
                               {transfer.card_title || `Card #${transfer.card_id}`}
                             </h4>
                           </div>
@@ -721,7 +721,7 @@ const Transfers: React.FC = () => {
                             {transferService.formatStatus(transfer.status)}
                           </span>
                         </div>
-                        <div className="space-y-1 text-sm text-slate-400">
+                        <div className="space-y-1 text-sm text-slate-500 dark:text-slate-400">
                           <p>
                             <span className="font-medium">De:</span> {transfer.from_user_name} {" "}
                             <span className="font-medium">Para:</span> {transfer.to_user_name}
@@ -735,7 +735,7 @@ const Transfers: React.FC = () => {
                               <span className="font-medium">Observações:</span> {transfer.notes}
                             </p>
                           )}
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-slate-400 dark:text-slate-500">
                             {formatDate(transfer.created_at)}
                           </p>
                         </div>
@@ -758,26 +758,26 @@ const Transfers: React.FC = () => {
         {/* Tab: Transferências Finalizadas (Admin/Gerente) */}
         {activeTab === "all" && (
           <div>
-            <h2 className="mb-4 text-xl font-semibold text-white">Transferências Finalizadas</h2>
-            <p className="mb-4 text-slate-400">Todas as transferências aprovadas ou rejeitadas do sistema</p>
+            <h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-white">Transferências Finalizadas</h2>
+            <p className="mb-4 text-slate-500 dark:text-slate-400">Todas as transferências aprovadas ou rejeitadas do sistema</p>
             {allTransfers.length === 0 ? (
               <div className="py-12 text-center">
-                <CheckCircle size={48} className="mx-auto mb-3 text-slate-600" />
-                <p className="text-slate-400">Nenhuma transferência finalizada ainda</p>
+                <CheckCircle size={48} className="mx-auto mb-3 text-slate-400 dark:text-slate-600" />
+                <p className="text-slate-500 dark:text-slate-400">Nenhuma transferência finalizada ainda</p>
               </div>
             ) : (
               <div className="space-y-3">{
               paginatedAllTransfers.map((transfer) => (
                 <div
                   key={transfer.id}
-                  className="rounded-lg border border-slate-700 bg-slate-900/50 p-4"
+                  className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/50"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="mb-2 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(transfer.status)}
-                          <h4 className="font-semibold text-white">
+                          <h4 className="font-semibold text-slate-900 dark:text-white">
                             {transfer.card_title || `Card #${transfer.card_id}`}
                           </h4>
                         </div>
@@ -793,7 +793,7 @@ const Transfers: React.FC = () => {
                           {transferService.formatStatus(transfer.status)}
                         </span>
                       </div>
-                      <div className="space-y-1 text-sm text-slate-400">
+                      <div className="space-y-1 text-sm text-slate-500 dark:text-slate-400">
                         <p>
                           <span className="font-medium">De:</span> {transfer.from_user_name || "Desconhecido"} {" "}
                           <span className="font-medium">Para:</span> {transfer.to_user_name || "Desconhecido"}
@@ -807,7 +807,7 @@ const Transfers: React.FC = () => {
                             <span className="font-medium">Observações:</span> {transfer.notes}
                           </p>
                         )}
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
                           {formatDate(transfer.created_at)}
                         </p>
                       </div>

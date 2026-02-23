@@ -72,14 +72,14 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
       }
     >
       <div className="space-y-4">
-        <p className="text-slate-300">
+        <p className="text-slate-600 dark:text-slate-300">
           Por que este negócio foi perdido? Selecione o motivo abaixo:
         </p>
 
         {/* Lista de motivos */}
         <div className="max-h-96 space-y-2 overflow-y-auto">
           {reasons.length === 0 ? (
-            <div className="py-8 text-center text-slate-400">
+            <div className="py-8 text-center text-slate-400 dark:text-slate-500 dark:text-slate-400">
               <AlertCircle size={48} className="mx-auto mb-2 opacity-50" />
               <p>Nenhum motivo cadastrado para este board</p>
             </div>
@@ -91,8 +91,8 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
                   flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-all
                   ${
                     selectedReason === reason
-                      ? "border-red-500/50 bg-red-500/20 text-white"
-                      : "border-slate-700 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:bg-slate-900"
+                      ? "border-red-500/50 bg-red-500/20 text-slate-900 dark:text-white"
+                      : "border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-900"
                   }
                 `}
               >

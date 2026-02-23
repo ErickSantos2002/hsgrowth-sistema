@@ -200,7 +200,7 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
 
           {/* Ícones sugeridos */}
           <div>
-            <p className="mb-2 text-sm font-medium text-slate-300">Ícones sugeridos</p>
+            <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Ícones sugeridos</p>
             <div className="flex flex-wrap justify-center gap-2 md:grid md:grid-cols-7 md:justify-start">
               {suggestedIcons.map((icon) => (
                 <button
@@ -210,7 +210,7 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
                   className={`rounded-lg border p-3 transition-all ${
                     formData.icon_url === icon.emoji
                       ? "border-emerald-500 bg-emerald-600/20"
-                      : "border-slate-700 bg-slate-900 hover:border-slate-600 hover:bg-slate-800"
+                      : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600 dark:hover:bg-slate-800"
                   }`}
                   title={icon.label}
                   disabled={loading}
@@ -236,12 +236,12 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
                 className={`rounded-lg border p-4 text-left transition-all ${
                   formData.criteria_type === "manual"
                     ? "border-emerald-500 bg-emerald-600/20"
-                    : "border-slate-700 bg-slate-900 hover:bg-slate-800"
+                    : "border-gray-200 bg-white hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                 }`}
                 disabled={loading}
               >
-                <p className="font-medium text-white">Manual</p>
-                <p className="mt-1 text-xs text-slate-400">Admin atribui manualmente</p>
+                <p className="font-medium text-slate-900 dark:text-white">Manual</p>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Admin atribui manualmente</p>
               </button>
 
               <button
@@ -250,25 +250,25 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
                 className={`rounded-lg border p-4 text-left transition-all ${
                   formData.criteria_type === "automatic"
                     ? "border-emerald-500 bg-emerald-600/20"
-                    : "border-slate-700 bg-slate-900 hover:bg-slate-800"
+                    : "border-gray-200 bg-white hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                 }`}
                 disabled={loading}
               >
-                <p className="font-medium text-white">Automático</p>
-                <p className="mt-1 text-xs text-slate-400">Sistema concede por regra</p>
+                <p className="font-medium text-slate-900 dark:text-white">Automático</p>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Sistema concede por regra</p>
               </button>
             </div>
           </FormField>
 
           {/* Critérios Automáticos (se selecionado) */}
           {formData.criteria_type === "automatic" && (
-            <div className="space-y-4 rounded-lg border border-slate-700 bg-slate-900 p-4">
-              <p className="text-sm font-medium text-slate-300">Regra de Concessão Automática</p>
+            <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Regra de Concessão Automática</p>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 {/* Campo */}
                 <div>
-                  <label className="mb-1 block text-xs text-slate-400">Campo</label>
+                  <label className="mb-1 block text-xs text-slate-600 dark:text-slate-400">Campo</label>
                   <SelectMenu
                     value={formData.criteria.field || ""}
                     options={[
@@ -283,7 +283,7 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
 
                 {/* Operador */}
                 <div>
-                  <label className="mb-1 block text-xs text-slate-400">Operador</label>
+                  <label className="mb-1 block text-xs text-slate-600 dark:text-slate-400">Operador</label>
                   <SelectMenu
                     value={formData.criteria.operator || ""}
                     options={[
@@ -300,12 +300,12 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
 
                 {/* Valor */}
                 <div>
-                  <label className="mb-1 block text-xs text-slate-400">Valor</label>
+                  <label className="mb-1 block text-xs text-slate-600 dark:text-slate-400">Valor</label>
                   <input
                     type="number"
                     value={formData.criteria.value || ""}
                     onChange={(e) => handleCriteriaChange("value", parseInt(e.target.value) || 0)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                     placeholder="Ex: 1000"
                     disabled={loading}
                   />
@@ -375,9 +375,9 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
@@ -386,7 +386,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -395,8 +395,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

@@ -69,8 +69,8 @@ const EditableSelectField: React.FC<EditableSelectFieldProps> = ({
   return (
     <div className="space-y-1">
       {/* Label */}
-      <div className="flex items-center gap-1 text-sm font-medium text-slate-300">
-        {icon && <span className="text-slate-400">{icon}</span>}
+      <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+        {icon && <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400">{icon}</span>}
         <span>{label}</span>
       </div>
 
@@ -93,14 +93,14 @@ const EditableSelectField: React.FC<EditableSelectFieldProps> = ({
               disabled={isSaving}
               className="rounded-lg bg-emerald-600 p-2 transition-colors hover:bg-emerald-700 disabled:bg-slate-700"
             >
-              <Check size={16} className="text-white" />
+              <Check size={16} className="text-slate-900 dark:text-white" />
             </button>
             <button
               onClick={handleCancel}
               disabled={isSaving}
-              className="rounded-lg bg-slate-700 p-2 transition-colors hover:bg-slate-600 disabled:bg-slate-800"
+              className="rounded-lg bg-gray-200 dark:bg-slate-700 p-2 transition-colors hover:bg-slate-600 disabled:bg-slate-800"
             >
-              <X size={16} className="text-white" />
+              <X size={16} className="text-slate-900 dark:text-white" />
             </button>
           </div>
         ) : (
@@ -108,17 +108,17 @@ const EditableSelectField: React.FC<EditableSelectFieldProps> = ({
             onClick={handleStartEdit}
             className={`rounded-lg border px-3 py-2 transition-colors ${
               disabled
-                ? "cursor-not-allowed border-slate-800 bg-slate-900/30"
-                : "cursor-pointer border-slate-700 bg-slate-900/50 hover:border-slate-600 hover:bg-slate-800/50"
+                ? "cursor-not-allowed border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-900/30"
+                : "cursor-pointer border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 hover:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-800/50"
             } flex items-center justify-between`}
           >
-            <span className={`text-sm ${value ? "text-white" : "text-slate-500"}`}>
+            <span className={`text-sm ${value ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
               {displayValue}
             </span>
             {!disabled && (
               <Pencil
                 size={14}
-                className="text-slate-400 opacity-0 transition-opacity group-hover:opacity-100"
+                className="text-slate-400 dark:text-slate-500 dark:text-slate-400 opacity-0 transition-opacity group-hover:opacity-100"
               />
             )}
           </div>
@@ -184,20 +184,20 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
           setIsOpen((open) => !open);
         }}
         disabled={disabled}
-        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800 px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
           disabled ? "cursor-not-allowed opacity-60" : ""
         }`}
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400 dark:text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
           size={16}
-          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -206,8 +206,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 dark:text-white hover:bg-gray-100 dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100/70 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

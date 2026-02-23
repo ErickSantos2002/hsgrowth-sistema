@@ -311,7 +311,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
 
       {/* Formulário de criação */}
       {isCreating && (
-        <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+        <div className="space-y-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
           {/* Indicador de processamento de imagem */}
           {isPastingImage && (
             <div className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-400">
@@ -327,11 +327,11 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
             suppressContentEditableWarning
             onPaste={(e) => handlePaste(e, newNoteRef)}
             data-placeholder="Digite sua anotação aqui... (Cole imagens com Ctrl+V)"
-            className="note-editor min-h-[100px] w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+            className="note-editor min-h-[100px] w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
           />
 
           {/* Dica de imagem */}
-          <p className="flex items-center gap-1 text-xs text-slate-500">
+          <p className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
             <Image size={11} />
             Cole prints e imagens diretamente com Ctrl+V
           </p>
@@ -340,7 +340,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
             <button
               onClick={handleCreateNote}
               disabled={loading || isPastingImage}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-slate-900 dark:text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
             >
               <Save size={18} />
               Salvar
@@ -351,7 +351,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                 if (newNoteRef.current) newNoteRef.current.innerHTML = "";
               }}
               disabled={loading}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-slate-900 dark:text-white transition-colors hover:bg-red-700"
             >
               <X size={18} />
               Cancelar
@@ -362,10 +362,10 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
 
       {/* Lista de notas */}
       {notes.length === 0 ? (
-        <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-8 text-center">
+        <div className="rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-8 text-center">
           <FileText size={32} className="mx-auto mb-2 text-slate-600" />
-          <p className="text-sm text-slate-400">Nenhuma anotação ainda</p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhuma anotação ainda</p>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
             Adicione observações, lembretes ou informações importantes
           </p>
         </div>
@@ -374,7 +374,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
           {notes.map((note) => (
             <div
               key={note.id}
-              className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 transition-colors hover:bg-slate-700/30"
+              className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4 transition-colors hover:bg-slate-700/30"
             >
               {editingNoteId === note.id ? (
                 // Modo de edição
@@ -392,10 +392,10 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                     contentEditable
                     suppressContentEditableWarning
                     onPaste={(e) => handlePaste(e, editNoteRef)}
-                    className="note-editor min-h-[80px] w-full rounded-lg border border-blue-500 bg-slate-900/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="note-editor min-h-[80px] w-full rounded-lg border border-blue-500 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
 
-                  <p className="flex items-center gap-1 text-xs text-slate-500">
+                  <p className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
                     <Image size={11} />
                     Cole prints e imagens diretamente com Ctrl+V
                   </p>
@@ -404,7 +404,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                     <button
                       onClick={() => handleSaveEdit(note.id)}
                       disabled={loading || isPastingImage}
-                      className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
                     >
                       <Save size={14} />
                       Salvar
@@ -412,7 +412,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                     <button
                       onClick={handleCancelEdit}
                       disabled={loading}
-                      className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-white transition-colors hover:bg-red-700"
                     >
                       <X size={14} />
                       Cancelar
@@ -424,12 +424,12 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                 <>
                   <div className="mb-2 flex items-start justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-xs font-medium text-white">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-xs font-medium text-slate-900 dark:text-white">
                         {note.user_name.substring(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-white">{note.user_name}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{note.user_name}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
                           {formatRelativeTime(note.created_at)}
                         </p>
                       </div>
@@ -439,7 +439,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                       <button
                         onClick={() => handleStartEdit(note)}
                         disabled={loading}
-                        className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-600 hover:text-blue-400"
+                        className="rounded p-1.5 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-blue-400"
                         title="Editar"
                       >
                         <Edit size={14} />
@@ -447,7 +447,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                       <button
                         onClick={() => handleDeleteNote(note.id)}
                         disabled={loading}
-                        className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-600 hover:text-red-400"
+                        className="rounded p-1.5 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-red-400"
                         title="Excluir"
                       >
                         <Trash2 size={14} />
@@ -458,7 +458,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                   <NoteRenderer content={note.content} />
 
                   {note.updated_at !== note.created_at && (
-                    <p className="mt-2 text-xs italic text-slate-500">
+                    <p className="mt-2 text-xs italic text-slate-400 dark:text-slate-500">
                       Editado em {formatRelativeTime(note.updated_at)}
                     </p>
                   )}

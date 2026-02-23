@@ -68,3 +68,24 @@ export const getBoardColor = (color: string): string => {
 export const getStatusColor = (status: StatusKey): string => {
   return COLORS.status[status];
 };
+
+/**
+ * Retorna um conjunto de cores adaptado ao tema atual.
+ * Use em componentes que precisam de cores programáticas (Recharts, React Flow, etc.)
+ * porque esses componentes não suportam classes Tailwind com prefixo dark:.
+ *
+ * @param darkMode - true para tema escuro, false para tema claro
+ */
+export const getChartColors = (darkMode: boolean) => ({
+  surface: darkMode
+    ? { base: '#0f172a', elevated: '#1e293b', hover: '#334155' }
+    : { base: '#f9fafb', elevated: '#ffffff', hover: '#f3f4f6' },
+
+  content: darkMode
+    ? { primary: '#ffffff', secondary: '#cbd5e1', tertiary: '#94a3b8', disabled: '#64748b' }
+    : { primary: '#0f172a', secondary: '#475569', tertiary: '#64748b', disabled: '#9ca3af' },
+
+  border: darkMode
+    ? { default: '#334155', light: '#475569', focus: '#10b981' }
+    : { default: '#e5e7eb', light: '#d1d5db', focus: '#10b981' },
+});

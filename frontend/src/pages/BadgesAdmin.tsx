@@ -144,7 +144,7 @@ const BadgesAdmin: React.FC = () => {
       <div className="flex min-h-[60vh] items-center justify-center p-6">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-slate-400">Carregando badges...</p>
+          <p className="mt-4 text-slate-500 dark:text-slate-400">Carregando badges...</p>
         </div>
       </div>
     );
@@ -154,28 +154,28 @@ const BadgesAdmin: React.FC = () => {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
+        <h1 className="flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
           <Award className="text-yellow-400" size={32} />
           Gerenciar Badges
         </h1>
-        <p className="mt-1 text-slate-400">Criar, editar e atribuir badges do sistema</p>
+        <p className="mt-1 text-slate-500 dark:text-slate-400">Criar, editar e atribuir badges do sistema</p>
       </div>
 
       {/* Actions */}
       <div className="mb-6 flex gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 transform text-slate-400" size={20} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 transform text-slate-400 dark:text-slate-400" size={20} />
           <input
             type="text"
             placeholder="Buscar badges..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
         </div>
         <button
           onClick={loadData}
-          className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white transition-colors hover:bg-slate-700"
+          className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
         >
           <RefreshCw size={18} />
           Atualizar
@@ -194,7 +194,7 @@ const BadgesAdmin: React.FC = () => {
         {filteredBadges.map((badge) => (
           <div
             key={badge.id}
-            className="rounded-xl border border-slate-700 bg-slate-800/50 p-6 transition-colors hover:bg-slate-800/70"
+            className="rounded-xl border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:bg-slate-800/70"
           >
             <div className="mb-4 flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -202,7 +202,7 @@ const BadgesAdmin: React.FC = () => {
                   <Award className="text-yellow-400" size={24} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white">{badge.name}</h3>
+                  <h3 className="font-semibold text-slate-900 dark:text-white">{badge.name}</h3>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs ${
                       badge.criteria_type === "automatic"
@@ -216,10 +216,10 @@ const BadgesAdmin: React.FC = () => {
               </div>
             </div>
 
-            <p className="mb-4 text-sm text-slate-300">{badge.description}</p>
+            <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">{badge.description}</p>
 
             {badge.criteria_type === "automatic" && badge.criteria && (
-              <div className="mb-4 rounded bg-slate-900/50 p-2 text-xs text-slate-400">
+              <div className="mb-4 rounded bg-gray-100 p-2 text-xs text-slate-500 dark:bg-slate-900/50 dark:text-slate-400">
                 Critério: {badge.criteria.field} {badge.criteria.operator} {badge.criteria.value}
               </div>
             )}
@@ -252,48 +252,48 @@ const BadgesAdmin: React.FC = () => {
       </div>
 
       {filteredBadges.length === 0 && (
-        <div className="rounded-xl border border-slate-700 bg-slate-800/50 py-12 text-center">
-          <Award className="mx-auto mb-4 text-slate-600" size={48} />
-          <p className="text-slate-400">Nenhum badge encontrado</p>
+        <div className="rounded-xl border border-gray-200 bg-white py-12 text-center dark:border-slate-700 dark:bg-slate-800/50">
+          <Award className="mx-auto mb-4 text-slate-400 dark:text-slate-600" size={48} />
+          <p className="text-slate-500 dark:text-slate-400">Nenhum badge encontrado</p>
         </div>
       )}
 
       {/* Modal Criar/Editar Badge */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-slate-700 bg-slate-800">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
             <div className="p-6">
-              <h2 className="mb-4 text-2xl font-bold text-white">
+              <h2 className="mb-4 text-2xl font-bold text-slate-900 dark:text-white">
                 {isEditMode ? "Editar Badge" : "Novo Badge"}
               </h2>
 
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Nome <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                     placeholder="Ex: Vendedor do Mês"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">Descrição</label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Descrição</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                     rows={3}
                     placeholder="Descrição do badge..."
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Tipo de Critério
                   </label>
                   <select
@@ -304,7 +304,7 @@ const BadgesAdmin: React.FC = () => {
                         criteria_type: e.target.value as "manual" | "automatic",
                       })
                     }
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                     disabled={isEditMode} // Não permite mudar tipo
                   >
                     <option value="manual">Manual (atribuído por admin)</option>
@@ -313,8 +313,8 @@ const BadgesAdmin: React.FC = () => {
                 </div>
 
                 {formData.criteria_type === "automatic" && (
-                  <div className="space-y-3 rounded-lg bg-slate-900/50 p-4">
-                    <p className="text-sm font-medium text-slate-300">Critério Automático</p>
+                  <div className="space-y-3 rounded-lg bg-gray-100 p-4 dark:bg-slate-900/50">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Critério Automático</p>
                     <div className="grid grid-cols-3 gap-2">
                       <div>
                         <label className="mb-1 block text-xs text-slate-400">Campo</label>
@@ -326,7 +326,7 @@ const BadgesAdmin: React.FC = () => {
                               criteria: { ...formData.criteria, field: e.target.value },
                             })
                           }
-                          className="w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-white"
+                          className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                         >
                           <option value="total_points">Pontos Totais</option>
                         </select>
@@ -341,7 +341,7 @@ const BadgesAdmin: React.FC = () => {
                               criteria: { ...formData.criteria, operator: e.target.value },
                             })
                           }
-                          className="w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-white"
+                          className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                         >
                           <option value=">=">&gt;=</option>
                           <option value=">">&gt;</option>
@@ -359,7 +359,7 @@ const BadgesAdmin: React.FC = () => {
                               criteria: { ...formData.criteria, value: parseInt(e.target.value) },
                             })
                           }
-                          className="w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-white"
+                          className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                         />
                       </div>
                     </div>
@@ -369,7 +369,7 @@ const BadgesAdmin: React.FC = () => {
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-700 px-4 py-2 text-white transition-colors hover:bg-slate-600"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-slate-700 transition-colors hover:bg-gray-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
                   >
                     <X size={18} />
                     Cancelar
@@ -391,21 +391,21 @@ const BadgesAdmin: React.FC = () => {
       {/* Modal Atribuir Badge */}
       {isAwardModalOpen && selectedBadge && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-800">
+          <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
             <div className="p-6">
-              <h2 className="mb-4 text-2xl font-bold text-white">Atribuir Badge</h2>
-              <p className="mb-4 text-slate-300">
+              <h2 className="mb-4 text-2xl font-bold text-slate-900 dark:text-white">Atribuir Badge</h2>
+              <p className="mb-4 text-slate-700 dark:text-slate-300">
                 Badge: <span className="font-semibold text-yellow-400">{selectedBadge.name}</span>
               </p>
 
               <div className="mb-6">
-                <label className="mb-2 block text-sm font-medium text-slate-300">
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Selecione o Vendedor <span className="text-red-400">*</span>
                 </label>
                 <select
                   value={selectedUserId || ""}
                   onChange={(e) => setSelectedUserId(parseInt(e.target.value))}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 >
                   <option value="">Selecione...</option>
                   {users.map((user) => (
@@ -419,7 +419,7 @@ const BadgesAdmin: React.FC = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => setIsAwardModalOpen(false)}
-                  className="flex-1 rounded-lg bg-slate-700 px-4 py-2 text-white transition-colors hover:bg-slate-600"
+                  className="flex-1 rounded-lg bg-gray-200 px-4 py-2 text-slate-700 transition-colors hover:bg-gray-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
                 >
                   Cancelar
                 </button>

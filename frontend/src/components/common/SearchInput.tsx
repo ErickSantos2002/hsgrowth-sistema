@@ -9,7 +9,7 @@ interface SearchInputProps {
 }
 
 /**
- * Componente reutilizável para input de busca
+ * Componente reutilizável para input de busca com suporte a modo claro e escuro
  *
  * Padroniza inputs de busca em todas as páginas com:
  * - Ícone de lupa consistente
@@ -34,7 +34,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-sm text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400"
       />
     </div>
   );

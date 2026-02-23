@@ -33,7 +33,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         return "bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border-yellow-500/50";
       case "secondary":
       default:
-        return "bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 border-slate-700 hover:border-slate-600";
+        return "bg-gray-100/50 dark:bg-slate-800/50 hover:bg-gray-200/50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-slate-600";
     }
   };
 

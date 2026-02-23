@@ -269,21 +269,21 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                   setIsColorOpen(false);
                 }}
                 disabled={loading}
-                className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200 transition-colors hover:bg-slate-700"
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-700 dark:text-slate-200 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700"
                 aria-haspopup="listbox"
                 aria-expanded={isIconOpen}
               >
                 <span className="flex items-center gap-3">
-                  <span className="text-slate-200">
+                  <span className="text-slate-700 dark:text-slate-200">
                     <SelectedIcon size={20} />
                   </span>
                   <span className="text-sm">{selectedIconOption.label}</span>
                 </span>
-                <ChevronDown size={18} className="text-slate-400" />
+                <ChevronDown size={18} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
               </button>
 
               {isIconOpen && (
-                <div className="absolute z-20 mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
+                <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-xl">
                   <div className="grid grid-cols-5 gap-2">
                     {iconOptions.map((option) => (
                       <button
@@ -296,13 +296,13 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                         disabled={loading}
                         className={`flex aspect-square items-center justify-center rounded-lg text-2xl transition-all ${
                           formData.icon === option.value
-                            ? "scale-105 bg-slate-700 ring-2 ring-white ring-offset-2 ring-offset-slate-900"
-                            : "bg-slate-800/50 hover:scale-105 hover:bg-slate-700"
+                            ? "scale-105 bg-gray-200 dark:bg-slate-700 ring-2 ring-white ring-offset-2 ring-offset-white dark:ring-offset-slate-900"
+                            : "bg-gray-100/50 dark:bg-slate-800/50 hover:scale-105 hover:bg-gray-200 dark:hover:bg-slate-700"
                         }`}
                         title={option.label}
                         aria-label={`Selecionar ícone ${option.label}`}
                       >
-                        <option.icon size={22} className="text-slate-200" />
+                        <option.icon size={22} className="text-slate-700 dark:text-slate-200" />
                       </button>
                     ))}
                   </div>
@@ -324,22 +324,22 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                   setIsIconOpen(false);
                 }}
                 disabled={loading}
-                className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200 transition-colors hover:bg-slate-700"
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-700 dark:text-slate-200 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700"
                 aria-haspopup="listbox"
                 aria-expanded={isColorOpen}
               >
                 <span className="flex items-center gap-3">
                   <span
-                    className="h-6 w-6 rounded-md border border-slate-600"
+                    className="h-6 w-6 rounded-md border border-gray-300 dark:border-slate-600"
                     style={{ backgroundColor: formData.color }}
                   />
                   <span className="text-sm">{formData.color}</span>
                 </span>
-                <ChevronDown size={18} className="text-slate-400" />
+                <ChevronDown size={18} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
               </button>
 
               {isColorOpen && (
-                <div className="absolute z-20 mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
+                <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-xl">
                   <div className="grid grid-cols-7 gap-2">
                     {colorPresets.map((colorValue) => (
                       <button
@@ -352,7 +352,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                         disabled={loading}
                         className={`aspect-square rounded-lg transition-all hover:scale-105 ${
                           formData.color === colorValue
-                            ? "scale-105 ring-2 ring-white ring-offset-2 ring-offset-slate-900"
+                            ? "scale-105 ring-2 ring-white ring-offset-2 ring-offset-white dark:ring-offset-slate-900"
                             : ""
                         }`}
                         style={{ backgroundColor: colorValue }}
@@ -360,7 +360,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                       >
                         {formData.color === colorValue && (
                           <svg
-                            className="h-full w-full p-2 text-white drop-shadow-md"
+                            className="h-full w-full p-2 text-slate-900 dark:text-white drop-shadow-md"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -382,7 +382,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                       value={formData.color}
                       onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                       disabled={loading}
-                      className="h-10 w-12 cursor-pointer rounded-lg border border-slate-600 bg-slate-800"
+                      className="h-10 w-12 cursor-pointer rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800"
                     />
                     <Input
                       type="text"
@@ -400,8 +400,8 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
         </div>
 
         {/* Preview do board */}
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <p className="mb-3 text-xs font-medium text-slate-400">Preview:</p>
+        <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
+          <p className="mb-3 text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Preview:</p>
           <div className="flex items-center gap-4">
             <div
               className="rounded-lg p-3"
@@ -412,11 +412,11 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
               <SelectedIcon size={28} style={{ color: formData.color }} />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 {formData.name.trim() || "Nome do Board"}
               </h3>
               {(formData.description.trim() || !board) && (
-                <p className="mt-0.5 text-sm text-slate-400">
+                <p className="mt-0.5 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
                   {(formData.description.trim() || "Sem descrição").slice(0, 200)}
                 </p>
               )}

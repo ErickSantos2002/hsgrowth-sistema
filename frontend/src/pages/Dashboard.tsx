@@ -23,11 +23,15 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, R
 import CountUp from "react-countup";
 import toast from "react-hot-toast";
 import { useDashboard, PeriodType } from "../context/DashboardContext";
-import { COLORS } from "../constants/colors";
+import { COLORS, getChartColors } from "../constants/colors";
+import { useTheme } from "../context/ThemeContext";
 
 const Dashboard: React.FC = () => {
   // Usa o contexto do Dashboard
   const { kpis, loading, error, period, lastUpdate, fetchDashboardData, handleRefresh, setPeriod } = useDashboard();
+  // Cores dos graficos adaptadas ao tema atual (Recharts nao suporta dark: do Tailwind)
+  const { darkMode } = useTheme();
+  const chartColors = getChartColors(darkMode);
 
   // Carrega dados apenas na primeira vez que monta o componente (se não tiver em cache)
   useEffect(() => {
@@ -209,10 +213,10 @@ const Dashboard: React.FC = () => {
       <div className="space-y-6 overflow-x-hidden p-6">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between">
-          <div className="h-8 w-48 animate-pulse rounded bg-slate-700/50" />
+          <div className="h-8 w-48 animate-pulse rounded bg-gray-200 dark:bg-slate-700/50" />
           <div className="flex gap-3">
-            <div className="h-10 w-32 animate-pulse rounded bg-slate-700/50" />
-            <div className="h-10 w-32 animate-pulse rounded bg-slate-700/50" />
+            <div className="h-10 w-32 animate-pulse rounded bg-gray-200 dark:bg-slate-700/50" />
+            <div className="h-10 w-32 animate-pulse rounded bg-gray-200 dark:bg-slate-700/50" />
           </div>
         </div>
 
@@ -221,15 +225,15 @@ const Dashboard: React.FC = () => {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-32 animate-pulse rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl"
+              className="h-32 animate-pulse rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl"
             />
           ))}
         </div>
 
         {/* Charts Skeleton */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="h-80 animate-pulse rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl" />
-          <div className="h-80 animate-pulse rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl" />
+          <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl" />
+          <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl" />
         </div>
       </div>
     );
@@ -261,8 +265,8 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
         <div className="text-left">
-          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-white">
-            <LayoutDashboard className="text-white" size={32} />
+          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
+            <LayoutDashboard className="text-slate-900 dark:text-white" size={32} />
             Dashboard
           </h1>
           <p className="text-sm text-slate-400">
@@ -290,7 +294,7 @@ const Dashboard: React.FC = () => {
           {/* Botão Refresh */}
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/80 px-4 py-2 text-white transition-all hover:bg-slate-700/80"
+            className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-slate-900 transition-all hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:text-white dark:hover:bg-slate-700/80"
           >
             <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline">Atualizar</span>
@@ -304,16 +308,16 @@ const Dashboard: React.FC = () => {
             </button>
 
             {/* Dropdown de exportação */}
-            <div className="invisible absolute right-0 z-10 mt-2 w-48 rounded-lg border border-slate-700 bg-slate-800 opacity-0 shadow-xl transition-all group-hover:visible group-hover:opacity-100">
+            <div className="invisible absolute right-0 z-10 mt-2 w-48 rounded-lg border border-gray-200 bg-white opacity-0 shadow-xl transition-all group-hover:visible group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-800">
               <button
                 onClick={handleExportPDF}
-                className="w-full rounded-t-lg px-4 py-2 text-left text-white transition-colors hover:bg-slate-700"
+                className="w-full rounded-t-lg px-4 py-2 text-left text-slate-900 transition-colors hover:bg-gray-100 dark:text-white dark:hover:bg-slate-700"
               >
                 Exportar PDF
               </button>
               <button
                 onClick={handleExportExcel}
-                className="w-full rounded-b-lg px-4 py-2 text-left text-white transition-colors hover:bg-slate-700"
+                className="w-full rounded-b-lg px-4 py-2 text-left text-slate-900 transition-colors hover:bg-gray-100 dark:text-white dark:hover:bg-slate-700"
               >
                 Exportar Excel
               </button>
@@ -332,7 +336,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="text-sm text-slate-400">Total de Cards</div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-3xl font-bold text-slate-900 dark:text-white">
                 <CountUp end={kpis?.total_cards || 0} duration={1.5} separator="." />
               </div>
             </div>
@@ -356,7 +360,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="text-sm text-slate-400">Valor em Pipeline</div>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-slate-900 dark:text-white">
                 <CountUp
                   end={kpis?.pipeline_value || 0}
                   duration={1.5}
@@ -382,7 +386,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="text-sm text-slate-400">Ganho Este Mês</div>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-slate-900 dark:text-white">
                 <CountUp
                   end={kpis?.won_value_this_month || 0}
                   duration={1.5}
@@ -409,7 +413,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="text-sm text-slate-400">Taxa de Conversão</div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-3xl font-bold text-slate-900 dark:text-white">
                 <CountUp
                   end={kpis?.conversion_rate_this_month || 0}
                   duration={1.5}
@@ -433,14 +437,14 @@ const Dashboard: React.FC = () => {
       {/* Cards Ativos e Estatísticas */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* Card: Novos Este Mês */}
-        <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl">
           <div className="mb-4 flex items-center gap-3">
             <div className="rounded-lg bg-blue-500/20 p-2">
               <Target className="h-5 w-5 text-blue-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white">Novos Este Mês</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Novos Este Mês</h3>
           </div>
-          <div className="mb-2 text-3xl font-bold text-white">
+          <div className="mb-2 text-3xl font-bold text-slate-900 dark:text-white">
             <CountUp end={kpis?.new_cards_this_month || 0} duration={1.5} separator="." />
           </div>
           <div className="text-sm text-slate-400">
@@ -449,12 +453,12 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card: Cards Vencidos */}
-        <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl">
           <div className="mb-4 flex items-center gap-3">
             <div className="rounded-lg bg-red-500/20 p-2">
               <TrendingDown className="h-5 w-5 text-red-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white">Cards Vencidos</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Cards Vencidos</h3>
           </div>
           <div className="mb-2 text-3xl font-bold text-red-400">
             <CountUp end={kpis?.overdue_cards || 0} duration={1.5} separator="." />
@@ -465,14 +469,14 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card: Tempo Médio */}
-        <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl">
           <div className="mb-4 flex items-center gap-3">
             <div className="rounded-lg bg-purple-500/20 p-2">
               <Calendar className="h-5 w-5 text-purple-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white">Tempo Médio</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Tempo Médio</h3>
           </div>
-          <div className="mb-2 text-3xl font-bold text-white">
+          <div className="mb-2 text-3xl font-bold text-slate-900 dark:text-white">
             {kpis?.avg_time_to_win_days ? (
               <>
                 <CountUp
@@ -494,12 +498,12 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Top Performers */}
-      <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl">
         <div className="mb-6 flex items-center gap-3">
           <div className="rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 p-2">
             <Trophy className="h-6 w-6 text-yellow-400" />
           </div>
-          <h3 className="text-lg font-semibold text-white">Top Performers</h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Top Performers</h3>
         </div>
 
         {kpis && kpis.top_sellers_this_month && kpis.top_sellers_this_month.length > 0 ? (
@@ -514,7 +518,7 @@ const Dashboard: React.FC = () => {
                 badgeColor = "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
               } else if (index === 1) {
                 badgeIcon = <Medal className="h-5 w-5" />;
-                badgeColor = "text-slate-300 bg-slate-500/10 border-slate-500/30";
+                badgeColor = "text-slate-600 bg-slate-500/10 border-slate-500/30 dark:text-slate-300";
               } else if (index === 2) {
                 badgeIcon = <Award className="h-5 w-5" />;
                 badgeColor = "text-orange-400 bg-orange-500/10 border-orange-500/30";
@@ -525,7 +529,7 @@ const Dashboard: React.FC = () => {
               return (
                 <div
                   key={`seller-${index}`}
-                  className="flex items-center justify-between rounded-lg border border-slate-600/30 bg-slate-700/30 p-4 transition-all hover:bg-slate-700/50"
+                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-4 transition-all hover:bg-gray-100 dark:border-slate-600/30 dark:bg-slate-700/30 dark:hover:bg-slate-700/50"
                 >
                   <div className="flex items-center gap-4">
                     {/* Posição/Badge */}
@@ -537,7 +541,7 @@ const Dashboard: React.FC = () => {
 
                     {/* Nome */}
                     <div>
-                      <div className="font-medium text-white">
+                      <div className="font-medium text-slate-900 dark:text-white">
                         {seller.name || "Sem nome"}
                       </div>
                       <div className="text-sm text-slate-400">
@@ -568,12 +572,12 @@ const Dashboard: React.FC = () => {
       {/* Gráficos */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Gráfico: Cards por Estágio */}
-        <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl">
           <div className="mb-6 flex items-center gap-3">
             <div className="rounded-lg bg-blue-500/20 p-2">
               <Target className="h-6 w-6 text-blue-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white">Cards por Estágio</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Cards por Estágio</h3>
           </div>
 
           {kpis && kpis.cards_by_stage && kpis.cards_by_stage.length > 0 ? (
@@ -586,23 +590,23 @@ const Dashboard: React.FC = () => {
                   data={kpis.cards_by_stage}
                   margin={{ top: 50, right: 10, left: 0, bottom: 40 }}
                 >
-                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border.default} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} />
                 <XAxis
                   dataKey="stage_name"
-                  stroke={COLORS.content.tertiary}
-                  tick={{ fill: COLORS.content.tertiary }}
+                  stroke={chartColors.content.tertiary}
+                  tick={{ fill: chartColors.content.tertiary }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
-                <YAxis stroke={COLORS.content.tertiary} tick={{ fill: COLORS.content.tertiary }} />
+                <YAxis stroke={chartColors.content.tertiary} tick={{ fill: chartColors.content.tertiary }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: COLORS.surface.elevated,
-                    border: `1px solid ${COLORS.border.light}`,
+                    backgroundColor: chartColors.surface.elevated,
+                    border: `1px solid ${chartColors.border.light}`,
                     borderRadius: "0.5rem"
                   }}
-                  labelStyle={{ color: COLORS.content.primary }}
+                  labelStyle={{ color: chartColors.content.primary }}
                   itemStyle={{ color: COLORS.board.blue }}
                   formatter={(value: any, name: string) => {
                     if (name === "card_count") return [value, "Cards"];
@@ -627,7 +631,7 @@ const Dashboard: React.FC = () => {
                     height={24}
                     y={0}
                     stroke={COLORS.board.blue}
-                    fill={COLORS.surface.elevated}
+                    fill={chartColors.surface.elevated}
                     travellerWidth={10}
                     tickFormatter={() => ""}
                   />
@@ -644,12 +648,12 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Gráfico: Evolução de Vendas */}
-        <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-6 backdrop-blur-xl">
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl">
           <div className="mb-6 flex items-center gap-3">
             <div className="rounded-lg bg-green-500/20 p-2">
               <TrendingUp className="h-6 w-6 text-green-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white">Evolução de Vendas (Últimos 6 Meses)</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Evolução de Vendas (Últimos 6 Meses)</h3>
           </div>
 
           {kpis && kpis.sales_evolution && kpis.sales_evolution.length > 0 ? (
@@ -662,20 +666,20 @@ const Dashboard: React.FC = () => {
                   data={kpis.sales_evolution}
                   margin={{ top: 50, right: 10, left: 0, bottom: 40 }}
                 >
-                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border.default} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} />
                 <XAxis
                   dataKey="period"
-                  stroke={COLORS.content.tertiary}
-                  tick={{ fill: COLORS.content.tertiary }}
+                  stroke={chartColors.content.tertiary}
+                  tick={{ fill: chartColors.content.tertiary }}
                 />
-                <YAxis stroke={COLORS.content.tertiary} tick={{ fill: COLORS.content.tertiary }} />
+                <YAxis stroke={chartColors.content.tertiary} tick={{ fill: chartColors.content.tertiary }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: COLORS.surface.elevated,
-                    border: `1px solid ${COLORS.border.light}`,
+                    backgroundColor: chartColors.surface.elevated,
+                    border: `1px solid ${chartColors.border.light}`,
                     borderRadius: "0.5rem"
                   }}
-                  labelStyle={{ color: COLORS.content.primary }}
+                  labelStyle={{ color: chartColors.content.primary }}
                   formatter={(value: any, name: string) => {
                     if (name === "won_count") return [value, "Cards Ganhos"];
                     if (name === "won_value") return [formatCurrency(value), "Valor Ganho"];
@@ -715,7 +719,7 @@ const Dashboard: React.FC = () => {
                   height={24}
                   y={0}
                   stroke={COLORS.board.green}
-                  fill={COLORS.surface.elevated}
+                  fill={chartColors.surface.elevated}
                   travellerWidth={10}
                   tickFormatter={() => ""}
                 />
@@ -778,11 +782,11 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
       >
         <span className="flex items-center gap-2 truncate">
           {icon}
-          <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+          <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
             {selectedLabel}
           </span>
         </span>
@@ -792,7 +796,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -801,8 +805,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

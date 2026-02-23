@@ -28,9 +28,7 @@ interface LoadingSpinnerProps {
 }
 
 /**
- * LoadingSpinner - Indicador de carregamento padronizado
- *
- * Spinner animado para indicar loading states de forma consistente.
+ * LoadingSpinner - Indicador de carregamento padronizado com suporte a modo claro e escuro
  *
  * @example
  * ```tsx
@@ -39,12 +37,6 @@ interface LoadingSpinnerProps {
  *
  * // Spinner grande com label
  * <LoadingSpinner size="lg" label="Carregando..." />
- *
- * // Spinner pequeno inline
- * <Button disabled>
- *   <LoadingSpinner size="sm" className="mr-2" />
- *   Salvando...
- * </Button>
  * ```
  */
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
@@ -72,14 +64,14 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     <div className={`flex flex-col items-center gap-2 ${className}`}>
       {/* Spinner */}
       <div
-        className={`${sizeClasses[size]} animate-spin rounded-full border-slate-700 border-t-${color} ${color}`}
+        className={`${sizeClasses[size]} animate-spin rounded-full border-slate-200 border-t-${color} ${color} dark:border-slate-700`}
         role="status"
         aria-label={label || "Carregando"}
       />
 
       {/* Label opcional */}
       {label && (
-        <span className={`${labelSizeClasses[size]} text-slate-400`}>
+        <span className={`${labelSizeClasses[size]} text-slate-500 dark:text-slate-400`}>
           {label}
         </span>
       )}
@@ -88,7 +80,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 };
 
 /**
- * LoadingOverlay - Overlay de loading para cobrir conteúdo
+ * LoadingOverlay - Overlay de loading para cobrir conteúdo com suporte a modo claro e escuro
  *
  * @example
  * ```tsx
@@ -97,7 +89,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
  */
 export const LoadingOverlay: React.FC<{ label?: string }> = ({ label }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
       <LoadingSpinner size="lg" label={label} />
     </div>
   );

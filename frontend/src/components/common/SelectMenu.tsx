@@ -23,10 +23,7 @@ interface SelectMenuProps {
 }
 
 /**
- * SelectMenu - Dropdown customizado reutilizável
- *
- * Componente de select com dropdown customizado que substitui o select nativo.
- * Oferece melhor controle visual e UX consistente.
+ * SelectMenu - Dropdown customizado reutilizável com suporte a modo claro e escuro
  *
  * @example
  * ```tsx
@@ -100,19 +97,19 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
           setIsOpen((open) => !open);
         }}
         disabled={disabled}
-        className={`flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 text-white transition-colors focus:outline-none focus:ring-2 ${
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 text-slate-900 transition-colors focus:outline-none focus:ring-2 dark:text-white ${
           error
             ? "border-red-500 focus:ring-red-500/20"
-            : "border-slate-600 focus:ring-emerald-500/20"
+            : "border-gray-300 focus:ring-emerald-500/20 dark:border-slate-600"
         } ${
           disabled
-            ? "cursor-not-allowed bg-slate-800/50 opacity-60"
-            : "bg-slate-800 hover:bg-slate-700"
+            ? "cursor-not-allowed bg-gray-100/50 opacity-60 dark:bg-slate-800/50"
+            : "bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700"
         }`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
@@ -124,11 +121,11 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
       {/* Dropdown de opções */}
       {isOpen && (
         <div
-          className="absolute z-50 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-xl"
+          className="absolute z-50 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
           role="listbox"
         >
           {options.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-slate-400">
+            <div className="px-4 py-3 text-sm text-slate-400 dark:text-slate-400">
               Nenhuma opção disponível
             </div>
           ) : (
@@ -140,8 +137,8 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`w-full px-4 py-2 text-left text-sm text-white transition-colors hover:bg-slate-800 ${
-                  option.value === value ? "bg-slate-800/70 font-medium" : ""
+                className={`w-full px-4 py-2 text-left text-sm text-slate-900 transition-colors hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                  option.value === value ? "bg-gray-100 font-medium dark:bg-slate-800/70" : ""
                 }`}
                 role="option"
                 aria-selected={option.value === value}

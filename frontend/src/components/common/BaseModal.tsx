@@ -37,30 +37,14 @@ const sizeClasses: Record<ModalSize, string> = {
 };
 
 /**
- * Componente base de Modal reutilizável
- *
- * Segue o padrão visual moderno com:
- * - Esquema de cores Slate (mais profissional)
- * - Bordas bem definidas
- * - Header fixo com título e subtítulo
- * - Conteúdo scrollável
- * - Footer fixo customizável
- * - Backdrop blur
- * - Animações suaves
+ * Componente base de Modal reutilizável com suporte a modo claro e escuro
  *
  * @example
  * <BaseModal
  *   isOpen={showModal}
  *   onClose={() => setShowModal(false)}
  *   title="Novo Card"
- *   subtitle="Preencha os dados do card"
  *   size="lg"
- *   footer={
- *     <div className="flex gap-3">
- *       <button onClick={onCancel}>Cancelar</button>
- *       <button onClick={onSave}>Salvar</button>
- *     </div>
- *   }
  * >
  *   <form>...</form>
  * </BaseModal>
@@ -93,18 +77,18 @@ const BaseModal: React.FC<BaseModalProps> = ({
       onClick={handleOverlayClick}
     >
       <div
-        className={`w-full rounded-2xl border border-slate-700 bg-slate-900 ${sizeClasses[size]} flex max-h-[90vh] flex-col overflow-hidden ${className}`}
+        className={`w-full rounded-2xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${sizeClasses[size]} flex max-h-[90vh] flex-col overflow-hidden ${className}`}
       >
         {/* Header fixo */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-700 p-6">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 p-6 dark:border-slate-700">
           <div>
-            <h2 className={`text-2xl font-bold text-white ${titleClassName}`}>{title}</h2>
-            {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
+            <h2 className={`text-2xl font-bold text-slate-900 dark:text-white ${titleClassName}`}>{title}</h2>
+            {subtitle && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
           </div>
           {showCloseButton && (
             <button
               onClick={onClose}
-              className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+              className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
               type="button"
             >
               <X size={24} />
@@ -117,7 +101,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
 
         {/* Footer fixo (opcional) */}
         {footer && (
-          <div className="flex-shrink-0 border-t border-slate-700 bg-slate-900 p-6">
+          <div className="flex-shrink-0 border-t border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
             {footer}
           </div>
         )}

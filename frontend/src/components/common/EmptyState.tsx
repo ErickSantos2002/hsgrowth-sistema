@@ -10,7 +10,7 @@ interface EmptyStateProps {
 }
 
 /**
- * Componente genérico para estado vazio
+ * Componente genérico para estado vazio com suporte a modo claro e escuro
  * Exibido quando não há dados para mostrar
  */
 const EmptyState: React.FC<EmptyStateProps> = ({
@@ -23,15 +23,15 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <div className="flex flex-col items-center justify-center px-4 py-16">
       {/* Ícone */}
-      <div className="mb-6 rounded-full bg-gray-800/30 p-6">
-        <Icon size={64} className="text-gray-600" />
+      <div className="mb-6 rounded-full bg-gray-100 p-6 dark:bg-gray-800/30">
+        <Icon size={64} className="text-gray-400 dark:text-gray-600" />
       </div>
 
       {/* Título */}
-      <h3 className="mb-2 text-2xl font-bold text-white">{title}</h3>
+      <h3 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">{title}</h3>
 
       {/* Descrição */}
-      <p className="mb-8 max-w-md text-center text-gray-400">{description}</p>
+      <p className="mb-8 max-w-md text-center text-slate-500 dark:text-gray-400">{description}</p>
 
       {/* Botão de ação (opcional) */}
       {actionLabel && onAction && (

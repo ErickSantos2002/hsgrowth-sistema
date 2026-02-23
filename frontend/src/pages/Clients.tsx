@@ -121,7 +121,7 @@ const Clients: React.FC = () => {
           className={`flex items-center gap-2 rounded-lg border px-4 py-2 transition-colors ${
             showFilters
               ? "border-emerald-600 bg-emerald-600 text-white"
-              : "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
+              : "border-gray-300 bg-white text-slate-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
           }`}
         >
           <Filter size={16} />
@@ -131,10 +131,10 @@ const Clients: React.FC = () => {
 
       {/* Painel de filtros */}
       {showFilters && (
-        <div className="mt-3 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+        <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
           <div className="flex flex-wrap gap-3">
             <div>
-              <label className="mb-2 block text-sm text-slate-400">Status</label>
+              <label className="mb-2 block text-sm text-slate-600 dark:text-slate-400">Status</label>
               <div className="min-w-[170px]">
                 <SelectMenu
                   value={customFilters.status || "all"}
@@ -152,17 +152,17 @@ const Clients: React.FC = () => {
       )}
 
       {/* Contador */}
-      <div className="mb-4 text-sm text-slate-400">
+      <div className="mb-4 text-sm text-slate-600 dark:text-slate-400">
         {filteredClients.length} cliente{filteredClients.length !== 1 ? "s" : ""} encontrado
         {filteredClients.length !== 1 ? "s" : ""}
       </div>
 
       {/* Tabela de clientes */}
       {loading ? (
-        <div className="py-12 text-center text-slate-400">Carregando clientes...</div>
+        <div className="py-12 text-center text-slate-500 dark:text-slate-400">Carregando clientes...</div>
       ) : filteredClients.length === 0 ? (
-        <div className="rounded-xl border border-slate-700 bg-slate-800/50 py-12 text-center">
-          <p className="mb-4 text-slate-400">
+        <div className="rounded-xl border border-gray-200 bg-gray-50 py-12 text-center dark:border-slate-700 dark:bg-slate-800/50">
+          <p className="mb-4 text-slate-500 dark:text-slate-400">
             {searchTerm || (customFilters.status && customFilters.status !== "all")
               ? "Nenhum cliente encontrado com os filtros aplicados"
               : "Nenhum cliente cadastrado ainda"}
@@ -174,36 +174,36 @@ const Clients: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-800/30">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-700 bg-slate-800/50">
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Cliente
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Contato
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Localização
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Cadastro
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-700/50">
                 {pagination.paginatedItems.map((client) => (
                   <tr
                     key={client.id}
-                    className="transition-colors hover:bg-slate-700/30"
+                    className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/30"
                   >
                     {/* Cliente */}
                     <td className="px-6 py-4">
@@ -218,9 +218,9 @@ const Clients: React.FC = () => {
                           {client.company_name ? <Building size={20} /> : <User size={20} />}
                         </div>
                         <div>
-                          <div className="font-medium text-white">{client.name}</div>
+                          <div className="font-medium text-slate-900 dark:text-white">{client.name}</div>
                           {client.company_name && (
-                            <div className="text-sm text-slate-400">{client.company_name}</div>
+                            <div className="text-sm text-slate-500 dark:text-slate-400">{client.company_name}</div>
                           )}
                         </div>
                       </div>
@@ -230,10 +230,10 @@ const Clients: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="text-sm">
                         {client.email && (
-                          <div className="text-white">{client.email}</div>
+                          <div className="text-slate-900 dark:text-white">{client.email}</div>
                         )}
                         {client.phone && (
-                          <div className="text-slate-400">{client.phone}</div>
+                          <div className="text-slate-500 dark:text-slate-400">{client.phone}</div>
                         )}
                         {!client.email && !client.phone && (
                           <span className="text-slate-500">-</span>
@@ -242,7 +242,7 @@ const Clients: React.FC = () => {
                     </td>
 
                     {/* Localização */}
-                    <td className="px-6 py-4 text-sm text-slate-300">
+                    <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
                       {client.city && client.state
                         ? `${client.city}, ${client.state}`
                         : client.city || client.state || "-"}
@@ -262,7 +262,7 @@ const Clients: React.FC = () => {
                     </td>
 
                     {/* Data de cadastro */}
-                    <td className="px-6 py-4 text-sm text-slate-400">
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
                       {formatDate(client.created_at)}
                     </td>
 
@@ -354,9 +354,9 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "text-slate-900 dark:text-white" : "text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
@@ -365,7 +365,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -374,8 +374,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

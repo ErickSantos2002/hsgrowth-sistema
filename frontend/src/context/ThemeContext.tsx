@@ -1,4 +1,3 @@
-// src/context/ThemeContext.tsx
 import React, {
   createContext,
   useContext,
@@ -10,19 +9,21 @@ import React, {
 type ThemeContextType = {
   darkMode: boolean;
   toggleDarkMode: () => void;
-  setDarkModeOnLogin: () => void; // 👈 nova função
+  setDarkModeOnLogin: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  // 🔹 Estado inicial com persistência
+  // Estado inicial com persistência no localStorage.
+  // Padrão é dark (true) caso o usuário nunca tenha escolhido um tema.
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const savedTheme = localStorage.getItem('theme');
-    return savedTheme === 'dark';
+    // Se não há preferência salva, usa dark como padrão do sistema
+    return savedTheme !== 'light';
   });
 
-  // 🔹 Sincroniza com <html> e localStorage sempre que darkMode mudar
+  // Sincroniza a classe "dark" no <html> e persiste no localStorage
   useEffect(() => {
     const root = document.documentElement;
     if (darkMode) {
@@ -34,25 +35,15 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [darkMode]);
 
-  // 🔹 Alterna o modo escuro manualmente (botão)
+  // Alterna entre modo claro e escuro (botão de toggle)
   const toggleDarkMode = () => setDarkMode((prev) => !prev);
 
-  // 🔹 Ativa o modo escuro automaticamente no login
+  // Ativa o modo escuro automaticamente ao fazer login
   const setDarkModeOnLogin = () => setDarkMode(true);
 
   return (
-    <ThemeContext.Provider
-      value={{ darkMode, toggleDarkMode, setDarkModeOnLogin }}
-    >
-      <div
-        className={
-          darkMode
-            ? 'bg-darkGray text-lightGray dark min-h-screen' // 🎨 novo tema cinza
-            : 'min-h-screen bg-gray-100 text-black'
-        }
-      >
-        {children}
-      </div>
+    <ThemeContext.Provider value={{ darkMode, toggleDarkMode, setDarkModeOnLogin }}>
+      {children}
     </ThemeContext.Provider>
   );
 };

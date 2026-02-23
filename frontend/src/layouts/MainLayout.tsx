@@ -14,9 +14,12 @@ import {
     Workflow,
     Package,
     Contact,
+    Sun,
+    Moon,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../context/ThemeContext";
 import logo from "../assets/logo.png";
 import NotificationDropdown from "../components/NotificationDropdown";
 import GlobalSearch from "../components/GlobalSearch";
@@ -40,6 +43,7 @@ export default function MainLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    const { darkMode, toggleDarkMode } = useTheme();
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // Define estado inicial da sidebar baseado no tamanho da tela
@@ -68,7 +72,7 @@ export default function MainLayout() {
     };
 
     return (
-        <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <div className="h-screen overflow-hidden bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
             {/* Overlay para mobile quando sidebar está aberta */}
             {sidebarOpen && (
                 <div
@@ -79,7 +83,7 @@ export default function MainLayout() {
 
             {/* Sidebar */}
             <aside
-                className={`fixed left-0 top-0 z-40 h-screen border-r border-slate-700/50 bg-gradient-to-b from-slate-900/95 to-slate-950/95 backdrop-blur-xl transition-all duration-300 ${
+                className={`fixed left-0 top-0 z-40 h-screen border-r border-gray-200 bg-white backdrop-blur-xl transition-all duration-300 dark:border-slate-700/50 dark:bg-gradient-to-b dark:from-slate-900/95 dark:to-slate-950/95 ${
                     sidebarOpen
                         ? "w-64 translate-x-0"
                         : "w-20 -translate-x-full lg:translate-x-0"
@@ -104,14 +108,14 @@ export default function MainLayout() {
                                     <h1 className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-xl font-bold text-transparent">
                                         HSGrowth
                                     </h1>
-                                    <p className="mt-1 text-xs text-slate-500">CRM & Sales</p>
+                                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">CRM & Sales</p>
                                 </div>
                             )}
                         </div>
                         {sidebarOpen && (
                             <button
                                 onClick={() => setSidebarOpen(false)}
-                                className="text-slate-400 transition-colors hover:text-white lg:hidden"
+                                className="text-slate-400 transition-colors hover:text-slate-700 dark:hover:text-white lg:hidden"
                             >
                                 <X size={24} />
                             </button>
@@ -135,7 +139,6 @@ export default function MainLayout() {
                                 const Icon = item.icon;
 
                                 // Verifica se o item está ativo
-                                // Para "Boards", considera também sub-rotas (/boards/:id e /cards/:id)
                                 const isActive =
                                     location.pathname === item.path ||
                                     (item.path === "/boards" &&
@@ -154,8 +157,8 @@ export default function MainLayout() {
                                             }}
                                             className={`group relative flex items-center rounded-xl p-3 transition-all duration-200 ${
                                                 isActive
-                                                    ? "bg-slate-800 text-white shadow-lg shadow-slate-800/20"
-                                                    : "text-slate-300 hover:bg-slate-800/50 hover:text-white"
+                                                    ? "bg-gray-100 text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white dark:shadow-slate-800/20"
+                                                    : "text-slate-600 hover:bg-gray-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/50 dark:hover:text-white"
                                             } ${sidebarOpen ? "" : "justify-center"}`}
                                             title={!sidebarOpen ? item.label : ""}
                                         >
@@ -172,7 +175,7 @@ export default function MainLayout() {
                                                             className={`ml-auto rounded border px-2 py-0.5 text-xs ${
                                                                 isActive
                                                                     ? "border-emerald-600/60 bg-emerald-700 text-white"
-                                                                    : "border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
+                                                                    : "border-emerald-500/30 bg-emerald-500/20 text-emerald-600 dark:text-emerald-300"
                                                             }`}
                                                         >
                                                             Admin
@@ -182,10 +185,10 @@ export default function MainLayout() {
                                             )}
                                             {/* Tooltip para modo mini */}
                                             {!sidebarOpen && (
-                                                <div className="pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                                <div className="pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 opacity-0 transition-opacity group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                                     {item.label}
                                                     {item.adminOnly && (
-                                                        <span className="ml-2 text-xs text-orange-400">
+                                                        <span className="ml-2 text-xs text-orange-500 dark:text-orange-400">
                                                             (Admin)
                                                         </span>
                                                     )}
@@ -200,12 +203,12 @@ export default function MainLayout() {
 
                     {/* Rodapé da Sidebar */}
                     {sidebarOpen && (
-                        <div className="mt-auto border-t border-slate-700/50 px-3 py-4">
+                        <div className="mt-auto border-t border-gray-200 px-3 py-4 dark:border-slate-700/50">
                             <div className="space-y-1 text-center">
-                                <p className="text-xs font-medium text-slate-500">
+                                <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
                                     HSGrowth CRM v1.1.10
                                 </p>
-                                <p className="text-[10px] text-slate-600">
+                                <p className="text-[10px] text-slate-300 dark:text-slate-600">
                                     © 2026 Health & Safety Tech
                                 </p>
                             </div>
@@ -217,11 +220,11 @@ export default function MainLayout() {
             {/* Main Content */}
             <div className={`${sidebarOpen ? "lg:ml-64" : "lg:ml-20"} flex h-screen flex-col transition-all duration-300`}>
                 {/* Top Navbar */}
-                <nav className="z-[2000] flex-shrink-0 border-b border-slate-700/50 bg-slate-900/50 px-6 py-4 backdrop-blur-xl">
+                <nav className="z-[2000] flex-shrink-0 border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between gap-4">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="flex-shrink-0 rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-800/50 hover:text-white"
+                            className="flex-shrink-0 rounded-lg p-2 text-slate-500 transition-all hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-white"
                         >
                             <Menu size={24} />
                         </button>
@@ -231,7 +234,7 @@ export default function MainLayout() {
 
                         <div className="flex flex-shrink-0 items-center gap-3">
                             {/* Avatar + Info do Usuário */}
-                            <div className="flex items-center gap-3 rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-2 transition-all hover:bg-slate-800/70">
+                            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-100/50 px-3 py-2 transition-all hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/50 dark:hover:bg-slate-800/70">
                                 {/* Avatar com indicador online */}
                                 <UserAvatar
                                     userId={user?.id}
@@ -244,10 +247,10 @@ export default function MainLayout() {
 
                                 {/* Nome e Role */}
                                 <div className="hidden flex-col md:flex">
-                                    <span className="text-sm font-medium text-white">
+                                    <span className="text-sm font-medium text-slate-900 dark:text-white">
                                         {user?.full_name || user?.username || "Usuário"}
                                     </span>
-                                    <span className="text-xs text-slate-400">
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">
                                         {user?.role === "admin"
                                             ? "Administrador"
                                             : user?.role === "manager"
@@ -257,13 +260,22 @@ export default function MainLayout() {
                                 </div>
                             </div>
 
+                            {/* Toggle de tema claro/escuro */}
+                            <button
+                                onClick={toggleDarkMode}
+                                className="rounded-lg border border-gray-200 bg-gray-100/50 p-2.5 text-slate-500 transition-all hover:bg-gray-100 hover:text-slate-900 dark:border-slate-700/50 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-white"
+                                title={darkMode ? "Mudar para modo claro" : "Mudar para modo escuro"}
+                            >
+                                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                            </button>
+
                             {/* Notificações */}
                             <NotificationDropdown />
 
                             {/* Botão Sair (só ícone) */}
                             <button
                                 onClick={handleLogout}
-                                className="rounded-lg border border-red-500/20 bg-red-500/10 p-2.5 text-red-400 transition-all hover:border-red-500/30 hover:bg-red-500/20"
+                                className="rounded-lg border border-red-500/20 bg-red-500/10 p-2.5 text-red-500 transition-all hover:border-red-500/30 hover:bg-red-500/20 dark:text-red-400"
                                 title="Sair"
                             >
                                 <LogOut size={22} />

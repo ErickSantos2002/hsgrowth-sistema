@@ -85,7 +85,7 @@ const TriggerNode: React.FC<TriggerNodeProps> = ({ id, data }) => {
 
   return (
     <div
-      className={`border-2 bg-slate-800 ${getBorderColor()} group relative min-w-[200px] rounded-lg shadow-xl transition-all hover:shadow-2xl`}
+      className={`border-2 bg-gray-100 dark:bg-slate-800 ${getBorderColor()} group relative min-w-[200px] rounded-lg shadow-xl transition-all hover:shadow-2xl`}
     >
       {/* Botões de ação (aparecem no hover) */}
       <div className="absolute -right-2 -top-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -106,7 +106,7 @@ const TriggerNode: React.FC<TriggerNodeProps> = ({ id, data }) => {
       </div>
 
       {/* Header */}
-      <div className="border-b border-slate-700 bg-gradient-to-r from-purple-600/20 to-purple-800/20 px-4 py-2">
+      <div className="border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-purple-600/20 to-purple-800/20 px-4 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap size={14} className="text-purple-400" />
@@ -127,10 +127,10 @@ const TriggerNode: React.FC<TriggerNodeProps> = ({ id, data }) => {
       <div className="p-4">
         <div className="mb-2 flex items-center gap-3">
           {getIcon()}
-          <span className="text-sm font-medium text-white">{data.label}</span>
+          <span className="text-sm font-medium text-slate-900 dark:text-white">{data.label}</span>
         </div>
         {data.boardName && (
-          <div className="mt-2 text-xs text-slate-400">Board: {data.boardName}</div>
+          <div className="mt-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Board: {data.boardName}</div>
         )}
       </div>
 

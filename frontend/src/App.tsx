@@ -3,35 +3,55 @@ import { Toaster } from 'react-hot-toast';
 import './styles/index.css';
 import AppRoutes from './router';
 import { DashboardProvider } from './context/DashboardContext';
-import { COLORS } from './constants/colors';
+import { useTheme } from './context/ThemeContext';
 
-const App: React.FC = () => {
+// Estilos do Toaster separados por tema para facilitar manutenção
+const toastDarkStyle = {
+  background: '#1e293b',  // slate-800
+  color: '#ffffff',
+  border: '1px solid #334155',  // slate-700
+};
+
+const toastLightStyle = {
+  background: '#ffffff',
+  color: '#1e293b',  // slate-800
+  border: '1px solid #e2e8f0',  // slate-200
+};
+
+const AppContent: React.FC = () => {
+  const { darkMode } = useTheme();
+  const toastStyle = darkMode ? toastDarkStyle : toastLightStyle;
+
   return (
-    <DashboardProvider>
+    <>
       <AppRoutes />
       <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
-          style: {
-            background: COLORS.surface.elevated,
-            color: COLORS.content.primary,
-            border: `1px solid ${COLORS.border.default}`,
-          },
+          style: toastStyle,
           success: {
             iconTheme: {
-              primary: COLORS.primary,
-              secondary: COLORS.content.primary,
+              primary: '#10b981',  // emerald-500
+              secondary: toastStyle.color,
             },
           },
           error: {
             iconTheme: {
-              primary: COLORS.status.error,
-              secondary: COLORS.content.primary,
+              primary: '#f87171',  // red-400
+              secondary: toastStyle.color,
             },
           },
         }}
       />
+    </>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <DashboardProvider>
+      <AppContent />
     </DashboardProvider>
   );
 };

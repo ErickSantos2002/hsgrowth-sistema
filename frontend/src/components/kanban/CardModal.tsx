@@ -310,17 +310,17 @@ const CardModal: React.FC<CardModalProps> = ({
 
         {/* Preview do card (apenas se tiver título) */}
         {formData.title.trim() && (
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <p className="mb-3 text-xs font-medium text-slate-400">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+            <p className="mb-3 text-xs font-medium text-slate-600 dark:text-slate-400">
               Preview do Card:
             </p>
-            <div className="rounded-lg border border-slate-600/30 bg-slate-700/30 p-3 backdrop-blur-sm">
-              <h4 className="mb-2 text-sm font-medium text-white">
+            <div className="rounded-lg border border-gray-200 bg-gray-100/50 p-3 backdrop-blur-sm dark:border-slate-600/30 dark:bg-slate-700/30">
+              <h4 className="mb-2 text-sm font-medium text-slate-900 dark:text-white">
                 {formData.title}
               </h4>
               <div className="flex items-center gap-3 text-xs">
                 {formData.due_date && (
-                  <span className="text-slate-400">
+                  <span className="text-slate-600 dark:text-slate-400">
                     📅{" "}
                     {new Date(formData.due_date + "T00:00:00").toLocaleDateString(
                       "pt-BR"

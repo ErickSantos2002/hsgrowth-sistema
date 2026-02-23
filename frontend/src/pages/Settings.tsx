@@ -793,11 +793,11 @@ const Settings: React.FC = () => {
       case "login":
         return "bg-cyan-500/20 text-cyan-400";
       case "logout":
-        return "bg-slate-500/20 text-slate-300";
+        return "bg-slate-500/20 text-slate-600 dark:text-slate-300";
       case "transfer":
         return "bg-purple-500/20 text-purple-400";
       default:
-        return "bg-slate-500/20 text-slate-300";
+        return "bg-slate-500/20 text-slate-600 dark:text-slate-300";
     }
   };
 
@@ -805,16 +805,16 @@ const Settings: React.FC = () => {
     <div className="p-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-white">
-          <SettingsIcon className="text-white" size={32} />
+        <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
+          <SettingsIcon className="text-slate-900 dark:text-white" size={32} />
           Configurações
         </h1>
-        <p className="text-slate-400">Gerencie suas informações pessoais e preferências</p>
+        <p className="text-slate-500 dark:text-slate-400">Gerencie suas informações pessoais e preferências</p>
       </div>
 
         {/* Tabs */}
-        <div className="overflow-hidden rounded-xl border border-slate-700 bg-slate-800/50 backdrop-blur">
-          <div className="flex overflow-x-auto whitespace-nowrap border-b border-slate-700">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
+          <div className="flex overflow-x-auto whitespace-nowrap border-b border-gray-200 dark:border-slate-700">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -824,7 +824,7 @@ const Settings: React.FC = () => {
                   className={`flex min-w-max flex-shrink-0 items-center justify-center gap-2 px-4 py-3 font-medium transition-colors sm:min-w-0 sm:flex-1 ${
                     activeTab === tab.id
                       ? "bg-emerald-600 text-white"
-                      : "text-slate-400 hover:bg-slate-700/50 hover:text-white"
+                      : "text-slate-500 hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-white"
                   }`}
                 >
                   <Icon size={20} />
@@ -838,14 +838,14 @@ const Settings: React.FC = () => {
             {/* Tab: Perfil */}
             {activeTab === "profile" && (
               <div className="space-y-6">
-                <h2 className="mb-6 text-xl font-semibold text-white">Informações do Perfil</h2>
+                <h2 className="mb-6 text-xl font-semibold text-slate-900 dark:text-white">Informações do Perfil</h2>
 
                 {/* Avatar */}
                 <div className="flex items-center gap-6">
                   <div className="relative">
                     {/* Preview do Avatar */}
                     {avatarPreview || user?.avatar_url ? (
-                      <div className="h-24 w-24 overflow-hidden rounded-full border-2 border-slate-700">
+                      <div className="h-24 w-24 overflow-hidden rounded-full border-2 border-gray-300 dark:border-slate-700">
                         <img
                           src={avatarPreview || (user ? avatarService.getAvatarUrl(user.id) : '')}
                           alt={user?.name}
@@ -889,8 +889,8 @@ const Settings: React.FC = () => {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-lg font-semibold text-white">{user?.name}</h3>
-                    <p className="max-w-[180px] truncate text-sm text-slate-400 sm:max-w-none sm:text-base">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{user?.name}</h3>
+                    <p className="max-w-[180px] truncate text-sm text-slate-500 dark:text-slate-400 sm:max-w-none sm:text-base">
                       {user?.email}
                     </p>
                     <span className="mt-2 inline-block rounded-full bg-emerald-600/20 px-3 py-1 text-sm font-medium text-emerald-400">
@@ -910,7 +910,7 @@ const Settings: React.FC = () => {
                         <button
                           onClick={handleCancelAvatarChange}
                           disabled={uploadingAvatar}
-                          className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+                          className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-slate-900 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
                         >
                           Cancelar
                         </button>
@@ -937,33 +937,33 @@ const Settings: React.FC = () => {
                 {/* Formulário */}
                 <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                       Nome Completo
                     </label>
                     <input
                       type="text"
                       value={profileData.name}
                       onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       placeholder="Seu nome completo"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                       Username
                     </label>
                     <input
                       type="text"
                       value={profileData.username}
                       onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       placeholder="Seu username"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                       Email
                     </label>
                     <input
@@ -971,7 +971,7 @@ const Settings: React.FC = () => {
                       value={profileData.email}
                       onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                       disabled={user?.role === "salesperson"}
-                      className={`w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      className={`w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400 ${
                         user?.role === "salesperson" ? "cursor-not-allowed opacity-60" : ""
                       }`}
                       placeholder="seu@email.com"
@@ -984,27 +984,27 @@ const Settings: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                       Telefone
                     </label>
                     <input
                       type="tel"
                       value={profileData.phone}
                       onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       placeholder="(00) 00000-0000"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                       Role (Função)
                     </label>
                     <input
                       type="text"
                       value={user?.role_name || ""}
                       disabled
-                      className="w-full cursor-not-allowed rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-slate-500"
+                      className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-4 py-2 text-slate-500 dark:border-slate-700 dark:bg-slate-800"
                       placeholder="Sua função"
                     />
                     <p className="mt-1 text-xs text-slate-500">
@@ -1030,16 +1030,16 @@ const Settings: React.FC = () => {
             {/* Tab: Notificações */}
             {activeTab === "notifications" && (
               <div className="space-y-6">
-                <h2 className="mb-6 text-xl font-semibold text-white">Notificações</h2>
+                <h2 className="mb-6 text-xl font-semibold text-slate-900 dark:text-white">Notificações</h2>
 
                 {/* Canais de Notificação */}
                 <div>
-                  <h3 className="mb-4 text-lg font-medium text-white">Canais de Notificação</h3>
+                  <h3 className="mb-4 text-lg font-medium text-slate-900 dark:text-white">Canais de Notificação</h3>
                   <div className="space-y-4">
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700">
+                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
                       <div>
-                        <p className="font-medium text-white">Notificações por Email</p>
-                        <p className="text-sm text-slate-400">
+                        <p className="font-medium text-slate-900 dark:text-white">Notificações por Email</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Receber notificações importantes por email
                         </p>
                       </div>
@@ -1056,10 +1056,10 @@ const Settings: React.FC = () => {
                       />
                     </label>
 
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700">
+                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
                       <div>
-                        <p className="font-medium text-white">Notificações Push</p>
-                        <p className="text-sm text-slate-400">
+                        <p className="font-medium text-slate-900 dark:text-white">Notificações Push</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Receber notificações no navegador
                         </p>
                       </div>
@@ -1076,10 +1076,10 @@ const Settings: React.FC = () => {
                       />
                     </label>
 
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700">
+                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
                       <div>
-                        <p className="font-medium text-white">Notificações no App</p>
-                        <p className="text-sm text-slate-400">
+                        <p className="font-medium text-slate-900 dark:text-white">Notificações no App</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Mostrar notificações dentro do sistema
                         </p>
                       </div>
@@ -1100,12 +1100,12 @@ const Settings: React.FC = () => {
 
                 {/* Tipos de Notificação */}
                 <div>
-                  <h3 className="mb-4 text-lg font-medium text-white">Tipos de Notificação</h3>
+                  <h3 className="mb-4 text-lg font-medium text-slate-900 dark:text-white">Tipos de Notificação</h3>
                   <div className="space-y-4">
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700">
+                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
                       <div>
-                        <p className="font-medium text-white">Card Atribuído a Mim</p>
-                        <p className="text-sm text-slate-400">
+                        <p className="font-medium text-slate-900 dark:text-white">Card Atribuído a Mim</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Quando um card for atribuído para você
                         </p>
                       </div>
@@ -1122,10 +1122,10 @@ const Settings: React.FC = () => {
                       />
                     </label>
 
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700">
+                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
                       <div>
-                        <p className="font-medium text-white">Transferência Recebida</p>
-                        <p className="text-sm text-slate-400">
+                        <p className="font-medium text-slate-900 dark:text-white">Transferência Recebida</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Quando você receber uma transferência de card
                         </p>
                       </div>
@@ -1142,10 +1142,10 @@ const Settings: React.FC = () => {
                       />
                     </label>
 
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700">
+                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
                       <div>
-                        <p className="font-medium text-white">Transferência Aprovada/Rejeitada</p>
-                        <p className="text-sm text-slate-400">
+                        <p className="font-medium text-slate-900 dark:text-white">Transferência Aprovada/Rejeitada</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Quando sua transferência for aprovada ou rejeitada
                         </p>
                       </div>
@@ -1162,10 +1162,10 @@ const Settings: React.FC = () => {
                       />
                     </label>
 
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700">
+                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
                       <div>
-                        <p className="font-medium text-white">Card Ganho pela Equipe</p>
-                        <p className="text-sm text-slate-400">
+                        <p className="font-medium text-slate-900 dark:text-white">Card Ganho pela Equipe</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Quando um card for marcado como ganho
                         </p>
                       </div>
@@ -1182,10 +1182,10 @@ const Settings: React.FC = () => {
                       />
                     </label>
 
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700">
+                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
                       <div>
-                        <p className="font-medium text-white">Badge Conquistado</p>
-                        <p className="text-sm text-slate-400">
+                        <p className="font-medium text-slate-900 dark:text-white">Badge Conquistado</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Quando você conquistar um novo badge
                         </p>
                       </div>
@@ -1202,10 +1202,10 @@ const Settings: React.FC = () => {
                       />
                     </label>
 
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700">
+                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
                       <div>
-                        <p className="font-medium text-white">Automação Falhou</p>
-                        <p className="text-sm text-slate-400">
+                        <p className="font-medium text-slate-900 dark:text-white">Automação Falhou</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Quando uma automação apresentar erro
                         </p>
                       </div>
@@ -1226,13 +1226,13 @@ const Settings: React.FC = () => {
 
                 {/* Não Perturbe */}
                 <div>
-                  <h3 className="mb-4 text-lg font-medium text-white">Não Perturbe</h3>
-                  <p className="mb-4 text-sm text-slate-400">
+                  <h3 className="mb-4 text-lg font-medium text-slate-900 dark:text-white">Não Perturbe</h3>
+                  <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
                     Defina um horário em que você não deseja receber notificações
                   </p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                         Início
                       </label>
                       <input
@@ -1244,11 +1244,11 @@ const Settings: React.FC = () => {
                             doNotDisturbStart: e.target.value,
                           })
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       />
                     </div>
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                         Fim
                       </label>
                       <input
@@ -1260,7 +1260,7 @@ const Settings: React.FC = () => {
                             doNotDisturbEnd: e.target.value,
                           })
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       />
                     </div>
                   </div>
@@ -1285,8 +1285,8 @@ const Settings: React.FC = () => {
                 <div className="space-y-6">
                   <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-xl font-semibold text-white">Histórico de Logins</h2>
-                      <p className="mt-1 text-sm text-slate-400">
+                      <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Histórico de Logins</h2>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         Acompanhe os últimos 25 acessos à sua conta para maior segurança
                       </p>
                     </div>
@@ -1309,7 +1309,7 @@ const Settings: React.FC = () => {
                       // Empty state
                       <div className="py-12 text-center">
                         <Shield size={48} className="mx-auto mb-3 text-slate-600" />
-                        <p className="text-slate-400">Nenhum login registrado ainda</p>
+                        <p className="text-slate-500 dark:text-slate-400">Nenhum login registrado ainda</p>
                       </div>
                     ) : (
                       // Login history list
@@ -1370,7 +1370,7 @@ const Settings: React.FC = () => {
                         return (
                           <div
                             key={login.id}
-                            className="rounded-lg border border-slate-600 bg-slate-700/50 p-4 transition-colors hover:bg-slate-700/70"
+                            className="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:bg-gray-100 dark:border-slate-600 dark:bg-slate-700/50 dark:hover:bg-slate-700/70"
                           >
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <div className="flex items-start gap-3">
@@ -1385,8 +1385,8 @@ const Settings: React.FC = () => {
                                 <div className="min-w-0 flex-1">
                                   {/* Nome do usuário e horário */}
                                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                                    <p className="text-base font-semibold text-white">{login.user_name}</p>
-                                    <div className="flex items-center gap-1.5 rounded bg-slate-800 px-2 py-1 text-sm text-slate-300">
+                                    <p className="text-base font-semibold text-slate-900 dark:text-white">{login.user_name}</p>
+                                    <div className="flex items-center gap-1.5 rounded bg-gray-100 px-2 py-1 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                                       <Clock size={14} />
                                       <span className="font-medium">{formatDate(login.created_at)}</span>
                                     </div>
@@ -1394,11 +1394,11 @@ const Settings: React.FC = () => {
 
                                   {/* Browser e OS */}
                                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                                    <span className="text-sm text-slate-400">{browser}</span>
+                                    <span className="text-sm text-slate-500 dark:text-slate-400">{browser}</span>
                                     <span className="text-slate-600">•</span>
-                                    <span className="text-sm text-slate-400">{os}</span>
+                                    <span className="text-sm text-slate-500 dark:text-slate-400">{os}</span>
                                     <span className="text-slate-600">•</span>
-                                    <span className="text-sm text-slate-400">{deviceType}</span>
+                                    <span className="text-sm text-slate-500 dark:text-slate-400">{deviceType}</span>
                                   </div>
 
                                   {/* IP Address */}
@@ -1415,8 +1415,8 @@ const Settings: React.FC = () => {
                     )}
                   </div>
                   {!loadingLoginHistory && loginTotalItems > 0 && (
-                    <div className="flex flex-col gap-4 border-t border-slate-700/60 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-                      <div className="text-sm text-slate-400">
+                    <div className="flex flex-col gap-4 border-t border-gray-200 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left dark:border-slate-700/60">
+                      <div className="text-sm text-slate-500 dark:text-slate-400">
                         Mostrando {loginTotalItems === 0 ? 0 : loginStartIndex + 1} a {loginEndIndex} de{" "}
                         {loginTotalItems} registros
                       </div>
@@ -1428,13 +1428,13 @@ const Settings: React.FC = () => {
                             disabled={safeLoginPage === 1}
                             className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
                               safeLoginPage === 1
-                                ? "border-slate-700 text-slate-600"
-                                : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                                ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                                : "border-gray-300 text-slate-700 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-200 dark:hover:text-white"
                             }`}
                           >
                             {"<"}
                           </button>
-                          <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
+                          <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-gray-300 px-2 py-2 text-sm text-slate-900 dark:border-slate-600 dark:text-white">
                             {safeLoginPage}
                           </div>
                           <button
@@ -1443,8 +1443,8 @@ const Settings: React.FC = () => {
                             disabled={safeLoginPage === loginTotalPages}
                             className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
                               safeLoginPage === loginTotalPages
-                                ? "border-slate-700 text-slate-600"
-                                : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                                ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                                : "border-gray-300 text-slate-700 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-200 dark:hover:text-white"
                             }`}
                           >
                             {">"}
@@ -1457,8 +1457,8 @@ const Settings: React.FC = () => {
                             disabled={safeLoginPage === 1}
                             className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
                               safeLoginPage === 1
-                                ? "border-slate-700 text-slate-600"
-                                : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                                ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                                : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:text-white"
                             }`}
                           >
                             Anterior
@@ -1471,7 +1471,7 @@ const Settings: React.FC = () => {
                               className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
                                 page === safeLoginPage
                                   ? "border-emerald-500 bg-emerald-500 text-white"
-                                  : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                                  : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:text-white"
                               }`}
                             >
                               {page}
@@ -1483,8 +1483,8 @@ const Settings: React.FC = () => {
                             disabled={safeLoginPage === loginTotalPages}
                             className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
                               safeLoginPage === loginTotalPages
-                                ? "border-slate-700 text-slate-600"
-                                : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                                ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                                : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:text-white"
                             }`}
                           >
                             Proxima
@@ -1504,8 +1504,8 @@ const Settings: React.FC = () => {
                 {/* Header */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h2 className="mb-2 text-xl font-semibold text-white">Gerenciar Badges</h2>
-                    <p className="text-sm text-slate-400">
+                    <h2 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">Gerenciar Badges</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Crie e gerencie badges customizadas do sistema de gamificação
                     </p>
                   </div>
@@ -1531,13 +1531,13 @@ const Settings: React.FC = () => {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   {/* Busca */}
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400" size={20} />
                     <input
                       type="text"
                       value={badgeSearch}
                       onChange={(e) => setBadgeSearch(e.target.value)}
                       placeholder="Buscar por nome ou descrição..."
-                      className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                     />
                   </div>
 
@@ -1563,24 +1563,24 @@ const Settings: React.FC = () => {
 
                 {/* Estatísticas */}
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-                    <p className="mb-1 text-sm text-slate-400">Total de Badges</p>
-                    <p className="text-2xl font-bold text-white">{badges.length}</p>
+                  <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <p className="mb-1 text-sm text-slate-500 dark:text-slate-400">Total de Badges</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{badges.length}</p>
                   </div>
-                  <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-                    <p className="mb-1 text-sm text-slate-400">Ativas</p>
+                  <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <p className="mb-1 text-sm text-slate-500 dark:text-slate-400">Ativas</p>
                     <p className="text-2xl font-bold text-emerald-400">
                       {badges.filter((b) => b.is_active).length}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-                    <p className="mb-1 text-sm text-slate-400">Manuais</p>
+                  <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <p className="mb-1 text-sm text-slate-500 dark:text-slate-400">Manuais</p>
                     <p className="text-2xl font-bold text-blue-400">
                       {badges.filter((b) => b.criteria_type === "manual").length}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-                    <p className="mb-1 text-sm text-slate-400">Automáticas</p>
+                  <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <p className="mb-1 text-sm text-slate-500 dark:text-slate-400">Automáticas</p>
                     <p className="text-2xl font-bold text-purple-400">
                       {badges.filter((b) => b.criteria_type === "automatic").length}
                     </p>
@@ -1591,12 +1591,12 @@ const Settings: React.FC = () => {
                 {loadingBadges ? (
                   <div className="py-12 text-center">
                     <LoadingSpinner size="lg" />
-                    <p className="mt-4 text-slate-400">Carregando badges...</p>
+                    <p className="mt-4 text-slate-500 dark:text-slate-400">Carregando badges...</p>
                   </div>
                 ) : filteredBadges.length === 0 ? (
                   <div className="py-12 text-center">
                     <Award className="mx-auto mb-4 text-slate-600" size={64} />
-                    <p className="mb-2 text-lg font-medium text-slate-400">
+                    <p className="mb-2 text-lg font-medium text-slate-500 dark:text-slate-400">
                       {badges.length === 0 ? "Nenhuma badge cadastrada" : "Nenhuma badge encontrada"}
                     </p>
                     <p className="text-sm text-slate-500">
@@ -1610,8 +1610,8 @@ const Settings: React.FC = () => {
                     {filteredBadges.map((badge) => (
                       <div
                         key={badge.id}
-                        className={`rounded-lg border bg-slate-900 p-5 transition-all hover:border-emerald-500/50 ${
-                          badge.is_active ? "border-slate-700" : "border-slate-800 opacity-60"
+                        className={`rounded-lg border bg-white p-5 transition-all hover:border-emerald-500/50 dark:bg-slate-900 ${
+                          badge.is_active ? "border-gray-200 dark:border-slate-700" : "border-gray-100 opacity-60 dark:border-slate-800"
                         }`}
                       >
                         {/* Header do Card */}
@@ -1619,7 +1619,7 @@ const Settings: React.FC = () => {
                           <div className="flex items-center gap-3">
                             <span className="text-4xl">{badge.icon_url || "🏆"}</span>
                             <div>
-                              <h3 className="font-semibold text-white">{badge.name}</h3>
+                              <h3 className="font-semibold text-slate-900 dark:text-white">{badge.name}</h3>
                               <div className="mt-1 flex items-center gap-2">
                                 <span
                                   className={`rounded px-2 py-0.5 text-xs font-medium ${
@@ -1634,7 +1634,7 @@ const Settings: React.FC = () => {
                                   className={`rounded px-2 py-0.5 text-xs font-medium ${
                                     badge.is_active
                                       ? "bg-emerald-500/20 text-emerald-400"
-                                      : "bg-slate-500/20 text-slate-400"
+                                      : "bg-slate-500/20 text-slate-600 dark:text-slate-400"
                                   }`}
                                 >
                                   {badge.is_active ? "Ativa" : "Inativa"}
@@ -1645,13 +1645,13 @@ const Settings: React.FC = () => {
                         </div>
 
                         {/* Descrição */}
-                        <p className="mb-4 line-clamp-2 text-sm text-slate-400">{badge.description}</p>
+                        <p className="mb-4 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{badge.description}</p>
 
                         {/* Critérios (se automático) */}
                         {badge.criteria_type === "automatic" && badge.criteria && (
-                          <div className="mb-4 rounded-lg border border-slate-700 bg-slate-800 p-3">
+                          <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-slate-700 dark:bg-slate-800">
                             <p className="mb-1 text-xs text-slate-500">Regra:</p>
-                            <p className="text-sm text-slate-300">
+                            <p className="text-sm text-slate-600 dark:text-slate-300">
                               {badge.criteria.field} {badge.criteria.operator} {badge.criteria.value}
                             </p>
                           </div>
@@ -1661,7 +1661,7 @@ const Settings: React.FC = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleEditBadge(badge)}
-                            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-700"
+                            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                             title="Editar badge"
                           >
                             <Edit2 size={16} />
@@ -1697,7 +1697,7 @@ const Settings: React.FC = () => {
                     <Award size={16} />
                     Como funcionam as badges
                   </h4>
-                  <ul className="space-y-1 text-sm text-slate-300">
+                  <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
                     <li>
                       • <strong>Manuais:</strong> Admin atribui manualmente a vendedores específicos
                     </li>
@@ -1718,8 +1718,8 @@ const Settings: React.FC = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="mb-2 text-xl font-semibold text-white">Configurar Pontos</h2>
-                    <p className="text-sm text-slate-400">
+                    <h2 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">Configurar Pontos</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Defina quantos pontos vale cada ação no sistema de gamificação
                     </p>
                   </div>
@@ -1737,17 +1737,17 @@ const Settings: React.FC = () => {
                 {/* Estatísticas */}
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                   <div className="rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6 backdrop-blur-xl transition-all hover:border-blue-500/40">
-                    <p className="mb-1 text-sm text-slate-400">Total de Ações</p>
-                    <p className="text-2xl font-bold text-white">{actionPoints.length}</p>
+                    <p className="mb-1 text-sm text-slate-500 dark:text-slate-400">Total de Ações</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{actionPoints.length}</p>
                   </div>
                   <div className="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-500/10 to-emerald-500/10 p-6 backdrop-blur-xl transition-all hover:border-green-500/40">
-                    <p className="mb-1 text-sm text-slate-400">Ações Ativas</p>
+                    <p className="mb-1 text-sm text-slate-500 dark:text-slate-400">Ações Ativas</p>
                     <p className="text-2xl font-bold text-emerald-400">
                       {actionPoints.filter((a) => a.is_active).length}
                     </p>
                   </div>
                   <div className="rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-6 backdrop-blur-xl transition-all hover:border-purple-500/40">
-                    <p className="mb-1 text-sm text-slate-400">Pontos Médios</p>
+                    <p className="mb-1 text-sm text-slate-500 dark:text-slate-400">Pontos Médios</p>
                     <p className="text-2xl font-bold text-purple-400">
                       {actionPoints.length > 0
                         ? Math.round(
@@ -1762,52 +1762,52 @@ const Settings: React.FC = () => {
                 {loadingPoints ? (
                   <div className="py-12 text-center">
                     <LoadingSpinner size="lg" />
-                    <p className="mt-4 text-slate-400">Carregando configurações...</p>
+                    <p className="mt-4 text-slate-500 dark:text-slate-400">Carregando configurações...</p>
                   </div>
                 ) : actionPoints.length === 0 ? (
                   <div className="py-12 text-center">
                     <Coins className="mx-auto mb-4 text-slate-600" size={64} />
-                    <p className="mb-2 text-lg font-medium text-slate-400">Nenhuma configuração encontrada</p>
+                    <p className="mb-2 text-lg font-medium text-slate-500 dark:text-slate-400">Nenhuma configuração encontrada</p>
                     <p className="text-sm text-slate-500">
                       As configurações padrão serão criadas automaticamente
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-hidden rounded-lg border border-slate-700 bg-slate-900">
+                  <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                     <div className="overflow-x-auto">
                       <table className="w-full">
-                        <thead className="bg-slate-800">
+                        <thead className="bg-gray-50 dark:bg-slate-800">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Ação
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Descrição
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-slate-300">
+                            <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Pontos
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-slate-300">
+                            <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Status
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-slate-300">
+                            <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Ações
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-700">
+                        <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                           {actionPoints.map((action) => (
-                            <tr key={action.id} className="transition-colors hover:bg-slate-800/50">
+                            <tr key={action.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/50">
                               {/* Tipo de Ação */}
                               <td className="px-6 py-4">
-                                <code className="rounded bg-slate-800 px-2 py-1 text-sm text-cyan-400">
+                                <code className="rounded bg-gray-100 px-2 py-1 text-sm text-cyan-600 dark:bg-slate-800 dark:text-cyan-400">
                                   {action.action_type}
                                 </code>
                               </td>
 
                               {/* Descrição */}
                               <td className="px-6 py-4">
-                                <p className="text-sm text-slate-300">{action.description || "-"}</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-300">{action.description || "-"}</p>
                               </td>
 
                               {/* Pontos (editável) */}
@@ -1822,7 +1822,7 @@ const Settings: React.FC = () => {
                                         [action.action_type]: parseInt(e.target.value) || 0,
                                       })
                                     }
-                                    className="w-20 rounded border border-slate-700 bg-slate-800 px-3 py-1 text-center text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    className="w-20 rounded border border-gray-300 bg-white px-3 py-1 text-center text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                   />
                                   {editingPoints[action.action_type] !== action.points && (
                                     <button
@@ -1842,7 +1842,7 @@ const Settings: React.FC = () => {
                                   className={`inline-block rounded px-2 py-1 text-xs font-medium ${
                                     action.is_active
                                       ? "bg-emerald-500/20 text-emerald-400"
-                                      : "bg-slate-500/20 text-slate-400"
+                                      : "bg-slate-500/20 text-slate-600 dark:text-slate-400"
                                   }`}
                                 >
                                   {action.is_active ? "Ativa" : "Inativa"}
@@ -1879,7 +1879,7 @@ const Settings: React.FC = () => {
                     <Coins size={16} />
                     Como funciona
                   </h4>
-                  <ul className="space-y-1 text-sm text-slate-300">
+                  <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
                     <li>• Cada ação no sistema pode gerar pontos para o usuário</li>
                     <li>• Valores negativos funcionam como penalidades (ex: card_lost = -5 pts)</li>
                     <li>• Ações desativadas não geram pontos, mas ficam salvas no sistema</li>
@@ -1897,17 +1897,17 @@ const Settings: React.FC = () => {
                 {/* Header */}
                 <div className="mb-6 flex items-center justify-between">
                   <div>
-                    <h2 className="mb-2 text-xl font-semibold text-white">Configurações API4COM (VOIP)</h2>
-                    <p className="text-sm text-slate-400">
+                    <h2 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">Configurações API4COM (VOIP)</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Gerencie credenciais e ramais para integração com API4COM
                     </p>
                   </div>
                 </div>
 
                 {/* ========== Seção de Configuração ========== */}
-                <div className="rounded-lg border border-slate-700 bg-slate-900 p-6">
+                <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h3 className="text-lg font-semibold text-white">Credenciais da API4COM</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Credenciais da API4COM</h3>
                     {api4comConfig && !showApi4comConfigForm && (
                       <button
                         onClick={() => setShowApi4comConfigForm(true)}
@@ -1923,11 +1923,11 @@ const Settings: React.FC = () => {
                     <div className="space-y-3">
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                          <span className="text-sm text-slate-400">Email:</span>
-                          <p className="font-medium text-white">{api4comConfig.email}</p>
+                          <span className="text-sm text-slate-500 dark:text-slate-400">Email:</span>
+                          <p className="font-medium text-slate-900 dark:text-white">{api4comConfig.email}</p>
                         </div>
                         <div>
-                          <span className="text-sm text-slate-400">Status:</span>
+                          <span className="text-sm text-slate-500 dark:text-slate-400">Status:</span>
                           <p>
                             {api4comConfig.is_active ? (
                               <span className="inline-flex items-center rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-green-400">
@@ -1941,7 +1941,7 @@ const Settings: React.FC = () => {
                           </p>
                         </div>
                         <div>
-                          <span className="text-sm text-slate-400">Token válido:</span>
+                          <span className="text-sm text-slate-500 dark:text-slate-400">Token válido:</span>
                           <p>
                             {api4comConfig.has_valid_token ? (
                               <span className="font-medium text-green-400">Sim</span>
@@ -1951,8 +1951,8 @@ const Settings: React.FC = () => {
                           </p>
                         </div>
                         <div>
-                          <span className="text-sm text-slate-400">Expira em:</span>
-                          <p className="text-sm text-slate-300">
+                          <span className="text-sm text-slate-500 dark:text-slate-400">Expira em:</span>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">
                             {api4comConfig.token_expires_at
                               ? new Date(api4comConfig.token_expires_at).toLocaleString('pt-BR')
                               : '-'}
@@ -1961,9 +1961,9 @@ const Settings: React.FC = () => {
                       </div>
 
                       {api4comConfig.last_test_at && (
-                        <div className="border-t border-slate-700 pt-3">
-                          <span className="text-sm text-slate-400">Último teste:</span>
-                          <p className="text-sm text-slate-300">
+                        <div className="border-t border-gray-200 pt-3 dark:border-slate-700">
+                          <span className="text-sm text-slate-500 dark:text-slate-400">Último teste:</span>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">
                             {new Date(api4comConfig.last_test_at).toLocaleString('pt-BR')} -{' '}
                             {api4comConfig.last_test_success ? (
                               <span className="text-green-400">Sucesso</span>
@@ -1993,27 +1993,27 @@ const Settings: React.FC = () => {
                   {showApi4comConfigForm && (
                     <form onSubmit={handleSaveApi4comConfig} className="space-y-4">
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-300">
+                        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                           Email da API4COM
                         </label>
                         <input
                           type="email"
                           value={api4comConfigForm.email}
                           onChange={(e) => setApi4comConfigForm({ ...api4comConfigForm, email: e.target.value })}
-                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                           required
                         />
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-300">
+                        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                           Senha da API4COM
                         </label>
                         <input
                           type="password"
                           value={api4comConfigForm.password}
                           onChange={(e) => setApi4comConfigForm({ ...api4comConfigForm, password: e.target.value })}
-                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                           required
                         />
                         <p className="mt-1 text-xs text-slate-500">
@@ -2047,17 +2047,17 @@ const Settings: React.FC = () => {
                 </div>
 
                 {/* ========== Seção de Ramais ========== */}
-                <div className="rounded-lg border border-slate-700 bg-slate-900 p-6">
-                  <h3 className="mb-4 text-lg font-semibold text-white">Ramais dos Vendedores</h3>
+                <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+                  <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Ramais dos Vendedores</h3>
 
                   {/* Formulário para Adicionar/Editar Ramal */}
-                  <form onSubmit={handleSaveApi4comExtension} className="mb-6 rounded-lg bg-slate-800 p-4">
-                    <h4 className="mb-3 text-sm font-medium text-slate-300">
+                  <form onSubmit={handleSaveApi4comExtension} className="mb-6 rounded-lg bg-gray-100 p-4 dark:bg-slate-800">
+                    <h4 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
                       {editingApi4comExtension ? 'Editar Ramal do Vendedor' : 'Vincular Vendedor ao Ramal'}
                     </h4>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                       <div className="col-span-1">
-                        <label className="mb-1 block text-sm font-medium text-slate-300">
+                        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                           Vendedor
                         </label>
                         <SelectMenu
@@ -2072,7 +2072,7 @@ const Settings: React.FC = () => {
                       </div>
 
                       <div className="col-span-1">
-                        <label className="mb-1 block text-sm font-medium text-slate-300">
+                        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                           Ramal
                         </label>
                         <input
@@ -2082,7 +2082,7 @@ const Settings: React.FC = () => {
                             setApi4comExtensionForm({ ...api4comExtensionForm, extension: e.target.value })
                           }
                           placeholder="Ex: 1000"
-                          className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                           required
                         />
                       </div>
@@ -2114,41 +2114,41 @@ const Settings: React.FC = () => {
 
                   {/* Tabela de Ramais */}
                   {loadingApi4comExtensions ? (
-                    <div className="py-8 text-center text-slate-400">Carregando ramais...</div>
+                    <div className="py-8 text-center text-slate-500 dark:text-slate-400">Carregando ramais...</div>
                   ) : api4comExtensions.length === 0 ? (
-                    <div className="py-8 text-center text-slate-400">
+                    <div className="py-8 text-center text-slate-500 dark:text-slate-400">
                       Nenhum ramal vinculado ainda
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full">
-                        <thead className="bg-slate-800">
+                        <thead className="bg-gray-50 dark:bg-slate-800">
                           <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Vendedor
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Email
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Ramal
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Status
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Ações
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-700">
+                        <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                           {api4comExtensions.map((ext) => (
-                            <tr key={ext.id} className="hover:bg-slate-800/50">
-                              <td className="px-4 py-3 text-sm font-medium text-white">
+                            <tr key={ext.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                              <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-white">
                                 {ext.user_name}
                               </td>
-                              <td className="px-4 py-3 text-sm text-slate-400">{ext.user_email}</td>
-                              <td className="px-4 py-3 font-mono text-sm text-white">
+                              <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{ext.user_email}</td>
+                              <td className="px-4 py-3 font-mono text-sm text-slate-900 dark:text-white">
                                 {ext.extension}
                               </td>
                               <td className="px-4 py-3 text-sm">
@@ -2157,7 +2157,7 @@ const Settings: React.FC = () => {
                                     Ativo
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-400">
+                                  <span className="inline-flex items-center rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
                                     Inativo
                                   </span>
                                 )}
@@ -2196,7 +2196,7 @@ const Settings: React.FC = () => {
                     <Phone size={16} />
                     Como funciona
                   </h4>
-                  <ul className="space-y-1 text-sm text-slate-300">
+                  <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
                     <li>• Configure as credenciais da sua conta API4COM para obter o token de autenticação</li>
                     <li>• Vincule cada vendedor ao seu ramal físico existente no sistema VOIP</li>
                     <li>• O token é renovado automaticamente quando próximo da expiração</li>
@@ -2211,15 +2211,15 @@ const Settings: React.FC = () => {
               <div className="space-y-6">
                 {/* Header */}
                 <div className="mb-6">
-                  <h2 className="mb-2 text-xl font-semibold text-white">Logs de Auditoria</h2>
-                  <p className="text-sm text-slate-400">
+                  <h2 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">Logs de Auditoria</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Visualize os últimos 100 logs de ações realizadas no sistema pelos usuários
                   </p>
                 </div>
 
                 {/* Filtros */}
-                <div className="rounded-lg border border-slate-700 bg-slate-900 p-6">
-                  <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+                <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+                  <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
                     <Filter size={20} />
                     Filtros
                   </h3>
@@ -2227,7 +2227,7 @@ const Settings: React.FC = () => {
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {/* Filtro por Ação */}
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                         Ação
                       </label>
                       <SelectMenu
@@ -2242,7 +2242,7 @@ const Settings: React.FC = () => {
 
                     {/* Filtro por Tipo de Entidade */}
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                         Tipo de Entidade
                       </label>
                       <SelectMenu
@@ -2257,7 +2257,7 @@ const Settings: React.FC = () => {
 
                     {/* Filtro por Data Inicial */}
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                         <Calendar size={16} className="mr-1 inline" />
                         Data Inicial
                       </label>
@@ -2265,13 +2265,13 @@ const Settings: React.FC = () => {
                         type="date"
                         value={logsFilters.start_date}
                         onChange={(e) => handleLogsFilterChange("start_date", e.target.value)}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       />
                     </div>
 
                     {/* Filtro por Data Final */}
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                         <Calendar size={16} className="mr-1 inline" />
                         Data Final
                       </label>
@@ -2279,7 +2279,7 @@ const Settings: React.FC = () => {
                         type="date"
                         value={logsFilters.end_date}
                         onChange={(e) => handleLogsFilterChange("end_date", e.target.value)}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       />
                     </div>
                   </div>
@@ -2287,7 +2287,7 @@ const Settings: React.FC = () => {
                   <div className="mt-4 flex gap-3">
                     <button
                       onClick={handleClearLogsFilters}
-                      className="rounded-lg bg-slate-700 px-4 py-2 text-white hover:bg-slate-600"
+                      className="rounded-lg bg-gray-200 px-4 py-2 text-slate-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
                     >
                       Limpar Filtros
                     </button>
@@ -2295,52 +2295,52 @@ const Settings: React.FC = () => {
                 </div>
 
                 {/* Tabela de Logs */}
-                <div className="overflow-hidden rounded-lg border border-slate-700 bg-slate-900">
+                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                   {loadingLogs ? (
-                    <div className="p-8 text-center text-slate-400">
+                    <div className="p-8 text-center text-slate-500 dark:text-slate-400">
                       Carregando logs...
                     </div>
                   ) : auditLogs.length === 0 ? (
-                    <div className="p-8 text-center text-slate-400">
+                    <div className="p-8 text-center text-slate-500 dark:text-slate-400">
                       Nenhum log encontrado
                     </div>
                   ) : (
                     <>
                       <div className="overflow-x-auto">
                         <table className="w-full">
-                          <thead className="border-b border-slate-700 bg-slate-800">
+                          <thead className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800">
                             <tr>
-                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
                                 Data/Hora
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
                                 Usuário
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
                                 Ação
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
                                 Entidade
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
                                 Descrição
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
                                 IP
                               </th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-700">
+                          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                           {paginatedAuditLogs.map((log) => (
-                                <tr key={log.id} className="hover:bg-slate-800/50">
-                                  <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-300">
+                                <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                                  <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                     {new Date(log.created_at).toLocaleString("pt-BR")}
                                   </td>
-                                  <td className="px-4 py-3 text-sm text-slate-300">
+                                  <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                     <div>
                                       <div className="font-medium">{log.user_name}</div>
                                       {log.user_email && (
-                                        <div className="text-xs text-slate-400">{log.user_email}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">{log.user_email}</div>
                                       )}
                                     </div>
                                   </td>
@@ -2353,16 +2353,16 @@ const Settings: React.FC = () => {
                                       {log.action}
                                     </span>
                                   </td>
-                                  <td className="px-4 py-3 text-sm text-slate-300">
+                                  <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                     {log.entity_type}
                                     {log.entity_id && (
                                       <span className="text-slate-500"> #{log.entity_id}</span>
                                     )}
                                   </td>
-                                  <td className="px-4 py-3 text-sm text-slate-300">
+                                  <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                     {log.description}
                                   </td>
-                                  <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-400">
+                                  <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                                     {log.ip_address}
                                   </td>
                                 </tr>
@@ -2371,8 +2371,8 @@ const Settings: React.FC = () => {
                         </table>
                       </div>
 
-                      <div className="flex flex-col gap-4 border-t border-slate-700/60 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-                        <div className="text-sm text-slate-400">
+                      <div className="flex flex-col gap-4 border-t border-gray-200 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left dark:border-slate-700/60">
+                        <div className="text-sm text-slate-500 dark:text-slate-400">
                           Mostrando {logsTotalItems === 0 ? 0 : logsStartIndex + 1} a {logsEndIndex} de{" "}
                           {logsTotalItems} registros
                         </div>
@@ -2384,13 +2384,13 @@ const Settings: React.FC = () => {
                               disabled={safeLogsPage === 1}
                               className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
                                 safeLogsPage === 1
-                                  ? "border-slate-700 text-slate-600"
-                                  : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                                  ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                                  : "border-gray-300 text-slate-700 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-200 dark:hover:text-white"
                               }`}
                             >
                               {"<"}
                             </button>
-                            <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-slate-600 px-2 py-2 text-sm text-white">
+                            <div className="flex min-w-[42px] items-center justify-center rounded-lg border border-gray-300 px-2 py-2 text-sm text-slate-900 dark:border-slate-600 dark:text-white">
                               {safeLogsPage}
                             </div>
                             <button
@@ -2399,8 +2399,8 @@ const Settings: React.FC = () => {
                               disabled={safeLogsPage === logsTotalPages}
                               className={`h-9 w-10 rounded-lg border text-sm transition-colors ${
                                 safeLogsPage === logsTotalPages
-                                  ? "border-slate-700 text-slate-600"
-                                  : "border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-white"
+                                  ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                                  : "border-gray-300 text-slate-700 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-200 dark:hover:text-white"
                               }`}
                             >
                               {">"}
@@ -2413,8 +2413,8 @@ const Settings: React.FC = () => {
                               disabled={safeLogsPage === 1}
                               className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
                                 safeLogsPage === 1
-                                  ? "border-slate-700 text-slate-600"
-                                  : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                                  ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                                  : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:text-white"
                               }`}
                             >
                               Anterior
@@ -2427,7 +2427,7 @@ const Settings: React.FC = () => {
                                 className={`h-9 w-9 rounded-lg border text-sm transition-colors ${
                                   page === safeLogsPage
                                     ? "border-emerald-500 bg-emerald-500 text-white"
-                                    : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                                    : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:text-white"
                                 }`}
                               >
                                 {page}
@@ -2439,8 +2439,8 @@ const Settings: React.FC = () => {
                               disabled={safeLogsPage === logsTotalPages}
                               className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
                                 safeLogsPage === logsTotalPages
-                                  ? "border-slate-700 text-slate-600"
-                                  : "border-slate-600 text-slate-300 hover:border-emerald-500 hover:text-white"
+                                  ? "border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-600"
+                                  : "border-gray-300 text-slate-600 hover:border-emerald-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:text-white"
                               }`}
                             >
                               Proxima
@@ -2463,7 +2463,7 @@ const Settings: React.FC = () => {
               <Shield size={16} />
               Sobre o Histórico de Logins
             </h4>
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               Cada login realizado no sistema é registrado com informações de{" "}
               <strong>endereço IP</strong>, <strong>dispositivo</strong> e{" "}
               <strong>navegador</strong> utilizado. Isso permite auditar acessos e identificar
@@ -2548,20 +2548,20 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
           setIsOpen((open) => !open);
         }}
         disabled={disabled}
-        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white ${
           disabled ? "cursor-not-allowed opacity-60" : ""
         }`}
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
           size={16}
-          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`text-slate-500 transition-transform dark:text-slate-400 ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((option) => (
             <button
               key={option.value || option.label}
@@ -2570,8 +2570,8 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-800 ${
-                option.value === value ? "bg-slate-800/70" : ""
+              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
               }`}
             >
               <span className="truncate">{option.label}</span>

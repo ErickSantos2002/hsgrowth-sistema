@@ -101,7 +101,7 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-slate-700 px-4 py-2 text-white transition-colors hover:bg-slate-600"
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
             disabled={loading}
           >
             Cancelar
@@ -109,7 +109,7 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-600"
+            className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-400 dark:disabled:bg-slate-600"
             disabled={loading}
           >
             {loading ? (
@@ -129,8 +129,8 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Modo de Reset */}
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <label className="mb-3 block text-sm font-medium text-slate-300">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+          <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Como deseja resetar a senha?
           </label>
           <div className="space-y-3">
@@ -144,10 +144,10 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
                 className="mt-1 text-emerald-500 focus:ring-emerald-500"
               />
               <div className="flex-1">
-                <span className="font-medium text-white">
+                <span className="font-medium text-slate-900 dark:text-white">
                   Definir senha manualmente
                 </span>
-                <p className="mt-1 text-sm text-slate-400">
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Você escolhe a nova senha para o usuário
                 </p>
               </div>
@@ -162,10 +162,10 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
                 className="mt-1 text-emerald-500 focus:ring-emerald-500"
               />
               <div className="flex-1">
-                <span className="font-medium text-white">
+                <span className="font-medium text-slate-900 dark:text-white">
                   Gerar senha temporária automática
                 </span>
-                <p className="mt-1 text-sm text-slate-400">
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Sistema gera uma senha aleatória que será exibida após o reset
                 </p>
               </div>
@@ -177,7 +177,7 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
         {resetMode === "manual" && (
           <>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Nova Senha *
               </label>
               <input
@@ -185,7 +185,7 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Digite a nova senha"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
                 disabled={loading}
               />
               {errors.newPassword && (
@@ -197,7 +197,7 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Confirmar Nova Senha *
               </label>
               <input
@@ -205,7 +205,7 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Digite a senha novamente"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
                 disabled={loading}
               />
               {errors.confirmPassword && (
@@ -219,8 +219,8 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
         )}
 
         {/* Alerta informativo */}
-        <div className="rounded-lg border border-yellow-500/50 bg-yellow-900/20 p-3">
-          <p className="text-sm text-yellow-300">
+        <div className="rounded-lg border border-yellow-500/50 bg-yellow-50 p-3 dark:bg-yellow-900/20">
+          <p className="text-sm text-yellow-700 dark:text-yellow-300">
             <strong>Importante:</strong> O usuário deverá usar a nova senha no
             próximo login. Certifique-se de informá-lo sobre a alteração.
           </p>

@@ -355,8 +355,8 @@ const CardDetails: React.FC = () => {
   // Loading
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-        <div className="text-xl text-white">Carregando...</div>
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div className="text-xl text-slate-900 dark:text-white">Carregando...</div>
       </div>
     );
   }
@@ -364,23 +364,23 @@ const CardDetails: React.FC = () => {
   // Card não encontrado
   if (!card) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-        <div className="text-xl text-white">Negócio não encontrado</div>
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div className="text-xl text-slate-900 dark:text-white">Negócio não encontrado</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* ========== HEADER FIXO ========== */}
-      <div className="relative z-40 flex-shrink-0 border-b border-slate-700/50 bg-slate-900/95 backdrop-blur-xl">
+      <div className="relative z-40 flex-shrink-0 border-b border-gray-200 bg-white backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/95">
         <div className="px-6 py-4">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Lado Esquerdo: Botão Voltar + Título */}
             <div className="flex flex-1 flex-col items-center gap-2 sm:flex-row sm:items-center sm:justify-start sm:gap-3">
               <button
                 onClick={handleBack}
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-800/80 hover:text-white"
+                className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/80 dark:hover:text-white"
                 title="Voltar ao board"
               >
                 <ArrowLeft size={20} />
@@ -401,12 +401,12 @@ const CardDetails: React.FC = () => {
                     }
                   }}
                   autoFocus
-                  className="rounded border-b-2 border-blue-500 bg-slate-800/50 px-2 py-1 text-2xl font-semibold text-white focus:outline-none"
+                  className="rounded border-b-2 border-blue-500 bg-white px-2 py-1 text-2xl font-semibold text-slate-900 focus:outline-none dark:bg-slate-800/50 dark:text-white"
                 />
                 ) : (
                   <h1
                     onClick={() => setIsTitleEditing(true)}
-                    className="cursor-pointer text-center text-2xl font-semibold text-white transition-colors hover:text-blue-400 sm:text-left"
+                    className="cursor-pointer text-center text-2xl font-semibold text-slate-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400 sm:text-left"
                     title="Clique para editar"
                   >
                     {card.title}
@@ -423,13 +423,13 @@ const CardDetails: React.FC = () => {
                   <>
                     <button
                       onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/80 px-3 py-2 transition-colors hover:bg-slate-700/80"
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
                     >
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-medium text-white">
                         {assignedUser?.name?.substring(0, 2).toUpperCase() || "?"}
                       </div>
-                      <span className="text-sm font-medium text-white">{assignedUser?.name || "Não atribuído"}</span>
-                      <ChevronDown size={16} className="text-slate-400" />
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">{assignedUser?.name || "Não atribuído"}</span>
+                      <ChevronDown size={16} className="text-slate-500 dark:text-slate-400" />
                     </button>
 
                     {/* Dropdown de seleção de responsável */}
@@ -442,7 +442,7 @@ const CardDetails: React.FC = () => {
                         />
 
                         {/* Menu dropdown */}
-                        <div className="fixed left-4 right-4 top-40 z-[60] max-h-80 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:z-[999] sm:mt-2 sm:w-64">
+                        <div className="fixed left-4 right-4 top-40 z-[60] max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:z-[999] sm:mt-2 sm:w-64 dark:border-slate-700 dark:bg-slate-800">
                           <div className="p-2">
                             <p className="mb-1 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
                               Selecionar responsável
@@ -454,7 +454,7 @@ const CardDetails: React.FC = () => {
                                 className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors ${
                                   user.id === card?.assigned_to_id
                                     ? "bg-blue-500/20 text-blue-400"
-                                    : "text-slate-300 hover:bg-slate-700"
+                                    : "text-slate-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700"
                                 }`}
                               >
                                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-xs font-medium text-white">
@@ -476,11 +476,11 @@ const CardDetails: React.FC = () => {
                   </>
                 ) : (
                   // Vendedor - apenas visualização (sem seta)
-                  <div className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/80 px-3 py-2">
+                  <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-700/50 dark:bg-slate-800/80">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-medium text-white">
                       {assignedUser?.name?.substring(0, 2).toUpperCase() || "?"}
                     </div>
-                    <span className="text-sm font-medium text-white">{assignedUser?.name || "Não atribuído"}</span>
+                    <span className="text-sm font-medium text-slate-900 dark:text-white">{assignedUser?.name || "Não atribuído"}</span>
                   </div>
                 )}
               </div>
@@ -493,13 +493,13 @@ const CardDetails: React.FC = () => {
                     <>
                       <button
                         onClick={() => setShowSdrDropdown(!showSdrDropdown)}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/80 px-3 py-2 transition-colors hover:bg-slate-700/80"
+                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
                       >
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-sm font-medium text-white">
                           {sdrUser?.name?.substring(0, 2).toUpperCase() || "SDR"}
                         </div>
-                        <span className="text-sm font-medium text-white">{sdrUser?.name || "Sem SDR"}</span>
-                        <ChevronDown size={16} className="text-slate-400" />
+                        <span className="text-sm font-medium text-slate-900 dark:text-white">{sdrUser?.name || "Sem SDR"}</span>
+                        <ChevronDown size={16} className="text-slate-500 dark:text-slate-400" />
                       </button>
 
                       {/* Dropdown de seleção de SDR */}
@@ -512,7 +512,7 @@ const CardDetails: React.FC = () => {
                           />
 
                           {/* Menu dropdown */}
-                          <div className="fixed left-4 right-4 top-40 z-[60] max-h-80 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:z-[999] sm:mt-2 sm:w-64">
+                          <div className="fixed left-4 right-4 top-40 z-[60] max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:z-[999] sm:mt-2 sm:w-64 dark:border-slate-700 dark:bg-slate-800">
                             <div className="p-2">
                               <p className="mb-1 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
                                 Selecionar SDR
@@ -524,7 +524,7 @@ const CardDetails: React.FC = () => {
                                   className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors ${
                                     user.id === card?.sdr_id
                                       ? "bg-cyan-500/20 text-cyan-400"
-                                      : "text-slate-300 hover:bg-slate-700"
+                                      : "text-slate-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700"
                                   }`}
                                 >
                                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-xs font-medium text-white">
@@ -546,11 +546,11 @@ const CardDetails: React.FC = () => {
                     </>
                   ) : (
                     // Vendedor - apenas visualização (sem seta)
-                    <div className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-800/80 px-3 py-2">
+                    <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-700/50 dark:bg-slate-800/80">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-sm font-medium text-white">
                         {sdrUser?.name?.substring(0, 2).toUpperCase() || "SDR"}
                       </div>
-                      <span className="text-sm font-medium text-white">{sdrUser?.name || "Sem SDR"}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">{sdrUser?.name || "Sem SDR"}</span>
                     </div>
                   )}
                 </div>
@@ -666,7 +666,7 @@ const CardDetails: React.FC = () => {
       {/* ========== LAYOUT PRINCIPAL: 30% + 70% (COM SCROLL INDEPENDENTE) ========== */}
       <div className="relative z-0 flex flex-1 flex-col overflow-y-auto sm:min-h-0 sm:flex-row sm:overflow-hidden">
         {/* ========== COLUNA ESQUERDA: 30% - INFORMAÇÕES (SCROLL INDEPENDENTE) ========== */}
-        <div className="relative z-0 w-full flex-none overflow-visible border-b-0 sm:z-auto sm:min-h-0 sm:w-[30%] sm:overflow-y-auto sm:overflow-x-hidden sm:border-b-0 sm:border-r sm:border-slate-700/50">
+        <div className="relative z-0 w-full flex-none overflow-visible border-b-0 sm:z-auto sm:min-h-0 sm:w-[30%] sm:overflow-y-auto sm:overflow-x-hidden sm:border-b-0 sm:border-r sm:border-gray-200 dark:sm:border-slate-700/50">
           <div className="space-y-4 p-6 sm:min-h-full">
             {/* Seção: Resumo */}
             <SummarySection
@@ -692,14 +692,14 @@ const CardDetails: React.FC = () => {
         <div className="relative z-0 w-full flex-none overflow-visible sm:z-auto sm:min-h-0 sm:w-[70%] sm:overflow-y-auto sm:overflow-x-hidden">
           <div className="p-6 sm:min-h-full">
             {/* Sistema de Abas */}
-            <div className="mb-6 border-b border-slate-700/50">
+            <div className="mb-6 border-b border-gray-200 dark:border-slate-700/50">
               <div className="scrollbar-hidden flex flex-nowrap gap-4 overflow-x-auto sm:gap-6 sm:overflow-visible">
                 <button
                   onClick={() => setActiveTab("atividade")}
                   className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "atividade"
                       ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-400 hover:text-white"
+                      : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
                   <Calendar size={18} />
@@ -714,12 +714,12 @@ const CardDetails: React.FC = () => {
                   className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "anotacoes"
                       ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-400 hover:text-white"
+                      : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
                   <FileText size={18} />
                   Anotações
-                  <span className="ml-1 rounded-full border border-slate-700 bg-slate-700/50 px-2 py-0.5 text-xs font-medium text-slate-400">
+                  <span className="ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
                     {card.notes?.length || 0}
                   </span>
                 </button>
@@ -729,7 +729,7 @@ const CardDetails: React.FC = () => {
                   className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "agendador"
                       ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-400 hover:text-white"
+                      : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
                   <Users size={18} />
@@ -741,12 +741,12 @@ const CardDetails: React.FC = () => {
                   className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "arquivos"
                       ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-400 hover:text-white"
+                      : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
                   <Paperclip size={18} />
                   Arquivos
-                  <span className="ml-1 rounded-full border border-slate-700 bg-slate-700/50 px-2 py-0.5 text-xs font-medium text-slate-400">
+                  <span className="ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
                     {attachmentsCount}
                   </span>
                 </button>
