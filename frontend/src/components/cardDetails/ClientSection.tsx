@@ -230,7 +230,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
           icon={<Building2 size={18} />}
         >
           <div className="space-y-3">
-            <p className="py-2 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <p className="py-2 text-center text-sm text-slate-400 dark:text-slate-400">
               Nenhum cliente vinculado a este negócio
             </p>
 
@@ -269,7 +269,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
                 <h3 className="font-semibold text-slate-900 dark:text-white">Vincular Cliente</h3>
                 <button
                   onClick={handleCloseModal}
-                  className="text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
+                  className="text-slate-400 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
                 >
                   <X size={20} />
                 </button>
@@ -278,7 +278,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
               {/* Campo de busca dentro do modal */}
               <div className="border-b border-gray-200 dark:border-slate-700 p-4">
                 <div className="relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
                   <input
                     type="text"
                     value={searchTerm}
@@ -290,7 +290,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >
                       <X size={18} />
                     </button>
@@ -301,15 +301,15 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
               {/* Resultados */}
               <div className="flex-1 overflow-y-auto p-4">
                 {isLoadingClients ? (
-                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-400">
                     Buscando clientes...
                   </div>
                 ) : !searchTerm.trim() ? (
-                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-400">
                     Digite o nome, CPF ou CNPJ para buscar
                   </div>
                 ) : allClients.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-400">
                     Nenhum cliente encontrado com esse critério
                   </div>
                 ) : (
@@ -322,7 +322,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
                       >
                         <p className="font-medium text-slate-900 dark:text-white">{c.company_name || c.name}</p>
                         {c.document && (
-                          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                          <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">
                             {formatDocument(c.document)}
                           </p>
                         )}
@@ -359,14 +359,14 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
       >
       {loading ? (
         <div className="py-4 text-center">
-          <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Carregando...</p>
+          <p className="text-sm text-slate-400 dark:text-slate-400">Carregando...</p>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Nome da Empresa */}
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <Building2 size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+              <Building2 size={14} className="text-slate-400 dark:text-slate-400" />
               <span>Nome da empresa</span>
             </div>
             <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
@@ -394,7 +394,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
                 {client?.address || "Não informado"}
               </p>
               {(client?.city || client?.state) && (
-                <p className="mt-1 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-sm text-slate-400 dark:text-slate-400">
                   {client.city}{client.city && client.state && " - "}{client.state}
                 </p>
               )}
@@ -406,13 +406,13 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
             <div className="text-sm font-medium text-slate-600 dark:text-slate-300">Contato</div>
             <div className="space-y-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Telefone</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Telefone</p>
                 <p className={client?.phone ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>
                   {formatPhone(client?.phone)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Email</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Email</p>
                 <p className={client?.email ? "text-sm text-blue-400" : "text-sm italic text-slate-400 dark:text-slate-500"}>
                   {client?.email || "Não informado"}
                 </p>

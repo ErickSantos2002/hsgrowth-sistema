@@ -141,7 +141,7 @@ const NodesSidebar: React.FC<NodesSidebarProps> = ({ onDragStart }) => {
   return (
     <div className="max-h-[85vh] w-80 overflow-y-auto overflow-x-hidden border-l border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4 backdrop-blur sm:max-h-[calc(100vh-70px)]">
       <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Blocos Disponíveis</h3>
-      <p className="mb-6 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+      <p className="mb-6 text-sm text-slate-400 dark:text-slate-400">
         Arraste os blocos para o canvas para criar sua automação
       </p>
 

@@ -42,7 +42,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, date }) => {
       default:
         return {
           text: "PENDENTE",
-          className: "bg-slate-500/20 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-slate-500/50",
+          className: "bg-slate-500/20 text-slate-400 dark:text-slate-400 border-slate-500/50",
         };
     }
   };

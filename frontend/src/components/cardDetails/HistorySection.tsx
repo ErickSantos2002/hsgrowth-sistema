@@ -245,13 +245,13 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
       assigned_changed: <User size={18} className="text-orange-400" />,
       person_linked: <UserPlus size={18} className="text-emerald-400" />,
       person_unlinked: <UserMinus size={18} className="text-red-400" />,
-      organization_changed: <Building2 size={18} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />,
+      organization_changed: <Building2 size={18} className="text-slate-400 dark:text-slate-400" />,
       due_date_changed: <Calendar size={18} className="text-yellow-400" />,
       // Tags
       tag_added: <Tag size={18} className="text-pink-400" />,
       tag_removed: <Tag size={18} className="text-red-400" />,
     };
-    return iconMap[type] || <MoreHorizontal size={18} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />;
+    return iconMap[type] || <MoreHorizontal size={18} className="text-slate-400 dark:text-slate-400" />;
   };
 
   /**
@@ -375,7 +375,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "all"
                 ? "border-blue-500 font-medium text-blue-400"
-                : "border-transparent text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Todos
@@ -386,11 +386,11 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "activities"
                 ? "border-blue-500 font-medium text-blue-400"
-                : "border-transparent text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Atividades
-            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-400">
               {activityCount}
             </span>
           </button>
@@ -400,11 +400,11 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "notes"
                 ? "border-blue-500 font-medium text-blue-400"
-                : "border-transparent text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Anotações
-            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-400">
               {noteCount}
             </span>
           </button>
@@ -414,11 +414,11 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "files"
                 ? "border-blue-500 font-medium text-blue-400"
-                : "border-transparent text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Arquivos
-            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-400">
               {fileCount}
             </span>
           </button>
@@ -428,11 +428,11 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "changes"
                 ? "border-blue-500 font-medium text-blue-400"
-                : "border-transparent text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Alterações
-            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-400">
               {changesCount}
             </span>
           </button>
@@ -456,7 +456,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
         {/* Botões de ação */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
+          className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-400 dark:text-slate-400 transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
           title="Filtros"
         >
           <Filter size={16} />
@@ -464,7 +464,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
 
         <button
           onClick={() => showInfo("Exportar histórico - Funcionalidade em desenvolvimento")}
-          className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
+          className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-400 dark:text-slate-400 transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
           title="Exportar"
         >
           <Download size={16} />
@@ -472,7 +472,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
 
         <button
           onClick={() => showInfo("Imprimir histórico - Funcionalidade em desenvolvimento")}
-          className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
+          className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-400 dark:text-slate-400 transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
           title="Imprimir"
         >
           <Printer size={16} />
@@ -484,7 +484,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
         {filteredEvents.length === 0 ? (
           <div className="rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-8 text-center">
             <FileText size={32} className="mx-auto mb-2 text-slate-600" />
-            <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-slate-400 dark:text-slate-400">
               {searchTerm ? "Nenhum evento encontrado" : "Nenhum evento nesta categoria"}
             </p>
           </div>
@@ -506,7 +506,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
                   />
 
                   {event.description && (
-                    <p className="mb-2 whitespace-pre-wrap break-words text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                    <p className="mb-2 whitespace-pre-wrap break-words text-sm text-slate-400 dark:text-slate-400">
                       {event.description}
                     </p>
                   )}

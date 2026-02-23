@@ -90,7 +90,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
       container: isHovered
         ? "bg-slate-600/30 border-gray-400 dark:border-slate-500 cursor-pointer"
         : "bg-gray-100/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 hover:bg-gray-200/50 dark:hover:bg-slate-700/50 cursor-pointer",
-      text: isHovered ? "text-slate-600 dark:text-slate-300 font-medium" : "text-slate-400 dark:text-slate-500 dark:text-slate-400",
+      text: isHovered ? "text-slate-600 dark:text-slate-300 font-medium" : "text-slate-400 dark:text-slate-400",
       dot: "bg-slate-600",
       icon: "text-slate-400 dark:text-slate-500",
     };
@@ -125,7 +125,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+      <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-400">
         <div className="animate-pulse">Carregando pipeline...</div>
       </div>
     );

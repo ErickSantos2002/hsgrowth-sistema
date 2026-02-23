@@ -204,7 +204,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
           icon={<User size={18} />}
         >
           <div className="space-y-3">
-            <p className="py-2 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <p className="py-2 text-center text-sm text-slate-400 dark:text-slate-400">
               Nenhuma pessoa vinculada a este negócio
             </p>
 
@@ -243,7 +243,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
                 <h3 className="font-semibold text-slate-900 dark:text-white">Vincular Pessoa</h3>
                 <button
                   onClick={handleCloseModal}
-                  className="text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
+                  className="text-slate-400 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
                 >
                   <X size={20} />
                 </button>
@@ -252,7 +252,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               {/* Campo de busca dentro do modal */}
               <div className="border-b border-gray-200 dark:border-slate-700 p-4">
                 <div className="relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
                   <input
                     type="text"
                     value={searchTerm}
@@ -264,7 +264,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >
                       <X size={18} />
                     </button>
@@ -275,15 +275,15 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               {/* Resultados */}
               <div className="flex-1 overflow-y-auto p-4">
                 {isLoadingPersons ? (
-                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-400">
                     Buscando pessoas...
                   </div>
                 ) : !searchTerm.trim() ? (
-                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-400">
                     Digite o nome, email, telefone ou cargo para buscar
                   </div>
                 ) : allPersons.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-400">
                     Nenhuma pessoa encontrada com esse critério
                   </div>
                 ) : (
@@ -296,7 +296,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
                       >
                         <p className="font-medium text-slate-900 dark:text-white">{p.name}</p>
                         {p.position && (
-                          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">{p.position}</p>
+                          <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">{p.position}</p>
                         )}
                         {(p.email_commercial || p.email) && (
                           <p className="mt-1 text-xs text-blue-400">
@@ -336,14 +336,14 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
       >
       {loading ? (
         <div className="py-4 text-center">
-          <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Carregando...</p>
+          <p className="text-sm text-slate-400 dark:text-slate-400">Carregando...</p>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Nome completo */}
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <User size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+              <User size={14} className="text-slate-400 dark:text-slate-400" />
               <span>Nome completo</span>
             </div>
             <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
@@ -354,7 +354,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
           {/* Cargo/Posição */}
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <Briefcase size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+              <Briefcase size={14} className="text-slate-400 dark:text-slate-400" />
               <span>Cargo/Posição</span>
             </div>
             <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
@@ -367,24 +367,24 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
           {/* E-mails */}
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <Mail size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+              <Mail size={14} className="text-slate-400 dark:text-slate-400" />
               <span>E-mails</span>
             </div>
             <div className="space-y-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Principal</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Principal</p>
                 <p className={person?.email ? "text-sm text-blue-400" : "text-sm italic text-slate-400 dark:text-slate-500"}>
                   {person?.email || "Não informado"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Comercial</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Comercial</p>
                 <p className={person?.email_commercial ? "text-sm text-blue-400" : "text-sm italic text-slate-400 dark:text-slate-500"}>
                   {person?.email_commercial || "Não informado"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Pessoal</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Pessoal</p>
                 <p className={person?.email_personal ? "text-sm text-blue-400" : "text-sm italic text-slate-400 dark:text-slate-500"}>
                   {person?.email_personal || "Não informado"}
                 </p>
@@ -395,24 +395,24 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
           {/* Telefones */}
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <Phone size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+              <Phone size={14} className="text-slate-400 dark:text-slate-400" />
               <span>Telefones</span>
             </div>
             <div className="space-y-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Principal</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Principal</p>
                 <p className={person?.phone ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>
                   {formatPhone(person?.phone)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">WhatsApp</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">WhatsApp</p>
                 <p className={person?.phone_whatsapp ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>
                   {formatPhone(person?.phone_whatsapp)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Comercial</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Comercial</p>
                 <p className={person?.phone_commercial ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>
                   {formatPhone(person?.phone_commercial)}
                 </p>
@@ -425,7 +425,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
             <div className="text-sm font-medium text-slate-600 dark:text-slate-300">Redes Sociais</div>
             <div className="space-y-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">LinkedIn</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">LinkedIn</p>
                 {person?.linkedin ? (
                   <a
                     href={person.linkedin}
@@ -441,13 +441,13 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
                 )}
               </div>
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Instagram</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Instagram</p>
                 <p className={person?.instagram ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>
                   {person?.instagram || "Não informado"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Facebook</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Facebook</p>
                 {person?.facebook ? (
                   <a
                     href={person.facebook}

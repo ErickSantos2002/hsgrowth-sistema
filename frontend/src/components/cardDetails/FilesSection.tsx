@@ -149,7 +149,7 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
     if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return <FileSpreadsheet {...iconProps} className="text-emerald-400" />;
     if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('7z')) return <FileArchive {...iconProps} className="text-yellow-400" />;
 
-    return <File {...iconProps} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />;
+    return <File {...iconProps} className="text-slate-400 dark:text-slate-400" />;
   };
 
   // Handlers de drag & drop
@@ -242,12 +242,12 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
       {loading ? (
         <div className="py-8 text-center">
           <Loader2 size={24} className="mx-auto animate-spin text-cyan-400" />
-          <p className="mt-2 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Carregando arquivos...</p>
+          <p className="mt-2 text-sm text-slate-400 dark:text-slate-400">Carregando arquivos...</p>
         </div>
       ) : attachments.length === 0 ? (
         <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/30 dark:bg-slate-800/30 p-6 text-center">
           <File size={32} className="mx-auto text-slate-600" />
-          <p className="mt-2 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhum arquivo anexado</p>
+          <p className="mt-2 text-sm text-slate-400 dark:text-slate-400">Nenhum arquivo anexado</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -275,7 +275,7 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
                   <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
                     {attachment.original_filename}
                   </p>
-                  <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-400">
                     <span>{attachmentService.formatFileSize(attachment.file_size)}</span>
                     <span>•</span>
                     <span>{attachment.uploader_name || 'Desconhecido'}</span>

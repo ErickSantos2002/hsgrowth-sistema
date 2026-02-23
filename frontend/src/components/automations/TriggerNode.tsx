@@ -130,7 +130,7 @@ const TriggerNode: React.FC<TriggerNodeProps> = ({ id, data }) => {
           <span className="text-sm font-medium text-slate-900 dark:text-white">{data.label}</span>
         </div>
         {data.boardName && (
-          <div className="mt-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Board: {data.boardName}</div>
+          <div className="mt-2 text-xs text-slate-400 dark:text-slate-400">Board: {data.boardName}</div>
         )}
       </div>
 

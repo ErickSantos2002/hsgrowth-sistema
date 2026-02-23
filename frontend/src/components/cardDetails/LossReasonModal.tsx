@@ -79,7 +79,7 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
         {/* Lista de motivos */}
         <div className="max-h-96 space-y-2 overflow-y-auto">
           {reasons.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <div className="py-8 text-center text-slate-400 dark:text-slate-400">
               <AlertCircle size={48} className="mx-auto mb-2 opacity-50" />
               <p>Nenhum motivo cadastrado para este board</p>
             </div>

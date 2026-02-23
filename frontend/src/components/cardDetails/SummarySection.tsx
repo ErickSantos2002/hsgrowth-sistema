@@ -257,7 +257,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
           {/* Valor do Negócio - sempre read-only, calculado a partir dos produtos */}
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <DollarSign size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+              <DollarSign size={14} className="text-slate-400 dark:text-slate-400" />
               <span>Valor do negócio</span>
             </div>
             <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
@@ -267,7 +267,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
             </div>
             {(card.products_total ?? 0) === 0 ? (
               <p className="text-xs text-slate-400 dark:text-slate-500">
-                Adicione produtos na seção <strong className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Produtos</strong> para calcular o valor automaticamente.
+                Adicione produtos na seção <strong className="text-slate-400 dark:text-slate-400">Produtos</strong> para calcular o valor automaticamente.
               </p>
             ) : (
               <p className="text-xs text-slate-400 dark:text-slate-500">
@@ -319,7 +319,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
           {/* Vendedor Responsável (campo já existe como assigned_to_id) */}
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <Briefcase size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+              <Briefcase size={14} className="text-slate-400 dark:text-slate-400" />
               <span>Vendedor Responsável</span>
             </div>
             <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
@@ -343,7 +343,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
           {/* Data de Entrada - Prospecção */}
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <Clock size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+              <Clock size={14} className="text-slate-400 dark:text-slate-400" />
               <span>Data de Entrada - Prospecção</span>
             </div>
             <div className="flex items-center gap-2">
@@ -366,7 +366,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
           {/* Data de Entrada - Aquisição */}
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <Clock size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+              <Clock size={14} className="text-slate-400 dark:text-slate-400" />
               <span>Data de Entrada - Aquisição</span>
             </div>
             <div className="flex items-center gap-2">
@@ -389,7 +389,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
           {/* Data de Entrada - Expansão */}
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <Clock size={14} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+              <Clock size={14} className="text-slate-400 dark:text-slate-400" />
               <span>Data de Entrada - Expansão</span>
             </div>
             <div className="flex items-center gap-2">
@@ -410,8 +410,8 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
           </div>
 
           <div className="flex items-start gap-2 rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-2">
-            <Info size={14} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-500 dark:text-slate-400" />
-            <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <Info size={14} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-400" />
+            <p className="text-xs text-slate-400 dark:text-slate-400">
               Essas datas são preenchidas automaticamente quando o card muda de board.
             </p>
           </div>
@@ -525,11 +525,11 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
 
         {/* ======== INFORMAÇÕES SOMENTE LEITURA ======== */}
         <div className="space-y-3 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
-          <h4 className="text-sm font-semibold text-slate-400 dark:text-slate-500 dark:text-slate-400">Informações Gerais</h4>
+          <h4 className="text-sm font-semibold text-slate-400 dark:text-slate-400">Informações Gerais</h4>
 
           {/* Data de Criação */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-1 text-sm text-slate-400 dark:text-slate-400">
               <Clock size={14} />
               <span>Criado em:</span>
             </div>
@@ -540,7 +540,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
 
           {/* Tempo no Funil */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-1 text-sm text-slate-400 dark:text-slate-400">
               <Clock size={14} />
               <span>Tempo no funil:</span>
             </div>
@@ -549,7 +549,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
 
           {/* ID do Card */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">ID:</span>
+            <span className="text-sm text-slate-400 dark:text-slate-400">ID:</span>
             <span className="font-mono text-sm font-medium text-slate-600 dark:text-slate-300">#{card.id}</span>
           </div>
         </div>

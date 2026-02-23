@@ -462,7 +462,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       {pendingActivities.length === 0 ? (
         <div className="rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-6 text-center">
           <CheckSquare size={32} className="mx-auto mb-2 text-slate-600" />
-          <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhuma atividade pendente</p>
+          <p className="text-sm text-slate-400 dark:text-slate-400">Nenhuma atividade pendente</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -483,7 +483,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                   {/* Conteúdo */}
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-start gap-2">
-                      <span className="mt-0.5 text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                      <span className="mt-0.5 text-slate-400 dark:text-slate-400">
                         {getActivityIcon(activity.task_type)}
                       </span>
                       <div className="flex-1">
@@ -504,7 +504,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                             {getActivityTypeName(activity.task_type)}
                           </span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-slate-400">
                           <StatusBadge status={status} />
                           {activity.due_date && <span>{formatBrazilDate(activity.due_date)}</span>}
                           {activity.assigned_to_name && (
@@ -531,7 +531,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                     </div>
                     <button
                       onClick={() => toggleActivity(activity.id)}
-                      className="rounded p-1 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-600"
+                      className="rounded p-1 text-slate-400 dark:text-slate-400 transition-colors hover:bg-slate-600"
                       title={isExpanded ? "Recolher" : "Expandir"}
                     >
                       {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
@@ -546,7 +546,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                     {editingTaskId === activity.id ? (
                       <div className="space-y-3 pt-3">
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-400">
                             Título *
                           </label>
                           <input
@@ -559,7 +559,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-400">
                             Descrição
                           </label>
                           <textarea
@@ -572,7 +572,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-400">
                             Anotações
                           </label>
                           <textarea
@@ -585,7 +585,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-400">
                             Link da gravação
                           </label>
                           <input
@@ -598,7 +598,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-400">
                             Prioridade
                           </label>
                           <select
@@ -798,7 +798,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                 />
               </div>
 
-              <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-400 dark:text-slate-400">
                 Se não definir um horário, será usado 12:00 como padrão.
               </p>
             </div>

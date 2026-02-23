@@ -26,7 +26,7 @@ const SchedulerSection: React.FC = () => {
             <h3 className="mb-1 text-lg font-semibold text-slate-900 dark:text-white">
               Agendador de Reuniões
             </h3>
-            <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-slate-400 dark:text-slate-400">
               Funcionalidade em desenvolvimento
             </p>
           </div>
@@ -51,7 +51,7 @@ const SchedulerSection: React.FC = () => {
 
           {/* Recursos planejados */}
           <div className="mt-6 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-4 text-left">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">
               Recursos Planejados:
             </p>
             <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">

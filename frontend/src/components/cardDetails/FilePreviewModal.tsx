@@ -95,7 +95,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ attachment, onClose
         {loading ? (
           <div className="flex flex-col items-center gap-3">
             <Loader2 size={40} className="animate-spin text-cyan-400" />
-            <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Carregando arquivo...</p>
+            <p className="text-sm text-slate-400 dark:text-slate-400">Carregando arquivo...</p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-3">

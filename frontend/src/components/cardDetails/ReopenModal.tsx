@@ -119,7 +119,7 @@ const ReopenModal: React.FC<ReopenModalProps> = ({
             Canal de Aquisição - Detalhamento
           </label>
           <p className="text-xs text-slate-400 dark:text-slate-500">
-            O canal será definido como <strong className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Base</strong>. Selecione o detalhamento:
+            O canal será definido como <strong className="text-slate-400 dark:text-slate-400">Base</strong>. Selecione o detalhamento:
           </p>
           <div className="space-y-2">
             {REOPEN_DETAIL_OPTIONS.map((option) => (

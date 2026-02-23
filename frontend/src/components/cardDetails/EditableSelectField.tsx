@@ -70,7 +70,7 @@ const EditableSelectField: React.FC<EditableSelectFieldProps> = ({
     <div className="space-y-1">
       {/* Label */}
       <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-        {icon && <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400">{icon}</span>}
+        {icon && <span className="text-slate-400 dark:text-slate-400">{icon}</span>}
         <span>{label}</span>
       </div>
 
@@ -118,7 +118,7 @@ const EditableSelectField: React.FC<EditableSelectFieldProps> = ({
             {!disabled && (
               <Pencil
                 size={14}
-                className="text-slate-400 dark:text-slate-500 dark:text-slate-400 opacity-0 transition-opacity group-hover:opacity-100"
+                className="text-slate-400 dark:text-slate-400 opacity-0 transition-opacity group-hover:opacity-100"
               />
             )}
           </div>
@@ -188,12 +188,12 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
           disabled ? "cursor-not-allowed opacity-60" : ""
         }`}
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400 dark:text-slate-500 dark:text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
           size={16}
-          className={`text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`text-slate-400 dark:text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
       {isOpen && (

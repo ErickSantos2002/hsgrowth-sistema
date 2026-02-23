@@ -699,12 +699,12 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
           disabled ? "cursor-not-allowed opacity-50" : ""
         }`}
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400 dark:text-slate-500 dark:text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
           size={16}
-          className={`text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`text-slate-400 dark:text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
       {isOpen && !disabled && (

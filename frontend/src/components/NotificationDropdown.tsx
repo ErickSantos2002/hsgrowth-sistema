@@ -149,7 +149,7 @@ const NotificationDropdown: React.FC = () => {
       {/* Botão de Notificações */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative rounded-lg p-2 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
+        className="relative rounded-lg p-2 text-slate-400 dark:text-slate-400 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
         title="Notificações"
       >
         <Bell size={20} />
@@ -168,14 +168,14 @@ const NotificationDropdown: React.FC = () => {
             <div>
               <h3 className="font-semibold text-slate-900 dark:text-white">Notificações</h3>
               {unreadCount > 0 && (
-                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">{unreadCount} não lida{unreadCount > 1 ? "s" : ""}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400">{unreadCount} não lida{unreadCount > 1 ? "s" : ""}</p>
               )}
             </div>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="rounded p-1.5 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
+                  className="rounded p-1.5 text-slate-400 dark:text-slate-400 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
                   title="Marcar todas como lidas"
                 >
                   <CheckCheck size={16} />
@@ -196,13 +196,13 @@ const NotificationDropdown: React.FC = () => {
           {/* Lista de Notificações */}
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <div className="p-8 text-center text-slate-400 dark:text-slate-500 dark:text-slate-400">
+              <div className="p-8 text-center text-slate-400 dark:text-slate-400">
                 Carregando...
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center">
                 <Bell size={48} className="mx-auto mb-3 text-slate-600" />
-                <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhuma notificação</p>
+                <p className="text-slate-400 dark:text-slate-400">Nenhuma notificação</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-200 dark:divide-slate-700">
@@ -225,7 +225,7 @@ const NotificationDropdown: React.FC = () => {
                         <p className={`text-sm ${notification.is_read ? "text-slate-600 dark:text-slate-300" : "font-medium text-slate-900 dark:text-white"}`}>
                           {notification.title}
                         </p>
-                        <p className="mt-0.5 line-clamp-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                        <p className="mt-0.5 line-clamp-2 text-xs text-slate-400 dark:text-slate-400">
                           {notification.message}
                         </p>
                         <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
@@ -240,7 +240,7 @@ const NotificationDropdown: React.FC = () => {
                             e.stopPropagation();
                             handleMarkAsRead(notification.id);
                           }}
-                          className="flex-shrink-0 rounded p-1 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-slate-900 dark:hover:text-white"
+                          className="flex-shrink-0 rounded p-1 text-slate-400 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-slate-900 dark:hover:text-white"
                           title="Marcar como lida"
                         >
                           <Check size={14} />

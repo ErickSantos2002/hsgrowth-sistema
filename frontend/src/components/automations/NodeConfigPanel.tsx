@@ -123,7 +123,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                     ]}
                     disabled={!config.board_id}
                   />
-                  <p className="mt-1 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">
                     Deixe vazio para qualquer movimento de card
                   </p>
                 </div>
@@ -167,7 +167,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
       case "manual":
         return (
-          <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+          <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-slate-400 dark:text-slate-400">
             <p className="mb-2">👆 <strong>Trigger Manual</strong></p>
             <p>Esta automação será executada apenas quando um usuário clicar em um botão específico (ex: no card ou em uma lista).</p>
             <p className="mt-2 text-xs">Não requer configuração adicional.</p>
@@ -176,7 +176,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
       default:
         return (
-          <div className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+          <div className="text-sm text-slate-400 dark:text-slate-400">
             Este gatilho não requer configuração adicional.
           </div>
         );
@@ -195,7 +195,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               </label>
               <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-200/50 dark:bg-slate-700/50 p-3">
                 {users.filter(u => u.role === "salesperson").length === 0 ? (
-                  <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhum vendedor encontrado</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-400">Nenhum vendedor encontrado</p>
                 ) : (
                   users.filter(u => u.role === "salesperson").map((user) => {
                     const isSelected = (config.user_ids || []).includes(String(user.id));
@@ -227,14 +227,14 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                   })
                 )}
               </div>
-              <p className="mt-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+              <p className="mt-2 text-xs text-slate-400 dark:text-slate-400">
                 {(config.user_ids || []).length === 0
                   ? "⚠️ Nenhum vendedor selecionado. Todos os vendedores ativos participarão do rodízio."
                   : `✓ ${(config.user_ids || []).length} vendedor(es) selecionado(s)`}
               </p>
             </div>
 
-            <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4 text-sm text-slate-400 dark:text-slate-400">
               <p className="mb-2">🔄 <strong>Como funciona:</strong></p>
               <p>Cards serão distribuídos automaticamente entre os vendedores selecionados em sistema de rodízio equilibrado.</p>
             </div>
@@ -250,7 +250,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               </label>
               <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-200/50 dark:bg-slate-700/50 p-3">
                 {users.filter(u => u.role === "sdr").length === 0 ? (
-                  <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhum SDR encontrado</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-400">Nenhum SDR encontrado</p>
                 ) : (
                   users.filter(u => u.role === "sdr").map((user) => {
                     const isSelected = (config.user_ids || []).includes(String(user.id));
@@ -282,14 +282,14 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                   })
                 )}
               </div>
-              <p className="mt-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+              <p className="mt-2 text-xs text-slate-400 dark:text-slate-400">
                 {(config.user_ids || []).length === 0
                   ? "⚠️ Nenhum SDR selecionado. Todos os SDRs ativos participarão do rodízio."
                   : `✓ ${(config.user_ids || []).length} SDR(s) selecionado(s)`}
               </p>
             </div>
 
-            <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-slate-400 dark:text-slate-400">
               <p className="mb-2">🔄 <strong>Como funciona:</strong></p>
               <p>Cards serão distribuídos automaticamente entre os SDRs selecionados em sistema de rodízio equilibrado.</p>
             </div>
@@ -354,7 +354,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
       case "mark_won":
         return (
-          <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+          <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-slate-400 dark:text-slate-400">
             <p className="mb-2">✅ <strong>Marcar como Ganho</strong></p>
             <p>Esta ação marca o card como ganho automaticamente.</p>
             <p className="mt-2 text-xs">Não requer configuração adicional.</p>
@@ -363,7 +363,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
       case "mark_lost":
         return (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-slate-400 dark:text-slate-400">
             <p className="mb-2">❌ <strong>Marcar como Perdido</strong></p>
             <p>Esta ação marca o card como perdido automaticamente.</p>
             <p className="mt-2 text-xs">Não requer configuração adicional.</p>
@@ -398,7 +398,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 rows={3}
                 className="w-full resize-none rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-200 dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 focus:border-transparent focus:ring-2 focus:ring-emerald-500"
               />
-              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">
                 Variáveis: {"{"}card_title{"}"}, {"{"}user_name{"}"}
               </p>
             </div>
@@ -447,7 +447,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                     { value: "Cliente", label: "Cliente" },
                   ]}
                 />
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">
                   Nota: Cliente → Lead/Prospect é bloqueado pelo sistema
                 </p>
               </div>
@@ -528,7 +528,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
               </div>
             )}
 
-            <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+            <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-slate-400 dark:text-slate-400">
               <p className="mb-2">📝 <strong>Atualizar Campo do Cliente</strong></p>
               <p>Esta ação atualiza um campo do cliente vinculado ao card.</p>
               {config.field_name && (
@@ -543,7 +543,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
       default:
         return (
-          <div className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+          <div className="text-sm text-slate-400 dark:text-slate-400">
             Esta ação não requer configuração adicional.
           </div>
         );
@@ -556,7 +556,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{node.data.label}</h3>
-          <p className="mt-1 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm text-slate-400 dark:text-slate-400">
             {isTrigger ? "Configurar gatilho" : "Configurar ação"}
           </p>
         </div>
@@ -564,7 +564,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
           onClick={onClose}
           className="rounded-lg p-2 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700"
         >
-          <X size={20} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+          <X size={20} className="text-slate-400 dark:text-slate-400" />
         </button>
       </div>
 
@@ -644,12 +644,12 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
           disabled ? "cursor-not-allowed opacity-50" : ""
         }`}
       >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-400 dark:text-slate-500 dark:text-slate-400"}`}>
+        <span className={`truncate ${selectedOption ? "" : "text-slate-400 dark:text-slate-400"}`}>
           {selectedLabel}
         </span>
         <ChevronDown
           size={16}
-          className={`text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`text-slate-400 dark:text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
       {isOpen && !disabled && (

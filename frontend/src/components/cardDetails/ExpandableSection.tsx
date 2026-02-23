@@ -34,13 +34,13 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
         <div className="flex items-center gap-2">
           {/* Ícone de expand/collapse */}
           {isExpanded ? (
-            <ChevronDown size={18} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+            <ChevronDown size={18} className="text-slate-400 dark:text-slate-400" />
           ) : (
-            <ChevronRight size={18} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+            <ChevronRight size={18} className="text-slate-400 dark:text-slate-400" />
           )}
 
           {/* Ícone opcional da seção */}
-          {icon && <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400">{icon}</span>}
+          {icon && <span className="text-slate-400 dark:text-slate-400">{icon}</span>}
 
           {/* Título da seção */}
           <span className="font-semibold text-slate-900 dark:text-white">{title}</span>

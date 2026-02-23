@@ -362,7 +362,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                   {/* Campos de quantidade e valores */}
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
-                      <label className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Quantidade</label>
+                      <label className="text-xs text-slate-400 dark:text-slate-400">Quantidade</label>
                       {isEditing ? (
                         <input
                           type="number"
@@ -379,14 +379,14 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                     </div>
 
                     <div>
-                      <label className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Valor unitário</label>
+                      <label className="text-xs text-slate-400 dark:text-slate-400">Valor unitário</label>
                       <p className="rounded border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 px-2 py-1.5 text-slate-900 dark:text-white">
                         {formatCurrency(product.unit_price)}
                       </p>
                     </div>
 
                     <div>
-                      <label className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Desconto (%)</label>
+                      <label className="text-xs text-slate-400 dark:text-slate-400">Desconto (%)</label>
                       {isEditing ? (
                         <input
                           type="number"
@@ -405,7 +405,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                     </div>
 
                     <div>
-                      <label className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Total da linha</label>
+                      <label className="text-xs text-slate-400 dark:text-slate-400">Total da linha</label>
                       <p className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1.5 font-medium text-blue-400">
                         {formatCurrency(isEditing ? editTotal : product.total)}
                       </p>
@@ -440,13 +440,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
             {/* Totalizadores */}
             <div className="space-y-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-3">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Subtotal:</span>
+                <span className="text-slate-400 dark:text-slate-400">Subtotal:</span>
                 <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(calculateSubtotal())}</span>
               </div>
 
               {calculateTotalDiscount() > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Desconto total:</span>
+                  <span className="text-slate-400 dark:text-slate-400">Desconto total:</span>
                   <span className="font-medium text-red-400">- {formatCurrency(calculateTotalDiscount())}</span>
                 </div>
               )}
@@ -488,13 +488,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                     <span className="text-slate-600 dark:text-slate-300">
                       <span className="font-medium text-emerald-400">{paymentInfo.payment_method}</span>
                       {paymentInfo.installments > 1 && (
-                        <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400"> - {paymentInfo.installments}x</span>
+                        <span className="text-slate-400 dark:text-slate-400"> - {paymentInfo.installments}x</span>
                       )}
                     </span>
                   </div>
 
                   {paymentInfo.notes && (
-                    <p className="pl-6 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">{paymentInfo.notes}</p>
+                    <p className="pl-6 text-xs text-slate-400 dark:text-slate-400">{paymentInfo.notes}</p>
                   )}
                 </div>
               </div>
@@ -512,7 +512,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
         ) : (
           <div className="py-6 text-center">
             <Package size={32} className="mx-auto mb-2 text-slate-600" />
-            <p className="mb-4 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhum produto adicionado</p>
+            <p className="mb-4 text-sm text-slate-400 dark:text-slate-400">Nenhum produto adicionado</p>
           </div>
         )}
 
@@ -559,7 +559,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                     setShowProductSearch(false);
                     setSearchTerm("");
                   }}
-                  className="text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
+                  className="text-slate-400 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
                 >
                   <X size={20} />
                 </button>
@@ -568,7 +568,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
               {/* Campo de busca dentro do modal */}
               <div className="border-b border-gray-200 dark:border-slate-700 p-4">
                 <div className="relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
                   <input
                     type="text"
                     value={searchTerm}
@@ -580,7 +580,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >
                       <X size={18} />
                     </button>
@@ -591,11 +591,11 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
               {/* Resultados */}
               <div className="flex-1 overflow-y-auto p-4">
                 {loading ? (
-                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-400">
                     Carregando produtos...
                   </div>
                 ) : filteredProducts.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-400">
                     {searchTerm
                       ? "Nenhum produto encontrado com esse critério"
                       : availableProducts.length === 0
@@ -643,7 +643,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                 <h3 className="font-semibold text-slate-900 dark:text-white">Condições de Pagamento</h3>
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
+                  className="text-slate-400 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
                 >
                   <X size={20} />
                 </button>

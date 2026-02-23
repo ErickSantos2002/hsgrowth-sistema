@@ -364,7 +364,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
       {notes.length === 0 ? (
         <div className="rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-8 text-center">
           <FileText size={32} className="mx-auto mb-2 text-slate-600" />
-          <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Nenhuma anotação ainda</p>
+          <p className="text-sm text-slate-400 dark:text-slate-400">Nenhuma anotação ainda</p>
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
             Adicione observações, lembretes ou informações importantes
           </p>
@@ -439,7 +439,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                       <button
                         onClick={() => handleStartEdit(note)}
                         disabled={loading}
-                        className="rounded p-1.5 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-blue-400"
+                        className="rounded p-1.5 text-slate-400 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-blue-400"
                         title="Editar"
                       >
                         <Edit size={14} />
@@ -447,7 +447,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                       <button
                         onClick={() => handleDeleteNote(note.id)}
                         disabled={loading}
-                        className="rounded p-1.5 text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-red-400"
+                        className="rounded p-1.5 text-slate-400 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-red-400"
                         title="Excluir"
                       >
                         <Trash2 size={14} />

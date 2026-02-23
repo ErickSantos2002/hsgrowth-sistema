@@ -107,7 +107,7 @@ const WhatsAppMessage: React.FC<{ message: ParsedMessage }> = ({ message }) => {
                     placeholder?.classList.add("flex");
                   }}
                 />
-                <div className="hidden items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-3 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                <div className="hidden items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-3 text-xs text-slate-400 dark:text-slate-400">
                   <ImageIcon size={16} />
                   <span>Imagem não disponível</span>
                 </div>

@@ -279,7 +279,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                   </span>
                   <span className="text-sm">{selectedIconOption.label}</span>
                 </span>
-                <ChevronDown size={18} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+                <ChevronDown size={18} className="text-slate-400 dark:text-slate-400" />
               </button>
 
               {isIconOpen && (
@@ -335,7 +335,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                   />
                   <span className="text-sm">{formData.color}</span>
                 </span>
-                <ChevronDown size={18} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+                <ChevronDown size={18} className="text-slate-400 dark:text-slate-400" />
               </button>
 
               {isColorOpen && (
@@ -401,7 +401,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
 
         {/* Preview do board */}
         <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
-          <p className="mb-3 text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Preview:</p>
+          <p className="mb-3 text-xs font-medium text-slate-400 dark:text-slate-400">Preview:</p>
           <div className="flex items-center gap-4">
             <div
               className="rounded-lg p-3"
@@ -416,7 +416,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
                 {formData.name.trim() || "Nome do Board"}
               </h3>
               {(formData.description.trim() || !board) && (
-                <p className="mt-0.5 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                <p className="mt-0.5 text-sm text-slate-400 dark:text-slate-400">
                   {(formData.description.trim() || "Sem descrição").slice(0, 200)}
                 </p>
               )}

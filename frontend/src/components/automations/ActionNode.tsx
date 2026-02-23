@@ -178,7 +178,7 @@ const ActionNode: React.FC<ActionNodeProps> = ({ id, data }) => {
           <span className="text-sm font-medium text-slate-900 dark:text-white">{data.label}</span>
         </div>
         {data.config && (
-          <div className="mt-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
+          <div className="mt-2 text-xs text-slate-400 dark:text-slate-400">
             {data.config.targetBoardName && `Board: ${data.config.targetBoardName}`}
             {data.config.emailTo && `Para: ${data.config.emailTo}`}
           </div>

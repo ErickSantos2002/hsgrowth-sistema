@@ -384,7 +384,7 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onSele
                       {template.category}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                  <p className="text-sm leading-relaxed text-slate-400 dark:text-slate-400">
                     {template.description}
                   </p>
                   <div className="mt-3 flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">

@@ -74,7 +74,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
    * Retorna classes CSS para o tipo de atividade selecionado
    */
   const getTypeColorClasses = (type: ActivityType, isSelected: boolean) => {
-    const unselected = "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700";
+    const unselected = "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700";
     const configs = {
       call: isSelected
         ? "bg-blue-500/30 text-blue-400 border-blue-500"
@@ -89,7 +89,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         ? "bg-yellow-500/30 text-yellow-400 border-yellow-500"
         : unselected,
       other: isSelected
-        ? "bg-slate-500/30 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-gray-400 dark:border-slate-500"
+        ? "bg-slate-500/30 text-slate-400 dark:text-slate-400 border-gray-400 dark:border-slate-500"
         : unselected,
     };
     return configs[type];
@@ -102,13 +102,13 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     const configs = {
       normal: isSelected
         ? "bg-blue-500/30 text-blue-300 border-blue-500"
-        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
+        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
       high: isSelected
         ? "bg-yellow-500/30 text-yellow-400 border-yellow-500"
-        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
+        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
       urgent: isSelected
         ? "bg-red-500/30 text-red-400 border-red-500"
-        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
+        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
     };
     return configs[priority as keyof typeof configs];
   };
@@ -196,7 +196,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     <div className="space-y-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
       {/* Título */}
       <div>
-        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Título da atividade</label>
+        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-400">Título da atividade</label>
         <input
           type="text"
           value={formData.title}
@@ -209,7 +209,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
 
       {/* Tipos de atividade */}
       <div>
-        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Tipo de atividade</label>
+        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-400">Tipo de atividade</label>
         <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
           {activityTypes.map((activityType) => (
             <button
@@ -230,7 +230,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       {/* Data, Hora e Duração */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Data</label>
+          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-400">Data</label>
           <div className="relative">
             <input
               ref={dateInputRef}
@@ -254,7 +254,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Hora</label>
+          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-400">Hora</label>
           <div className="relative">
             <input
               ref={timeInputRef}
@@ -278,7 +278,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Duração (min)</label>
+          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-400">Duração (min)</label>
           <input
             type="number"
             min="5"
@@ -292,7 +292,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
 
       {/* Prioridade */}
       <div>
-        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Prioridade</label>
+        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-400">Prioridade</label>
         <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => setFormData({ ...formData, priority: "normal" })}
@@ -326,7 +326,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
 
       {/* Descrição (obrigatória) */}
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
+        <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-400">
           Descrição *
         </label>
         <textarea
@@ -340,7 +340,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
 
       {/* Notas (opcional) */}
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
+        <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-slate-400">
           Notas adicionais (opcional)
         </label>
         <textarea
@@ -354,7 +354,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
 
       {/* Opções adicionais */}
       <div className="space-y-2">
-        <label className="block text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Opções adicionais</label>
+        <label className="block text-xs font-medium text-slate-400 dark:text-slate-400">Opções adicionais</label>
 
         {/* Localização */}
         <div className="flex items-center gap-2">

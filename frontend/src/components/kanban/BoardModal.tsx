@@ -217,7 +217,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
 
         {/* Preview do board */}
         <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
-          <p className="mb-3 text-xs font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">Preview:</p>
+          <p className="mb-3 text-xs font-medium text-slate-400 dark:text-slate-400">Preview:</p>
           <div className="flex items-center gap-4">
             <div
               className="rounded-lg p-3"
@@ -234,7 +234,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
                 {name.trim() || "Nome do Board"}
               </h3>
               {(description.trim() || !board) && (
-                <p className="mt-0.5 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                <p className="mt-0.5 text-sm text-slate-400 dark:text-slate-400">
                   {description.trim() || "Sem descrição"}
                 </p>
               )}
