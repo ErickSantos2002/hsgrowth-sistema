@@ -57,38 +57,17 @@ export const Pagination: React.FC<PaginationProps> = ({
   }
 
   return (
-    <div className="mt-6 flex items-center justify-between border-t border-slate-700 pt-6">
-      {/* Mobile - Navegação simples */}
-      <div className="flex w-full items-center justify-between gap-2 md:hidden">
-        <button
-          disabled={!hasPrevPage}
-          onClick={goToPrevPage}
-          className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Anterior
-        </button>
-        <span className="text-sm text-slate-400">
-          Página {currentPage} de {totalPages}
-        </span>
-        <button
-          disabled={!hasNextPage}
-          onClick={goToNextPage}
-          className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Próxima
-        </button>
-      </div>
-
+    <div className="mt-6 border-t border-slate-700 px-6 pb-4 pt-4">
       {/* Desktop - Navegação completa */}
-      <div className="hidden w-full items-center justify-between md:flex">
-        <div className="text-sm text-slate-400">
+      <div className="hidden items-center justify-between text-sm text-slate-400 md:flex">
+        <div>
           Mostrando {startIndex + 1} a {endIndex} de {totalItems} {itemLabel}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2">
           <button
             disabled={!hasPrevPage}
             onClick={goToPrevPage}
-            className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1 text-sm text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Anterior
           </button>
@@ -99,7 +78,7 @@ export const Pagination: React.FC<PaginationProps> = ({
               <button
                 key={pageNum}
                 onClick={() => goToPage(pageNum)}
-                className={`min-w-10 rounded-lg px-3 py-2 text-sm transition-colors ${
+                className={`min-w-10 rounded-lg px-3 py-1 text-sm transition-colors ${
                   pageNum === currentPage
                     ? "bg-emerald-600 text-white"
                     : "border border-slate-700 bg-slate-800 text-white hover:bg-slate-700"
@@ -113,9 +92,37 @@ export const Pagination: React.FC<PaginationProps> = ({
           <button
             disabled={!hasNextPage}
             onClick={goToNextPage}
-            className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1 text-sm text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Próxima
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile - Navegação simples */}
+      <div className="mt-3 flex flex-col items-center text-sm text-slate-400 md:hidden">
+        <div className="mb-2">
+          Mostrando {startIndex + 1} a {endIndex} de {totalItems} {itemLabel}
+        </div>
+        <div className="flex items-center justify-center gap-2">
+          <button
+            disabled={!hasPrevPage}
+            onClick={goToPrevPage}
+            className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1 text-sm text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Página anterior"
+          >
+            {"<"}
+          </button>
+          <span className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1 text-sm text-white">
+            {currentPage}
+          </span>
+          <button
+            disabled={!hasNextPage}
+            onClick={goToNextPage}
+            className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1 text-sm text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Próxima página"
+          >
+            {">"}
           </button>
         </div>
       </div>
