@@ -17,7 +17,7 @@ export type { PeriodType };
 // TIPOS BÁSICOS
 // ========================
 
-export type DataSource = 'cards' | 'clients' | 'persons' | 'activities';
+export type DataSource = 'cards' | 'clients' | 'persons' | 'activities' | 'tasks';
 export type ChartType = 'bar' | 'line' | 'pie' | 'table';
 export type AggregationType = 'count' | 'sum' | 'avg' | 'distinct_count';
 export type GroupByType = 'day' | 'week' | 'month' | 'year';
@@ -158,6 +158,7 @@ export const DATA_SOURCE_LABELS: Record<DataSource, string> = {
   clients: 'Clientes',
   persons: 'Pessoas',
   activities: 'Atividades',
+  tasks: 'Tarefas',
 };
 
 /**

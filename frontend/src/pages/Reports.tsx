@@ -41,6 +41,7 @@ const EMPTY_CATALOG: FieldCatalog = {
   clients: [],
   persons: [],
   activities: [],
+  tasks: [],
 };
 
 const Reports: React.FC = () => {
@@ -134,6 +135,13 @@ const Reports: React.FC = () => {
     }
   }, [isTitleEditing]);
 
+  /**
+   * Ref para o timer de debounce da chamada à API de query do gráfico.
+   * Garante que keystokes rápidos no título não disparem múltiplas chamadas,
+   * mas o estado `currentReport` (e portanto o Save) é sempre atualizado imediatamente.
+   */
+  const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ========================
   // Helpers: busca de dados
   // ========================
@@ -174,7 +182,8 @@ const Reports: React.FC = () => {
 
   /** Abre relatório salvo no builder e carrega os dados de cada gráfico via API */
   const handleOpenReport = async (report: SavedReport) => {
-    setCurrentReport(report.config);
+    // Injeta o id do banco no config para que saves futuros usem PUT em vez de POST
+    setCurrentReport({ ...report.config, id: report.id });
     setTitleValue(report.config.name);
     setActiveSources(report.config.allowed_sources ?? []);
     setMode('builder');
@@ -253,10 +262,14 @@ const Reports: React.FC = () => {
 
   /**
    * Atualiza (ou cria) um gráfico em tempo real conforme o usuário edita o painel direito.
-   * Busca dados reais na API automaticamente quando X e Y estão preenchidos.
+   *
+   * O estado `currentReport` é atualizado IMEDIATAMENTE para que o botão Salvar
+   * sempre leia os valores mais recentes (incluindo o título digitado agora mesmo).
+   * A chamada à API é feita com debounce de 400ms para evitar spam de requests
+   * enquanto o usuário ainda está digitando.
    */
-  const handleLiveChartChange = useCallback(async (config: ChartConfig) => {
-    // Atualiza a lista de gráficos do relatório
+  const handleLiveChartChange = useCallback((config: ChartConfig) => {
+    // Atualiza a lista de gráficos do relatório imediatamente
     setCurrentReport((prev) => {
       const existingIndex = prev.charts.findIndex((c) => c.id === config.id);
       const updatedCharts =
@@ -266,8 +279,13 @@ const Reports: React.FC = () => {
       return { ...prev, charts: updatedCharts };
     });
 
-    // Busca dados reais se o gráfico está configurado
-    await fetchChartData(config);
+    // Debounce na chamada à API — evita requests a cada tecla digitada no título
+    if (fetchDebounceRef.current) {
+      clearTimeout(fetchDebounceRef.current);
+    }
+    fetchDebounceRef.current = setTimeout(() => {
+      fetchChartData(config);
+    }, 400);
   }, [fetchChartData]);
 
   /** Remove gráfico do relatório atual */

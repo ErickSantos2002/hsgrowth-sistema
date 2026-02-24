@@ -116,8 +116,8 @@ const cycleAggregation = (current: AggregationType, field: AxisField): Aggregati
  *
  * Fica fixo à direita do builder. Os campos são arrastados do painel esquerdo
  * para as zonas de drop dos eixos X e Y. Mudanças são propagadas para o pai
- * em tempo real via `onLiveChange`.
- * O título usa debounce de 400ms para evitar atualizações excessivas ao digitar.
+ * em tempo real via `onLiveChange` a cada alteração (sem debounce local).
+ * O pai (Reports.tsx) é responsável por aplicar debounce apenas na chamada à API.
  *
  * Eixo Y suporta múltiplas séries:
  * - bar/line: até 4 campos Y (cada um vira uma série colorida)
@@ -157,12 +157,6 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
    */
   const [currentChartId, setCurrentChartId] = useState<string>(() => crypto.randomUUID());
 
-  /**
-   * Versão debounced do título — atualiza 400ms após o último keystroke.
-   * É esse valor que vai para `onLiveChange` para não gerar um update por tecla.
-   */
-  const [debouncedTitle, setDebouncedTitle] = useState(title);
-
   // Rastreia o ID do último editingConfig para detectar troca de gráfico
   const prevEditingIdRef = useRef<string | null | undefined>(undefined);
 
@@ -179,7 +173,6 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
     if (editingConfig) {
       setTitle(editingConfig.title);
-      setDebouncedTitle(editingConfig.title); // sem debounce ao carregar
       setChartType(editingConfig.type);
       setXAxisField(editingConfig.x_field);
       setXGroupBy(editingConfig.x_group_by || 'month');
@@ -192,7 +185,6 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     } else {
       // Novo gráfico: reseta tudo e gera ID novo
       setTitle('Novo Gráfico');
-      setDebouncedTitle('Novo Gráfico');
       setChartType('bar');
       setXAxisField(null);
       setXGroupBy('month');
@@ -206,19 +198,14 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingConfig?.id]);
 
-  // Debounce do título: propaga para debouncedTitle após 400ms sem digitar
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedTitle(title), 400);
-    return () => clearTimeout(timer);
-  }, [title]);
-
   // ========================
   // Atualização em tempo real
   // ========================
 
   /**
    * Dispara `onLiveChange` sempre que qualquer campo muda.
-   * O título usa `debouncedTitle` para evitar um update por tecla digitada.
+   * Usa `title` diretamente (sem debounce) para garantir que o valor mais recente
+   * chegue ao pai imediatamente — o pai aplica debounce apenas na chamada à API.
    * Só executa quando o painel está ativo, xAxisField e pelo menos 1 campo Y foram preenchidos.
    */
   useEffect(() => {
@@ -229,7 +216,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     const config: ChartConfig = {
       id: currentChartId,
       type: chartType,
-      title: debouncedTitle.trim() || 'Novo Gráfico',
+      title: title.trim() || 'Novo Gráfico',
       x_field: xAxisField,
       x_group_by: isDate ? xGroupBy : undefined,
       y_fields: yFields,
@@ -244,7 +231,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     onLiveChange(config);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    debouncedTitle,
+    title,
     chartType,
     xAxisField,
     xGroupBy,

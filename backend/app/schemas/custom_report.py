@@ -17,7 +17,7 @@ class AxisFieldSchema(BaseModel):
     """Representa um campo selecionado para o eixo X ou Y do gráfico."""
     key: str
     label: str
-    source: Literal['cards', 'clients', 'persons', 'activities']
+    source: Literal['cards', 'clients', 'persons', 'activities', 'tasks']
     field_type: Literal['date', 'currency', 'category', 'user', 'number']
     groupable: bool
     aggregatable: bool
@@ -106,3 +106,4 @@ class FieldCatalogResponse(BaseModel):
     clients: List[FieldDefinitionSchema]
     persons: List[FieldDefinitionSchema]
     activities: List[FieldDefinitionSchema]
+    tasks: List[FieldDefinitionSchema]

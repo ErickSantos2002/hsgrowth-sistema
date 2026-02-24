@@ -13,7 +13,7 @@ from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, case
 
 from app.models.custom_report import CustomReport
 from app.models.card import Card
@@ -21,6 +21,7 @@ from app.models.client import Client
 from app.models.person import Person
 from app.models.activity import Activity
 from app.models.user import User
+from app.models.card_task import CardTask, TaskType
 from app.schemas.custom_report import (
     QueryRequest,
     QueryResponse,
@@ -38,6 +39,19 @@ _SOURCE_LABELS = {
     'clients': 'Clientes',
     'persons': 'Pessoas',
     'activities': 'Atividades',
+    'tasks': 'Tarefas',
+}
+
+# Rótulos em português para os tipos de tarefa do CardTask
+_TASK_TYPE_LABELS = {
+    'call': 'Ligação',
+    'meeting': 'Reunião',
+    'task': 'Tarefa',
+    'follow_up': 'Acompanhamento',
+    'deadline': 'Prazo',
+    'email': 'E-mail',
+    'lunch': 'Almoço',
+    'other': 'Outro',
 }
 
 # Abreviações de meses em português para formatação de labels
@@ -273,6 +287,7 @@ class CustomReportService:
                 field('sdr', 'SDR', 'user', True, False),
                 field('loss_reason', 'Motivo de Perda', 'category', True, False),
                 field('count', 'Quantidade', 'number', False, True),
+                field('won_count', 'Negócios Ganhos', 'number', False, True),
             ],
             clients=[
                 field('created_at', 'Data de Cadastro', 'date', True, False),
@@ -293,6 +308,16 @@ class CustomReportService:
                 field('activity_type', 'Tipo de Atividade', 'category', True, False),
                 field('user', 'Responsável', 'user', True, False),
                 field('count', 'Quantidade', 'number', False, True),
+            ],
+            tasks=[
+                field('due_date', 'Data da Tarefa', 'date', True, False),
+                field('created_at', 'Data de Criação', 'date', True, False),
+                field('completed_at', 'Data de Conclusão', 'date', True, False),
+                field('task_type', 'Tipo de Atividade', 'category', True, False),
+                field('assigned_to', 'Responsável', 'user', True, False),
+                field('is_completed', 'Status', 'category', True, False),
+                field('count', 'Quantidade', 'number', False, True),
+                field('meeting_count', 'Reuniões', 'number', False, True),
             ],
         )
 
@@ -334,6 +359,13 @@ class CustomReportService:
             return Person.created_at
         elif source == 'activities':
             return Activity.created_at
+        elif source == 'tasks':
+            cols = {
+                'due_date': CardTask.due_date,
+                'created_at': CardTask.created_at,
+                'completed_at': CardTask.completed_at,
+            }
+            return cols.get(key, CardTask.due_date)
         return None
 
     def _get_x_category_col(self, source: str, key: str):
@@ -366,6 +398,12 @@ class CustomReportService:
             cols = {
                 'activity_type': Activity.activity_type,
                 'user': Activity.user_id,
+            }
+            return cols.get(key)
+        elif source == 'tasks':
+            cols = {
+                'task_type': CardTask.task_type,
+                'is_completed': CardTask.is_completed,
             }
             return cols.get(key)
         return None
@@ -456,6 +494,18 @@ class CustomReportService:
                 results.append((str(row.group_val or 'Sem usuário'), row.raw_key))
             return results
 
+        if source == 'tasks' and key == 'assigned_to':
+            rows = (
+                self.db.query(User.name.label('group_val'), User.id.label('raw_key'))
+                .join(CardTask, CardTask.assigned_to_id == User.id)
+                .group_by(User.id, User.name)
+                .order_by(User.name)
+                .all()
+            )
+            for row in rows:
+                results.append((str(row.group_val or 'Sem usuário'), row.raw_key))
+            return results
+
         # --- Campos categóricos normais ---
         cat_col = self._get_x_category_col(source, key)
         if cat_col is None:
@@ -473,6 +523,12 @@ class CustomReportService:
             raw = row[0]
             if key == 'is_won':
                 label = self._is_won_label(raw)
+            elif key == 'task_type':
+                # TaskType é str+Enum — usar .value para obter "meeting", não "TaskType.MEETING"
+                raw_str = raw.value if hasattr(raw, 'value') else str(raw)
+                label = _TASK_TYPE_LABELS.get(raw_str, raw_str if raw is not None else 'Não informado')
+            elif key == 'is_completed':
+                label = 'Concluída' if raw else 'Pendente'
             else:
                 label = str(raw) if raw is not None else 'Não informado'
             results.append((label, raw))
@@ -487,7 +543,7 @@ class CustomReportService:
         # Person não tem soft delete — filtra is_active
         if source == 'persons':
             return Person.is_active == True
-        # Activity não tem soft delete
+        # Activity e CardTask não têm soft delete
         return None
 
     def _get_split_values(
@@ -526,6 +582,18 @@ class CustomReportService:
             )
             return [(str(row.label or 'Sem usuário'), row.raw) for row in rows]
 
+        # Campo de usuário em Tarefas
+        if source == 'tasks' and key == 'assigned_to':
+            rows = (
+                self.db.query(User.name.label('label'), User.id.label('raw'))
+                .join(CardTask, CardTask.assigned_to_id == User.id)
+                .group_by(User.id, User.name)
+                .order_by(User.name)
+                .limit(20)
+                .all()
+            )
+            return [(str(row.label or 'Sem usuário'), row.raw) for row in rows]
+
         # Campos categóricos normais
         cat_col = self._get_x_category_col(source, key)
         if cat_col is None:
@@ -539,7 +607,16 @@ class CustomReportService:
 
         for row in query.all():
             raw = row[0]
-            label = self._is_won_label(raw) if key == 'is_won' else (str(raw) if raw is not None else 'Não informado')
+            if key == 'is_won':
+                label = self._is_won_label(raw)
+            elif key == 'task_type':
+                # TaskType é str+Enum — usar .value para obter "meeting", não "TaskType.MEETING"
+                raw_str = raw.value if hasattr(raw, 'value') else str(raw)
+                label = _TASK_TYPE_LABELS.get(raw_str, raw_str if raw is not None else 'Não informado')
+            elif key == 'is_completed':
+                label = 'Concluída' if raw else 'Pendente'
+            else:
+                label = str(raw) if raw is not None else 'Não informado'
             results.append((label, raw))
 
         return results
@@ -559,6 +636,12 @@ class CustomReportService:
 
         if source == 'activities' and key == 'user':
             return Activity.user_id == raw_value
+
+        if source == 'tasks':
+            if key == 'assigned_to':
+                return CardTask.assigned_to_id == raw_value
+            col = self._get_x_category_col(source, key)
+            return col == raw_value if col is not None else None
 
         col = self._get_x_category_col(source, key)
         return col == raw_value if col is not None else None
@@ -655,11 +738,14 @@ class CustomReportService:
                 return None
             return func.date_trunc(x_group_by, date_col)
 
-        if x_key in ('assigned_to', 'sdr'):
+        if x_source == 'cards' and x_key in ('assigned_to', 'sdr'):
             return Card.assigned_to_id if x_key == 'assigned_to' else Card.sdr_id
 
         if x_source == 'activities' and x_key == 'user':
             return Activity.user_id
+
+        if x_source == 'tasks' and x_key == 'assigned_to':
+            return CardTask.assigned_to_id
 
         col = self._get_x_category_col(x_source, x_key)
         return col
@@ -668,7 +754,23 @@ class CustomReportService:
         """
         Retorna (expressão de agregação, precisou_de_join: bool).
         None se a combinação não for suportada.
+
+        Campos especiais com agregação condicional (CASE WHEN):
+          - won_count: conta apenas cards com is_won = 1
+          - meeting_count: conta apenas tarefas com task_type = 'meeting'
         """
+        needs_join = (x_source != y_source)
+
+        # Campo especial: won_count — COUNT(CASE WHEN is_won=1 THEN 1 END)
+        if y_source == 'cards' and y_key == 'won_count':
+            expr = func.count(case((Card.is_won == 1, 1), else_=None))
+            return expr, needs_join
+
+        # Campo especial: meeting_count — COUNT(CASE WHEN task_type='meeting' THEN 1 END)
+        if y_source == 'tasks' and y_key == 'meeting_count':
+            expr = func.count(case((CardTask.task_type == TaskType.MEETING, 1), else_=None))
+            return expr, (x_source != 'tasks')
+
         # Mapeamento de colunas Y por fonte
         y_col_map = {
             'cards': {
@@ -683,6 +785,9 @@ class CustomReportService:
             },
             'activities': {
                 'count': Activity.id,
+            },
+            'tasks': {
+                'count': CardTask.id,
             },
         }
 
@@ -747,6 +852,14 @@ class CustomReportService:
                 q = (
                     self.db.query(x_raw_expr.label('x_key'), y_agg_expr.label('y_val'))
                     .join(Activity, Activity.card_id == Card.id)
+                    .filter(*base_filter)
+                    .group_by(x_raw_expr)
+                )
+            elif y_source == 'tasks':
+                # cards → card_tasks via card_id
+                q = (
+                    self.db.query(x_raw_expr.label('x_key'), y_agg_expr.label('y_val'))
+                    .join(CardTask, CardTask.card_id == Card.id)
                     .filter(*base_filter)
                     .group_by(x_raw_expr)
                 )
@@ -868,6 +981,41 @@ class CustomReportService:
                 return []
 
             return [(row.x_key, row.y_val) for row in q.all()]
+
+        # --- Fonte base: tasks (CardTask) ---
+        elif x_source == 'tasks':
+            base_filter = [] + extra
+
+            if x_group_by:
+                date_col = self._get_x_date_col('tasks', x_key)
+                base_filter += [
+                    func.date(date_col) >= start,
+                    func.date(date_col) <= end,
+                ]
+
+            if not needs_join:
+                # Mesma fonte: agrega diretamente
+                q = self.db.query(x_raw_expr.label('x_key'), y_agg_expr.label('y_val'))
+                if base_filter:
+                    q = q.filter(*base_filter)
+                q = q.group_by(x_raw_expr)
+            elif y_source == 'cards':
+                # tasks → cards via card_id
+                q = (
+                    self.db.query(x_raw_expr.label('x_key'), y_agg_expr.label('y_val'))
+                    .join(Card, CardTask.card_id == Card.id)
+                    .filter(Card.is_deleted == False)
+                )
+                if base_filter:
+                    q = q.filter(*base_filter)
+                q = q.group_by(x_raw_expr)
+            else:
+                return []
+
+            return [(row.x_key, row.y_val) for row in q.all()]
+
+        # --- Suporte a y_source='tasks' quando x_source='cards' ---
+        # (coberto pelo branch cards acima com JOIN CardTask)
 
         return []
 
