@@ -1,4 +1,11 @@
 import api from "./api";
+import type {
+  FieldCatalog,
+  ChartConfig,
+  QueryResponse,
+  CustomReportConfig,
+  SavedReport,
+} from "../components/reports/reportTypes";
 
 /**
  * Enums e Types para Relatórios
@@ -199,6 +206,72 @@ class ReportService {
       request
     );
     return response.data;
+  }
+
+  // ========================
+  // Relatórios Customizados (Fase 2)
+  // ========================
+
+  /**
+   * Busca o catálogo de campos disponíveis por fonte de dados.
+   * Substitui o FIELD_CATALOG hardcoded do frontend.
+   */
+  async fetchReportFields(): Promise<FieldCatalog> {
+    const response = await api.get<FieldCatalog>("/api/v1/reports/fields");
+    return response.data;
+  }
+
+  /**
+   * Executa a query de um gráfico customizado e retorna os dados para renderização.
+   * Substitui o generateMockData do frontend.
+   */
+  async queryChart(config: ChartConfig): Promise<QueryResponse> {
+    // Converte o ChartConfig do frontend para o formato esperado pelo backend
+    const payload = {
+      x_field: config.x_field,
+      x_group_by: config.x_group_by ?? null,
+      y_fields: config.y_fields,
+      period: config.period,
+      start_date: config.start_date ?? null,
+      end_date: config.end_date ?? null,
+      split_by: config.split_by ?? null,
+    };
+    const response = await api.post<QueryResponse>("/api/v1/reports/query", payload);
+    return response.data;
+  }
+
+  /**
+   * Lista todos os relatórios customizados salvos.
+   * Substitui o localStorage.getItem da Fase 1.
+   */
+  async listCustomReports(): Promise<SavedReport[]> {
+    const response = await api.get<SavedReport[]>("/api/v1/reports/custom");
+    return response.data;
+  }
+
+  /**
+   * Cria um novo relatório customizado.
+   */
+  async createCustomReport(config: CustomReportConfig): Promise<SavedReport> {
+    const payload = { name: config.name, config };
+    const response = await api.post<SavedReport>("/api/v1/reports/custom", payload);
+    return response.data;
+  }
+
+  /**
+   * Atualiza um relatório customizado existente.
+   */
+  async updateCustomReport(id: number, config: CustomReportConfig): Promise<SavedReport> {
+    const payload = { name: config.name, config };
+    const response = await api.put<SavedReport>(`/api/v1/reports/custom/${id}`, payload);
+    return response.data;
+  }
+
+  /**
+   * Exclui um relatório customizado pelo ID.
+   */
+  async deleteCustomReport(id: number): Promise<void> {
+    await api.delete(`/api/v1/reports/custom/${id}`);
   }
 
   /**

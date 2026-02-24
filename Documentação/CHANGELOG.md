@@ -7,6 +7,50 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.0] - 2026-02-24
+
+### 🎨 Novas Funcionalidades
+
+#### Módulo de Relatórios Customizados — Frontend Fase 1 (Power BI-style)
+- **Builder de dashboards** com layout 3 colunas: painel de campos | grid de gráficos | painel de configuração
+- **Drag & drop** de campos para os eixos X e Y diretamente do painel de campos disponíveis
+- **4 tipos de gráfico**: Barras, Linha, Pizza e Tabela — alternáveis em tempo real
+- **Múltiplas séries no eixo Y** para bar/line: até 4 campos Y simultâneos, cada um com sua própria agregação e cor
+- **Badge de agregação clicável** nos chips do eixo Y — cicla entre as opções disponíveis por tipo de campo (`count → distinct_count → sum → avg` para numéricos/moeda; `count → distinct_count` para demais)
+- **Atualização em tempo real** — gráfico atualiza instantaneamente a cada mudança no formulário (sem botão confirmar); título com debounce de 400ms
+- **Correspondência visual** entre chips de configuração e séries do gráfico via `SERIES_COLORS` compartilhado
+- **Feedback de limite** no eixo Y: mensagem "Limite de 4 métricas atingido" para bar/line; zona de drop sempre visível para pie/table com hint "Arraste para substituir"
+- **Troca de tipo com truncagem automática**: ao mudar de bar/line para pie/table com múltiplas séries, mantém apenas a primeira e descarta as extras
+- **Persistência em localStorage** com CRUD completo de relatórios (criar, abrir, salvar, excluir)
+- **Relatórios salvos**: grid de cards com busca por nome, contador de gráficos e data de atualização
+- **Agrupamento temporal** no eixo X para campos de data: Dia / Semana / Mês / Ano
+- **Catálogo de campos** por fonte de dados (Negócios, Clientes, Pessoas, Atividades) com 25 campos mapeados
+
+### 🔧 Melhorias Técnicas
+
+#### Arquitetura do módulo
+- **`YFieldConfig`**: novo tipo central — campo Y com agregação própria, substituiu o antigo `y_field + aggregation` no `ChartConfig`
+- **`SeriesData`**: tipo para séries múltiplas na `QueryResponse` (`series?: SeriesData[]`), mantendo `values` para compatibilidade com pie/table
+- **`SERIES_COLORS`**: paleta centralizada em `reportTypes.ts`, importada por `ChartConfigPanel` (chips) e `ChartWidget` (Recharts) — fonte única de verdade para cores de séries
+- **Nomes únicos de série**: quando múltiplos campos têm o mesmo label (ex: "Quantidade" de fontes diferentes), `generateMockData` adiciona a fonte automaticamente ("Quantidade (Negócios)", "Quantidade (Atividades)") para evitar colisão de keys no Recharts
+- **Migração automática de localStorage**: ao carregar, converte relatórios com estrutura antiga (`y_field + aggregation`) para o novo formato (`y_fields[]`) sem intervenção do usuário
+
+### 📝 Arquivos Modificados
+
+#### Frontend
+- `src/components/reports/reportTypes.ts` — tipos `YFieldConfig`, `SeriesData`, `SERIES_COLORS`; `ChartConfig` atualizado; `generateMockData` com nova assinatura
+- `src/components/reports/ChartConfigPanel.tsx` — estado `yFields[]`, chips múltiplos com badge ciclável, zona de drop contextual, correspondência de cores
+- `src/components/reports/ChartWidget.tsx` — suporte a `data.series` em bar/line, multi-`<Bar>`/`<Line>` com `<Legend>`, `SERIES_COLORS` importado de `reportTypes`
+- `src/components/reports/ChartConfigModal.tsx` — adaptado para compilar com nova API (`y_fields[]`)
+- `src/pages/Reports.tsx` — migração de localStorage, chamadas de `generateMockData` atualizadas
+
+### 🔮 Próximos Passos (Fase 2)
+- `GET /api/v1/reports/fields` → substituir `FIELD_CATALOG` hardcoded
+- `POST /api/v1/reports/query` → substituir `generateMockData` por dados reais
+- CRUD `/api/v1/reports/custom` → substituir `localStorage`
+
+---
+
 ## [1.2.0] - 2026-02-23
 
 ### 🎨 Novas Funcionalidades

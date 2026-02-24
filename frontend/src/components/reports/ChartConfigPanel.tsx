@@ -9,12 +9,10 @@ import {
   GroupByType,
   YFieldConfig,
   ChartConfig,
-  QueryResponse,
   PeriodType,
   DATA_SOURCE_LABELS,
   PERIOD_OPTIONS,
   SERIES_COLORS,
-  generateMockData,
 } from './reportTypes';
 
 interface ChartConfigPanelProps {
@@ -30,9 +28,9 @@ interface ChartConfigPanelProps {
   editingConfig?: ChartConfig | null;
   /**
    * Chamado em tempo real sempre que o formulário muda e xAxisField está definido.
-   * O pai atualiza (ou cria) o gráfico correspondente no grid imediatamente.
+   * O pai recebe apenas a config e é responsável por chamar a API para buscar os dados.
    */
-  onLiveChange: (config: ChartConfig, data: QueryResponse) => void;
+  onLiveChange: (config: ChartConfig) => void;
   /** Fecha o painel e volta ao estado idle */
   onClose: () => void;
 }
@@ -144,10 +142,13 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
   const [period, setPeriod] = useState<PeriodType>('this_month');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  /** Campo de divisão de séries — só válido para bar/line */
+  const [splitByField, setSplitByField] = useState<AxisField | null>(null);
 
   /** Estado visual das zonas de drop */
   const [xDropState, setXDropState] = useState<DropState>('idle');
   const [yDropState, setYDropState] = useState<DropState>('idle');
+  const [splitDropState, setSplitDropState] = useState<DropState>('idle');
 
   /**
    * ID estável do gráfico atual.
@@ -186,6 +187,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       setPeriod(editingConfig.period);
       setStartDate(editingConfig.start_date || '');
       setEndDate(editingConfig.end_date || '');
+      setSplitByField(editingConfig.split_by ?? null);
       setCurrentChartId(editingConfig.id);
     } else {
       // Novo gráfico: reseta tudo e gera ID novo
@@ -198,6 +200,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       setPeriod('this_month');
       setStartDate('');
       setEndDate('');
+      setSplitByField(null);
       setCurrentChartId(crypto.randomUUID());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -233,10 +236,12 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       period,
       start_date: period === 'custom' ? startDate : undefined,
       end_date: period === 'custom' ? endDate : undefined,
+      // split_by só é incluído para bar/line; para pie/table não faz sentido
+      split_by: isMultiSeriesType && splitByField ? splitByField : undefined,
     };
 
-    const data = generateMockData(xAxisField, yFields, isDate ? xGroupBy : undefined);
-    onLiveChange(config, data);
+    // Notifica o pai com a config atualizada — Reports.tsx busca os dados via API
+    onLiveChange(config);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     debouncedTitle,
@@ -247,6 +252,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     period,
     startDate,
     endDate,
+    splitByField,
     active,
     currentChartId,
   ]);
@@ -336,6 +342,47 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
   };
 
   // ========================
+  // Handlers de drag & drop — Dividir por
+  // ========================
+
+  const handleSplitDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const isGroupable = e.dataTransfer.types.includes('application/field-groupable');
+    // Campo de data não é válido para split (criaria séries de datas, não categorias)
+    const isDate = e.dataTransfer.types.includes('application/field-date');
+    const isValid = isGroupable && !isDate;
+    setSplitDropState(isValid ? 'valid' : 'invalid');
+    e.dataTransfer.dropEffect = isValid ? 'copy' : 'none';
+  };
+
+  const handleSplitDragLeave = () => setSplitDropState('idle');
+
+  const handleSplitDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setSplitDropState('idle');
+
+    let field: AxisField;
+    try {
+      field = JSON.parse(e.dataTransfer.getData('application/json')) as AxisField;
+    } catch {
+      return;
+    }
+
+    // Rejeita campos de data e não-groupable
+    if (field.field_type === 'date' || !field.groupable) return;
+
+    // Rejeita o mesmo campo do eixo X
+    if (xAxisField && field.key === xAxisField.key && field.source === xAxisField.source) return;
+
+    setSplitByField(field);
+
+    // Quando split_by está ativo, Y fica limitado a 1 campo (split gera as múltiplas séries)
+    if (yFields.length > 1) {
+      setYFields((prev) => prev.slice(0, 1));
+    }
+  };
+
+  // ========================
   // Handlers dos chips do eixo Y
   // ========================
 
@@ -368,10 +415,16 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
   /**
    * Determina se a zona dashed de drop Y deve ser exibida.
-   * - bar/line: visível quando há menos de 4 campos Y
+   * - Com split_by ativo: Y fica limitado a 1 (split cria as séries)
+   * - bar/line sem split_by: visível quando há menos de 4 campos Y
    * - pie/table: sempre visível (drop substitui o campo existente)
    */
-  const canReceiveMoreY = isMultiSeriesType ? yFields.length < 4 : true;
+  const splitIsActive = isMultiSeriesType && splitByField !== null;
+  const canReceiveMoreY = splitIsActive
+    ? yFields.length < 1
+    : isMultiSeriesType
+      ? yFields.length < 4
+      : true;
 
   // ========================
   // Estado idle
@@ -475,7 +528,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
         ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
         : 'border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-800/50';
 
-    const maxLabel = isMultiSeriesType ? '(máx. 4)' : '(1 campo)';
+    const maxLabel = splitIsActive ? '(1 campo)' : isMultiSeriesType ? '(máx. 4)' : '(1 campo)';
 
     // Texto de hint da zona dashed conforme o contexto
     const dropHint =
@@ -483,7 +536,9 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
         ? 'Arraste qualquer campo aqui'
         : !isMultiSeriesType
           ? 'Arraste para substituir'
-          : 'Arraste outro campo para comparar';
+          : splitIsActive
+            ? 'Arraste para substituir'
+            : 'Arraste outro campo para comparar';
 
     return (
       <div>
@@ -558,9 +613,11 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
             )}
           </div>
         ) : (
-          /* bar/line atingiu o limite de 4 séries */
+          /* Limite atingido — por split_by ativo (1) ou por 4 séries */
           <p className="rounded-lg bg-slate-50 px-3 py-2 text-center text-xs text-slate-400 dark:bg-slate-800 dark:text-slate-500">
-            Limite de 4 métricas atingido
+            {splitIsActive
+              ? 'Remova o "Dividir por" para adicionar mais métricas'
+              : 'Limite de 4 métricas atingido'}
           </p>
         )}
       </div>
@@ -616,9 +673,10 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
                 type="button"
                 onClick={() => {
                   setChartType(type);
-                  // pie/table só aceitam 1 métrica — descarta as extras ao mudar o tipo
-                  if ((type === 'pie' || type === 'table') && yFields.length > 1) {
-                    setYFields((prev) => prev.slice(0, 1));
+                  // pie/table só aceitam 1 métrica — descarta as extras e o split_by
+                  if (type === 'pie' || type === 'table') {
+                    if (yFields.length > 1) setYFields((prev) => prev.slice(0, 1));
+                    setSplitByField(null);
                   }
                 }}
                 className={`flex flex-col items-center gap-1 rounded-lg border p-2.5 text-xs font-medium transition-colors ${
@@ -662,6 +720,73 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
         {/* Eixo Y — chips múltiplos + zona de drop */}
         {renderYDropZone()}
+
+        {/* Dividir por — apenas para bar/line; gera uma série por valor da dimensão */}
+        {isMultiSeriesType && (
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400">
+              Dividir por{' '}
+              <span className="font-normal text-slate-400 dark:text-slate-500">(opcional)</span>
+            </label>
+
+            {splitByField ? (
+              // Campo preenchido — chip com botão de remoção
+              <div className="flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 dark:border-violet-700/50 dark:bg-violet-900/20">
+                <FieldTypeIcon fieldType={splitByField.field_type} size={13} />
+                <span className="min-w-0 flex-1 truncate text-xs font-medium text-violet-700 dark:text-violet-300">
+                  {splitByField.label}
+                </span>
+                <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-xs text-violet-500 dark:bg-violet-800/50 dark:text-violet-400">
+                  {DATA_SOURCE_LABELS[splitByField.source]}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSplitByField(null)}
+                  title="Remover divisão"
+                  className="shrink-0 rounded p-0.5 text-violet-400 transition-colors hover:bg-violet-100 hover:text-violet-600 dark:hover:bg-violet-800/50"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              // Zona vazia — aceita drop de campos groupable não-date
+              <div
+                onDragOver={handleSplitDragOver}
+                onDragLeave={handleSplitDragLeave}
+                onDrop={handleSplitDrop}
+                className={`flex items-center justify-center gap-2 rounded-lg border-2 border-dashed px-3 py-3 text-xs transition-colors ${
+                  splitDropState === 'valid'
+                    ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20'
+                    : splitDropState === 'invalid'
+                      ? 'border-red-400 bg-red-50 dark:bg-red-900/20'
+                      : 'border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-800/50'
+                }`}
+              >
+                {splitDropState === 'invalid' ? (
+                  <span className="text-red-500 dark:text-red-400">
+                    Apenas campos categóricos
+                  </span>
+                ) : splitDropState === 'valid' ? (
+                  <span className="text-violet-600 dark:text-violet-400">Solte aqui</span>
+                ) : (
+                  <>
+                    <GripVertical size={13} className="text-slate-300 dark:text-slate-600" />
+                    <span className="text-slate-400 dark:text-slate-500">
+                      Ex: Vendedor, Canal, Status
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Aviso quando split_by está ativo */}
+            {splitByField && (
+              <p className="mt-1.5 text-xs text-violet-500 dark:text-violet-400">
+                O gráfico exibirá uma série por valor de "{splitByField.label}"
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Período */}
         <div>

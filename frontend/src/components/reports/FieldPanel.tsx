@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Calendar, DollarSign, Tag, User, Hash, GripVertical } from 'lucide-react';
 import { SearchInput } from '../common/SearchInput';
-import { DataSource, FieldDefinition, FIELD_CATALOG, DATA_SOURCE_LABELS, AxisField } from './reportTypes';
+import { DataSource, FieldDefinition, FieldCatalog, DATA_SOURCE_LABELS, AxisField } from './reportTypes';
 
 interface FieldPanelProps {
   /** Fontes de dados permitidas neste relatório (definidas na criação) */
   activeSources: DataSource[];
+  /** Catálogo de campos carregado da API pelo componente pai */
+  fieldCatalog: FieldCatalog;
 }
 
 /** Ícone correspondente ao tipo de campo */
@@ -35,12 +37,12 @@ const FieldIcon: React.FC<{ fieldType: FieldDefinition['field_type'] }> = ({ fie
  * Os dados do campo são serializados no dataTransfer para que a zona de drop
  * possa validar e aceitar ou rejeitar sem estado global.
  */
-const FieldPanel: React.FC<FieldPanelProps> = ({ activeSources }) => {
+const FieldPanel: React.FC<FieldPanelProps> = ({ activeSources, fieldCatalog }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Retorna os campos de uma fonte filtrados pelo termo de busca
   const getVisibleFields = (source: DataSource): FieldDefinition[] =>
-    FIELD_CATALOG[source].filter(
+    (fieldCatalog[source] ?? []).filter(
       (field) => !searchTerm || field.label.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -110,6 +112,10 @@ const FieldPanel: React.FC<FieldPanelProps> = ({ activeSources }) => {
                           }
                           if (field.aggregatable) {
                             e.dataTransfer.setData('application/field-aggregatable', 'true');
+                          }
+                          // Marca campos de data para que a zona "Dividir por" possa rejeitar
+                          if (field.field_type === 'date') {
+                            e.dataTransfer.setData('application/field-date', 'true');
                           }
                           e.dataTransfer.effectAllowed = 'copy';
                         }}

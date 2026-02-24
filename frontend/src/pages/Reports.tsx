@@ -1,13 +1,13 @@
 /**
  * Página de Relatórios — Gerador de Dashboards Customizados (Power BI-style)
  *
- * Fase 1: dados mockados + persistência em localStorage.
- * Fase 2 (quando aprovado): substituir localStorage por chamadas à API:
- *   - CRUD /api/v1/reports/custom → savedReports
- *   - POST /api/v1/reports/query  → dados reais nos gráficos
+ * Fase 2: integração completa com a API.
+ *   - GET /api/v1/reports/fields  → catálogo de campos
+ *   - POST /api/v1/reports/query  → dados reais do banco
+ *   - CRUD /api/v1/reports/custom → persistência em PostgreSQL
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FileText,
   Plus,
@@ -25,24 +25,23 @@ import FieldPanel from '../components/reports/FieldPanel';
 import ChartWidget from '../components/reports/ChartWidget';
 import ChartConfigPanel from '../components/reports/ChartConfigPanel';
 import NewReportModal from '../components/reports/NewReportModal';
+import reportService from '../services/reportService';
 import {
   DataSource,
-  AxisField,
-  AggregationType,
-  YFieldConfig,
   ChartConfig,
   QueryResponse,
   CustomReportConfig,
   SavedReport,
-  generateMockData,
+  FieldCatalog,
 } from '../components/reports/reportTypes';
 
-// Chave para persistência local (será removida na Fase 2)
-const LOCAL_STORAGE_KEY = 'hsgrowth_reports';
-
-// Gera IDs numéricos únicos para relatórios salvos localmente
-let nextId = Date.now();
-const getNextId = (): number => ++nextId;
+// Catálogo vazio inicial (enquanto carrega da API)
+const EMPTY_CATALOG: FieldCatalog = {
+  cards: [],
+  clients: [],
+  persons: [],
+  activities: [],
+};
 
 const Reports: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -54,8 +53,13 @@ const Reports: React.FC = () => {
   // Modo de exibição: lista de relatórios ou builder
   const [mode, setMode] = useState<'list' | 'builder'>('list');
 
-  // Lista de relatórios persistidos no localStorage
+  // Catálogo de campos carregado da API
+  const [fieldCatalog, setFieldCatalog] = useState<FieldCatalog>(EMPTY_CATALOG);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+
+  // Lista de relatórios salvos no backend
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
 
   // Relatório sendo editado no builder
   const [currentReport, setCurrentReport] = useState<CustomReportConfig>({
@@ -64,7 +68,7 @@ const Reports: React.FC = () => {
     allowed_sources: [],
   });
 
-  // Dados de cada gráfico (key = chart.id); são regenerados como mock
+  // Dados de cada gráfico (key = chart.id); são carregados via API
   const [chartData, setChartData] = useState<Record<string, QueryResponse>>({});
 
   // Fontes de dados ativas no painel esquerdo do builder
@@ -94,44 +98,33 @@ const Reports: React.FC = () => {
   // Inicialização
   // ========================
 
-  // Carrega relatórios do localStorage ao montar o componente
+  // Carrega catálogo de campos e lista de relatórios ao montar
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as SavedReport[];
+    if (!isManagerOrAdmin) return;
 
-        // Migração: relatórios salvos antes da implementação de múltiplas séries
-        // tinham y_field (AxisField | null) + aggregation (AggregationType) em vez de y_fields[].
-        // Converte automaticamente para o novo formato ao carregar.
-        const migrated = parsed.map((report) => ({
-          ...report,
-          config: {
-            ...report.config,
-            charts: report.config.charts.map((chart) => {
-              const legacy = chart as ChartConfig & {
-                y_field?: AxisField | null;
-                aggregation?: AggregationType;
-              };
-              if (!legacy.y_fields) {
-                const yField = legacy.y_field ?? null;
-                const agg: AggregationType = legacy.aggregation ?? 'count';
-                const yFields: YFieldConfig[] = yField ? [{ field: yField, aggregation: agg }] : [];
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { y_field: _yf, aggregation: _agg, ...rest } = legacy;
-                return { ...rest, y_fields: yFields } as ChartConfig;
-              }
-              return chart;
-            }),
-          },
-        }));
+    const loadInitialData = async () => {
+      try {
+        setCatalogLoading(true);
+        setReportsLoading(true);
 
-        setSavedReports(migrated);
+        // Carrega em paralelo para maior performance
+        const [catalog, reports] = await Promise.all([
+          reportService.fetchReportFields(),
+          reportService.listCustomReports(),
+        ]);
+
+        setFieldCatalog(catalog);
+        setSavedReports(reports);
+      } catch {
+        showError('Erro ao carregar dados de relatórios');
+      } finally {
+        setCatalogLoading(false);
+        setReportsLoading(false);
       }
-    } catch {
-      // Ignora dados corrompidos no localStorage
-    }
-  }, []);
+    };
+
+    loadInitialData();
+  }, [isManagerOrAdmin]);
 
   // Foca o input de título ao entrar em modo de edição inline
   useEffect(() => {
@@ -142,13 +135,29 @@ const Reports: React.FC = () => {
   }, [isTitleEditing]);
 
   // ========================
+  // Helpers: busca de dados
+  // ========================
+
+  /**
+   * Busca os dados reais de um gráfico via API e atualiza chartData.
+   * Silencia erros individuais de chart para não bloquear o builder.
+   */
+  const fetchChartData = useCallback(async (config: ChartConfig) => {
+    if (!config.x_field || config.y_fields.length === 0) return;
+
+    try {
+      const data = await reportService.queryChart(config);
+      setChartData((prev) => ({ ...prev, [config.id]: data }));
+    } catch {
+      // Mantém dados anteriores em caso de falha (não limpa o gráfico)
+    }
+  }, []);
+
+  // ========================
   // Handlers: modo lista
   // ========================
 
-  /** Abre o modal de criação de novo relatório */
-  const handleNewReport = () => {
-    setShowNewReportModal(true);
-  };
+  const handleNewReport = () => setShowNewReportModal(true);
 
   /** Recebe nome e fontes do modal e inicia o builder em branco */
   const handleCreateReport = (name: string, sources: DataSource[]) => {
@@ -163,79 +172,69 @@ const Reports: React.FC = () => {
     setMode('builder');
   };
 
-  /** Abre relatório salvo no builder, restaurando os dados mock de cada gráfico */
-  const handleOpenReport = (report: SavedReport) => {
+  /** Abre relatório salvo no builder e carrega os dados de cada gráfico via API */
+  const handleOpenReport = async (report: SavedReport) => {
     setCurrentReport(report.config);
     setTitleValue(report.config.name);
-
-    // Restaura as fontes permitidas salvas na configuração do relatório
     setActiveSources(report.config.allowed_sources ?? []);
-
-    // Regenera dados mock para cada gráfico (não são persistidos no localStorage)
-    const restoredData: Record<string, QueryResponse> = {};
-    for (const chart of report.config.charts) {
-      restoredData[chart.id] = generateMockData(
-        chart.x_field,
-        chart.y_fields,
-        chart.x_group_by
-      );
-    }
-    setChartData(restoredData);
-
     setMode('builder');
+
+    // Carrega dados reais de cada gráfico em paralelo
+    const charts = report.config.charts.filter(
+      (c) => c.x_field && c.y_fields.length > 0
+    );
+
+    const results = await Promise.allSettled(
+      charts.map((chart) => reportService.queryChart(chart))
+    );
+
+    const newData: Record<string, QueryResponse> = {};
+    results.forEach((result, idx) => {
+      if (result.status === 'fulfilled') {
+        newData[charts[idx].id] = result.value;
+      }
+    });
+    setChartData(newData);
   };
 
-  /** Remove relatório da lista e do localStorage */
-  const handleDeleteReport = (id: number) => {
+  /** Remove relatório do backend e da lista local */
+  const handleDeleteReport = async (id: number) => {
     if (!confirm('Tem certeza que deseja excluir este relatório?')) return;
-    const updated = savedReports.filter((r) => r.id !== id);
-    setSavedReports(updated);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+
+    try {
+      await reportService.deleteCustomReport(id);
+      setSavedReports((prev) => prev.filter((r) => r.id !== id));
+      showSuccess('Relatório excluído com sucesso!');
+    } catch {
+      showError('Erro ao excluir relatório');
+    }
   };
 
   // ========================
   // Handlers: builder
   // ========================
 
-  /** Salva relatório atual no localStorage (cria novo ou atualiza existente) */
-  const handleSaveReport = () => {
+  /** Salva relatório atual no backend (cria novo ou atualiza existente) */
+  const handleSaveReport = async () => {
     try {
       const reportName = titleValue.trim() || 'Sem título';
-      const existingIndex = savedReports.findIndex((r) => r.id === currentReport.id);
-      let updatedList: SavedReport[];
+      const configToSave: CustomReportConfig = { ...currentReport, name: reportName };
 
-      if (existingIndex >= 0) {
-        // Atualiza relatório existente na lista
-        updatedList = savedReports.map((r, i) =>
-          i === existingIndex
-            ? {
-                ...r,
-                name: reportName,
-                updated_at: new Date().toISOString(),
-                charts_count: currentReport.charts.length,
-                config: { ...currentReport, name: reportName },
-              }
-            : r
+      if (currentReport.id) {
+        // Atualiza relatório existente
+        const updated = await reportService.updateCustomReport(currentReport.id, configToSave);
+        setSavedReports((prev) =>
+          prev.map((r) => (r.id === updated.id ? updated : r))
         );
+        showSuccess('Relatório atualizado com sucesso!');
       } else {
-        // Cria entrada nova
-        const newId = getNextId();
-        const newSaved: SavedReport = {
-          id: newId,
-          name: reportName,
-          created_by_name: currentUser?.name || 'Usuário',
-          updated_at: new Date().toISOString(),
-          charts_count: currentReport.charts.length,
-          config: { ...currentReport, name: reportName, id: newId },
-        };
-        updatedList = [...savedReports, newSaved];
+        // Cria novo relatório
+        const created = await reportService.createCustomReport(configToSave);
         // Guarda o id no estado para que saves futuros atualizem o mesmo registro
-        setCurrentReport((prev) => ({ ...prev, name: reportName, id: newId }));
+        setCurrentReport((prev) => ({ ...prev, name: reportName, id: created.id }));
+        setSavedReports((prev) => [created, ...prev]);
+        showSuccess('Relatório salvo com sucesso!');
       }
-
-      setSavedReports(updatedList);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
-      showSuccess('Relatório salvo com sucesso!');
     } catch {
       showError('Erro ao salvar relatório');
     }
@@ -254,9 +253,10 @@ const Reports: React.FC = () => {
 
   /**
    * Atualiza (ou cria) um gráfico em tempo real conforme o usuário edita o painel direito.
-   * Não fecha o painel — as mudanças são refletidas imediatamente no grid.
+   * Busca dados reais na API automaticamente quando X e Y estão preenchidos.
    */
-  const handleLiveChartChange = (config: ChartConfig, data: QueryResponse) => {
+  const handleLiveChartChange = useCallback(async (config: ChartConfig) => {
+    // Atualiza a lista de gráficos do relatório
     setCurrentReport((prev) => {
       const existingIndex = prev.charts.findIndex((c) => c.id === config.id);
       const updatedCharts =
@@ -266,8 +266,9 @@ const Reports: React.FC = () => {
       return { ...prev, charts: updatedCharts };
     });
 
-    setChartData((prev) => ({ ...prev, [config.id]: data }));
-  };
+    // Busca dados reais se o gráfico está configurado
+    await fetchChartData(config);
+  }, [fetchChartData]);
 
   /** Remove gráfico do relatório atual */
   const handleDeleteChart = (id: string) => {
@@ -293,10 +294,9 @@ const Reports: React.FC = () => {
     setConfigPanelActive(true);
   };
 
-  /** Regera dados mock para um gráfico específico */
+  /** Recarrega os dados de um gráfico específico via API */
   const handleRefreshChart = (chart: ChartConfig) => {
-    const newData = generateMockData(chart.x_field, chart.y_fields, chart.x_group_by);
-    setChartData((prev) => ({ ...prev, [chart.id]: newData }));
+    fetchChartData(chart);
   };
 
   // Ativa o painel em modo "novo gráfico" (formulário em branco)
@@ -409,7 +409,10 @@ const Reports: React.FC = () => {
         {/* Corpo do builder: painel esquerdo + área central + painel direito */}
         <div className="flex flex-1 overflow-hidden">
           {/* Painel esquerdo — campos disponíveis */}
-          <FieldPanel activeSources={activeSources} />
+          <FieldPanel
+            activeSources={activeSources}
+            fieldCatalog={catalogLoading ? EMPTY_CATALOG : fieldCatalog}
+          />
 
           {/* Área central — grid de gráficos */}
           <main className="flex-1 overflow-y-auto bg-gray-50 p-6 dark:bg-slate-950">
@@ -507,8 +510,15 @@ const Reports: React.FC = () => {
         />
       </div>
 
+      {/* Estado de carregamento */}
+      {reportsLoading && (
+        <div className="py-16 text-center">
+          <p className="text-slate-500 dark:text-slate-400">Carregando relatórios...</p>
+        </div>
+      )}
+
       {/* Estado vazio */}
-      {filteredReports.length === 0 && (
+      {!reportsLoading && filteredReports.length === 0 && (
         <div className="py-16 text-center">
           <FileText size={64} className="mx-auto mb-4 text-slate-300 dark:text-slate-700" />
           <h3 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">
@@ -532,7 +542,7 @@ const Reports: React.FC = () => {
       )}
 
       {/* Grid de cards de relatórios salvos */}
-      {filteredReports.length > 0 && (
+      {!reportsLoading && filteredReports.length > 0 && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredReports.map((report) => (
             <div

@@ -50,6 +50,9 @@ from app.models.notification import Notification
 # Modelos de API4COM (VOIP)
 from app.models.api4com import API4ComConfig, UserExtension, CallLog
 
+# Modelos de relatórios customizados
+from app.models.custom_report import CustomReport
+
 # Lista de todos os modelos (útil para imports)
 __all__ = [
     "Base",
@@ -84,4 +87,5 @@ __all__ = [
     "API4ComConfig",
     "UserExtension",
     "CallLog",
+    "CustomReport",
 ]

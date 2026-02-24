@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, PieChart, Table, Eye } from 'lucide-react';
 import BaseModal from '../common/BaseModal';
 import { SelectMenu } from '../common/SelectMenu';
+import reportService from '../../services/reportService';
 import {
   DataSource,
   AxisField,
   ChartType,
   AggregationType,
   GroupByType,
+  FieldCatalog,
   YFieldConfig,
   ChartConfig,
   QueryResponse,
   PeriodType,
-  FIELD_CATALOG,
   PERIOD_OPTIONS,
-  generateMockData,
 } from './reportTypes';
 import ChartWidget from './ChartWidget';
 
@@ -28,6 +28,8 @@ interface ChartConfigModalProps {
   editingData?: QueryResponse | null;
   /** Restringe as fontes de dados disponíveis às escolhidas na criação do relatório */
   allowedSources?: DataSource[];
+  /** Catálogo de campos carregado da API pelo componente pai */
+  fieldCatalog?: FieldCatalog;
 }
 
 // Tipos de gráfico disponíveis com ícone e rótulo
@@ -62,6 +64,9 @@ const GROUP_BY_OPTIONS: { value: GroupByType; label: string }[] = [
  * O botão "Adicionar ao Relatório" só é habilitado após o usuário clicar em
  * "Pré-visualizar", garantindo que ele viu o resultado antes de confirmar.
  */
+// Catálogo vazio padrão enquanto carrega (evita erros antes do prop chegar)
+const EMPTY_FIELD_CATALOG: FieldCatalog = { cards: [], clients: [], persons: [], activities: [] };
+
 const ChartConfigModal: React.FC<ChartConfigModalProps> = ({
   isOpen,
   onClose,
@@ -69,6 +74,7 @@ const ChartConfigModal: React.FC<ChartConfigModalProps> = ({
   editingConfig,
   editingData,
   allowedSources,
+  fieldCatalog = EMPTY_FIELD_CATALOG,
 }) => {
   // Estado do formulário
   const [title, setTitle] = useState('Novo Gráfico');
@@ -131,10 +137,10 @@ const ChartConfigModal: React.FC<ChartConfigModalProps> = ({
   }, [isOpen, editingConfig, editingData, defaultSource]);
 
   // Campos groupable (eixo X) da fonte selecionada
-  const groupableFields = FIELD_CATALOG[dataSource].filter((f) => f.groupable);
+  const groupableFields = (fieldCatalog[dataSource] ?? []).filter((f: { groupable: boolean }) => f.groupable);
 
   // Campos aggregatable (eixo Y) da fonte selecionada
-  const aggregatableFields = FIELD_CATALOG[dataSource].filter((f) => f.aggregatable);
+  const aggregatableFields = (fieldCatalog[dataSource] ?? []).filter((f: { aggregatable: boolean }) => f.aggregatable);
 
   // Campo X atual — determina se deve mostrar "Agrupar por"
   const selectedXFieldDef = groupableFields.find((f) => f.key === xField);
@@ -149,15 +155,15 @@ const ChartConfigModal: React.FC<ChartConfigModalProps> = ({
   // Opções do SelectMenu para eixo X
   const xFieldOptions = [
     { value: '', label: 'Selecione o campo X...' },
-    ...groupableFields.map((f) => ({ value: f.key, label: f.label })),
+    ...groupableFields.map((f: { key: string; label: string }) => ({ value: f.key, label: f.label })),
   ];
 
   // Opções do SelectMenu para eixo Y
   const yFieldOptions = [
     { value: 'count', label: 'Quantidade (contagem)' },
     ...aggregatableFields
-      .filter((f) => f.key !== 'count')
-      .map((f) => ({ value: f.key, label: f.label })),
+      .filter((f: { key: string }) => f.key !== 'count')
+      .map((f: { key: string; label: string }) => ({ value: f.key, label: f.label })),
   ];
 
   // Muda fonte de dados e reseta campos dependentes
@@ -176,7 +182,7 @@ const ChartConfigModal: React.FC<ChartConfigModalProps> = ({
    */
   const buildAxisField = (key: string, isX: boolean): AxisField | null => {
     if (!key) return null;
-    const fieldDef = FIELD_CATALOG[dataSource].find((f) => f.key === key);
+    const fieldDef = (fieldCatalog[dataSource] ?? []).find((f: { key: string }) => f.key === key);
     if (!fieldDef) return null;
     return {
       key: fieldDef.key,
@@ -188,19 +194,32 @@ const ChartConfigModal: React.FC<ChartConfigModalProps> = ({
     };
   };
 
-  // Gera dados mock e exibe a pré-visualização
-  const handlePreview = () => {
+  // Busca dados reais da API e exibe a pré-visualização
+  const handlePreview = async () => {
     const xAxisField = buildAxisField(xField, true);
     const yAxisField = buildAxisField(yField, false);
-    // Monta lista de campos Y para compatibilidade com generateMockData
+    if (!xAxisField) return;
+
     const yFields: YFieldConfig[] = yAxisField ? [{ field: yAxisField, aggregation }] : [];
-    const data = generateMockData(
-      xAxisField,
-      yFields,
-      xFieldIsDate && xField ? xGroupBy : undefined
-    );
-    setPreviewData(data);
-    setHasPreviewed(true);
+    const config: ChartConfig = {
+      id: 'preview',
+      type: chartType,
+      title: title || 'Pré-visualização',
+      x_field: xAxisField,
+      x_group_by: xFieldIsDate && xField ? xGroupBy : undefined,
+      y_fields: yFields,
+      period,
+      start_date: period === 'custom' ? startDate : undefined,
+      end_date: period === 'custom' ? endDate : undefined,
+    };
+
+    try {
+      const data = await reportService.queryChart(config);
+      setPreviewData(data);
+      setHasPreviewed(true);
+    } catch {
+      // Mantém estado anterior em caso de erro
+    }
   };
 
   // Monta o ChartConfig e passa para o componente pai
