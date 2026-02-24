@@ -373,7 +373,7 @@ const CardDetails: React.FC = () => {
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* ========== HEADER FIXO ========== */}
-      <div className="relative z-40 flex-shrink-0 border-b border-gray-200 bg-white backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/95">
+      <div className="relative z-20 flex-shrink-0 border-b border-gray-200 bg-white backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/95">
         <div className="px-6 py-4">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Lado Esquerdo: Botão Voltar + Título */}
