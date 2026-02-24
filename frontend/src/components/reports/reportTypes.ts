@@ -9,6 +9,7 @@
  */
 
 import type { PeriodType } from '../../services/reportService';
+import { COLORS } from '../../constants/colors';
 
 // Re-exporta PeriodType para facilitar uso nos componentes filhos
 export type { PeriodType };
@@ -191,6 +192,21 @@ export const DATA_SOURCE_LABELS: Record<DataSource, string> = {
   persons: 'Pessoas',
   activities: 'Atividades',
 };
+
+/**
+ * Paleta de cores para séries de gráficos (bar/line multi-série).
+ * Fonte única de verdade — usada tanto nos chips do ChartConfigPanel
+ * quanto nas barras/linhas do ChartWidget para manter correspondência visual.
+ */
+export const SERIES_COLORS = [
+  COLORS.board.blue,
+  COLORS.board.green,
+  COLORS.board.amber,
+  COLORS.board.red,
+  COLORS.board.purple,
+  COLORS.board.pink,
+  COLORS.board.gray,
+] as const;
 
 /** Opções de período para o SelectMenu */
 export const PERIOD_OPTIONS = [
