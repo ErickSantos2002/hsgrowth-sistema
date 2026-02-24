@@ -13,6 +13,7 @@ import {
   PeriodType,
   DATA_SOURCE_LABELS,
   PERIOD_OPTIONS,
+  SERIES_COLORS,
   generateMockData,
 } from './reportTypes';
 
@@ -363,15 +364,14 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
   const xFieldIsDate = xAxisField?.field_type === 'date';
 
+  const isMultiSeriesType = chartType === 'bar' || chartType === 'line';
+
   /**
    * Determina se a zona dashed de drop Y deve ser exibida.
    * - bar/line: visível quando há menos de 4 campos Y
-   * - pie/table: visível apenas quando a lista está vazia (1 item substitui)
+   * - pie/table: sempre visível (drop substitui o campo existente)
    */
-  const canReceiveMoreY =
-    chartType === 'bar' || chartType === 'line'
-      ? yFields.length < 4
-      : yFields.length === 0;
+  const canReceiveMoreY = isMultiSeriesType ? yFields.length < 4 : true;
 
   // ========================
   // Estado idle
@@ -465,8 +465,9 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
   /**
    * Renderiza a seção do eixo Y com:
-   * - Um chip por campo Y adicionado (com badge de agregação clicável)
-   * - Zona dashed de drop abaixo (visível quando pode receber mais campos)
+   * - Um chip por campo Y (ponto colorido para bar/line, badge de agregação clicável, botão ×)
+   * - Zona dashed de drop abaixo (sempre visível para pie/table, visível para bar/line < 4)
+   * - Aviso de limite atingido para bar/line com 4 campos
    */
   const renderYDropZone = () => {
     const yBorderClass =
@@ -474,8 +475,15 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
         ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
         : 'border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-800/50';
 
-    const maxLabel =
-      chartType === 'bar' || chartType === 'line' ? '(máx. 4)' : '(1 campo)';
+    const maxLabel = isMultiSeriesType ? '(máx. 4)' : '(1 campo)';
+
+    // Texto de hint da zona dashed conforme o contexto
+    const dropHint =
+      yFields.length === 0
+        ? 'Arraste qualquer campo aqui'
+        : !isMultiSeriesType
+          ? 'Arraste para substituir'
+          : 'Arraste outro campo para comparar';
 
     return (
       <div>
@@ -491,6 +499,16 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
                 key={`${yf.field.source}-${yf.field.key}-${index}`}
                 className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
               >
+                {/*
+                  Ponto colorido para bar/line — corresponde à cor da série no gráfico.
+                  Para pie/table (1 campo), não exibe pois não há múltiplas séries.
+                */}
+                {isMultiSeriesType && (
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: SERIES_COLORS[index % SERIES_COLORS.length] }}
+                  />
+                )}
                 <FieldTypeIcon fieldType={yf.field.field_type} size={13} />
                 <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-300">
                   {yf.field.label}
@@ -522,8 +540,8 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
           </div>
         )}
 
-        {/* Zona dashed de drop — visível apenas quando pode receber mais campos */}
-        {canReceiveMoreY && (
+        {/* Zona dashed de drop */}
+        {canReceiveMoreY ? (
           <div
             onDragOver={handleYDragOver}
             onDragLeave={handleYDragLeave}
@@ -535,14 +553,15 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
             ) : (
               <>
                 <GripVertical size={13} className="text-slate-300 dark:text-slate-600" />
-                <span className="text-slate-400 dark:text-slate-500">
-                  {yFields.length === 0
-                    ? 'Arraste qualquer campo aqui'
-                    : 'Arraste outro campo para comparar'}
-                </span>
+                <span className="text-slate-400 dark:text-slate-500">{dropHint}</span>
               </>
             )}
           </div>
+        ) : (
+          /* bar/line atingiu o limite de 4 séries */
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-center text-xs text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+            Limite de 4 métricas atingido
+          </p>
         )}
       </div>
     );

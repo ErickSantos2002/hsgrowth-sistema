@@ -27,6 +27,9 @@ import ChartConfigPanel from '../components/reports/ChartConfigPanel';
 import NewReportModal from '../components/reports/NewReportModal';
 import {
   DataSource,
+  AxisField,
+  AggregationType,
+  YFieldConfig,
   ChartConfig,
   QueryResponse,
   CustomReportConfig,
@@ -96,7 +99,34 @@ const Reports: React.FC = () => {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (stored) {
-        setSavedReports(JSON.parse(stored));
+        const parsed = JSON.parse(stored) as SavedReport[];
+
+        // Migração: relatórios salvos antes da implementação de múltiplas séries
+        // tinham y_field (AxisField | null) + aggregation (AggregationType) em vez de y_fields[].
+        // Converte automaticamente para o novo formato ao carregar.
+        const migrated = parsed.map((report) => ({
+          ...report,
+          config: {
+            ...report.config,
+            charts: report.config.charts.map((chart) => {
+              const legacy = chart as ChartConfig & {
+                y_field?: AxisField | null;
+                aggregation?: AggregationType;
+              };
+              if (!legacy.y_fields) {
+                const yField = legacy.y_field ?? null;
+                const agg: AggregationType = legacy.aggregation ?? 'count';
+                const yFields: YFieldConfig[] = yField ? [{ field: yField, aggregation: agg }] : [];
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { y_field: _yf, aggregation: _agg, ...rest } = legacy;
+                return { ...rest, y_fields: yFields } as ChartConfig;
+              }
+              return chart;
+            }),
+          },
+        }));
+
+        setSavedReports(migrated);
       }
     } catch {
       // Ignora dados corrompidos no localStorage

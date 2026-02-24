@@ -16,20 +16,10 @@ import {
   Legend,
 } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
-import { getChartColors, COLORS } from '../../constants/colors';
+import { getChartColors } from '../../constants/colors';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { formatCurrency } from '../../utils/formatters';
-import { ChartConfig, QueryResponse } from './reportTypes';
-
-const PIE_COLORS = [
-  COLORS.board.blue,
-  COLORS.board.green,
-  COLORS.board.amber,
-  COLORS.board.red,
-  COLORS.board.purple,
-  COLORS.board.pink,
-  COLORS.board.gray,
-];
+import { ChartConfig, QueryResponse, SERIES_COLORS } from './reportTypes';
 
 interface ChartWidgetProps {
   config: ChartConfig;
@@ -162,7 +152,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 <Bar
                   key={key}
                   dataKey={key}
-                  fill={PIE_COLORS[i % PIE_COLORS.length]}
+                  fill={SERIES_COLORS[i % SERIES_COLORS.length]}
                   radius={[4, 4, 0, 0]}
                 />
               ))}
@@ -188,7 +178,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
               />
               {hasSeries && renderLegend()}
               {lineKeys.map((key, i) => {
-                const color = PIE_COLORS[i % PIE_COLORS.length];
+                const color = SERIES_COLORS[i % SERIES_COLORS.length];
                 return (
                   <Line
                     key={key}
@@ -212,7 +202,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
             <PieChart>
               <Pie data={rechartData} cx="50%" cy="50%" innerRadius={55} outerRadius={88} dataKey="valor" nameKey="name">
                 {rechartData.map((_, index) => (
-                  <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  <Cell key={index} fill={SERIES_COLORS[index % SERIES_COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip {...tooltipStyle} formatter={(value: number) => [formatTooltipValue(value), '']} />
