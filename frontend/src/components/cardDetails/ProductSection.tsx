@@ -519,7 +519,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
         {/* Botão adicionar produto */}
         <button
           onClick={() => setShowProductSearch(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-2 font-medium text-blue-400 transition-colors hover:bg-blue-500/30"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-2 font-medium text-slate-900 dark:text-blue-400 transition-colors hover:bg-blue-500/30"
         >
           <Plus size={18} />
           Adicionar produto
@@ -531,7 +531,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
           disabled={products.length === 0}
           className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 font-medium transition-colors ${
             products.length > 0
-              ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+              ? "border-emerald-500/50 bg-emerald-500/20 text-slate-900 dark:text-emerald-400 hover:bg-emerald-500/30"
               : "cursor-not-allowed border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 text-slate-600"
           }`}
         >

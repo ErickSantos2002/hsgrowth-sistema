@@ -775,29 +775,29 @@ const Settings: React.FC = () => {
     switch (normalized) {
       case "create":
       case "created":
-        return "bg-emerald-500/20 text-emerald-400";
+        return "bg-emerald-500/20 text-slate-900 dark:text-emerald-400";
       case "update":
       case "updated":
-        return "bg-blue-500/20 text-blue-400";
+        return "bg-blue-500/20 text-slate-900 dark:text-blue-400";
       case "delete":
       case "deleted":
       case "remove":
       case "removed":
-        return "bg-red-500/20 text-red-400";
+        return "bg-red-500/20 text-slate-900 dark:text-red-400";
       case "approve":
       case "approved":
-        return "bg-green-500/20 text-green-400";
+        return "bg-green-500/20 text-slate-900 dark:text-green-400";
       case "reject":
       case "rejected":
-        return "bg-rose-500/20 text-rose-400";
+        return "bg-rose-500/20 text-slate-900 dark:text-rose-400";
       case "login":
-        return "bg-cyan-500/20 text-cyan-400";
+        return "bg-cyan-500/20 text-slate-900 dark:text-cyan-400";
       case "logout":
-        return "bg-slate-500/20 text-slate-600 dark:text-slate-300";
+        return "bg-slate-500/20 text-slate-900 dark:text-slate-300";
       case "transfer":
-        return "bg-purple-500/20 text-purple-400";
+        return "bg-purple-500/20 text-slate-900 dark:text-purple-400";
       default:
-        return "bg-slate-500/20 text-slate-600 dark:text-slate-300";
+        return "bg-slate-500/20 text-slate-900 dark:text-slate-300";
     }
   };
 
@@ -893,7 +893,7 @@ const Settings: React.FC = () => {
                     <p className="max-w-[180px] truncate text-sm text-slate-500 dark:text-slate-400 sm:max-w-none sm:text-base">
                       {user?.email}
                     </p>
-                    <span className="mt-2 inline-block rounded-full bg-emerald-600/20 px-3 py-1 text-sm font-medium text-emerald-400">
+                    <span className="mt-2 inline-block rounded-full bg-emerald-600/20 px-3 py-1 text-sm font-medium text-slate-900 dark:text-emerald-400">
                       {user?.role_name || "Usuário"}
                     </span>
 
@@ -1624,8 +1624,8 @@ const Settings: React.FC = () => {
                                 <span
                                   className={`rounded px-2 py-0.5 text-xs font-medium ${
                                     badge.criteria_type === "manual"
-                                      ? "bg-blue-500/20 text-blue-400"
-                                      : "bg-purple-500/20 text-purple-400"
+                                      ? "bg-blue-500/20 text-slate-900 dark:text-blue-400"
+                                      : "bg-purple-500/20 text-slate-900 dark:text-purple-400"
                                   }`}
                                 >
                                   {badge.criteria_type === "manual" ? "Manual" : "Automático"}
@@ -1633,8 +1633,8 @@ const Settings: React.FC = () => {
                                 <span
                                   className={`rounded px-2 py-0.5 text-xs font-medium ${
                                     badge.is_active
-                                      ? "bg-emerald-500/20 text-emerald-400"
-                                      : "bg-slate-500/20 text-slate-600 dark:text-slate-400"
+                                      ? "bg-emerald-500/20 text-slate-900 dark:text-emerald-400"
+                                      : "bg-slate-500/20 text-slate-900 dark:text-slate-400"
                                   }`}
                                 >
                                   {badge.is_active ? "Ativa" : "Inativa"}
@@ -1661,7 +1661,7 @@ const Settings: React.FC = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleEditBadge(badge)}
-                            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm text-slate-900 transition-colors hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                             title="Editar badge"
                           >
                             <Edit2 size={16} />
@@ -1671,8 +1671,8 @@ const Settings: React.FC = () => {
                             onClick={() => handleToggleBadgeStatus(badge)}
                             className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
                               badge.is_active
-                                ? "bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30"
-                                : "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30"
+                                ? "bg-yellow-600/20 text-slate-900 dark:text-yellow-400 hover:bg-yellow-600/30"
+                                : "bg-emerald-600/20 text-slate-900 dark:text-emerald-400 hover:bg-emerald-600/30"
                             }`}
                             title={badge.is_active ? "Desativar badge" : "Ativar badge"}
                           >
@@ -1680,7 +1680,7 @@ const Settings: React.FC = () => {
                           </button>
                           <button
                             onClick={() => handleDeleteBadge(badge)}
-                            className="flex items-center justify-center gap-2 rounded-lg bg-red-600/20 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-600/30"
+                            className="flex items-center justify-center gap-2 rounded-lg bg-red-600/20 px-3 py-2 text-sm text-slate-900 dark:text-red-400 transition-colors hover:bg-red-600/30"
                             title="Deletar badge"
                           >
                             <Trash2 size={16} />
@@ -1841,8 +1841,8 @@ const Settings: React.FC = () => {
                                 <span
                                   className={`inline-block rounded px-2 py-1 text-xs font-medium ${
                                     action.is_active
-                                      ? "bg-emerald-500/20 text-emerald-400"
-                                      : "bg-slate-500/20 text-slate-600 dark:text-slate-400"
+                                      ? "bg-emerald-500/20 text-slate-900 dark:text-emerald-400"
+                                      : "bg-slate-500/20 text-slate-900 dark:text-slate-400"
                                   }`}
                                 >
                                   {action.is_active ? "Ativa" : "Inativa"}
@@ -1856,8 +1856,8 @@ const Settings: React.FC = () => {
                                     onClick={() => handleToggleActionStatus(action)}
                                     className={`rounded p-2 transition-colors ${
                                       action.is_active
-                                        ? "bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30"
-                                        : "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30"
+                                        ? "bg-yellow-600/20 text-slate-900 dark:text-yellow-400 hover:bg-yellow-600/30"
+                                        : "bg-emerald-600/20 text-slate-900 dark:text-emerald-400 hover:bg-emerald-600/30"
                                     }`}
                                     title={action.is_active ? "Desativar ação" : "Ativar ação"}
                                   >
@@ -1930,11 +1930,11 @@ const Settings: React.FC = () => {
                           <span className="text-sm text-slate-500 dark:text-slate-400">Status:</span>
                           <p>
                             {api4comConfig.is_active ? (
-                              <span className="inline-flex items-center rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-green-400">
+                              <span className="inline-flex items-center rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-900 dark:text-green-400">
                                 Ativo
                               </span>
                             ) : (
-                              <span className="inline-flex items-center rounded-full bg-red-500/20 px-2.5 py-0.5 text-xs font-medium text-red-400">
+                              <span className="inline-flex items-center rounded-full bg-red-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-900 dark:text-red-400">
                                 Inativo
                               </span>
                             )}
@@ -2153,11 +2153,11 @@ const Settings: React.FC = () => {
                               </td>
                               <td className="px-4 py-3 text-sm">
                                 {ext.is_active ? (
-                                  <span className="inline-flex items-center rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-green-400">
+                                  <span className="inline-flex items-center rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-900 dark:text-green-400">
                                     Ativo
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                                  <span className="inline-flex items-center rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-900 dark:text-slate-400">
                                     Inativo
                                   </span>
                                 )}
@@ -2166,7 +2166,7 @@ const Settings: React.FC = () => {
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleEditApi4comExtension(ext)}
-                                    className="rounded-lg bg-yellow-600/20 p-2 text-yellow-400 transition-colors hover:bg-yellow-600/30"
+                                    className="rounded-lg bg-yellow-600/20 p-2 text-slate-900 dark:text-yellow-400 transition-colors hover:bg-yellow-600/30"
                                     title="Editar ramal"
                                     aria-label="Editar ramal"
                                   >
@@ -2174,7 +2174,7 @@ const Settings: React.FC = () => {
                                   </button>
                                   <button
                                     onClick={() => handleDeleteApi4comExtension(ext.user_id, ext.user_name || '')}
-                                    className="rounded-lg bg-red-600/20 p-2 text-red-400 transition-colors hover:bg-red-600/30"
+                                    className="rounded-lg bg-red-600/20 p-2 text-slate-900 dark:text-red-400 transition-colors hover:bg-red-600/30"
                                     title="Remover ramal"
                                     aria-label="Remover ramal"
                                   >

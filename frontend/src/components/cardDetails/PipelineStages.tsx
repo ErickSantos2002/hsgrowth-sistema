@@ -67,7 +67,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
     if (isCurrent) {
       return {
         container: "bg-emerald-500/20 border-emerald-500 ring-2 ring-emerald-500/30",
-        text: "text-emerald-400 font-semibold",
+        text: "text-slate-900 dark:text-emerald-400 font-semibold",
         dot: "bg-emerald-500",
         icon: "text-emerald-400",
       };
@@ -79,7 +79,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
         container: isHovered
           ? "bg-blue-500/30 border-blue-500 cursor-pointer"
           : "bg-blue-500/10 border-blue-500/50 hover:bg-blue-500/20 cursor-pointer",
-        text: isHovered ? "text-blue-300 font-medium" : "text-blue-400",
+        text: isHovered ? "text-slate-900 dark:text-blue-300 font-medium" : "text-slate-900 dark:text-blue-400",
         dot: "bg-blue-500",
         icon: "text-blue-400",
       };
@@ -90,7 +90,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
       container: isHovered
         ? "bg-slate-600/30 border-gray-400 dark:border-slate-500 cursor-pointer"
         : "bg-gray-100/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 hover:bg-gray-200/50 dark:hover:bg-slate-700/50 cursor-pointer",
-      text: isHovered ? "text-slate-600 dark:text-slate-300 font-medium" : "text-slate-400 dark:text-slate-400",
+      text: isHovered ? "text-slate-900 dark:text-slate-300 font-medium" : "text-slate-900 dark:text-slate-400",
       dot: "bg-slate-600",
       icon: "text-slate-400 dark:text-slate-500",
     };

@@ -122,11 +122,11 @@ const BoardCard: React.FC<BoardCardProps> = ({
       {/* Badge de status */}
       <div className="absolute right-4 top-4">
         {!board.is_deleted ? (
-          <span className="rounded-full bg-green-500/20 px-2 py-1 text-xs font-medium text-green-400">
+          <span className="rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-slate-900 dark:text-green-400">
             Ativo
           </span>
         ) : (
-          <span className="rounded-full bg-yellow-500/20 px-2 py-1 text-xs font-medium text-yellow-400">
+          <span className="rounded-full bg-yellow-500/20 px-2 py-1 text-xs font-semibold text-slate-900 dark:text-yellow-400">
             Arquivado
           </span>
         )}

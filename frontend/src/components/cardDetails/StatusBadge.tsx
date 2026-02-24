@@ -17,32 +17,32 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, date }) => {
       case "overdue":
         return {
           text: "VENCIDO",
-          className: "bg-red-500/20 text-red-400 border-red-500/50",
+          className: "bg-red-500/20 text-slate-900 dark:text-red-400 border-red-500/50",
         };
       case "today":
         return {
           text: "HOJE",
-          className: "bg-green-500/20 text-green-400 border-green-500/50",
+          className: "bg-green-500/20 text-slate-900 dark:text-green-400 border-green-500/50",
         };
       case "tomorrow":
         return {
           text: "AMANHÃ",
-          className: "bg-purple-500/20 text-purple-400 border-purple-500/50",
+          className: "bg-purple-500/20 text-slate-900 dark:text-purple-400 border-purple-500/50",
         };
       case "completed":
         return {
           text: "CONCLUÍDO",
-          className: "bg-emerald-500/20 text-emerald-400 border-emerald-500/50",
+          className: "bg-emerald-500/20 text-slate-900 dark:text-emerald-400 border-emerald-500/50",
         };
       case "future":
         return {
           text: date || "FUTURO",
-          className: "bg-purple-500/20 text-purple-400 border-purple-500/50",
+          className: "bg-purple-500/20 text-slate-900 dark:text-purple-400 border-purple-500/50",
         };
       default:
         return {
           text: "PENDENTE",
-          className: "bg-slate-500/20 text-slate-400 dark:text-slate-400 border-slate-500/50",
+          className: "bg-slate-500/20 text-slate-900 dark:text-slate-400 border-slate-500/50",
         };
     }
   };

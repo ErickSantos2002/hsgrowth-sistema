@@ -4,17 +4,38 @@
 
 /* Global scrollbar styles e cores do sistema */
 :root {
+  color-scheme: light;
+
   /* Scrollbar */
   --scrollbar-size: 6px;
   --scrollbar-track: transparent;
-  --scrollbar-thumb: rgba(148, 163, 184, 0.45);
-  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.7);
+  --scrollbar-thumb: rgba(100, 116, 139, 0.35);
+  --scrollbar-thumb-hover: rgba(100, 116, 139, 0.55);
 
   /* Cores do sistema (sincronizadas com constants/colors.ts e tailwind.config.js) */
   --color-primary: #10b981;
   --color-board-blue: #3B82F6;
+  --color-surface-elevated: #ffffff;
+  --color-border: #e5e7eb;
+
+  /* Tokens auxiliares para tema */
+  --note-placeholder-color: #64748b;
+  --history-link: #0f172a;
+  --history-link-hover: #1e293b;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --scrollbar-thumb: rgba(148, 163, 184, 0.45);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.7);
+
   --color-surface-elevated: #1e293b;
   --color-border: #334155;
+
+  --note-placeholder-color: #94a3b8;
+  --history-link: #ffffff;
+  --history-link-hover: #e2e8f0;
 }
 
 * {
@@ -43,7 +64,7 @@
 /* Editor de anotações (contenteditable) - placeholder e estilos de imagem */
 .note-editor:empty::before {
   content: attr(data-placeholder);
-  color: #64748b; /* slate-500 */
+  color: var(--note-placeholder-color);
   pointer-events: none;
 }
 
@@ -62,11 +83,15 @@
 
 /* QuickActivityForm: hide native picker icons so custom white icons can be used */
 .activity-picker-input {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 .activity-picker-input::-webkit-calendar-picker-indicator {
   opacity: 0;
+}
+
+:root.dark .activity-picker-input {
+  color-scheme: dark;
 }
 
 @layer utilities {
@@ -85,7 +110,7 @@
 
   .scrollbar-muted {
     scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
   }
 
   .scrollbar-muted::-webkit-scrollbar {
@@ -97,12 +122,12 @@
   }
 
   .scrollbar-muted::-webkit-scrollbar-thumb {
-    background-color: rgba(148, 163, 184, 0.45);
+    background-color: var(--scrollbar-thumb);
     border-radius: 9999px;
   }
 
   .scrollbar-muted::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(148, 163, 184, 0.7);
+    background-color: var(--scrollbar-thumb-hover);
   }
 
   .scrollbar-desktop {
@@ -116,7 +141,7 @@
   @media (min-width: 640px) {
     .scrollbar-desktop {
       scrollbar-width: thin;
-      scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
     }
 
     .scrollbar-desktop::-webkit-scrollbar {
@@ -129,25 +154,25 @@
     }
 
     .scrollbar-desktop::-webkit-scrollbar-thumb {
-      background-color: rgba(148, 163, 184, 0.45);
+      background-color: var(--scrollbar-thumb);
       border-radius: 9999px;
     }
 
     .scrollbar-desktop::-webkit-scrollbar-thumb:hover {
-      background-color: rgba(148, 163, 184, 0.7);
+      background-color: var(--scrollbar-thumb-hover);
     }
   }
 }
 
 .history-html a {
-  color: #ffffff;
+  color: var(--history-link);
   text-decoration: underline;
   text-underline-offset: 2px;
   font-weight: 600;
 }
 
 .history-html a:hover {
-  color: #e2e8f0;
+  color: var(--history-link-hover);
 }
 
 /* Estilos para React Flow - Nodes Selecionados */
@@ -172,4 +197,16 @@
 .react-flow__nodesselection-rect {
   background: rgba(59, 130, 246, 0.08);
   border: 2px dashed var(--color-board-blue);
+}
+
+/* Light mode: make muted gray text black for readability */
+html:not(.dark) .text-slate-300,
+html:not(.dark) .text-slate-400,
+html:not(.dark) .text-slate-500,
+html:not(.dark) .text-slate-600,
+html:not(.dark) .text-gray-300,
+html:not(.dark) .text-gray-400,
+html:not(.dark) .text-gray-500,
+html:not(.dark) .text-gray-600 {
+  color: #0f172a !important;
 }

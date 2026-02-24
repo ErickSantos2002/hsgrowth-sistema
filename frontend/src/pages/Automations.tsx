@@ -238,11 +238,11 @@ const Automations: React.FC = () => {
                         {automation.name}
                       </h3>
                       {automation.is_active ? (
-                        <span className="rounded-full bg-green-500/20 px-2 py-1 text-xs font-medium text-green-400">
+                        <span className="rounded-full bg-green-500/20 px-2 py-1 text-xs font-medium text-slate-900 dark:text-green-400">
                           Ativa
                         </span>
                       ) : (
-                        <span className="rounded-full bg-gray-200 px-2 py-1 text-xs font-medium text-slate-500 dark:bg-slate-600/50 dark:text-slate-400">
+                        <span className="rounded-full bg-gray-200 px-2 py-1 text-xs font-medium text-slate-900 dark:bg-slate-600/50 dark:text-slate-400">
                           Inativa
                         </span>
                       )}
@@ -302,7 +302,7 @@ const Automations: React.FC = () => {
                     onClick={() => handleToggleActive(automation.id, automation.is_active)}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-colors ${
                       automation.is_active
-                        ? "bg-gray-200 text-slate-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
+                        ? "bg-gray-200 text-slate-900 hover:bg-gray-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
                         : "bg-green-600 text-white hover:bg-green-700"
                     }`}
                   >
@@ -320,21 +320,21 @@ const Automations: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setEditingAutomation(automation)}
-                    className="rounded-lg bg-yellow-600/20 p-2 text-yellow-400 transition-colors hover:bg-yellow-600/30"
+                    className="rounded-lg bg-yellow-600/20 p-2 text-slate-900 dark:text-yellow-400 transition-colors hover:bg-yellow-600/30"
                     title="Editar informações"
                   >
                     <Edit size={16} />
                   </button>
                   <button
                     onClick={() => navigate(`/automations/${automation.id}/edit`)}
-                    className="rounded-lg bg-purple-600/20 p-2 text-purple-400 transition-colors hover:bg-purple-600/30"
+                    className="rounded-lg bg-purple-600/20 p-2 text-slate-900 dark:text-purple-400 transition-colors hover:bg-purple-600/30"
                     title="Construtor de automação"
                   >
                     <Workflow size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(automation.id)}
-                    className="rounded-lg bg-red-600/20 p-2 text-red-400 transition-colors hover:bg-red-600/30"
+                    className="rounded-lg bg-red-600/20 p-2 text-slate-900 dark:text-red-400 transition-colors hover:bg-red-600/30"
                     title="Deletar"
                   >
                     <Trash2 size={16} />

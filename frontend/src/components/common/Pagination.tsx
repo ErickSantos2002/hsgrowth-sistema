@@ -51,31 +51,10 @@ export const Pagination: React.FC<PaginationProps> = ({
   }
 
   return (
-    <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-6 dark:border-slate-700">
-      {/* Mobile - Navegação simples */}
-      <div className="flex w-full items-center justify-between gap-2 md:hidden">
-        <button
-          disabled={!hasPrevPage}
-          onClick={goToPrevPage}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-        >
-          Anterior
-        </button>
-        <span className="text-sm text-slate-500 dark:text-slate-400">
-          Página {currentPage} de {totalPages}
-        </span>
-        <button
-          disabled={!hasNextPage}
-          onClick={goToNextPage}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-        >
-          Próxima
-        </button>
-      </div>
-
-      {/* Desktop - Navegação completa */}
-      <div className="hidden w-full items-center justify-between md:flex">
-        <div className="text-sm text-slate-500 dark:text-slate-400">
+    <div className="mt-6 border-t border-gray-200 px-6 pb-4 pt-4 dark:border-slate-700">
+      {/* Desktop */}
+      <div className="hidden items-center justify-between text-sm text-slate-500 dark:text-slate-400 md:flex">
+        <div>
           Mostrando {startIndex + 1} a {endIndex} de {totalItems} {itemLabel}
         </div>
         <div className="flex gap-2">
@@ -110,6 +89,32 @@ export const Pagination: React.FC<PaginationProps> = ({
             className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
           >
             Próxima
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile */}
+      <div className="flex flex-col items-center gap-2 text-sm text-slate-500 dark:text-slate-400 md:hidden">
+        <div>
+          Mostrando {startIndex + 1} a {endIndex} de {totalItems} {itemLabel}
+        </div>
+        <div className="flex items-center justify-center gap-2">
+          <button
+            disabled={!hasPrevPage}
+            onClick={goToPrevPage}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm text-slate-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+          >
+            {"<"}
+          </button>
+          <span className="rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+            {currentPage}
+          </span>
+          <button
+            disabled={!hasNextPage}
+            onClick={goToNextPage}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm text-slate-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+          >
+            {">"}
           </button>
         </div>
       </div>

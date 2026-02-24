@@ -238,7 +238,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={handleOpenModal}
-                className="flex items-center justify-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-3 font-medium text-blue-400 transition-colors hover:bg-blue-500/30"
+                className="flex items-center justify-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-3 font-medium text-slate-900 dark:text-blue-400 transition-colors hover:bg-blue-500/30"
               >
                 <ExternalLink size={16} />
                 Vincular
@@ -246,7 +246,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
 
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center justify-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-3 font-medium text-green-400 transition-colors hover:bg-green-500/30"
+                className="flex items-center justify-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-3 font-medium text-slate-900 dark:text-green-400 transition-colors hover:bg-green-500/30"
               >
                 <Plus size={16} />
                 Cadastrar

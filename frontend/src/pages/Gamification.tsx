@@ -17,7 +17,7 @@ const Gamification: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | "team" | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
-  const teamIconUrl = "https://img.icons8.com/?size=100&id=9542&format=png&color=ffffff";
+  const teamIconUrl = "https://img.icons8.com/?size=100&id=9542&format=png&color=000000";
   const userIconUrl = "https://img.icons8.com/?size=100&id=98957&format=png&color=000000";
   const userIconStyle: React.CSSProperties = {
     filter: "invert(39%) sepia(72%) saturate(2249%) hue-rotate(260deg) brightness(92%) contrast(90%)",
@@ -238,7 +238,7 @@ const Gamification: React.FC = () => {
                 <img
                   src={selectedIcon}
                   alt=""
-                  className="h-5 w-5"
+                  className={`h-5 w-5 ${selectedUser ? "" : "dark:invert"}`}
                   style={selectedUser ? userIconStyle : undefined}
                 />
                 <span className="truncate">{selectedLabel}</span>
@@ -258,7 +258,7 @@ const Gamification: React.FC = () => {
                   }}
                   className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${selectedUserId === "team" || selectedUserId === null ? "bg-gray-100 dark:bg-slate-800/70" : ""}`}
                 >
-                  <img src={teamIconUrl} alt="" className="h-5 w-5" />
+                  <img src={teamIconUrl} alt="" className="h-5 w-5 dark:invert" />
                   <span>Visão Geral da Equipe</span>
                 </button>
                 <div className="px-4 py-2 text-xs uppercase tracking-wide text-slate-500">

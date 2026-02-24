@@ -196,15 +196,15 @@ const Users: React.FC = () => {
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case "admin":
-        return "bg-purple-500/20 text-purple-400";
+        return "bg-purple-500/20 text-slate-900 dark:text-purple-400";
       case "manager":
-        return "bg-blue-500/20 text-blue-400";
+        return "bg-blue-500/20 text-slate-900 dark:text-blue-400";
       case "salesperson":
-        return "bg-emerald-500/20 text-emerald-400";
+        return "bg-emerald-500/20 text-slate-900 dark:text-emerald-400";
       case "sdr":
-        return "bg-amber-500/20 text-amber-400";
+        return "bg-amber-500/20 text-slate-900 dark:text-amber-400";
       default:
-        return "bg-slate-500/20 text-slate-400";
+        return "bg-slate-500/20 text-slate-900 dark:text-slate-400";
     }
   };
 
@@ -379,7 +379,7 @@ const Users: React.FC = () => {
                           <div className="flex items-center gap-2 font-medium text-slate-900 dark:text-white">
                             {user.name}
                             {user.id === currentUser?.id && (
-                              <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400">
+                              <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-slate-900 dark:text-blue-400">
                                 Você
                               </span>
                             )}
@@ -418,8 +418,8 @@ const Users: React.FC = () => {
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
                           user.is_active
-                            ? "bg-emerald-500/20 text-emerald-400"
-                            : "bg-red-500/20 text-red-400"
+                            ? "bg-emerald-500/20 text-slate-900 dark:text-emerald-400"
+                            : "bg-red-500/20 text-slate-900 dark:text-red-400"
                         }`}
                       >
                         {user.is_active ? "Ativo" : "Inativo"}
@@ -446,27 +446,27 @@ const Users: React.FC = () => {
                     {/* Ações */}
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          className="rounded-lg bg-yellow-600/20 p-2 text-yellow-400 transition-colors hover:bg-yellow-600/30"
-                          title="Editar"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleResetPassword(user)}
-                          className="rounded-lg bg-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-300 dark:bg-slate-600/20 dark:text-slate-300 dark:hover:bg-slate-600/30"
-                          title="Trocar Senha"
-                        >
-                          <Key size={16} />
-                        </button>
-                        {user.id !== currentUser?.id && (
                           <button
-                            onClick={() => handleDelete(user)}
-                            className="rounded-lg bg-red-600/20 p-2 text-red-400 transition-colors hover:bg-red-600/30"
-                            title="Deletar"
+                            onClick={() => handleEdit(user)}
+                            className="rounded-lg bg-yellow-600/20 p-2 text-slate-900 dark:text-yellow-400 transition-colors hover:bg-yellow-600/30"
+                            title="Editar"
                           >
-                            <Trash2 size={16} />
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleResetPassword(user)}
+                            className="rounded-lg bg-slate-200 p-2 text-slate-900 transition-colors hover:bg-slate-300 dark:bg-slate-600/20 dark:text-slate-300 dark:hover:bg-slate-600/30"
+                            title="Trocar Senha"
+                          >
+                            <Key size={16} />
+                          </button>
+                          {user.id !== currentUser?.id && (
+                            <button
+                              onClick={() => handleDelete(user)}
+                              className="rounded-lg bg-red-600/20 p-2 text-slate-900 dark:text-red-400 transition-colors hover:bg-red-600/30"
+                              title="Deletar"
+                            >
+                              <Trash2 size={16} />
                           </button>
                         )}
                       </div>

@@ -375,7 +375,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "all"
                 ? "border-blue-500 font-medium text-blue-400"
-                : "border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "border-transparent text-slate-900 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Todos
@@ -386,11 +386,11 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "activities"
                 ? "border-blue-500 font-medium text-blue-400"
-                : "border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "border-transparent text-slate-900 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Atividades
-            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-400">
+            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-900 dark:text-slate-400">
               {activityCount}
             </span>
           </button>
@@ -400,11 +400,11 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "notes"
                 ? "border-blue-500 font-medium text-blue-400"
-                : "border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "border-transparent text-slate-900 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Anotações
-            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-400">
+            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-900 dark:text-slate-400">
               {noteCount}
             </span>
           </button>
@@ -414,11 +414,11 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "files"
                 ? "border-blue-500 font-medium text-blue-400"
-                : "border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "border-transparent text-slate-900 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Arquivos
-            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-400">
+            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-900 dark:text-slate-400">
               {fileCount}
             </span>
           </button>
@@ -428,11 +428,11 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
               activeTab === "changes"
                 ? "border-blue-500 font-medium text-blue-400"
-                : "border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "border-transparent text-slate-900 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Alterações
-            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-400 dark:text-slate-400">
+            <span className="ml-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-900 dark:text-slate-400">
               {changesCount}
             </span>
           </button>

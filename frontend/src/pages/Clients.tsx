@@ -253,8 +253,8 @@ const Clients: React.FC = () => {
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
                           client.is_active
-                            ? "bg-emerald-500/20 text-emerald-400"
-                            : "bg-red-500/20 text-red-400"
+                            ? "bg-emerald-500/20 text-slate-900 dark:text-emerald-400"
+                            : "bg-red-500/20 text-slate-900 dark:text-red-400"
                         }`}
                       >
                         {client.is_active ? "Ativo" : "Inativo"}
@@ -271,14 +271,14 @@ const Clients: React.FC = () => {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleEdit(client)}
-                          className="rounded-lg bg-yellow-600/20 p-2 text-yellow-400 transition-colors hover:bg-yellow-600/30"
+                          className="rounded-lg bg-yellow-600/20 p-2 text-slate-900 dark:text-yellow-400 transition-colors hover:bg-yellow-600/30"
                           title="Editar"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(client)}
-                          className="rounded-lg bg-red-600/20 p-2 text-red-400 transition-colors hover:bg-red-600/30"
+                          className="rounded-lg bg-red-600/20 p-2 text-slate-900 dark:text-red-400 transition-colors hover:bg-red-600/30"
                           title="Deletar"
                         >
                           <Trash2 size={16} />

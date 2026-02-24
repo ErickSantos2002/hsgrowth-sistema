@@ -24,16 +24,16 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   const getVariantClasses = () => {
     switch (variant) {
       case "primary":
-        return "bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/50";
+        return "bg-blue-500/20 hover:bg-blue-500/30 text-slate-900 dark:text-blue-400 border-blue-500/50";
       case "success":
-        return "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border-emerald-500/50";
+        return "bg-emerald-500/20 hover:bg-emerald-500/30 text-slate-900 dark:text-emerald-400 border-emerald-500/50";
       case "danger":
-        return "bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50";
+        return "bg-red-500/20 hover:bg-red-500/30 text-slate-900 dark:text-red-400 border-red-500/50";
       case "warning":
-        return "bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border-yellow-500/50";
+        return "bg-yellow-500/20 hover:bg-yellow-500/30 text-slate-900 dark:text-yellow-400 border-yellow-500/50";
       case "secondary":
       default:
-        return "bg-gray-100/50 dark:bg-slate-800/50 hover:bg-gray-200/50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-slate-600";
+        return "bg-gray-100/50 dark:bg-slate-800/50 hover:bg-gray-200/50 dark:hover:bg-slate-700/50 text-slate-900 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-slate-600";
     }
   };
 

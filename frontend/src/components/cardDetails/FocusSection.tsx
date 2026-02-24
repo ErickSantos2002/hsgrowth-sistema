@@ -130,14 +130,14 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
    */
   const getActivityTypeBadgeClasses = (type: string) => {
     const classes = {
-      call: "border-blue-500/40 bg-blue-500/15 text-blue-300",
-      meeting: "border-purple-500/40 bg-purple-500/15 text-purple-300",
-      task: "border-green-500/40 bg-green-500/15 text-green-300",
-      follow_up: "border-yellow-500/40 bg-yellow-500/15 text-yellow-300",
-      deadline: "border-yellow-500/40 bg-yellow-500/15 text-yellow-300",
-      email: "border-blue-500/40 bg-blue-500/15 text-blue-300",
-      lunch: "border-purple-500/40 bg-purple-500/15 text-purple-300",
-      other: "border-gray-300 dark:border-slate-600 bg-slate-700/40 text-slate-600 dark:text-slate-300",
+      call: "border-blue-500/40 bg-blue-500/15 text-slate-900 dark:text-blue-300",
+      meeting: "border-purple-500/40 bg-purple-500/15 text-slate-900 dark:text-purple-300",
+      task: "border-green-500/40 bg-green-500/15 text-slate-900 dark:text-green-300",
+      follow_up: "border-yellow-500/40 bg-yellow-500/15 text-slate-900 dark:text-yellow-300",
+      deadline: "border-yellow-500/40 bg-yellow-500/15 text-slate-900 dark:text-yellow-300",
+      email: "border-blue-500/40 bg-blue-500/15 text-slate-900 dark:text-blue-300",
+      lunch: "border-purple-500/40 bg-purple-500/15 text-slate-900 dark:text-purple-300",
+      other: "border-gray-300 dark:border-slate-600 bg-slate-700/40 text-slate-900 dark:text-slate-300",
     };
 
     return classes[type as keyof typeof classes] || classes.other;
@@ -166,9 +166,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
    */
   const getPriorityBadgeClasses = (priority: string) => {
     const classes = {
-      normal: "border-blue-500/40 bg-blue-500/15 text-blue-300",
-      high: "border-yellow-500/40 bg-yellow-500/15 text-yellow-300",
-      urgent: "border-red-500/40 bg-red-500/15 text-red-300",
+      normal: "border-blue-500/40 bg-blue-500/15 text-slate-900 dark:text-blue-300",
+      high: "border-yellow-500/40 bg-yellow-500/15 text-slate-900 dark:text-yellow-300",
+      urgent: "border-red-500/40 bg-red-500/15 text-slate-900 dark:text-red-300",
     };
 
     return classes[priority as keyof typeof classes] || classes.normal;
@@ -682,7 +682,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                             <button
                               onClick={() => handleMakeCall(activity.id)}
                               disabled={callingTaskId === activity.id || (!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial)}
-                              className="flex flex-1 items-center justify-center gap-1 rounded border border-blue-400/70 bg-blue-500/30 px-3 py-1.5 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/45 disabled:opacity-50"
+                              className="flex flex-1 items-center justify-center gap-1 rounded border border-blue-400/70 bg-blue-500/30 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-blue-300 transition-colors hover:bg-blue-500/45 disabled:opacity-50"
                               title={!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial ? "Pessoa sem nenhum número cadastrado" : "Ligar agora"}
                             >
                               {callingTaskId === activity.id ? (
@@ -699,7 +699,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                             <button
                               onClick={() => handleNoShow(activity.id)}
                               disabled={noShowTaskId === activity.id || loadingTaskId === activity.id}
-                              className="flex flex-1 items-center justify-center gap-1 rounded border border-orange-500/50 bg-orange-500/20 px-3 py-1.5 text-sm font-medium text-orange-400 transition-colors hover:bg-orange-500/30 disabled:opacity-50"
+                              className="flex flex-1 items-center justify-center gap-1 rounded border border-orange-500/50 bg-orange-500/20 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-orange-400 transition-colors hover:bg-orange-500/30 disabled:opacity-50"
                               title="Cliente não compareceu - move para Reagendamento"
                             >
                               {noShowTaskId === activity.id ? (
@@ -714,7 +714,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={() => handleToggleComplete(activity.id)}
                             disabled={loadingTaskId === activity.id}
-                            className="flex flex-1 items-center justify-center gap-1 rounded border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+                            className="flex flex-1 items-center justify-center gap-1 rounded border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
                           >
                             {loadingTaskId === activity.id ? (
                               <Loader2 size={14} className="animate-spin" />
@@ -726,7 +726,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={() => handleStartEdit(activity)}
                             disabled={loadingTaskId === activity.id}
-                            className="rounded border border-blue-500/50 bg-blue-500/20 px-3 py-1.5 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/30 disabled:opacity-50"
+                            className="rounded border border-blue-500/50 bg-blue-500/20 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-blue-400 transition-colors hover:bg-blue-500/30 disabled:opacity-50"
                             title="Editar"
                           >
                             <Edit size={14} />
@@ -734,7 +734,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={() => handleOpenReschedule(activity)}
                             disabled={loadingTaskId === activity.id}
-                            className="rounded border border-yellow-500/50 bg-yellow-500/20 px-3 py-1.5 text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/30 disabled:opacity-50"
+                            className="rounded border border-yellow-500/50 bg-yellow-500/20 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-yellow-400 transition-colors hover:bg-yellow-500/30 disabled:opacity-50"
                             title="Reagendar"
                           >
                             <Calendar size={14} />
@@ -742,7 +742,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           <button
                             onClick={() => handleDeleteTask(activity.id)}
                             disabled={loadingTaskId === activity.id}
-                            className="rounded border border-red-500/50 bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+                            className="rounded border border-red-500/50 bg-red-500/20 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
                             title="Excluir"
                           >
                             {loadingTaskId === activity.id ? (

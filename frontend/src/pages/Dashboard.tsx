@@ -19,7 +19,7 @@ import {
   Medal,
 } from "lucide-react";
 // Recharts para gráficos
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Brush } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import CountUp from "react-countup";
 import toast from "react-hot-toast";
 import { useDashboard, PeriodType } from "../context/DashboardContext";
@@ -582,13 +582,10 @@ const Dashboard: React.FC = () => {
 
           {kpis && kpis.cards_by_stage && kpis.cards_by_stage.length > 0 ? (
             <>
-              <p className="mb-3 text-xs text-slate-500">
-                Ajuste a visualizacao arrastando a barra para os lados.
-              </p>
               <ResponsiveContainer width="100%" height={380}>
                 <BarChart
                   data={kpis.cards_by_stage}
-                  margin={{ top: 50, right: 10, left: 0, bottom: 40 }}
+                  margin={{ top: 50, right: 10, left: 0, bottom: 50 }}
                 >
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} />
                 <XAxis
@@ -614,30 +611,13 @@ const Dashboard: React.FC = () => {
                     return [value, name];
                   }}
                 />
-                <Legend
-                  wrapperStyle={{ paddingTop: "20px" }}
-                  iconType="circle"
-                  formatter={(value: string) => {
-                    if (value === "card_count") return "Quantidade de Cards";
-                    if (value === "total_value") return "Valor Total";
-                    return value;
-                  }}
-                />
                 <Bar dataKey="card_count" fill={COLORS.board.blue} radius={[8, 8, 0, 0]} />
-                {/* Brush para zoom/pan - só aparece se houver muitos estágios */}
-                {kpis.cards_by_stage.length > 4 && (
-                  <Brush
-                    dataKey="stage_name"
-                    height={24}
-                    y={0}
-                    stroke={COLORS.board.blue}
-                    fill={chartColors.surface.elevated}
-                    travellerWidth={10}
-                    tickFormatter={() => ""}
-                  />
-                )}
                 </BarChart>
               </ResponsiveContainer>
+              <div className="mt-2 flex items-center justify-center gap-2 text-sm">
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                <span className="text-blue-500">Quantidade de Cards</span>
+              </div>
             </>
           ) : (
             <div className="flex h-80 flex-col items-center justify-center text-slate-500">
@@ -658,9 +638,6 @@ const Dashboard: React.FC = () => {
 
           {kpis && kpis.sales_evolution && kpis.sales_evolution.length > 0 ? (
             <>
-              <p className="mb-3 text-xs text-slate-500">
-                Ajuste a visualizacao arrastando a barra para os lados.
-              </p>
               <ResponsiveContainer width="100%" height={380}>
                 <LineChart
                   data={kpis.sales_evolution}
@@ -712,16 +689,6 @@ const Dashboard: React.FC = () => {
                   strokeWidth={2}
                   dot={{ fill: COLORS.board.red, r: 4 }}
                   activeDot={{ r: 6 }}
-                />
-                {/* Brush para zoom/pan - permite navegar pela timeline */}
-                <Brush
-                  dataKey="period"
-                  height={24}
-                  y={0}
-                  stroke={COLORS.board.green}
-                  fill={chartColors.surface.elevated}
-                  travellerWidth={10}
-                  tickFormatter={() => ""}
                 />
                 </LineChart>
               </ResponsiveContainer>

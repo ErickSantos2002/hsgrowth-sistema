@@ -74,22 +74,22 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
    * Retorna classes CSS para o tipo de atividade selecionado
    */
   const getTypeColorClasses = (type: ActivityType, isSelected: boolean) => {
-    const unselected = "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700";
+    const unselected = "bg-gray-100 dark:bg-slate-800 text-slate-900 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700";
     const configs = {
       call: isSelected
-        ? "bg-blue-500/30 text-blue-400 border-blue-500"
+        ? "bg-blue-500/30 text-slate-900 dark:text-blue-400 border-blue-500"
         : unselected,
       meeting: isSelected
-        ? "bg-purple-500/30 text-purple-400 border-purple-500"
+        ? "bg-purple-500/30 text-slate-900 dark:text-purple-400 border-purple-500"
         : unselected,
       task: isSelected
-        ? "bg-green-500/30 text-green-400 border-green-500"
+        ? "bg-green-500/30 text-slate-900 dark:text-green-400 border-green-500"
         : unselected,
       follow_up: isSelected
-        ? "bg-yellow-500/30 text-yellow-400 border-yellow-500"
+        ? "bg-yellow-500/30 text-slate-900 dark:text-yellow-400 border-yellow-500"
         : unselected,
       other: isSelected
-        ? "bg-slate-500/30 text-slate-400 dark:text-slate-400 border-gray-400 dark:border-slate-500"
+        ? "bg-slate-500/30 text-slate-900 dark:text-slate-400 border-gray-400 dark:border-slate-500"
         : unselected,
     };
     return configs[type];
@@ -101,14 +101,14 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
   const getPriorityClasses = (priority: string, isSelected: boolean) => {
     const configs = {
       normal: isSelected
-        ? "bg-blue-500/30 text-blue-300 border-blue-500"
-        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
+        ? "bg-blue-500/30 text-slate-900 dark:text-blue-300 border-blue-500"
+        : "bg-gray-100 dark:bg-slate-800 text-slate-900 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
       high: isSelected
-        ? "bg-yellow-500/30 text-yellow-400 border-yellow-500"
-        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
+        ? "bg-yellow-500/30 text-slate-900 dark:text-yellow-400 border-yellow-500"
+        : "bg-gray-100 dark:bg-slate-800 text-slate-900 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
       urgent: isSelected
-        ? "bg-red-500/30 text-red-400 border-red-500"
-        : "bg-gray-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
+        ? "bg-red-500/30 text-slate-900 dark:text-red-400 border-red-500"
+        : "bg-gray-100 dark:bg-slate-800 text-slate-900 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
     };
     return configs[priority as keyof typeof configs];
   };
@@ -184,7 +184,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-4 py-3 text-emerald-300 transition-colors hover:bg-emerald-500/25 hover:text-emerald-200"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-4 py-3 text-slate-900 dark:text-emerald-300 transition-colors hover:bg-emerald-500/25 hover:text-slate-900 dark:hover:text-emerald-200"
       >
         <Plus size={18} />
         <span>Adicionar Atividades</span>
@@ -385,14 +385,14 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       <div className="flex gap-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-2">
         <button
           onClick={handleCancel}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-slate-900 dark:text-white transition-colors hover:bg-red-700"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
         >
           <X size={18} />
           Cancelar
         </button>
         <button
           onClick={handleSave}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-slate-900 dark:text-white transition-colors hover:bg-blue-700"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
         >
           <Save size={18} />
           Salvar atividade

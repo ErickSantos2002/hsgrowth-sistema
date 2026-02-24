@@ -699,7 +699,7 @@ const CardDetails: React.FC = () => {
                   className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "atividade"
                       ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
                   <Calendar size={18} />
@@ -714,12 +714,12 @@ const CardDetails: React.FC = () => {
                   className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "anotacoes"
                       ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
                   <FileText size={18} />
                   Anotações
-                  <span className="ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
+                  <span className="ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
                     {card.notes?.length || 0}
                   </span>
                 </button>
@@ -729,7 +729,7 @@ const CardDetails: React.FC = () => {
                   className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "agendador"
                       ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
                   <Users size={18} />
@@ -741,12 +741,12 @@ const CardDetails: React.FC = () => {
                   className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
                     activeTab === "arquivos"
                       ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
                   <Paperclip size={18} />
                   Arquivos
-                  <span className="ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
+                  <span className="ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
                     {attachmentsCount}
                   </span>
                 </button>
