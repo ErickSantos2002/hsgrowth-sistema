@@ -221,7 +221,7 @@ export default function MainLayout() {
             <div className={`${sidebarOpen ? "lg:ml-64" : "lg:ml-20"} flex h-screen flex-col transition-all duration-300`}>
                 {/* Top Navbar */}
                 <nav className="z-[2000] flex-shrink-0 border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50">
-                    <div className="flex flex-wrap items-center gap-4">
+                    <div className="relative flex flex-wrap items-center gap-4">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                             className="order-1 flex-shrink-0 rounded-lg p-2 text-slate-500 transition-all hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-white"
@@ -230,7 +230,7 @@ export default function MainLayout() {
                         </button>
 
                         {/* Ações do topo */}
-                        <div className="order-2 ml-auto flex flex-shrink-0 items-center gap-3 sm:order-3 sm:ml-0">
+                        <div className="order-2 ml-auto flex flex-shrink-0 items-center gap-3 sm:order-3 sm:ml-auto">
                             {/* Avatar + Info do Usuário */}
                             <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-100/50 px-3 py-2 transition-all hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/50 dark:hover:bg-slate-800/70">
                                 {/* Avatar com indicador online */}
@@ -281,7 +281,7 @@ export default function MainLayout() {
                         </div>
 
                         {/* Busca Global */}
-                        <div className="order-3 w-full sm:order-2 sm:w-auto sm:flex-1">
+                        <div className="order-3 w-full sm:order-2 sm:w-auto sm:flex-1 lg:absolute lg:left-1/2 lg:top-1/2 lg:w-full lg:max-w-2xl lg:-translate-x-1/2 lg:-translate-y-1/2">
                             <GlobalSearch />
                         </div>
                     </div>
