@@ -1,1279 +1,558 @@
 /**
- * ATENÇÃO: Esta página está usando DADOS MOCKADOS temporariamente
- * até que os endpoints do backend (/api/v1/reports/*) sejam implementados.
+ * Página de Relatórios — Gerador de Dashboards Customizados (Power BI-style)
  *
- * TODO: Quando o backend estiver pronto:
- * 1. Remover os mocks das funções handleGenerate*Report
- * 2. Descomentar as chamadas para reportService
- * 3. Testar com dados reais
+ * Fase 1: dados mockados + persistência em localStorage.
+ * Fase 2 (quando aprovado): substituir localStorage por chamadas à API:
+ *   - CRUD /api/v1/reports/custom → savedReports
+ *   - POST /api/v1/reports/query  → dados reais nos gráficos
  */
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText,
-  TrendingUp,
-  ArrowRightLeft,
-  Download,
-  BarChart3,
-  ChevronDown,
+  Plus,
+  Trash2,
   Shield,
+  LayoutGrid,
+  Save,
+  ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { COLORS, getChartColors } from '../constants/colors';
-import { useTheme } from '../context/ThemeContext';
-import { showError, showWarning } from '../utils/toast';
+import { PageHeader } from '../components/layout';
+import { SearchInput } from '../components/common';
+import { showSuccess, showError } from '../utils/toast';
+import FieldPanel from '../components/reports/FieldPanel';
+import ChartWidget from '../components/reports/ChartWidget';
+import ChartConfigPanel from '../components/reports/ChartConfigPanel';
+import NewReportModal from '../components/reports/NewReportModal';
 import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  LineChart,
-  Line,
-} from 'recharts';
-import reportService, {
-  PeriodType,
-  SalesReportResponse,
-  ConversionReportResponse,
-  TransferReportResponse,
-} from '../services/reportService';
-import boardService from '../services/boardService';
-import userService from '../services/userService';
+  DataSource,
+  ChartConfig,
+  QueryResponse,
+  CustomReportConfig,
+  SavedReport,
+  generateMockData,
+} from '../components/reports/reportTypes';
 
-type TabType = 'sales' | 'conversion' | 'transfers';
+// Chave para persistência local (será removida na Fase 2)
+const LOCAL_STORAGE_KEY = 'hsgrowth_reports';
 
-interface Board {
-  id: number;
-  name: string;
-}
-
-interface User {
-  id: number;
-  name: string;
-}
+// Gera IDs numéricos únicos para relatórios salvos localmente
+let nextId = Date.now();
+const getNextId = (): number => ++nextId;
 
 const Reports: React.FC = () => {
   const { user: currentUser } = useAuth();
-  // Cores dos graficos adaptadas ao tema atual (Recharts nao suporta dark: do Tailwind)
-  const { darkMode } = useTheme();
-  const chartColors = getChartColors(darkMode);
-  const [activeTab, setActiveTab] = useState<TabType>('sales');
-  const [loading, setLoading] = useState(false);
 
-  // Verifica se o usuário é admin ou manager
-  const isManagerOrAdmin = currentUser?.role === 'admin' || currentUser?.role === 'manager';
+  // ========================
+  // Estado principal
+  // ========================
 
-  // Listas para selects
-  const [boards, setBoards] = useState<Board[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  // Modo de exibição: lista de relatórios ou builder
+  const [mode, setMode] = useState<'list' | 'builder'>('list');
 
-  // Filtros Tab 1 - Vendas
-  const [salesPeriod, setSalesPeriod] = useState<PeriodType>('this_month');
-  const [salesBoardId, setSalesBoardId] = useState<string>('');
-  const [salesUserId, setSalesUserId] = useState<string>('');
-  const [salesStartDate, setSalesStartDate] = useState('');
-  const [salesEndDate, setSalesEndDate] = useState('');
-  const [salesReport, setSalesReport] = useState<SalesReportResponse | null>(null);
+  // Lista de relatórios persistidos no localStorage
+  const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
 
-  // Filtros Tab 2 - Conversão
-  const [conversionBoardId, setConversionBoardId] = useState<string>('');
-  const [conversionPeriod, setConversionPeriod] = useState<PeriodType>('this_month');
-  const [conversionStartDate, setConversionStartDate] = useState('');
-  const [conversionEndDate, setConversionEndDate] = useState('');
-  const [conversionReport, setConversionReport] = useState<ConversionReportResponse | null>(null);
+  // Relatório sendo editado no builder
+  const [currentReport, setCurrentReport] = useState<CustomReportConfig>({
+    name: 'Novo Relatório',
+    charts: [],
+    allowed_sources: [],
+  });
 
-  // Filtros Tab 3 - Transferências
-  const [transferPeriod, setTransferPeriod] = useState<PeriodType>('this_month');
-  const [transferFromUserId, setTransferFromUserId] = useState<string>('');
-  const [transferToUserId, setTransferToUserId] = useState<string>('');
-  const [transferStartDate, setTransferStartDate] = useState('');
-  const [transferEndDate, setTransferEndDate] = useState('');
-  const [transferReport, setTransferReport] = useState<TransferReportResponse | null>(null);
+  // Dados de cada gráfico (key = chart.id); são regenerados como mock
+  const [chartData, setChartData] = useState<Record<string, QueryResponse>>({});
 
-  // Carrega boards e users ao montar
+  // Fontes de dados ativas no painel esquerdo do builder
+  const [activeSources, setActiveSources] = useState<DataSource[]>([]);
+
+  // Modal de criação de novo relatório
+  const [showNewReportModal, setShowNewReportModal] = useState(false);
+
+  // Controla se o painel direito está em modo ativo (form visível) ou idle (placeholder)
+  const [configPanelActive, setConfigPanelActive] = useState(false);
+  // Gráfico sendo editado — null significa "novo gráfico"
+  const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
+
+  // Busca na lista de relatórios
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Edição inline do título do relatório (no builder)
+  const [isTitleEditing, setIsTitleEditing] = useState(false);
+  const [titleValue, setTitleValue] = useState('Novo Relatório');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Permissão de acesso
+  const isManagerOrAdmin =
+    currentUser?.role === 'admin' || currentUser?.role === 'manager';
+
+  // ========================
+  // Inicialização
+  // ========================
+
+  // Carrega relatórios do localStorage ao montar o componente
   useEffect(() => {
-    loadBoardsAndUsers();
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        setSavedReports(JSON.parse(stored));
+      }
+    } catch {
+      // Ignora dados corrompidos no localStorage
+    }
   }, []);
 
-  const loadBoardsAndUsers = async () => {
+  // Foca o input de título ao entrar em modo de edição inline
+  useEffect(() => {
+    if (isTitleEditing && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isTitleEditing]);
+
+  // ========================
+  // Handlers: modo lista
+  // ========================
+
+  /** Abre o modal de criação de novo relatório */
+  const handleNewReport = () => {
+    setShowNewReportModal(true);
+  };
+
+  /** Recebe nome e fontes do modal e inicia o builder em branco */
+  const handleCreateReport = (name: string, sources: DataSource[]) => {
+    const blank: CustomReportConfig = { name, charts: [], allowed_sources: sources };
+    setCurrentReport(blank);
+    setChartData({});
+    setTitleValue(name);
+    setActiveSources(sources);
+    setConfigPanelActive(false);
+    setEditingChart(null);
+    setShowNewReportModal(false);
+    setMode('builder');
+  };
+
+  /** Abre relatório salvo no builder, restaurando os dados mock de cada gráfico */
+  const handleOpenReport = (report: SavedReport) => {
+    setCurrentReport(report.config);
+    setTitleValue(report.config.name);
+
+    // Restaura as fontes permitidas salvas na configuração do relatório
+    setActiveSources(report.config.allowed_sources ?? []);
+
+    // Regenera dados mock para cada gráfico (não são persistidos no localStorage)
+    const restoredData: Record<string, QueryResponse> = {};
+    for (const chart of report.config.charts) {
+      restoredData[chart.id] = generateMockData(
+        chart.x_field,
+        chart.y_fields,
+        chart.x_group_by
+      );
+    }
+    setChartData(restoredData);
+
+    setMode('builder');
+  };
+
+  /** Remove relatório da lista e do localStorage */
+  const handleDeleteReport = (id: number) => {
+    if (!confirm('Tem certeza que deseja excluir este relatório?')) return;
+    const updated = savedReports.filter((r) => r.id !== id);
+    setSavedReports(updated);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  // ========================
+  // Handlers: builder
+  // ========================
+
+  /** Salva relatório atual no localStorage (cria novo ou atualiza existente) */
+  const handleSaveReport = () => {
     try {
-      const [boardsResponse, usersData] = await Promise.all([
-        boardService.list(),
-        userService.listActive(),
-      ]);
-      // Extrai os boards da resposta paginada
-      setBoards(boardsResponse.boards || []);
-      setUsers(usersData);
-    } catch (error) {
-      console.error('Erro ao carregar boards/users:', error);
+      const reportName = titleValue.trim() || 'Sem título';
+      const existingIndex = savedReports.findIndex((r) => r.id === currentReport.id);
+      let updatedList: SavedReport[];
+
+      if (existingIndex >= 0) {
+        // Atualiza relatório existente na lista
+        updatedList = savedReports.map((r, i) =>
+          i === existingIndex
+            ? {
+                ...r,
+                name: reportName,
+                updated_at: new Date().toISOString(),
+                charts_count: currentReport.charts.length,
+                config: { ...currentReport, name: reportName },
+              }
+            : r
+        );
+      } else {
+        // Cria entrada nova
+        const newId = getNextId();
+        const newSaved: SavedReport = {
+          id: newId,
+          name: reportName,
+          created_by_name: currentUser?.name || 'Usuário',
+          updated_at: new Date().toISOString(),
+          charts_count: currentReport.charts.length,
+          config: { ...currentReport, name: reportName, id: newId },
+        };
+        updatedList = [...savedReports, newSaved];
+        // Guarda o id no estado para que saves futuros atualizem o mesmo registro
+        setCurrentReport((prev) => ({ ...prev, name: reportName, id: newId }));
+      }
+
+      setSavedReports(updatedList);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
+      showSuccess('Relatório salvo com sucesso!');
+    } catch {
+      showError('Erro ao salvar relatório');
     }
   };
 
-  // Handler Tab 1 - Vendas
-  const handleGenerateSalesReport = async () => {
-    setLoading(true);
-    try {
-      // TODO: Temporariamente usando dados mockados até backend estar implementado
-      console.log('Usando dados mockados para visualização');
+  /** Confirma o título editável e atualiza o estado do relatório atual */
+  const handleTitleBlur = () => {
+    setIsTitleEditing(false);
+    const newName = titleValue.trim() || 'Sem título';
+    setCurrentReport((prev) => ({ ...prev, name: newName }));
+  };
 
-      // Simula delay da API
-      await new Promise(resolve => setTimeout(resolve, 500));
+  // ========================
+  // Handlers: gráficos
+  // ========================
 
-      setSalesReport({
-        summary: {
-          total_cards_created: 145,
-          total_cards_won: 78,
-          total_cards_lost: 32,
-          total_value_won: 487500.00,
-          conversion_rate: 53.79,
-        },
-        details: [
-          { user_name: 'João Silva', cards_created: 42, cards_won: 24, cards_lost: 8, value_won: 156000.00, conversion_rate: 57.14 },
-          { user_name: 'Maria Santos', cards_created: 38, cards_won: 21, cards_lost: 7, value_won: 132500.00, conversion_rate: 55.26 },
-          { user_name: 'Pedro Costa', cards_created: 35, cards_won: 18, cards_lost: 9, value_won: 98750.00, conversion_rate: 51.43 },
-          { user_name: 'Ana Oliveira', cards_created: 30, cards_won: 15, cards_lost: 8, value_won: 100250.00, conversion_rate: 50.00 },
-        ],
-      });
-    } catch (error: any) {
-      console.error('Erro ao gerar relatório de vendas:', error);
-      showError('Erro inesperado ao gerar relatório.');
-    } finally {
-      setLoading(false);
+  /**
+   * Atualiza (ou cria) um gráfico em tempo real conforme o usuário edita o painel direito.
+   * Não fecha o painel — as mudanças são refletidas imediatamente no grid.
+   */
+  const handleLiveChartChange = (config: ChartConfig, data: QueryResponse) => {
+    setCurrentReport((prev) => {
+      const existingIndex = prev.charts.findIndex((c) => c.id === config.id);
+      const updatedCharts =
+        existingIndex >= 0
+          ? prev.charts.map((c, i) => (i === existingIndex ? config : c))
+          : [...prev.charts, config];
+      return { ...prev, charts: updatedCharts };
+    });
+
+    setChartData((prev) => ({ ...prev, [config.id]: data }));
+  };
+
+  /** Remove gráfico do relatório atual */
+  const handleDeleteChart = (id: string) => {
+    setCurrentReport((prev) => ({
+      ...prev,
+      charts: prev.charts.filter((c) => c.id !== id),
+    }));
+    setChartData((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+    // Se o gráfico removido estava sendo editado, volta para idle
+    if (editingChart?.id === id) {
+      setEditingChart(null);
+      setConfigPanelActive(false);
     }
   };
 
-  // Handler Tab 2 - Conversão
-  const handleGenerateConversionReport = async () => {
-    setLoading(true);
-    try {
-      // TODO: Temporariamente usando dados mockados até backend estar implementado
-      console.log('Usando dados mockados para visualização');
-
-      // Simula delay da API
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      setConversionReport({
-        summary: {
-          total_cards: 145,
-          total_value: 825000.00,
-          overall_conversion_rate: 53.79,
-        },
-        stages: [
-          { stage_name: 'Novos Leads', card_count: 145, total_value: 825000.00, conversion_rate: 100.00, avg_time_in_stage: 2.3 },
-          { stage_name: 'Qualificação', card_count: 98, total_value: 612500.00, conversion_rate: 67.59, avg_time_in_stage: 3.5 },
-          { stage_name: 'Proposta Enviada', card_count: 85, total_value: 531250.00, conversion_rate: 58.62, avg_time_in_stage: 5.2 },
-          { stage_name: 'Negociação', card_count: 78, total_value: 487500.00, conversion_rate: 53.79, avg_time_in_stage: 4.7 },
-          { stage_name: 'Ganho', card_count: 78, total_value: 487500.00, conversion_rate: 53.79, avg_time_in_stage: null },
-          { stage_name: 'Perdido', card_count: 32, total_value: 187500.00, conversion_rate: 22.07, avg_time_in_stage: null },
-        ],
-      });
-    } catch (error: any) {
-      console.error('Erro ao gerar relatório de conversão:', error);
-      showError('Erro inesperado ao gerar relatório.');
-    } finally {
-      setLoading(false);
-    }
+  /** Carrega a config do gráfico no painel direito */
+  const handleEditChart = (chart: ChartConfig) => {
+    setEditingChart(chart);
+    setConfigPanelActive(true);
   };
 
-  // Handler Tab 3 - Transferências
-  const handleGenerateTransferReport = async () => {
-    setLoading(true);
-    try {
-      // TODO: Temporariamente usando dados mockados até backend estar implementado
-      console.log('Usando dados mockados para visualização');
-
-      // Simula delay da API
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      setTransferReport({
-        summary: {
-          total_transfers: 24,
-          total_cards_won_after_transfer: 18,
-          total_value_won_after_transfer: 213750.00,
-          avg_days_to_won: 12.5,
-        },
-        details: [
-          { from_user_name: 'João Silva', to_user_name: 'Maria Santos', transfer_count: 8, cards_won_count: 6, total_value_won: 87500.00, avg_days_to_won: 11.2 },
-          { from_user_name: 'Pedro Costa', to_user_name: 'João Silva', transfer_count: 6, cards_won_count: 5, total_value_won: 62500.00, avg_days_to_won: 13.8 },
-          { from_user_name: 'Maria Santos', to_user_name: 'Ana Oliveira', transfer_count: 5, cards_won_count: 4, total_value_won: 42500.00, avg_days_to_won: 10.5 },
-          { from_user_name: 'Ana Oliveira', to_user_name: 'Pedro Costa', transfer_count: 5, cards_won_count: 3, total_value_won: 21250.00, avg_days_to_won: 15.3 },
-        ],
-      });
-    } catch (error: any) {
-      console.error('Erro ao gerar relatório de transferências:', error);
-      showError('Erro inesperado ao gerar relatório.');
-    } finally {
-      setLoading(false);
-    }
+  /** Regera dados mock para um gráfico específico */
+  const handleRefreshChart = (chart: ChartConfig) => {
+    const newData = generateMockData(chart.x_field, chart.y_fields, chart.x_group_by);
+    setChartData((prev) => ({ ...prev, [chart.id]: newData }));
   };
 
-  const handleExportExcel = () => {
-    showWarning('Exportação para Excel - Funcionalidade em desenvolvimento');
+  // Ativa o painel em modo "novo gráfico" (formulário em branco)
+  const handleOpenNewChart = () => {
+    setEditingChart(null);
+    setConfigPanelActive(true);
   };
 
-  // Verifica permissão de acesso
+  // Volta ao estado idle (placeholder "nenhum selecionado")
+  const handleResetConfigPanel = () => {
+    setEditingChart(null);
+    setConfigPanelActive(false);
+  };
+
+  // ========================
+  // Filtro da lista
+  // ========================
+
+  const filteredReports = savedReports.filter(
+    (r) => !searchTerm || r.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // ========================
+  // Acesso restrito
+  // ========================
+
   if (!isManagerOrAdmin) {
     return (
       <div className="p-6">
         <div className="mx-auto max-w-2xl py-12 text-center">
-          <div className="mb-4">
-            <Shield size={64} className="mx-auto text-red-400" />
-          </div>
-          <h2 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">Acesso Restrito</h2>
+          <Shield size={64} className="mx-auto mb-4 text-red-400" />
+          <h2 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">
+            Acesso Restrito
+          </h2>
           <p className="text-slate-500 dark:text-slate-400">
-            Apenas administradores e gerentes podem acessar relatórios.
+            Apenas administradores e gerentes podem acessar os relatórios.
           </p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="overflow-x-hidden p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
-            <FileText className="text-slate-900 dark:text-white" size={32} />
-            Relatórios
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400">Análise detalhada de vendas, conversão e transferências</p>
-        </div>
+  // ========================
+  // MODO BUILDER
+  // ========================
 
-        {/* Tabs */}
-        <div className="mb-6 flex w-full max-w-full justify-center gap-1 overflow-x-hidden border-b border-gray-200 sm:justify-start sm:gap-4 dark:border-slate-700">
+  if (mode === 'builder') {
+    return (
+      <div className="flex h-full flex-col overflow-hidden">
+        {/* Barra de topo do builder */}
+        <div className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700/50 dark:bg-slate-900">
+          {/* Botão voltar para a lista */}
           <button
-            onClick={() => setActiveTab('sales')}
-            className={`flex min-w-0 flex-1 items-center justify-center gap-2 px-2 py-3 text-base font-medium transition-colors sm:flex-none sm:px-6 sm:text-base ${
-              activeTab === 'sales'
-                ? 'border-b-2 border-emerald-400 text-emerald-400'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-            }`}
+            onClick={() => setMode('list')}
+            title="Voltar para a lista"
+            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
           >
-            <TrendingUp size={20} />
-            Vendas
+            <ArrowLeft size={20} />
           </button>
-          <button
-            onClick={() => setActiveTab('conversion')}
-            className={`flex min-w-0 flex-1 items-center justify-center gap-2 px-2 py-3 text-base font-medium transition-colors sm:flex-none sm:px-6 sm:text-base ${
-              activeTab === 'conversion'
-                ? 'border-b-2 border-emerald-400 text-emerald-400'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-            }`}
-          >
-            <BarChart3 size={20} />
-            Conversão
-          </button>
-          <button
-            onClick={() => setActiveTab('transfers')}
-            className={`flex min-w-0 flex-1 items-center justify-center gap-2 px-2 py-3 text-base font-medium transition-colors sm:flex-none sm:px-6 sm:text-base ${
-              activeTab === 'transfers'
-                ? 'border-b-2 border-emerald-400 text-emerald-400'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-            }`}
-          >
-            <ArrowRightLeft size={20} />
-            Transferências
-          </button>
-        </div>
 
-        {/* Tab Content */}
-        {activeTab === 'sales' && (
-          <SalesTab
-            period={salesPeriod}
-            setPeriod={setSalesPeriod}
-            boardId={salesBoardId}
-            setBoardId={setSalesBoardId}
-            userId={salesUserId}
-            setUserId={setSalesUserId}
-            startDate={salesStartDate}
-            setStartDate={setSalesStartDate}
-            endDate={salesEndDate}
-            setEndDate={setSalesEndDate}
-            boards={boards}
-            users={users}
-            loading={loading}
-            report={salesReport}
-            onGenerate={handleGenerateSalesReport}
-            onExport={handleExportExcel}
-          />
-        )}
-
-        {activeTab === 'conversion' && (
-          <ConversionTab
-            boardId={conversionBoardId}
-            setBoardId={setConversionBoardId}
-            period={conversionPeriod}
-            setPeriod={setConversionPeriod}
-            startDate={conversionStartDate}
-            setStartDate={setConversionStartDate}
-            endDate={conversionEndDate}
-            setEndDate={setConversionEndDate}
-            boards={boards}
-            loading={loading}
-            report={conversionReport}
-            onGenerate={handleGenerateConversionReport}
-            onExport={handleExportExcel}
-          />
-        )}
-
-        {activeTab === 'transfers' && (
-          <TransfersTab
-            period={transferPeriod}
-            setPeriod={setTransferPeriod}
-            fromUserId={transferFromUserId}
-            setFromUserId={setTransferFromUserId}
-            toUserId={transferToUserId}
-            setToUserId={setTransferToUserId}
-            startDate={transferStartDate}
-            setStartDate={setTransferStartDate}
-            endDate={transferEndDate}
-            setEndDate={setTransferEndDate}
-            users={users}
-            loading={loading}
-            report={transferReport}
-            onGenerate={handleGenerateTransferReport}
-            onExport={handleExportExcel}
-          />
-        )}
-    </div>
-  );
-};
-
-// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-interface SelectMenuProps {
-  value: string;
-  options: SelectOption[];
-  placeholder?: string;
-  onChange: (value: string) => void;
-}
-
-const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find((option) => option.value === value);
-  const selectedLabel = selectedOption?.label || placeholder || 'Selecione';
-
-  return (
-    <div ref={menuRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-      >
-        <span className={`truncate ${selectedOption ? '' : 'text-slate-400'}`}>{selectedLabel}</span>
-        <ChevronDown
-          size={16}
-          className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-      {isOpen && (
-        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-          {options.map((option) => (
-            <button
-              key={option.value || option.label}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
+          {/* Título editável ao clicar */}
+          {isTitleEditing ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={titleValue}
+              onChange={(e) => setTitleValue(e.target.value)}
+              onBlur={handleTitleBlur}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleTitleBlur();
+                if (e.key === 'Escape') {
+                  setIsTitleEditing(false);
+                  setTitleValue(currentReport.name);
+                }
               }}
-              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
-                option.value === value ? 'bg-gray-100 dark:bg-slate-800/70' : ''
-              }`}
+              className="min-w-0 flex-1 rounded-lg border border-emerald-500 bg-transparent px-3 py-1.5 text-lg font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:text-white"
+            />
+          ) : (
+            <button
+              onClick={() => {
+                setTitleValue(currentReport.name);
+                setIsTitleEditing(true);
+              }}
+              title="Clique para renomear o relatório"
+              className="min-w-0 flex-1 truncate rounded-lg px-3 py-1.5 text-left text-lg font-semibold text-slate-900 transition-colors hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800"
             >
-              <span className="truncate">{option.label}</span>
+              {currentReport.name}
             </button>
+          )}
+
+          {/* Ações do builder */}
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={handleOpenNewChart}
+              className="flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              <Plus size={16} />
+              Gráfico
+            </button>
+            <button
+              onClick={handleSaveReport}
+              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+            >
+              <Save size={16} />
+              Salvar
+            </button>
+          </div>
+        </div>
+
+        {/* Corpo do builder: painel esquerdo + área central + painel direito */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Painel esquerdo — campos disponíveis */}
+          <FieldPanel activeSources={activeSources} />
+
+          {/* Área central — grid de gráficos */}
+          <main className="flex-1 overflow-y-auto bg-gray-50 p-6 dark:bg-slate-950">
+            {currentReport.charts.length === 0 ? (
+              // Estado vazio: nenhum gráfico adicionado ainda
+              <div className="flex h-full min-h-[400px] flex-col items-center justify-center gap-4 text-center">
+                <div className="rounded-full bg-gray-100 p-6 dark:bg-slate-800">
+                  <LayoutGrid size={40} className="text-slate-400 dark:text-slate-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Nenhum gráfico adicionado
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Clique em{' '}
+                    <strong className="text-slate-700 dark:text-slate-300">+ Gráfico</strong>{' '}
+                    no topo para começar a construir seu dashboard
+                  </p>
+                </div>
+                <button
+                  onClick={handleOpenNewChart}
+                  className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                >
+                  <Plus size={16} />
+                  Adicionar Gráfico
+                </button>
+              </div>
+            ) : (
+              // Grid de gráficos + card "+" no final
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                {currentReport.charts.map((chart) => (
+                  <ChartWidget
+                    key={chart.id}
+                    config={chart}
+                    data={chartData[chart.id] || {}}
+                    isSelected={editingChart?.id === chart.id}
+                    onClick={() => handleEditChart(chart)}
+                    onDelete={() => handleDeleteChart(chart.id)}
+                    onRefresh={() => handleRefreshChart(chart)}
+                  />
+                ))}
+
+                {/* Card de atalho para adicionar mais gráficos */}
+                <button
+                  onClick={handleOpenNewChart}
+                  className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gray-300 bg-white text-slate-400 transition-colors hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-800/30 dark:hover:border-emerald-500/50 dark:hover:bg-emerald-900/10 dark:hover:text-emerald-400"
+                >
+                  <Plus size={28} />
+                  <span className="text-sm font-medium">Adicionar Gráfico</span>
+                </button>
+              </div>
+            )}
+          </main>
+
+          {/* Painel direito — sempre visível no builder */}
+          <ChartConfigPanel
+            allowedSources={currentReport.allowed_sources}
+            active={configPanelActive}
+            editingConfig={editingChart}
+            onLiveChange={handleLiveChartChange}
+            onClose={handleResetConfigPanel}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ========================
+  // MODO LISTA
+  // ========================
+
+  return (
+    <div className="p-6">
+      <PageHeader
+        title="Relatórios"
+        description="Crie e salve seus dashboards personalizados"
+        icon={FileText}
+        actions={
+          <button
+            onClick={handleNewReport}
+            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-medium text-white transition-colors hover:bg-emerald-700"
+          >
+            <Plus size={20} />
+            Novo Relatório
+          </button>
+        }
+      />
+
+      {/* Campo de busca */}
+      <div className="mb-6">
+        <SearchInput
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Buscar relatórios..."
+        />
+      </div>
+
+      {/* Estado vazio */}
+      {filteredReports.length === 0 && (
+        <div className="py-16 text-center">
+          <FileText size={64} className="mx-auto mb-4 text-slate-300 dark:text-slate-700" />
+          <h3 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">
+            {searchTerm ? 'Nenhum relatório encontrado' : 'Nenhum relatório criado'}
+          </h3>
+          <p className="mb-6 text-slate-500 dark:text-slate-400">
+            {searchTerm
+              ? 'Tente ajustar o termo de busca'
+              : 'Clique em "Novo Relatório" para criar seu primeiro dashboard personalizado'}
+          </p>
+          {!searchTerm && (
+            <button
+              onClick={handleNewReport}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-emerald-700"
+            >
+              <Plus size={18} />
+              Criar Primeiro Relatório
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Grid de cards de relatórios salvos */}
+      {filteredReports.length > 0 && (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredReports.map((report) => (
+            <div
+              key={report.id}
+              className="flex flex-col rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-emerald-500/40 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800/50"
+            >
+              {/* Informações do relatório */}
+              <div className="mb-4 flex-1">
+                <h3 className="mb-1 text-lg font-semibold text-slate-900 dark:text-white">
+                  {report.name}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Por: {report.created_by_name}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {report.charts_count}{' '}
+                  {report.charts_count === 1 ? 'gráfico' : 'gráficos'}
+                </p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                  {new Date(report.updated_at).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+
+              {/* Ações do card */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleOpenReport(report)}
+                  className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                >
+                  Abrir
+                </button>
+                <button
+                  onClick={() => handleDeleteReport(report.id)}
+                  title="Excluir relatório"
+                  className="rounded-lg bg-red-600/10 p-2 text-red-500 transition-colors hover:bg-red-600/20 dark:text-red-400"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       )}
-    </div>
-  );
-};
 
-// ==================== TAB 1: VENDAS ====================
-interface SalesTabProps {
-  period: PeriodType;
-  setPeriod: (p: PeriodType) => void;
-  boardId: string;
-  setBoardId: (id: string) => void;
-  userId: string;
-  setUserId: (id: string) => void;
-  startDate: string;
-  setStartDate: (d: string) => void;
-  endDate: string;
-  setEndDate: (d: string) => void;
-  boards: Board[];
-  users: User[];
-  loading: boolean;
-  report: SalesReportResponse | null;
-  onGenerate: () => void;
-  onExport: () => void;
-}
-
-const SalesTab: React.FC<SalesTabProps> = ({
-  period,
-  setPeriod,
-  boardId,
-  setBoardId,
-  userId,
-  setUserId,
-  startDate,
-  setStartDate,
-  endDate,
-  setEndDate,
-  boards,
-  users,
-  loading,
-  report,
-  onGenerate,
-  onExport,
-}) => {
-  const periodOptions: SelectOption[] = [
-    { value: 'today', label: 'Hoje' },
-    { value: 'yesterday', label: 'Ontem' },
-    { value: 'this_week', label: 'Esta Semana' },
-    { value: 'last_week', label: 'Semana Passada' },
-    { value: 'this_month', label: 'Este Mês' },
-    { value: 'last_month', label: 'Mês Passado' },
-    { value: 'this_quarter', label: 'Este Trimestre' },
-    { value: 'last_quarter', label: 'Trimestre Passado' },
-    { value: 'this_year', label: 'Este Ano' },
-    { value: 'last_year', label: 'Ano Passado' },
-    { value: 'custom', label: 'Personalizado' },
-  ];
-  const boardOptions: SelectOption[] = [
-    { value: '', label: 'Todos os boards' },
-    ...boards.map((board) => ({ value: String(board.id), label: board.name })),
-  ];
-  const userOptions: SelectOption[] = [
-    { value: '', label: 'Todos os vendedores' },
-    ...users.map((user) => ({ value: String(user.id), label: user.name })),
-  ];
-
-  return (
-    <div className="space-y-6">
-      {/* Filtros */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Filtros</h2>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Período</label>
-            <SelectMenu
-              value={period}
-              options={periodOptions}
-              onChange={(value) => setPeriod(value as PeriodType)}
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Board (Opcional)</label>
-            <SelectMenu
-              value={boardId}
-              options={boardOptions}
-              onChange={setBoardId}
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Vendedor (Opcional)</label>
-            <SelectMenu
-              value={userId}
-              options={userOptions}
-              onChange={setUserId}
-            />
-          </div>
-
-          {period === 'custom' && (
-            <>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Inicial</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Final</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                />
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="mt-4 flex justify-center sm:justify-start">
-          <button
-            onClick={onGenerate}
-            disabled={loading}
-            className="rounded-lg bg-emerald-600 px-6 py-2 font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-600"
-          >
-            {loading ? 'Gerando...' : 'Gerar Relatório'}
-          </button>
-        </div>
-      </div>
-
-      {/* Métricas */}
-      {report && report.summary && (
-        <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <MetricCard
-              icon={<FileText className="text-blue-400" />}
-              label="Cards Criados"
-              value={report.summary.total_cards_created?.toString() || '0'}
-            />
-            <MetricCard
-              icon={<TrendingUp className="text-emerald-400" />}
-              label="Cards Ganhos"
-              value={report.summary.total_cards_won?.toString() || '0'}
-            />
-            <MetricCard
-              icon={<FileText className="text-red-400" />}
-              label="Cards Perdidos"
-              value={report.summary.total_cards_lost?.toString() || '0'}
-            />
-            <MetricCard
-              icon={<TrendingUp className="text-emerald-400" />}
-              label="Valor Ganho Total"
-              value={reportService.formatCurrency(report.summary.total_value_won || 0)}
-            />
-            <MetricCard
-              icon={<BarChart3 className="text-purple-400" />}
-              label="Taxa de Conversão"
-              value={reportService.formatPercentage(report.summary.conversion_rate || 0)}
-            />
-          </div>
-
-          {/* Graficos */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <ChartCard title="Cards por vendedor">
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={report.details || []}>
-                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="user_name" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: chartColors.surface.base,
-                      border: `1px solid ${chartColors.border.default}`,
-                      borderRadius: '8px',
-                    }}
-                    labelStyle={{ color: chartColors.content.secondary }}
-                    itemStyle={{ color: chartColors.content.secondary }}
-                  />
-                  <Legend />
-                  <Bar dataKey="cards_created" name="Criados" fill={COLORS.status.info} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="cards_won" name="Ganhos" fill={COLORS.status.success} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="cards_lost" name="Perdidos" fill={COLORS.status.error} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            <ChartCard title="Valor ganho por vendedor">
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={report.details || []}>
-                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="user_name" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: chartColors.surface.base,
-                      border: `1px solid ${chartColors.border.default}`,
-                      borderRadius: '8px',
-                    }}
-                    labelStyle={{ color: chartColors.content.secondary }}
-                    itemStyle={{ color: chartColors.content.secondary }}
-                    formatter={(value) => reportService.formatCurrency(Number(value))}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="value_won"
-                    name="Valor ganho"
-                    fill={COLORS.board.green}
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-          </div>
-
-          {/* Tabela */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Detalhamento</h3>
-              <button
-                onClick={onExport}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-              >
-                <Download size={16} />
-                Exportar Excel
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-slate-700">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Vendedor/Período
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Cards Criados
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Cards Ganhos
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Cards Perdidos
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Valor Ganho
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Taxa
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.details?.map((item, index) => (
-                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 dark:border-slate-700/50 dark:hover:bg-slate-700/30">
-                      <td className="px-4 py-3 text-slate-900 dark:text-white">
-                        {item.user_name || (item.period ? reportService.formatPeriod(item.period as PeriodType) : '-')}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
-                        {item.cards_created}
-                      </td>
-                      <td className="px-4 py-3 text-right text-emerald-400">
-                        {item.cards_won}
-                      </td>
-                      <td className="px-4 py-3 text-right text-red-400">
-                        {item.cards_lost}
-                      </td>
-                      <td className="px-4 py-3 text-right text-emerald-400">
-                        {reportService.formatCurrency(item.value_won)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
-                        {reportService.formatPercentage(item.conversion_rate)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Empty State */}
-      {!report && !loading && (
-        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
-          <FileText size={48} className="mx-auto mb-4 text-slate-600" />
-          <p className="text-lg text-slate-400">
-            Selecione os filtros e clique em "Gerar Relatório" para visualizar os dados
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ==================== TAB 2: CONVERSÃO ====================
-interface ConversionTabProps {
-  boardId: string;
-  setBoardId: (id: string) => void;
-  period: PeriodType;
-  setPeriod: (p: PeriodType) => void;
-  startDate: string;
-  setStartDate: (d: string) => void;
-  endDate: string;
-  setEndDate: (d: string) => void;
-  boards: Board[];
-  loading: boolean;
-  report: ConversionReportResponse | null;
-  onGenerate: () => void;
-  onExport: () => void;
-}
-
-const ConversionTab: React.FC<ConversionTabProps> = ({
-  boardId,
-  setBoardId,
-  period,
-  setPeriod,
-  startDate,
-  setStartDate,
-  endDate,
-  setEndDate,
-  boards,
-  loading,
-  report,
-  onGenerate,
-  onExport,
-}) => {
-  const periodOptions: SelectOption[] = [
-    { value: 'today', label: 'Hoje' },
-    { value: 'yesterday', label: 'Ontem' },
-    { value: 'this_week', label: 'Esta Semana' },
-    { value: 'last_week', label: 'Semana Passada' },
-    { value: 'this_month', label: 'Este Mês' },
-    { value: 'last_month', label: 'Mês Passado' },
-    { value: 'this_quarter', label: 'Este Trimestre' },
-    { value: 'last_quarter', label: 'Trimestre Passado' },
-    { value: 'this_year', label: 'Este Ano' },
-    { value: 'last_year', label: 'Ano Passado' },
-    { value: 'custom', label: 'Personalizado' },
-  ];
-  const boardOptions: SelectOption[] = [
-    { value: '', label: 'Selecione um board' },
-    ...boards.map((board) => ({ value: String(board.id), label: board.name })),
-  ];
-
-  return (
-    <div className="space-y-6">
-      {/* Filtros */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Filtros</h2>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Board <span className="text-red-400">*</span>
-            </label>
-            <SelectMenu
-              value={boardId}
-              options={boardOptions}
-              onChange={setBoardId}
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Período</label>
-            <SelectMenu
-              value={period}
-              options={periodOptions}
-              onChange={(value) => setPeriod(value as PeriodType)}
-            />
-          </div>
-
-          {period === 'custom' && (
-            <>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Inicial</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Final</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                />
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="mt-4 flex justify-center sm:justify-start">
-          <button
-            onClick={onGenerate}
-            disabled={loading}
-            className="rounded-lg bg-emerald-600 px-6 py-2 font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-600"
-          >
-            {loading ? 'Gerando...' : 'Gerar Relatório'}
-          </button>
-        </div>
-      </div>
-
-      {/* Métricas */}
-      {report && report.summary && (
-        <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <MetricCard
-              icon={<FileText className="text-blue-400" />}
-              label="Total de Cards no Funil"
-              value={report.summary.total_cards?.toString() || '0'}
-            />
-            <MetricCard
-              icon={<TrendingUp className="text-emerald-400" />}
-              label="Valor Total"
-              value={reportService.formatCurrency(report.summary.total_value || 0)}
-            />
-            <MetricCard
-              icon={<BarChart3 className="text-purple-400" />}
-              label="Taxa de Conversão Geral"
-              value={reportService.formatPercentage(report.summary.overall_conversion_rate || 0)}
-            />
-          </div>
-
-          {/* Graficos */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <ChartCard title="Cards por etapa">
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={report.stages || []}>
-                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="stage_name" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: chartColors.surface.base,
-                      border: `1px solid ${chartColors.border.default}`,
-                      borderRadius: '8px',
-                    }}
-                    labelStyle={{ color: chartColors.content.secondary }}
-                    itemStyle={{ color: chartColors.content.secondary }}
-                  />
-                  <Legend />
-                  <Bar dataKey="card_count" name="Quantidade" fill={COLORS.status.info} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            <ChartCard title="Valor total por etapa">
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={report.stages || []}>
-                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="stage_name" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: chartColors.surface.base,
-                      border: `1px solid ${chartColors.border.default}`,
-                      borderRadius: '8px',
-                    }}
-                    labelStyle={{ color: chartColors.content.secondary }}
-                    itemStyle={{ color: chartColors.content.secondary }}
-                    formatter={(value) => reportService.formatCurrency(Number(value))}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="total_value"
-                    name="Valor total"
-                    fill={COLORS.board.green}
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-          </div>
-
-          {/* Tabela */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Funil de Conversão</h3>
-              <button
-                onClick={onExport}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-              >
-                <Download size={16} />
-                Exportar Excel
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-slate-700">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">Etapa</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Quantidade
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Valor Total
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Taxa de Conversão
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Tempo Médio (dias)
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.stages?.map((stage, index) => (
-                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 dark:border-slate-700/50 dark:hover:bg-slate-700/30">
-                      <td className="px-4 py-3 text-slate-900 dark:text-white">{stage.stage_name}</td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">{stage.card_count}</td>
-                      <td className="px-4 py-3 text-right text-emerald-400">
-                        {reportService.formatCurrency(stage.total_value)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
-                        {reportService.formatPercentage(stage.conversion_rate)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
-                        {stage.avg_time_in_stage?.toFixed(1) || '0.0'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Empty State */}
-      {!report && !loading && (
-        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
-          <BarChart3 size={48} className="mx-auto mb-4 text-slate-600" />
-          <p className="text-lg text-slate-400">
-            Selecione um board e clique em "Gerar Relatório" para visualizar o funil de conversão
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ==================== TAB 3: TRANSFERÊNCIAS ====================
-interface TransfersTabProps {
-  period: PeriodType;
-  setPeriod: (p: PeriodType) => void;
-  fromUserId: string;
-  setFromUserId: (id: string) => void;
-  toUserId: string;
-  setToUserId: (id: string) => void;
-  startDate: string;
-  setStartDate: (d: string) => void;
-  endDate: string;
-  setEndDate: (d: string) => void;
-  users: User[];
-  loading: boolean;
-  report: TransferReportResponse | null;
-  onGenerate: () => void;
-  onExport: () => void;
-}
-
-const TransfersTab: React.FC<TransfersTabProps> = ({
-  period,
-  setPeriod,
-  fromUserId,
-  setFromUserId,
-  toUserId,
-  setToUserId,
-  startDate,
-  setStartDate,
-  endDate,
-  setEndDate,
-  users,
-  loading,
-  report,
-  onGenerate,
-  onExport,
-}) => {
-  const periodOptions: SelectOption[] = [
-    { value: 'today', label: 'Hoje' },
-    { value: 'yesterday', label: 'Ontem' },
-    { value: 'this_week', label: 'Esta Semana' },
-    { value: 'last_week', label: 'Semana Passada' },
-    { value: 'this_month', label: 'Este Mês' },
-    { value: 'last_month', label: 'Mês Passado' },
-    { value: 'this_quarter', label: 'Este Trimestre' },
-    { value: 'last_quarter', label: 'Trimestre Passado' },
-    { value: 'this_year', label: 'Este Ano' },
-    { value: 'last_year', label: 'Ano Passado' },
-    { value: 'custom', label: 'Personalizado' },
-  ];
-  const fromUserOptions: SelectOption[] = [
-    { value: '', label: 'Qualquer usuário' },
-    ...users.map((user) => ({ value: String(user.id), label: user.name })),
-  ];
-  const toUserOptions: SelectOption[] = [
-    { value: '', label: 'Qualquer usuário' },
-    ...users.map((user) => ({ value: String(user.id), label: user.name })),
-  ];
-
-  return (
-    <div className="space-y-6">
-      {/* Filtros */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Filtros</h2>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Período</label>
-            <SelectMenu
-              value={period}
-              options={periodOptions}
-              onChange={(value) => setPeriod(value as PeriodType)}
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">De (Opcional)</label>
-            <SelectMenu
-              value={fromUserId}
-              options={fromUserOptions}
-              onChange={setFromUserId}
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Para (Opcional)</label>
-            <SelectMenu
-              value={toUserId}
-              options={toUserOptions}
-              onChange={setToUserId}
-            />
-          </div>
-
-          {period === 'custom' && (
-            <>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Inicial</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Data Final</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                />
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="mt-4 flex justify-center sm:justify-start">
-          <button
-            onClick={onGenerate}
-            disabled={loading}
-            className="rounded-lg bg-emerald-600 px-6 py-2 font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-600"
-          >
-            {loading ? 'Gerando...' : 'Gerar Relatório'}
-          </button>
-        </div>
-      </div>
-
-      {/* Métricas */}
-      {report && report.summary && (
-        <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MetricCard
-              icon={<ArrowRightLeft className="text-blue-400" />}
-              label="Total de Transferências"
-              value={report.summary.total_transfers?.toString() || '0'}
-            />
-            <MetricCard
-              icon={<TrendingUp className="text-emerald-400" />}
-              label="Cards Ganhos Após Transfer"
-              value={report.summary.total_cards_won_after_transfer?.toString() || '0'}
-            />
-            <MetricCard
-              icon={<TrendingUp className="text-emerald-400" />}
-              label="Valor Total Ganho"
-              value={reportService.formatCurrency(report.summary.total_value_won_after_transfer || 0)}
-            />
-            <MetricCard
-              icon={<BarChart3 className="text-purple-400" />}
-              label="Média de Dias para Ganhar"
-              value={`${(report.summary.avg_days_to_won || 0).toFixed(1)} dias`}
-            />
-          </div>
-
-          {/* Graficos */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <ChartCard title="Transferencias por usuario">
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart
-                  data={(report.details || []).map((item) => ({
-                    ...item,
-                    pair_label: `${item.from_user_name} -> ${item.to_user_name}`,
-                  }))}
-                >
-                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="pair_label" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: chartColors.surface.base,
-                      border: `1px solid ${chartColors.border.default}`,
-                      borderRadius: '8px',
-                    }}
-                    labelStyle={{ color: chartColors.content.secondary }}
-                    itemStyle={{ color: chartColors.content.secondary }}
-                  />
-                  <Legend />
-                  <Bar dataKey="transfer_count" name="Transferencias" fill={COLORS.status.info} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            <ChartCard title="Tempo medio para ganhar">
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart
-                  data={(report.details || []).map((item) => ({
-                    ...item,
-                    pair_label: `${item.from_user_name} -> ${item.to_user_name}`,
-                  }))}
-                >
-                  <CartesianGrid stroke={chartColors.surface.elevated} strokeDasharray="3 3" />
-                  <XAxis dataKey="pair_label" tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: chartColors.content.tertiary, fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: chartColors.surface.base,
-                      border: `1px solid ${chartColors.border.default}`,
-                      borderRadius: '8px',
-                    }}
-                    labelStyle={{ color: chartColors.content.secondary }}
-                    itemStyle={{ color: chartColors.content.secondary }}
-                    formatter={(value) => `${Number(value).toFixed(1)} dias`}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="avg_days_to_won"
-                    name="Dias"
-                    stroke={COLORS.board.purple}
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartCard>
-          </div>
-
-          {/* Tabela */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Detalhamento de Transferências</h3>
-              <button
-                onClick={onExport}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-              >
-                <Download size={16} />
-                Exportar Excel
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-slate-700">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                      De → Para
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Transferências
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Cards Ganhos
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Valor Ganho
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Tempo Médio
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.details?.map((item, index) => (
-                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 dark:border-slate-700/50 dark:hover:bg-slate-700/30">
-                      <td className="px-4 py-3 text-slate-900 dark:text-white">
-                        {item.from_user_name} → {item.to_user_name}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
-                        {item.transfer_count}
-                      </td>
-                      <td className="px-4 py-3 text-right text-emerald-400">
-                        {item.cards_won_count}
-                      </td>
-                      <td className="px-4 py-3 text-right text-emerald-400">
-                        {reportService.formatCurrency(item.total_value_won)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
-                        {item.avg_days_to_won?.toFixed(1) || '0.0'} dias
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Empty State */}
-      {!report && !loading && (
-        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
-          <ArrowRightLeft size={48} className="mx-auto mb-4 text-slate-600" />
-          <p className="text-lg text-slate-400">
-            Selecione os filtros e clique em "Gerar Relatório" para visualizar as transferências
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ==================== COMPONENTE AUXILIAR: METRIC CARD ====================
-interface MetricCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}
-
-interface ChartCardProps {
-  title: string;
-  children: React.ReactNode;
-}
-
-const ChartCard: React.FC<ChartCardProps> = ({ title, children }) => {
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
-      <h4 className="mb-3 text-base font-semibold text-slate-900 dark:text-white">{title}</h4>
-      {children}
-    </div>
-  );
-};
-
-const MetricCard: React.FC<MetricCardProps> = ({ icon, label, value }) => {
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
-      <div className="mb-2 flex items-center gap-3">
-        {icon}
-        <span className="text-sm text-slate-400">{label}</span>
-      </div>
-      <div className="text-2xl font-bold text-slate-900 dark:text-white">{value}</div>
+      {/* Modal de criação de novo relatório */}
+      <NewReportModal
+        isOpen={showNewReportModal}
+        onClose={() => setShowNewReportModal(false)}
+        onConfirm={handleCreateReport}
+      />
     </div>
   );
 };
