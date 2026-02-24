@@ -9,45 +9,76 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [1.3.0] - 2026-02-24
 
-### 🎨 Novas Funcionalidades
+### Adicionado
 
-#### Módulo de Relatórios Customizados — Frontend Fase 1 (Power BI-style)
-- **Builder de dashboards** com layout 3 colunas: painel de campos | grid de gráficos | painel de configuração
+#### Módulo de Relatórios Customizados — Power BI-style (Frontend + Backend integrado)
+
+**Builder de dashboards:**
+- Layout 3 colunas: painel de campos | grid de gráficos | painel de configuração
 - **Drag & drop** de campos para os eixos X e Y diretamente do painel de campos disponíveis
 - **4 tipos de gráfico**: Barras, Linha, Pizza e Tabela — alternáveis em tempo real
 - **Múltiplas séries no eixo Y** para bar/line: até 4 campos Y simultâneos, cada um com sua própria agregação e cor
 - **Badge de agregação clicável** nos chips do eixo Y — cicla entre as opções disponíveis por tipo de campo (`count → distinct_count → sum → avg` para numéricos/moeda; `count → distinct_count` para demais)
-- **Atualização em tempo real** — gráfico atualiza instantaneamente a cada mudança no formulário (sem botão confirmar); título com debounce de 400ms
-- **Correspondência visual** entre chips de configuração e séries do gráfico via `SERIES_COLORS` compartilhado
-- **Feedback de limite** no eixo Y: mensagem "Limite de 4 métricas atingido" para bar/line; zona de drop sempre visível para pie/table com hint "Arraste para substituir"
-- **Troca de tipo com truncagem automática**: ao mudar de bar/line para pie/table com múltiplas séries, mantém apenas a primeira e descarta as extras
-- **Persistência em localStorage** com CRUD completo de relatórios (criar, abrir, salvar, excluir)
-- **Relatórios salvos**: grid de cards com busca por nome, contador de gráficos e data de atualização
+- **Atualização em tempo real** — gráfico atualiza automaticamente a cada mudança; debounce de 400ms aplicado apenas na chamada à API, sem bloquear o estado local
 - **Agrupamento temporal** no eixo X para campos de data: Dia / Semana / Mês / Ano
-- **Catálogo de campos** por fonte de dados (Negócios, Clientes, Pessoas, Atividades) com 25 campos mapeados
+- **Correspondência visual** entre chips de configuração e séries do gráfico via `SERIES_COLORS` compartilhado
+- **Relatórios salvos**: grid de cards com busca por nome, contador de gráficos e data de atualização
 
-### 🔧 Melhorias Técnicas
+**Funcionalidade "Dividir por" (split_by):**
+- Quebra as séries de um gráfico bar/line por uma dimensão categórica (ex: X=Data, Y=Quantidade, Dividir por=Vendedor → uma série por vendedor)
+- Zona de drop dedicada com validação: aceita apenas campos groupable não-date
+- Quando ativo, eixo Y fica limitado a 1 campo (split gera as séries automaticamente)
 
-#### Arquitetura do módulo
-- **`YFieldConfig`**: novo tipo central — campo Y com agregação própria, substituiu o antigo `y_field + aggregation` no `ChartConfig`
-- **`SeriesData`**: tipo para séries múltiplas na `QueryResponse` (`series?: SeriesData[]`), mantendo `values` para compatibilidade com pie/table
-- **`SERIES_COLORS`**: paleta centralizada em `reportTypes.ts`, importada por `ChartConfigPanel` (chips) e `ChartWidget` (Recharts) — fonte única de verdade para cores de séries
-- **Nomes únicos de série**: quando múltiplos campos têm o mesmo label (ex: "Quantidade" de fontes diferentes), `generateMockData` adiciona a fonte automaticamente ("Quantidade (Negócios)", "Quantidade (Atividades)") para evitar colisão de keys no Recharts
-- **Migração automática de localStorage**: ao carregar, converte relatórios com estrutura antiga (`y_field + aggregation`) para o novo formato (`y_fields[]`) sem intervenção do usuário
+**Fontes de dados disponíveis:** Negócios, Clientes, Pessoas, Atividades, Tarefas
 
-### 📝 Arquivos Modificados
+**Campos especiais:**
+- **`meeting_count`** (fonte Tarefas): conta apenas tarefas do tipo reunião via `COUNT(CASE WHEN task_type='meeting' THEN 1 END)`
+- **`won_count`** (fonte Negócios): conta apenas negócios ganhos via `COUNT(CASE WHEN is_won=1 THEN 1 END)`
 
-#### Frontend
-- `src/components/reports/reportTypes.ts` — tipos `YFieldConfig`, `SeriesData`, `SERIES_COLORS`; `ChartConfig` atualizado; `generateMockData` com nova assinatura
-- `src/components/reports/ChartConfigPanel.tsx` — estado `yFields[]`, chips múltiplos com badge ciclável, zona de drop contextual, correspondência de cores
-- `src/components/reports/ChartWidget.tsx` — suporte a `data.series` em bar/line, multi-`<Bar>`/`<Line>` com `<Legend>`, `SERIES_COLORS` importado de `reportTypes`
-- `src/components/reports/ChartConfigModal.tsx` — adaptado para compilar com nova API (`y_fields[]`)
-- `src/pages/Reports.tsx` — migração de localStorage, chamadas de `generateMockData` atualizadas
+**Backend — novos arquivos:**
+- **`app/models/custom_report.py`**: Model `CustomReport` com tabela `custom_reports` no PostgreSQL
+- **`app/schemas/custom_report.py`**: Schemas Pydantic completos — `QueryRequest`, `QueryResponse`, `CustomReportCreate`, `CustomReportResponse`, `FieldCatalogResponse`
+- **`app/services/custom_report_service.py`**: Query engine com suporte a agrupamento temporal, agregações, campos categóricos, user e moeda; CRUD de relatórios
+- **`app/api/v1/endpoints/custom_reports.py`**: 7 endpoints RESTful protegidos por role (`admin`/`manager`)
+- Migration Alembic de criação da tabela `custom_reports`
 
-### 🔮 Próximos Passos (Fase 2)
-- `GET /api/v1/reports/fields` → substituir `FIELD_CATALOG` hardcoded
-- `POST /api/v1/reports/query` → substituir `generateMockData` por dados reais
-- CRUD `/api/v1/reports/custom` → substituir `localStorage`
+**Endpoints:**
+- `GET  /api/v1/reports/fields` — catálogo de campos por fonte de dados
+- `POST /api/v1/reports/query` — executa query e retorna dados agregados
+- `GET  /api/v1/reports/custom` — lista relatórios salvos
+- `POST /api/v1/reports/custom` — cria novo relatório
+- `GET  /api/v1/reports/custom/{id}` — busca por ID
+- `PUT  /api/v1/reports/custom/{id}` — atualiza relatório
+- `DELETE /api/v1/reports/custom/{id}` — exclui relatório
+
+### Corrigido
+
+- **Salvar relatório criava duplicata**: `handleOpenReport` não injetava o `id` no `currentReport`, fazendo o Save sempre chamar `createCustomReport` — corrigido passando `{ ...report.config, id: report.id }`
+- **Título do gráfico não persistia ao salvar**: `debouncedTitle` de 400ms atrasava a atualização do estado, fazendo o Save ler o título antigo — corrigido movendo o debounce para a chamada à API
+
+### Arquivos Criados
+
+**Backend:**
+- `app/models/custom_report.py`
+- `app/schemas/custom_report.py`
+- `app/services/custom_report_service.py`
+- `app/api/v1/endpoints/custom_reports.py`
+- `alembic/versions/XXXX_create_custom_reports_table.py`
+
+### Arquivos Modificados
+
+**Backend:**
+- `app/api/v1/__init__.py` — registro do router de relatórios
+- `app/models/__init__.py` — import do CustomReport
+
+**Frontend:**
+- `src/services/reportService.ts` — funções de integração com a API
+- `src/pages/Reports.tsx` — integração completa com API (catálogo, query, CRUD)
+- `src/components/reports/ChartConfigPanel.tsx` — split_by, debounce movido para o pai
+- `src/components/reports/ChartWidget.tsx` — suporte a multi-série via `data.series`
+- `src/components/reports/FieldPanel.tsx` — catálogo recebido como prop
+- `src/components/reports/NewReportModal.tsx` — fonte Tarefas adicionada
+- `src/components/reports/reportTypes.ts` — tipos `YFieldConfig`, `SeriesData`, `SERIES_COLORS`, `split_by`
 
 ---
 
