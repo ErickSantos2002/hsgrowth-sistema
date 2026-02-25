@@ -365,7 +365,7 @@ const Reports: React.FC = () => {
     return (
       <div className="flex h-full flex-col overflow-hidden">
         {/* Barra de topo do builder */}
-        <div className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700/50 dark:bg-slate-900">
+        <div className="hidden shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700/50 dark:bg-slate-900 lg:flex">
           {/* Botão voltar para a lista */}
           <button
             onClick={() => setMode('list')}
@@ -426,11 +426,13 @@ const Reports: React.FC = () => {
 
         {/* Corpo do builder: painel esquerdo + área central + painel direito */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Painel esquerdo — campos disponíveis */}
-          <FieldPanel
-            activeSources={activeSources}
-            fieldCatalog={catalogLoading ? EMPTY_CATALOG : fieldCatalog}
-          />
+          {/* Painel esquerdo — campos disponíveis (desktop only) */}
+          <div className="hidden lg:block">
+            <FieldPanel
+              activeSources={activeSources}
+              fieldCatalog={catalogLoading ? EMPTY_CATALOG : fieldCatalog}
+            />
+          </div>
 
           {/* Área central — grid de gráficos */}
           <main className="flex-1 overflow-y-auto bg-gray-50 p-6 dark:bg-slate-950">
@@ -485,14 +487,16 @@ const Reports: React.FC = () => {
             )}
           </main>
 
-          {/* Painel direito — sempre visível no builder */}
-          <ChartConfigPanel
-            allowedSources={currentReport.allowed_sources}
-            active={configPanelActive}
-            editingConfig={editingChart}
-            onLiveChange={handleLiveChartChange}
-            onClose={handleResetConfigPanel}
-          />
+          {/* Painel direito — desktop only */}
+          <div className="hidden lg:block">
+            <ChartConfigPanel
+              allowedSources={currentReport.allowed_sources}
+              active={configPanelActive}
+              editingConfig={editingChart}
+              onLiveChange={handleLiveChartChange}
+              onClose={handleResetConfigPanel}
+            />
+          </div>
         </div>
       </div>
     );
