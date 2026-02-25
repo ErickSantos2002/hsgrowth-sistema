@@ -415,6 +415,29 @@ class CardService:
                 detail="Board não encontrado"
             )
 
+        # Verifica se o usuário tem permissão para criar card nessa lista.
+        # Apenas Admin e Manager podem criar em qualquer lista.
+        # Demais roles só podem criar na primeira lista do board de Prospecção (id=6).
+        is_privileged = (
+            current_user.role and current_user.role.name in ("admin", "manager")
+        )
+        if not is_privileged:
+            from app.models.list import List as ListModel
+            first_list = (
+                self.db.query(ListModel)
+                .filter(ListModel.board_id == 6)
+                .order_by(ListModel.position.asc())
+                .first()
+            )
+            if not first_list or list_obj.id != first_list.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "Você só pode criar negócios na lista 'Lead Novo' "
+                        "do quadro Prospecção"
+                    ),
+                )
+
         # Cria o card
         card = self.card_repository.create(card_data)
         print(f"[AUTOMATION] Card criado ID={card.id}, Board={board.id}")
@@ -432,6 +455,20 @@ class CardService:
 
         self.db.commit()
         self.db.refresh(card)
+
+        # Registra entrada inicial na lista de histórico
+        try:
+            from app.models.card_list_history import CardListHistory
+            initial_entry = CardListHistory(
+                card_id=card.id,
+                list_id=card.list_id,
+                board_id=board.id,
+                entered_at=now,
+            )
+            self.db.add(initial_entry)
+            self.db.commit()
+        except Exception as e:
+            print(f"[CARD_LIST_HISTORY] Erro ao registrar entrada inicial: {e}")
 
         # Dispara automações do tipo "card_created"
         try:
@@ -626,6 +663,357 @@ class CardService:
         # Deleta o card
         self.card_repository.delete(card)
 
+    def _validate_stage_advancement(
+        self,
+        card: Card,
+        source_list,
+        target_list,
+    ) -> None:
+        """
+        Valida as regras de movimentação de card entre etapas do pipeline.
+
+        Para o board 6 (Prospecção), usa um mapa explícito de transições permitidas,
+        pois o fluxo não é estritamente sequencial — "Reagendamento" é uma etapa de
+        retorno (populada pelo botão No Show) e não faz parte do avanço normal:
+
+            Lead Novo → Prospecção → Conectado → Agendado (→ board Aquisição)
+                                                 ↑
+                                          Reagendamento  (retorno via No Show)
+
+        Para outros boards, aplica a regra genérica de "só próxima etapa".
+
+        Raises:
+            HTTPException 403: Se tentar fazer uma transição não permitida
+            HTTPException 422: Se os critérios de avanço não estiverem preenchidos
+        """
+        from app.models.list import List as ListModel
+        from app.models.client import Client
+        from app.models.person import Person
+        from app.models.api4com import CallLog
+        from app.models.card_task import CardTask, TaskType
+        from app.models.card_note import CardNote
+        from app.models.attachment import Attachment
+
+        # Busca todas as listas do board de origem ordenadas por posição
+        board_lists = (
+            self.db.query(ListModel)
+            .filter(ListModel.board_id == source_list.board_id)
+            .order_by(ListModel.position.asc())
+            .all()
+        )
+
+        # Determina os índices de origem e destino no pipeline
+        source_index = next(
+            (i for i, l in enumerate(board_lists) if l.id == source_list.id), None
+        )
+        target_index = next(
+            (i for i, l in enumerate(board_lists) if l.id == target_list.id), None
+        )
+
+        if source_index is None or target_index is None:
+            return  # Não conseguiu mapear, deixa passar
+
+        # ── Validação de transição ──────────────────────────────────────────────
+        #
+        # Board 6: mapa explícito de transições (source_index → [target_indices])
+        # Qualquer combinação fora do mapa é bloqueada.
+        #
+        # Board outros: regra genérica — só pode avançar para a próxima posição.
+        # ───────────────────────────────────────────────────────────────────────
+        if source_list.board_id == 6:
+            # Mapa de transições permitidas por índice de origem no board 6.
+            # "Reagendamento" (índice 3) não recebe cards pelo pipeline normal —
+            # é populado exclusivamente pelo botão No Show no board de Aquisição.
+            allowed_transitions = {
+                0: [1],  # Lead Novo       → Prospecção
+                1: [2],  # Prospecção      → Conectado
+                2: [4],  # Conectado       → Agendado (pula Reagendamento propositalmente)
+                3: [4],  # Reagendamento   → Agendado (SDR reagendando após No Show)
+            }
+            allowed = allowed_transitions.get(source_index, [])
+
+            if target_index not in allowed:
+                if target_index < source_index:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Não é permitido voltar etapas pelo pipeline.",
+                    )
+                # Indica qual é o destino correto para a etapa de origem
+                correct_targets = ", ".join(
+                    f"'{board_lists[i].name}'" for i in allowed if i < len(board_lists)
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        f"Transição não permitida. "
+                        f"De '{source_list.name}', o destino correto é: {correct_targets}."
+                    ),
+                )
+        else:
+            # Regra genérica para outros boards: só próxima etapa
+            if target_index != source_index + 1:
+                if target_index < source_index:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Não é permitido voltar etapas pelo pipeline.",
+                    )
+                next_list = board_lists[source_index + 1]
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        f"Não é permitido pular etapas. "
+                        f"Avance o negócio para a próxima etapa: '{next_list.name}'."
+                    ),
+                )
+
+        # ── Validações por etapa de origem ─────────────────────────────────────
+
+        # Etapa 1 — Lead Novo → Prospecção:
+        # empresa, contato, segmento e cargo devem estar preenchidos
+        if source_list.board_id == 6 and source_index == 0:
+            missing = []
+
+            if not card.client_id:
+                missing.append("empresa vinculada ao negócio")
+
+            if not card.person_id:
+                missing.append("contato vinculado ao negócio")
+
+            if card.client_id:
+                client = self.db.query(Client).filter(Client.id == card.client_id).first()
+                if not client or not (client.sector or "").strip():
+                    missing.append("segmento da empresa")
+
+            if card.person_id:
+                person = self.db.query(Person).filter(Person.id == card.person_id).first()
+                if not person or not (person.position or "").strip():
+                    missing.append("cargo do contato")
+
+            if missing:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Para avançar para '{target_list.name}', preencha: "
+                        f"{', '.join(missing)}."
+                    ),
+                )
+
+        # Etapa 2 — Prospecção → Conectado:
+        # evidência de contato efetivo — pelo menos UMA das opções:
+        #   1. Ligação VOIP concluída
+        #   2. Task de ligação marcada como concluída
+        #   3. Nota com ao menos 20 caracteres
+        elif source_list.board_id == 6 and source_index == 1:
+            MIN_NOTE_LENGTH = 20
+
+            has_completed_call = (
+                self.db.query(CallLog)
+                .filter(CallLog.card_id == card.id, CallLog.status == "completed")
+                .first()
+            ) is not None
+
+            has_completed_call_task = (
+                self.db.query(CardTask)
+                .filter(
+                    CardTask.card_id == card.id,
+                    CardTask.task_type == TaskType.CALL,
+                    CardTask.is_completed == True,  # noqa: E712
+                )
+                .first()
+            ) is not None
+
+            notes = self.db.query(CardNote).filter(CardNote.card_id == card.id).all()
+            has_valid_note = any(
+                len((n.content or "").strip()) >= MIN_NOTE_LENGTH for n in notes
+            )
+
+            if not (has_completed_call or has_completed_call_task or has_valid_note):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Para avançar para '{target_list.name}', registre evidência de "
+                        "contato efetivo: ligação concluída (VOIP ou tarefa de ligação "
+                        f"marcada como feita) ou uma nota com ao menos {MIN_NOTE_LENGTH} "
+                        "caracteres descrevendo o contato realizado."
+                    ),
+                )
+
+        # Etapa 3 — Conectado → Agendado:
+        # deve existir uma task de reunião criada + nota documentando o problema identificado
+        elif source_list.board_id == 6 and source_index == 2:
+            MIN_NOTE_LENGTH = 20
+
+            has_meeting_task = (
+                self.db.query(CardTask)
+                .filter(
+                    CardTask.card_id == card.id,
+                    CardTask.task_type == TaskType.MEETING,
+                )
+                .first()
+            ) is not None
+
+            notes = self.db.query(CardNote).filter(CardNote.card_id == card.id).all()
+            has_valid_note = any(
+                len((n.content or "").strip()) >= MIN_NOTE_LENGTH for n in notes
+            )
+
+            missing = []
+            if not has_meeting_task:
+                missing.append("criar uma tarefa de reunião no card")
+            if not has_valid_note:
+                missing.append(
+                    f"adicionar uma nota com ao menos {MIN_NOTE_LENGTH} caracteres "
+                    "descrevendo o problema identificado"
+                )
+
+            if missing:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Para avançar para '{target_list.name}', é necessário: "
+                        f"{'; '.join(missing)}."
+                    ),
+                )
+
+        # Etapa 4 — Reagendamento → Agendado:
+        # o No Show marca a reunião anterior como concluída, então o card chega aqui
+        # sem nenhuma task de reunião pendente. O SDR precisa criar uma nova.
+        # Condição: task de reunião com is_completed = False (nova reunião agendada)
+        elif source_list.board_id == 6 and source_index == 3:
+            has_pending_meeting_task = (
+                self.db.query(CardTask)
+                .filter(
+                    CardTask.card_id == card.id,
+                    CardTask.task_type == TaskType.MEETING,
+                    CardTask.is_completed == False,  # noqa: E712
+                )
+                .first()
+            ) is not None
+
+            if not has_pending_meeting_task:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Para avançar para '{target_list.name}', crie uma nova tarefa "
+                        "de reunião no card para reagendar o encontro."
+                    ),
+                )
+
+        # ── Board 7 — Aquisição ────────────────────────────────────────────────
+        # Fluxo sequencial: Reunião Agendada → Qualificação → Diagnóstico e Proposta
+        #                   → Negociação → (Negócio Ganho/Perdido via botões)
+        #
+        # Transições permitidas (por índice na lista ordenada do board):
+        #   0 → 1  Reunião Agendada  → Qualificação
+        #   1 → 2  Qualificação      → Diagnóstico e Proposta
+        #   2 → 3  Diagnóstico e Proposta → Negociação
+        #   3 → 4  Negociação        → Negócio Ganho  (terminal, não passa por aqui)
+        # Negócio Ganho e Negócio Perdido são excluídos antes de chegar neste método.
+        elif source_list.board_id == 7:
+            allowed_transitions_b7 = {
+                0: [1],  # Reunião Agendada    → Qualificação
+                1: [2],  # Qualificação        → Diagnóstico e Proposta
+                2: [3],  # Diagnóstico e Proposta → Negociação
+            }
+
+            # Negociação (index 3) não possui próxima etapa pelo pipeline —
+            # o encerramento do negócio é feito pelos botões dedicados Ganho/Perdido
+            if source_index not in allowed_transitions_b7:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        f"A etapa '{source_list.name}' não possui próxima etapa no pipeline. "
+                        "Para encerrar o negócio, use os botões 'Ganho' ou 'Perdido'."
+                    ),
+                )
+
+            allowed_b7 = allowed_transitions_b7[source_index]
+
+            if target_index not in allowed_b7:
+                if target_index < source_index:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Não é permitido voltar etapas pelo pipeline.",
+                    )
+                correct_targets = ", ".join(
+                    f"'{board_lists[i].name}'"
+                    for i in allowed_b7
+                    if i < len(board_lists)
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        f"Transição não permitida. "
+                        f"De '{source_list.name}', o destino correto é: {correct_targets}."
+                    ),
+                )
+
+            # Reunião Agendada → Qualificação:
+            # nenhuma task de reunião pode estar pendente — prova que a reunião aconteceu
+            if source_index == 0:
+                has_pending_meeting = (
+                    self.db.query(CardTask)
+                    .filter(
+                        CardTask.card_id == card.id,
+                        CardTask.task_type == TaskType.MEETING,
+                        CardTask.is_completed == False,  # noqa: E712
+                    )
+                    .first()
+                ) is not None
+
+                if has_pending_meeting:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=(
+                            f"Para avançar para '{target_list.name}', a reunião agendada "
+                            "precisa ser concluída primeiro. Se o lead não compareceu, "
+                            "use o botão 'No Show'."
+                        ),
+                    )
+
+            # Diagnóstico e Proposta → Negociação:
+            # 1. Proposta Comercial em PDF deve estar anexada ao card
+            # 2. Deve existir ao menos uma task de follow-up pendente (não concluída)
+            elif source_index == 2:
+                has_proposal = (
+                    self.db.query(Attachment)
+                    .filter(
+                        Attachment.card_id == card.id,
+                        Attachment.attachment_type == 'proposal',
+                        Attachment.deleted_at.is_(None),
+                    )
+                    .first()
+                ) is not None
+
+                has_pending_followup = (
+                    self.db.query(CardTask)
+                    .filter(
+                        CardTask.card_id == card.id,
+                        CardTask.task_type == TaskType.FOLLOW_UP,
+                        CardTask.is_completed == False,  # noqa: E712
+                    )
+                    .first()
+                ) is not None
+
+                missing = []
+                if not has_proposal:
+                    missing.append(
+                        "anexar a Proposta Comercial em PDF (seção 'Resumo' do card)"
+                    )
+                if not has_pending_followup:
+                    missing.append(
+                        "criar uma tarefa de follow-up pendente no card"
+                    )
+
+                if missing:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=(
+                            f"Para avançar para '{target_list.name}', é necessário: "
+                            f"{'; '.join(missing)}."
+                        ),
+                    )
+
     def move_card(self, card_id: int, target_list_id: int, position: Optional[int], current_user: User) -> Card:
         """
         Move um card para outra lista.
@@ -664,6 +1052,32 @@ class CardService:
         source_list_name = source_list.name if source_list else "Lista"
         source_board = self.board_repository.find_by_id(source_list.board_id) if source_list else None
 
+        # Aplica regras de movimentação para usuários não privilegiados.
+        # Admin e Manager passam livremente; demais roles seguem as regras de pipeline.
+        is_privileged = (
+            current_user.role and current_user.role.name in ("admin", "manager")
+        )
+        if not is_privileged and source_list and source_board:
+            # Impede saída de estágios terminais (Negócio Ganho / Negócio Perdido).
+            # Uma vez que o card chega lá, só Admin/Manager pode movê-lo.
+            # Movimento para terminais (Ganho/Perdido) continua permitido — os botões
+            # dedicados "Marcar como Ganho/Perdido" usam o mesmo move_card internamente.
+            # O pipeline visual esconde essas etapas para usuários não privilegiados.
+            if source_list.is_done_stage or source_list.is_lost_stage:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        f"O negócio está em '{source_list.name}' e não pode ser movido. "
+                        "Solicite ao administrador caso precise reabrir."
+                    ),
+                )
+
+            # Valida as regras de pipeline dentro do mesmo board,
+            # exceto quando o destino é um estágio terminal (tratado pelos botões dedicados)
+            target_is_terminal = target_list.is_done_stage or target_list.is_lost_stage
+            if source_list.board_id == target_list.board_id and not target_is_terminal:
+                self._validate_stage_advancement(card, source_list, target_list)
+
         # Preenche data de entrada no board se estiver mudando de board
         if source_board and source_board.id != target_board.id:
             now = datetime.now()
@@ -694,6 +1108,36 @@ class CardService:
 
         # Move o card
         moved_card = self.card_repository.move_to_list(card, target_list_id, position)
+
+        # Registra movimentação no histórico de listas
+        try:
+            from app.models.card_list_history import CardListHistory
+            from datetime import datetime as _dt
+            history_now = _dt.utcnow()
+
+            # Fecha o registro aberto anterior (se existir)
+            open_entry = (
+                self.db.query(CardListHistory)
+                .filter(
+                    CardListHistory.card_id == card_id,
+                    CardListHistory.exited_at == None,  # noqa: E711
+                )
+                .first()
+            )
+            if open_entry:
+                open_entry.exited_at = history_now
+
+            # Cria novo registro de entrada na lista de destino
+            new_entry = CardListHistory(
+                card_id=card_id,
+                list_id=target_list_id,
+                board_id=target_board.id,
+                entered_at=history_now,
+            )
+            self.db.add(new_entry)
+            self.db.commit()
+        except Exception as e:
+            print(f"[CARD_LIST_HISTORY] Erro ao registrar movimentação: {e}")
 
         # Atribui pontos e cria parabenização (se card tiver responsável)
         if moved_card.assigned_to_id:
@@ -798,7 +1242,12 @@ class CardService:
                 description=act_desc,
                 activity_metadata={
                     "from_list": source_list_name,
-                    "to_list": target_list.name
+                    "to_list": target_list.name,
+                    # IDs incluídos para facilitar queries de relatório
+                    "from_list_id": source_list.id if source_list else None,
+                    "to_list_id": target_list.id,
+                    "from_board_id": source_board.id if source_board else None,
+                    "to_board_id": target_board.id,
                 }
             )
         except Exception as e:

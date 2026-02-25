@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Info } from "lucide-react";
 import { List } from "../../types";
 import listService from "../../services/listService";
 
@@ -8,6 +8,9 @@ interface PipelineStagesProps {
   currentListId: number;
   onMoveCard: (_listId: number) => void;
   isMoving?: boolean;
+  // Quando true, esconde estágios terminais (Ganho/Perdido) do pipeline visual.
+  // Usuários não privilegiados usam os botões dedicados para encerrar negócios.
+  hideTerminalStages?: boolean;
 }
 
 /**
@@ -19,6 +22,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
   currentListId,
   onMoveCard,
   isMoving = false,
+  hideTerminalStages = false,
 }) => {
   const [lists, setLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,8 +40,11 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
     try {
       setLoading(true);
       const allLists = await listService.list({ board_id: boardId });
-      // Ordena por position
-      const sortedLists = allLists.sort((a, b) => a.position - b.position);
+      // Ordena por position e filtra terminais se necessário
+      let sortedLists = allLists.sort((a, b) => a.position - b.position);
+      if (hideTerminalStages) {
+        sortedLists = sortedLists.filter((l) => !l.is_done_stage && !l.is_lost_stage);
+      }
       setLists(sortedLists);
     } catch (error) {
       console.error("Erro ao carregar listas:", error);
@@ -135,6 +142,16 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
     return null;
   }
 
+  /**
+   * Verifica se o card está na última etapa visível do pipeline (sem próxima etapa disponível).
+   * Quando hideTerminalStages=true, as etapas Ganho/Perdido são ocultadas, então
+   * a última etapa visível é o "fim da linha" — o usuário só pode marcar como Ganho ou Perdido.
+   */
+  const isAtLastVisibleStage = () => {
+    const currentPosition = getCurrentPosition();
+    return currentPosition === lists.length - 1;
+  };
+
   return (
     <div className="relative">
       {/* Overlay quando está movendo */}
@@ -223,6 +240,18 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
         );
       })}
       </div>
+
+      {/* Aviso quando o card está na última etapa visível e não há para onde avançar */}
+      {hideTerminalStages && isAtLastVisibleStage() && (
+        <div className="mt-2 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+          <Info size={14} className="flex-shrink-0 text-amber-400" />
+          <p className="text-xs text-amber-400/90">
+            Esta é a última etapa do pipeline. Para encerrar o negócio, use os botões
+            <strong className="text-amber-400"> Ganho</strong> ou
+            <strong className="text-amber-400"> Perdido</strong> acima.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

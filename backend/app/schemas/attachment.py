@@ -23,6 +23,7 @@ class AttachmentCreate(AttachmentBase):
     storage_path: str = Field(..., max_length=1000, description="Caminho de armazenamento relativo")
     card_id: int = Field(..., description="ID do card")
     uploaded_by_id: int = Field(..., description="ID do usuário que fez upload")
+    attachment_type: str = Field(default='general', max_length=50, description="Tipo do anexo (general, proposal)")
 
     @field_validator('file_size')
     @classmethod
@@ -76,6 +77,9 @@ class AttachmentResponse(BaseModel):
     file_size: int
     mime_type: str
     storage_path: str
+
+    # Tipo do anexo
+    attachment_type: str = 'general'
 
     # Informações do uploader
     uploader_name: Optional[str] = None

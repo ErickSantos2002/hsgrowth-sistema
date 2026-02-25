@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   DollarSign,
   TrendingUp,
@@ -15,15 +15,20 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
+  FileText,
+  Upload,
+  Trash2,
+  Download,
 } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
 import EditableField from "./EditableField";
 import EditableSelectField from "./EditableSelectField";
-import { showWarning } from "../../utils/toast";
+import { showWarning, showError, showSuccess } from "../../utils/toast";
 import { Card, Board } from "../../types";
 import { User as UserType } from "../../types";
 import userService from "../../services/userService";
 import boardService from "../../services/boardService";
+import attachmentService, { Attachment } from "../../services/attachmentService";
 import {
   DEAL_TYPES,
   ACQUISITION_CHANNELS,
@@ -47,6 +52,15 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
   const [sdrUsers, setSDRUsers] = useState<UserType[]>([]);
   const [boards, setBoards] = useState<Board[]>([]);
   const [currentBoard, setCurrentBoard] = useState<Board | null>(null);
+
+  // Estado da proposta formal (board 7)
+  const [proposalAttachment, setProposalAttachment] = useState<Attachment | null>(null);
+  const [isUploadingProposal, setIsUploadingProposal] = useState(false);
+  const [isDeletingProposal, setIsDeletingProposal] = useState(false);
+  const proposalInputRef = useRef<HTMLInputElement>(null);
+
+  // Card está no board de Aquisição (board 7)
+  const isAcquisitionBoard = card.board_id === 7;
 
   // Carrega usuários ativos e SDRs
   useEffect(() => {
@@ -74,6 +88,97 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
     };
     loadData();
   }, [card.board_id]);
+
+  // Carrega a proposta formal do card (se estiver no board de Aquisição)
+  useEffect(() => {
+    if (!isAcquisitionBoard) return;
+
+    const loadProposal = async () => {
+      try {
+        const response = await attachmentService.listFiles(card.id);
+        // Busca o anexo mais recente com tipo 'proposal'
+        const proposal = response.attachments.find((a) => a.attachment_type === 'proposal') || null;
+        setProposalAttachment(proposal);
+      } catch (err) {
+        console.error("Erro ao carregar proposta:", err);
+      }
+    };
+
+    loadProposal();
+  }, [card.id, isAcquisitionBoard]);
+
+  /**
+   * Faz upload da proposta formal (somente PDF)
+   */
+  const handleProposalUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validação: somente PDF
+    if (file.type !== 'application/pdf') {
+      showWarning("Somente arquivos PDF são aceitos para a Proposta Comercial.");
+      // Limpa o input para permitir novo upload
+      if (proposalInputRef.current) proposalInputRef.current.value = '';
+      return;
+    }
+
+    // Validação: tamanho máximo 10MB
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showWarning("O arquivo é muito grande. Tamanho máximo: 10MB.");
+      if (proposalInputRef.current) proposalInputRef.current.value = '';
+      return;
+    }
+
+    setIsUploadingProposal(true);
+    try {
+      // Se já existe uma proposta, remove a anterior antes de subir a nova
+      if (proposalAttachment) {
+        await attachmentService.deleteFile(proposalAttachment.id);
+      }
+
+      const uploaded = await attachmentService.uploadFile(card.id, file, 'proposal');
+      setProposalAttachment(uploaded);
+      showSuccess("Proposta Comercial anexada com sucesso.");
+    } catch (err) {
+      console.error("Erro ao fazer upload da proposta:", err);
+      showError("Erro ao anexar a proposta. Tente novamente.");
+    } finally {
+      setIsUploadingProposal(false);
+      if (proposalInputRef.current) proposalInputRef.current.value = '';
+    }
+  };
+
+  /**
+   * Remove a proposta formal do card
+   */
+  const handleDeleteProposal = async () => {
+    if (!proposalAttachment) return;
+
+    setIsDeletingProposal(true);
+    try {
+      await attachmentService.deleteFile(proposalAttachment.id);
+      setProposalAttachment(null);
+      showSuccess("Proposta removida com sucesso.");
+    } catch (err) {
+      console.error("Erro ao remover proposta:", err);
+      showError("Erro ao remover a proposta. Tente novamente.");
+    } finally {
+      setIsDeletingProposal(false);
+    }
+  };
+
+  /**
+   * Faz download da proposta formal
+   */
+  const handleDownloadProposal = async () => {
+    if (!proposalAttachment) return;
+    try {
+      await attachmentService.triggerDownload(proposalAttachment.id, proposalAttachment.original_filename);
+    } catch (err) {
+      showError("Erro ao fazer download da proposta.");
+    }
+  };
 
   /**
    * Atualiza a probabilidade
@@ -494,6 +599,107 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
             icon={<Users size={14} />}
           />
         </div>
+
+        {/* ======== SEÇÃO: PROPOSTA FORMAL (BOARD DE AQUISIÇÃO) ======== */}
+        {isAcquisitionBoard && (
+          <div className="space-y-4 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
+            <h4 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+              <FileText size={16} />
+              Proposta Comercial
+            </h4>
+
+            {/* Input oculto para seleção do PDF */}
+            <input
+              ref={proposalInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              className="hidden"
+              onChange={handleProposalUpload}
+            />
+
+            {proposalAttachment ? (
+              /* Proposta já anexada */
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+                <div className="flex items-start gap-3">
+                  <FileText size={20} className="mt-0.5 flex-shrink-0 text-emerald-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
+                      {proposalAttachment.original_filename}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                      {attachmentService.formatFileSize(proposalAttachment.file_size)}
+                      {proposalAttachment.uploader_name && (
+                        <> &bull; Enviado por {proposalAttachment.uploader_name}</>
+                      )}
+                    </p>
+                  </div>
+                  {/* Ações: download e remover */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={handleDownloadProposal}
+                      className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-white"
+                      title="Baixar proposta"
+                    >
+                      <Download size={14} />
+                    </button>
+                    <button
+                      onClick={() => proposalInputRef.current?.click()}
+                      disabled={isUploadingProposal}
+                      className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-white"
+                      title="Substituir proposta"
+                    >
+                      <Upload size={14} />
+                    </button>
+                    <button
+                      onClick={handleDeleteProposal}
+                      disabled={isDeletingProposal}
+                      className="rounded p-1.5 text-red-400 transition-colors hover:bg-red-500/10"
+                      title="Remover proposta"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Nenhuma proposta anexada — área de upload */
+              <button
+                onClick={() => proposalInputRef.current?.click()}
+                disabled={isUploadingProposal}
+                className="group flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 px-4 py-5 text-center transition-colors hover:border-emerald-500/50 hover:bg-emerald-500/5 disabled:cursor-wait"
+              >
+                {isUploadingProposal ? (
+                  <>
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                    <span className="text-sm text-slate-400">Enviando proposta...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={20} className="text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                    <div>
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-300 group-hover:text-emerald-400 transition-colors">
+                        Anexar Proposta Comercial
+                      </p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
+                        Somente PDF &bull; Máximo 10MB
+                      </p>
+                    </div>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Aviso sobre obrigatoriedade para avançar de etapa */}
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2">
+              <Info size={14} className="mt-0.5 flex-shrink-0 text-amber-400" />
+              <p className="text-xs text-amber-400/90">
+                A Proposta Comercial em PDF é obrigatória para avançar da etapa
+                <strong className="text-amber-400"> Diagnóstico e Proposta</strong> para
+                <strong className="text-amber-400"> Negociação</strong>.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ======== SEÇÃO: MOTIVO DA PERDA (CONDICIONAL) ======== */}
         {isLost && (

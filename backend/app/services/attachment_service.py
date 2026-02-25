@@ -56,7 +56,8 @@ class AttachmentService:
         self,
         card_id: int,
         file: UploadFile,
-        uploaded_by: User
+        uploaded_by: User,
+        attachment_type: str = 'general'
     ) -> AttachmentResponse:
         """
         Faz upload de um arquivo e salva no volume.
@@ -120,7 +121,8 @@ class AttachmentService:
             mime_type=file.content_type,
             storage_path=storage_path,
             card_id=card_id,
-            uploaded_by_id=uploaded_by.id
+            uploaded_by_id=uploaded_by.id,
+            attachment_type=attachment_type
         )
 
         attachment = self.repository.create(attachment_data)
@@ -228,6 +230,7 @@ class AttachmentService:
             file_size=attachment.file_size,
             mime_type=attachment.mime_type,
             storage_path=attachment.storage_path,
+            attachment_type=attachment.attachment_type,
             uploader_name=attachment.uploaded_by.name if attachment.uploaded_by else None,
             uploader_email=attachment.uploaded_by.email if attachment.uploaded_by else None,
             created_at=attachment.created_at,

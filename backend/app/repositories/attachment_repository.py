@@ -101,6 +101,25 @@ class AttachmentRepository:
         total_size = sum([r[0] for r in result if r[0]])
         return total_size
 
+    def get_by_card_and_type(self, card_id: int, attachment_type: str) -> List[Attachment]:
+        """
+        Lista attachments de um card filtrados por tipo.
+        Usado para verificar se existe proposta formal (attachment_type='proposal').
+        """
+        return (
+            self.db.query(Attachment)
+            .filter(
+                and_(
+                    Attachment.card_id == card_id,
+                    Attachment.attachment_type == attachment_type,
+                    Attachment.deleted_at.is_(None)
+                )
+            )
+            .options(joinedload(Attachment.uploaded_by))
+            .order_by(Attachment.created_at.desc())
+            .all()
+        )
+
     def count_by_card(self, card_id: int) -> int:
         """
         Conta quantos attachments um card possui.

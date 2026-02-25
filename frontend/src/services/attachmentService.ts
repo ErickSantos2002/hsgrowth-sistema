@@ -18,6 +18,9 @@ export interface Attachment {
   mime_type: string;
   storage_path: string;
 
+  // Tipo do anexo: 'general' ou 'proposal'
+  attachment_type: string;
+
   // Informações do uploader
   uploader_name?: string;
   uploader_email?: string;
@@ -47,12 +50,14 @@ const attachmentService = {
    * Upload de arquivo para um card
    * @param cardId ID do card
    * @param file Arquivo a ser enviado
+   * @param attachmentType Tipo do anexo: 'general' (padrão) ou 'proposal'
    * @returns Informações do arquivo enviado
    */
-  async uploadFile(cardId: number, file: File): Promise<Attachment> {
-    // Criar FormData para enviar arquivo
+  async uploadFile(cardId: number, file: File, attachmentType: string = 'general'): Promise<Attachment> {
+    // Criar FormData para enviar arquivo e tipo
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('attachment_type', attachmentType);
 
     const response = await api.post(
       `/api/v1/cards/${cardId}/attachments`,

@@ -7,7 +7,7 @@ Rotas disponíveis:
 - GET /attachments/{attachment_id}/download - Download de arquivo
 - DELETE /attachments/{attachment_id} - Deletar arquivo
 """
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, Request
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, Request
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List
@@ -69,12 +69,13 @@ async def upload_file(
     card_id: int,
     request: Request,
     file: UploadFile = File(..., description="Arquivo a ser enviado"),
+    attachment_type: str = Form(default='general', description="Tipo do anexo: 'general' ou 'proposal'"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Upload de arquivo para um card"""
     service = AttachmentService(db)
-    attachment = await service.upload_file(card_id, file, current_user)
+    attachment = await service.upload_file(card_id, file, current_user, attachment_type)
 
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"

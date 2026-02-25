@@ -205,14 +205,16 @@ const KanbanList: React.FC<KanbanListProps> = ({
           </button>
         )}
 
-        {/* Botão adicionar card */}
-        <button
-          onClick={onAddCard}
-          className="group flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white"
-        >
-          <Plus size={16} className="transition-transform group-hover:scale-110" />
-          <span>Adicionar card</span>
-        </button>
+        {/* Botão adicionar card — oculto quando o usuário não tem permissão para criar nessa lista */}
+        {onAddCard && (
+          <button
+            onClick={onAddCard}
+            className="group flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white"
+          >
+            <Plus size={16} className="transition-transform group-hover:scale-110" />
+            <span>Adicionar card</span>
+          </button>
+        )}
 
         {/* Seta direita - apenas Admin/Manager */}
         {canManageLists && !isLastList && onMoveRight && (

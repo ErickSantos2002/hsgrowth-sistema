@@ -954,12 +954,18 @@ const KanbanBoard: React.FC = () => {
               const isFirstList = index === 0;
               const isLastList = index === lists.length - 1;
 
+              // Regra de criação de cards:
+              // Admin e Manager podem criar em qualquer lista.
+              // Demais roles só podem criar na primeira lista do board de Prospecção (id=6).
+              const canAddCardToList =
+                canCreateList || (board?.id === 6 && isFirstList);
+
               return (
                 <KanbanList
                   key={list.id}
                   list={list}
                   cards={filteredCards}
-                  onAddCard={() => handleAddCard(list.id)}
+                  onAddCard={canAddCardToList ? () => handleAddCard(list.id) : undefined}
                   onEditList={() => handleEditList(list)}
                   onArchiveList={() => handleArchiveList(list)}
                   onDeleteList={() => handleDeleteListClick(list)}

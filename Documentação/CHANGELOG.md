@@ -7,6 +7,59 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.1] - 2026-02-25
+
+### Adicionado
+
+#### Rastreamento de Histórico de Etapas (`card_list_history`)
+- Nova tabela `card_list_history` para registrar quando cada card entrou e saiu de cada lista
+- Campos: `card_id`, `list_id`, `board_id` (desnormalizado), `entered_at`, `exited_at` (NULL = ainda na etapa)
+- Atualizada automaticamente em toda movimentação de card (`move_card`) e na criação do card
+- Script de migração histórica `scripts/migrate_card_list_history.py` para popular dados anteriores a partir das atividades
+- 4 índices para performance: `card_id`, `list_id + entered_at`, `board_id + entered_at`, `card_id + exited_at`
+
+#### Regras de Movimentação — Board 6 (Prospecção)
+- Vendedores e SDRs só podem criar cards na primeira lista ("Lead Novo") do board 6
+- Frontend oculta o botão "Adicionar card" nas demais listas para usuários sem permissão
+- **Lead Novo → Prospecção**: exige empresa vinculada, contato vinculado, segmento da empresa e cargo do contato
+- **Prospecção → Conectado**: exige evidência de contato efetivo — ligação VOIP concluída, task de ligação concluída ou nota com ≥ 20 caracteres
+- **Conectado → Agendado**: exige task de reunião criada e nota com ≥ 20 caracteres descrevendo o problema identificado; pula a etapa "Reagendamento" propositalmente
+- **Reagendamento → Agendado**: exige task de reunião pendente (não concluída) — garante que o SDR reagendou o encontro após No Show
+- Fluxo No Show: botão marca a task de reunião como concluída e move o card para "Reagendamento" automaticamente
+
+#### Regras de Movimentação — Board 7 (Aquisição)
+- **Reunião Agendada → Qualificação**: exige que não haja tasks de reunião pendentes (prova que a reunião aconteceu); se o lead não compareceu, usar botão "No Show"
+- **Qualificação → Diagnóstico e Proposta**: transição livre, sem requisitos
+- **Diagnóstico e Proposta → Negociação**: exige (1) Proposta Comercial em PDF anexada ao card e (2) task de follow-up pendente criada
+- **Negociação**: não possui próxima etapa pelo pipeline — encerramento apenas pelos botões "Ganho" ou "Perdido"; mensagem de erro clara ao tentar avançar pelo pipeline
+- Board 8 (Expansão): sem regras de movimentação por enquanto
+
+#### Proposta Comercial (Anexo PDF dedicado)
+- Novo campo `attachment_type` (`VARCHAR(50) DEFAULT 'general'`) na tabela `attachments`
+- Suporte a `attachment_type='proposal'` para classificar propostas comerciais separadamente dos anexos gerais
+- Seção "Proposta Comercial" na aba Resumo do card — visível apenas para cards no board de Aquisição (board 7)
+- Upload restrito a PDF, tamanho máximo 10MB
+- Permite substituir ou remover a proposta existente
+- Botão de download da proposta diretamente na seção
+- Aviso visual informando que a proposta é obrigatória para avançar para Negociação
+
+#### Melhorias na Interface do Pipeline
+- `PipelineStages` recebe prop `hideTerminalStages` — oculta etapas "Negócio Ganho" e "Negócio Perdido" do pipeline visual para usuários não privilegiados
+- Aviso âmbar exibido abaixo do pipeline quando o card está na última etapa visível, orientando o usuário a usar os botões Ganho/Perdido
+- Erro de movimentação no `handleMoveCard` (CardDetails) agora exibe a mensagem exata retornada pela API ao invés de mensagem genérica
+
+### Alterado
+- `move_card` no backend: bloqueia saída de estágios terminais (Ganho/Perdido); entrada em terminais continua liberada pelos botões dedicados
+- `move_card` registra `from_list_id`, `to_list_id`, `from_board_id`, `to_board_id` nos metadados da atividade
+- Endpoint `POST /cards/{card_id}/attachments` aceita parâmetro `attachment_type` via form field (padrão: `'general'`)
+- `attachmentService.uploadFile` no frontend aceita `attachmentType` como terceiro parâmetro
+
+### Banco de Dados — Migrações
+- `2026_02_25_1000-create_card_list_history.py` — cria tabela `card_list_history`
+- `2026_02_25_1100-add_attachment_type.py` — adiciona coluna `attachment_type` em `attachments`
+
+---
+
 ## [1.3.0] - 2026-02-24
 
 ### Adicionado

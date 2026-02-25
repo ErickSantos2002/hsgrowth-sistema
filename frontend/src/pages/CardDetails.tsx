@@ -332,9 +332,11 @@ const CardDetails: React.FC = () => {
       });
 
       await loadCardData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao mover card:", error);
-      showError("Erro ao mover card para nova lista");
+      // Extrai a mensagem de erro retornada pela API (regras de pipeline, validações, etc.)
+      const apiMessage = error?.response?.data?.detail;
+      showError(apiMessage || "Erro ao mover card para nova lista");
     } finally {
       setIsMovingCard(false);
     }
@@ -657,6 +659,7 @@ const CardDetails: React.FC = () => {
                 currentListId={card.list_id}
                 onMoveCard={handleMoveCard}
                 isMoving={isMovingCard}
+                hideTerminalStages={currentUser?.role !== "admin" && currentUser?.role !== "manager"}
               />
             </div>
           )}

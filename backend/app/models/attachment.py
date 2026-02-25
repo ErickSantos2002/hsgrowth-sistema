@@ -32,6 +32,9 @@ class Attachment(Base, TimestampMixin, SoftDeleteMixin):
     # Caminho de armazenamento
     storage_path = Column(String(1000), nullable=False)  # Caminho relativo: cards/123/abc123.pdf
 
+    # Tipo de anexo (general, proposal, etc.)
+    attachment_type = Column(String(50), nullable=False, default='general', index=True)
+
     # Relacionamentos
     card = relationship("Card", back_populates="attachments")
     uploaded_by = relationship("User", foreign_keys=[uploaded_by_id])
