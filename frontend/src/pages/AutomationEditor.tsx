@@ -731,7 +731,7 @@ const AutomationEditorContent: React.FC = () => {
           </ReactFlow>
         </div>
 
-        <div className="w-[320px] min-w-[280px] shrink-0">
+        <div className="hidden lg:block w-[320px] min-w-[280px] shrink-0">
           {selectedNode ? (
             <NodeConfigPanel
               node={selectedNode}
