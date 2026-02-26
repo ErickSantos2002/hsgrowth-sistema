@@ -330,14 +330,14 @@ const Gamification: React.FC = () => {
       {/* Visão Geral da Equipe (apenas para gerente/admin quando selecionado "team") */}
       {isManagerOrAdmin && selectedUserId === "team" && activeTab === "profile" && teamStats && (
         <div className="space-y-6">
-          <div className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
+          <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700/50 dark:bg-slate-800/50">
             <div className="flex items-center gap-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                <UsersIcon size={40} />
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 dark:bg-emerald-500/20">
+                <UsersIcon size={40} className="text-emerald-500" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Visão Geral da Equipe</h2>
-                <p className="text-white/80">Desempenho coletivo de {availableUsers.length} vendedores</p>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Visão Geral da Equipe</h2>
+                <p className="text-slate-500 dark:text-slate-400">Desempenho coletivo de {availableUsers.length} vendedores</p>
               </div>
             </div>
           </div>
@@ -410,25 +410,25 @@ const Gamification: React.FC = () => {
       {activeTab === "profile" && summary && (
         <div className="space-y-6">
           {/* Header do perfil */}
-          <div className={`rounded-xl p-6 text-white ${
-            isManagerOrAdmin && selectedUserId !== "team"
-              ? "bg-gradient-to-r from-blue-600 to-indigo-600"
-              : "bg-gradient-to-r from-emerald-600 to-cyan-600"
-          }`}>
+          <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700/50 dark:bg-slate-800/50">
             <div className="flex items-center gap-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 text-2xl font-bold backdrop-blur-sm">
+              <div className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold ${
+                isManagerOrAdmin && selectedUserId !== "team"
+                  ? "bg-blue-500/10 text-blue-500 dark:bg-blue-500/20"
+                  : "bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20"
+              }`}>
                 {getInitials(summary.user_name)}
               </div>
               <div>
-                <h2 className="text-2xl font-bold">{summary.user_name}</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{summary.user_name}</h2>
                 {isManagerOrAdmin && selectedUserId !== "team" && (
                   <div className="mt-2">
-                    <span className="rounded-full bg-white/20 px-3 py-1 text-sm">
+                    <span className="rounded-full bg-blue-500/10 px-3 py-1 text-sm text-blue-500 dark:bg-blue-500/20">
                       Visualizando vendedor
                     </span>
                   </div>
                 )}
-                <p className="text-white/80">
+                <p className="text-slate-500 dark:text-slate-400">
                   {isManagerOrAdmin && selectedUserId !== "team"
                     ? "Desempenho individual do vendedor"
                     : "Continue conquistando pontos e badges!"}

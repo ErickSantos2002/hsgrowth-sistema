@@ -416,35 +416,35 @@ const Transfers: React.FC = () => {
       {/* Estatsticas */}
       {statistics && (
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
-          <div className="rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6 backdrop-blur-xl transition-all hover:border-blue-500/40">
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl transition-all hover:border-gray-300 dark:hover:border-slate-600">
             <div className="mb-1 flex items-center gap-2">
               <ArrowRightLeft size={16} className="text-blue-400" />
               <span className="text-xs text-slate-500 dark:text-slate-400">Total</span>
             </div>
             <div className="text-2xl font-bold text-slate-900 dark:text-white">{statistics.total_transfers}</div>
           </div>
-          <div className="rounded-xl border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 p-6 backdrop-blur-xl transition-all hover:border-yellow-500/40">
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl transition-all hover:border-gray-300 dark:hover:border-slate-600">
             <div className="mb-1 flex items-center gap-2">
               <Clock size={16} className="text-yellow-400" />
               <span className="text-xs text-slate-500 dark:text-slate-400">Pendentes</span>
             </div>
             <div className="text-2xl font-bold text-slate-900 dark:text-white">{statistics.pending_approvals}</div>
           </div>
-          <div className="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-500/10 to-emerald-500/10 p-6 backdrop-blur-xl transition-all hover:border-green-500/40">
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl transition-all hover:border-gray-300 dark:hover:border-slate-600">
             <div className="mb-1 flex items-center gap-2">
               <CheckCircle size={16} className="text-green-400" />
               <span className="text-xs text-slate-500 dark:text-slate-400">Hoje</span>
             </div>
             <div className="text-2xl font-bold text-slate-900 dark:text-white">{statistics.completed_today}</div>
           </div>
-          <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-6 backdrop-blur-xl transition-all hover:border-emerald-500/40">
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl transition-all hover:border-gray-300 dark:hover:border-slate-600">
             <div className="mb-1 flex items-center gap-2">
               <CheckCircle size={16} className="text-emerald-400" />
               <span className="text-xs text-slate-500 dark:text-slate-400">Esta Semana</span>
             </div>
             <div className="text-2xl font-bold text-slate-900 dark:text-white">{statistics.completed_this_week}</div>
           </div>
-          <div className="rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-6 backdrop-blur-xl transition-all hover:border-cyan-500/40">
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl transition-all hover:border-gray-300 dark:hover:border-slate-600">
             <div className="mb-1 flex items-center gap-2">
               <CheckCircle size={16} className="text-cyan-400" />
               <span className="text-xs text-slate-500 dark:text-slate-400">Este Ms</span>

@@ -329,7 +329,7 @@ const Dashboard: React.FC = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {/* Card: Total de Cards */}
-        <div className="rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6 backdrop-blur-xl transition-all hover:border-blue-500/40">
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl transition-all hover:border-gray-300 dark:hover:border-slate-600">
           <div className="mb-3 flex items-center justify-between">
             <div className="rounded-lg bg-blue-500/20 p-3">
               <Target className="h-6 w-6 text-blue-400" />
@@ -353,7 +353,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card: Valor Total */}
-        <div className="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-500/10 to-emerald-500/10 p-6 backdrop-blur-xl transition-all hover:border-green-500/40">
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl transition-all hover:border-gray-300 dark:hover:border-slate-600">
           <div className="mb-3 flex items-center justify-between">
             <div className="rounded-lg bg-green-500/20 p-3">
               <DollarSign className="h-6 w-6 text-green-400" />
@@ -379,7 +379,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card: Valor Ganho */}
-        <div className="rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-6 backdrop-blur-xl transition-all hover:border-purple-500/40">
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl transition-all hover:border-gray-300 dark:hover:border-slate-600">
           <div className="mb-3 flex items-center justify-between">
             <div className="rounded-lg bg-purple-500/20 p-3">
               <TrendingUp className="h-6 w-6 text-purple-400" />
@@ -406,7 +406,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card: Taxa de Conversão */}
-        <div className="rounded-xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-red-500/10 p-6 backdrop-blur-xl transition-all hover:border-orange-500/40">
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50 p-6 backdrop-blur-xl transition-all hover:border-gray-300 dark:hover:border-slate-600">
           <div className="mb-3 flex items-center justify-between">
             <div className="rounded-lg bg-orange-500/20 p-3">
               <Users className="h-6 w-6 text-orange-400" />
