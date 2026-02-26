@@ -7,6 +7,7 @@ import userService from "../../services/userService";
 import { User as UserType } from "../../types";
 import { PERSON_AREAS } from "../../constants/blueprintOptions";
 import { maskPhone } from "../../utils/formatters";
+import { useAuth } from "../../hooks/useAuth";
 
 /**
  * Props do componente PersonModal
@@ -62,8 +63,9 @@ interface PersonFormData {
  */
 const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, person }) => {
   const isEditing = !!person;
+  const { user } = useAuth();
 
-  // Estado do formulário
+  // Estado do formulário — owner_id inicia com o usuário logado na criação
   const [formData, setFormData] = useState<PersonFormData>({
     name: "",
     first_name: "",
@@ -76,7 +78,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
     phone_whatsapp: "",
     position: "",
     area: "",
-    owner_id: null,
+    owner_id: user?.id ?? null,
     linkedin: "",
     instagram: "",
     facebook: "",
@@ -94,7 +96,8 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
     const loadUsers = async () => {
       try {
         const activeUsers = await userService.listActive();
-        setUsers(activeUsers);
+        // Exibe apenas vendedores como opção de proprietário
+        setUsers(activeUsers.filter((u) => u.role === "salesperson"));
       } catch (err) {
         console.error("Erro ao carregar usuários:", err);
       }
@@ -129,7 +132,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         is_active: person.is_active,
       });
     } else {
-      // Resetar formulário ao criar novo
+      // Resetar formulário ao criar novo — owner_id pré-preenchido com o usuário logado
       setFormData({
         name: "",
         first_name: "",
@@ -142,7 +145,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         phone_whatsapp: "",
         position: "",
         area: "",
-        owner_id: null,
+        owner_id: user?.id ?? null,
         linkedin: "",
         instagram: "",
         facebook: "",
