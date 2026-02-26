@@ -259,6 +259,7 @@ class CardService:
                         pending_tasks_status=pending_status,
                         value=card.value,
                         due_date=card.due_date,
+                        created_at=card.created_at,
                         is_won=card.is_won,
                         is_lost=card.is_lost
                     )

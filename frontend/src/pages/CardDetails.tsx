@@ -28,6 +28,7 @@ import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ReopenModal from "../components/cardDetails/ReopenModal";
 import { showSuccess, showError } from "../utils/toast";
 import attachmentService from "../services/attachmentService";
+import UserAvatar from "../components/common/UserAvatar";
 
 /**
  * Página de detalhes do Card - Layout estilo Pipedrive com tema escuro
@@ -427,9 +428,12 @@ const CardDetails: React.FC = () => {
                       onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
                       className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
                     >
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-medium text-white">
-                        {assignedUser?.name?.substring(0, 2).toUpperCase() || "?"}
-                      </div>
+                      <UserAvatar
+                        userId={assignedUser?.id}
+                        userName={assignedUser?.name || "?"}
+                        avatarUrl={assignedUser?.avatar_url}
+                        size="sm"
+                      />
                       <span className="text-sm font-medium text-slate-900 dark:text-white">{assignedUser?.name || "Não atribuído"}</span>
                       <ChevronDown size={16} className="text-slate-500 dark:text-slate-400" />
                     </button>
@@ -459,9 +463,12 @@ const CardDetails: React.FC = () => {
                                     : "text-slate-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700"
                                 }`}
                               >
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-xs font-medium text-white">
-                                  {user.name.substring(0, 2).toUpperCase()}
-                                </div>
+                                <UserAvatar
+                                  userId={user.id}
+                                  userName={user.name}
+                                  avatarUrl={user.avatar_url}
+                                  size="xs"
+                                />
                                 <div className="min-w-0 flex-1">
                                   <p className="truncate text-sm font-medium">{user.name}</p>
                                   <p className="truncate text-xs text-slate-500">{user.role_name}</p>
@@ -479,9 +486,12 @@ const CardDetails: React.FC = () => {
                 ) : (
                   // Vendedor - apenas visualização (sem seta)
                   <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-700/50 dark:bg-slate-800/80">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-medium text-white">
-                      {assignedUser?.name?.substring(0, 2).toUpperCase() || "?"}
-                    </div>
+                    <UserAvatar
+                      userId={assignedUser?.id}
+                      userName={assignedUser?.name || "?"}
+                      avatarUrl={assignedUser?.avatar_url}
+                      size="sm"
+                    />
                     <span className="text-sm font-medium text-slate-900 dark:text-white">{assignedUser?.name || "Não atribuído"}</span>
                   </div>
                 )}
@@ -497,9 +507,12 @@ const CardDetails: React.FC = () => {
                         onClick={() => setShowSdrDropdown(!showSdrDropdown)}
                         className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
                       >
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-sm font-medium text-white">
-                          {sdrUser?.name?.substring(0, 2).toUpperCase() || "SDR"}
-                        </div>
+                        <UserAvatar
+                          userId={sdrUser?.id}
+                          userName={sdrUser?.name || "SDR"}
+                          avatarUrl={sdrUser?.avatar_url}
+                          size="sm"
+                        />
                         <span className="text-sm font-medium text-slate-900 dark:text-white">{sdrUser?.name || "Sem SDR"}</span>
                         <ChevronDown size={16} className="text-slate-500 dark:text-slate-400" />
                       </button>
@@ -529,9 +542,12 @@ const CardDetails: React.FC = () => {
                                       : "text-slate-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700"
                                   }`}
                                 >
-                                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-xs font-medium text-white">
-                                    {user.name.substring(0, 2).toUpperCase()}
-                                  </div>
+                                  <UserAvatar
+                                    userId={user.id}
+                                    userName={user.name}
+                                    avatarUrl={user.avatar_url}
+                                    size="xs"
+                                  />
                                   <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-medium">{user.name}</p>
                                     <p className="truncate text-xs text-slate-500">{user.role_name}</p>
@@ -549,9 +565,12 @@ const CardDetails: React.FC = () => {
                   ) : (
                     // Vendedor - apenas visualização (sem seta)
                     <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-700/50 dark:bg-slate-800/80">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-sm font-medium text-white">
-                        {sdrUser?.name?.substring(0, 2).toUpperCase() || "SDR"}
-                      </div>
+                      <UserAvatar
+                        userId={sdrUser?.id}
+                        userName={sdrUser?.name || "SDR"}
+                        avatarUrl={sdrUser?.avatar_url}
+                        size="sm"
+                      />
                       <span className="text-sm font-medium text-slate-900 dark:text-white">{sdrUser?.name || "Sem SDR"}</span>
                     </div>
                   )}

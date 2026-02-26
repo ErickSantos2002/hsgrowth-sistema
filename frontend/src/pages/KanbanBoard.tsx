@@ -500,38 +500,51 @@ const KanbanBoard: React.FC = () => {
         if (!matches) return false;
       }
 
-      // Filtro por data de vencimento
-      if (dueDateFilter && card.due_date) {
-        const dueDate = new Date(card.due_date);
+      // Filtro por data de criação
+      if (dueDateFilter) {
+        // Se o card não tem created_at por algum motivo, exclui do resultado
+        if (!card.created_at) return false;
+
+        const createdDate = new Date(card.created_at);
+
+        // Se a data é inválida, exclui do resultado
+        if (isNaN(createdDate.getTime())) return false;
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         let matches = false;
 
         switch (dueDateFilter) {
-          case "overdue":
-            // Atrasados: due_date < hoje
-            matches = dueDate < today;
+          case "overdue": {
+            // Antes desta semana: criado antes do início da semana atual (segunda-feira)
+            const startOfWeek = new Date(today);
+            const day = startOfWeek.getDay();
+            startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1));
+            matches = createdDate < startOfWeek;
             break;
+          }
           case "today": {
-            // Hoje: due_date = hoje
-            const dueDateOnly = new Date(dueDate);
-            dueDateOnly.setHours(0, 0, 0, 0);
-            matches = dueDateOnly.getTime() === today.getTime();
+            // Hoje: criado hoje
+            const createdOnly = new Date(createdDate);
+            createdOnly.setHours(0, 0, 0, 0);
+            matches = createdOnly.getTime() === today.getTime();
             break;
           }
           case "week": {
-            // Esta semana: devido nos próximos 7 dias
-            const weekFromNow = new Date(today);
-            weekFromNow.setDate(weekFromNow.getDate() + 7);
-            matches = dueDate >= today && dueDate <= weekFromNow;
+            // Esta semana: criado desde segunda-feira até hoje
+            const startOfWeek = new Date(today);
+            const day = startOfWeek.getDay();
+            startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1));
+            startOfWeek.setHours(0, 0, 0, 0);
+            matches = createdDate >= startOfWeek && createdDate <= new Date();
             break;
           }
           case "month":
-            // Este mês
+            // Este mês: criado no mês atual
             matches =
-              dueDate.getMonth() === today.getMonth() &&
-              dueDate.getFullYear() === today.getFullYear();
+              createdDate.getMonth() === today.getMonth() &&
+              createdDate.getFullYear() === today.getFullYear();
             break;
         }
 
@@ -900,13 +913,13 @@ const KanbanBoard: React.FC = () => {
               />
             </div>
 
-            {/* Filtro por data de vencimento */}
+            {/* Filtro por data de criação */}
             <div className="w-full sm:w-auto sm:min-w-[170px]">
               <SelectMenu
                 value={dueDateFilter}
                 options={[
                   { value: "", label: "Qualquer data" },
-                  { value: "overdue", label: "Atrasados" },
+                  { value: "overdue", label: "Antes desta semana" },
                   { value: "today", label: "Hoje" },
                   { value: "week", label: "Esta semana" },
                   { value: "month", label: "Este mês" },

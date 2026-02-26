@@ -22,6 +22,8 @@ from app.models.person import Person
 from app.models.activity import Activity
 from app.models.user import User
 from app.models.card_task import CardTask, TaskType
+from app.models.attachment import Attachment
+from app.models.card_list_history import CardListHistory
 from app.schemas.custom_report import (
     QueryRequest,
     QueryResponse,
@@ -57,6 +59,10 @@ _TASK_TYPE_LABELS = {
 # Abreviações de meses em português para formatação de labels
 _MONTH_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
                 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+
+# ID da lista "Prospecção" dentro do board "Prospecção" (board_id=6, list_id=23).
+# Usado para calcular "Negócios Válidos" — cards que chegaram nessa etapa.
+_PROSPECCAO_LIST_ID = 23
 
 
 class CustomReportService:
@@ -288,6 +294,8 @@ class CustomReportService:
                 field('loss_reason', 'Motivo de Perda', 'category', True, False),
                 field('count', 'Quantidade', 'number', False, True),
                 field('won_count', 'Negócios Ganhos', 'number', False, True),
+                field('proposal_count', 'Propostas Enviadas', 'number', False, True),
+                field('valid_count', 'Negócios Válidos', 'number', False, True),
             ],
             clients=[
                 field('created_at', 'Data de Cadastro', 'date', True, False),
@@ -696,6 +704,16 @@ class CustomReportService:
         result: Dict[Any, float] = {}
 
         try:
+            # Campos especiais que precisam de queries com JOINs próprios
+            if y_source == 'cards' and y_key == 'proposal_count':
+                return self._run_proposal_count_query(
+                    x_source, x_key, x_group_by, start, end, extra_filters
+                )
+            if y_source == 'cards' and y_key == 'valid_count':
+                return self._run_valid_count_query(
+                    x_source, x_key, x_group_by, start, end, extra_filters
+                )
+
             # Determina a expressão da chave X (para GROUP BY)
             x_raw_expr = self._build_x_raw_expr(x_source, x_key, x_group_by)
             if x_raw_expr is None:
@@ -1018,6 +1036,116 @@ class CustomReportService:
         # (coberto pelo branch cards acima com JOIN CardTask)
 
         return []
+
+    def _run_proposal_count_query(
+        self,
+        x_source: str, x_key: str, x_group_by: Optional[str],
+        start: date, end: date,
+        extra_filters: Optional[List] = None,
+    ) -> Dict[Any, float]:
+        """
+        Conta cards distintos que possuem ao menos 1 proposta enviada
+        (attachments com attachment_type='proposal'), agrupados pelo campo X.
+
+        Usa COUNT(DISTINCT card.id) com JOIN em attachments para evitar
+        duplicatas quando um card tem mais de uma proposta.
+        """
+        result: Dict[Any, float] = {}
+
+        try:
+            x_raw_expr = self._build_x_raw_expr(x_source, x_key, x_group_by)
+            if x_raw_expr is None:
+                return result
+
+            extra = list(extra_filters or [])
+            base_filter = [
+                Card.is_deleted == False,
+                Attachment.attachment_type == 'proposal',
+                Attachment.is_deleted == False,
+            ] + extra
+
+            # Aplica filtro de data na coluna X quando for um campo de data
+            if x_group_by:
+                date_col = self._get_x_date_col(x_source, x_key)
+                if date_col is not None:
+                    base_filter += [
+                        func.date(date_col) >= start,
+                        func.date(date_col) <= end,
+                    ]
+
+            rows = (
+                self.db.query(
+                    x_raw_expr.label('x_key'),
+                    func.count(func.distinct(Card.id)).label('y_val'),
+                )
+                .join(Attachment, Attachment.card_id == Card.id)
+                .filter(*base_filter)
+                .group_by(x_raw_expr)
+                .all()
+            )
+
+            for row in rows:
+                result[row.x_key] = float(row.y_val or 0)
+
+        except Exception:
+            pass
+
+        return result
+
+    def _run_valid_count_query(
+        self,
+        x_source: str, x_key: str, x_group_by: Optional[str],
+        start: date, end: date,
+        extra_filters: Optional[List] = None,
+    ) -> Dict[Any, float]:
+        """
+        Conta cards distintos que chegaram à lista "Prospecção" (list_id=23)
+        do board Prospecção, agrupados pelo campo X.
+
+        Usa a tabela card_list_history que registra toda movimentação de cards
+        entre listas. Um card é "válido" quando tem ao menos um registro nessa
+        lista, independente de onde estiver agora.
+        """
+        result: Dict[Any, float] = {}
+
+        try:
+            x_raw_expr = self._build_x_raw_expr(x_source, x_key, x_group_by)
+            if x_raw_expr is None:
+                return result
+
+            extra = list(extra_filters or [])
+            base_filter = [
+                Card.is_deleted == False,
+                CardListHistory.list_id == _PROSPECCAO_LIST_ID,
+            ] + extra
+
+            # Aplica filtro de data na coluna X quando for um campo de data
+            if x_group_by:
+                date_col = self._get_x_date_col(x_source, x_key)
+                if date_col is not None:
+                    base_filter += [
+                        func.date(date_col) >= start,
+                        func.date(date_col) <= end,
+                    ]
+
+            rows = (
+                self.db.query(
+                    x_raw_expr.label('x_key'),
+                    func.count(func.distinct(Card.id)).label('y_val'),
+                )
+                .join(CardListHistory, CardListHistory.card_id == Card.id)
+                .filter(*base_filter)
+                .group_by(x_raw_expr)
+                .all()
+            )
+
+            for row in rows:
+                result[row.x_key] = float(row.y_val or 0)
+
+        except Exception:
+            pass
+
+        return result
 
     # ========================
     # QUERY ENGINE — PÚBLICO

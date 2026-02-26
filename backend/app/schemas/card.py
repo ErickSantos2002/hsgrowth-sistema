@@ -479,6 +479,7 @@ class CardMinimalResponse(BaseModel):
     pending_tasks_status: Optional[str] = Field(None, description="Status das atividades: overdue, today, future, none")
     value: Optional[float] = Field(None, description="Valor monetário")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
+    created_at: Optional[datetime] = Field(None, description="Data de criação")
     is_won: bool = Field(..., description="Card ganho")
     is_lost: bool = Field(..., description="Card perdido")
 

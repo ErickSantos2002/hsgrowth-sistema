@@ -7,6 +7,41 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.2] - 2026-02-26
+
+### Adicionado
+
+#### Relatórios — Novos Campos: Propostas Enviadas e Negócios Válidos
+- Novo campo `proposal_count` ("Propostas Enviadas") no catálogo de relatórios customizados
+  - Conta cards distintos que possuem ao menos 1 anexo com `attachment_type = 'proposal'`
+  - Usa `COUNT(DISTINCT card.id)` com JOIN em `attachments` para evitar duplicatas
+- Novo campo `valid_count` ("Negócios Válidos") no catálogo de relatórios customizados
+  - Conta cards distintos que chegaram à lista "Prospecção" (`list_id = 23`) do board Prospecção (`board_id = 6`)
+  - Usa `COUNT(DISTINCT card.id)` com JOIN em `card_list_history`
+- Constante `_PROSPECCAO_LIST_ID = 23` no service para facilitar manutenção futura
+- Métodos privados `_run_proposal_count_query` e `_run_valid_count_query` em `CustomReportService`
+- Campo `created_at` adicionado ao schema `CardMinimalResponse` e ao service (necessário para o filtro de data do Kanban)
+
+### Corrigido
+
+#### KanbanBoard — Filtro de Data
+- Filtro de data corrigido para usar `created_at` (data de criação) em vez de `due_date` (data de vencimento)
+- Corrigido bug onde cards sem `due_date` passavam pelo filtro sem serem filtrados (agora cards sem `created_at` são excluídos quando filtro está ativo)
+- Lógica do período "Esta semana" ajustada para olhar para o passado (criado desde segunda-feira até hoje) em vez do futuro
+- Label "Atrasados" renomeado para "Antes desta semana" (semanticamente correto para filtro por criação)
+
+#### CardDetails — Avatares no Header
+- Substituídas as iniciais estáticas por fotos reais usando o componente `UserAvatar` em 6 locais do header:
+  - Botão de seleção do Vendedor (admin/manager)
+  - Botão de seleção do SDR (admin/manager)
+  - Exibição read-only do Vendedor (role vendedor)
+  - Exibição read-only do SDR (role vendedor)
+  - Itens do dropdown de seleção de Vendedor
+  - Itens do dropdown de seleção de SDR
+- Mantido fallback automático para iniciais com gradiente quando o usuário não tem foto cadastrada
+
+---
+
 ## [1.3.1] - 2026-02-25
 
 ### Adicionado
