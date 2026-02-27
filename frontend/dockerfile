@@ -16,7 +16,9 @@ COPY tailwind.config.js ./
 COPY postcss.config.js ./
 
 # Instala dependências
-RUN npm install
+# Remove o package-lock.json para evitar conflitos de binários específicos do Windows
+# (lock gerado no Windows tem pacotes como lightningcss-win32-x64-msvc que não existem no Alpine Linux)
+RUN rm -f package-lock.json && npm install --legacy-peer-deps
 
 # Copia o restante do projeto (src/, index.html, public/, etc)
 COPY . .
