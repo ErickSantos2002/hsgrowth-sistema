@@ -42,11 +42,11 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Estado de edição: { [productId]: { quantity, discountPercent } }
+  // Estado de edição: { [productId]: { quantity, discountValue } }
   const [editingProduct, setEditingProduct] = useState<number | null>(null);
-  const [editValues, setEditValues] = useState<{ quantity: number; discountPercent: number }>({
+  const [editValues, setEditValues] = useState<{ quantity: number; discountValue: number }>({
     quantity: 1,
-    discountPercent: 0,
+    discountValue: 0,
   });
 
   // Estado do modal de pagamento
@@ -155,14 +155,10 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
   const handleStartEdit = (product: ProductItem) => {
     setEditingProduct(product.id);
 
-    // Calcula percentual de desconto baseado no valor atual
-    const discountPercent = product.subtotal > 0
-      ? (product.discount / product.subtotal) * 100
-      : 0;
-
+    // Usa o valor de desconto em reais diretamente (arredondado para inteiro)
     setEditValues({
       quantity: product.quantity,
-      discountPercent: Math.round(discountPercent * 100) / 100, // arredonda para 2 casas
+      discountValue: Math.round(product.discount),
     });
   };
 
@@ -171,7 +167,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
    */
   const handleCancelEdit = () => {
     setEditingProduct(null);
-    setEditValues({ quantity: 1, discountPercent: 0 });
+    setEditValues({ quantity: 1, discountValue: 0 });
   };
 
   /**
@@ -183,21 +179,24 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
       return;
     }
 
-    if (editValues.discountPercent < 0 || editValues.discountPercent > 100) {
-      showWarning("Desconto deve estar entre 0% e 100%");
+    if (editValues.discountValue < 0) {
+      showWarning("Desconto não pode ser negativo");
+      return;
+    }
+
+    // Calcula subtotal para validar que o desconto não ultrapassa o total
+    const subtotal = editValues.quantity * product.unit_price;
+    if (editValues.discountValue > subtotal) {
+      showWarning(`Desconto não pode ser maior que o valor total da linha (${formatCurrency(subtotal)})`);
       return;
     }
 
     try {
       setLoading(true);
 
-      // Calcula desconto em valor absoluto baseado no percentual
-      const subtotal = editValues.quantity * product.unit_price;
-      const discountValue = (subtotal * editValues.discountPercent) / 100;
-
       await productService.updateCardProduct(product.id, {
         quantity: editValues.quantity,
-        discount: discountValue,
+        discount: editValues.discountValue,
       });
 
       setEditingProduct(null);
@@ -310,17 +309,12 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
             {products.map((product: ProductItem) => {
               const isEditing = editingProduct === product.id;
 
-              // Calcula percentual de desconto atual
-              const currentDiscountPercent = product.subtotal > 0
-                ? (product.discount / product.subtotal) * 100
-                : 0;
-
               // Calcula valores para o modo de edição
               const editSubtotal = isEditing
                 ? editValues.quantity * product.unit_price
                 : product.subtotal;
               const editDiscount = isEditing
-                ? (editSubtotal * editValues.discountPercent) / 100
+                ? editValues.discountValue
                 : product.discount;
               const editTotal = editSubtotal - editDiscount;
 
@@ -386,20 +380,19 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
                     </div>
 
                     <div>
-                      <label className="text-xs text-slate-400 dark:text-slate-400">Desconto (%)</label>
+                      <label className="text-xs text-slate-400 dark:text-slate-400">Desconto (R$)</label>
                       {isEditing ? (
                         <input
                           type="number"
                           min="0"
-                          max="100"
-                          step="0.01"
-                          value={editValues.discountPercent}
-                          onChange={(e) => setEditValues({ ...editValues, discountPercent: parseFloat(e.target.value) || 0 })}
+                          step="1"
+                          value={editValues.discountValue}
+                          onChange={(e) => setEditValues({ ...editValues, discountValue: parseInt(e.target.value) || 0 })}
                           className="w-full rounded border border-blue-500 bg-gray-100 dark:bg-slate-800 px-2 py-1.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       ) : (
                         <p className="rounded border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 px-2 py-1.5 text-slate-900 dark:text-white">
-                          {currentDiscountPercent.toFixed(2)}%
+                          {formatCurrency(product.discount)}
                         </p>
                       )}
                     </div>
