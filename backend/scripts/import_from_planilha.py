@@ -213,8 +213,10 @@ def extract_cnae_code(val) -> str | None:
 
 def find_sdr_user(db, sdr_name: str) -> int | None:
     """
-    Busca usuário no banco pelo nome informado na planilha (correspondência parcial).
-    Compara sem acentos e case-insensitive para maior tolerância a variações.
+    Busca usuário no banco pelo nome informado na planilha.
+    Exige que TODAS as palavras significativas (>3 chars) do nome do usuário
+    estejam presentes no nome buscado — evita falsos positivos por sobrenome comum
+    (ex: 'Sandra Silva' não bate em 'Cláudia Silva' porque 'sandra' não está lá).
     """
     if not sdr_name:
         return None
@@ -224,12 +226,13 @@ def find_sdr_user(db, sdr_name: str) -> int | None:
         if not user.name:
             continue
         user_norm = strip_accents(user.name.lower())
-        # Verifica se cada palavra relevante do nome do usuário está no nome da planilha
-        words_match = [
-            word for word in user_norm.split()
-            if len(word) > 3 and word in name_norm
-        ]
-        if words_match:
+        # Palavras significativas do nome do usuário cadastrado (mais de 3 letras)
+        significant_words = [word for word in user_norm.split() if len(word) > 3]
+        if not significant_words:
+            continue
+        # Todas as palavras significativas do usuário devem estar no nome da planilha
+        all_match = all(word in name_norm for word in significant_words)
+        if all_match:
             return user.id
     return None
 
@@ -434,11 +437,11 @@ def create_card(
         except (ValueError, TypeError):
             value = 0.0
 
-    # Data de prospecção vira created_at do card
-    # Se a data estiver no futuro (ex: Excel inverteu DD/MM para MM/DD), usa hoje
-    parsed_date = parse_date(reader.get(row, "Data_Prospecao"))
+    # Data de criação do card: prioriza "Data Criação*" (preenchida pelo SDR),
+    # cai em "Data_Prospecao" como fallback, e por último usa hoje
+    parsed_date = parse_date(reader.get(row, "Data Criação*")) or parse_date(reader.get(row, "Data_Prospecao"))
     if parsed_date and parsed_date > datetime.now():
-        print(f"    AVISO   : Data_Prospecao '{parsed_date.date()}' está no futuro — usando data de hoje")
+        print(f"    AVISO   : Data '{parsed_date.date()}' está no futuro — usando data de hoje")
         parsed_date = None
     created_at = parsed_date or datetime.now()
 
@@ -516,7 +519,7 @@ def create_activities(
 
 def import_from_sheet():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    sheet_path = os.path.join(script_dir, "Planilha_Importacao_CRM_preenchida.xlsx")
+    sheet_path = os.path.join(script_dir, "Planilha_Importacao_CRM_JOAO_VICTOR.xlsx")
 
     print("=" * 70)
     print("IMPORTACAO DA PLANILHA SDR PARA CARDS")
@@ -578,7 +581,7 @@ def import_from_sheet():
                 sdr_name = clean_str(reader.get(row_num, "SDR_Responsavel *"))
                 sdr_id = find_sdr_user(db, sdr_name)
                 if sdr_id:
-                    print(f"    SDR     : {sdr_name} → id={sdr_id}")
+                    print(f"    SDR     : {sdr_name} -> id={sdr_id}")
                 else:
                     msg = f"Linha {row_num}: SDR '{sdr_name}' nao encontrado"
                     print(f"    AVISO   : {msg}")

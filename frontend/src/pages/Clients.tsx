@@ -54,7 +54,7 @@ const Clients: React.FC = () => {
     customFilters,
     setCustomFilter,
   } = useFilter<Client>(clients, {
-    search: filterHelpers.searchInFields(["name", "company_name", "email", "phone"]),
+    search: filterHelpers.searchInFields(["name", "company_name", "email", "phone", "document"]),
     status: (client, status) =>
       status === "all" ||
       (status === "active" && client.is_active) ||
@@ -112,7 +112,7 @@ const Clients: React.FC = () => {
         <SearchInput
           value={searchTerm}
           onChange={setSearchTerm}
-          placeholder="Buscar por nome, empresa, email ou telefone..."
+          placeholder="Buscar por nome, empresa, email, telefone ou CPF/CNPJ..."
         />
 
         {/* Botão de filtros */}

@@ -694,6 +694,8 @@ class CardService:
         from app.models.card_task import CardTask, TaskType
         from app.models.card_note import CardNote
         from app.models.attachment import Attachment
+        from app.models.card_product import CardProduct
+        from app.models.product import Product
 
         # Busca todas as listas do board de origem ordenadas por posição
         board_lists = (
@@ -767,28 +769,158 @@ class CardService:
                     ),
                 )
 
-        # ── Validações por etapa de origem ─────────────────────────────────────
-
-        # Etapa 1 — Lead Novo → Prospecção:
-        # empresa, contato, segmento e cargo devem estar preenchidos
-        if source_list.board_id == 6 and source_index == 0:
+        # ── Validações por etapa de origem (CUMULATIVAS para Board 6) ──────────
+        #
+        # As regras são acumuladas conforme o card avança no pipeline:
+        # - etapa 0 → valida apenas regras da etapa 0
+        # - etapa 1 → valida etapa 0 + etapa 1
+        # - etapa 2 → valida etapa 0 + etapa 1 + etapa 2
+        #
+        # Isso garante que campos obrigatórios permaneçam preenchidos mesmo após
+        # o avanço inicial. Produto só é exigido a partir da etapa 2.
+        #
+        if source_list.board_id == 6 and source_index in (0, 1, 2):
             missing = []
+            MIN_NOTE_LENGTH = 20
 
+            # ── Etapa 0: Lead Novo → Prospecção ───────────────────────────────
+            # Empresa: nome, tipo de relacionamento, segmento
+            # Contato: nome, e-mail, cargo, área
+            # Negócio: canal de aquisição, detalhamento, tipo de negócio
             if not card.client_id:
                 missing.append("empresa vinculada ao negócio")
+            else:
+                client = self.db.query(Client).filter(Client.id == card.client_id).first()
+                if client:
+                    if not (client.name or "").strip():
+                        missing.append("nome da empresa")
+                    if not (client.relationship_type or "").strip():
+                        missing.append("tipo de relacionamento da empresa")
+                    if not (client.sector or "").strip():
+                        missing.append("segmento da empresa")
 
             if not card.person_id:
                 missing.append("contato vinculado ao negócio")
-
-            if card.client_id:
-                client = self.db.query(Client).filter(Client.id == card.client_id).first()
-                if not client or not (client.sector or "").strip():
-                    missing.append("segmento da empresa")
-
-            if card.person_id:
+            else:
                 person = self.db.query(Person).filter(Person.id == card.person_id).first()
-                if not person or not (person.position or "").strip():
-                    missing.append("cargo do contato")
+                if person:
+                    if not (person.name or "").strip():
+                        missing.append("nome do contato")
+                    # Aceita qualquer campo de e-mail preenchido
+                    has_email = any([
+                        (person.email or "").strip(),
+                        (person.email_commercial or "").strip(),
+                        (person.email_personal or "").strip(),
+                        (person.email_alternative or "").strip(),
+                    ])
+                    if not has_email:
+                        missing.append("e-mail do contato")
+                    if not (person.position or "").strip():
+                        missing.append("cargo do contato")
+                    if not (person.area or "").strip():
+                        missing.append("área do contato")
+
+            if not (card.acquisition_channel or "").strip():
+                missing.append("canal de aquisição")
+            if not (card.acquisition_channel_detail or "").strip():
+                missing.append("canal de aquisição - detalhamento")
+            if not (card.deal_type or "").strip():
+                missing.append("tipo de negócio")
+
+            # ── Etapa 1: Prospecção → Conectado (e etapas seguintes) ──────────
+            # Evidência de contato efetivo: ligação VOIP, task de ligação concluída,
+            # ou nota com ao menos 20 caracteres
+            if source_index >= 1:
+                has_completed_call = (
+                    self.db.query(CallLog)
+                    .filter(CallLog.card_id == card.id, CallLog.status == "completed")
+                    .first()
+                ) is not None
+
+                has_completed_call_task = (
+                    self.db.query(CardTask)
+                    .filter(
+                        CardTask.card_id == card.id,
+                        CardTask.task_type == TaskType.CALL,
+                        CardTask.is_completed == True,  # noqa: E712
+                    )
+                    .first()
+                ) is not None
+
+                notes = self.db.query(CardNote).filter(CardNote.card_id == card.id).all()
+                has_valid_note = any(
+                    len((n.content or "").strip()) >= MIN_NOTE_LENGTH for n in notes
+                )
+
+                if not (has_completed_call or has_completed_call_task or has_valid_note):
+                    missing.append(
+                        f"evidência de contato efetivo (ligação VOIP concluída, tarefa de "
+                        f"ligação marcada como feita, ou nota com ao menos {MIN_NOTE_LENGTH} caracteres)"
+                    )
+
+            # ── Etapa 2: Conectado → Agendado (e etapas seguintes) ────────────
+            # Produto obrigatório, vendedor responsável, reunião se Phoebus,
+            # nota do problema, implementação, pessoas para manusear,
+            # colaboradores e status do cliente
+            if source_index >= 2:
+                # Busca produtos vinculados ao card com join no catálogo
+                card_products = (
+                    self.db.query(CardProduct)
+                    .join(Product, CardProduct.product_id == Product.id)
+                    .filter(CardProduct.card_id == card.id)
+                    .all()
+                )
+                product_names = [cp.product.name or "" for cp in card_products]
+
+                # Ao menos 1 produto vinculado ao negócio
+                if not card_products:
+                    missing.append("ao menos 1 produto vinculado ao negócio")
+
+                # Task de reunião: obrigatória APENAS quando há produto Phoebus vinculado
+                has_phoebus = any("phoebus" in name.lower() for name in product_names)
+                if has_phoebus:
+                    has_meeting_task = (
+                        self.db.query(CardTask)
+                        .filter(
+                            CardTask.card_id == card.id,
+                            CardTask.task_type == TaskType.MEETING,
+                        )
+                        .first()
+                    ) is not None
+                    if not has_meeting_task:
+                        missing.append(
+                            "tarefa de reunião no card "
+                            "(obrigatório pois há produto Phoebus vinculado)"
+                        )
+
+                # Nota documentando o problema identificado
+                # has_valid_note já calculado no bloco da etapa 1 (source_index >= 1)
+                if not has_valid_note:
+                    missing.append(
+                        f"nota com ao menos {MIN_NOTE_LENGTH} caracteres "
+                        "descrevendo o problema identificado"
+                    )
+
+                # Vendedor responsável vinculado ao negócio
+                if not card.assigned_to_id:
+                    missing.append("vendedor responsável vinculado ao negócio")
+
+                # Campos do negócio: implementação e pessoas para manusear
+                # (inteiros: null = não respondido, 0 ou 1 = respondido)
+                if card.has_implementation is None:
+                    missing.append("implementação (negócio)")
+                if card.has_personnel is None:
+                    missing.append("se tem pessoas para manusear (negócio)")
+
+                # Campos adicionais da empresa para esta etapa
+                # (relationship_type já validado na etapa 0)
+                if card.client_id:
+                    client_e2 = self.db.query(Client).filter(Client.id == card.client_id).first()
+                    if client_e2:
+                        if not (client_e2.employee_count or "").strip():
+                            missing.append("número de colaboradores da empresa")
+                        if not (client_e2.commercial_activity or "").strip():
+                            missing.append("status do cliente da empresa")
 
             if missing:
                 raise HTTPException(
@@ -796,83 +928,6 @@ class CardService:
                     detail=(
                         f"Para avançar para '{target_list.name}', preencha: "
                         f"{', '.join(missing)}."
-                    ),
-                )
-
-        # Etapa 2 — Prospecção → Conectado:
-        # evidência de contato efetivo — pelo menos UMA das opções:
-        #   1. Ligação VOIP concluída
-        #   2. Task de ligação marcada como concluída
-        #   3. Nota com ao menos 20 caracteres
-        elif source_list.board_id == 6 and source_index == 1:
-            MIN_NOTE_LENGTH = 20
-
-            has_completed_call = (
-                self.db.query(CallLog)
-                .filter(CallLog.card_id == card.id, CallLog.status == "completed")
-                .first()
-            ) is not None
-
-            has_completed_call_task = (
-                self.db.query(CardTask)
-                .filter(
-                    CardTask.card_id == card.id,
-                    CardTask.task_type == TaskType.CALL,
-                    CardTask.is_completed == True,  # noqa: E712
-                )
-                .first()
-            ) is not None
-
-            notes = self.db.query(CardNote).filter(CardNote.card_id == card.id).all()
-            has_valid_note = any(
-                len((n.content or "").strip()) >= MIN_NOTE_LENGTH for n in notes
-            )
-
-            if not (has_completed_call or has_completed_call_task or has_valid_note):
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=(
-                        f"Para avançar para '{target_list.name}', registre evidência de "
-                        "contato efetivo: ligação concluída (VOIP ou tarefa de ligação "
-                        f"marcada como feita) ou uma nota com ao menos {MIN_NOTE_LENGTH} "
-                        "caracteres descrevendo o contato realizado."
-                    ),
-                )
-
-        # Etapa 3 — Conectado → Agendado:
-        # deve existir uma task de reunião criada + nota documentando o problema identificado
-        elif source_list.board_id == 6 and source_index == 2:
-            MIN_NOTE_LENGTH = 20
-
-            has_meeting_task = (
-                self.db.query(CardTask)
-                .filter(
-                    CardTask.card_id == card.id,
-                    CardTask.task_type == TaskType.MEETING,
-                )
-                .first()
-            ) is not None
-
-            notes = self.db.query(CardNote).filter(CardNote.card_id == card.id).all()
-            has_valid_note = any(
-                len((n.content or "").strip()) >= MIN_NOTE_LENGTH for n in notes
-            )
-
-            missing = []
-            if not has_meeting_task:
-                missing.append("criar uma tarefa de reunião no card")
-            if not has_valid_note:
-                missing.append(
-                    f"adicionar uma nota com ao menos {MIN_NOTE_LENGTH} caracteres "
-                    "descrevendo o problema identificado"
-                )
-
-            if missing:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=(
-                        f"Para avançar para '{target_list.name}', é necessário: "
-                        f"{'; '.join(missing)}."
                     ),
                 )
 
