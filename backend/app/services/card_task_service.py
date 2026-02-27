@@ -186,7 +186,10 @@ class CardTaskService:
                 metadata={
                     "task_id": task.id,
                     "task_type": task.task_type.value,
-                    "task_title": task.title
+                    "task_title": task.title,
+                    # Inclui descrição e anotações para exibição no histórico
+                    "task_description": task.description or "",
+                    "task_notes": task.notes or "",
                 }
             )
 

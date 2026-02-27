@@ -411,15 +411,21 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
             Responsáveis
           </h4>
 
-          {/* SDR Responsável */}
-          <EditableSelectField
-            label="SDR Responsável"
-            value={card.sdr_id}
-            onSave={handleUpdateSDR}
-            options={sdrOptions}
-            placeholder="Nenhum SDR atribuído"
-            icon={<User size={14} />}
-          />
+          {/* SDR Responsável (somente leitura — atribuído pelo sistema ou por um Gerente) */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <User size={14} className="text-slate-400 dark:text-slate-400" />
+              <span>SDR Responsável</span>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
+              <span className="text-sm text-slate-900 dark:text-white">
+                {card.sdr_name || "Não atribuído"}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              O SDR será atribuído automaticamente pelo sistema ou por um Gerente
+            </p>
+          </div>
 
           {/* Vendedor Responsável (campo já existe como assigned_to_id) */}
           <div className="space-y-1">

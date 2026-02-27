@@ -7,6 +7,60 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.3] - 2026-02-27
+
+### Adicionado
+
+#### Kanban — Regras de Avanço Cumulativas (Board 6 — Prospecção)
+- Validações de avanço de etapa tornadas **cumulativas**: ao tentar avançar para uma etapa N, todas as regras das etapas anteriores também são verificadas novamente
+- Evita que campos obrigatórios sejam preenchidos para avançar e depois removidos
+- **Lead Novo → Prospecção** — novos campos obrigatórios:
+  - Tipo de Relacionamento da empresa (`relationship_type`)
+  - Segmento/setor da empresa (`sector`)
+  - Nome, e-mail (ao menos 1), cargo e área do contato vinculado
+  - Canal de Aquisição (`acquisition_channel`), Detalhamento do Canal (`acquisition_channel_detail`) e Tipo de Negócio (`deal_type`)
+- **Conectado → Agendado** — novos campos obrigatórios:
+  - Vendedor responsável vinculado ao card (`assigned_to_id`)
+  - Ao menos 1 produto cadastrado no card
+  - Task de reunião criada — **apenas se** algum dos produtos vinculados for "Phoebus"; caso contrário, task de reunião não é exigida
+  - Implementação do negócio (`has_implementation`)
+  - Pessoas para manusear (`has_personnel`)
+  - Número de colaboradores da empresa (`employee_count`)
+  - Atividade comercial da empresa (`commercial_activity`)
+  - Tipo de Relacionamento e Status do cliente da empresa
+
+#### Script de Importação de Planilha (`import_from_planilha.py`)
+- Campo `Data Criação*` adicionado como **fonte primária de data** ao criar o card; fallback para `Data_Prospecao` e depois para a data atual
+- Lógica de busca de SDR corrigida: todas as palavras significativas do nome do usuário precisam constar no nome da planilha (evita falsos positivos como "Sandra Silva" casar com "Cláudia Silva")
+
+### Corrigido
+
+#### Deploy — Dockerfile Frontend (Easypanel / Alpine Linux)
+- Corrigido erro `npm install` no build Docker causado pelo `package-lock.json` gerado no Windows com binários específicos da plataforma (`lightningcss-win32-x64-msvc`, `@rollup/rollup-win32-x64-msvc`)
+- Solução: `RUN rm -f package-lock.json && npm install --legacy-peer-deps`
+
+#### CardDetails — Desconto de Produto
+- Desconto alterado de percentual (%) para **valor fixo em R$** (inteiro)
+- Input do tipo `number` com `step="1"` (somente inteiros)
+- Validação que impede desconto maior que o subtotal dos itens
+- Exibição formatada como moeda (`R$ X.XXX,XX`) no modo leitura
+
+#### Clientes — Busca por CPF/CNPJ
+- Campo `document` adicionado ao `searchInFields` do filtro de busca
+- Placeholder da busca atualizado para indicar que CPF/CNPJ é pesquisável
+
+#### CardDetails — Campo SDR (Seção Resumo)
+- Campo SDR alterado de dropdown editável para **somente leitura**, igual ao comportamento do campo Vendedor
+- Exibe nome do SDR atribuído ou "Não atribuído"
+- Texto informativo: "O SDR será atribuído automaticamente pelo sistema ou por um Gerente"
+
+#### CardDetails — Histórico de Atividades (Descrição/Anotações)
+- Corrigido: após concluir uma atividade, a descrição e anotações da tarefa não apareciam no Histórico
+- **Backend** (`card_task_service.py`): ao marcar tarefa como concluída, agora salva `task_description` e `task_notes` no `activity_metadata`
+- **Frontend** (`HistorySection.tsx`): mapeamento da `description` atualizado com prioridade: anotações (`task_notes`) > descrição (`task_description`) > título (apenas se diferente do título principal, evitando duplicidade)
+
+---
+
 ## [1.3.2] - 2026-02-26
 
 ### Adicionado

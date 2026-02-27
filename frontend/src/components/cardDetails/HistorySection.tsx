@@ -128,15 +128,33 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
     return typeMap[backendType] || "activity_created";
   };
 
-  const activityEvents: HistoryEvent[] = (activities || []).map((act: any) => ({
-    id: act.id,
-    type: mapActivityType(act.activity_type),
-    title: act.description || "Evento",
-    description: act.activity_metadata?.task_title || "",
-    user_name: act.user?.name || "Sistema",
-    created_at: act.created_at,
-    metadata: act.activity_metadata || {},
-  }));
+  const activityEvents: HistoryEvent[] = (activities || []).map((act: any) => {
+    const meta = act.activity_metadata || {};
+
+    // Monta a descrição exibida abaixo do título no histórico.
+    // Para atividades concluídas, prioriza as anotações (task_notes) e depois
+    // a descrição da tarefa (task_description). Para outros eventos, usa task_title.
+    let description = "";
+    if (meta.task_notes) {
+      description = meta.task_notes;
+    } else if (meta.task_description) {
+      description = meta.task_description;
+    } else if (meta.task_title && meta.task_title !== act.description) {
+      // Exibe task_title apenas se for diferente do description principal
+      // (evita duplicidade: "Ligação concluída: X" + "X" abaixo)
+      description = meta.task_title;
+    }
+
+    return {
+      id: act.id,
+      type: mapActivityType(act.activity_type),
+      title: act.description || "Evento",
+      description,
+      user_name: act.user?.name || "Sistema",
+      created_at: act.created_at,
+      metadata: meta,
+    };
+  });
 
   const noteEvents: HistoryEvent[] = (notes || []).map((note: any) => ({
     id: note.id,
