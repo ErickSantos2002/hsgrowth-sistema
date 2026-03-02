@@ -138,27 +138,23 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
   };
 
   /**
-   * Callback quando uma nova pessoa é criada
-   * Automaticamente vincula a pessoa ao card
+   * Callback quando uma nova pessoa é criada pelo PersonModal.
+   * Recebe a pessoa já criada (retornada diretamente pela API) e a vincula ao card.
+   * Isso evita a heurística anterior de buscar a primeira pessoa da lista
+   * (que retornava por ordem alfabética e podia vincular a pessoa errada).
    */
-  const handlePersonCreated = async () => {
+  const handlePersonCreated = async (createdPerson?: Person) => {
     setShowCreateModal(false);
 
-    // Aguarda um momento para o backend processar
-    await new Promise(resolve => setTimeout(resolve, 500));
+    if (!createdPerson) {
+      showError("Pessoa criada, mas não foi possível vinculá-la automaticamente. Vincule manualmente.");
+      return;
+    }
 
     try {
-      // Busca a pessoa recém-criada (última criada)
-      const response = await personService.list({ page_size: 1, is_active: true });
-
-      if (response.persons.length > 0) {
-        const newPerson = response.persons[0];
-
-        // Vincula automaticamente ao card
-        await personService.linkToCard(card.id, newPerson.id);
-
-        onUpdate();
-      }
+      // Vincula diretamente usando o ID retornado pela criação
+      await personService.linkToCard(card.id, createdPerson.id);
+      onUpdate();
     } catch (error) {
       console.error("Erro ao vincular pessoa recém-criada:", error);
       showError("Pessoa criada, mas houve erro ao vincular. Vincule manualmente");

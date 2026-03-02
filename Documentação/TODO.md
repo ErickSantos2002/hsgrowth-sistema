@@ -1,6 +1,6 @@
 # TODO - HSGrowth CRM
 
-**Última atualização**: 02/03/2026
+**Última atualização**: 02/03/2026 (v1.3.4)
 **Responsável**: Erick (Cientista de Dados / Full Stack)
 
 ---
@@ -69,11 +69,12 @@
 ## 📋 Pendências e Próximas Implementações
 
 ### Backend - Agendador (Scheduler/Calendar)
-- [ ] Planejamento da arquitetura
+- [x] Planejamento da arquitetura — concluído (v1.3.4)
+- [x] Conectar frontend `SchedulerSection` com backend — concluído (v1.3.4)
+- [x] Página global `/calendar` com visão somente leitura — concluído (v1.3.4)
 - [ ] Integração com Google Calendar (opcional)
 - [ ] Integração com Microsoft Teams/Outlook (opcional)
 - [ ] Sistema de lembretes e notificações
-- [ ] Conectar frontend `SchedulerSection` com backend
 
 ### Frontend - Melhorias e Ajustes
 - [ ] Auto-save em campos editáveis (com debounce e feedback visual)
@@ -105,7 +106,7 @@
 ### Geral - Otimizações
 - [ ] Paginação no histórico (scroll infinito)
 - [ ] Cache de dados frequentemente acessados
-- [ ] Otimização de queries N+1 (verificar se já não foi feito)
+- [x] Otimização de queries N+1 em `list_by_filters` (CardTask + assigned_to + card + client) — concluído (v1.3.4)
 - [ ] Compressão de respostas API
 - [ ] Rate limiting (verificar se já implementado)
 
@@ -154,10 +155,10 @@
    - Debounce de 500-1000ms
    - Indicador visual de "salvando..."
 
-5. **Sistema de Agendador/Calendário**
-   - Planejamento da arquitetura
-   - Integração com calendários externos (opcional)
-   - Interface de calendário no frontend
+5. ~~**Sistema de Agendador/Calendário**~~ ✅ Concluído em v1.3.4
+   - ~~Planejamento da arquitetura~~
+   - Interface de calendário no frontend — feito
+   - Integração com calendários externos (opcional — pendente)
 
 6. **Testes unitários**
    - Componentes principais do frontend
@@ -198,23 +199,24 @@
 - ✅ **Página de Documentação da API (/api-docs)**
 - ✅ **Sistema de Anotações (Notes)**
 - ✅ **Sistema de Arquivos (Attachments/Upload)**
+- ✅ **Calendário Global (/calendar)** — v1.3.4
 
 ### Módulos Parcialmente Implementados
 - 🔄 **Notificações** - Estrutura existe, melhorias pendentes
 - 🔄 **Gamificação** - Funcional, melhorias opcionais pendentes
 
 ### Módulos Não Iniciados
-- ❌ **Agendador/Calendário**
+- *(nenhum módulo core pendente)*
 
 ### Estatísticas do Projeto
 - **Endpoints da API**: ~149
 - **Schemas Pydantic**: ~146
-- **Páginas React**: 20+
+- **Páginas React**: 21+
 - **Componentes React**: 100+
 - **Modelos do banco**: 25+
 - **Migrations**: 40+
 - **Linhas de código (Backend)**: ~15.000+
-- **Linhas de código (Frontend)**: ~20.000+
+- **Linhas de código (Frontend)**: ~21.000+
 
 ---
 
@@ -227,6 +229,7 @@
 - ✅ **v1.1.3** (09/02/2026) - Sistema de SDR e Rodízio
 - ✅ **v1.1.4** (10/02/2026) - Melhorias de UX e permissões
 - ✅ **v1.1.5** (10/02/2026) - Edição inline e simplificações
+- ✅ **v1.3.4** (02/03/2026) - Calendário Global de Atividades
 
 ---
 

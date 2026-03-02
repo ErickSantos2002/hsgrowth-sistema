@@ -15,7 +15,8 @@ import { useAuth } from "../../hooks/useAuth";
 interface PersonModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
+  /** Na criação, recebe a pessoa criada. Na edição, chamado sem argumento. */
+  onSave: (person?: Person) => void;
   person: Person | null; // null = criar, objeto = editar
 }
 
@@ -220,11 +221,13 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
 
       if (isEditing) {
         await personService.update(person.id, dataToSend);
+        onSave(); // Edição: sem argumento, apenas sinaliza que terminou
       } else {
-        await personService.create(dataToSend);
+        // Criação: captura a pessoa retornada pela API e repassa via callback
+        // para que o chamador possa vinculá-la diretamente pelo ID correto
+        const created = await personService.create(dataToSend);
+        onSave(created);
       }
-
-      onSave(); // Recarrega a lista
       onClose(); // Fecha o modal
     } catch (err: any) {
       console.error("Erro ao salvar pessoa:", err);

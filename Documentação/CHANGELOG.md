@@ -7,6 +7,64 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.4] - 2026-03-02
+
+### Adicionado
+
+#### Calendário Global de Atividades (`/calendar`)
+- **Nova página `/calendar`** com visão global de todas as atividades/tarefas de todos os cards
+- Controle de visibilidade por role:
+  - `admin` / `manager`: veem todos por padrão, com dropdown para filtrar por usuário específico ("Todos os usuários" como opção padrão)
+  - `salesperson` / `sdr`: filtro fixo no próprio `user.id`, badge fixo "Minhas atividades"
+- Dois modos de visualização:
+  - **Grade mensal** — idêntica ao `SchedulerSection`, pills coloridos por tipo, indicador de overflow (+N mais)
+  - **Lista cronológica** — agrupada por mês, com `card_title` e `card_client_name` como info secundária
+- Seletor rápido de mês via popover (navegação de ano + grade de 12 meses), botão "Hoje"
+- Modal de detalhes **somente leitura**: tipo, prioridade, status, card/cliente, data/hora/duração, local, link de vídeo, responsável, descrição, notas
+- Botão "Abrir card" no modal navega para `/cards/{id}` — sem ações de criar, editar ou excluir
+
+#### Novos campos em `CardTaskResponse` (backend)
+- `card_title` — título do card ao qual a tarefa pertence
+- `card_client_name` — nome do cliente vinculado ao card
+- Populados em todas as respostas da API via join automático
+
+#### Constantes compartilhadas `cardTaskConfig.ts` (frontend)
+- Novo arquivo `frontend/src/constants/cardTaskConfig.ts` centralizando:
+  - `TYPE_CONFIG` — configurações visuais por tipo (cor, ícone, label)
+  - `PRIORITY_CONFIG` — badges de prioridade
+  - `WEEK_DAYS` — cabeçalho dos dias da semana
+  - Tipos exportados: `TaskType`, `Priority`, `TypeConfig`
+
+#### Método `getForCalendar()` no `cardTaskService.ts` (frontend)
+- Busca todas as tarefas sem filtro de `card_id`, com `assignedToId` opcional
+- Paginação automática: `page_size=100` com requisições paralelas para páginas extras
+
+### Melhorado
+
+#### Otimização de queries N+1 em `list_by_filters`
+- `CardTaskRepository.list_by_filters` agora carrega em uma única query via `joinedload`:
+  - `CardTask.assigned_to` — resolvia N+1 que já existia anteriormente
+  - `CardTask.card` + `Card.client` — para popular os novos campos de contexto
+
+#### `SchedulerSection.tsx` refatorado (sem impacto visual)
+- Removidas definições locais de `TYPE_CONFIG`, `PRIORITY_CONFIG`, `WEEK_DAYS`, `TaskType`, `Priority`
+- Substituídas por imports de `../../constants/cardTaskConfig`
+
+### Arquivos Criados
+- `frontend/src/constants/cardTaskConfig.ts`
+- `frontend/src/pages/Calendar.tsx`
+
+### Arquivos Modificados
+- `backend/app/schemas/card_task.py` — campos `card_title` e `card_client_name` no `CardTaskResponse`
+- `backend/app/repositories/card_task_repository.py` — `joinedload` encadeado em `list_by_filters`
+- `backend/app/services/card_task_service.py` — `_build_response` popula os novos campos
+- `frontend/src/services/cardTaskService.ts` — novos campos no tipo `CardTask` + `getForCalendar()`
+- `frontend/src/components/cardDetails/SchedulerSection.tsx` — imports de `cardTaskConfig.ts`
+- `frontend/src/router.tsx` — rota `/calendar` registrada
+- `frontend/src/layouts/MainLayout.tsx` — versão atualizada para v1.3.4
+
+---
+
 ## [1.3.3] - 2026-02-27
 
 ### Adicionado

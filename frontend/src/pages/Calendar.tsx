@@ -102,6 +102,11 @@ const CalendarPage: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<CardTask | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
+  // ── Modal de "ver todas" as atividades de um dia específico
+  const [showDayModal, setShowDayModal] = useState(false);
+  const [dayModalTasks, setDayModalTasks] = useState<CardTask[]>([]);
+  const [dayModalDate, setDayModalDate] = useState<string>("");
+
   // ── Carrega lista de usuários ativos (somente admin/manager)
   useEffect(() => {
     if (!isAdminOrManager) return;
@@ -209,6 +214,25 @@ const CalendarPage: React.FC = () => {
     setSelectedTask(null);
   };
 
+  /** Abre o modal com todas as tarefas de um dia (botão "+X mais") */
+  const handleShowMoreClick = (
+    e: React.MouseEvent,
+    dayStr: string,
+    allDayTasks: CardTask[]
+  ) => {
+    e.stopPropagation();
+    setDayModalDate(dayStr);
+    setDayModalTasks(allDayTasks);
+    setShowDayModal(true);
+  };
+
+  /** Clica em uma tarefa dentro do modal de dia: fecha o modal de dia e abre o detalhe */
+  const handleTaskFromDayModal = (task: CardTask) => {
+    setShowDayModal(false);
+    setSelectedTask(task);
+    setShowDetailModal(true);
+  };
+
   // ── Navega para o card da tarefa
   const handleOpenCard = () => {
     if (!selectedTask) return;
@@ -313,14 +337,11 @@ const CalendarPage: React.FC = () => {
                     </div>
                   ))}
 
-                  {/* Indicador de overflow */}
+                  {/* Botão de overflow: abre modal com todas as tarefas do dia */}
                   {overflow > 0 && (
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTaskPillClick(e, dayTasks[3]);
-                      }}
+                      onClick={(e) => handleShowMoreClick(e, dayStr, dayTasks)}
                       className="w-full rounded px-1 py-0.5 text-center text-xs text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
                     >
                       +{overflow} mais
@@ -458,6 +479,91 @@ const CalendarPage: React.FC = () => {
           </div>
         )}
       </div>
+    );
+  };
+
+  // ── Modal "Todas as atividades do dia"
+  const renderDayModal = () => {
+    if (!showDayModal) return null;
+
+    // Formata a data do modal para exibição (ex: "segunda-feira, 2 de março")
+    const [year, month, day] = dayModalDate.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    const dateLabel = format(dateObj, "EEEE, d 'de' MMMM", { locale: ptBR });
+
+    return (
+      <BaseModal
+        isOpen={showDayModal}
+        onClose={() => setShowDayModal(false)}
+        title="Atividades do dia"
+        subtitle={dateLabel}
+        size="md"
+      >
+        <div className="space-y-2">
+          {dayModalTasks.map((task) => {
+            const config = TYPE_CONFIG[task.task_type as TaskType] ?? TYPE_CONFIG.other;
+            const priorityConfig =
+              PRIORITY_CONFIG[task.priority as Priority] ?? PRIORITY_CONFIG.normal;
+
+            return (
+              <button
+                key={task.id}
+                type="button"
+                onClick={() => handleTaskFromDayModal(task)}
+                className="flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 text-left transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800/70"
+              >
+                {/* Ícone do tipo */}
+                <div
+                  className={[
+                    "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border",
+                    config.pillBg,
+                    config.pillText,
+                    config.pillBorder,
+                  ].join(" ")}
+                >
+                  <config.Icon size={16} />
+                </div>
+
+                {/* Título e informações */}
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={[
+                      "truncate text-sm font-medium text-slate-900 dark:text-white",
+                      task.is_completed ? "opacity-60 line-through" : "",
+                    ].join(" ")}
+                  >
+                    {task.title}
+                  </p>
+                  {(task.card_title || task.card_client_name) && (
+                    <p className="truncate text-xs text-slate-400 dark:text-slate-500">
+                      {task.card_title}
+                      {task.card_title && task.card_client_name && " · "}
+                      {task.card_client_name}
+                    </p>
+                  )}
+                  {task.due_date && (
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      {formatBrazilDateTime(task.due_date)}
+                    </p>
+                  )}
+                </div>
+
+                {/* Badge de prioridade */}
+                <span
+                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${priorityConfig.badgeClass}`}
+                >
+                  {priorityConfig.label}
+                </span>
+
+                {/* Ícone de concluída */}
+                {task.is_completed && (
+                  <CheckCircle2 size={16} className="flex-shrink-0 text-green-400" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </BaseModal>
     );
   };
 
@@ -849,6 +955,9 @@ const CalendarPage: React.FC = () => {
       ) : (
         renderListView()
       )}
+
+      {/* Modal com todas as atividades de um dia (botão "+X mais") */}
+      {renderDayModal()}
 
       {/* Modal de detalhes (somente leitura) */}
       {renderDetailModal()}
