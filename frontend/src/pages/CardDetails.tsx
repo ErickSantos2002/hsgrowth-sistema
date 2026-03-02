@@ -134,8 +134,18 @@ const CardDetails: React.FC = () => {
     const previousCard = { ...card };
 
     try {
+      // Se shipping_cost mudou, recalcula products_total localmente para
+      // refletir o novo total (produtos + frete) sem precisar recarregar a página
+      const enrichedUpdates = { ...updates };
+      if ("shipping_cost" in updates) {
+        const oldShipping = card.shipping_cost ?? 0;
+        const newShipping = updates.shipping_cost ?? 0;
+        const productsBase = (card.products_total ?? 0) - oldShipping;
+        enrichedUpdates.products_total = productsBase + newShipping;
+      }
+
       // 1. Atualiza localmente (otimista) - feedback instantâneo
-      setCard((prev) => (prev ? { ...prev, ...updates } : prev));
+      setCard((prev) => (prev ? { ...prev, ...enrichedUpdates } : prev));
 
       // 2. Envia para o backend em background
       await cardService.update(card.id, updates as any);

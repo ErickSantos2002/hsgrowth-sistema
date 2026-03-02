@@ -140,6 +140,7 @@ export interface Card {
   recent_activities?: any[];
   products?: any[];
   products_total?: number | null;
+  shipping_cost?: number | null;
   custom_field_values?: any[];
 }
 

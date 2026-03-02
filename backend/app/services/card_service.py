@@ -553,6 +553,18 @@ class CardService:
         # Atualiza o card
         updated_card = self.card_repository.update(card, card_data)
 
+        # Se shipping_cost foi alterado, recalcula card.value (produtos + frete)
+        # para que o Kanban e todos os outros locais que usam card.value já recebam
+        # o total correto sem precisar de recarregamento
+        if "shipping_cost" in update_data_fields:
+            from app.repositories.product_repository import ProductRepository
+            product_repo = ProductRepository(self.db)
+            totals = product_repo.get_card_products_total(card_id)
+            shipping = float(updated_card.shipping_cost) if updated_card.shipping_cost else 0
+            updated_card.value = totals["total"] + shipping
+            self.db.commit()
+            self.db.refresh(updated_card)
+
         # Dispara triggers de automação se status mudou
         try:
             # Busca a lista do card para pegar o board_id
@@ -1688,7 +1700,9 @@ class CardService:
                 }
                 for cp in card_products
             ],
-            "products_total": products_totals["total"],
+            # Soma o frete ao total de produtos para refletir o valor real do negócio
+            "products_total": products_totals["total"] + (float(card.shipping_cost) if card.shipping_cost else 0),
+            "shipping_cost": float(card.shipping_cost) if card.shipping_cost else None,
             "recent_activities": recent_activities,
             "notes": notes
         }

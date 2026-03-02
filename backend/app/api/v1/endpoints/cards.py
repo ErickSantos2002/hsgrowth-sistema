@@ -48,6 +48,7 @@ def card_to_response(
         assigned_to_id=card.assigned_to_id,
         sdr_id=card.sdr_id,  # ✅ Incluído campo sdr_id
         value=card.value,
+        shipping_cost=card.shipping_cost,  # Custo de frete/envio
         due_date=card.due_date,
         is_won=card.is_won == 1,  # Converte Integer para bool
         is_lost=card.is_lost,  # Já é property que retorna bool

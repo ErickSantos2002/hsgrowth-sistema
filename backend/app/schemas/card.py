@@ -253,6 +253,7 @@ class CardUpdate(BaseModel):
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável (Vendedor)")
     sdr_id: Optional[int] = Field(None, description="ID do usuário SDR responsável")
     value: Optional[float] = Field(None, ge=0, description="Valor monetário do card")
+    shipping_cost: Optional[float] = Field(None, ge=0, description="Custo de frete/envio do negócio")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     payment_info: Optional[PaymentInfo] = Field(None, description="Informações de pagamento/condições comerciais")
     is_won: Optional[bool] = Field(None, description="Card ganho (venda fechada)")
@@ -353,6 +354,7 @@ class CardResponse(CardBase):
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável (Vendedor)")
     sdr_id: Optional[int] = Field(None, description="ID do usuário SDR responsável")
     value: Optional[float] = Field(None, description="Valor monetário")
+    shipping_cost: Optional[float] = Field(None, description="Custo de frete/envio do negócio")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     payment_info: Optional[PaymentInfo] = Field(None, description="Informações de pagamento/condições comerciais")
     is_won: bool = Field(..., description="Card ganho")
@@ -391,7 +393,7 @@ class CardResponse(CardBase):
     person_name: Optional[str] = Field(None, description="Nome da pessoa vinculada")
     custom_fields: Optional[list] = Field(None, description="Campos customizados do card")
 
-    @field_validator('value', 'position', mode='before')
+    @field_validator('value', 'shipping_cost', 'position', mode='before')
     @classmethod
     def convert_decimal_to_float(cls, v):
         """Converte Decimal para float"""

@@ -206,6 +206,16 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
   };
 
   /**
+   * Atualiza o custo de frete
+   */
+  const handleUpdateShippingCost = async (value: string) => {
+    const cost = parseFloat(value);
+    // Permite zerar o frete (valor 0 é válido)
+    const normalized = isNaN(cost) ? undefined : cost < 0 ? 0 : cost;
+    await onUpdate({ shipping_cost: normalized });
+  };
+
+  /**
    * Atualiza o SDR responsável
    */
   const handleUpdateSDR = async (value: string) => {
@@ -376,10 +386,21 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
               </p>
             ) : (
               <p className="text-xs text-slate-400 dark:text-slate-500">
-                Calculado automaticamente com base nos produtos vinculados.
+                Calculado automaticamente com base nos produtos vinculados{(card.shipping_cost ?? 0) > 0 ? " + frete" : ""}.
               </p>
             )}
           </div>
+
+          {/* Frete - valor editável que soma ao total */}
+          <EditableField
+            label="Frete"
+            value={card.shipping_cost ?? ""}
+            onSave={handleUpdateShippingCost}
+            type="number"
+            placeholder="R$ 0,00"
+            icon={<DollarSign size={14} />}
+            format={(val) => formatCurrency(val)}
+          />
 
           {/* Probabilidade de Fechamento */}
           <EditableField

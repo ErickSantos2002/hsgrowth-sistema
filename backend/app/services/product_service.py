@@ -304,18 +304,20 @@ class ProductService:
 
     def _sync_card_value_with_products(self, card_id: int) -> None:
         """
-        Sincroniza o valor do card com o total de produtos.
-        Atualiza automaticamente o campo 'value' do card.
+        Sincroniza o valor do card com o total de produtos + frete.
+        Atualiza automaticamente o campo 'value' do card para refletir
+        o valor real do negócio (soma de produtos com descontos + custo de frete).
         """
-        # Calcula o total de produtos
+        # Calcula o total de produtos (com descontos aplicados)
         totals = self.repository.get_card_products_total(card_id)
         total_value = totals["total"]
 
-        # Atualiza o valor do card
+        # Atualiza o valor do card somando o frete ao total de produtos
         card_repo = CardRepository(self.db)
         card = card_repo.find_by_id(card_id)
         if card:
-            card.value = total_value
+            shipping = float(card.shipping_cost) if card.shipping_cost else 0
+            card.value = total_value + shipping
             self.db.commit()
 
     def _build_product_response(self, product: Product) -> ProductResponse:

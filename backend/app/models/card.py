@@ -42,6 +42,7 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
 
     # Valor monetário (opcional)
     value = Column(Numeric(12, 2), nullable=True)  # Valor do negócio
+    shipping_cost = Column(Numeric(12, 2), nullable=True)  # Custo de frete/envio (somado ao total)
     currency = Column(String(3), default="BRL", nullable=False)  # BRL, USD, EUR
 
     # Datas importantes
