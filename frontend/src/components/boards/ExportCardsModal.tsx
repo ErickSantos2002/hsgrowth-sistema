@@ -58,8 +58,13 @@ const getCardStatus = (card: Card): string => {
 /**
  * Modal de exportação de cards para Excel
  *
- * Permite filtrar por board, status, etapa, vendedor, período de criação
+ * Permite filtrar por board, status, etapa, vendedor, SDR, período de criação
  * e nome do cliente antes de gerar o arquivo .xlsx.
+ *
+ * Lógica de permissão (espelha o KanbanBoard):
+ * - admin/manager → vendedor e SDR livres
+ * - salesperson   → filtro de vendedor travado no próprio ID
+ * - sdr           → filtro de SDR travado no próprio ID
  */
 const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
   isOpen,
@@ -68,17 +73,21 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
 }) => {
   const { user } = useAuth();
 
-  // Admin e Manager podem filtrar por qualquer vendedor; demais roles ficam travados no próprio usuário
-  const isAdminOrManager =
-    user?.role === "admin" || user?.role === "manager";
+  // Salesperson trava no filtro de Vendedor; SDR trava no filtro de SDR
+  const isVendorLocked = user?.role === "salesperson";
+  const isSdrLocked = user?.role === "sdr";
 
   // ─── Filtros ──────────────────────────────────────────────────────────────
   const [selectedBoardId, setSelectedBoardId] = useState<number | "all">("all");
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
   const [selectedListId, setSelectedListId] = useState<number | "all">("all");
-  // Vendedor: admin/manager começam com "all"; demais roles partem do próprio ID
+  // Vendedor: salesperson parte do próprio ID travado; demais partem de "all"
   const [selectedUserId, setSelectedUserId] = useState<number | "all">(
-    isAdminOrManager ? "all" : (user?.id ?? "all")
+    isVendorLocked ? (user?.id ?? "all") : "all"
+  );
+  // SDR: sdr parte do próprio ID travado; demais partem de "all"
+  const [selectedSdrId, setSelectedSdrId] = useState<number | "all">(
+    isSdrLocked ? (user?.id ?? "all") : "all"
   );
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
@@ -92,15 +101,14 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
   const [loadingLists, setLoadingLists] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Carrega lista de usuários ativos ao abrir o modal e aplica lógica de permissão
+  // Carrega lista de usuários ativos ao abrir o modal e reaplica travas de permissão
   useEffect(() => {
     if (isOpen) {
       userService.listActive().then(setUsers).catch(console.error);
 
-      // Garante que o filtro de vendedor fique travado para roles sem permissão
-      if (!isAdminOrManager && user?.id) {
-        setSelectedUserId(user.id);
-      }
+      // Reaplica travamento caso o modal seja reaberto
+      if (isVendorLocked && user?.id) setSelectedUserId(user.id);
+      if (isSdrLocked && user?.id) setSelectedSdrId(user.id);
     }
   }, [isOpen]);
 
@@ -120,12 +128,13 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
     }
   }, [selectedBoardId]);
 
-  // Reseta filtros ao fechar (vendedor volta ao próprio ID se não for admin/manager)
+  // Reseta filtros ao fechar respeitando as travas de cada role
   const handleClose = () => {
     setSelectedBoardId("all");
     setSelectedStatus("all");
     setSelectedListId("all");
-    setSelectedUserId(isAdminOrManager ? "all" : (user?.id ?? "all"));
+    setSelectedUserId(isVendorLocked ? (user?.id ?? "all") : "all");
+    setSelectedSdrId(isSdrLocked ? (user?.id ?? "all") : "all");
     setDateStart("");
     setDateEnd("");
     setClientSearch("");
@@ -160,6 +169,11 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
     );
 
     let cards = results.flatMap((r) => r.cards);
+
+    // Filtro de SDR (client-side — sdr_id não está no CardFilters da API)
+    if (selectedSdrId !== "all") {
+      cards = cards.filter((c) => (c as any).sdr_id === selectedSdrId);
+    }
 
     // Filtro de status (client-side — conversão -1/0/1 pode variar no backend)
     if (selectedStatus === "open") cards = cards.filter((c) => !c.is_won && !c.is_lost);
@@ -483,14 +497,13 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
           </div>
         </div>
 
-        {/* ── Linha 3: Vendedor + Período de criação ───────────────────────── */}
+        {/* ── Linha 3: Vendedor + SDR ──────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Vendedor */}
           <div>
             <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
               Vendedor
-              {/* Badge indicando que o filtro está travado para o próprio usuário */}
-              {!isAdminOrManager && (
+              {isVendorLocked && (
                 <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-normal text-amber-600 dark:text-amber-400">
                   travado
                 </span>
@@ -503,23 +516,56 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
                   e.target.value === "all" ? "all" : Number(e.target.value)
                 )
               }
-              // Desabilita o select para roles sem permissão (salesperson, sdr)
-              disabled={!isAdminOrManager}
+              disabled={isVendorLocked}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
             >
-              {isAdminOrManager && (
+              {!isVendorLocked && (
                 <option value="all">Todos os vendedores</option>
               )}
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
+              {/* Exibe apenas usuários com role salesperson */}
+              {users
+                .filter((u) => u.role === "salesperson")
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
             </select>
           </div>
 
-          {/* Placeholder para manter o grid alinhado */}
-          <div className="hidden sm:block" />
+          {/* SDR */}
+          <div>
+            <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+              SDR
+              {isSdrLocked && (
+                <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-normal text-amber-600 dark:text-amber-400">
+                  travado
+                </span>
+              )}
+            </label>
+            <select
+              value={selectedSdrId}
+              onChange={(e) =>
+                setSelectedSdrId(
+                  e.target.value === "all" ? "all" : Number(e.target.value)
+                )
+              }
+              disabled={isSdrLocked}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            >
+              {!isSdrLocked && (
+                <option value="all">Todos os SDRs</option>
+              )}
+              {/* Exibe apenas usuários com role SDR */}
+              {users
+                .filter((u) => u.role === "sdr")
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+            </select>
+          </div>
         </div>
 
         {/* ── Linha 4: Período de criação ─────────────────────────────────── */}

@@ -66,18 +66,20 @@ class CardService:
                 detail="Board não encontrado"
             )
 
-    def get_card_by_id(self, card_id: int) -> Card:
+    def get_card_by_id(self, card_id: int, current_user: Optional[User] = None) -> Card:
         """
         Busca um card por ID.
 
         Args:
             card_id: ID do card
+            current_user: Usuário autenticado — quando informado, aplica
+                          verificação de acesso por role (salesperson/sdr)
 
         Returns:
             Card
 
         Raises:
-            HTTPException: Se não encontrado
+            HTTPException: 404 se não encontrado, 403 se sem permissão
         """
         card = self.card_repository.find_by_id(card_id)
 
@@ -87,8 +89,21 @@ class CardService:
                 detail="Card não encontrado"
             )
 
-        # Verifica acesso
+        # Verifica acesso estrutural (lista e board existem)
         self._verify_card_access(card)
+
+        # Verifica permissão por role quando o usuário é fornecido
+        if current_user is not None:
+            if current_user.role.name == "salesperson" and card.assigned_to_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Você não tem permissão para acessar este card"
+                )
+            if current_user.role.name == "sdr" and card.sdr_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Você não tem permissão para acessar este card"
+                )
 
         return card
 
@@ -100,9 +115,11 @@ class CardService:
         all: bool = False,
         minimal: bool = False,
         assigned_to_id: Optional[int] = None,
+        sdr_id: Optional[int] = None,
         person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
-        is_lost: Optional[bool] = None
+        is_lost: Optional[bool] = None,
+        current_user: Optional[User] = None,
     ):
         """
         Lista cards de um board com paginação e filtros.
@@ -113,14 +130,26 @@ class CardService:
             page_size: Tamanho da página
             all: Se True, retorna TODOS os cards sem paginação
             minimal: Se True, retorna apenas campos essenciais (otimizado)
-            assigned_to_id: Filtro por responsável
+            assigned_to_id: Filtro por responsável (sobrescrito pelo role se necessário)
+            sdr_id: Filtro por SDR (sobrescrito pelo role se necessário)
+            person_id: Filtro por pessoa de contato
             is_won: Filtro por cards ganhos
             is_lost: Filtro por cards perdidos
+            current_user: Usuário autenticado — quando informado, aplica
+                          filtros automáticos por role (salesperson/sdr)
 
         Returns:
             CardListResponse ou CardMinimalListResponse
         """
         from app.schemas.card import CardMinimalResponse, CardMinimalListResponse
+
+        # Força filtros por role: salesperson só vê os seus; SDR só vê onde é o SDR
+        # Isso garante que o filtro não pode ser contornado via parâmetro de query
+        if current_user is not None:
+            if current_user.role.name == "salesperson":
+                assigned_to_id = current_user.id
+            elif current_user.role.name == "sdr":
+                sdr_id = current_user.id
 
         # Verifica se o board existe
         board = self.board_repository.find_by_id(board_id)
@@ -144,6 +173,7 @@ class CardService:
             skip=skip,
             limit=limit,
             assigned_to_id=assigned_to_id,
+            sdr_id=sdr_id,
             person_id=person_id,
             is_won=is_won,
             is_lost=is_lost
@@ -153,6 +183,7 @@ class CardService:
         total = self.card_repository.count_by_board(
             board_id=board_id,
             assigned_to_id=assigned_to_id,
+            sdr_id=sdr_id,
             person_id=person_id,
             is_won=is_won,
             is_lost=is_lost
@@ -504,8 +535,8 @@ class CardService:
         Returns:
             Card atualizado
         """
-        # Busca e verifica acesso
-        card = self.get_card_by_id(card_id)
+        # Busca e verifica acesso (inclui verificação de role)
+        card = self.get_card_by_id(card_id, current_user)
 
         # Guarda valores antigos para detectar mudanças
         old_is_won = card.is_won
@@ -658,8 +689,8 @@ class CardService:
                 detail="Você não tem permissão para deletar cards"
             )
 
-        # Busca e verifica acesso
-        card = self.get_card_by_id(card_id)
+        # Busca e verifica acesso (inclui verificação de role)
+        card = self.get_card_by_id(card_id, current_user)
 
         # Deleta o card
         self.card_repository.delete(card)
@@ -1085,8 +1116,8 @@ class CardService:
         """
         from datetime import datetime
 
-        # Busca e verifica acesso ao card
-        card = self.get_card_by_id(card_id)
+        # Busca e verifica acesso ao card (inclui verificação de role)
+        card = self.get_card_by_id(card_id, current_user)
 
         # Verifica se a lista de destino existe e pertence à mesma conta
         target_list = self.list_repository.find_by_id(target_list_id)
@@ -1518,8 +1549,8 @@ class CardService:
         from app.repositories.card_task_repository import CardTaskRepository
         from app.repositories.product_repository import ProductRepository
 
-        # Busca o card
-        card = self.get_card_by_id(card_id)
+        # Busca o card (inclui verificação de role via current_user)
+        card = self.get_card_by_id(card_id, current_user)
 
         # Busca relacionamentos
         card_task_repo = CardTaskRepository(self.db)

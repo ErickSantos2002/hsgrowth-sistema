@@ -164,7 +164,8 @@ async def list_cards(
         assigned_to_id=assigned_to_id,
         person_id=person_id,
         is_won=is_won,
-        is_lost=is_lost
+        is_lost=is_lost,
+        current_user=current_user,
     )
 
 
@@ -180,7 +181,7 @@ async def get_card(
     - **card_id**: ID do card
     """
     service = CardService(db)
-    card = service.get_card_by_id(card_id)
+    card = service.get_card_by_id(card_id, current_user)
 
     # Busca informações relacionadas
     assigned_to_name = None
@@ -764,9 +765,13 @@ async def global_search_cards(
         Card.title.ilike(f"%{q}%")
     )
 
-    # Vendedor só vê seus próprios cards
-    if current_user.role == "salesperson":
+    # Salesperson só vê cards atribuídos a ele
+    if current_user.role.name == "salesperson":
         query = query.filter(Card.assigned_to_id == current_user.id)
+
+    # SDR só vê cards onde ele é o SDR responsável
+    if current_user.role.name == "sdr":
+        query = query.filter(Card.sdr_id == current_user.id)
 
     # Busca os cards ordenados por atualização mais recente
     cards = query.order_by(Card.updated_at.desc()).limit(limit).all()

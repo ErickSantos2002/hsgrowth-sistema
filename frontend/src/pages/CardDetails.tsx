@@ -84,9 +84,14 @@ const CardDetails: React.FC = () => {
       const cardData = await cardService.getExpanded(Number(cardId));
       setCard(cardData);
       setTitleValue(cardData.title);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao carregar card:", error);
-      showError("Erro ao carregar card");
+      // Distingue erro de permissão (403) de outros erros
+      if (error?.response?.status === 403) {
+        showError("Você não tem permissão para visualizar este card.");
+      } else {
+        showError("Erro ao carregar card.");
+      }
       navigate(-1);
     } finally {
       setLoading(false);
