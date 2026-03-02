@@ -23,6 +23,10 @@ interface QuickActivityFormProps {
   cardId: number;
   onSave: () => void;
   onCancel: () => void;
+  /** Data pré-selecionada no formato YYYY-MM-DD (opcional).
+   * Quando fornecida, o formulário inicia expandido com a data preenchida.
+   * Útil ao abrir o form ao clicar em um dia no calendário. */
+  defaultDate?: string;
 }
 
 /**
@@ -41,14 +45,15 @@ interface ActivityTypeConfig {
  * Formulário de criação rápida de atividade
  * Usado na aba "Atividade" da coluna direita
  */
-const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, onCancel }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, onCancel, defaultDate }) => {
+  // Inicia expandido quando uma data padrão é fornecida (ex: clique em dia no calendário)
+  const [isExpanded, setIsExpanded] = useState(defaultDate !== undefined);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
   const timeInputRef = useRef<HTMLInputElement | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     type: "call" as ActivityType,
-    date: "",
+    date: defaultDate ?? "",
     time: "",
     duration: "30", // minutos
     priority: "normal" as "normal" | "high" | "urgent",

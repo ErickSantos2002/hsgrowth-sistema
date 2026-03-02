@@ -24,6 +24,8 @@ export interface CardTask {
   updated_at: string;
   assigned_to_name?: string;
   is_overdue?: boolean;
+  card_title?: string;
+  card_client_name?: string;
 }
 
 export interface CreateCardTaskRequest {
@@ -147,6 +149,68 @@ class CardTaskService {
       is_completed: isCompleted,
     });
     return response.data;
+  }
+
+  /**
+   * Busca todas as tarefas de um card (pendentes e concluídas) para o calendário.
+   * Usa page_size máximo permitido pelo backend (100) para trazer o máximo possível de uma vez.
+   * Em casos raros de cards com mais de 100 tarefas, faz múltiplas requisições.
+   */
+  async getAllByCard(cardId: number): Promise<CardTask[]> {
+    const PAGE_SIZE = 100; // limite máximo definido no schema do backend (le=100)
+    const firstPage = await this.list({ card_id: cardId, page_size: PAGE_SIZE, page: 1 });
+    const allTasks = [...firstPage.tasks];
+
+    // Se houver mais páginas, busca as demais em paralelo
+    if (firstPage.total_pages > 1) {
+      const pageNumbers = Array.from(
+        { length: firstPage.total_pages - 1 },
+        (_, i) => i + 2
+      );
+      const remainingPages = await Promise.all(
+        pageNumbers.map((p) =>
+          this.list({ card_id: cardId, page_size: PAGE_SIZE, page: p })
+        )
+      );
+      for (const page of remainingPages) {
+        allTasks.push(...page.tasks);
+      }
+    }
+
+    return allTasks;
+  }
+
+  /**
+   * Busca todas as tarefas para o calendário global (sem filtro de card_id).
+   * Aceita filtro opcional por responsável. Usa paginação automática com
+   * page_size máximo (100) para trazer todos os registros em menos requisições.
+   */
+  async getForCalendar(assignedToId?: number): Promise<CardTask[]> {
+    const PAGE_SIZE = 100;
+    const firstPage = await this.list({
+      assigned_to_id: assignedToId,
+      page_size: PAGE_SIZE,
+      page: 1,
+    });
+    const allTasks = [...firstPage.tasks];
+
+    // Se houver mais páginas, busca as demais em paralelo
+    if (firstPage.total_pages > 1) {
+      const remainingPages = await Promise.all(
+        Array.from({ length: firstPage.total_pages - 1 }, (_, i) =>
+          this.list({
+            assigned_to_id: assignedToId,
+            page_size: PAGE_SIZE,
+            page: i + 2,
+          })
+        )
+      );
+      for (const page of remainingPages) {
+        allTasks.push(...page.tasks);
+      }
+    }
+
+    return allTasks;
   }
 
   /**

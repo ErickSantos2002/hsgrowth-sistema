@@ -21,6 +21,7 @@ import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import Users from './pages/Users';
 import BadgesAdmin from './pages/BadgesAdmin';
+import Calendar from './pages/Calendar';
 import NotFound from './pages/NotFound';
 
 const AppRoutes: React.FC = () => (
@@ -69,6 +70,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/settings" element={<Settings />} />
       <Route path="/users" element={<Users />} />
       <Route path="/admin/badges" element={<BadgesAdmin />} />
+      <Route path="/calendar" element={<Calendar />} />
     </Route>
 
     <Route path="*" element={<NotFound />} />

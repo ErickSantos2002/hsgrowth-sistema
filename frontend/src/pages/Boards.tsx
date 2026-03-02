@@ -1,5 +1,6 @@
   import React, { useState, useEffect } from "react";
-import { Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle, Trello, Download } from "lucide-react";
+import { Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle, Trello, Download, CalendarDays } from "lucide-react";
+import { Link } from "react-router-dom";
 import boardService from "../services/boardService";
 import { Board } from "../types";
 import BoardCard from "../components/boards/BoardCard";
@@ -149,6 +150,15 @@ const Boards: React.FC = () => {
         </div>
         {/* Botões do header */}
         <div className="flex w-full items-center gap-3 sm:w-auto">
+          {/* Botão Calendário Global - visível para todos os usuários */}
+          <Link
+            to="/calendar"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-blue-400 transition-all hover:bg-blue-500/20 sm:flex-none"
+          >
+            <CalendarDays size={20} />
+            <span className="hidden sm:inline">Calendário</span>
+          </Link>
+
           {/* Botão Novo Board - Apenas Admin e Manager */}
           {canCreateBoard && (
             <button

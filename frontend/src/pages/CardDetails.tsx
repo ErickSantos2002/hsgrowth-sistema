@@ -6,9 +6,9 @@ import {
   XCircle,
   ChevronDown,
   Calendar,
+  CalendarDays,
   FileText,
   Paperclip,
-  Users,
   UserPlus,
   Sparkles,
   RefreshCw,
@@ -754,8 +754,8 @@ const CardDetails: React.FC = () => {
                       : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
-                  <Users size={18} />
-                  Agendador de reuniões
+                  <CalendarDays size={18} />
+                  Calendário
                 </button>
 
                 <button
@@ -805,7 +805,13 @@ const CardDetails: React.FC = () => {
                 />
               )}
 
-              {activeTab === "agendador" && <SchedulerSection />}
+              {activeTab === "agendador" && card && (
+                <SchedulerSection
+                  cardId={card.id}
+                  card={card}
+                  onUpdate={loadCardData}
+                />
+              )}
 
               {activeTab === "arquivos" && cardId && <FilesSection cardId={Number(cardId)} />}
             </div>

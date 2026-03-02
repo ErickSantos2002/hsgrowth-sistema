@@ -193,6 +193,23 @@ def clean_phone(val) -> str | None:
     return str(val).strip() or None
 
 
+def clean_cnpj(val) -> str | None:
+    """
+    Converte CNPJ para string de somente dígitos, com padding de zeros à esquerda
+    para garantir sempre 14 dígitos.
+    Isso corrige o problema de CNPJs armazenados como inteiro no Excel,
+    que perdem o zero inicial (ex: 05970600000104 vira 5970600000104).
+    """
+    if val is None:
+        return None
+    # Extrai somente os dígitos (lida com inteiros e strings formatadas)
+    digits = "".join(c for c in str(val).strip() if c.isdigit())
+    if not digits:
+        return None
+    # Garante 14 dígitos com zero à esquerda se necessário
+    return digits.zfill(14)
+
+
 def extract_cnae_code(val) -> str | None:
     """
     Extrai somente o código CNAE (parte numérica) da string completa.
@@ -281,15 +298,16 @@ def get_or_create_client(db, reader: RowReader, row: int) -> int | None:
     if not razao_social:
         return None
 
-    cnpj_raw = clean_str(reader.get(row, "CNPJ *"))
-    cnpj_digits = "".join(c for c in cnpj_raw if c.isdigit()) if cnpj_raw else None
+    # clean_cnpj garante 14 dígitos com zero à esquerda (corrige problema do Excel
+    # que remove zeros iniciais ao salvar CNPJ como número inteiro)
+    cnpj_digits = clean_cnpj(reader.get(row, "CNPJ *"))
 
-    # Tenta localizar cliente existente pelo CNPJ
-    if cnpj_digits and len(cnpj_digits) == 14:
+    # Tenta localizar cliente existente pelo CNPJ (sempre compara 14 dígitos)
+    if cnpj_digits:
         existing_clients = db.query(Client).filter(Client.is_deleted == False).all()
         for c in existing_clients:
             if c.document:
-                doc_digits = "".join(ch for ch in c.document if ch.isdigit())
+                doc_digits = "".join(ch for ch in c.document if ch.isdigit()).zfill(14)
                 if doc_digits == cnpj_digits:
                     print(f"    Cliente ja existe (CNPJ ...{cnpj_digits[-4:]}): {c.name}")
                     return c.id
@@ -298,7 +316,7 @@ def get_or_create_client(db, reader: RowReader, row: int) -> int | None:
     new_client = Client(
         name=razao_social,
         company_name=clean_str(reader.get(row, "Nome Fantasia")) or razao_social,
-        document=cnpj_raw,
+        document=cnpj_digits,  # Salva CNPJ como 14 dígitos sem formatação
         website=clean_str(reader.get(row, "Site")),
         state=normalize_uf(reader.get(row, "Estado (UF)")),
         city=clean_str(reader.get(row, "Cidade")),

@@ -7,6 +7,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from app.models.card_task import CardTask
+from app.models.card import Card
 from app.schemas.card_task import CardTaskCreate, CardTaskUpdate, CardTaskFilters
 
 
@@ -43,9 +44,14 @@ class CardTaskRepository:
     def list_by_filters(self, filters: CardTaskFilters) -> tuple[List[CardTask], int]:
         """
         Lista tarefas com filtros e paginação.
+        Carrega os relacionamentos assigned_to, card e card.client em uma única query
+        para evitar N+1 e popular campos como card_title e card_client_name.
         Retorna (lista_de_tarefas, total_count)
         """
-        query = self.db.query(CardTask)
+        query = self.db.query(CardTask).options(
+            joinedload(CardTask.assigned_to),
+            joinedload(CardTask.card).joinedload(Card.client),
+        )
 
         # Aplicar filtros
         if filters.card_id is not None:

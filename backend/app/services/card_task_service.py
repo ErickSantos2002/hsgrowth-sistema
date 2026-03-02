@@ -275,4 +275,10 @@ class CardTaskService:
         if hasattr(task, 'assigned_to') and task.assigned_to:
             response_data["assigned_to_name"] = task.assigned_to.name
 
+        # Adiciona título e nome do cliente do card (útil na visão global do calendário)
+        if hasattr(task, 'card') and task.card:
+            response_data["card_title"] = task.card.title
+            if task.card.client:
+                response_data["card_client_name"] = task.card.client.name
+
         return CardTaskResponse(**response_data)

@@ -134,6 +134,10 @@ class CardTaskResponse(BaseModel):
     assigned_to_name: Optional[str] = Field(None, description="Nome do usuário responsável")
     is_overdue: Optional[bool] = Field(None, description="Se a tarefa está atrasada")
 
+    # Campos do card vinculado (úteis na visão global do calendário)
+    card_title: Optional[str] = Field(None, description="Título do card ao qual a tarefa pertence")
+    card_client_name: Optional[str] = Field(None, description="Nome do cliente do card")
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={

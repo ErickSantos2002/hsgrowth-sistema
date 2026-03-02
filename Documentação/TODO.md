@@ -1,6 +1,6 @@
 # TODO - HSGrowth CRM
 
-**Última atualização**: 12/02/2026
+**Última atualização**: 02/03/2026
 **Responsável**: Erick (Cientista de Dados / Full Stack)
 
 ---
@@ -37,23 +37,36 @@
 - Botão "Ligar" integrado ao sistema
 - Ver arquivo: `TODO - Integração API4COM.md` (marcado como concluído)
 
+### Fase: Sistema de Arquivos (Attachments/Upload) ✅ CONCLUÍDA
+- Model `Attachment` com soft delete e propriedades calculadas (is_image, is_pdf, file_size_mb, etc.)
+- Schema Pydantic v2 com validação de tipo MIME e tamanho (máx 10MB)
+- Repository com 8 métodos (incluindo soft delete, filtro por tipo, tamanho total)
+- Service com upload (salva em disco + banco), download, delete e listagem com estatísticas
+- 4 endpoints REST documentados no OpenAPI
+- Migrations: criação da tabela e adição do campo `attachment_type`
+- Frontend: `attachmentService.ts` com upload, download, preview e validação local
+- Frontend: `FilesSection.tsx` com drag & drop, preview, delete e contador
+- Frontend: `FilePreviewModal.tsx` para imagens e PDFs
+- Integrado no `CardDetails.tsx` como aba "Arquivos" com badge de contagem
+- Auditoria e histórico de atividades registrados
+- Obs: validação de permissões no download/delete deixada como melhoria futura
+
+### Fase: Sistema de Anotações (Notes) ✅ CONCLUÍDA
+- Model `CardNote` com cascade delete e timestamps automáticos
+- Schema Pydantic v2 completo (Create, Update, Response)
+- Repository com CRUD completo
+- Service com controle de permissões (autor, admin, manager) e auditoria
+- 5 endpoints REST documentados no OpenAPI (`/api/v1/card-notes`)
+- Notas carregadas junto com o card no endpoint `expanded`
+- Frontend: `cardNoteService.ts` com todas as chamadas tipadas
+- Frontend: `NotesSection.tsx` com suporte a imagens coladas (Ctrl+V com compressão)
+- Frontend: `NoteRenderer.tsx` com parser de HTML/WhatsApp e sanitização
+- Integrado no `CardDetails.tsx` como aba "Anotações"
+- Script de importação do Pipedrive funcional
+
 ---
 
 ## 📋 Pendências e Próximas Implementações
-
-### Backend - Anotações (Notes)
-- [ ] Endpoint CRUD para notas já existe? **Verificar estado atual**
-- [ ] Conectar frontend `NotesSection` com backend (se ainda não conectado)
-- [ ] Integrar com sistema de histórico (registrar note_added)
-
-### Backend - Arquivos (Files/Attachments)
-- [ ] Criar modelo `Attachment`
-- [ ] Criar repository `AttachmentRepository`
-- [ ] Criar service `AttachmentService` com upload
-- [ ] Criar endpoints para upload/download/listagem
-- [ ] Integração com S3 ou storage local
-- [ ] Integrar com sistema de histórico (registrar file_attached)
-- [ ] Conectar frontend `FilesSection` com backend
 
 ### Backend - Agendador (Scheduler/Calendar)
 - [ ] Planejamento da arquitetura
@@ -131,16 +144,7 @@
 
 ## 🎯 Próximos Passos Sugeridos (Ordem de Prioridade)
 
-1. **Verificar estado das Notas (Notes)**
-   - Se já estiver implementado, apenas conectar frontend
-   - Se não, implementar backend completo
-
-2. **Implementar sistema de Arquivos (upload/download)**
-   - Decisão: S3, MinIO ou storage local?
-   - Implementar upload com validação de tipo/tamanho
-   - Interface de drag & drop no frontend
-
-3. **Melhorar tratamento de erros no frontend**
+1. **Melhorar tratamento de erros no frontend**
    - Substituir alerts por toasts/notifications
    - Sistema de notificações toast centralizado
    - Feedback visual consistente
@@ -192,14 +196,14 @@
 - ✅ **Importação de Dados (Pipedrive)**
 - ✅ **Busca Global (Ctrl+K)**
 - ✅ **Página de Documentação da API (/api-docs)**
+- ✅ **Sistema de Anotações (Notes)**
+- ✅ **Sistema de Arquivos (Attachments/Upload)**
 
 ### Módulos Parcialmente Implementados
-- 🔄 **Notas (Notes)** - Frontend pronto, backend a verificar
 - 🔄 **Notificações** - Estrutura existe, melhorias pendentes
 - 🔄 **Gamificação** - Funcional, melhorias opcionais pendentes
 
 ### Módulos Não Iniciados
-- ❌ **Arquivos (Attachments/Upload)**
 - ❌ **Agendador/Calendário**
 
 ### Estatísticas do Projeto
