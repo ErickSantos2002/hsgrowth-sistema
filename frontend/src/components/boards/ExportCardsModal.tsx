@@ -1,0 +1,576 @@
+import React, { useState, useEffect } from "react";
+import * as XLSX from "xlsx-js-style";
+import { saveAs } from "file-saver";
+import {
+  Download,
+  Search,
+  Loader2,
+  FileSpreadsheet,
+  Filter,
+} from "lucide-react";
+import BaseModal from "../common/BaseModal";
+import cardService from "../../services/cardService";
+import boardService from "../../services/boardService";
+import userService from "../../services/userService";
+import { Board, Card, CardFilters, User } from "../../types";
+import { showSuccess, showError } from "../../utils/toast";
+import { useAuth } from "../../hooks/useAuth";
+
+/**
+ * Props do componente ExportCardsModal
+ */
+interface ExportCardsModalProps {
+  /** Modal visível ou não */
+  isOpen: boolean;
+  /** Callback para fechar */
+  onClose: () => void;
+  /** Lista de boards já carregada na página pai */
+  boards: Board[];
+}
+
+/** Opções de status do card para o filtro */
+type StatusFilter = "all" | "open" | "won" | "lost";
+
+/**
+ * Formata uma data ISO para exibição no padrão DD/MM/AAAA
+ * Retorna string vazia se a data for nula/inválida
+ */
+const formatDateBR = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return "";
+  try {
+    // Usa apenas a parte da data (YYYY-MM-DD) para evitar problemas de fuso
+    const [year, month, day] = dateStr.slice(0, 10).split("-");
+    return `${day}/${month}/${year}`;
+  } catch {
+    return "";
+  }
+};
+
+/**
+ * Determina o status legível do card
+ */
+const getCardStatus = (card: Card): string => {
+  if (card.is_won) return "Ganho";
+  if (card.is_lost) return "Perdido";
+  return "Aberto";
+};
+
+/**
+ * Modal de exportação de cards para Excel
+ *
+ * Permite filtrar por board, status, etapa, vendedor, período de criação
+ * e nome do cliente antes de gerar o arquivo .xlsx.
+ */
+const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
+  isOpen,
+  onClose,
+  boards,
+}) => {
+  const { user } = useAuth();
+
+  // Admin e Manager podem filtrar por qualquer vendedor; demais roles ficam travados no próprio usuário
+  const isAdminOrManager =
+    user?.role === "admin" || user?.role === "manager";
+
+  // ─── Filtros ──────────────────────────────────────────────────────────────
+  const [selectedBoardId, setSelectedBoardId] = useState<number | "all">("all");
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
+  const [selectedListId, setSelectedListId] = useState<number | "all">("all");
+  // Vendedor: admin/manager começam com "all"; demais roles partem do próprio ID
+  const [selectedUserId, setSelectedUserId] = useState<number | "all">(
+    isAdminOrManager ? "all" : (user?.id ?? "all")
+  );
+  const [dateStart, setDateStart] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
+
+  // ─── Dados auxiliares ─────────────────────────────────────────────────────
+  const [lists, setLists] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+
+  // ─── Estados de carregamento ──────────────────────────────────────────────
+  const [loadingLists, setLoadingLists] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  // Carrega lista de usuários ativos ao abrir o modal e aplica lógica de permissão
+  useEffect(() => {
+    if (isOpen) {
+      userService.listActive().then(setUsers).catch(console.error);
+
+      // Garante que o filtro de vendedor fique travado para roles sem permissão
+      if (!isAdminOrManager && user?.id) {
+        setSelectedUserId(user.id);
+      }
+    }
+  }, [isOpen]);
+
+  // Carrega etapas/listas quando um board específico é selecionado
+  useEffect(() => {
+    if (selectedBoardId !== "all") {
+      setLoadingLists(true);
+      setSelectedListId("all"); // reseta seleção de lista ao trocar board
+      boardService
+        .getLists(selectedBoardId as number)
+        .then(setLists)
+        .catch(console.error)
+        .finally(() => setLoadingLists(false));
+    } else {
+      setLists([]);
+      setSelectedListId("all");
+    }
+  }, [selectedBoardId]);
+
+  // Reseta filtros ao fechar (vendedor volta ao próprio ID se não for admin/manager)
+  const handleClose = () => {
+    setSelectedBoardId("all");
+    setSelectedStatus("all");
+    setSelectedListId("all");
+    setSelectedUserId(isAdminOrManager ? "all" : (user?.id ?? "all"));
+    setDateStart("");
+    setDateEnd("");
+    setClientSearch("");
+    onClose();
+  };
+
+  /**
+   * Busca os cards aplicando os filtros de API e depois aplica
+   * filtros adicionais client-side (status, datas, busca de cliente)
+   */
+  const fetchCards = async (): Promise<Card[]> => {
+    // Boards a buscar: todos os não-deletados ou apenas o selecionado
+    const boardsToFetch =
+      selectedBoardId === "all"
+        ? boards.filter((b) => !b.is_deleted)
+        : boards.filter((b) => b.id === selectedBoardId);
+
+    if (boardsToFetch.length === 0) return [];
+
+    // Filtros que o backend suporta
+    const apiFilters: CardFilters = {
+      all: true,
+      ...(selectedListId !== "all" && { list_id: selectedListId as number }),
+      ...(selectedUserId !== "all" && { assigned_to_id: selectedUserId as number }),
+    };
+
+    // Busca em paralelo para cada board
+    const results = await Promise.all(
+      boardsToFetch.map((b) =>
+        cardService.list({ ...apiFilters, board_id: b.id })
+      )
+    );
+
+    let cards = results.flatMap((r) => r.cards);
+
+    // Filtro de status (client-side — conversão -1/0/1 pode variar no backend)
+    if (selectedStatus === "open") cards = cards.filter((c) => !c.is_won && !c.is_lost);
+    if (selectedStatus === "won") cards = cards.filter((c) => c.is_won);
+    if (selectedStatus === "lost") cards = cards.filter((c) => c.is_lost);
+
+    // Filtro de período de criação (compara YYYY-MM-DD para evitar problemas de TZ)
+    if (dateStart) {
+      cards = cards.filter((c) => c.created_at.slice(0, 10) >= dateStart);
+    }
+    if (dateEnd) {
+      cards = cards.filter((c) => c.created_at.slice(0, 10) <= dateEnd);
+    }
+
+    // Filtro de busca de cliente (client-side, case-insensitive)
+    if (clientSearch.trim()) {
+      const search = clientSearch.trim().toLowerCase();
+      cards = cards.filter((c) =>
+        c.client_name?.toLowerCase().includes(search)
+      );
+    }
+
+    return cards;
+  };
+
+  /**
+   * Gera o arquivo Excel com os cards filtrados
+   */
+  const exportToExcel = (cards: Card[]) => {
+    const wb = XLSX.utils.book_new();
+
+    // Cabeçalhos da planilha
+    const headers = [
+      "ID",
+      "Título",
+      "Board",
+      "Etapa",
+      "Status",
+      "Vendedor",
+      "SDR",
+      "Cliente",
+      "Valor (R$)",
+      "Forma de Pgto.",
+      "Parcelas",
+      "Criado em",
+      "Vencimento",
+      "Fechado em",
+      "Tipo de negócio",
+      "Canal de aquisição",
+      "Det. canal",
+      "Motivo de perda",
+      "Tarefas pendentes",
+    ];
+
+    // Linhas de dados
+    const rows = cards.map((c) => [
+      c.id,
+      c.title,
+      c.board_name ?? "",
+      c.list_name ?? "",
+      getCardStatus(c),
+      c.assigned_to_name ?? "",
+      c.sdr_name ?? "",
+      c.client_name ?? "",
+      c.value ?? "",
+      c.payment_info?.payment_method ?? "",
+      c.payment_info?.installments ?? "",
+      formatDateBR(c.created_at),
+      formatDateBR(c.due_date),
+      // Fechado em: data de ganho ou perda, o que estiver preenchido
+      formatDateBR(c.won_at ?? c.lost_at),
+      c.deal_type ?? "",
+      c.acquisition_channel ?? "",
+      c.acquisition_channel_detail ?? "",
+      c.loss_reason ?? "",
+      c.pending_tasks_count ?? 0,
+    ]);
+
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // ─── Estilo do cabeçalho ─────────────────────────────────────────────
+    const headerStyle = {
+      font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+      fill: { patternType: "solid", fgColor: { rgb: "1E3A5F" } },
+      alignment: { horizontal: "center", vertical: "center", wrapText: true },
+      border: {
+        top: { style: "thin", color: { rgb: "CCCCCC" } },
+        bottom: { style: "thin", color: { rgb: "CCCCCC" } },
+        left: { style: "thin", color: { rgb: "CCCCCC" } },
+        right: { style: "thin", color: { rgb: "CCCCCC" } },
+      },
+    };
+
+    headers.forEach((_, colIdx) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIdx });
+      if (ws[cellRef]) {
+        ws[cellRef].s = headerStyle;
+      }
+    });
+
+    // ─── Estilo alternado nas linhas de dados ────────────────────────────
+    const rowStyleEven = {
+      fill: { patternType: "solid", fgColor: { rgb: "F0F4F8" } },
+      border: {
+        bottom: { style: "thin", color: { rgb: "DDDDDD" } },
+        left: { style: "thin", color: { rgb: "DDDDDD" } },
+        right: { style: "thin", color: { rgb: "DDDDDD" } },
+      },
+    };
+    const rowStyleOdd = {
+      fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } },
+      border: {
+        bottom: { style: "thin", color: { rgb: "DDDDDD" } },
+        left: { style: "thin", color: { rgb: "DDDDDD" } },
+        right: { style: "thin", color: { rgb: "DDDDDD" } },
+      },
+    };
+
+    rows.forEach((row, rowIdx) => {
+      const style = rowIdx % 2 === 0 ? rowStyleEven : rowStyleOdd;
+      row.forEach((_, colIdx) => {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIdx + 1, c: colIdx });
+        if (ws[cellRef]) {
+          ws[cellRef].s = style;
+        }
+      });
+    });
+
+    // ─── Largura das colunas ─────────────────────────────────────────────
+    ws["!cols"] = [
+      { wch: 6 },  // ID
+      { wch: 32 }, // Título
+      { wch: 20 }, // Board
+      { wch: 22 }, // Etapa
+      { wch: 10 }, // Status
+      { wch: 22 }, // Vendedor
+      { wch: 20 }, // SDR
+      { wch: 28 }, // Cliente
+      { wch: 15 }, // Valor
+      { wch: 16 }, // Forma de Pgto
+      { wch: 10 }, // Parcelas
+      { wch: 13 }, // Criado em
+      { wch: 13 }, // Vencimento
+      { wch: 13 }, // Fechado em
+      { wch: 22 }, // Tipo de negócio
+      { wch: 26 }, // Canal de aquisição
+      { wch: 26 }, // Det. canal
+      { wch: 30 }, // Motivo de perda
+      { wch: 17 }, // Tarefas pendentes
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "Cards");
+
+    // Gera e faz download do arquivo
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], { type: "application/octet-stream" });
+    const today = new Date().toISOString().slice(0, 10);
+    saveAs(blob, `cards-hsgrowth-${today}.xlsx`);
+
+    showSuccess(
+      `${cards.length} card${cards.length !== 1 ? "s" : ""} exportado${cards.length !== 1 ? "s" : ""} com sucesso!`
+    );
+  };
+
+  /**
+   * Handler principal do botão Exportar
+   */
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const cards = await fetchCards();
+
+      if (cards.length === 0) {
+        showError("Nenhum card encontrado com os filtros selecionados.");
+        return;
+      }
+
+      exportToExcel(cards);
+      handleClose();
+    } catch (error) {
+      console.error("Erro ao exportar cards:", error);
+      showError("Erro ao exportar cards. Tente novamente.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Boards ativos (não deletados) para o dropdown
+  const activeBoards = boards.filter((b) => !b.is_deleted);
+
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Exportar Cards"
+      subtitle="Configure os filtros e exporte para Excel (.xlsx)"
+      size="lg"
+      footer={
+        <div className="flex items-center justify-between">
+          {/* Indicador de ajuda */}
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            <Filter size={14} className="mr-1 inline" />
+            Filtros sem seleção incluem todos os registros
+          </p>
+
+          {/* Botões de ação */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleClose}
+              disabled={exporting}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+            >
+              {exporting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Exportando...
+                </>
+              ) : (
+                <>
+                  <Download size={16} />
+                  Exportar Excel
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-5">
+        {/* Ícone decorativo */}
+        <div className="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+          <FileSpreadsheet size={22} className="shrink-0 text-green-400" />
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Os dados serão exportados com todas as informações dos cards conforme
+            os filtros abaixo.
+          </p>
+        </div>
+
+        {/* ── Linha 1: Board ─────────────────────────────────────────────── */}
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Board
+          </label>
+          <select
+            value={selectedBoardId}
+            onChange={(e) =>
+              setSelectedBoardId(
+                e.target.value === "all" ? "all" : Number(e.target.value)
+              )
+            }
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+          >
+            <option value="all">Todos os boards</option>
+            {activeBoards.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* ── Linha 2: Status + Etapa ─────────────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Status */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Status
+            </label>
+            <select
+              value={selectedStatus}
+              onChange={(e) =>
+                setSelectedStatus(e.target.value as StatusFilter)
+              }
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            >
+              <option value="all">Todos</option>
+              <option value="open">Aberto</option>
+              <option value="won">Ganho</option>
+              <option value="lost">Perdido</option>
+            </select>
+          </div>
+
+          {/* Etapa/Lista — só aparece quando um board específico está selecionado */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Etapa / Lista
+            </label>
+            <select
+              value={selectedListId}
+              onChange={(e) =>
+                setSelectedListId(
+                  e.target.value === "all" ? "all" : Number(e.target.value)
+                )
+              }
+              disabled={selectedBoardId === "all" || loadingLists}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            >
+              {selectedBoardId === "all" ? (
+                <option value="all">Selecione um board primeiro</option>
+              ) : loadingLists ? (
+                <option value="all">Carregando...</option>
+              ) : (
+                <>
+                  <option value="all">Todas as etapas</option>
+                  {lists.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </div>
+        </div>
+
+        {/* ── Linha 3: Vendedor + Período de criação ───────────────────────── */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Vendedor */}
+          <div>
+            <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+              Vendedor
+              {/* Badge indicando que o filtro está travado para o próprio usuário */}
+              {!isAdminOrManager && (
+                <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-normal text-amber-600 dark:text-amber-400">
+                  travado
+                </span>
+              )}
+            </label>
+            <select
+              value={selectedUserId}
+              onChange={(e) =>
+                setSelectedUserId(
+                  e.target.value === "all" ? "all" : Number(e.target.value)
+                )
+              }
+              // Desabilita o select para roles sem permissão (salesperson, sdr)
+              disabled={!isAdminOrManager}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            >
+              {isAdminOrManager && (
+                <option value="all">Todos os vendedores</option>
+              )}
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Placeholder para manter o grid alinhado */}
+          <div className="hidden sm:block" />
+        </div>
+
+        {/* ── Linha 4: Período de criação ─────────────────────────────────── */}
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Período de criação
+          </label>
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <input
+                type="date"
+                value={dateStart}
+                onChange={(e) => setDateStart(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              />
+            </div>
+            <span className="text-sm text-slate-500 dark:text-slate-400">até</span>
+            <div className="flex-1">
+              <input
+                type="date"
+                value={dateEnd}
+                onChange={(e) => setDateEnd(e.target.value)}
+                min={dateStart || undefined}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Linha 5: Busca de cliente ────────────────────────────────────── */}
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Cliente (busca por nome)
+          </label>
+          <div className="relative">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              value={clientSearch}
+              onChange={(e) => setClientSearch(e.target.value)}
+              placeholder="Digite parte do nome do cliente..."
+              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+            />
+          </div>
+        </div>
+      </div>
+    </BaseModal>
+  );
+};
+
+export default ExportCardsModal;

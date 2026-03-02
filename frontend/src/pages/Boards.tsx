@@ -1,10 +1,11 @@
-  import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle, Trello, Download, CalendarDays } from "lucide-react";
 import { Link } from "react-router-dom";
 import boardService from "../services/boardService";
 import { Board } from "../types";
 import BoardCard from "../components/boards/BoardCard";
 import BoardModal from "../components/boards/BoardModal";
+import ExportCardsModal from "../components/boards/ExportCardsModal";
 import { showSuccess, showError } from "../utils/toast";
 import EmptyState from "../components/common/EmptyState";
 import { useAuth } from "../hooks/useAuth";
@@ -17,6 +18,7 @@ const Boards: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "archived">("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Permissões: Apenas Admin e Manager podem criar boards
   const canCreateBoard = user?.role === "admin" || user?.role === "manager";
@@ -171,7 +173,10 @@ const Boards: React.FC = () => {
           )}
 
           {/* Botão Exportar */}
-          <button className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-2 text-green-400 transition-all hover:bg-green-500/30">
+          <button
+            onClick={() => setIsExportModalOpen(true)}
+            className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-2 text-green-400 transition-all hover:bg-green-500/30"
+          >
             <Download className="h-4 w-4 text-slate-900 dark:text-green-400" />
             <span className="hidden sm:inline text-slate-900 dark:text-green-400">Exportar</span>
           </button>
@@ -299,6 +304,13 @@ const Boards: React.FC = () => {
           onSuccess={handleModalSuccess}
         />
       )}
+
+      {/* Modal de exportação de cards para Excel */}
+      <ExportCardsModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        boards={boards}
+      />
     </div>
   );
 };

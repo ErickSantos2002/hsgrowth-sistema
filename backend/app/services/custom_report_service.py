@@ -8,7 +8,7 @@ Responsabilidades:
      vinda do frontend (x_field, y_fields, period) e retorna dados para renderização.
 """
 from typing import List, Optional, Tuple, Dict, Any
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from fastapi import HTTPException, status
@@ -345,9 +345,10 @@ class CustomReportService:
             elif group_by == 'day':
                 return f"{dt_val.day:02d}/{m:02d}"
             elif group_by == 'week':
-                # Calcula o número da semana usando isocalendar()
-                week_num = dt_val.isocalendar()[1]
-                return f"Sem {week_num}"
+                # Exibe a data da segunda-feira da semana no formato DD/MM
+                # weekday() retorna 0 para segunda, então subtraímos os dias necessários
+                monday = dt_val - timedelta(days=dt_val.weekday())
+                return f"{monday.day:02d}/{monday.month:02d}"
             elif group_by == 'year':
                 return str(y)
         return str(dt_val)
