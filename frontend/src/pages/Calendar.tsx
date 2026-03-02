@@ -613,7 +613,7 @@ const CalendarPage: React.FC = () => {
               {priorityConfig.label}
             </span>
             {selectedTask.is_completed && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-green-500/40 bg-green-500/20 px-3 py-1 text-xs font-medium text-green-300">
+              <span className="inline-flex items-center gap-1 rounded-full border border-green-500/40 bg-green-500/20 px-3 py-1 text-xs font-medium text-slate-900 dark:text-green-300">
                 <CheckCircle2 size={12} />
                 Concluída
               </span>

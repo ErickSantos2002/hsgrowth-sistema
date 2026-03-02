@@ -31,35 +31,35 @@ export const TYPE_CONFIG: Record<TaskType, TypeConfig> = {
     label: "Ligação",
     Icon: Phone,
     pillBg: "bg-blue-500/20",
-    pillText: "text-blue-300",
+    pillText: "text-slate-900 dark:text-blue-300",
     pillBorder: "border-blue-500/40",
   },
   meeting: {
     label: "Reunião",
     Icon: Users,
     pillBg: "bg-purple-500/20",
-    pillText: "text-purple-300",
+    pillText: "text-slate-900 dark:text-purple-300",
     pillBorder: "border-purple-500/40",
   },
   task: {
     label: "Tarefa",
     Icon: CheckSquare,
     pillBg: "bg-green-500/20",
-    pillText: "text-green-300",
+    pillText: "text-slate-900 dark:text-green-300",
     pillBorder: "border-green-500/40",
   },
   follow_up: {
     label: "Follow Up",
     Icon: Clock,
     pillBg: "bg-yellow-500/20",
-    pillText: "text-yellow-300",
+    pillText: "text-slate-900 dark:text-yellow-300",
     pillBorder: "border-yellow-500/40",
   },
   other: {
     label: "Outro",
     Icon: MoreHorizontal,
     pillBg: "bg-slate-500/20",
-    pillText: "text-slate-300",
+    pillText: "text-slate-900 dark:text-slate-300",
     pillBorder: "border-slate-500/40",
   },
 };
@@ -72,16 +72,16 @@ export const PRIORITY_CONFIG: Record<
 > = {
   normal: {
     label: "Normal",
-    badgeClass: "bg-blue-500/20 border border-blue-500/40 text-blue-300",
+    badgeClass: "bg-blue-500/20 border border-blue-500/40 text-slate-900 dark:text-blue-300",
   },
   high: {
     label: "Alta",
     badgeClass:
-      "bg-yellow-500/20 border border-yellow-500/40 text-yellow-300",
+      "bg-yellow-500/20 border border-yellow-500/40 text-slate-900 dark:text-yellow-300",
   },
   urgent: {
     label: "Urgente",
-    badgeClass: "bg-red-500/20 border border-red-500/40 text-red-300",
+    badgeClass: "bg-red-500/20 border border-red-500/40 text-slate-900 dark:text-red-300",
   },
 };
 
