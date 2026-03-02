@@ -1,5 +1,5 @@
   import React, { useState, useEffect } from "react";
-import { Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle, Trello } from "lucide-react";
+import { Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle, Trello, Download } from "lucide-react";
 import boardService from "../services/boardService";
 import { Board } from "../types";
 import BoardCard from "../components/boards/BoardCard";
@@ -147,16 +147,25 @@ const Boards: React.FC = () => {
             Gerencie seus quadros Kanban e organize seus projetos
           </p>
         </div>
-        {/* Botão Novo Board - Apenas Admin e Manager */}
-        {canCreateBoard && (
-          <button
-            onClick={handleCreateBoard}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2 text-white shadow-lg transition-all hover:from-blue-600 hover:to-cyan-600 hover:shadow-xl sm:w-auto"
-          >
-            <Plus size={20} />
-            Novo Board
+        {/* Botões do header */}
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          {/* Botão Novo Board - Apenas Admin e Manager */}
+          {canCreateBoard && (
+            <button
+              onClick={handleCreateBoard}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2 text-white shadow-lg transition-all hover:from-blue-600 hover:to-cyan-600 hover:shadow-xl sm:w-auto"
+            >
+              <Plus size={20} />
+              Novo Board
+            </button>
+          )}
+
+          {/* Botão Exportar */}
+          <button className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-2 text-green-400 transition-all hover:bg-green-500/30">
+            <Download className="h-4 w-4 text-slate-900 dark:text-green-400" />
+            <span className="hidden sm:inline text-slate-900 dark:text-green-400">Exportar</span>
           </button>
-        )}
+        </div>
       </div>
 
       {/* Barra de filtros e busca */}

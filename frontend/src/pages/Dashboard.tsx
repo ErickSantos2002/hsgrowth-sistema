@@ -302,9 +302,9 @@ const Dashboard: React.FC = () => {
 
           {/* Botão Exportar */}
           <div className="group relative">
-            <button className="flex items-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-2 text-blue-400 transition-all hover:bg-blue-500/30">
-              <Download className="h-6 w-6 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Exportar</span>
+            <button className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-2 text-green-400 transition-all hover:bg-green-500/30">
+              <Download className="h-6 w-6 sm:h-4 sm:w-4 text-slate-900 dark:text-green-400" />
+              <span className="hidden sm:inline text-slate-900 dark:text-green-400">Exportar</span>
             </button>
 
             {/* Dropdown de exportação */}
