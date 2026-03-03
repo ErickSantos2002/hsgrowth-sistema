@@ -12,6 +12,7 @@ import {
   UserPlus,
   Sparkles,
   RefreshCw,
+  UserX,
 } from "lucide-react";
 import { Card } from "../types";
 import cardService from "../services/cardService";
@@ -313,7 +314,7 @@ const CardDetails: React.FC = () => {
   /**
    * Atualiza o responsável do card
    */
-  const handleChangeAssignee = async (userId: number) => {
+  const handleChangeAssignee = async (userId: number | null) => {
     if (!card) return;
 
     try {
@@ -329,7 +330,7 @@ const CardDetails: React.FC = () => {
   /**
    * Atualiza o SDR do card
    */
-  const handleChangeSdr = async (userId: number) => {
+  const handleChangeSdr = async (userId: number | null) => {
     if (!card) return;
 
     try {
@@ -478,6 +479,26 @@ const CardDetails: React.FC = () => {
                             <p className="mb-1 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
                               Selecionar responsável
                             </p>
+                            {/* Opção para remover atribuição */}
+                            <button
+                              onClick={() => handleChangeAssignee(null)}
+                              className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors ${
+                                card?.assigned_to_id === null
+                                  ? "bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200"
+                                  : "text-slate-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-700"
+                              }`}
+                            >
+                              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-600">
+                                <UserX size={12} className="text-slate-500 dark:text-slate-400" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium">Nenhum</p>
+                              </div>
+                              {card?.assigned_to_id === null && (
+                                <CheckCircle2 size={16} className="flex-shrink-0 text-slate-500" />
+                              )}
+                            </button>
+                            <div className="my-1 border-t border-gray-100 dark:border-slate-700" />
                             {users.map((user) => (
                               <button
                                 key={user.id}
@@ -557,6 +578,26 @@ const CardDetails: React.FC = () => {
                               <p className="mb-1 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
                                 Selecionar SDR
                               </p>
+                              {/* Opção para remover atribuição */}
+                              <button
+                                onClick={() => handleChangeSdr(null)}
+                                className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors ${
+                                  card?.sdr_id === null || card?.sdr_id === undefined
+                                    ? "bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200"
+                                    : "text-slate-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-700"
+                                }`}
+                              >
+                                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-600">
+                                  <UserX size={12} className="text-slate-500 dark:text-slate-400" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium">Nenhum</p>
+                                </div>
+                                {(card?.sdr_id === null || card?.sdr_id === undefined) && (
+                                  <CheckCircle2 size={16} className="flex-shrink-0 text-slate-500" />
+                                )}
+                              </button>
+                              <div className="my-1 border-t border-gray-100 dark:border-slate-700" />
                               {sdrUsers.map((user) => (
                                 <button
                                   key={user.id}
