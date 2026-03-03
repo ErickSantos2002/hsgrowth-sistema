@@ -3,6 +3,7 @@ import { FileText, Plus, Trash2, Edit, Save, X, Image } from "lucide-react";
 import cardNoteService from "../../services/cardNoteService";
 import NoteRenderer from "./NoteRenderer";
 import { showError, showWarning } from "../../utils/toast";
+import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface Note {
   id: number;
@@ -24,6 +25,7 @@ interface NotesSectionProps {
  * Imagens são comprimidas e armazenadas como base64 na nota
  */
 const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) => {
+  const { confirm } = useConfirm();
   const [isCreating, setIsCreating] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -254,7 +256,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
    * Deleta uma nota
    */
   const handleDeleteNote = async (noteId: number) => {
-    if (!confirm("Tem certeza que deseja excluir esta anotação?")) return;
+    const confirmed = await confirm({
+      title: "Excluir anotação",
+      message: "Tem certeza que deseja excluir esta anotação? Esta ação não pode ser desfeita.",
+      confirmText: "Excluir",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       setLoading(true);

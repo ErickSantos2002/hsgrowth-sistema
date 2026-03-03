@@ -51,6 +51,7 @@ import type { Card } from "../../types";
 import BaseModal from "../common/BaseModal";
 import QuickActivityForm from "./QuickActivityForm";
 import { showError } from "../../utils/toast";
+import { useConfirm } from "../../contexts/ConfirmContext";
 
 // ─── Tipos internos ──────────────────────────────────────────────────────────
 
@@ -99,6 +100,7 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
   cardId,
   onUpdate,
 }) => {
+  const { confirm } = useConfirm();
   // ── Estado do calendário
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
@@ -304,7 +306,13 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
   /** Exclui a tarefa após confirmação do usuário */
   const handleDeleteTask = async () => {
     if (!selectedTask) return;
-    if (!confirm(`Excluir a atividade "${selectedTask.title}"?`)) return;
+    const confirmed = await confirm({
+      title: "Excluir atividade",
+      message: `Excluir a atividade "${selectedTask.title}"? Esta ação não pode ser desfeita.`,
+      confirmText: "Excluir",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     setActionLoading(true);
     try {

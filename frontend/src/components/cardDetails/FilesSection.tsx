@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import attachmentService, { Attachment, AttachmentListResponse } from "../../services/attachmentService";
 import FilePreviewModal from "./FilePreviewModal";
+import { showError } from "../../utils/toast";
+import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface FilesSectionProps {
   cardId: number;
@@ -24,6 +26,7 @@ interface FilesSectionProps {
  * Seção de Arquivos - Upload e gerenciamento de arquivos anexados ao card
  */
 const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
+  const { confirm } = useConfirm();
   // Estados
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [totalSize, setTotalSize] = useState<number>(0);
@@ -64,7 +67,7 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
       setTotalSize(response.total_size_mb);
     } catch (err: any) {
       console.error("Erro ao carregar arquivos:", err);
-      setError("Erro ao carregar arquivos");
+      showError("Erro ao carregar arquivos");
     } finally {
       setLoading(false);
     }
@@ -99,7 +102,7 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
       await loadFiles();
     } catch (err: any) {
       console.error("Erro ao fazer upload:", err);
-      setError(err.response?.data?.detail || "Erro ao fazer upload do arquivo");
+      showError(err.response?.data?.detail || "Erro ao fazer upload do arquivo");
     } finally {
       setUploading(false);
 
@@ -118,7 +121,7 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
       await attachmentService.triggerDownload(attachment.id, attachment.original_filename);
     } catch (err) {
       console.error("Erro ao fazer download:", err);
-      setError("Erro ao fazer download do arquivo");
+      showError("Erro ao fazer download do arquivo");
     }
   };
 
@@ -126,14 +129,20 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
    * Deleta um arquivo
    */
   const handleDelete = async (attachmentId: number) => {
-    if (!confirm("Tem certeza que deseja deletar este arquivo?")) return;
+    const confirmed = await confirm({
+      title: "Deletar arquivo",
+      message: "Tem certeza que deseja deletar este arquivo? Esta ação não pode ser desfeita.",
+      confirmText: "Deletar",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await attachmentService.deleteFile(attachmentId);
       await loadFiles(); // Recarregar lista
     } catch (err) {
       console.error("Erro ao deletar arquivo:", err);
-      setError("Erro ao deletar arquivo");
+      showError("Erro ao deletar arquivo");
     }
   };
 

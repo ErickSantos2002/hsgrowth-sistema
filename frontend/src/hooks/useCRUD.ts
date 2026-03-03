@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useConfirm } from "../contexts/ConfirmContext";
 
 /**
  * Interface genérica para serviços CRUD
@@ -37,6 +38,8 @@ export function useCRUD<T extends { id: number }, CreateData = Partial<T>, Updat
     onError,
     autoLoad = true,
   } = options;
+
+  const { confirm } = useConfirm();
 
   // Estado
   const [items, setItems] = useState<T[]>([]);
@@ -100,9 +103,13 @@ export function useCRUD<T extends { id: number }, CreateData = Partial<T>, Updat
     }
 
     const itemName = (item as any).name || (item as any).title || `ID ${item.id}`;
-    if (!window.confirm(`Tem certeza que deseja deletar "${itemName}"?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Deletar item",
+      message: `Tem certeza que deseja deletar "${itemName}"?`,
+      confirmText: "Deletar",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await service.delete(item.id);

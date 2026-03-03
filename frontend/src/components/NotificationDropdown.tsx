@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import notificationService from "../services/notificationService";
 import { Notification, NotificationType } from "../types";
+import { showError } from "../utils/toast";
 
 const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -88,6 +89,7 @@ const NotificationDropdown: React.FC = () => {
       setUnreadCount(count);
     } catch (error) {
       console.error("Erro ao carregar contador:", error);
+      showError("Erro ao atualizar contador de notificações.");
     }
   };
 
@@ -99,6 +101,7 @@ const NotificationDropdown: React.FC = () => {
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error("Erro ao marcar como lida:", error);
+      showError("Erro ao marcar notificação como lida.");
     }
   };
 
@@ -110,6 +113,7 @@ const NotificationDropdown: React.FC = () => {
       setUnreadCount(0);
     } catch (error) {
       console.error("Erro ao marcar todas como lidas:", error);
+      showError("Erro ao marcar todas as notificações como lidas.");
     }
   };
 

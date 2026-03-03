@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Check, Loader2, Info } from "lucide-react";
 import { List } from "../../types";
 import listService from "../../services/listService";
+import { showError } from "../../utils/toast";
 
 interface PipelineStagesProps {
   boardId: number;
@@ -48,6 +49,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
       setLists(sortedLists);
     } catch (error) {
       console.error("Erro ao carregar listas:", error);
+      showError("Erro ao carregar etapas do pipeline. Tente novamente.");
     } finally {
       setLoading(false);
     }

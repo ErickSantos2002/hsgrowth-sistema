@@ -25,6 +25,7 @@ import personService, { Person } from "../../services/personService";
 import automationService from "../../services/automationService";
 import { Card } from "../../types";
 import { showSuccess, showError, showWarning } from "../../utils/toast";
+import { useConfirm } from "../../contexts/ConfirmContext";
 import {
   formatBrazilDate,
   extractBrazilDateForInput,
@@ -59,6 +60,7 @@ interface FocusSectionProps {
  * Exibida na aba "Atividade", logo abaixo do formulário de criação rápida
  */
 const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) => {
+  const { confirm } = useConfirm();
   const [expandAll, setExpandAll] = useState(false);
   const [expandedActivities, setExpandedActivities] = useState<number[]>([]);
   const [loadingTaskId, setLoadingTaskId] = useState<number | null>(null);
@@ -206,7 +208,13 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
    * Deleta uma atividade
    */
   const handleDeleteTask = async (activityId: number) => {
-    if (!confirm("Tem certeza que deseja excluir esta atividade?")) return;
+    const confirmed = await confirm({
+      title: "Excluir atividade",
+      message: "Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.",
+      confirmText: "Excluir",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       setLoadingTaskId(activityId);
@@ -354,9 +362,13 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       ? "WhatsApp"
       : "Comercial";
 
-    if (!confirm(`Ligar para ${person.name} no número ${phoneNumber} (${phoneLabel})?`)) {
-      return;
-    }
+    const confirmedCall = await confirm({
+      title: "Iniciar chamada",
+      message: `Ligar para ${person.name} no número ${phoneNumber} (${phoneLabel})?`,
+      confirmText: "Ligar",
+      isDanger: false,
+    });
+    if (!confirmedCall) return;
 
     try {
       setCallingTaskId(activityId);
@@ -383,9 +395,13 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
    * Marca reunião como NoShow e dispara automação para mover card para Reagendamento
    */
   const handleNoShow = async (activityId: number) => {
-    if (!confirm("Marcar como NoShow? O card será movido para Reagendamento.")) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Marcar como NoShow",
+      message: "Marcar como NoShow? O card será movido para Reagendamento.",
+      confirmText: "Confirmar",
+      isDanger: false,
+    });
+    if (!confirmed) return;
 
     try {
       setNoShowTaskId(activityId);

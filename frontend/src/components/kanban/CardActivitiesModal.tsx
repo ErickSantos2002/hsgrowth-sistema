@@ -4,6 +4,7 @@ import { X, Phone, Users, CheckSquare, Clock, Mail, Coffee, MoreHorizontal } fro
 import api from "../../services/api";
 import StatusBadge from "../cardDetails/StatusBadge";
 import { formatBrazilDate, getActivityStatusBrazil } from "../../utils/timezone";
+import { showError } from "../../utils/toast";
 
 interface CardTask {
   id: number;
@@ -51,6 +52,7 @@ const CardActivitiesModal: React.FC<CardActivitiesModalProps> = ({
       setTasks(response.data.tasks || []);
     } catch (error) {
       console.error("Erro ao carregar atividades:", error);
+      showError("Erro ao carregar atividades do card. Tente novamente.");
     } finally {
       setLoading(false);
     }

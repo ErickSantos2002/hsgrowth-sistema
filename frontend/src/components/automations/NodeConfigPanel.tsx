@@ -3,6 +3,7 @@ import { X, Save, AlertCircle, ChevronDown } from "lucide-react";
 import { Node as FlowNode } from "reactflow";
 import boardService from "../../services/boardService";
 import userService from "../../services/userService";
+import { showError } from "../../utils/toast";
 
 interface NodeConfigPanelProps {
   node: FlowNode | null;
@@ -45,6 +46,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
       setBoards(response.boards || []);
     } catch (error) {
       console.error("Erro ao carregar boards:", error);
+      showError("Erro ao carregar boards. Tente novamente.");
     }
   };
 
@@ -55,6 +57,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
       setLists(response || []);
     } catch (error) {
       console.error("Erro ao carregar listas:", error);
+      showError("Erro ao carregar listas do board. Tente novamente.");
       setLists([]);
     } finally {
       setLoading(false);
@@ -68,6 +71,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
       setUsers(response);
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
+      showError("Erro ao carregar usuários. Tente novamente.");
     }
   };
 

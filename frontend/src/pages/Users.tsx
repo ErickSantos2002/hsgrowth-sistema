@@ -6,11 +6,13 @@ import { useAuth, usePagination, useFilter, filterHelpers } from "../hooks";
 import UserModal from "../components/users/UserModal";
 import AdminPasswordResetModal from "../components/users/AdminPasswordResetModal";
 import { showSuccess, showError, showWarning } from "../utils/toast";
+import { useConfirm } from "../contexts/ConfirmContext";
 import { SearchInput, Pagination, UserAvatar } from "../components/common";
 import { PageHeader } from "../components/layout";
 
 const Users: React.FC = () => {
   const { user: currentUser } = useAuth();
+  const { confirm } = useConfirm();
 
   // Estados
   const [users, setUsers] = useState<User[]>([]);
@@ -113,7 +115,14 @@ const Users: React.FC = () => {
       return;
     }
 
-    if (confirm(`Tem certeza que deseja deletar o usuário "${user.name}"?`)) {
+    const confirmed = await confirm({
+      title: "Deletar Usuário",
+      message: `Tem certeza que deseja deletar o usuário "${user.name}"? Esta ação não pode ser desfeita.`,
+      confirmText: "Deletar",
+      isDanger: true,
+    });
+
+    if (confirmed) {
       try {
         await userService.delete(user.id);
         await loadUsers();

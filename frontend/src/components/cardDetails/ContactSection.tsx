@@ -8,6 +8,7 @@ import { Person } from "../../services/personService";
 import personService from "../../services/personService";
 import PersonModal from "../persons/PersonModal";
 import { showError } from "../../utils/toast";
+import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface ContactSectionProps {
   card: Card;
@@ -19,6 +20,7 @@ interface ContactSectionProps {
  * Terceira seção da coluna esquerda, expandida por padrão
  */
 const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
+  const { confirm } = useConfirm();
   const [person, setPerson] = useState<Person | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLoadingPersons, setIsLoadingPersons] = useState(false);
@@ -126,7 +128,13 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
    * Remove vínculo da pessoa
    */
   const handleUnlinkPerson = async () => {
-    if (!confirm("Desvincular esta pessoa do negócio?")) return;
+    const confirmed = await confirm({
+      title: "Desvincular pessoa",
+      message: "Deseja desvincular esta pessoa do negócio?",
+      confirmText: "Desvincular",
+      isDanger: false,
+    });
+    if (!confirmed) return;
 
     try {
       await personService.unlinkFromCard(card.id);

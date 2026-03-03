@@ -18,6 +18,7 @@ import { BaseModal, FormField, Input, Select, Textarea, Button, Alert } from "..
 import userService from "../../services/userService";
 import { User as UserType } from "../../types";
 import { showError } from "../../utils/toast";
+import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface CardDetailModalProps {
   isOpen: boolean;
@@ -46,6 +47,8 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
   onMarkAsLost,
   onMove,
 }) => {
+  const { confirm } = useConfirm();
+
   // Estado do formulário (editável)
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -154,7 +157,13 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
    * Handler para marcar como ganho
    */
   const handleMarkAsWon = async () => {
-    if (confirm("Marcar este card como GANHO?")) {
+    const confirmed = await confirm({
+      title: "Marcar como Ganho",
+      message: "Tem certeza que deseja marcar este card como GANHO?",
+      confirmText: "Confirmar",
+      isDanger: false,
+    });
+    if (confirmed) {
       try {
         await onMarkAsWon(card.id);
         onClose();
@@ -169,7 +178,13 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
    * Handler para marcar como perdido
    */
   const handleMarkAsLost = async () => {
-    if (confirm("Marcar este card como PERDIDO?")) {
+    const confirmed = await confirm({
+      title: "Marcar como Perdido",
+      message: "Tem certeza que deseja marcar este card como PERDIDO?",
+      confirmText: "Confirmar",
+      isDanger: false,
+    });
+    if (confirmed) {
       try {
         await onMarkAsLost(card.id);
         onClose();
@@ -184,7 +199,13 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
    * Handler para deletar card
    */
   const handleDelete = async () => {
-    if (confirm("Tem certeza que deseja DELETAR este card? Esta ação não pode ser desfeita.")) {
+    const confirmed = await confirm({
+      title: "Deletar Card",
+      message: "Tem certeza que deseja DELETAR este card? Esta ação não pode ser desfeita.",
+      confirmText: "Deletar",
+      isDanger: true,
+    });
+    if (confirmed) {
       try {
         await onDelete(card.id);
         onClose();

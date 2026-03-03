@@ -27,6 +27,7 @@ import FilesSection from "../components/cardDetails/FilesSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ReopenModal from "../components/cardDetails/ReopenModal";
 import { showSuccess, showError } from "../utils/toast";
+import { useConfirm } from "../contexts/ConfirmContext";
 import attachmentService from "../services/attachmentService";
 import UserAvatar from "../components/common/UserAvatar";
 
@@ -38,6 +39,7 @@ const CardDetails: React.FC = () => {
   const { cardId } = useParams<{ cardId: string }>();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const { confirm } = useConfirm();
 
   // Estados principais
   const [card, setCard] = useState<Card | null>(null);
@@ -183,7 +185,15 @@ const CardDetails: React.FC = () => {
    */
   const handleMarkAsWon = async () => {
     if (!card) return;
-    if (confirm("Marcar este negócio como GANHO?")) {
+
+    const confirmed = await confirm({
+      title: "Marcar como Ganho",
+      message: "Tem certeza que deseja marcar este negócio como GANHO?",
+      confirmText: "Confirmar",
+      isDanger: false,
+    });
+
+    if (confirmed) {
       try {
         await cardService.update(card.id, { is_won: true, is_lost: false });
         await loadCardData();

@@ -4,6 +4,7 @@ import BaseModal from "./common/BaseModal";
 import { FormField, Input, Textarea, Button } from "./common";
 import automationService from "../services/automationService";
 import boardService from "../services/boardService";
+import { showError } from "../utils/toast";
 
 interface Board {
   id: number;
@@ -72,6 +73,7 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
       setBoards(response.boards || []);
     } catch (err) {
       console.error("Erro ao carregar boards:", err);
+      showError("Erro ao carregar boards. Tente novamente.");
     }
   };
 
@@ -82,6 +84,7 @@ const AutomationRoundRobinForm: React.FC<AutomationRoundRobinFormProps> = ({
       setLists(response || []);
     } catch (err) {
       console.error("Erro ao carregar listas:", err);
+      showError("Erro ao carregar listas do board. Tente novamente.");
       setLists([]);
     } finally {
       setLoadingLists(false);

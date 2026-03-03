@@ -9,6 +9,7 @@ import clientService from "../../services/clientService";
 import cardService from "../../services/cardService";
 import ClientModal from "../clients/ClientModal";
 import { showError } from "../../utils/toast";
+import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface ClientSectionProps {
   card: Card;
@@ -21,6 +22,7 @@ interface ClientSectionProps {
  * Segunda seção da coluna esquerda, expandida por padrão
  */
 const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
+  const { confirm } = useConfirm();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
@@ -137,7 +139,13 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
    * Remove vínculo do cliente
    */
   const handleUnlinkClient = async () => {
-    if (!confirm("Desvincular este cliente do negócio?")) return;
+    const confirmed = await confirm({
+      title: "Desvincular cliente",
+      message: "Deseja desvincular este cliente do negócio?",
+      confirmText: "Desvincular",
+      isDanger: false,
+    });
+    if (!confirmed) return;
 
     try {
       await cardService.update(card.id, {

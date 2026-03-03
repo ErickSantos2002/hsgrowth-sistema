@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import userService from "../services/userService";
 import { User } from "../types";
 import { LoadingSpinner } from "../components/common";
+import { showError } from "../utils/toast";
 
 const Gamification: React.FC = () => {
   const { user } = useAuth();
@@ -98,6 +99,7 @@ const Gamification: React.FC = () => {
       }
     } catch (error) {
       console.error("Erro ao carregar dados de gamificação:", error);
+      showError("Erro ao carregar dados de gamificação. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -116,6 +118,7 @@ const Gamification: React.FC = () => {
       setMyBadges(userBadgesData);
     } catch (error) {
       console.error("Erro ao carregar dados do usuário:", error);
+      showError("Erro ao carregar dados do vendedor. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -151,6 +154,7 @@ const Gamification: React.FC = () => {
       setMyBadges([]);
     } catch (error) {
       console.error("Erro ao carregar estatísticas da equipe:", error);
+      showError("Erro ao carregar estatísticas da equipe. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -162,6 +166,7 @@ const Gamification: React.FC = () => {
       setRankings(response.rankings || []);
     } catch (error) {
       console.error("Erro ao carregar rankings:", error);
+      showError("Erro ao carregar rankings. Tente novamente.");
       setRankings([]);
     }
   };

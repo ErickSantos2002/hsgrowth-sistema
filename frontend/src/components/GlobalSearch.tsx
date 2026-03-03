@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, Loader2, FileText, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import cardService from "../services/cardService";
+import { showError } from "../utils/toast";
 
 interface SearchResult {
   id: number;
@@ -41,6 +42,7 @@ const GlobalSearch: React.FC = () => {
         setResults(response);
       } catch (error) {
         console.error("Erro na busca global:", error);
+        showError("Erro ao realizar a busca. Tente novamente.");
         setResults([]);
       } finally {
         setLoading(false);

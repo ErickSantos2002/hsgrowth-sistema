@@ -9,9 +9,11 @@ import ExportCardsModal from "../components/boards/ExportCardsModal";
 import { showSuccess, showError } from "../utils/toast";
 import EmptyState from "../components/common/EmptyState";
 import { useAuth } from "../hooks/useAuth";
+import { useConfirm } from "../contexts/ConfirmContext";
 
 const Boards: React.FC = () => {
   const { user } = useAuth(); // Pegar usuário logado
+  const { confirm } = useConfirm();
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -110,9 +112,12 @@ const Boards: React.FC = () => {
    * Deleta um board
    */
   const handleDeleteBoard = async (board: Board) => {
-    const confirmed = window.confirm(
-      `Tem certeza que deseja deletar o board "${board.name}"? Esta ação não pode ser desfeita.`
-    );
+    const confirmed = await confirm({
+      title: "Deletar Board",
+      message: `Tem certeza que deseja deletar o board "${board.name}"? Todos os cards e listas serão removidos permanentemente.`,
+      confirmText: "Deletar",
+      isDanger: true,
+    });
 
     if (!confirmed) return;
 

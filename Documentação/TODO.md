@@ -79,7 +79,7 @@
 ### Frontend - Melhorias e Ajustes
 - [ ] Auto-save em campos editáveis (com debounce e feedback visual)
 - [ ] Loading states em mais operações
-- [ ] Tratamento de erros mais robusto (toasts/notifications em vez de alerts)
+- [x] Tratamento de erros mais robusto (toasts/notifications em vez de alerts) — ConfirmContext + showError() em ~37 locais
 - [ ] Validação de formulários mais completa
 - [ ] Responsividade mobile
 - [ ] Testes unitários dos componentes

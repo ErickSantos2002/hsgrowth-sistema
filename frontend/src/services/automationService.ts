@@ -86,11 +86,17 @@ export interface Automation {
 export interface AutomationExecution {
   id: number;
   automation_id: number;
-  status: "success" | "error";
-  execution_time_ms: number;
+  card_id?: number;
+  triggered_by_id?: number;
+  status: "success" | "failed" | "pending";
+  started_at: string;
+  completed_at?: string;
+  duration_ms?: number;
+  execution_data?: Record<string, any>;
   error_message?: string;
-  executed_at: string;
-  triggered_by?: string;
+  error_stack?: string;
+  automation_name?: string;
+  card_title?: string;
 }
 
 

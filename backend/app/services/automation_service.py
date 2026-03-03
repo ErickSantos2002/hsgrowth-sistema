@@ -537,7 +537,17 @@ class AutomationService:
                 # Atualiza campo do cliente vinculado ao card
                 self._update_client_field(card, params)
 
-            # Outras ações podem ser implementadas conforme necessário
+            elif action_type == "send_notification":
+                # Envia notificação para usuários especificados (ou responsável pelo card)
+                self._send_notification_action(card, params)
+
+            elif action_type == "award_points" and card:
+                # Atribui pontos ao responsável pelo card (ou usuário especificado)
+                self._award_points_action(card, params)
+
+            elif action_type == "update_field" and card:
+                # Atualiza um campo padrão do card
+                self._update_field_action(card, params)
 
     def _assign_round_robin(self, automation: Automation, card: Card) -> None:
         """
@@ -761,6 +771,111 @@ class AutomationService:
         self.db.commit()
 
         print(f"[AUTOMATION] Cliente {client.id} campo '{field_name}' atualizado de '{old_value}' para '{value}'")
+
+    def _send_notification_action(self, card: Optional[Card], params: dict) -> None:
+        """
+        Envia notificação para usuários especificados.
+        Se nenhum usuário for especificado e o card tiver responsável, notifica o responsável.
+
+        Args:
+            card: Card relacionado (pode ser None para automações agendadas)
+            params: Parâmetros com 'user_ids' (lista), 'title' e 'message'
+        """
+        from app.repositories.notification_repository import NotificationRepository
+
+        notification_repo = NotificationRepository(self.db)
+
+        user_ids = params.get("user_ids", [])
+        title = params.get("title", "Notificação de Automação")
+        message = params.get("message", "")
+
+        # Se não especificou usuários e tem card com responsável, notifica o responsável
+        if not user_ids and card and card.assigned_to_id:
+            user_ids = [card.assigned_to_id]
+
+        if not user_ids:
+            print(f"[AUTOMATION] send_notification: nenhum destinatário definido")
+            return
+
+        for user_id in user_ids:
+            try:
+                notification_repo.create({
+                    "user_id": user_id,
+                    "notification_type": "automation",
+                    "title": title,
+                    "message": message,
+                    "notification_metadata": {"card_id": card.id if card else None}
+                })
+            except Exception as e:
+                print(f"[AUTOMATION] Erro ao notificar usuário {user_id}: {e}")
+
+        print(f"[AUTOMATION] Notificação enviada para {len(user_ids)} usuário(s)")
+
+    def _award_points_action(self, card: Card, params: dict) -> None:
+        """
+        Atribui pontos de gamificação ao responsável pelo card (ou usuário especificado).
+
+        Args:
+            card: Card relacionado
+            params: Parâmetros com 'user_id' (opcional), 'points' e 'description'
+        """
+        from app.repositories.gamification_repository import GamificationRepository
+        from app.schemas.gamification import GamificationPointCreate
+
+        # Determina o usuário alvo (parâmetro explícito ou responsável pelo card)
+        user_id = params.get("user_id") or card.assigned_to_id
+        if not user_id:
+            print(f"[AUTOMATION] award_points: nenhum usuário alvo definido para card {card.id}")
+            return
+
+        points = int(params.get("points", 10))
+        reason = params.get("reason", "automation_action")
+        description = params.get("description", "Pontos concedidos por automação")
+
+        if points <= 0:
+            print(f"[AUTOMATION] award_points: valor de pontos inválido ({points})")
+            return
+
+        point_data = GamificationPointCreate(
+            user_id=user_id,
+            points=points,
+            reason=reason,
+            description=description
+        )
+
+        repo = GamificationRepository(self.db)
+        repo.create_point(point_data)
+
+        print(f"[AUTOMATION] {points} pontos atribuídos ao usuário {user_id} (razão: {reason})")
+
+    def _update_field_action(self, card: Card, params: dict) -> None:
+        """
+        Atualiza um campo padrão do card.
+        Campos suportados: title, value, due_date, description.
+
+        Args:
+            card: Card a ser atualizado
+            params: Parâmetros com 'field_name' e 'value'
+        """
+        # Apenas campos seguros e editáveis são permitidos (evita sobrescrever IDs, etc.)
+        allowed_fields = {"title", "value", "due_date", "description"}
+
+        field_name = params.get("field_name")
+        new_value = params.get("value")
+
+        if not field_name:
+            print(f"[AUTOMATION] update_field: field_name não especificado")
+            return
+
+        if field_name not in allowed_fields:
+            print(f"[AUTOMATION] update_field: campo '{field_name}' não permitido (permitidos: {allowed_fields})")
+            return
+
+        old_value = getattr(card, field_name, None)
+        setattr(card, field_name, new_value)
+        self.db.commit()
+
+        print(f"[AUTOMATION] Card {card.id} campo '{field_name}' atualizado de '{old_value}' para '{new_value}'")
 
     def _to_response(self, automation: Automation) -> AutomationResponse:
         """Converte Automation para AutomationResponse."""

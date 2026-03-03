@@ -6,6 +6,7 @@ import { Card } from "../../types";
 import productService from "../../services/productService";
 import cardService from "../../services/cardService";
 import { showError, showWarning } from "../../utils/toast";
+import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface ProductSectionProps {
   card: Card;
@@ -33,6 +34,7 @@ interface ProductItem {
  * Quarta seção da coluna esquerda, expandida por padrão quando há produtos
  */
 const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
+  const { confirm } = useConfirm();
   // Produtos vindos do backend (card.products)
   const products = (card as any).products || [];
   const productsTotal = (card as any).products_total || 0;
@@ -135,7 +137,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
    * Remove produto
    */
   const handleRemoveProduct = async (cardProductId: number) => {
-    if (!confirm("Remover este produto?")) return;
+    const confirmed = await confirm({
+      title: "Remover produto",
+      message: "Tem certeza que deseja remover este produto do negócio?",
+      confirmText: "Remover",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       setLoading(true);
@@ -270,7 +278,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
    * Remove condições de pagamento
    */
   const handleRemovePayment = async () => {
-    if (!confirm("Remover condições de pagamento?")) return;
+    const confirmed = await confirm({
+      title: "Remover condições de pagamento",
+      message: "Tem certeza que deseja remover as condições de pagamento deste negócio?",
+      confirmText: "Remover",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       setLoading(true);

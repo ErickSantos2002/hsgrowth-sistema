@@ -8,6 +8,7 @@ import { User as UserType } from "../../types";
 import { PERSON_AREAS } from "../../constants/blueprintOptions";
 import { maskPhone } from "../../utils/formatters";
 import { useAuth } from "../../hooks/useAuth";
+import { showError } from "../../utils/toast";
 
 /**
  * Props do componente PersonModal
@@ -101,6 +102,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         setUsers(activeUsers.filter((u) => u.role === "salesperson"));
       } catch (err) {
         console.error("Erro ao carregar usuários:", err);
+        showError("Erro ao carregar lista de usuários. Tente novamente.");
       }
     };
 

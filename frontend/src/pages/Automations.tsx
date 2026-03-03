@@ -14,12 +14,18 @@ import {
   ChevronDown,
   Shield,
   Workflow,
+  History,
+  X,
+  Loader2,
+  AlertCircle,
+  Timer,
 } from "lucide-react";
 import { useAuth, usePagination, useFilter, filterHelpers } from "../hooks";
-import automationService, { Automation } from "../services/automationService";
+import automationService, { Automation, AutomationExecution } from "../services/automationService";
 import boardService from "../services/boardService";
 import AutomationRoundRobinForm from "../components/AutomationRoundRobinForm";
 import { showSuccess, showError } from "../utils/toast";
+import { useConfirm } from "../contexts/ConfirmContext";
 import { LoadingSpinner, SearchInput, Pagination } from "../components/common";
 import { PageHeader } from "../components/layout";
 
@@ -31,11 +37,13 @@ interface Board {
 const Automations: React.FC = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const { confirm } = useConfirm();
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRoundRobinForm, setShowRoundRobinForm] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
+  const [historyAutomation, setHistoryAutomation] = useState<Automation | null>(null);
 
   // Hook de filtros
   const {
@@ -115,7 +123,13 @@ const Automations: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Tem certeza que deseja deletar esta automação?")) return;
+    const confirmed = await confirm({
+      title: "Deletar Automação",
+      message: "Tem certeza que deseja deletar esta automação? Esta ação não pode ser desfeita.",
+      confirmText: "Deletar",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await automationService.delete(id);
@@ -333,6 +347,13 @@ const Automations: React.FC = () => {
                     <Workflow size={16} />
                   </button>
                   <button
+                    onClick={() => setHistoryAutomation(automation)}
+                    className="rounded-lg bg-cyan-600/20 p-2 text-slate-900 dark:text-cyan-400 transition-colors hover:bg-cyan-600/30"
+                    title="Histórico de execuções"
+                  >
+                    <History size={16} />
+                  </button>
+                  <button
                     onClick={() => handleDelete(automation.id)}
                     className="rounded-lg bg-red-600/20 p-2 text-slate-900 dark:text-red-400 transition-colors hover:bg-red-600/30"
                     title="Deletar"
@@ -367,11 +388,230 @@ const Automations: React.FC = () => {
           }}
         />
       )}
+
+      {/* Modal de histórico de execuções */}
+      {historyAutomation && (
+        <ExecutionHistoryModal
+          automation={historyAutomation}
+          onClose={() => setHistoryAutomation(null)}
+        />
+      )}
     </div>
   );
 };
 
 export default Automations;
+
+// ==================== COMPONENTE: MODAL DE HISTÓRICO DE EXECUÇÕES ====================
+
+interface ExecutionHistoryModalProps {
+  automation: Automation;
+  onClose: () => void;
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  success: "Sucesso",
+  failed: "Falha",
+  pending: "Pendente",
+};
+
+const STATUS_CLASSES: Record<string, string> = {
+  success: "bg-green-500/20 text-green-400",
+  failed: "bg-red-500/20 text-red-400",
+  pending: "bg-yellow-500/20 text-yellow-400",
+};
+
+/**
+ * Modal que exibe o histórico de execuções de uma automação,
+ * com filtro por status e paginação.
+ */
+const ExecutionHistoryModal: React.FC<ExecutionHistoryModalProps> = ({ automation, onClose }) => {
+  const [executions, setExecutions] = useState<AutomationExecution[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<"" | "success" | "failed" | "pending">("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    loadExecutions();
+  }, [page, statusFilter]);
+
+  // Fecha com ESC
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
+  const loadExecutions = async () => {
+    try {
+      setLoading(true);
+      const response = await automationService.getExecutions(
+        automation.id,
+        page,
+        PAGE_SIZE,
+        statusFilter || undefined
+      );
+      setExecutions(response.executions);
+      setTotalPages(response.total_pages);
+      setTotal(response.total);
+    } catch (err) {
+      console.error("Erro ao carregar histórico:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Formata duração em ms para exibição legível (ex: "1.2s" ou "320ms")
+   */
+  const formatDuration = (ms?: number): string => {
+    if (!ms) return "—";
+    if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${ms}ms`;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative z-10 flex w-full max-w-3xl flex-col rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-200 p-5 dark:border-slate-700">
+          <div className="flex items-center gap-3">
+            <History size={20} className="text-cyan-400" />
+            <div>
+              <h2 className="font-semibold text-slate-900 dark:text-white">Histórico de Execuções</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{automation.name}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Filtros de status */}
+        <div className="flex gap-2 border-b border-gray-200 px-5 py-3 dark:border-slate-700">
+          {(["", "success", "failed", "pending"] as const).map((s) => (
+            <button
+              key={s || "all"}
+              onClick={() => { setStatusFilter(s); setPage(1); }}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                statusFilter === s
+                  ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/40"
+                  : "text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              {s === "" ? "Todas" : STATUS_LABELS[s]}
+            </button>
+          ))}
+          <span className="ml-auto text-xs text-slate-400">{total} execuç{total !== 1 ? "ões" : "ão"}</span>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="min-h-[300px] overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 size={24} className="animate-spin text-cyan-400" />
+            </div>
+          ) : executions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+              <History size={40} className="text-slate-600" />
+              <p className="text-sm text-slate-400">Nenhuma execução encontrada</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-slate-700">
+                  <th className="px-5 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Data / Hora</th>
+                  <th className="px-5 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Status</th>
+                  <th className="px-5 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Duração</th>
+                  <th className="px-5 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Detalhe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {executions.map((exec) => (
+                  <tr
+                    key={exec.id}
+                    className="border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-slate-800 dark:hover:bg-slate-800/40"
+                  >
+                    {/* Data e hora */}
+                    <td className="px-5 py-3 text-slate-700 dark:text-slate-300">
+                      {new Date(exec.started_at).toLocaleString("pt-BR")}
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-5 py-3">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[exec.status] ?? "bg-gray-200 text-slate-600"}`}>
+                        {STATUS_LABELS[exec.status] ?? exec.status}
+                      </span>
+                    </td>
+
+                    {/* Duração */}
+                    <td className="px-5 py-3">
+                      <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                        <Timer size={12} />
+                        {formatDuration(exec.duration_ms)}
+                      </span>
+                    </td>
+
+                    {/* Erro ou OK */}
+                    <td className="max-w-xs px-5 py-3">
+                      {exec.error_message ? (
+                        <span className="flex items-start gap-1 text-red-400">
+                          <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                          <span className="truncate text-xs">{exec.error_message}</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-gray-200 px-5 py-3 dark:border-slate-700">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-gray-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              Anterior
+            </button>
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              Página {page} de {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-gray-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              Próxima
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
 interface SelectOption {

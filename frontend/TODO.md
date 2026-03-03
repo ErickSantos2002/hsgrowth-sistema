@@ -1063,7 +1063,7 @@ Durante a implementação da Fase 9, foi adicionada funcionalidade extra:
 ---
 
 ### 💡 Melhorias Futuras (Opcionais):
-- [ ] Substituir `alert()` por toast library (Fase 17)
+- [x] Substituir `alert()` por toast library (Fase 17) — concluído, react-hot-toast
 - [ ] Adicionar notificações de transferência (Fase 12)
 - [ ] Implementar filtros avançados (status, período, usuário)
 - [ ] Adicionar busca por card/usuário
@@ -1385,55 +1385,59 @@ Quando o backend de automações estiver implementado, basta conectar os endpoin
 - **Total:** ~1.977 linhas implementadas
 - **Dependências:** react-flow (já instalada)
 
-### ⏳ Pendente - Backend (Estimativa: ~3 dias):
+### ✅ Backend - Concluído:
 
 #### Backend: Modelos e Schemas
-- [ ] Criar modelo `Automation` no banco (tabela já existe)
-- [ ] Criar modelo `AutomationExecution` para histórico
-- [ ] Criar schemas Pydantic (AutomationCreate, AutomationUpdate, AutomationResponse)
-- [ ] Validar estrutura de nodes e edges (JSON)
+- [x] Criar modelo `Automation` no banco (tabela já existe)
+- [x] Criar modelo `AutomationExecution` para histórico
+- [x] Criar schemas Pydantic (AutomationCreate, AutomationUpdate, AutomationResponse)
+- [x] Validar estrutura de nodes e edges (JSON)
 
 #### Backend: Repository
-- [ ] Criar `automation_repository.py`
-- [ ] Métodos: create, update, delete, list, get_by_id
-- [ ] Busca por board_id, is_active
-- [ ] Paginação e filtros
+- [x] Criar `automation_repository.py`
+- [x] Métodos: create, update, delete, list, get_by_id
+- [x] Busca por board_id, is_active
+- [x] Paginação e filtros
 
 #### Backend: Service (Lógica de Execução)
-- [ ] Criar `automation_service.py`
-- [ ] Sistema de triggers (escutar eventos: card_created, card_won, etc)
-- [ ] Sistema de execução de actions
-- [ ] Validação de nodes e edges
-- [ ] Logs de execução
-- [ ] Tratamento de erros
+- [x] Criar `automation_service.py`
+- [x] Sistema de triggers (escutar eventos: card_created, card_won, etc)
+- [x] Sistema de execução de actions
+- [x] Validação de nodes e edges
+- [x] Logs de execução
+- [x] Tratamento de erros
 
 #### Backend: Endpoints
-- [ ] `GET /api/v1/automations` - Listar
-- [ ] `GET /api/v1/automations/{id}` - Buscar
-- [ ] `POST /api/v1/automations` - Criar
-- [ ] `PUT /api/v1/automations/{id}` - Atualizar
-- [ ] `DELETE /api/v1/automations/{id}` - Deletar
-- [ ] `PATCH /api/v1/automations/{id}/toggle` - Ativar/Desativar
-- [ ] `GET /api/v1/automations/{id}/executions` - Histórico
-- [ ] `POST /api/v1/automations/{id}/test` - Testar execução
+- [x] `GET /api/v1/automations` - Listar
+- [x] `GET /api/v1/automations/{id}` - Buscar
+- [x] `POST /api/v1/automations` - Criar
+- [x] `PUT /api/v1/automations/{id}` - Atualizar
+- [x] `DELETE /api/v1/automations/{id}` - Deletar
+- [x] `PATCH /api/v1/automations/{id}/toggle` - Ativar/Desativar (via PUT)
+- [x] `GET /api/v1/automations/{id}/executions` - Histórico
+- [x] `POST /api/v1/automations/{id}/trigger` - Testar execução
 
 #### Backend: Sistema de Triggers
-- [ ] Integrar triggers com eventos do sistema
-- [ ] card_created → disparar automações
-- [ ] card_won → disparar automações
-- [ ] card_lost → disparar automações
-- [ ] card_moved → disparar automações
-- [ ] card_overdue → job agendado (Celery)
-- [ ] scheduled → jobs agendados (Celery)
+- [x] Integrar triggers com eventos do sistema
+- [x] card_created → disparar automações
+- [x] card_won → disparar automações
+- [x] card_lost → disparar automações
+- [x] card_moved → disparar automações
+- [x] card_assigned → disparar automações (adicionado em v1.3.5)
+- [x] field_changed → disparar automações (adicionado em v1.3.5)
+- [x] card_overdue → job agendado (APScheduler)
+- [x] scheduled → jobs agendados (APScheduler + Celery)
 
 #### Backend: Sistema de Actions
-- [ ] create_card → criar card no board destino
-- [ ] send_email → integrar com SMTP
-- [ ] create_notification → criar notificação interna
-- [ ] assign_user → atribuir card a usuário
-- [ ] add_tag → adicionar tag ao card
-- [ ] move_to_list → mover card para outra lista
-- [ ] update_field → atualizar campo customizado
+- [x] move_card → mover card para lista destino
+- [x] assign_card → atribuir card a usuário
+- [x] assign_round_robin → rodízio de vendedores com estado persistente
+- [x] assign_sdr_round_robin → rodízio de SDRs
+- [x] mark_won / mark_lost → marcar card como ganho/perdido
+- [x] update_client_field → atualizar campo do cliente vinculado
+- [x] send_notification → criar notificação interna (adicionado em v1.3.5)
+- [x] award_points → conceder pontos de gamificação (adicionado em v1.3.5)
+- [x] update_field → atualizar campo padrão do card (adicionado em v1.3.5)
 
 #### Backend: Testes
 - [ ] Testes unitários dos métodos
@@ -1442,7 +1446,7 @@ Quando o backend de automações estiver implementado, basta conectar os endpoin
 - [ ] Testes de actions
 
 ### 💡 Melhorias Futuras (Opcionais):
-- [ ] Implementar histórico de execuções (modal frontend)
+- [x] Implementar histórico de execuções (modal frontend) — adicionado em v1.3.5
 - [ ] Adicionar mais tipos de triggers/actions
 - [ ] Sistema de condições avançadas (if/else)
 - [ ] Testes E2E do editor visual
@@ -1825,17 +1829,17 @@ Quando o backend de automações estiver implementado, basta conectar os endpoin
 - [ ] Aplicar em todas as listas vazias
 
 #### 17.3 - Confirmações
-- [ ] Modal de confirmação para ações destrutivas
-- [ ] Deletar card/board/cliente/usuário/etc
-- [ ] Texto explicativo do que será perdido
+- [x] Modal de confirmação para ações destrutivas (ConfirmContext com Promise-based API)
+- [x] Deletar card/board/cliente/usuário/etc (~20 locais substituídos)
+- [x] Texto explicativo do que será perdido
 
 #### 17.4 - Toasts e Feedback
-- [ ] Toast de sucesso (verde)
-- [ ] Toast de erro (vermelho)
-- [ ] Toast de aviso (amarelo)
-- [ ] Toast de info (azul)
-- [ ] Posição consistente (top-right)
-- [ ] Auto-dismiss (4 segundos)
+- [x] Toast de sucesso (verde) — showSuccess()
+- [x] Toast de erro (vermelho) — showError()
+- [x] Toast de aviso (amarelo) — showWarning()
+- [x] Toast de info (azul) — showInfo()
+- [x] Posição consistente (top-right)
+- [x] Auto-dismiss (4 segundos)
 
 #### 17.5 - Animações
 - [ ] Fade in ao carregar listas

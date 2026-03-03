@@ -21,6 +21,7 @@ import { useAuth } from '../hooks/useAuth';
 import { PageHeader } from '../components/layout';
 import { SearchInput } from '../components/common';
 import { showSuccess, showError } from '../utils/toast';
+import { useConfirm } from '../contexts/ConfirmContext';
 import FieldPanel from '../components/reports/FieldPanel';
 import ChartWidget from '../components/reports/ChartWidget';
 import ChartConfigPanel from '../components/reports/ChartConfigPanel';
@@ -46,6 +47,7 @@ const EMPTY_CATALOG: FieldCatalog = {
 
 const Reports: React.FC = () => {
   const { user: currentUser } = useAuth();
+  const { confirm } = useConfirm();
 
   // ========================
   // Estado principal
@@ -208,7 +210,13 @@ const Reports: React.FC = () => {
 
   /** Remove relatório do backend e da lista local */
   const handleDeleteReport = async (id: number) => {
-    if (!confirm('Tem certeza que deseja excluir este relatório?')) return;
+    const confirmed = await confirm({
+      title: "Excluir Relatório",
+      message: "Tem certeza que deseja excluir este relatório? Esta ação não pode ser desfeita.",
+      confirmText: "Excluir",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await reportService.deleteCustomReport(id);

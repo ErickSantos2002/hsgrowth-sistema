@@ -32,6 +32,7 @@ import { Board, List, Card, User } from "../types";
 import { COLORS } from "../constants/colors";
 import KanbanList from "../components/kanban/KanbanList";
 import { showSuccess, showError, showWarning } from "../utils/toast";
+import { useConfirm } from "../contexts/ConfirmContext";
 import { LoadingSpinner } from "../components/common";
 import KanbanCard from "../components/kanban/KanbanCard";
 import ListModal from "../components/kanban/ListModal";
@@ -44,6 +45,7 @@ const KanbanBoard: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth(); // Pegar usuário logado
+  const { confirm } = useConfirm();
 
   // Permissões: Apenas Admin e Manager podem criar listas
   const canCreateList = user?.role === "admin" || user?.role === "manager";
@@ -259,9 +261,12 @@ const KanbanBoard: React.FC = () => {
     setShowBoardMenu(false);
     if (!board) return;
 
-    const confirmed = window.confirm(
-      `Tem certeza que deseja arquivar o board "${board.name}"?`
-    );
+    const confirmed = await confirm({
+      title: "Arquivar Board",
+      message: `Tem certeza que deseja arquivar o board "${board.name}"? Ele ficará disponível na seção de arquivados.`,
+      confirmText: "Arquivar",
+      isDanger: false,
+    });
 
     if (!confirmed) return;
 

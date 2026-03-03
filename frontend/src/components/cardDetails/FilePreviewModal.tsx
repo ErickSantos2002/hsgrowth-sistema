@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Download, Loader2, AlertCircle } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import attachmentService, { Attachment } from "../../services/attachmentService";
+import { showError } from "../../utils/toast";
 
 interface FilePreviewModalProps {
   attachment: Attachment;
@@ -56,6 +57,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ attachment, onClose
       await attachmentService.triggerDownload(attachment.id, attachment.original_filename);
     } catch (err) {
       console.error("Erro ao fazer download:", err);
+      showError("Erro ao fazer download do arquivo. Tente novamente.");
     }
   };
 

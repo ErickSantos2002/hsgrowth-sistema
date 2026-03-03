@@ -14,9 +14,11 @@ import gamificationService, { Badge, UserBadge } from "../services/gamificationS
 import userService from "../services/userService";
 import { User } from "../types";
 import { showSuccess, showError, showWarning } from "../utils/toast";
+import { useConfirm } from "../contexts/ConfirmContext";
 import { LoadingSpinner } from "../components/common";
 
 const BadgesAdmin: React.FC = () => {
+  const { confirm } = useConfirm();
   const [badges, setBadges] = useState<Badge[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +111,13 @@ const BadgesAdmin: React.FC = () => {
   };
 
   const handleDeleteBadge = async (badgeId: number) => {
-    if (!confirm("Tem certeza que deseja deletar este badge?")) return;
+    const confirmed = await confirm({
+      title: "Deletar Badge",
+      message: "Tem certeza que deseja deletar este badge? Esta ação não pode ser desfeita.",
+      confirmText: "Deletar",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await gamificationService.deleteBadge(badgeId);

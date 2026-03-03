@@ -28,6 +28,7 @@ import { convertApiToReactFlow, convertReactFlowToApi, validateAutomation } from
 import { COLORS, getChartColors } from "../constants/colors";
 import { useTheme } from "../context/ThemeContext";
 import { showSuccess, showError, showWarning, showInfo } from "../utils/toast";
+import { useConfirm } from "../contexts/ConfirmContext";
 import { LoadingSpinner } from "../components/common";
 
 // Tipos de nodes customizados
@@ -47,6 +48,7 @@ const getId = () => `node_${nodeId++}`;
 const AutomationEditorContent: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { confirm } = useConfirm();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   // Cores adaptadas ao tema (React Flow nao suporta dark: do Tailwind em props programaticas)
@@ -318,8 +320,14 @@ const AutomationEditorContent: React.FC = () => {
     }
   };
 
-  const handleClear = () => {
-    if (confirm("Tem certeza que deseja limpar todo o canvas?")) {
+  const handleClear = async () => {
+    const confirmed = await confirm({
+      title: "Limpar canvas",
+      message: "Tem certeza que deseja limpar todo o canvas? Todos os nós e conexões serão removidos.",
+      confirmText: "Limpar",
+      isDanger: true,
+    });
+    if (confirmed) {
       setNodes([]);
       setEdges([]);
       setSelectedNode(null);

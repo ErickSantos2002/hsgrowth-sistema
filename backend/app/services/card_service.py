@@ -541,6 +541,7 @@ class CardService:
         # Guarda valores antigos para detectar mudanças
         old_is_won = card.is_won
         old_is_lost = card.is_lost
+        old_assigned_to_id = card.assigned_to_id
 
         # Captura snapshot dos campos alteráveis para registrar mudanças no histórico
         update_data_fields = card_data.model_dump(exclude_unset=True)
@@ -595,6 +596,21 @@ class CardService:
                             card=updated_card,
                             user=current_user,
                             trigger_data={"manual": True}
+                        )
+
+                    # Dispara trigger card_assigned se responsável mudou
+                    if (
+                        "assigned_to_id" in update_data_fields
+                        and old_assigned_to_id != updated_card.assigned_to_id
+                        and updated_card.assigned_to_id is not None
+                    ):
+                        print(f"[AUTOMATION] Card {card_id} atribuído a usuário {updated_card.assigned_to_id}, disparando trigger card_assigned")
+                        automation_service.process_trigger(
+                            board_id=board.id,
+                            trigger_event="card_assigned",
+                            card=updated_card,
+                            user=current_user,
+                            trigger_data={"assigned_to_id": updated_card.assigned_to_id}
                         )
         except Exception as e:
             # Log do erro mas não falha a atualização do card
@@ -1495,6 +1511,25 @@ class CardService:
 
         # Cria ou atualiza o valor
         field_value = self.field_repository.create_or_update_value(card_id, field_data)
+
+        # Dispara trigger field_changed para automações
+        try:
+            AutomationService = get_automation_service()
+            automation_service = AutomationService(self.db)
+            automation_service.process_trigger(
+                board_id=board_id,
+                trigger_event="field_changed",
+                card=card,
+                user=current_user,
+                trigger_data={
+                    "field_definition_id": field_value.field_definition_id,
+                    "field_name": field_def.name if field_def else None,
+                    "new_value": field_value.value
+                }
+            )
+        except Exception as e:
+            # Log do erro mas não falha a atualização do campo
+            print(f"[AUTOMATION] Erro ao disparar trigger field_changed: {e}")
 
         return CardFieldValueResponse(
             id=field_value.id,

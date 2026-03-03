@@ -9,6 +9,7 @@ import AwardBadgeModal from "../components/settings/AwardBadgeModal";
 import api4comService, { API4ComConfig, UserExtension, API4ComConfigCreate, UserExtensionCreate } from "../services/api4comService";
 import auditLogService, { AuditLog } from "../services/auditLogService";
 import { showSuccess, showError, showWarning } from "../utils/toast";
+import { useConfirm } from "../contexts/ConfirmContext";
 import type { User } from "../types";
 import { LoadingSpinner } from "../components/common";
 import avatarService from "../services/avatarService";
@@ -17,6 +18,7 @@ type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
+  const { confirm } = useConfirm();
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [loading, setLoading] = useState(false);
 
@@ -288,9 +290,13 @@ const Settings: React.FC = () => {
   const handleDeleteAvatar = async () => {
     if (!user?.avatar_url) return;
 
-    if (!confirm("Tem certeza que deseja remover sua foto de perfil?")) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Remover foto de perfil",
+      message: "Tem certeza que deseja remover sua foto de perfil?",
+      confirmText: "Remover",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       setUploadingAvatar(true);
@@ -378,9 +384,13 @@ const Settings: React.FC = () => {
   };
 
   const handleDeleteBadge = async (badge: Badge) => {
-    if (!window.confirm(`Tem certeza que deseja deletar a badge "${badge.name}"?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Deletar Badge",
+      message: `Tem certeza que deseja deletar a badge "${badge.name}"?`,
+      confirmText: "Deletar",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await gamificationService.deleteBadge(badge.id);
@@ -463,9 +473,13 @@ const Settings: React.FC = () => {
   };
 
   const handleInitializeActionPoints = async () => {
-    if (!confirm("Deseja inicializar as configurações padrão de pontos? Isso irá criar as ações padrão do sistema.")) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Inicializar configurações de pontos",
+      message: "Deseja inicializar as configurações padrão de pontos? Isso irá criar as ações padrão do sistema.",
+      confirmText: "Inicializar",
+      isDanger: false,
+    });
+    if (!confirmed) return;
 
     try {
       setLoadingPoints(true);
@@ -650,7 +664,13 @@ const Settings: React.FC = () => {
   };
 
   const handleDeleteApi4comExtension = async (userId: number, userName: string) => {
-    if (!confirm(`Deseja remover o ramal de ${userName}?`)) return;
+    const confirmed = await confirm({
+      title: "Remover ramal",
+      message: `Deseja remover o ramal de ${userName}?`,
+      confirmText: "Remover",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await api4comService.deleteExtension(userId);

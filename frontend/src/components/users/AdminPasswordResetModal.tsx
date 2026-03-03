@@ -3,6 +3,7 @@ import { Key, AlertCircle } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import { User } from "../../types";
 import { LoadingSpinner } from "../common";
+import { showError } from "../../utils/toast";
 
 interface AdminPasswordResetModalProps {
   isOpen: boolean;
@@ -82,6 +83,7 @@ const AdminPasswordResetModal: React.FC<AdminPasswordResetModalProps> = ({
       }
     } catch (error) {
       console.error("Erro ao resetar senha:", error);
+      showError("Erro ao resetar a senha. Tente novamente.");
     } finally {
       setLoading(false);
     }

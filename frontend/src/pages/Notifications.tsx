@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { showError } from "../utils/toast";
+import { useConfirm } from "../contexts/ConfirmContext";
 import {
   Bell,
   Check,
@@ -22,6 +24,7 @@ import { Pagination } from "../components/common";
 import { Notification, NotificationType } from "../types";
 
 const Notifications: React.FC = () => {
+  const { confirm } = useConfirm();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -72,6 +75,7 @@ const Notifications: React.FC = () => {
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error("Erro ao marcar como lida:", error);
+      showError("Erro ao marcar notificação como lida");
     }
   };
 
@@ -82,11 +86,18 @@ const Notifications: React.FC = () => {
       setUnreadCount(0);
     } catch (error) {
       console.error("Erro ao marcar todas como lidas:", error);
+      showError("Erro ao marcar todas as notificações como lidas");
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Tem certeza que deseja deletar esta notificação?")) return;
+    const confirmed = await confirm({
+      title: "Deletar notificação",
+      message: "Tem certeza que deseja deletar esta notificação?",
+      confirmText: "Deletar",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await notificationService.delete(id);
@@ -94,11 +105,18 @@ const Notifications: React.FC = () => {
       setTotal(prev => prev - 1);
     } catch (error) {
       console.error("Erro ao deletar notificação:", error);
+      showError("Erro ao deletar notificação");
     }
   };
 
   const handleDeleteAllRead = async () => {
-    if (!confirm("Tem certeza que deseja deletar todas as notificações lidas?")) return;
+    const confirmed = await confirm({
+      title: "Deletar notificações lidas",
+      message: "Tem certeza que deseja deletar todas as notificações lidas? Esta ação não pode ser desfeita.",
+      confirmText: "Deletar todas",
+      isDanger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await notificationService.deleteAllRead();
@@ -106,6 +124,7 @@ const Notifications: React.FC = () => {
       setTotal(notifications.filter(n => !n.is_read).length);
     } catch (error) {
       console.error("Erro ao deletar notificações lidas:", error);
+      showError("Erro ao deletar notificações lidas");
     }
   };
 

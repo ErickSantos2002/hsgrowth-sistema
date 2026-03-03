@@ -4,6 +4,7 @@ import './styles/index.css';
 import AppRoutes from './router';
 import { DashboardProvider } from './context/DashboardContext';
 import { useTheme } from './context/ThemeContext';
+import { ConfirmProvider } from './contexts/ConfirmContext';
 
 // Estilos do Toaster separados por tema para facilitar manutenção
 const toastDarkStyle = {
@@ -51,7 +52,11 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <DashboardProvider>
-      <AppContent />
+      {/* ConfirmProvider deve envolver toda a árvore para que qualquer
+          componente possa usar useConfirm() sem gerenciar estado local */}
+      <ConfirmProvider>
+        <AppContent />
+      </ConfirmProvider>
     </DashboardProvider>
   );
 };

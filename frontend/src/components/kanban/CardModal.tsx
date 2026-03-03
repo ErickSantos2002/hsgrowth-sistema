@@ -5,6 +5,7 @@ import { BaseModal, FormField, Input, Select, Textarea, Button, Alert } from "..
 import userService from "../../services/userService";
 import { User as UserType } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
+import { showError } from "../../utils/toast";
 
 interface CardModalProps {
   isOpen: boolean;
@@ -72,6 +73,7 @@ const CardModal: React.FC<CardModalProps> = ({
       setSDRs(sdrs);
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
+      showError("Erro ao carregar lista de usuários. Tente novamente.");
     }
   };
 
