@@ -97,7 +97,7 @@ export const ACQUISITION_CHANNEL_DETAILS: Record<string, string[]> = {
     "Inbound - Tráfego pago",
     "Inbound - SEO",
     "Inbound - Email marketing",
-    "Inbound - Levantada de mão (site / WhatsApp / formulário)",
+    "Inbound - Levantada de mão",
   ],
   "Outbound": [
     "Outbound - Lista fria",
