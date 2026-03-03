@@ -165,10 +165,48 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
   };
 
   /**
-   * Lê o HTML do contenteditable para salvar no banco
+   * Converte o HTML do contenteditable em texto puro preservando quebras de linha.
+   * Substitui <br> e blocos (div, p) por \n e retorna o innerText limpo.
+   */
+  const convertEditorToText = (div: HTMLDivElement): string => {
+    const clone = div.cloneNode(true) as HTMLElement;
+
+    // Substitui cada <br> por um marcador de quebra de linha
+    clone.querySelectorAll("br").forEach((br) => {
+      br.replaceWith("\n");
+    });
+
+    // Adiciona \n antes de cada bloco (div, p) para preservar parágrafos
+    clone.querySelectorAll("div, p").forEach((block) => {
+      block.prepend(document.createTextNode("\n"));
+    });
+
+    // innerText respeitará os \n inseridos e ignorará tags restantes
+    const text = clone.innerText ?? clone.textContent ?? "";
+
+    // Normaliza quebras de linha excessivas (máximo 2 consecutivas)
+    return text.replace(/\n{3,}/g, "\n\n");
+  };
+
+  /**
+   * Lê o conteúdo do contenteditable para salvar no banco.
+   * - Se houver imagens: mantém HTML mas converte &nbsp; em espaços normais.
+   * - Caso contrário: converte para texto puro preservando quebras de linha.
    */
   const getContent = (divRef: React.RefObject<HTMLDivElement | null>): string => {
-    return divRef.current?.innerHTML.trim() ?? "";
+    if (!divRef.current) return "";
+
+    const hasImages = divRef.current.querySelectorAll("img").length > 0;
+
+    if (hasImages) {
+      // Mantém HTML apenas quando há imagens, normalizando espaços
+      return divRef.current.innerHTML
+        .replace(/&nbsp;/g, " ")
+        .trim();
+    }
+
+    // Texto puro: converte o HTML do editor para texto com \n reais
+    return convertEditorToText(divRef.current).trim();
   };
 
   /**

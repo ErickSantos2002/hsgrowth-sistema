@@ -18,15 +18,29 @@ interface NoteRendererProps {
  * Para HTML, faz parsing e exibe em formato organizado
  */
 const NoteRenderer: React.FC<NoteRendererProps> = ({ content }) => {
-  // Detecta se o conteúdo contém HTML
-  const isHTML = /<[^>]+>/.test(content);
+  // Detecta imagens do editor (coladas via Ctrl+V como base64 ou blob)
+  const hasEditorImages = /<img\s[^>]*>/i.test(content);
 
-  if (!isHTML) {
-    // Conteúdo texto simples - renderiza normalmente
+  // Detecta HTML importado externo: qualquer tag HTML além de <img> e <br>
+  // Notas criadas pelo editor com texto puro são salvas como texto sem tags
+  const isImportedHTML = !hasEditorImages && /<(?!br\b|img\b)[^>]+>/i.test(content);
+
+  if (!hasEditorImages && !isImportedHTML) {
+    // Texto puro (incluindo quebras de linha \n) - renderiza normalmente
     return <p className="whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{content}</p>;
   }
 
-  // Conteúdo HTML - faz parsing e renderiza organizado
+  if (hasEditorImages) {
+    // Nota com imagem(ns) colada(s) pelo editor — renderiza o HTML sem aviso
+    return (
+      <div
+        className="note-content text-sm text-slate-600 dark:text-slate-300 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1"
+        dangerouslySetInnerHTML={{ __html: sanitizeHTML(content) }}
+      />
+    );
+  }
+
+  // HTML externo/importado — tenta parsear como conversa WhatsApp
   const messages = parseWhatsAppHTML(content);
 
   if (messages.length === 0) {

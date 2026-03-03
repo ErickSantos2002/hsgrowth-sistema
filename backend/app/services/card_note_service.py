@@ -6,7 +6,6 @@ from typing import List
 from fastapi import HTTPException, status
 
 from app.repositories.card_note_repository import CardNoteRepository
-from app.repositories.activity_repository import ActivityRepository
 from app.models.user import User
 from app.schemas.card_note import CardNoteCreate, CardNoteUpdate, CardNoteResponse
 
@@ -17,33 +16,6 @@ class CardNoteService:
     def __init__(self, db: Session):
         self.db = db
         self.repository = CardNoteRepository(db)
-        self.activity_repository = ActivityRepository(db)
-
-    def _log_activity(
-        self,
-        card_id: int,
-        user_id: int,
-        activity_type: str,
-        description: str,
-        metadata: dict = None
-    ):
-        """
-        Registra uma atividade no histórico do card
-
-        Args:
-            card_id: ID do card
-            user_id: ID do usuário que executou a ação
-            activity_type: Tipo da atividade
-            description: Descrição legível
-            metadata: Dados adicionais em JSON
-        """
-        self.activity_repository.create(
-            card_id=card_id,
-            user_id=user_id,
-            activity_type=activity_type,
-            description=description,
-            activity_metadata=metadata or {}
-        )
 
     def create_note(self, note_data: CardNoteCreate, current_user: User) -> CardNoteResponse:
         """
@@ -61,19 +33,6 @@ class CardNoteService:
             card_id=note_data.card_id,
             user_id=current_user.id,
             content=note_data.content
-        )
-
-        # Registra no histórico
-        preview = note_data.content[:50] + "..." if len(note_data.content) > 50 else note_data.content
-        self._log_activity(
-            card_id=note_data.card_id,
-            user_id=current_user.id,
-            activity_type="note_added",
-            description=f"Anotação adicionada: {preview}",
-            metadata={
-                "note_id": note.id,
-                "note_preview": preview
-            }
         )
 
         # Retorna response
@@ -177,19 +136,6 @@ class CardNoteService:
         # Atualiza
         updated_note = self.repository.update(note_id, note_data.content)
 
-        # Registra no histórico
-        preview = note_data.content[:50] + "..." if len(note_data.content) > 50 else note_data.content
-        self._log_activity(
-            card_id=note.card_id,
-            user_id=current_user.id,
-            activity_type="note_edited",
-            description=f"Anotação editada: {preview}",
-            metadata={
-                "note_id": note.id,
-                "note_preview": preview
-            }
-        )
-
         return CardNoteResponse(
             id=updated_note.id,
             card_id=updated_note.card_id,
@@ -231,16 +177,3 @@ class CardNoteService:
 
         # Deleta
         self.repository.delete(note_id)
-
-        # Registra no histórico
-        preview = note.content[:50] + "..." if len(note.content) > 50 else note.content
-        self._log_activity(
-            card_id=card_id,
-            user_id=current_user.id,
-            activity_type="note_deleted",
-            description=f"Anotação deletada: {preview}",
-            metadata={
-                "note_id": note_id,
-                "note_preview": preview
-            }
-        )
