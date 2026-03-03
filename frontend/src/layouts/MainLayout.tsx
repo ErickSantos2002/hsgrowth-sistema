@@ -232,7 +232,7 @@ export default function MainLayout() {
                         {/* Ações do topo */}
                         <div className="order-2 ml-auto flex flex-shrink-0 items-center gap-3 sm:order-3 sm:ml-auto">
                             {/* Avatar + Info do Usuário */}
-                            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-100/50 px-3 py-2 transition-all hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/50 dark:hover:bg-slate-800/70">
+                            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-100/50 px-3 py-1 transition-all hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/50 dark:hover:bg-slate-800/70">
                                 {/* Avatar com indicador online */}
                                 <UserAvatar
                                     userId={user?.id}

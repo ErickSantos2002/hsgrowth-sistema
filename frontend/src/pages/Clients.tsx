@@ -118,7 +118,7 @@ const Clients: React.FC = () => {
         {/* Botão de filtros */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 rounded-lg border px-4 py-2 transition-colors ${
+          className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors ${
             showFilters
               ? "border-emerald-600 bg-emerald-600 text-white"
               : "border-gray-300 bg-white text-slate-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"

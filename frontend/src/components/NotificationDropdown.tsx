@@ -153,7 +153,7 @@ const NotificationDropdown: React.FC = () => {
       {/* Botão de Notificações */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative rounded-lg p-2 text-slate-400 dark:text-slate-400 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
+        className="relative rounded-lg p-2.5 text-slate-500 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-white"
         title="Notificações"
       >
         <Bell size={20} />

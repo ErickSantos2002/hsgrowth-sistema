@@ -294,7 +294,7 @@ const Dashboard: React.FC = () => {
           {/* Botão Refresh */}
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-slate-900 transition-all hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:text-white dark:hover:bg-slate-700/80"
+            className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-slate-900 transition-all hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:text-white dark:hover:bg-slate-700/80"
           >
             <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline">Atualizar</span>
@@ -302,7 +302,7 @@ const Dashboard: React.FC = () => {
 
           {/* Botão Exportar */}
           <div className="group relative">
-            <button className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-2 text-green-400 transition-all hover:bg-green-500/30">
+            <button className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-2 text-sm text-green-400 transition-all hover:bg-green-500/30">
               <Download className="h-6 w-6 sm:h-4 sm:w-4 text-slate-900 dark:text-green-400" />
               <span className="hidden sm:inline text-slate-900 dark:text-green-400">Exportar</span>
             </button>
@@ -749,7 +749,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
       >
         <span className="flex items-center gap-2 truncate">
           {icon}

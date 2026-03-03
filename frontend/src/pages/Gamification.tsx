@@ -237,7 +237,7 @@ const Gamification: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsUserMenuOpen((open) => !open)}
-              className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white md:w-auto"
+              className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white md:w-auto"
             >
               <span className="flex items-center gap-2">
                 <img
