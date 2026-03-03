@@ -101,6 +101,9 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
       borderRadius: '8px',
       fontSize: '12px',
     },
+    wrapperStyle: {
+      zIndex: 9999,
+    },
   };
 
   /** Renderiza o Legend com cor de texto do tema */
