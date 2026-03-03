@@ -452,7 +452,7 @@ const CardDetails: React.FC = () => {
                   <>
                     <button
                       onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
+                      className="flex h-12 cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 font-medium transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
                     >
                       <UserAvatar
                         userId={assignedUser?.id}
@@ -531,7 +531,7 @@ const CardDetails: React.FC = () => {
                   </>
                 ) : (
                   // Vendedor - apenas visualização (sem seta)
-                  <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-700/50 dark:bg-slate-800/80">
+                  <div className="flex h-12 items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-800/80">
                     <UserAvatar
                       userId={assignedUser?.id}
                       userName={assignedUser?.name || "?"}
@@ -551,7 +551,7 @@ const CardDetails: React.FC = () => {
                     <>
                       <button
                         onClick={() => setShowSdrDropdown(!showSdrDropdown)}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
+                        className="flex h-12 cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 font-medium transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
                       >
                         <UserAvatar
                           userId={sdrUser?.id}
@@ -630,7 +630,7 @@ const CardDetails: React.FC = () => {
                     </>
                   ) : (
                     // Vendedor - apenas visualização (sem seta)
-                    <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-700/50 dark:bg-slate-800/80">
+                    <div className="flex h-12 items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-800/80">
                       <UserAvatar
                         userId={sdrUser?.id}
                         userName={sdrUser?.name || "SDR"}
@@ -647,7 +647,7 @@ const CardDetails: React.FC = () => {
               {!card.is_won && !card.is_lost && (
                 <button
                   onClick={handleMarkAsWon}
-                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 font-medium text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-700 hover:to-emerald-600"
+                  className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 font-medium text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-700 hover:to-emerald-600"
                 >
                   <CheckCircle2 size={18} />
                   Ganho
@@ -658,7 +658,7 @@ const CardDetails: React.FC = () => {
               {!card.is_won && !card.is_lost && (
                 <button
                   onClick={handleMarkAsLost}
-                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-500 px-4 py-2 font-medium text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-700 hover:to-red-600"
+                  className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-500 px-4 font-medium text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-700 hover:to-red-600"
                 >
                   <XCircle size={18} />
                   Perdido
@@ -670,7 +670,7 @@ const CardDetails: React.FC = () => {
                 <button
                   onClick={handleAutoAssign}
                   disabled={isAutoAssigning}
-                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-2 font-medium text-white shadow-lg shadow-purple-500/20 transition-all hover:from-purple-700 hover:to-purple-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 px-4 font-medium text-white shadow-lg shadow-purple-500/20 transition-all hover:from-purple-700 hover:to-purple-600 disabled:cursor-not-allowed disabled:opacity-50"
                   title="Atribui automaticamente um vendedor via rodízio"
                 >
                   {isAutoAssigning ? (
@@ -711,21 +711,21 @@ const CardDetails: React.FC = () => {
 
               {/* Se já foi ganho ou perdido */}
               {card.is_won && (
-                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-4 py-2 font-medium text-emerald-400">
+                <div className="flex h-12 items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-4 font-medium text-emerald-400">
                   <CheckCircle2 size={18} />
                   Negócio Ganho
                 </div>
               )}
               {card.is_lost && (
                 <>
-                  <div className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 font-medium text-red-400">
+                  <div className="flex h-12 items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 font-medium text-red-400">
                     <XCircle size={18} />
                     Negócio Perdido
                   </div>
                   {/* Botão de reabertura - aparece somente para negócios perdidos */}
                   <button
                     onClick={() => setShowReopenModal(true)}
-                    className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-blue-600"
+                    className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-blue-600"
                     title="Cria um novo card a partir deste negócio perdido"
                   >
                     <RefreshCw size={18} />
