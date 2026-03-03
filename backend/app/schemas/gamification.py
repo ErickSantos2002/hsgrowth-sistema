@@ -37,6 +37,7 @@ class GamificationPointResponse(GamificationPointBase):
     """Dados de uma entrada de pontos de gamificação."""
     id: int = Field(..., description="ID único do registro de pontos")
     user_id: int = Field(..., description="ID do usuário")
+    user_name: Optional[str] = Field(None, description="Nome do usuário que ganhou os pontos")
     created_at: datetime = Field(..., description="Data e hora do registro")
 
     model_config = ConfigDict(
@@ -45,6 +46,7 @@ class GamificationPointResponse(GamificationPointBase):
             "example": {
                 "id": 1,
                 "user_id": 5,
+                "user_name": "João Silva",
                 "points": 20,
                 "reason": "card_won",
                 "description": "Card 'Projeto Alpha' ganho - valor R$ 50.000",
@@ -52,6 +54,15 @@ class GamificationPointResponse(GamificationPointBase):
             }
         }
     )
+
+
+class GamificationPointListResponse(BaseModel):
+    """Resposta paginada do histórico de pontos de gamificação."""
+    points: List[GamificationPointResponse] = Field(..., description="Lista de registros de pontos")
+    total: int = Field(..., description="Total de registros")
+    page: int = Field(..., description="Página atual")
+    page_size: int = Field(..., description="Itens por página")
+    total_pages: int = Field(..., description="Total de páginas")
 
 
 # ========== BADGE SCHEMAS ==========

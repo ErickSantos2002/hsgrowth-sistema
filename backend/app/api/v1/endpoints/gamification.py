@@ -6,10 +6,12 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body, Request, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user, require_role
+from app.api.deps import get_db, get_current_active_user, require_role, require_manager_or_admin
 from app.services.gamification_service import GamificationService
+from app.repositories.gamification_repository import GamificationRepository
 from app.schemas.gamification import (
     GamificationPointResponse,
+    GamificationPointListResponse,
     BadgeCreate,
     BadgeUpdate,
     BadgeResponse,
@@ -1158,3 +1160,174 @@ async def initialize_action_points(
     service = GamificationService(db)
     service.initialize_default_action_points()
     return {"message": "Configurações inicializadas com sucesso"}
+
+
+# ========== HISTÓRICO DE PONTOS ==========
+
+def _build_point_responses(points: list, user_name_map: dict) -> list:
+    """
+    Constrói lista de GamificationPointResponse com user_name preenchido.
+    Recebe um mapa {user_id: user_name} para evitar múltiplas queries ao banco.
+    """
+    return [
+        GamificationPointResponse(
+            id=p.id,
+            user_id=p.user_id,
+            user_name=user_name_map.get(p.user_id),
+            points=p.points,
+            reason=p.reason,
+            description=p.description,
+            created_at=p.created_at,
+        )
+        for p in points
+    ]
+
+
+@router.get(
+    "/points/me",
+    response_model=GamificationPointListResponse,
+    summary="Histórico de pontos do usuário logado",
+    responses={
+        200: {
+            "description": "Histórico de pontos retornado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "points": [
+                            {
+                                "id": 10,
+                                "user_id": 5,
+                                "user_name": "João Silva",
+                                "points": 20,
+                                "reason": "card_won",
+                                "description": "Card 'Projeto Alpha' ganho",
+                                "created_at": "2026-03-01T14:30:00"
+                            }
+                        ],
+                        "total": 42,
+                        "page": 1,
+                        "page_size": 20,
+                        "total_pages": 3
+                    }
+                }
+            }
+        }
+    }
+)
+async def get_my_points_history(
+    page: int = Query(1, ge=1, description="Número da página"),
+    page_size: int = Query(20, ge=1, le=100, description="Itens por página"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Retorna o histórico paginado de pontos do usuário logado,
+    ordenado por data decrescente (mais recentes primeiro).
+    """
+    repo = GamificationRepository(db)
+    skip = (page - 1) * page_size
+    points = repo.list_user_points(current_user.id, skip, page_size)
+    total = repo.count_user_points(current_user.id)
+    total_pages = max(1, (total + page_size - 1) // page_size)
+
+    # O user_name é sempre o próprio usuário logado
+    user_name_map = {current_user.id: current_user.name}
+
+    return GamificationPointListResponse(
+        points=_build_point_responses(points, user_name_map),
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
+
+
+@router.get(
+    "/points",
+    response_model=GamificationPointListResponse,
+    summary="Histórico de pontos de toda a equipe (admin/manager)",
+    responses={
+        200: {
+            "description": "Histórico global de pontos retornado com sucesso"
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores e gerentes"
+        }
+    }
+)
+async def get_all_points_history(
+    page: int = Query(1, ge=1, description="Número da página"),
+    page_size: int = Query(20, ge=1, le=100, description="Itens por página"),
+    current_user: User = Depends(require_manager_or_admin()),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Retorna o histórico paginado de pontos de todos os usuários (visão da equipe).
+    Apenas administradores e gerentes podem acessar este endpoint.
+    """
+    repo = GamificationRepository(db)
+    skip = (page - 1) * page_size
+    points = repo.list_all_points(skip, page_size)
+    total = repo.count_all_points()
+    total_pages = max(1, (total + page_size - 1) // page_size)
+
+    # Busca nomes dos usuários em uma única query para não fazer N+1
+    user_ids = list({p.user_id for p in points})
+    users = db.query(User.id, User.name).filter(User.id.in_(user_ids)).all()
+    user_name_map = {u.id: u.name for u in users}
+
+    return GamificationPointListResponse(
+        points=_build_point_responses(points, user_name_map),
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
+
+
+@router.get(
+    "/points/users/{user_id}",
+    response_model=GamificationPointListResponse,
+    summary="Histórico de pontos de um usuário específico (admin/manager)",
+    responses={
+        200: {
+            "description": "Histórico de pontos retornado com sucesso"
+        },
+        403: {
+            "description": "Acesso negado - apenas administradores e gerentes",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Permissão insuficiente. Requer role: admin"}
+                }
+            }
+        }
+    }
+)
+async def get_user_points_history(
+    user_id: int = Path(..., description="ID do usuário"),
+    page: int = Query(1, ge=1, description="Número da página"),
+    page_size: int = Query(20, ge=1, le=100, description="Itens por página"),
+    current_user: User = Depends(require_manager_or_admin()),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Retorna o histórico paginado de pontos de um usuário específico.
+    Apenas administradores e gerentes podem acessar este endpoint.
+    """
+    repo = GamificationRepository(db)
+    skip = (page - 1) * page_size
+    points = repo.list_user_points(user_id, skip, page_size)
+    total = repo.count_user_points(user_id)
+    total_pages = max(1, (total + page_size - 1) // page_size)
+
+    # Busca o nome do usuário alvo
+    target_user = db.query(User.id, User.name).filter(User.id == user_id).first()
+    user_name_map = {user_id: target_user.name} if target_user else {}
+
+    return GamificationPointListResponse(
+        points=_build_point_responses(points, user_name_map),
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )

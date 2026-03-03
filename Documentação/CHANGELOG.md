@@ -7,6 +7,113 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.7] - 2026-03-03
+
+### Adicionado
+
+#### Gamificação — Histórico de pontos contextual por perfil
+- **Vendedor**: vê apenas o próprio histórico (`GET /points/me`)
+- **Gerente/Admin com usuário específico selecionado**: vê o histórico daquele vendedor (`GET /points/users/{id}`)
+- **Gerente/Admin com visão "Equipe"**: novo endpoint `GET /points` retorna histórico de toda a equipe com `user_name` em cada registro
+- Coluna "Usuário" aparece dinamicamente na tabela apenas na visão de equipe (quando `user_name` está preenchido)
+- Campo `user_name: Optional[str]` adicionado ao `GamificationPointResponse`
+- Helper `_build_point_responses()` no endpoint — monta a lista com `user_name` a partir de um dicionário `{user_id: name}`, evitando N+1 queries
+- Novos métodos no `GamificationRepository`: `list_all_points()` e `count_all_points()`
+- Novo método no `gamificationService.ts`: `getAllPointsHistory()`
+
+#### `require_manager_or_admin()` em `deps.py`
+- Nova dependency reutilizável que aceita roles `"manager"` **ou** `"admin"`
+- `require_role()` existente faz verificação de igualdade exata — admins recebiam 403 ao tentar acessar endpoints marcados como `require_role("manager")`
+- Utilizada nos endpoints `GET /points` e `GET /points/users/{id}`
+
+### Corrigido
+
+- **Bug**: admin recebia 403 ao carregar histórico de pontos da equipe porque `require_role("manager")` não permite role `"admin"` (verificação exata de string)
+- **Comportamento**: ao trocar usuário no dropdown (gerente/admin), `historyPage` é resetado para 1 para evitar página inválida no novo contexto
+
+### Arquivos Modificados
+- `backend/app/api/deps.py` — nova função `require_manager_or_admin()`
+- `backend/app/schemas/gamification.py` — campo `user_name` em `GamificationPointResponse`
+- `backend/app/repositories/gamification_repository.py` — `list_all_points()`, `count_all_points()`
+- `backend/app/api/v1/endpoints/gamification.py` — `GET /points` (global), helper `_build_point_responses()`, `require_manager_or_admin()` nos endpoints de manager
+- `frontend/src/services/gamificationService.ts` — `user_name` em `GamificationPointRecord`, `getAllPointsHistory()`
+- `frontend/src/pages/Gamification.tsx` — lógica contextual em `loadPointsHistory()`, coluna "Usuário" dinâmica, reset de página ao trocar usuário
+
+---
+
+## [1.3.6] - 2026-03-03
+
+### Adicionado
+
+#### Gamificação — Histórico de pontos (implementação base)
+- **Novo endpoint** `GET /api/v1/gamification/points/me` — histórico paginado do usuário logado (qualquer role)
+- **Novo endpoint** `GET /api/v1/gamification/points/users/{user_id}` — histórico de usuário específico (manager/admin)
+- **Novo schema** `GamificationPointListResponse` com paginação (`points`, `total`, `page`, `page_size`, `total_pages`)
+- **Novo método** `count_user_points(user_id)` no `GamificationRepository` para total de registros
+- **Nova aba "Histórico"** na página de Gamificação (`/gamification`):
+  - Tabela com colunas: Data/Hora, Ação (chip com `reason`), Pontos (verde `+N` / vermelho `-N`), Descrição
+  - Estado vazio com ícone e mensagem orientativa
+  - Paginação com botões Anterior/Próxima (exibida só quando `total_pages > 1`)
+  - Loading spinner durante requisição
+- Novos métodos em `gamificationService.ts`: `getMyPointsHistory()`, `getUserPointsHistory()`
+- Nova interface `GamificationPointRecord` e `GamificationPointListResponse` no frontend
+
+### Arquivos Criados / Modificados
+- `backend/app/schemas/gamification.py` — `GamificationPointListResponse`
+- `backend/app/repositories/gamification_repository.py` — `count_user_points()`
+- `backend/app/api/v1/endpoints/gamification.py` — `GET /points/me`, `GET /points/users/{id}`
+- `frontend/src/services/gamificationService.ts` — interfaces e métodos de histórico
+- `frontend/src/pages/Gamification.tsx` — aba "Histórico" com tabela paginada
+
+---
+
+## [1.3.5] - 2026-03-03
+
+### Adicionado
+
+#### Tratamento de Erros — `ConfirmContext` global
+- **Novo contexto** `src/contexts/ConfirmContext.tsx` com `ConfirmProvider` e hook `useConfirm()`
+- Padrão Promise-based: `await confirm({ title, message, confirmText, isDanger })` retorna `true`/`false`
+- Substitui ~20 chamadas `window.confirm()` nativas em todo o sistema por modal estilizado (`ConfirmModal`)
+- `ConfirmProvider` adicionado ao `App.tsx` junto com os demais providers globais
+
+#### Tratamento de Erros — `showError()` nos catch blocks
+- `showError()` / `handleError()` adicionados em ~17 arquivos que tinham `catch` blocks com apenas `console.error`
+- Usuário agora recebe feedback visual (toast) em erros de API em vez de silêncio
+- Arquivos cobertos: `NotificationDropdown`, `GlobalSearch`, `NodeConfigPanel`, `FilesSection`, `ClientModal`, `PersonModal`, `ProductModal`, `CardModal`, `CardActivitiesModal`, `Gamification`, `Notifications`, e outros
+
+#### Automações — Triggers faltantes integrados
+- **`card_assigned`**: `card_service.py` captura `old_assigned_to_id` antes do update e dispara o trigger quando `assigned_to_id` muda
+- **`field_changed`**: disparado ao final de `add_or_update_field_value()` com `field_definition_id`, `field_name` e `new_value` no `trigger_data`
+
+#### Automações — Actions implementadas
+- **`send_notification`**: cria notificações via `NotificationRepository` para lista de `user_ids` ou responsável do card
+- **`award_points`**: chama `GamificationRepository.create_point()` com pontos configuráveis (padrão: 10)
+- **`update_field`**: atualiza campos permitidos do card via `setattr` (`title`, `value`, `due_date`, `description`)
+
+#### Automações — Modal de histórico de execuções
+- **Botão "Histórico"** em cada card de automação na listagem
+- `ExecutionHistoryModal` com filtro por status (Todas/Sucesso/Falha/Pendente), tabela paginada e tecla ESC para fechar
+- Colunas: Data/Hora (`started_at`), Status (badge colorido), Duração (`duration_ms` formatado em ms/s), Detalhe (`error_message` ou "—")
+
+### Corrigido
+
+- **"Invalid Date" e duração vazia** no histórico de execuções: frontend usava `executed_at` e `execution_duration_ms` mas o backend retorna `started_at` e `duration_ms` — corrigido em `automationService.ts` e `Automations.tsx`
+- **`AutomationExecution` interface** atualizada para refletir os campos reais do `AutomationExecutionResponse` do backend
+
+### Arquivos Criados
+- `frontend/src/contexts/ConfirmContext.tsx`
+
+### Arquivos Modificados
+- `frontend/src/App.tsx` — `ConfirmProvider` adicionado
+- `frontend/src/services/automationService.ts` — interface `AutomationExecution` corrigida
+- `frontend/src/pages/Automations.tsx` — `ExecutionHistoryModal`, botão "Histórico", estados de paginação
+- `backend/app/services/card_service.py` — triggers `card_assigned` e `field_changed`
+- `backend/app/services/automation_service.py` — actions `send_notification`, `award_points`, `update_field`
+- ~20 arquivos frontend — `window.confirm()` → `useConfirm()`, `console.error` → `showError()`
+
+---
+
 ## [1.3.4] - 2026-03-02
 
 ### Adicionado

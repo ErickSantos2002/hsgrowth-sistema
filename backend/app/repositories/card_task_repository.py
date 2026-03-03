@@ -4,7 +4,7 @@ Repository para CardTask - Gerenciamento de tarefas/atividades dos cards.
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.models.card_task import CardTask
 from app.models.card import Card
@@ -126,6 +126,28 @@ class CardTaskRepository:
             query = query.filter(CardTask.assigned_to_id == user_id)
 
         return query.order_by(CardTask.due_date.asc()).all()
+
+    def get_tasks_due_soon(self, hours_ahead: int = 24) -> List[CardTask]:
+        """
+        Busca tarefas pendentes que vencerão dentro de N horas.
+        Usada pelo job do scheduler para enviar notificações preventivas.
+
+        Args:
+            hours_ahead: Janela de tempo em horas para considerar "próximo do vencimento"
+
+        Returns:
+            Lista de tarefas com assigned_to_id definido e due_date dentro da janela
+        """
+        now = datetime.utcnow()
+        limit = now + timedelta(hours=hours_ahead)
+
+        return self.db.query(CardTask).filter(
+            CardTask.is_completed == False,
+            CardTask.due_date.isnot(None),
+            CardTask.due_date >= now,
+            CardTask.due_date <= limit,
+            CardTask.assigned_to_id.isnot(None)
+        ).all()
 
     def update(self, task_id: int, task_data: CardTaskUpdate) -> Optional[CardTask]:
         """Atualiza uma tarefa"""

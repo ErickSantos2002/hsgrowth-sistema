@@ -110,6 +110,45 @@ class GamificationRepository:
             GamificationPoint.user_id == user_id
         ).order_by(GamificationPoint.created_at.desc()).offset(skip).limit(limit).all()
 
+    def count_user_points(self, user_id: int) -> int:
+        """
+        Conta o total de registros de pontos de um usuário (para paginação).
+
+        Args:
+            user_id: ID do usuário
+
+        Returns:
+            Total de registros
+        """
+        return self.db.query(func.count(GamificationPoint.id)).filter(
+            GamificationPoint.user_id == user_id
+        ).scalar() or 0
+
+    def list_all_points(self, skip: int = 0, limit: int = 100) -> List[GamificationPoint]:
+        """
+        Lista pontos de todos os usuários ordenados por data decrescente.
+        Usado por admin/manager para ver o histórico global da equipe.
+
+        Args:
+            skip: Paginação - offset
+            limit: Paginação - limite
+
+        Returns:
+            Lista de GamificationPoint
+        """
+        return self.db.query(GamificationPoint).order_by(
+            GamificationPoint.created_at.desc()
+        ).offset(skip).limit(limit).all()
+
+    def count_all_points(self) -> int:
+        """
+        Conta o total de registros de pontos de todos os usuários.
+
+        Returns:
+            Total de registros
+        """
+        return self.db.query(func.count(GamificationPoint.id)).scalar() or 0
+
     # ========== BADGES ==========
 
     def create_badge(self, badge_data: BadgeCreate) -> GamificationBadge:

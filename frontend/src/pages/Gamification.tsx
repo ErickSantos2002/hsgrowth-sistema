@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Trophy, Medal, Award, Star, TrendingUp, Crown, Target, Zap, Users as UsersIcon, ChevronDown } from "lucide-react";
-import gamificationService, { GamificationSummary, Badge, UserBadge, Ranking } from "../services/gamificationService";
+import { Trophy, Medal, Award, Star, TrendingUp, Crown, Target, Zap, Users as UsersIcon, ChevronDown, History, ChevronLeft, ChevronRight } from "lucide-react";
+import gamificationService, { GamificationSummary, Badge, UserBadge, Ranking, GamificationPointRecord } from "../services/gamificationService";
 import { useAuth } from "../hooks/useAuth";
 import userService from "../services/userService";
 import { User } from "../types";
@@ -9,8 +9,15 @@ import { showError } from "../utils/toast";
 
 const Gamification: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"profile" | "rankings" | "badges">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "rankings" | "badges" | "history">("profile");
   const [loading, setLoading] = useState(true);
+
+  // Estado do histórico de pontos
+  const [historyPoints, setHistoryPoints] = useState<GamificationPointRecord[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Controle de visualização para gerente/admin
   const isManagerOrAdmin = user?.role === "manager" || user?.role === "admin";
@@ -49,6 +56,13 @@ const Gamification: React.FC = () => {
     }
   }, [activeTab, rankingPeriod]);
 
+  // Carrega histórico de pontos quando entra na aba, muda de página ou muda o usuário selecionado
+  useEffect(() => {
+    if (activeTab === "history") {
+      loadPointsHistory();
+    }
+  }, [activeTab, historyPage, selectedUserId]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (!userMenuRef.current) return;
@@ -62,8 +76,10 @@ const Gamification: React.FC = () => {
   }, []);
 
   // Carrega dados quando o usuário selecionado muda (para gerente/admin)
+  // Também reseta a paginação do histórico para não ficar em página inválida
   useEffect(() => {
     if (isManagerOrAdmin && selectedUserId !== null) {
+      setHistoryPage(1);
       if (selectedUserId === "team") {
         loadTeamStats();
       } else {
@@ -168,6 +184,37 @@ const Gamification: React.FC = () => {
       console.error("Erro ao carregar rankings:", error);
       showError("Erro ao carregar rankings. Tente novamente.");
       setRankings([]);
+    }
+  };
+
+  // Carrega o histórico de pontos de forma contextual:
+  // - Gerente/admin com visão "equipe" → todos os usuários (global)
+  // - Gerente/admin com usuário específico selecionado → pontos daquele usuário
+  // - Vendedor → apenas seus próprios pontos
+  const loadPointsHistory = async () => {
+    try {
+      setHistoryLoading(true);
+
+      let response;
+      if (isManagerOrAdmin && selectedUserId === "team") {
+        // Visão da equipe: retorna pontos de todos os usuários
+        response = await gamificationService.getAllPointsHistory(historyPage, 20);
+      } else if (isManagerOrAdmin && typeof selectedUserId === "number") {
+        // Usuário específico selecionado pelo gerente/admin
+        response = await gamificationService.getUserPointsHistory(selectedUserId, historyPage, 20);
+      } else {
+        // Vendedor vendo seu próprio histórico
+        response = await gamificationService.getMyPointsHistory(historyPage, 20);
+      }
+
+      setHistoryPoints(response.points);
+      setHistoryTotal(response.total);
+      setHistoryTotalPages(response.total_pages);
+    } catch (error) {
+      console.error("Erro ao carregar histórico de pontos:", error);
+      showError("Erro ao carregar histórico de pontos. Tente novamente.");
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -315,6 +362,19 @@ const Gamification: React.FC = () => {
           <div className="flex items-center gap-2">
             <TrendingUp size={16} />
             Rankings
+          </div>
+        </button>
+        <button
+          onClick={() => { setActiveTab("history"); setHistoryPage(1); }}
+          className={`border-b-2 px-4 py-2 font-medium transition-colors ${
+            activeTab === "history"
+              ? "border-emerald-400 text-emerald-400"
+              : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <History size={16} />
+            Histórico
           </div>
         </button>
         <button
@@ -641,6 +701,115 @@ const Gamification: React.FC = () => {
                     })}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Histórico de Pontos */}
+      {activeTab === "history" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {historyTotal} {historyTotal === 1 ? "registro" : "registros"} no total
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50">
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <LoadingSpinner />
+              </div>
+            ) : historyPoints.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-slate-500 dark:text-slate-400">
+                <History size={40} className="mb-3 opacity-40" />
+                <p className="font-medium">Nenhum ponto registrado ainda</p>
+                <p className="mt-1 text-sm">Complete atividades para ganhar pontos</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-left dark:border-slate-700">
+                      <th className="px-6 py-3 font-medium text-slate-500 dark:text-slate-400">Data / Hora</th>
+                      {/* Exibe coluna "Usuário" apenas quando os registros têm user_name preenchido (visão global do gerente/admin) */}
+                      {historyPoints.some((r) => r.user_name) && (
+                        <th className="px-6 py-3 font-medium text-slate-500 dark:text-slate-400">Usuário</th>
+                      )}
+                      <th className="px-6 py-3 font-medium text-slate-500 dark:text-slate-400">Ação</th>
+                      <th className="px-6 py-3 text-right font-medium text-slate-500 dark:text-slate-400">Pontos</th>
+                      <th className="px-6 py-3 font-medium text-slate-500 dark:text-slate-400">Descrição</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
+                    {historyPoints.map((record) => (
+                      <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                        <td className="whitespace-nowrap px-6 py-3 text-slate-500 dark:text-slate-400">
+                          {new Date(record.created_at).toLocaleString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                        {historyPoints.some((r) => r.user_name) && (
+                          <td className="px-6 py-3 font-medium text-slate-900 dark:text-white">
+                            {record.user_name || <span className="text-slate-400">—</span>}
+                          </td>
+                        )}
+                        <td className="px-6 py-3">
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                            {record.reason}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-right">
+                          <span
+                            className={`font-bold ${
+                              record.points >= 0
+                                ? "text-emerald-500"
+                                : "text-red-500"
+                            }`}
+                          >
+                            {record.points >= 0 ? "+" : ""}
+                            {record.points} pts
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-slate-600 dark:text-slate-300">
+                          {record.description || <span className="text-slate-400">—</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Paginação */}
+          {historyTotalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Página {historyPage} de {historyTotalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                  disabled={historyPage === 1}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/30"
+                >
+                  <ChevronLeft size={14} />
+                  Anterior
+                </button>
+                <button
+                  onClick={() => setHistoryPage((p) => Math.min(historyTotalPages, p + 1))}
+                  disabled={historyPage === historyTotalPages}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/30"
+                >
+                  Próxima
+                  <ChevronRight size={14} />
+                </button>
               </div>
             </div>
           )}

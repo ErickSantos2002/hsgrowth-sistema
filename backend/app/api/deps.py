@@ -209,6 +209,30 @@ def require_role(required_role: str):
     return role_checker
 
 
+def require_manager_or_admin():
+    """
+    Dependency que permite acesso a usuários com role 'manager' ou 'admin'.
+    Útil para endpoints que managers e admins compartilham, já que require_role()
+    faz verificação exata de um único role.
+
+    Returns:
+        Dependency function que verifica se o role é manager ou admin
+    """
+    async def checker(
+        current_user: User = Depends(get_current_active_user)
+    ) -> User:
+        """Verifica se o usuário é manager ou admin."""
+        allowed_roles = ("manager", "admin")
+        if not current_user.role or current_user.role.name not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso negado. Role necessário: manager ou admin"
+            )
+        return current_user
+
+    return checker
+
+
 def require_permission(required_permission: str):
     """
     Factory de dependency para verificar se o usuário tem uma permissão específica.

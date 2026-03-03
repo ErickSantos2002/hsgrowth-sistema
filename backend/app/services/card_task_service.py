@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 
 from app.repositories.card_task_repository import CardTaskRepository
 from app.repositories.activity_repository import ActivityRepository
+from app.repositories.notification_repository import NotificationRepository
 from app.models.card_task import CardTask
 from app.models.user import User
 from app.schemas.card_task import (
@@ -26,6 +27,7 @@ class CardTaskService:
         self.db = db
         self.repository = CardTaskRepository(db)
         self.activity_repository = ActivityRepository(db)
+        self.notification_repo = NotificationRepository(db)
 
     def _log_activity(
         self,
@@ -52,6 +54,21 @@ class CardTaskService:
             description=description,
             activity_metadata=metadata or {}
         )
+
+    def _check_task_permission(self, task: CardTask, current_user: User) -> None:
+        """
+        Verifica se o usuário tem permissão para editar ou deletar a tarefa.
+        Admin e manager sempre podem. Salesperson/SDR apenas se forem o responsável.
+        """
+        role_name = current_user.role.name if current_user.role else ""
+        is_privileged = role_name in ("admin", "manager")
+        is_assigned = task.assigned_to_id == current_user.id
+
+        if not is_privileged and not is_assigned:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Apenas o responsável pela tarefa, gerentes e administradores podem modificá-la."
+            )
 
     def create_task(self, task_data: CardTaskCreate, current_user: User) -> CardTaskResponse:
         """Cria uma nova tarefa"""
@@ -88,7 +105,25 @@ class CardTaskService:
             }
         )
 
-        # TODO: Enviar notificação se assigned_to_id != current_user.id
+        # Notifica o responsável se for diferente de quem criou a tarefa
+        if task.assigned_to_id and task.assigned_to_id != current_user.id:
+            try:
+                self.notification_repo.create({
+                    "user_id": task.assigned_to_id,
+                    "notification_type": "task_assigned",
+                    "title": "Nova tarefa atribuída a você",
+                    "message": f"{current_user.name} atribuiu a você: \"{task.title}\"",
+                    "icon": "check-square",
+                    "color": "info",
+                    "notification_metadata": {
+                        "task_id": task.id,
+                        "card_id": task.card_id,
+                        "assigned_by_id": current_user.id,
+                        "assigned_by_name": current_user.name
+                    }
+                })
+            except Exception as e:
+                print(f"[NOTIFICATION] Erro ao notificar tarefa atribuída: {e}")
 
         return self._build_response(task)
 
@@ -138,7 +173,11 @@ class CardTaskService:
                 detail=f"Tarefa {task_id} não encontrada"
             )
 
-        # TODO: Verificar permissões (apenas o responsável ou admin pode editar)
+        # Verifica permissão: admin/manager sempre podem; salesperson/SDR apenas se forem o responsável
+        self._check_task_permission(task, current_user)
+
+        # Captura o responsável anterior para detectar reatribuição
+        old_assigned_to_id = task.assigned_to_id
 
         updated_task = self.repository.update(task_id, task_data)
 
@@ -150,6 +189,27 @@ class CardTaskService:
             description=f"Tarefa editada: {task.title}",
             metadata={"task_id": task.id, "task_title": task.title}
         )
+
+        # Notifica o novo responsável se o assigned_to mudou e é diferente de quem editou
+        new_assigned_to_id = task_data.assigned_to_id if task_data.assigned_to_id is not None else old_assigned_to_id
+        if new_assigned_to_id and new_assigned_to_id != old_assigned_to_id and new_assigned_to_id != current_user.id:
+            try:
+                self.notification_repo.create({
+                    "user_id": new_assigned_to_id,
+                    "notification_type": "task_assigned",
+                    "title": "Nova tarefa atribuída a você",
+                    "message": f"{current_user.name} atribuiu a você: \"{updated_task.title}\"",
+                    "icon": "check-square",
+                    "color": "info",
+                    "notification_metadata": {
+                        "task_id": updated_task.id,
+                        "card_id": updated_task.card_id,
+                        "assigned_by_id": current_user.id,
+                        "assigned_by_name": current_user.name
+                    }
+                })
+            except Exception as e:
+                print(f"[NOTIFICATION] Erro ao notificar reatribuição de tarefa: {e}")
 
         return self._build_response(updated_task)
 
@@ -218,7 +278,8 @@ class CardTaskService:
                 detail=f"Tarefa {task_id} não encontrada"
             )
 
-        # TODO: Verificar permissões
+        # Verifica permissão: admin/manager sempre podem; salesperson/SDR apenas se forem o responsável
+        self._check_task_permission(task, current_user)
 
         # Salva informações antes de deletar para o histórico
         card_id = task.card_id

@@ -178,6 +178,44 @@ def job_check_overdue_cards():
         db.close()
 
 
+def job_check_overdue_tasks():
+    """
+    Job: Verifica tarefas próximas do vencimento e notifica os responsáveis.
+    Frequência: Diariamente às 07:00
+    """
+    db = SessionLocal()
+    try:
+        logger.info("[CRON] Verificando tarefas próximas do vencimento...")
+
+        from app.repositories.card_task_repository import CardTaskRepository
+
+        repo = CardTaskRepository(db)
+        tasks = repo.get_tasks_due_soon(hours_ahead=24)
+
+        notified_count = 0
+        for task in tasks:
+            try:
+                send_notification_task.delay(
+                    user_ids=[task.assigned_to_id],
+                    notification_type="task_due_soon",
+                    title="Tarefa próxima do vencimento",
+                    message=f"A tarefa \"{task.title}\" vence em menos de 24 horas",
+                    entity_id=task.id,
+                    entity_type="task",
+                    metadata={"card_id": task.card_id, "due_date": str(task.due_date)}
+                )
+                notified_count += 1
+            except Exception as e:
+                logger.warning(f"[CRON] Erro ao notificar tarefa {task.id}: {e}")
+
+        logger.success(f"[CRON] {notified_count} notificações de tarefas próximas do vencimento enviadas")
+
+    except Exception as e:
+        logger.error(f"[CRON] Erro ao verificar tarefas próximas do vencimento: {e}")
+    finally:
+        db.close()
+
+
 def job_report_failed_automations():
     """
     Job: Envia relatório de automações que falharam nas últimas 24h.
@@ -475,6 +513,15 @@ def configure_jobs():
         trigger=CronTrigger(hour=8, minute=0),
         id="check_overdue_cards",
         name="Verificar Cards Vencidos",
+        replace_existing=True
+    )
+
+    # 4b. Verificar tarefas próximas do vencimento - Diariamente às 07:00
+    sched.add_job(
+        job_check_overdue_tasks,
+        trigger=CronTrigger(hour=7, minute=0),
+        id="check_overdue_tasks",
+        name="Verificar Tarefas Próximas do Vencimento",
         replace_existing=True
     )
 

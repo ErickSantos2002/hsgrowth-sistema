@@ -9,6 +9,7 @@ import math
 from app.repositories.product_repository import ProductRepository
 from app.repositories.card_repository import CardRepository
 from app.repositories.activity_repository import ActivityRepository
+from app.repositories.notification_repository import NotificationRepository
 from app.models.product import Product
 from app.models.card_product import CardProduct
 from app.models.user import User
@@ -31,6 +32,7 @@ class ProductService:
         self.db = db
         self.repository = ProductRepository(db)
         self.activity_repository = ActivityRepository(db)
+        self.notification_repo = NotificationRepository(db)
 
     # ========== PRODUCT CATALOG ==========
 
@@ -205,6 +207,28 @@ class ProductService:
         except Exception as e:
             print(f"[ACTIVITY] Erro ao registrar adição de produto no histórico: {e}")
 
+        # Notifica o responsável do card se for diferente de quem adicionou o produto
+        try:
+            card = CardRepository(self.db).find_by_id(card_id)
+            if card and card.assigned_to_id and card.assigned_to_id != current_user.id:
+                self.notification_repo.create({
+                    "user_id": card.assigned_to_id,
+                    "notification_type": "product_added",
+                    "title": "Produto adicionado ao card",
+                    "message": f"{current_user.name} adicionou \"{product.name}\" ao card \"{card.title}\"",
+                    "icon": "package",
+                    "color": "info",
+                    "notification_metadata": {
+                        "card_id": card_id,
+                        "product_id": product.id,
+                        "product_name": product.name,
+                        "added_by_id": current_user.id,
+                        "added_by_name": current_user.name
+                    }
+                })
+        except Exception as e:
+            print(f"[NOTIFICATION] Erro ao notificar produto adicionado: {e}")
+
         # Atualiza o valor total do card
         self._sync_card_value_with_products(card_id)
 
@@ -294,6 +318,27 @@ class ProductService:
             )
         except Exception as e:
             print(f"[ACTIVITY] Erro ao registrar remoção de produto no histórico: {e}")
+
+        # Notifica o responsável do card se for diferente de quem removeu o produto
+        try:
+            card = CardRepository(self.db).find_by_id(card_id)
+            if card and card.assigned_to_id and card.assigned_to_id != current_user.id:
+                self.notification_repo.create({
+                    "user_id": card.assigned_to_id,
+                    "notification_type": "product_removed",
+                    "title": "Produto removido do card",
+                    "message": f"{current_user.name} removeu \"{product_name_for_log}\" do card \"{card.title}\"",
+                    "icon": "package",
+                    "color": "warning",
+                    "notification_metadata": {
+                        "card_id": card_id,
+                        "product_name": product_name_for_log,
+                        "removed_by_id": current_user.id,
+                        "removed_by_name": current_user.name
+                    }
+                })
+        except Exception as e:
+            print(f"[NOTIFICATION] Erro ao notificar produto removido: {e}")
 
         # Atualiza o valor total do card
         self._sync_card_value_with_products(card_id)

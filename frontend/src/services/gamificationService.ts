@@ -71,6 +71,24 @@ export interface ActionPoints {
   updated_at: string;
 }
 
+export interface GamificationPointRecord {
+  id: number;
+  user_id: number;
+  user_name: string | null;
+  points: number;
+  reason: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface GamificationPointListResponse {
+  points: GamificationPointRecord[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 /**
  * Serviço de Gamificação
  */
@@ -234,6 +252,47 @@ class GamificationService {
    */
   async initializeActionPoints(): Promise<{ message: string }> {
     const response = await api.post<{ message: string }>("/api/v1/gamification/action-points/initialize");
+    return response.data;
+  }
+
+  /**
+   * Busca histórico de pontos do usuário logado (paginado)
+   *
+   * @param page - Número da página (padrão: 1)
+   * @param pageSize - Itens por página (padrão: 20)
+   */
+  async getMyPointsHistory(page = 1, pageSize = 20): Promise<GamificationPointListResponse> {
+    const response = await api.get<GamificationPointListResponse>("/api/v1/gamification/points/me", {
+      params: { page, page_size: pageSize },
+    });
+    return response.data;
+  }
+
+  /**
+   * Busca histórico de pontos de um usuário específico (admin/manager only)
+   *
+   * @param userId - ID do usuário
+   * @param page - Número da página (padrão: 1)
+   * @param pageSize - Itens por página (padrão: 20)
+   */
+  async getUserPointsHistory(userId: number, page = 1, pageSize = 20): Promise<GamificationPointListResponse> {
+    const response = await api.get<GamificationPointListResponse>(`/api/v1/gamification/points/users/${userId}`, {
+      params: { page, page_size: pageSize },
+    });
+    return response.data;
+  }
+
+  /**
+   * Busca histórico de pontos de toda a equipe (admin/manager only)
+   * Retorna pontos de todos os usuários com user_name preenchido.
+   *
+   * @param page - Número da página (padrão: 1)
+   * @param pageSize - Itens por página (padrão: 20)
+   */
+  async getAllPointsHistory(page = 1, pageSize = 20): Promise<GamificationPointListResponse> {
+    const response = await api.get<GamificationPointListResponse>("/api/v1/gamification/points", {
+      params: { page, page_size: pageSize },
+    });
     return response.data;
   }
 }
