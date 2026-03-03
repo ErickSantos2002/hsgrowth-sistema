@@ -37,6 +37,7 @@ const Gamification: React.FC = () => {
   const [myBadges, setMyBadges] = useState<UserBadge[]>([]);
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [rankingPeriod, setRankingPeriod] = useState<"weekly" | "monthly" | "quarterly" | "annual">("monthly");
+  const [rankingsLoading, setRankingsLoading] = useState(false);
 
   // Estatísticas da equipe (para gerente/admin)
   const [teamStats, setTeamStats] = useState<{
@@ -178,12 +179,15 @@ const Gamification: React.FC = () => {
 
   const loadRankings = async () => {
     try {
+      setRankingsLoading(true);
       const response = await gamificationService.getRankings(rankingPeriod);
       setRankings(response.rankings || []);
     } catch (error) {
       console.error("Erro ao carregar rankings:", error);
       showError("Erro ao carregar rankings. Tente novamente.");
       setRankings([]);
+    } finally {
+      setRankingsLoading(false);
     }
   };
 
@@ -625,7 +629,13 @@ const Gamification: React.FC = () => {
           </div>
 
           {/* Lista de rankings */}
-          {rankings.length === 0 ? (
+          {rankingsLoading ? (
+            <div className="rounded-xl border border-gray-200 bg-white py-12 dark:border-slate-700 dark:bg-slate-800/50">
+              <div className="flex items-center justify-center">
+                <LoadingSpinner />
+              </div>
+            </div>
+          ) : rankings.length === 0 ? (
             <div className="rounded-xl border border-gray-200 bg-white py-12 text-center dark:border-slate-700 dark:bg-slate-800/50">
               <Trophy className="mx-auto mb-4 text-slate-600" size={48} />
               <p className="text-slate-500 dark:text-slate-400">Nenhum ranking disponível para este período</p>

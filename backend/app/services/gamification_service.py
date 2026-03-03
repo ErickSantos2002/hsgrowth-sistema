@@ -582,49 +582,18 @@ class GamificationService:
 
     def get_rankings(self, period_type: str, limit: int = 100) -> RankingListResponse:
         """
-        Obtém rankings de um período (calcula se não existir).
+        Obtém rankings de um período, sempre recalculando para refletir pontos atuais.
+        A abordagem de cache estático causava desatualização: quem ganhava pontos
+        após o primeiro cálculo não aparecia no ranking até um recálculo manual.
 
         Args:
             period_type: Tipo de período
-            limit: Limite de resultados
+            limit: Limite de resultados (ignorado internamente — calculate_rankings retorna todos)
 
         Returns:
-            RankingListResponse
+            RankingListResponse sempre atualizado
         """
-        period_start, period_end = self._get_period_dates(period_type)
-
-        # Busca rankings existentes
-        rankings = self.repository.list_rankings_by_period(
-            period_type, period_start, period_end, limit
-        )
-
-        # Se não existir, calcula
-        if not rankings:
-            return self.calculate_rankings(period_type)
-
-        # Converte para response
-        rankings_response = []
-        for ranking in rankings:
-            user = self.db.query(User).filter(User.id == ranking.user_id).first()
-            rankings_response.append(
-                RankingResponse(
-                    id=ranking.id,
-                    user_id=ranking.user_id,
-                    period_type=ranking.period_type,
-                    period_start=ranking.period_start,
-                    period_end=ranking.period_end,
-                    total_points=ranking.points,
-                    rank_position=ranking.rank,
-                    user_name=user.name if user else None
-                )
-            )
-
-        return RankingListResponse(
-            rankings=rankings_response,
-            period_type=period_type,
-            period_start=period_start,
-            period_end=period_end
-        )
+        return self.calculate_rankings(period_type)
 
     # ========== RESUMO DO USUÁRIO ==========
 
