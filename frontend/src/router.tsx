@@ -1,7 +1,8 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import { useAuth } from './hooks/useAuth';
 
 // Importação direta (sem lazy loading) para navegação instantânea
 import Login from './pages/Login';
@@ -24,16 +25,31 @@ import BadgesAdmin from './pages/BadgesAdmin';
 import Calendar from './pages/Calendar';
 import NotFound from './pages/NotFound';
 
+/**
+ * Componente que protege rotas não permitidas para o role 'viewer'.
+ * Se o usuário for viewer e tentar acessar uma rota não autorizada,
+ * redireciona para /boards (página principal do viewer).
+ */
+const ViewerGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    if (user?.role === 'viewer') {
+        return <Navigate to="/boards" replace />;
+    }
+    return <>{children}</>;
+};
+
 const AppRoutes: React.FC = () => (
   <Routes>
     <Route path="/login" element={<Login />} />
 
-    {/* Editor de automações (fullscreen, sem MainLayout) */}
+    {/* Editor de automações (fullscreen, sem MainLayout) - bloqueado para viewer */}
     <Route
       path="/automations/new"
       element={
         <ProtectedRoute>
-          <AutomationEditor />
+          <ViewerGuard>
+            <AutomationEditor />
+          </ViewerGuard>
         </ProtectedRoute>
       }
     />
@@ -41,7 +57,9 @@ const AppRoutes: React.FC = () => (
       path="/automations/:id/edit"
       element={
         <ProtectedRoute>
-          <AutomationEditor />
+          <ViewerGuard>
+            <AutomationEditor />
+          </ViewerGuard>
         </ProtectedRoute>
       }
     />
@@ -62,15 +80,16 @@ const AppRoutes: React.FC = () => (
       <Route path="/clients" element={<Clients />} />
       <Route path="/persons" element={<Persons />} />
       <Route path="/products" element={<Products />} />
-      <Route path="/gamification" element={<Gamification />} />
-      <Route path="/transfers" element={<Transfers />} />
-      <Route path="/reports" element={<Reports />} />
-      <Route path="/automations" element={<Automations />} />
-      <Route path="/notifications" element={<Notifications />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/users" element={<Users />} />
-      <Route path="/admin/badges" element={<BadgesAdmin />} />
-      <Route path="/calendar" element={<Calendar />} />
+      {/* Rotas bloqueadas para viewer - redirecionam para /boards */}
+      <Route path="/gamification" element={<ViewerGuard><Gamification /></ViewerGuard>} />
+      <Route path="/transfers" element={<ViewerGuard><Transfers /></ViewerGuard>} />
+      <Route path="/reports" element={<ViewerGuard><Reports /></ViewerGuard>} />
+      <Route path="/automations" element={<ViewerGuard><Automations /></ViewerGuard>} />
+      <Route path="/notifications" element={<ViewerGuard><Notifications /></ViewerGuard>} />
+      <Route path="/settings" element={<ViewerGuard><Settings /></ViewerGuard>} />
+      <Route path="/users" element={<ViewerGuard><Users /></ViewerGuard>} />
+      <Route path="/admin/badges" element={<ViewerGuard><BadgesAdmin /></ViewerGuard>} />
+      <Route path="/calendar" element={<ViewerGuard><Calendar /></ViewerGuard>} />
     </Route>
 
     <Route path="*" element={<NotFound />} />

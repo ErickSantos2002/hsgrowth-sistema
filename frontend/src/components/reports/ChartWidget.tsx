@@ -32,6 +32,12 @@ interface ChartWidgetProps {
   onDelete: () => void;
   onRefresh: () => void;
   loading?: boolean;
+  /**
+   * Chamado ao clicar em uma barra/fatia do gráfico para drill-down.
+   * xLabel: label do eixo X da barra clicada.
+   * seriesLabel: nome da série quando split_by está ativo (multi-série).
+   */
+  onBarClick?: (xLabel: string, seriesLabel?: string) => void;
 }
 
 /**
@@ -51,6 +57,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
   onDelete,
   onRefresh,
   loading = false,
+  onBarClick,
 }) => {
   const { darkMode } = useTheme();
   const chartColors = getChartColors(darkMode);
@@ -197,6 +204,13 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                   dataKey={key}
                   fill={SERIES_COLORS[i % SERIES_COLORS.length]}
                   radius={[4, 4, 0, 0]}
+                  style={{ cursor: onBarClick ? 'pointer' : 'default' }}
+                  onClick={onBarClick
+                    ? (barData) => {
+                        if (barData?.name != null)
+                          onBarClick(String(barData.name), hasSeries ? key : undefined);
+                      }
+                    : undefined}
                 >
                   <LabelList
                     dataKey={key}
@@ -222,7 +236,23 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
         const lineKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
         return (
           <ResponsiveContainer width="100%" height={hasSeries ? 240 : 220}>
-            <LineChart data={rechartData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+            <LineChart
+              data={rechartData}
+              margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
+              style={{ cursor: onBarClick ? 'pointer' : 'default' }}
+              onClick={onBarClick
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ? (chartData: any) => {
+                    if (chartData?.activeLabel) {
+                      // Em multi-série, usa a primeira série ativa; em single usa undefined
+                      const seriesName: string | undefined = hasSeries
+                        ? chartData.activePayload?.[0]?.name
+                        : undefined;
+                      onBarClick(chartData.activeLabel, seriesName);
+                    }
+                  }
+                : undefined}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
               <XAxis dataKey="name" {...axisProps} />
               <YAxis {...axisProps} />
@@ -290,6 +320,10 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 nameKey="name"
                 labelLine={false}
                 label={renderPieLabel}
+                style={{ cursor: onBarClick ? 'pointer' : 'default' }}
+                onClick={onBarClick
+                  ? (sliceData) => onBarClick(sliceData.name)
+                  : undefined}
               >
                 {rechartData.map((_, index) => (
                   <Cell key={index} fill={SERIES_COLORS[index % SERIES_COLORS.length]} />
@@ -321,7 +355,11 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
               </thead>
               <tbody>
                 {rechartData.map((row, index) => (
-                  <tr key={index} className="border-t border-gray-100 dark:border-slate-700">
+                  <tr
+                    key={index}
+                    className={`border-t border-gray-100 dark:border-slate-700 ${onBarClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/40' : ''}`}
+                    onClick={onBarClick ? () => onBarClick(row.name as string) : undefined}
+                  >
                     <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{row.name}</td>
                     <td className="px-3 py-2 text-right font-medium text-slate-900 dark:text-white">
                       {formatTooltipValue(row.valor as number)}

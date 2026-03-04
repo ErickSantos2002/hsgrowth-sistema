@@ -5,6 +5,7 @@ import type {
   QueryResponse,
   CustomReportConfig,
   SavedReport,
+  DrillDownResponse,
 } from "../components/reports/reportTypes";
 
 /**
@@ -272,6 +273,38 @@ class ReportService {
    */
   async deleteCustomReport(id: number): Promise<void> {
     await api.delete(`/api/v1/reports/custom/${id}`);
+  }
+
+  /**
+   * Busca os cards que compõem uma barra/fatia específica do gráfico (drill-down).
+   * xLabel: o label do eixo X da barra clicada (ex: "Prospecção", "Jan/25").
+   * splitLabel: nome da série clicada quando o gráfico usa split_by.
+   */
+  async drillDown(
+    config: ChartConfig,
+    xLabel: string,
+    splitLabel?: string
+  ): Promise<DrillDownResponse> {
+    // Envia o y_field principal para que o backend replique o filtro implícito
+    // da agregação (ex: won_count → is_won=1, meeting_count → task_type=meeting).
+    // Sem isso, o drill-down mostraria todos os cards do grupo, não apenas os que
+    // contribuíram para o valor exibido no gráfico.
+    const primaryYField = config.y_fields[0] ?? null;
+
+    const payload = {
+      x_field: config.x_field,
+      x_group_by: config.x_group_by ?? null,
+      period: config.period,
+      start_date: config.start_date ?? null,
+      end_date: config.end_date ?? null,
+      x_label: xLabel,
+      split_by: config.split_by ?? null,
+      split_label: splitLabel ?? null,
+      y_source: primaryYField?.field.source ?? null,
+      y_key: primaryYField?.field.key ?? null,
+    };
+    const response = await api.post<DrillDownResponse>("/api/v1/reports/drill-down", payload);
+    return response.data;
   }
 
   /**

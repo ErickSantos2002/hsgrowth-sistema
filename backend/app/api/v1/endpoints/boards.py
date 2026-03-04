@@ -6,7 +6,7 @@ from typing import Any, Optional, List
 from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.board_service import BoardService
 from app.services.list_service import ListService
 from app.schemas.board import (
@@ -252,7 +252,7 @@ async def get_board(
 async def create_board(
     request: Request,
     board_data: BoardCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -335,7 +335,7 @@ async def update_board(
     request: Request,
     board_id: int = Path(..., description="ID do board"),
     board_data: BoardUpdate = ...,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -406,7 +406,7 @@ async def update_board(
 async def delete_board(
     request: Request,
     board_id: int = Path(..., description="ID do board"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -471,7 +471,7 @@ async def delete_board(
 async def duplicate_board(
     board_id: int = Path(..., description="ID do board"),
     duplicate_data: BoardDuplicateRequest = ...,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -615,7 +615,7 @@ async def list_board_lists(
 async def create_list(
     board_id: int = Path(..., description="ID do board"),
     list_data: ListCreate = ...,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -679,7 +679,7 @@ async def update_list(
     board_id: int = Path(..., description="ID do board"),
     list_id: int = Path(..., description="ID da lista"),
     list_data: ListUpdate = ...,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -721,7 +721,7 @@ async def update_list(
 async def delete_list(
     board_id: int = Path(..., description="ID do board"),
     list_id: int = Path(..., description="ID da lista"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -765,7 +765,7 @@ async def move_list(
     board_id: int = Path(..., description="ID do board"),
     list_id: int = Path(..., description="ID da lista"),
     move_data: ListMoveRequest = ...,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """

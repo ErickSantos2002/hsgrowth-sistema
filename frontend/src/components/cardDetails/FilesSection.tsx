@@ -20,12 +20,13 @@ import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface FilesSectionProps {
   cardId: number;
+  readOnly?: boolean;
 }
 
 /**
  * Seção de Arquivos - Upload e gerenciamento de arquivos anexados ao card
  */
-const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
+const FilesSection: React.FC<FilesSectionProps> = ({ cardId, readOnly = false }) => {
   const { confirm } = useConfirm();
   // Estados
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -190,8 +191,8 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
 
   return (
     <div className="space-y-4">
-      {/* Área de Upload */}
-      <div
+      {/* Área de Upload - oculta para visualizadores */}
+      {!readOnly && <div
         className={`
           rounded-lg border-2 border-dashed transition-all
           ${isDragging ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-200 dark:border-slate-700 bg-gray-100/30 dark:bg-slate-800/30'}
@@ -231,7 +232,7 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
           onChange={(e) => handleUpload(e.target.files)}
           accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.7z"
         />
-      </div>
+      </div>}
 
       {/* Mensagem de erro */}
       {error && (
@@ -315,14 +316,16 @@ const FilesSection: React.FC<FilesSectionProps> = ({ cardId }) => {
                     <Download size={16} />
                   </button>
 
-                  {/* Botão Deletar */}
-                  <button
-                    onClick={() => handleDelete(attachment.id)}
-                    className="rounded-lg p-2 text-red-400 transition-all hover:bg-red-500/20"
-                    title="Deletar arquivo"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {/* Botão Deletar - oculto para visualizadores */}
+                  {!readOnly && (
+                    <button
+                      onClick={() => handleDelete(attachment.id)}
+                      className="rounded-lg p-2 text-red-400 transition-all hover:bg-red-500/20"
+                      title="Deletar arquivo"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

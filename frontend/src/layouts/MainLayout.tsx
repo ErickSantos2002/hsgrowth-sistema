@@ -26,17 +26,17 @@ import GlobalSearch from "../components/GlobalSearch";
 import { UserAvatar } from "../components/common";
 
 const menuItems = [
-    { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false },
-    { path: "/boards", icon: Trello, label: "Boards", adminOnly: false, managerOrAdminOnly: false },
-    { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false },
-    { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false },
-    { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false },
-    { path: "/gamification", icon: Trophy, label: "Gamificação", adminOnly: false, managerOrAdminOnly: false },
-    { path: "/transfers", icon: Repeat, label: "Transferências", adminOnly: false, managerOrAdminOnly: false },
-    { path: "/reports", icon: FileText, label: "Relatórios", adminOnly: false, managerOrAdminOnly: true },
-    { path: "/automations", icon: Workflow, label: "Automações", adminOnly: false, managerOrAdminOnly: true },
-    { path: "/settings", icon: Settings, label: "Configurações", adminOnly: false, managerOrAdminOnly: false },
-    { path: "/users", icon: UserCircle, label: "Usuários", adminOnly: true, managerOrAdminOnly: false },
+    { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/boards", icon: Trello, label: "Boards", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/gamification", icon: Trophy, label: "Gamificação", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
+    { path: "/transfers", icon: Repeat, label: "Transferências", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
+    { path: "/reports", icon: FileText, label: "Relatórios", adminOnly: false, managerOrAdminOnly: true, viewerAllowed: false },
+    { path: "/automations", icon: Workflow, label: "Automações", adminOnly: false, managerOrAdminOnly: true, viewerAllowed: false },
+    { path: "/settings", icon: Settings, label: "Configurações", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
+    { path: "/users", icon: UserCircle, label: "Usuários", adminOnly: true, managerOrAdminOnly: false, viewerAllowed: false },
 ];
 
 export default function MainLayout() {
@@ -136,6 +136,11 @@ export default function MainLayout() {
                                     return null;
                                 }
 
+                                // Ocultar itens não permitidos para visualizadores
+                                if (!item.viewerAllowed && user?.role === "viewer") {
+                                    return null;
+                                }
+
                                 const Icon = item.icon;
 
                                 // Verifica se o item está ativo
@@ -206,7 +211,7 @@ export default function MainLayout() {
                         <div className="mt-auto border-t border-gray-200 px-3 py-4 dark:border-slate-700/50">
                             <div className="space-y-1 text-center">
                                 <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
-                                    HSGrowth CRM v1.3.7
+                                    HSGrowth CRM v1.3.9
                                 </p>
                                 <p className="text-[10px] text-slate-300 dark:text-slate-600">
                                     © 2026 Health & Safety Tech
@@ -253,6 +258,12 @@ export default function MainLayout() {
                                             ? "Administrador"
                                             : user?.role === "manager"
                                             ? "Gerente"
+                                            : user?.role === "salesperson"
+                                            ? "Vendedor"
+                                            : user?.role === "sdr"
+                                            ? "SDR"
+                                            : user?.role === "viewer"
+                                            ? "Visualizador"
                                             : "Usuário"}
                                     </span>
                                 </div>

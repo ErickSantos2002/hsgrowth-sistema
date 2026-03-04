@@ -107,3 +107,48 @@ class FieldCatalogResponse(BaseModel):
     persons: List[FieldDefinitionSchema]
     activities: List[FieldDefinitionSchema]
     tasks: List[FieldDefinitionSchema]
+
+
+# ========================
+# DRILL-DOWN (detalhamento de barra)
+# ========================
+
+class DrillDownRequest(BaseModel):
+    """
+    Requisição para obter os cards que compõem uma barra/fatia do gráfico.
+    Recebe a config do eixo X + o label clicado para montar o filtro equivalente.
+    Quando split_by está ativo, split_label identifica a série clicada.
+
+    y_source + y_key identificam a métrica principal do gráfico para que o
+    drill-down aplique o mesmo filtro implícito que a agregação usa.
+    Exemplo: won_count → filtra apenas cards com is_won=1.
+    """
+    x_field: AxisFieldSchema
+    x_group_by: Optional[Literal['day', 'week', 'month', 'year']] = None
+    period: PeriodEnum
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    x_label: str
+    split_by: Optional[AxisFieldSchema] = None
+    split_label: Optional[str] = None
+    # Métrica Y principal — usada para replicar o filtro implícito do gráfico
+    y_source: Optional[str] = None
+    y_key: Optional[str] = None
+
+
+class DrillDownCard(BaseModel):
+    """Resumo de um card retornado pelo drill-down."""
+    id: int
+    title: str
+    list_name: str
+    board_name: str
+    assigned_to_name: Optional[str] = None
+    value: Optional[float] = None
+    created_at: datetime
+    status: str  # "Aberto", "Ganho" ou "Perdido"
+
+
+class DrillDownResponse(BaseModel):
+    """Resposta do drill-down com a lista de cards e o total."""
+    cards: List[DrillDownCard]
+    total: int

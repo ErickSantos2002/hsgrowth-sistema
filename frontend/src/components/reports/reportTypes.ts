@@ -123,6 +123,27 @@ export interface QueryResponse {
 }
 
 // ========================
+// DRILL-DOWN
+// ========================
+
+/** Card retornado pelo drill-down ao clicar em uma barra/fatia do gráfico */
+export interface DrillDownCard {
+  id: number;
+  title: string;
+  list_name: string;
+  board_name: string;
+  assigned_to_name: string | null;
+  value: number | null;
+  created_at: string;
+  status: 'Aberto' | 'Ganho' | 'Perdido';
+}
+
+export interface DrillDownResponse {
+  cards: DrillDownCard[];
+  total: number;
+}
+
+// ========================
 // RELATÓRIOS SALVOS
 // ========================
 

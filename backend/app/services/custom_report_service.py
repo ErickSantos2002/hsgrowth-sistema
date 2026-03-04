@@ -24,6 +24,7 @@ from app.models.user import User
 from app.models.card_task import CardTask, TaskType
 from app.models.attachment import Attachment
 from app.models.card_list_history import CardListHistory
+from app.models.list import List as BoardList
 from app.schemas.custom_report import (
     QueryRequest,
     QueryResponse,
@@ -32,6 +33,9 @@ from app.schemas.custom_report import (
     CustomReportResponse,
     FieldDefinitionSchema,
     FieldCatalogResponse,
+    DrillDownRequest,
+    DrillDownCard,
+    DrillDownResponse,
 )
 from app.schemas.report import PeriodEnum
 
@@ -282,16 +286,29 @@ class CustomReportService:
 
         return FieldCatalogResponse(
             cards=[
+                # Datas
                 field('created_at', 'Data de Criação', 'date', True, False),
                 field('closed_at', 'Data de Fechamento', 'date', True, False),
                 field('due_date', 'Data Limite', 'date', True, False),
+                field('prospection_entry_date', 'Data Entrada Prospecção', 'date', True, False),
+                field('acquisition_entry_date', 'Data Entrada Aquisição', 'date', True, False),
+                field('expansion_entry_date', 'Data Entrada Expansão', 'date', True, False),
+                # Valores monetários (agregáveis)
                 field('value', 'Valor do Negócio', 'currency', False, True),
+                field('shipping_cost', 'Custo de Frete', 'currency', False, True),
+                # Dimensões categóricas (groupáveis)
+                field('list_name', 'Etapa', 'category', True, False),
                 field('is_won', 'Status', 'category', True, False),
                 field('acquisition_channel', 'Canal de Aquisição', 'category', True, False),
+                field('acquisition_channel_detail', 'Detalhe do Canal', 'category', True, False),
                 field('deal_type', 'Tipo de Negócio', 'category', True, False),
+                field('loss_reason', 'Motivo de Perda', 'category', True, False),
+                field('has_implementation', 'Tem Implementação', 'category', True, False),
+                field('has_personnel', 'Tem Pessoal', 'category', True, False),
+                # Dimensões de usuário (groupáveis)
                 field('assigned_to', 'Vendedor', 'user', True, False),
                 field('sdr', 'SDR', 'user', True, False),
-                field('loss_reason', 'Motivo de Perda', 'category', True, False),
+                # Métricas (agregáveis)
                 field('count', 'Quantidade', 'number', False, True),
                 field('won_count', 'Negócios Ganhos', 'number', False, True),
                 field('proposal_count', 'Propostas Enviadas', 'number', False, True),
@@ -360,6 +377,9 @@ class CustomReportService:
                 'created_at': Card.created_at,
                 'closed_at': Card.closed_at,
                 'due_date': Card.due_date,
+                'prospection_entry_date': Card.prospection_entry_date,
+                'acquisition_entry_date': Card.acquisition_entry_date,
+                'expansion_entry_date': Card.expansion_entry_date,
             }
             return cols.get(key, Card.created_at)
         elif source == 'clients':
@@ -383,10 +403,14 @@ class CustomReportService:
             cols = {
                 'is_won': Card.is_won,
                 'acquisition_channel': Card.acquisition_channel,
+                'acquisition_channel_detail': Card.acquisition_channel_detail,
                 'deal_type': Card.deal_type,
                 'assigned_to': Card.assigned_to_id,  # FK — join feito separado
                 'sdr': Card.sdr_id,
                 'loss_reason': Card.loss_reason,
+                'has_implementation': Card.has_implementation,
+                'has_personnel': Card.has_personnel,
+                # list_name requer JOIN com BoardList — tratado separadamente
             }
             return cols.get(key)
         elif source == 'clients':
@@ -470,9 +494,30 @@ class CustomReportService:
 
             return results
 
+        # --- Etapa (list_name) — requer JOIN com BoardList ---
+        if source == 'cards' and key == 'list_name':
+            rows = (
+                self.db.query(
+                    BoardList.name.label('group_val'),
+                    BoardList.id.label('raw_key'),
+                )
+                .join(Card, Card.list_id == BoardList.id)
+                .filter(
+                    Card.is_deleted == False,
+                    func.date(Card.created_at) >= start,
+                    func.date(Card.created_at) <= end,
+                )
+                .group_by(BoardList.id, BoardList.name, BoardList.position)
+                .order_by(BoardList.position, BoardList.name)
+                .all()
+            )
+            for row in rows:
+                results.append((str(row.group_val or 'Sem etapa'), row.raw_key))
+            return results
+
         # --- Campos de user (assigned_to, sdr, activities.user) ---
         if key in ('assigned_to', 'sdr'):
-            # JOIN com User para obter o nome
+            # JOIN com User para obter o nome; filtra pelo período via created_at do card
             user_alias = User
             if key == 'assigned_to':
                 fk_col = Card.assigned_to_id
@@ -482,7 +527,11 @@ class CustomReportService:
             rows = (
                 self.db.query(user_alias.name.label('group_val'), user_alias.id.label('raw_key'))
                 .join(Card, fk_col == user_alias.id)
-                .filter(Card.is_deleted == False)
+                .filter(
+                    Card.is_deleted == False,
+                    func.date(Card.created_at) >= start,
+                    func.date(Card.created_at) <= end,
+                )
                 .group_by(user_alias.id, user_alias.name)
                 .order_by(user_alias.name)
                 .all()
@@ -495,6 +544,10 @@ class CustomReportService:
             rows = (
                 self.db.query(User.name.label('group_val'), User.id.label('raw_key'))
                 .join(Activity, Activity.user_id == User.id)
+                .filter(
+                    func.date(Activity.created_at) >= start,
+                    func.date(Activity.created_at) <= end,
+                )
                 .group_by(User.id, User.name)
                 .order_by(User.name)
                 .all()
@@ -507,6 +560,10 @@ class CustomReportService:
             rows = (
                 self.db.query(User.name.label('group_val'), User.id.label('raw_key'))
                 .join(CardTask, CardTask.assigned_to_id == User.id)
+                .filter(
+                    func.date(CardTask.created_at) >= start,
+                    func.date(CardTask.created_at) <= end,
+                )
                 .group_by(User.id, User.name)
                 .order_by(User.name)
                 .all()
@@ -520,11 +577,19 @@ class CustomReportService:
         if cat_col is None:
             return []
 
+        # Filtra pelo período usando a data primária da fonte, para que o seletor
+        # de período funcione mesmo quando o eixo X não é um campo de data
+        primary_date = self._get_source_primary_date_col(source)
         source_filter = self._get_source_alive_filter(source)
 
         query = self.db.query(cat_col.label('group_val')).group_by(cat_col).order_by(cat_col)
         if source_filter is not None:
             query = query.filter(source_filter)
+        if primary_date is not None:
+            query = query.filter(
+                func.date(primary_date) >= start,
+                func.date(primary_date) <= end,
+            )
         query = query.limit(100)
 
         rows = query.all()
@@ -538,6 +603,14 @@ class CustomReportService:
                 label = _TASK_TYPE_LABELS.get(raw_str, raw_str if raw is not None else 'Não informado')
             elif key == 'is_completed':
                 label = 'Concluída' if raw else 'Pendente'
+            elif key in ('has_implementation', 'has_personnel'):
+                # 1=Sim, 0=Não, None=Não Informado
+                if raw is None:
+                    label = 'Não Informado'
+                elif int(raw) == 1:
+                    label = 'Sim'
+                else:
+                    label = 'Não'
             else:
                 label = str(raw) if raw is not None else 'Não informado'
             results.append((label, raw))
@@ -555,6 +628,21 @@ class CustomReportService:
         # Activity e CardTask não têm soft delete
         return None
 
+    def _get_source_primary_date_col(self, source: str):
+        """
+        Retorna a coluna de data primária de cada fonte.
+        Usada para aplicar o filtro de período em campos categóricos (não-data),
+        garantindo que o seletor de período sempre funcione independente do tipo do eixo X.
+        """
+        cols = {
+            'cards': Card.created_at,
+            'clients': Client.created_at,
+            'persons': Person.created_at,
+            'activities': Activity.created_at,
+            'tasks': CardTask.created_at,
+        }
+        return cols.get(source)
+
     def _get_split_values(
         self, source: str, key: str
     ) -> List[Tuple[str, Any]]:
@@ -564,6 +652,19 @@ class CustomReportService:
         Campos de usuário retornam o nome; campos categóricos retornam o valor.
         """
         results: List[Tuple[str, Any]] = []
+
+        # Etapa (list_name) em Negócios — requer JOIN com BoardList
+        if source == 'cards' and key == 'list_name':
+            rows = (
+                self.db.query(BoardList.name.label('label'), BoardList.id.label('raw'))
+                .join(Card, Card.list_id == BoardList.id)
+                .filter(Card.is_deleted == False)
+                .group_by(BoardList.id, BoardList.name, BoardList.position)
+                .order_by(BoardList.position, BoardList.name)
+                .limit(50)
+                .all()
+            )
+            return [(str(row.label or 'Sem etapa'), row.raw) for row in rows]
 
         # Campos de usuário em Negócios (assigned_to / sdr)
         if source == 'cards' and key in ('assigned_to', 'sdr'):
@@ -624,6 +725,13 @@ class CustomReportService:
                 label = _TASK_TYPE_LABELS.get(raw_str, raw_str if raw is not None else 'Não informado')
             elif key == 'is_completed':
                 label = 'Concluída' if raw else 'Pendente'
+            elif key in ('has_implementation', 'has_personnel'):
+                if raw is None:
+                    label = 'Não Informado'
+                elif int(raw) == 1:
+                    label = 'Sim'
+                else:
+                    label = 'Não'
             else:
                 label = str(raw) if raw is not None else 'Não informado'
             results.append((label, raw))
@@ -640,6 +748,8 @@ class CustomReportService:
                 return Card.assigned_to_id == raw_value
             if key == 'sdr':
                 return Card.sdr_id == raw_value
+            if key == 'list_name':
+                return Card.list_id == raw_value
             col = self._get_x_category_col(source, key)
             return col == raw_value if col is not None else None
 
@@ -760,6 +870,10 @@ class CustomReportService:
         if x_source == 'cards' and x_key in ('assigned_to', 'sdr'):
             return Card.assigned_to_id if x_key == 'assigned_to' else Card.sdr_id
 
+        # Etapa: agrupamos pelo FK list_id (os labels já foram resolvidos via JOIN)
+        if x_source == 'cards' and x_key == 'list_name':
+            return Card.list_id
+
         if x_source == 'activities' and x_key == 'user':
             return Activity.user_id
 
@@ -795,6 +909,7 @@ class CustomReportService:
             'cards': {
                 'count': Card.id,
                 'value': Card.value,
+                'shipping_cost': Card.shipping_cost,
             },
             'clients': {
                 'count': Client.id,
@@ -851,9 +966,12 @@ class CustomReportService:
         if x_source == 'cards':
             base_filter = [Card.is_deleted == False] + extra
 
-            # Filtro de data — usa a coluna de data do x_field se for data
-            if x_group_by:
-                date_col = self._get_x_date_col('cards', x_key)
+            # Filtro de data: usa o campo X quando for data; senão usa created_at (campo categórico)
+            date_col = (
+                self._get_x_date_col('cards', x_key) if x_group_by
+                else self._get_source_primary_date_col('cards')
+            )
+            if date_col is not None:
                 base_filter += [
                     func.date(date_col) >= start,
                     func.date(date_col) <= end,
@@ -910,8 +1028,11 @@ class CustomReportService:
         elif x_source == 'clients':
             base_filter = [Client.is_deleted == False] + extra
 
-            if x_group_by:
-                date_col = Client.created_at
+            date_col = (
+                Client.created_at if x_group_by
+                else self._get_source_primary_date_col('clients')
+            )
+            if date_col is not None:
                 base_filter += [
                     func.date(date_col) >= start,
                     func.date(date_col) <= end,
@@ -946,8 +1067,11 @@ class CustomReportService:
         elif x_source == 'persons':
             base_filter = [Person.is_active == True] + extra
 
-            if x_group_by:
-                date_col = Person.created_at
+            date_col = (
+                Person.created_at if x_group_by
+                else self._get_source_primary_date_col('persons')
+            )
+            if date_col is not None:
                 base_filter += [
                     func.date(date_col) >= start,
                     func.date(date_col) <= end,
@@ -975,8 +1099,11 @@ class CustomReportService:
         elif x_source == 'activities':
             base_filter = [] + extra
 
-            if x_group_by:
-                date_col = Activity.created_at
+            date_col = (
+                Activity.created_at if x_group_by
+                else self._get_source_primary_date_col('activities')
+            )
+            if date_col is not None:
                 base_filter += [
                     func.date(date_col) >= start,
                     func.date(date_col) <= end,
@@ -1005,8 +1132,11 @@ class CustomReportService:
         elif x_source == 'tasks':
             base_filter = [] + extra
 
-            if x_group_by:
-                date_col = self._get_x_date_col('tasks', x_key)
+            date_col = (
+                self._get_x_date_col('tasks', x_key) if x_group_by
+                else self._get_source_primary_date_col('tasks')
+            )
+            if date_col is not None:
                 base_filter += [
                     func.date(date_col) >= start,
                     func.date(date_col) <= end,
@@ -1250,3 +1380,308 @@ class CustomReportService:
                 ))
 
             return QueryResponse(labels=labels, series=series)
+
+    # ========================
+    # DRILL-DOWN — detalhamento de barra
+    # ========================
+
+    def _get_y_card_filter(self, y_source: Optional[str], y_key: Optional[str]):
+        """
+        Retorna o filtro adicional (ou lista de filtros) para a query de Cards
+        baseado na métrica Y do gráfico.
+
+        Cada métrica especial do sistema implica uma condição adicional que
+        precisa ser replicada no drill-down para que os cards exibidos sejam
+        exatamente os que contribuíram para o valor da barra.
+
+        Retorna None quando a métrica não exige filtro extra (ex: count, value).
+        """
+        if not y_source or not y_key:
+            return None
+
+        if y_source == 'cards':
+            if y_key == 'won_count':
+                # Conta apenas cards ganhos
+                return Card.is_won == 1
+
+            if y_key == 'proposal_count':
+                # Conta cards que têm ao menos 1 proposta enviada (attachment do tipo 'proposal')
+                subq = (
+                    self.db.query(Attachment.card_id)
+                    .filter(
+                        Attachment.attachment_type == 'proposal',
+                        Attachment.is_deleted == False,
+                    )
+                )
+                return Card.id.in_(subq)
+
+            if y_key == 'valid_count':
+                # Conta cards que passaram pela lista de Prospecção
+                subq = (
+                    self.db.query(CardListHistory.card_id)
+                    .filter(CardListHistory.list_id == _PROSPECCAO_LIST_ID)
+                )
+                return Card.id.in_(subq)
+
+        # count, value, shipping_cost, distinct_count e métricas de tasks/activities
+        # não exigem filtro adicional na query de cards
+        return None
+
+    def _get_split_raw_value(self, split_by, split_label: str):
+        """
+        Busca o raw_value (id/valor interno) correspondente ao label do split_by clicado.
+        Retorna None se não encontrar.
+        """
+        if not split_by or not split_label:
+            return None
+        split_values = self._get_split_values(split_by.source, split_by.key)
+        for label, raw in split_values:
+            if label == split_label:
+                return raw
+        return None
+
+    def _build_card_id_subquery_from_tasks(
+        self,
+        x_key: str,
+        x_group_by: Optional[str],
+        x_raw_value: Any,
+        start: date,
+        end: date,
+        split_source: Optional[str],
+        split_key: Optional[str],
+        split_raw_value: Any,
+        y_key: Optional[str] = None,
+    ):
+        """
+        Constrói uma subquery que retorna card_ids cujos CardTask satisfazem
+        os filtros de eixo X e split_by.
+
+        Usada quando x_field.source == 'tasks' para evitar cross join implícito.
+        """
+        date_col_map = {
+            'created_at':   CardTask.created_at,
+            'due_date':     CardTask.due_date,
+            'completed_at': CardTask.completed_at,
+        }
+        x_date_col = date_col_map.get(x_key, CardTask.created_at)
+
+        q = self.db.query(CardTask.card_id)
+
+        if x_group_by:
+            # Eixo X de data: filtra pelo bucket (ex: semana, mês)
+            q = q.filter(func.date_trunc(x_group_by, x_date_col) == x_raw_value)
+        else:
+            # Eixo X categórico: filtra pelo valor + período via created_at
+            cat_col = self._get_x_category_col('tasks', x_key)
+            if cat_col is not None:
+                q = q.filter(cat_col == x_raw_value)
+            q = q.filter(
+                func.date(CardTask.created_at) >= start,
+                func.date(CardTask.created_at) <= end,
+            )
+
+        # Filtro do split_by (se também for de tasks)
+        if split_source == 'tasks' and split_key and split_raw_value is not None:
+            split_filter = self._build_split_filter('tasks', split_key, split_raw_value)
+            if split_filter is not None:
+                q = q.filter(split_filter)
+
+        # Filtro da métrica Y: meeting_count conta apenas tarefas do tipo MEETING
+        if y_key == 'meeting_count':
+            q = q.filter(CardTask.task_type == TaskType.MEETING)
+
+        return q
+
+    def _build_card_id_subquery_from_activities(
+        self,
+        x_key: str,
+        x_group_by: Optional[str],
+        x_raw_value: Any,
+        start: date,
+        end: date,
+        split_source: Optional[str],
+        split_key: Optional[str],
+        split_raw_value: Any,
+    ):
+        """
+        Constrói uma subquery que retorna card_ids cujas Activity satisfazem
+        os filtros de eixo X e split_by.
+
+        Usada quando x_field.source == 'activities' para evitar cross join implícito.
+        """
+        q = self.db.query(Activity.card_id)
+
+        if x_group_by:
+            q = q.filter(func.date_trunc(x_group_by, Activity.created_at) == x_raw_value)
+        else:
+            cat_col = self._get_x_category_col('activities', x_key)
+            if cat_col is not None:
+                q = q.filter(cat_col == x_raw_value)
+            q = q.filter(
+                func.date(Activity.created_at) >= start,
+                func.date(Activity.created_at) <= end,
+            )
+
+        # Filtro do split_by (se também for de activities)
+        if split_source == 'activities' and split_key and split_raw_value is not None:
+            split_filter = self._build_split_filter('activities', split_key, split_raw_value)
+            if split_filter is not None:
+                q = q.filter(split_filter)
+
+        return q
+
+    def execute_drill_down(self, request: DrillDownRequest) -> DrillDownResponse:
+        """
+        Retorna os cards que compõem uma barra/fatia específica do gráfico.
+
+        Fluxo:
+          1. Recalcula o intervalo de datas.
+          2. Reutiliza _get_x_labels_and_order() para encontrar o raw_value do label clicado.
+          3. Constrói os filtros para a query de Cards:
+             - x_field.source == 'cards'    → filtros diretos na tabela cards
+             - x_field.source == 'tasks'    → subquery CardTask → card_ids
+             - x_field.source == 'activities' → subquery Activity → card_ids
+          4. Aplica filtro do split_by se a fonte for 'cards'; caso contrário já
+             foi incorporado na subquery (split_by da mesma fonte do x_field).
+          5. Executa a query de cards com JOINs para obter nomes legíveis.
+          6. Retorna lista de DrillDownCard limitada a 200 registros.
+        """
+        from app.models.board import Board
+
+        start, end = self._get_date_range(request.period, request.start_date, request.end_date)
+        x_source = request.x_field.source
+
+        # Passo 1: encontra o raw_value correspondente ao label clicado no eixo X
+        label_raw_pairs = self._get_x_labels_and_order(
+            x_source, request.x_field.key, request.x_group_by, start, end,
+        )
+        x_raw_value = None
+        for label, raw in label_raw_pairs:
+            if label == request.x_label:
+                x_raw_value = raw
+                break
+
+        if x_raw_value is None:
+            return DrillDownResponse(cards=[], total=0)
+
+        # Passo 2: resolve o raw_value do split_by (se houver)
+        split_source = request.split_by.source if request.split_by else None
+        split_key = request.split_by.key if request.split_by else None
+        split_raw_value = self._get_split_raw_value(request.split_by, request.split_label)
+
+        # Passo 3: constrói os filtros para a query principal de Cards
+        card_filters = [Card.is_deleted == False]
+
+        # Filtro da métrica Y: replica o filtro implícito da agregação do gráfico.
+        # Exemplo: won_count só conta cards com is_won=1, então o drill-down deve
+        # exibir apenas esses cards — caso contrário mostra cards que não contribuíram.
+        y_card_filter = self._get_y_card_filter(request.y_source, request.y_key)
+        if y_card_filter is not None:
+            card_filters.append(y_card_filter)
+
+        if x_source == 'cards':
+            # --- Fonte cards: filtros diretos ---
+            if request.x_group_by:
+                date_col = self._get_x_date_col('cards', request.x_field.key)
+                if date_col is not None:
+                    card_filters.append(
+                        func.date_trunc(request.x_group_by, date_col) == x_raw_value
+                    )
+            elif request.x_field.key == 'list_name':
+                card_filters.append(Card.list_id == x_raw_value)
+            elif request.x_field.key == 'assigned_to':
+                card_filters.append(Card.assigned_to_id == x_raw_value)
+            elif request.x_field.key == 'sdr':
+                card_filters.append(Card.sdr_id == x_raw_value)
+            else:
+                col = self._get_x_category_col('cards', request.x_field.key)
+                if col is not None:
+                    card_filters.append(col == x_raw_value)
+
+            # Para campos categóricos, aplica filtro de período via created_at
+            if not request.x_group_by:
+                card_filters += [
+                    func.date(Card.created_at) >= start,
+                    func.date(Card.created_at) <= end,
+                ]
+
+            # Filtro do split_by (somente quando a fonte também é cards)
+            if split_source == 'cards' and split_key and split_raw_value is not None:
+                split_filter = self._build_split_filter('cards', split_key, split_raw_value)
+                if split_filter is not None:
+                    card_filters.append(split_filter)
+
+        elif x_source == 'tasks':
+            # --- Fonte tasks: subquery card_ids evita cross join ---
+            card_id_subq = self._build_card_id_subquery_from_tasks(
+                request.x_field.key, request.x_group_by, x_raw_value,
+                start, end, split_source, split_key, split_raw_value,
+                y_key=request.y_key,
+            )
+            card_filters.append(Card.id.in_(card_id_subq))
+
+            # Se o split_by for de cards, aplica filtro direto (ex: Vendedor do card)
+            if split_source == 'cards' and split_key and split_raw_value is not None:
+                split_filter = self._build_split_filter('cards', split_key, split_raw_value)
+                if split_filter is not None:
+                    card_filters.append(split_filter)
+
+        elif x_source == 'activities':
+            # --- Fonte activities: subquery card_ids evita cross join ---
+            card_id_subq = self._build_card_id_subquery_from_activities(
+                request.x_field.key, request.x_group_by, x_raw_value,
+                start, end, split_source, split_key, split_raw_value,
+            )
+            card_filters.append(Card.id.in_(card_id_subq))
+
+            if split_source == 'cards' and split_key and split_raw_value is not None:
+                split_filter = self._build_split_filter('cards', split_key, split_raw_value)
+                if split_filter is not None:
+                    card_filters.append(split_filter)
+
+        else:
+            # Fontes não suportadas diretamente no drill-down (clients, persons)
+            return DrillDownResponse(cards=[], total=0)
+
+        # Passo 4: busca os cards com JOINs para nomes legíveis
+        try:
+            rows = (
+                self.db.query(
+                    Card.id,
+                    Card.title,
+                    Card.value,
+                    Card.is_won,
+                    Card.created_at,
+                    BoardList.name.label('list_name'),
+                    Board.name.label('board_name'),
+                    User.name.label('assigned_to_name'),
+                )
+                .join(BoardList, Card.list_id == BoardList.id)
+                .join(Board, BoardList.board_id == Board.id)
+                .outerjoin(User, Card.assigned_to_id == User.id)
+                .filter(*card_filters)
+                .distinct()
+                .order_by(Card.created_at.desc())
+                .limit(200)
+                .all()
+            )
+        except Exception:
+            return DrillDownResponse(cards=[], total=0)
+
+        _STATUS_MAP = {0: 'Aberto', 1: 'Ganho', -1: 'Perdido'}
+
+        cards = [
+            DrillDownCard(
+                id=row.id,
+                title=row.title,
+                list_name=row.list_name or 'Sem etapa',
+                board_name=row.board_name or 'Sem quadro',
+                assigned_to_name=row.assigned_to_name,
+                value=float(row.value) if row.value is not None else None,
+                created_at=row.created_at,
+                status=_STATUS_MAP.get(int(row.is_won or 0), 'Aberto'),
+            )
+            for row in rows
+        ]
+
+        return DrillDownResponse(cards=cards, total=len(cards))

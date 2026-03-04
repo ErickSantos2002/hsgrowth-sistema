@@ -17,6 +17,7 @@ interface NotesSectionProps {
   cardId: number;
   notes: Note[];
   onUpdate: () => void;
+  readOnly?: boolean;
 }
 
 /**
@@ -24,7 +25,7 @@ interface NotesSectionProps {
  * Suporta texto livre e imagens coladas (Ctrl+V)
  * Imagens são comprimidas e armazenadas como base64 na nota
  */
-const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) => {
+const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate, readOnly = false }) => {
   const { confirm } = useConfirm();
   const [isCreating, setIsCreating] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
@@ -340,8 +341,8 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
 
   return (
     <div className="space-y-4">
-      {/* Botão para criar nova nota */}
-      {!isCreating && (
+      {/* Botão para criar nova nota - oculto para visualizadores */}
+      {!readOnly && !isCreating && (
         <button
           onClick={() => {
             setIsCreating(true);
@@ -481,24 +482,27 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate }) 
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleStartEdit(note)}
-                        disabled={loading}
-                        className="rounded p-1.5 text-slate-400 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-blue-400"
-                        title="Editar"
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteNote(note.id)}
-                        disabled={loading}
-                        className="rounded p-1.5 text-slate-400 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-red-400"
-                        title="Excluir"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                    {/* Botões de edição - ocultos para visualizadores */}
+                    {!readOnly && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleStartEdit(note)}
+                          disabled={loading}
+                          className="rounded p-1.5 text-slate-400 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-blue-400"
+                          title="Editar"
+                        >
+                          <Edit size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNote(note.id)}
+                          disabled={loading}
+                          className="rounded p-1.5 text-slate-400 dark:text-slate-400 transition-colors hover:bg-slate-600 hover:text-red-400"
+                          title="Excluir"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <NoteRenderer content={note.content} />

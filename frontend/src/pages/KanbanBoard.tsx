@@ -50,6 +50,9 @@ const KanbanBoard: React.FC = () => {
   // Permissões: Apenas Admin e Manager podem criar listas
   const canCreateList = user?.role === "admin" || user?.role === "manager";
 
+  // Visualizadores têm acesso somente leitura
+  const isViewer = user?.role === "viewer";
+
   // Estados
   const [board, setBoard] = useState<Board | null>(null);
   const [lists, setLists] = useState<List[]>([]);
@@ -770,8 +773,8 @@ const KanbanBoard: React.FC = () => {
               </button>
             )}
 
-            {/* Menu do board */}
-            <div className="relative">
+            {/* Menu do board - oculto para visualizadores */}
+            {!isViewer && <div className="relative">
               <button
                 onClick={() => setShowBoardMenu(!showBoardMenu)}
                 className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50"
@@ -827,7 +830,7 @@ const KanbanBoard: React.FC = () => {
                   </div>
                 </>
               )}
-            </div>
+            </div>}
           </div>
         </div>
       </div>
@@ -973,10 +976,11 @@ const KanbanBoard: React.FC = () => {
               const isLastList = index === lists.length - 1;
 
               // Regra de criação de cards:
+              // Viewer nunca pode criar.
               // Admin e Manager podem criar em qualquer lista.
               // Demais roles só podem criar na primeira lista do board de Prospecção (id=6).
               const canAddCardToList =
-                canCreateList || (board?.id === 6 && isFirstList);
+                !isViewer && (canCreateList || (board?.id === 6 && isFirstList));
 
               return (
                 <KanbanList
@@ -984,15 +988,15 @@ const KanbanBoard: React.FC = () => {
                   list={list}
                   cards={filteredCards}
                   onAddCard={canAddCardToList ? () => handleAddCard(list.id) : undefined}
-                  onEditList={() => handleEditList(list)}
-                  onArchiveList={() => handleArchiveList(list)}
-                  onDeleteList={() => handleDeleteListClick(list)}
+                  onEditList={isViewer ? undefined : () => handleEditList(list)}
+                  onArchiveList={isViewer ? undefined : () => handleArchiveList(list)}
+                  onDeleteList={isViewer ? undefined : () => handleDeleteListClick(list)}
                   onCardClick={(card) => handleViewCard(card)}
-                  onMoveLeft={() => handleMoveListLeft(list)}
-                  onMoveRight={() => handleMoveListRight(list)}
+                  onMoveLeft={isViewer ? undefined : () => handleMoveListLeft(list)}
+                  onMoveRight={isViewer ? undefined : () => handleMoveListRight(list)}
                   isFirstList={isFirstList}
                   isLastList={isLastList}
-                  canManageLists={canCreateList}
+                  canManageLists={!isViewer && canCreateList}
                 />
               );
             })

@@ -87,8 +87,8 @@ const KanbanList: React.FC<KanbanListProps> = ({
           </span>
         </div>
 
-        {/* Menu de ações */}
-        <div className="relative">
+        {/* Menu de ações - oculto quando nenhum handler de edição foi fornecido (ex: viewer) */}
+        {(onEditList || onArchiveList || onDeleteList) && <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
             className="rounded p-1 transition-colors hover:bg-gray-200 dark:hover:bg-slate-800/60"
@@ -144,7 +144,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
               </div>
             </>
           )}
-        </div>
+        </div>}
       </div>
 
       {/* Cards da lista - com scroll vertical */}

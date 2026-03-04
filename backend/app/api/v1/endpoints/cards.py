@@ -6,7 +6,7 @@ from typing import Any, Optional, List
 from fastapi import APIRouter, Depends, Query, Path, Request
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.card_service import CardService
 from app.schemas.card import (
     CardCreate,
@@ -270,7 +270,7 @@ async def get_card(
 async def create_card(
     request: Request,
     card_data: CardCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -303,7 +303,7 @@ async def update_card(
     request: Request,
     card_id: int = Path(..., description="ID do card"),
     card_data: CardUpdate = ...,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -353,7 +353,7 @@ async def update_card(
 async def delete_card(
     request: Request,
     card_id: int = Path(..., description="ID do card"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -392,7 +392,7 @@ async def move_card(
     request: Request,
     card_id: int = Path(..., description="ID do card"),
     move_data: CardMoveRequest = ...,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -439,7 +439,7 @@ async def assign_card(
     request: Request,
     card_id: int = Path(..., description="ID do card"),
     assign_data: CardAssignRequest = ...,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -512,7 +512,7 @@ async def reopen_card(
     request: Request,
     card_id: int = Path(..., description="ID do card perdido a ser reaberto"),
     reopen_data: CardReopenRequest = ...,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -575,7 +575,7 @@ async def get_card_fields(
 async def add_or_update_field(
     card_id: int = Path(..., description="ID do card"),
     field_data: CardFieldValueCreate = ...,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -680,7 +680,7 @@ def get_card_expanded(
 async def link_person_to_card(
     card_id: int,
     person_id: int = Query(..., description="ID da pessoa"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -713,7 +713,7 @@ async def link_person_to_card(
 )
 async def unlink_person_from_card(
     card_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """

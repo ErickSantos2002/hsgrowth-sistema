@@ -141,6 +141,7 @@ export const LOSS_REASONS_PROSPECTION = [
   "Cenário externo",
   "Demanda Calibração",
   "Demanda Suporte",
+  "Não deu retorno",
 ];
 
 export const LOSS_REASONS_ACQUISITION = [
@@ -154,6 +155,7 @@ export const LOSS_REASONS_ACQUISITION = [
   "Perda para concorrência",
   "Demanda Calibração",
   "Demanda Suporte",
+  "Não deu retorno",
 ];
 
 export const LOSS_REASONS_EXPANSION = [
@@ -165,6 +167,7 @@ export const LOSS_REASONS_EXPANSION = [
   "Proposta fora de timing",
   "Aprovação interna travada",
   "Perda para concorrência",
+  "Não deu retorno",
 ];
 
 // Mapeamento de board_id para motivos de perda

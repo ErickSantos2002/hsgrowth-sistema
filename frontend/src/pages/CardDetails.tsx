@@ -372,6 +372,9 @@ const CardDetails: React.FC = () => {
   // Verifica se o usuário pode alterar o responsável
   const canChangeAssignee = currentUser?.role === "admin" || currentUser?.role === "manager";
 
+  // Visualizadores têm acesso somente leitura — nenhuma ação de escrita permitida
+  const isViewer = currentUser?.role === "viewer";
+
   // Encontra o responsável atual
   const assignedUser = users.find((u) => u.id === card?.assigned_to_id);
 
@@ -415,8 +418,8 @@ const CardDetails: React.FC = () => {
                 <ArrowLeft size={20} />
               </button>
 
-              {/* Título Editável */}
-              {isTitleEditing ? (
+              {/* Título - editável apenas para não-visualizadores */}
+              {isTitleEditing && !isViewer ? (
                 <input
                   type="text"
                   value={titleValue}
@@ -434,9 +437,11 @@ const CardDetails: React.FC = () => {
                 />
                 ) : (
                   <h1
-                    onClick={() => setIsTitleEditing(true)}
-                    className="cursor-pointer text-center text-2xl font-semibold text-slate-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400 sm:text-left"
-                    title="Clique para editar"
+                    onClick={() => !isViewer && setIsTitleEditing(true)}
+                    className={`text-center text-2xl font-semibold text-slate-900 dark:text-white sm:text-left ${
+                      !isViewer ? "cursor-pointer transition-colors hover:text-blue-600 dark:hover:text-blue-400" : ""
+                    }`}
+                    title={!isViewer ? "Clique para editar" : undefined}
                   >
                     {card.title}
                   </h1>
@@ -643,8 +648,10 @@ const CardDetails: React.FC = () => {
                 </div>
               )}
 
+              {/* Botões de ação - ocultos para visualizadores */}
+
               {/* Botão Ganho */}
-              {!card.is_won && !card.is_lost && (
+              {!isViewer && !card.is_won && !card.is_lost && (
                 <button
                   onClick={handleMarkAsWon}
                   className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 font-medium text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-700 hover:to-emerald-600"
@@ -655,7 +662,7 @@ const CardDetails: React.FC = () => {
               )}
 
               {/* Botão Perdido */}
-              {!card.is_won && !card.is_lost && (
+              {!isViewer && !card.is_won && !card.is_lost && (
                 <button
                   onClick={handleMarkAsLost}
                   className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-500 px-4 font-medium text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-700 hover:to-red-600"
@@ -666,7 +673,7 @@ const CardDetails: React.FC = () => {
               )}
 
               {/* Botão Atribuir Vendedor Automaticamente (Rodízio) */}
-              {!card.is_won && !card.is_lost && !card.assigned_to_id && (
+              {!isViewer && !card.is_won && !card.is_lost && !card.assigned_to_id && (
                 <button
                   onClick={handleAutoAssign}
                   disabled={isAutoAssigning}
@@ -722,22 +729,24 @@ const CardDetails: React.FC = () => {
                     <XCircle size={18} />
                     Negócio Perdido
                   </div>
-                  {/* Botão de reabertura - aparece somente para negócios perdidos */}
-                  <button
-                    onClick={() => setShowReopenModal(true)}
-                    className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-blue-600"
-                    title="Cria um novo card a partir deste negócio perdido"
-                  >
-                    <RefreshCw size={18} />
-                    Reabrir Negócio
-                  </button>
+                  {/* Botão de reabertura - oculto para visualizadores */}
+                  {!isViewer && (
+                    <button
+                      onClick={() => setShowReopenModal(true)}
+                      className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-blue-600"
+                      title="Cria um novo card a partir deste negócio perdido"
+                    >
+                      <RefreshCw size={18} />
+                      Reabrir Negócio
+                    </button>
+                  )}
                 </>
               )}
             </div>
           </div>
 
-          {/* Pipeline de Stages */}
-          {card.board_id && (
+          {/* Pipeline de Stages - oculto para visualizadores */}
+          {card.board_id && !isViewer && (
             <div className="mt-3">
               <PipelineStages
                 boardId={card.board_id}
@@ -845,12 +854,14 @@ const CardDetails: React.FC = () => {
             <div className="space-y-6">
               {activeTab === "atividade" && (
                 <>
-                  {/* Área de Criação Rápida */}
-                  <QuickActivityForm
-                    cardId={card.id}
-                    onSave={loadCardData}
-                    onCancel={() => {}}
-                  />
+                  {/* Área de Criação Rápida - oculta para visualizadores */}
+                  {!isViewer && (
+                    <QuickActivityForm
+                      cardId={card.id}
+                      onSave={loadCardData}
+                      onCancel={() => {}}
+                    />
+                  )}
 
                   {/* Seção Foco - Tarefas Pendentes */}
                   <FocusSection tasks={card.pending_tasks || []} card={card} onUpdate={loadCardData} />
@@ -868,6 +879,7 @@ const CardDetails: React.FC = () => {
                   cardId={card.id}
                   notes={card.notes || []}
                   onUpdate={loadCardData}
+                  readOnly={isViewer}
                 />
               )}
 
@@ -876,10 +888,13 @@ const CardDetails: React.FC = () => {
                   cardId={card.id}
                   card={card}
                   onUpdate={loadCardData}
+                  readOnly={isViewer}
                 />
               )}
 
-              {activeTab === "arquivos" && cardId && <FilesSection cardId={Number(cardId)} />}
+              {activeTab === "arquivos" && cardId && (
+                <FilesSection cardId={Number(cardId)} readOnly={isViewer} />
+              )}
             </div>
           </div>
         </div>

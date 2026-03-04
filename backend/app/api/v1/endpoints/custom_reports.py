@@ -17,6 +17,8 @@ from app.schemas.custom_report import (
     CustomReportCreate,
     CustomReportResponse,
     FieldCatalogResponse,
+    DrillDownRequest,
+    DrillDownResponse,
 )
 
 router = APIRouter()
@@ -104,6 +106,28 @@ async def query_chart(
     _require_manager_or_admin(current_user)
     service = CustomReportService(db)
     return service.execute_query(request)
+
+
+@router.post(
+    "/drill-down",
+    response_model=DrillDownResponse,
+    summary="Detalha os cards de uma barra/fatia do gráfico",
+)
+async def drill_down_chart(
+    request: DrillDownRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Retorna os cards que compõem a barra ou fatia clicada no gráfico.
+
+    Recebe o mesmo eixo X do gráfico + o label da barra clicada.
+    Quando o gráfico usa split_by, informar também o split_label (nome da série clicada).
+    Limitado a 200 registros para não sobrecarregar a interface.
+    """
+    _require_manager_or_admin(current_user)
+    service = CustomReportService(db)
+    return service.execute_drill_down(request)
 
 
 # ========================

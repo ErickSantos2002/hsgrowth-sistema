@@ -6,7 +6,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.client_service import ClientService
 from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse, ClientListResponse
 from app.models.user import User
@@ -194,7 +194,7 @@ async def get_client(
 )
 async def create_client(
     client_data: ClientCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -234,7 +234,7 @@ async def create_client(
 async def update_client(
     client_id: int,
     client_data: ClientUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -268,7 +268,7 @@ async def update_client(
 )
 async def delete_client(
     client_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
