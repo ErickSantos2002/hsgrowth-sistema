@@ -18,7 +18,7 @@ from app.schemas.product import (
     CardProductSummary
 )
 from app.models.user import User
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, require_not_viewer
 
 router = APIRouter()
 
@@ -87,7 +87,7 @@ router = APIRouter()
 def create_product(
     product_data: ProductCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_not_viewer())
 ):
     """
     Cria um novo produto no catálogo.
@@ -294,7 +294,7 @@ def update_product(
     product_id: int,
     product_data: ProductUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_not_viewer())
 ):
     """
     Atualiza um produto do catálogo.
@@ -344,7 +344,7 @@ def update_product(
 def delete_product(
     product_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_not_viewer())
 ):
     """
     Deleta um produto do catálogo (soft delete).
@@ -425,7 +425,7 @@ def add_product_to_card(
     card_id: int,
     card_product_data: CardProductCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_not_viewer())
 ):
     """
     Adiciona um produto a um card.
@@ -577,7 +577,7 @@ def update_card_product(
     card_product_id: int,
     card_product_data: CardProductUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_not_viewer())
 ):
     """
     Atualiza um produto do card.
@@ -627,7 +627,7 @@ def update_card_product(
 def remove_product_from_card(
     card_product_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_not_viewer())
 ):
     """Remove um produto de um card."""
     service = ProductService(db)

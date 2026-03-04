@@ -25,6 +25,9 @@ const Boards: React.FC = () => {
   // Permissões: Apenas Admin e Manager podem criar boards
   const canCreateBoard = user?.role === "admin" || user?.role === "manager";
 
+  // Visualizadores têm acesso somente leitura
+  const isViewer = user?.role === "viewer";
+
   // Carregar boards ao montar o componente
   useEffect(() => {
     loadBoards();
@@ -276,6 +279,7 @@ const Boards: React.FC = () => {
               onDuplicate={handleDuplicateBoard}
               onToggleArchive={handleToggleArchive}
               onDelete={handleDeleteBoard}
+              isViewer={isViewer}
             />
           ))}
         </div>

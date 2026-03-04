@@ -428,6 +428,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                   { value: "2", label: "Gerente" },
                   { value: "3", label: "Vendedor" },
                   { value: "4", label: "SDR" },
+                  { value: "5", label: "Visualizador" },
                 ]}
                 onChange={(value) => setRoleId(Number(value))}
               />
@@ -436,6 +437,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                 {roleId === 2 && "Gerencia equipes e relatórios"}
                 {roleId === 3 && "Gerencia apenas seus próprios cards"}
                 {roleId === 4 && "Gerencia prospecção e qualificação de leads"}
+                {roleId === 5 && "Acesso somente leitura a boards, clientes, pessoas e produtos"}
               </p>
             </FormField>
 

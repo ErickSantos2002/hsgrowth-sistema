@@ -76,6 +76,7 @@ interface SchedulerSectionProps {
   cardId: number;
   card: Card;
   onUpdate: () => void;
+  readOnly?: boolean;
 }
 
 // ─── Utilitários ─────────────────────────────────────────────────────────────
@@ -99,6 +100,7 @@ function getTaskBrazilDate(task: CardTask): string | null {
 const SchedulerSection: React.FC<SchedulerSectionProps> = ({
   cardId,
   onUpdate,
+  readOnly = false,
 }) => {
   const { confirm } = useConfirm();
   // ── Estado do calendário
@@ -194,6 +196,8 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
 
   /** Abre o formulário de criação com a data do dia clicado pré-preenchida */
   const handleDayClick = (dateStr: string) => {
+    // Visualizadores não podem criar atividades
+    if (readOnly) return;
     setPreselectedDate(dateStr);
     setShowCreateModal(true);
   };
@@ -586,8 +590,8 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
         size="md"
         footer={
           <div className="flex gap-2">
-            {/* Botão de concluir — só aparece quando a tarefa ainda está pendente */}
-            {!selectedTask.is_completed && (
+            {/* Botão de concluir — oculto para visualizadores e quando já está concluída */}
+            {!readOnly && !selectedTask.is_completed && (
               <button
                 type="button"
                 onClick={handleToggleComplete}
@@ -599,26 +603,29 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
               </button>
             )}
 
-            {/* Botão de editar */}
-            <button
-              type="button"
-              onClick={handleEditClick}
-              className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              <Edit2 size={16} />
-              Editar
-            </button>
+            {/* Botões de editar e excluir - ocultos para visualizadores */}
+            {!readOnly && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleEditClick}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                >
+                  <Edit2 size={16} />
+                  Editar
+                </button>
 
-            {/* Botão de excluir */}
-            <button
-              type="button"
-              onClick={handleDeleteTask}
-              disabled={actionLoading}
-              className="flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-60"
-            >
-              <Trash2 size={16} />
-              Excluir
-            </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteTask}
+                  disabled={actionLoading}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+                >
+                  <Trash2 size={16} />
+                  Excluir
+                </button>
+              </>
+            )}
           </div>
         }
       >
@@ -1143,18 +1150,20 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
             </button>
           </div>
 
-          {/* Botão de agendar (sem data pré-selecionada) */}
-          <button
-            type="button"
-            onClick={() => {
-              setPreselectedDate("");
-              setShowCreateModal(true);
-            }}
-            className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-500/25"
-          >
-            <Plus size={14} />
-            Agendar
-          </button>
+          {/* Botão de agendar - oculto para visualizadores */}
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => {
+                setPreselectedDate("");
+                setShowCreateModal(true);
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-500/25"
+            >
+              <Plus size={14} />
+              Agendar
+            </button>
+          )}
         </div>
       </div>
 

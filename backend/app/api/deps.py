@@ -233,6 +233,31 @@ def require_manager_or_admin():
     return checker
 
 
+def require_not_viewer():
+    """
+    Dependency que bloqueia acesso de usuários com role 'viewer' a endpoints de escrita.
+    Viewers têm acesso somente leitura: podem ver dados, mas não criar, editar ou deletar.
+
+    Returns:
+        Dependency function que verifica se o usuário NÃO é viewer
+
+    Raises:
+        HTTPException 403: Se o usuário tiver role 'viewer'
+    """
+    async def checker(
+        current_user: User = Depends(get_current_active_user)
+    ) -> User:
+        """Verifica se o usuário não é viewer antes de permitir ação de escrita."""
+        if current_user.role and current_user.role.name == "viewer":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso negado. Visualizadores não podem modificar dados."
+            )
+        return current_user
+
+    return checker
+
+
 def require_permission(required_permission: str):
     """
     Factory de dependency para verificar se o usuário tem uma permissão específica.

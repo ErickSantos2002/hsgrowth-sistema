@@ -7,6 +7,113 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.9] - 2026-03-04
+
+### Adicionado
+
+#### Role "Visualizador" — acesso somente leitura ao sistema
+
+Nova função de usuário para quem precisa consultar o sistema sem realizar nenhuma ação de escrita.
+
+**Backend**
+- Nova dependency `require_not_viewer()` em `backend/app/api/deps.py` — retorna HTTP 403 para qualquer usuário com role `viewer` que tente executar um endpoint de escrita
+- Aplicada em todos os endpoints de escrita (POST/PUT/PATCH/DELETE) dos módulos: `boards`, `cards`, `clients`, `persons`, `products` (30 endpoints ao total)
+- Role `viewer` adicionada ao script de seed (`backend/scripts/seed_database.py`)
+- Migration Alembic `2026_03_04_1000-add_viewer_role.py` — insere a role `viewer` na tabela `roles` via `ON CONFLICT DO NOTHING`
+
+**Frontend — Roteamento e Menu**
+- `'viewer'` adicionado ao union type de role em `frontend/src/types/index.ts`
+- `MainLayout.tsx` — campo `viewerAllowed` em cada item do menu; itens não permitidos (Gamificação, Transferências, Relatórios, Automações, Notificações, Configurações, Usuários) são ocultados para viewer; label "Visualizador" adicionado ao mapeamento de roles no rodapé
+- `router.tsx` — componente `ViewerGuard` redireciona viewer para `/boards` ao tentar acessar rotas não autorizadas
+
+**Frontend — Páginas e Componentes**
+- `Boards.tsx` + `BoardCard.tsx` — viewer não vê botão "Novo Board" nem menu de ações (editar/duplicar/arquivar) nos cards de board
+- `KanbanBoard.tsx` — viewer não vê menu do board (editar/duplicar/arquivar), não pode adicionar cards; handlers de edição/arquivamento/deleção/movimentação de listas passados como `undefined`
+- `KanbanList.tsx` — menu MoreVertical da lista ocultado automaticamente quando nenhum handler de ação é fornecido
+- `Clients.tsx`, `Persons.tsx`, `Products.tsx` — botões de criar, editar e deletar ocultos para viewer
+- `CardDetails.tsx` — título não editável; botões Ganho/Perdido/Reabrir/Atribuir Vendedor ocultos; PipelineStages e QuickActivityForm ocultados
+- `NotesSection.tsx` — prop `readOnly` oculta botão "Adicionar anotação" e botões editar/excluir de notas existentes
+- `SchedulerSection.tsx` — prop `readOnly` oculta botão "Agendar", desativa clique no calendário, oculta botões Concluir/Editar/Excluir no modal de atividade
+- `FilesSection.tsx` — prop `readOnly` oculta área de upload e botão deletar; viewer pode visualizar e baixar arquivos
+- `UserModal.tsx` — opção "Visualizador" (ID 5) adicionada ao select de função no modal de criação/edição de usuário
+
+### Arquivos Modificados
+- `backend/app/api/deps.py`
+- `backend/app/api/v1/endpoints/boards.py`
+- `backend/app/api/v1/endpoints/cards.py`
+- `backend/app/api/v1/endpoints/clients.py`
+- `backend/app/api/v1/endpoints/persons.py`
+- `backend/app/api/v1/endpoints/products.py`
+- `backend/scripts/seed_database.py`
+- `frontend/src/types/index.ts`
+- `frontend/src/layouts/MainLayout.tsx`
+- `frontend/src/router.tsx`
+- `frontend/src/pages/Boards.tsx`
+- `frontend/src/pages/KanbanBoard.tsx`
+- `frontend/src/pages/Clients.tsx`
+- `frontend/src/pages/Persons.tsx`
+- `frontend/src/pages/Products.tsx`
+- `frontend/src/pages/CardDetails.tsx`
+- `frontend/src/components/boards/BoardCard.tsx`
+- `frontend/src/components/kanban/KanbanList.tsx`
+- `frontend/src/components/cardDetails/NotesSection.tsx`
+- `frontend/src/components/cardDetails/SchedulerSection.tsx`
+- `frontend/src/components/cardDetails/FilesSection.tsx`
+- `frontend/src/components/users/UserModal.tsx`
+
+### Arquivos Criados
+- `backend/alembic/versions/2026_03_04_1000-add_viewer_role.py`
+
+---
+
+## [1.3.8] - 2026-03-04
+
+### Adicionado
+
+#### Relatórios Customizados — Drill-down de gráficos
+- Barras, fatias e linhas dos gráficos agora são clicáveis e abrem uma modal com os negócios que compõem aquele valor
+- Modal usa o `BaseModal` padrão do sistema com título da barra clicada e contagem de negócios como subtítulo
+- Tabela exibe: título, quadro/etapa, vendedor, valor, status (Aberto/Ganho/Perdido com badge colorido), data de criação e botão de acesso direto ao card
+- Limitado a 200 registros com aviso quando atingido
+- Novos componente: `frontend/src/components/reports/DrillDownModal.tsx`
+- Novo endpoint: `POST /api/v1/reports/drill-down`
+- Novos schemas: `DrillDownRequest`, `DrillDownCard`, `DrillDownResponse` em `custom_report.py`
+- Novo método `drillDown()` em `reportService.ts`
+
+#### Relatórios Customizados — Novos campos no catálogo
+- **Etapa** (`list_name`): agrupa negócios por etapa do Kanban, ordenado pela posição das listas
+- **Custo de Frete** (`shipping_cost`): campo monetário agregável
+- **Detalhe do Canal** (`acquisition_channel_detail`): dimensão categórica
+- **Tem Implementação** (`has_implementation`) e **Tem Pessoal** (`has_personnel`): dimensões categóricas booleanas
+- **Datas de entrada por board**: `prospection_entry_date`, `acquisition_entry_date`, `expansion_entry_date`
+
+### Corrigido
+
+#### Relatórios Customizados
+- **Bug**: clicar em "+ Novo Gráfico" após criar um gráfico exibia os dados do gráfico anterior em vez de formulário vazio — corrigido com `newChartSessionKey` que força remount do `ChartConfigPanel` via prop `key`
+- **Bug**: filtro de período (`Esta Semana`, `Este Mês`, etc.) era ignorado quando o eixo X era um campo categórico (ex: Etapa, Vendedor) — agora aplica `created_at` via `_get_source_primary_date_col()` nesses casos
+
+#### Drill-down — correções progressivas após implementação inicial
+- **Bug**: cards apareciam duplicados (até 8× cada) na modal de drill-down — corrigido com `.distinct()` na query
+- **Bug**: ao clicar em barra de gráfico cuja fonte do eixo X é `tasks` ou `activities`, o drill-down aplicava filtros dessas tabelas diretamente na query de Cards sem JOIN, gerando cross join implícito e retornando resultados incorretos — corrigido com subqueries `card_id IN (SELECT card_id FROM card_tasks WHERE ...)` e `card_id IN (SELECT card_id FROM activities WHERE ...)`
+- **Bug**: drill-down exibia todos os cards do grupo (ex: 6 cards) em vez de apenas os que contribuíram para o valor da barra (ex: 1 card ganho) — corrigido enviando `y_source` + `y_key` no request; o backend replica o filtro implícito da agregação:
+  - `won_count` → `is_won = 1`
+  - `proposal_count` → `card_id IN (attachments do tipo 'proposal')`
+  - `valid_count` → `card_id IN (card_list_history da lista de Prospecção)`
+  - `meeting_count` → `task_type = 'meeting'` na subquery de tasks
+
+### Arquivos Modificados
+- `backend/app/schemas/custom_report.py` — `DrillDownRequest` (+ `y_source`, `y_key`), `DrillDownCard`, `DrillDownResponse`
+- `backend/app/services/custom_report_service.py` — novos campos no catálogo, `_get_source_primary_date_col()`, `_build_card_id_subquery_from_tasks()`, `_build_card_id_subquery_from_activities()`, `_get_split_raw_value()`, `_get_y_card_filter()`, `execute_drill_down()` refatorado
+- `backend/app/api/v1/endpoints/custom_reports.py` — endpoint `POST /drill-down`
+- `frontend/src/pages/Reports.tsx` — `newChartSessionKey`, handlers de drill-down
+- `frontend/src/components/reports/ChartWidget.tsx` — prop `onBarClick`, cursor pointer, handlers por tipo de gráfico
+- `frontend/src/components/reports/DrillDownModal.tsx` — novo componente (criado)
+- `frontend/src/services/reportService.ts` — método `drillDown()` com `y_source`/`y_key`
+- `frontend/src/layouts/MainLayout.tsx` — versão atualizada para `v1.3.8`
+
+---
+
 ## [1.3.7] - 2026-03-03
 
 ### Adicionado

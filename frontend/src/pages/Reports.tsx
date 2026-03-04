@@ -26,7 +26,9 @@ import FieldPanel from '../components/reports/FieldPanel';
 import ChartWidget from '../components/reports/ChartWidget';
 import ChartConfigPanel from '../components/reports/ChartConfigPanel';
 import NewReportModal from '../components/reports/NewReportModal';
+import DrillDownModal from '../components/reports/DrillDownModal';
 import reportService from '../services/reportService';
+import { useNavigate } from 'react-router-dom';
 import {
   DataSource,
   ChartConfig,
@@ -34,6 +36,7 @@ import {
   CustomReportConfig,
   SavedReport,
   FieldCatalog,
+  DrillDownCard,
 } from '../components/reports/reportTypes';
 
 // Catálogo vazio inicial (enquanto carrega da API)
@@ -48,6 +51,7 @@ const EMPTY_CATALOG: FieldCatalog = {
 const Reports: React.FC = () => {
   const { user: currentUser } = useAuth();
   const { confirm } = useConfirm();
+  const navigate = useNavigate();
 
   // ========================
   // Estado principal
@@ -84,6 +88,20 @@ const Reports: React.FC = () => {
   const [configPanelActive, setConfigPanelActive] = useState(false);
   // Gráfico sendo editado — null significa "novo gráfico"
   const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
+  /**
+   * Contador incrementado a cada clique em "+ Gráfico".
+   * Usado como parte da key do ChartConfigPanel para forçar remontagem
+   * completa do componente, garantindo formulário limpo mesmo quando
+   * editingChart já era null (evita bug de estado anterior persistindo).
+   */
+  const [newChartSessionKey, setNewChartSessionKey] = useState(0);
+
+  // Estado do drill-down: armazena qual gráfico e label foram clicados
+  const [drillDownChart, setDrillDownChart] = useState<ChartConfig | null>(null);
+  const [drillDownLabel, setDrillDownLabel] = useState<{ x: string; series?: string } | null>(null);
+  const [drillDownCards, setDrillDownCards] = useState<DrillDownCard[]>([]);
+  const [drillDownTotal, setDrillDownTotal] = useState(0);
+  const [drillDownLoading, setDrillDownLoading] = useState(false);
 
   // Busca na lista de relatórios
   const [searchTerm, setSearchTerm] = useState('');
@@ -328,6 +346,9 @@ const Reports: React.FC = () => {
   // Ativa o painel em modo "novo gráfico" (formulário em branco)
   const handleOpenNewChart = () => {
     setEditingChart(null);
+    // Incrementa a chave de sessão para forçar remontagem do ChartConfigPanel,
+    // garantindo formulário limpo mesmo que editingChart já fosse null
+    setNewChartSessionKey((prev) => prev + 1);
     setConfigPanelActive(true);
   };
 
@@ -335,6 +356,38 @@ const Reports: React.FC = () => {
   const handleResetConfigPanel = () => {
     setEditingChart(null);
     setConfigPanelActive(false);
+  };
+
+  /**
+   * Abre o drill-down ao clicar em uma barra/fatia do gráfico.
+   * Chama o endpoint /reports/drill-down e exibe a modal com os cards retornados.
+   */
+  const handleBarClick = useCallback(async (
+    chart: ChartConfig,
+    xLabel: string,
+    seriesLabel?: string,
+  ) => {
+    setDrillDownChart(chart);
+    setDrillDownLabel({ x: xLabel, series: seriesLabel });
+    setDrillDownCards([]);
+    setDrillDownTotal(0);
+    setDrillDownLoading(true);
+
+    try {
+      const result = await reportService.drillDown(chart, xLabel, seriesLabel);
+      setDrillDownCards(result.cards);
+      setDrillDownTotal(result.total);
+    } catch {
+      // Mantém a modal aberta com estado vazio em caso de erro
+    } finally {
+      setDrillDownLoading(false);
+    }
+  }, []);
+
+  const handleCloseDrillDown = () => {
+    setDrillDownChart(null);
+    setDrillDownLabel(null);
+    setDrillDownCards([]);
   };
 
   // ========================
@@ -480,6 +533,9 @@ const Reports: React.FC = () => {
                     onClick={() => handleEditChart(chart)}
                     onDelete={() => handleDeleteChart(chart.id)}
                     onRefresh={() => handleRefreshChart(chart)}
+                    onBarClick={(xLabel, seriesLabel) =>
+                      handleBarClick(chart, xLabel, seriesLabel)
+                    }
                   />
                 ))}
 
@@ -498,6 +554,7 @@ const Reports: React.FC = () => {
           {/* Painel direito — desktop only */}
           <div className="hidden h-full overflow-y-auto lg:block">
             <ChartConfigPanel
+              key={editingChart?.id ?? `new-${newChartSessionKey}`}
               allowedSources={currentReport.allowed_sources}
               active={configPanelActive}
               editingConfig={editingChart}
@@ -506,6 +563,21 @@ const Reports: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Modal de drill-down — exibida ao clicar em uma barra/fatia */}
+        {drillDownChart && drillDownLabel && (
+          <DrillDownModal
+            title={`${drillDownLabel.series ? `${drillDownLabel.series} — ` : ''}${drillDownLabel.x}`}
+            cards={drillDownCards}
+            total={drillDownTotal}
+            loading={drillDownLoading}
+            onClose={handleCloseDrillDown}
+            onOpenCard={(cardId) => {
+              handleCloseDrillDown();
+              navigate(`/cards/${cardId}`);
+            }}
+          />
+        )}
       </div>
     );
   }

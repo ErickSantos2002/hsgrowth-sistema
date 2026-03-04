@@ -6,7 +6,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.person_service import PersonService
 from app.schemas.person import PersonCreate, PersonUpdate, PersonResponse, PersonListResponse
 from app.models.user import User
@@ -207,7 +207,7 @@ async def get_person(
 )
 async def create_person(
     person_data: PersonCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -246,7 +246,7 @@ async def create_person(
 async def update_person(
     person_id: int,
     person_data: PersonUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -279,7 +279,7 @@ async def update_person(
 )
 async def delete_person(
     person_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -314,7 +314,7 @@ async def delete_person(
 async def set_person_status(
     person_id: int,
     is_active: bool = Query(..., description="Novo status (true/false)"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
