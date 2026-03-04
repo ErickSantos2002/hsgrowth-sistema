@@ -1217,6 +1217,9 @@ def _build_point_responses(points: list, user_name_map: dict) -> list:
 async def get_my_points_history(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(20, ge=1, le=100, description="Itens por página"),
+    reason: Optional[str] = Query(None, description="Filtrar por tipo de ação (ex: card_moved)"),
+    date_from: Optional[str] = Query(None, description="Data inicial (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Data final (YYYY-MM-DD)"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
@@ -1224,13 +1227,16 @@ async def get_my_points_history(
     Retorna o histórico paginado de pontos do usuário logado,
     ordenado por data decrescente (mais recentes primeiro).
     """
+    from datetime import datetime as dt
+    df = dt.fromisoformat(date_from) if date_from else None
+    dt2 = dt.fromisoformat(date_to).replace(hour=23, minute=59, second=59) if date_to else None
+
     repo = GamificationRepository(db)
     skip = (page - 1) * page_size
-    points = repo.list_user_points(current_user.id, skip, page_size)
-    total = repo.count_user_points(current_user.id)
+    points = repo.list_user_points(current_user.id, skip, page_size, reason=reason, date_from=df, date_to=dt2)
+    total = repo.count_user_points(current_user.id, reason=reason, date_from=df, date_to=dt2)
     total_pages = max(1, (total + page_size - 1) // page_size)
 
-    # O user_name é sempre o próprio usuário logado
     user_name_map = {current_user.id: current_user.name}
 
     return GamificationPointListResponse(
@@ -1258,6 +1264,10 @@ async def get_my_points_history(
 async def get_all_points_history(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(20, ge=1, le=100, description="Itens por página"),
+    reason: Optional[str] = Query(None, description="Filtrar por tipo de ação"),
+    filter_user_id: Optional[int] = Query(None, alias="user_id", description="Filtrar por usuário"),
+    date_from: Optional[str] = Query(None, description="Data inicial (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Data final (YYYY-MM-DD)"),
     current_user: User = Depends(require_manager_or_admin()),
     db: Session = Depends(get_db)
 ) -> Any:
@@ -1265,13 +1275,16 @@ async def get_all_points_history(
     Retorna o histórico paginado de pontos de todos os usuários (visão da equipe).
     Apenas administradores e gerentes podem acessar este endpoint.
     """
+    from datetime import datetime as dt
+    df = dt.fromisoformat(date_from) if date_from else None
+    dt2 = dt.fromisoformat(date_to).replace(hour=23, minute=59, second=59) if date_to else None
+
     repo = GamificationRepository(db)
     skip = (page - 1) * page_size
-    points = repo.list_all_points(skip, page_size)
-    total = repo.count_all_points()
+    points = repo.list_all_points(skip, page_size, reason=reason, user_id=filter_user_id, date_from=df, date_to=dt2)
+    total = repo.count_all_points(reason=reason, user_id=filter_user_id, date_from=df, date_to=dt2)
     total_pages = max(1, (total + page_size - 1) // page_size)
 
-    # Busca nomes dos usuários em uma única query para não fazer N+1
     user_ids = list({p.user_id for p in points})
     users = db.query(User.id, User.name).filter(User.id.in_(user_ids)).all()
     user_name_map = {u.id: u.name for u in users}
@@ -1307,6 +1320,9 @@ async def get_user_points_history(
     user_id: int = Path(..., description="ID do usuário"),
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(20, ge=1, le=100, description="Itens por página"),
+    reason: Optional[str] = Query(None, description="Filtrar por tipo de ação"),
+    date_from: Optional[str] = Query(None, description="Data inicial (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Data final (YYYY-MM-DD)"),
     current_user: User = Depends(require_manager_or_admin()),
     db: Session = Depends(get_db)
 ) -> Any:
@@ -1314,13 +1330,16 @@ async def get_user_points_history(
     Retorna o histórico paginado de pontos de um usuário específico.
     Apenas administradores e gerentes podem acessar este endpoint.
     """
+    from datetime import datetime as dt
+    df = dt.fromisoformat(date_from) if date_from else None
+    dt2 = dt.fromisoformat(date_to).replace(hour=23, minute=59, second=59) if date_to else None
+
     repo = GamificationRepository(db)
     skip = (page - 1) * page_size
-    points = repo.list_user_points(user_id, skip, page_size)
-    total = repo.count_user_points(user_id)
+    points = repo.list_user_points(user_id, skip, page_size, reason=reason, date_from=df, date_to=dt2)
+    total = repo.count_user_points(user_id, reason=reason, date_from=df, date_to=dt2)
     total_pages = max(1, (total + page_size - 1) // page_size)
 
-    # Busca o nome do usuário alvo
     target_user = db.query(User.id, User.name).filter(User.id == user_id).first()
     user_name_map = {user_id: target_user.name} if target_user else {}
 

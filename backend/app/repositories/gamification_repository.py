@@ -93,61 +93,89 @@ class GamificationRepository:
         self,
         user_id: int,
         skip: int = 0,
-        limit: int = 100
+        limit: int = 100,
+        reason: Optional[str] = None,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
     ) -> List[GamificationPoint]:
         """
-        Lista pontos de um usuário.
-
-        Args:
-            user_id: ID do usuário
-            skip: Paginação - offset
-            limit: Paginação - limite
-
-        Returns:
-            Lista de GamificationPoint
+        Lista pontos de um usuário com filtros opcionais.
         """
-        return self.db.query(GamificationPoint).filter(
+        query = self.db.query(GamificationPoint).filter(
             GamificationPoint.user_id == user_id
-        ).order_by(GamificationPoint.created_at.desc()).offset(skip).limit(limit).all()
+        )
+        if reason:
+            query = query.filter(GamificationPoint.reason == reason)
+        if date_from:
+            query = query.filter(GamificationPoint.created_at >= date_from)
+        if date_to:
+            query = query.filter(GamificationPoint.created_at <= date_to)
+        return query.order_by(GamificationPoint.created_at.desc()).offset(skip).limit(limit).all()
 
-    def count_user_points(self, user_id: int) -> int:
+    def count_user_points(
+        self,
+        user_id: int,
+        reason: Optional[str] = None,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
+    ) -> int:
         """
-        Conta o total de registros de pontos de um usuário (para paginação).
-
-        Args:
-            user_id: ID do usuário
-
-        Returns:
-            Total de registros
+        Conta o total de registros de pontos de um usuário com filtros opcionais.
         """
-        return self.db.query(func.count(GamificationPoint.id)).filter(
+        query = self.db.query(func.count(GamificationPoint.id)).filter(
             GamificationPoint.user_id == user_id
-        ).scalar() or 0
+        )
+        if reason:
+            query = query.filter(GamificationPoint.reason == reason)
+        if date_from:
+            query = query.filter(GamificationPoint.created_at >= date_from)
+        if date_to:
+            query = query.filter(GamificationPoint.created_at <= date_to)
+        return query.scalar() or 0
 
-    def list_all_points(self, skip: int = 0, limit: int = 100) -> List[GamificationPoint]:
+    def list_all_points(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        reason: Optional[str] = None,
+        user_id: Optional[int] = None,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
+    ) -> List[GamificationPoint]:
         """
-        Lista pontos de todos os usuários ordenados por data decrescente.
-        Usado por admin/manager para ver o histórico global da equipe.
-
-        Args:
-            skip: Paginação - offset
-            limit: Paginação - limite
-
-        Returns:
-            Lista de GamificationPoint
+        Lista pontos de todos os usuários com filtros opcionais.
         """
-        return self.db.query(GamificationPoint).order_by(
-            GamificationPoint.created_at.desc()
-        ).offset(skip).limit(limit).all()
+        query = self.db.query(GamificationPoint)
+        if reason:
+            query = query.filter(GamificationPoint.reason == reason)
+        if user_id:
+            query = query.filter(GamificationPoint.user_id == user_id)
+        if date_from:
+            query = query.filter(GamificationPoint.created_at >= date_from)
+        if date_to:
+            query = query.filter(GamificationPoint.created_at <= date_to)
+        return query.order_by(GamificationPoint.created_at.desc()).offset(skip).limit(limit).all()
 
-    def count_all_points(self) -> int:
+    def count_all_points(
+        self,
+        reason: Optional[str] = None,
+        user_id: Optional[int] = None,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
+    ) -> int:
         """
-        Conta o total de registros de pontos de todos os usuários.
-
-        Returns:
-            Total de registros
+        Conta o total de registros de pontos com filtros opcionais.
         """
-        return self.db.query(func.count(GamificationPoint.id)).scalar() or 0
+        query = self.db.query(func.count(GamificationPoint.id))
+        if reason:
+            query = query.filter(GamificationPoint.reason == reason)
+        if user_id:
+            query = query.filter(GamificationPoint.user_id == user_id)
+        if date_from:
+            query = query.filter(GamificationPoint.created_at >= date_from)
+        if date_to:
+            query = query.filter(GamificationPoint.created_at <= date_to)
+        return query.scalar() or 0
 
     # ========== BADGES ==========
 

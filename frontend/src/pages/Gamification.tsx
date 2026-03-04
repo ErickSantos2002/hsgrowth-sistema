@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Trophy, Medal, Award, Star, TrendingUp, Crown, Target, Zap, Users as UsersIcon, ChevronDown, History, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trophy, Medal, Award, Star, TrendingUp, Crown, Target, Zap, Users as UsersIcon, ChevronDown, History } from "lucide-react";
 import gamificationService, { GamificationSummary, Badge, UserBadge, Ranking, GamificationPointRecord } from "../services/gamificationService";
 import { useAuth } from "../hooks/useAuth";
 import userService from "../services/userService";
 import { User } from "../types";
 import { LoadingSpinner } from "../components/common";
+import { Pagination } from "../components/common/Pagination";
 import { showError } from "../utils/toast";
 
 const Gamification: React.FC = () => {
@@ -18,6 +19,12 @@ const Gamification: React.FC = () => {
   const [historyTotal, setHistoryTotal] = useState(0);
   const [historyTotalPages, setHistoryTotalPages] = useState(1);
   const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Filtros do histórico
+  const [filterReason, setFilterReason] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterUserId, setFilterUserId] = useState<number | "">("")
 
   // Controle de visualização para gerente/admin
   const isManagerOrAdmin = user?.role === "manager" || user?.role === "admin";
@@ -57,12 +64,12 @@ const Gamification: React.FC = () => {
     }
   }, [activeTab, rankingPeriod]);
 
-  // Carrega histórico de pontos quando entra na aba, muda de página ou muda o usuário selecionado
+  // Carrega histórico de pontos quando entra na aba, muda de página, muda filtros ou muda o usuário selecionado
   useEffect(() => {
     if (activeTab === "history") {
       loadPointsHistory();
     }
-  }, [activeTab, historyPage, selectedUserId]);
+  }, [activeTab, historyPage, selectedUserId, filterReason, filterDateFrom, filterDateTo, filterUserId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -199,16 +206,20 @@ const Gamification: React.FC = () => {
     try {
       setHistoryLoading(true);
 
+      const filters = {
+        ...(filterReason ? { reason: filterReason } : {}),
+        ...(filterDateFrom ? { date_from: filterDateFrom } : {}),
+        ...(filterDateTo ? { date_to: filterDateTo } : {}),
+        ...(filterUserId !== "" && selectedUserId === "team" ? { user_id: filterUserId } : {}),
+      };
+
       let response;
       if (isManagerOrAdmin && selectedUserId === "team") {
-        // Visão da equipe: retorna pontos de todos os usuários
-        response = await gamificationService.getAllPointsHistory(historyPage, 20);
+        response = await gamificationService.getAllPointsHistory(historyPage, 20, filters);
       } else if (isManagerOrAdmin && typeof selectedUserId === "number") {
-        // Usuário específico selecionado pelo gerente/admin
-        response = await gamificationService.getUserPointsHistory(selectedUserId, historyPage, 20);
+        response = await gamificationService.getUserPointsHistory(selectedUserId, historyPage, 20, filters);
       } else {
-        // Vendedor vendo seu próprio histórico
-        response = await gamificationService.getMyPointsHistory(historyPage, 20);
+        response = await gamificationService.getMyPointsHistory(historyPage, 20, filters);
       }
 
       setHistoryPoints(response.points);
@@ -720,10 +731,63 @@ const Gamification: React.FC = () => {
       {/* Tab: Histórico de Pontos */}
       {activeTab === "history" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+          {/* Barra de filtros */}
+          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700/50 dark:bg-slate-800/50">
+            {/* Data Início */}
+            <div className="flex flex-col gap-1">
+              <label className="mb-1 block text-sm text-slate-600 dark:text-slate-400">Data Início</label>
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => { setFilterDateFrom(e.target.value); setHistoryPage(1); }}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+            </div>
+            {/* Data Fim */}
+            <div className="flex flex-col gap-1">
+              <label className="mb-1 block text-sm text-slate-600 dark:text-slate-400">Data Fim</label>
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={(e) => { setFilterDateTo(e.target.value); setHistoryPage(1); }}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+            </div>
+            {/* Usuário — apenas visão equipe (admin/manager) */}
+            {isManagerOrAdmin && selectedUserId === "team" && (
+              <HistoryFilterSelect
+                label="Usuário"
+                value={String(filterUserId)}
+                options={[
+                  { value: "", label: "Todos os usuários" },
+                  ...availableUsers.map((u) => ({ value: String(u.id), label: u.name })),
+                ]}
+                onChange={(val) => { setFilterUserId(val === "" ? "" : Number(val)); setHistoryPage(1); }}
+              />
+            )}
+            {/* Ação */}
+            <HistoryFilterSelect
+              label="Ação"
+              value={filterReason}
+              options={[
+                { value: "", label: "Todas as ações" },
+                { value: "card_moved", label: "card_moved — Moveu card" },
+                { value: "card_won", label: "card_won — Card ganho" },
+              ]}
+              onChange={(val) => { setFilterReason(val); setHistoryPage(1); }}
+            />
+            {/* Limpar filtros */}
+            {(filterReason || filterDateFrom || filterDateTo || filterUserId !== "") && (
+              <button
+                onClick={() => { setFilterReason(""); setFilterDateFrom(""); setFilterDateTo(""); setFilterUserId(""); setHistoryPage(1); }}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              >
+                Limpar filtros
+              </button>
+            )}
+            <div className="ml-auto text-sm text-slate-500 dark:text-slate-400">
               {historyTotal} {historyTotal === 1 ? "registro" : "registros"} no total
-            </p>
+            </div>
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50">
@@ -795,34 +859,39 @@ const Gamification: React.FC = () => {
                 </table>
               </div>
             )}
-          </div>
+            {/* Paginação — componente padrão do projeto */}
+            {historyTotalPages > 1 && (() => {
+              const PAGE_SIZE = 20;
+              const startIndex = (historyPage - 1) * PAGE_SIZE;
+              const endIndex = Math.min(historyPage * PAGE_SIZE, historyTotal);
+              const delta = 2;
+              const range: number[] = [];
+              for (
+                let i = Math.max(1, historyPage - delta);
+                i <= Math.min(historyTotalPages, historyPage + delta);
+                i++
+              ) range.push(i);
+              if (range[0] > 1) range.unshift(1);
+              if (range[range.length - 1] < historyTotalPages) range.push(historyTotalPages);
 
-          {/* Paginação */}
-          {historyTotalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Página {historyPage} de {historyTotalPages}
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
-                  disabled={historyPage === 1}
-                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/30"
-                >
-                  <ChevronLeft size={14} />
-                  Anterior
-                </button>
-                <button
-                  onClick={() => setHistoryPage((p) => Math.min(historyTotalPages, p + 1))}
-                  disabled={historyPage === historyTotalPages}
-                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/30"
-                >
-                  Próxima
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-            </div>
-          )}
+              return (
+                <Pagination
+                  currentPage={historyPage}
+                  totalPages={historyTotalPages}
+                  pageNumbers={range}
+                  totalItems={historyTotal}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
+                  hasNextPage={historyPage < historyTotalPages}
+                  hasPrevPage={historyPage > 1}
+                  goToPage={(p) => setHistoryPage(p)}
+                  goToNextPage={() => setHistoryPage((p) => Math.min(historyTotalPages, p + 1))}
+                  goToPrevPage={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                  itemLabel="registros"
+                />
+              );
+            })()}
+          </div>
         </div>
       )}
 
@@ -889,3 +958,60 @@ const Gamification: React.FC = () => {
 };
 
 export default Gamification;
+
+// ==================== COMPONENTE AUXILIAR: FILTRO SELECT ====================
+interface HistoryFilterSelectProps {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}
+
+const HistoryFilterSelect: React.FC<HistoryFilterSelectProps> = ({ label, value, options, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} className="flex flex-col gap-1">
+      <label className="mb-1 block text-sm text-slate-600 dark:text-slate-400">{label}</label>
+      <div className="relative min-w-[180px]">
+        <button
+          type="button"
+          onClick={() => setIsOpen((o) => !o)}
+          className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+        >
+          <span className={`truncate ${selected?.value ? "text-slate-900 dark:text-white" : "text-slate-400"}`}>
+            {selected?.label || "Selecione"}
+          </span>
+          <ChevronDown size={16} className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </button>
+        {isOpen && (
+          <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                  opt.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

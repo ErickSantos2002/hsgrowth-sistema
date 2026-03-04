@@ -261,9 +261,13 @@ class GamificationService {
    * @param page - Número da página (padrão: 1)
    * @param pageSize - Itens por página (padrão: 20)
    */
-  async getMyPointsHistory(page = 1, pageSize = 20): Promise<GamificationPointListResponse> {
+  async getMyPointsHistory(
+    page = 1,
+    pageSize = 20,
+    filters?: { reason?: string; dateFrom?: string; dateTo?: string }
+  ): Promise<GamificationPointListResponse> {
     const response = await api.get<GamificationPointListResponse>("/api/v1/gamification/points/me", {
-      params: { page, page_size: pageSize },
+      params: { page, page_size: pageSize, ...filters },
     });
     return response.data;
   }
@@ -275,9 +279,14 @@ class GamificationService {
    * @param page - Número da página (padrão: 1)
    * @param pageSize - Itens por página (padrão: 20)
    */
-  async getUserPointsHistory(userId: number, page = 1, pageSize = 20): Promise<GamificationPointListResponse> {
+  async getUserPointsHistory(
+    userId: number,
+    page = 1,
+    pageSize = 20,
+    filters?: { reason?: string; dateFrom?: string; dateTo?: string }
+  ): Promise<GamificationPointListResponse> {
     const response = await api.get<GamificationPointListResponse>(`/api/v1/gamification/points/users/${userId}`, {
-      params: { page, page_size: pageSize },
+      params: { page, page_size: pageSize, ...filters },
     });
     return response.data;
   }
@@ -289,9 +298,13 @@ class GamificationService {
    * @param page - Número da página (padrão: 1)
    * @param pageSize - Itens por página (padrão: 20)
    */
-  async getAllPointsHistory(page = 1, pageSize = 20): Promise<GamificationPointListResponse> {
+  async getAllPointsHistory(
+    page = 1,
+    pageSize = 20,
+    filters?: { reason?: string; user_id?: number; dateFrom?: string; dateTo?: string }
+  ): Promise<GamificationPointListResponse> {
     const response = await api.get<GamificationPointListResponse>("/api/v1/gamification/points", {
-      params: { page, page_size: pageSize },
+      params: { page, page_size: pageSize, ...filters },
     });
     return response.data;
   }
