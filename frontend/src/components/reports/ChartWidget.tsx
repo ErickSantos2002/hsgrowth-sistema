@@ -222,16 +222,13 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
         const lineKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
         return (
           <ResponsiveContainer width="100%" height={hasSeries ? 240 : 220}>
-            <LineChart data={rechartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <LineChart data={rechartData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
               <XAxis dataKey="name" {...axisProps} />
               <YAxis {...axisProps} />
               <Tooltip
-                {...tooltipStyle}
-                formatter={(value: number, name: string) => [
-                  formatTooltipValue(value),
-                  hasSeries ? name : config.title,
-                ]}
+                content={<CustomBarTooltip />}
+                wrapperStyle={{ zIndex: 9999 }}
               />
               {hasSeries && renderLegend()}
               {lineKeys.map((key, i) => {
@@ -245,7 +242,21 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                     strokeWidth={2}
                     dot={{ fill: color, r: 4 }}
                     activeDot={{ r: 6 }}
-                  />
+                  >
+                    <LabelList
+                      dataKey={key}
+                      position="top"
+                      style={{
+                        fill: darkMode ? '#ffffff' : '#0f172a',
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}
+                      formatter={(val: unknown) => {
+                        const n = Number(val);
+                        return n === 0 ? '' : formatTooltipValue(n);
+                      }}
+                    />
+                  </Line>
                 );
               })}
             </LineChart>
@@ -253,16 +264,41 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
         );
       }
 
-      case 'pie':
+      case 'pie': {
+        const RADIAN = Math.PI / 180;
+        const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }: any) => {
+          if (!value || value === 0) return null;
+          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+          return (
+            <text x={x} y={y} fill="#ffffff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
+              {formatTooltipValue(value)}
+            </text>
+          );
+        };
         return (
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={rechartData} cx="50%" cy="50%" innerRadius={55} outerRadius={88} dataKey="valor" nameKey="name">
+              <Pie
+                data={rechartData}
+                cx="50%"
+                cy="50%"
+                innerRadius={55}
+                outerRadius={88}
+                dataKey="valor"
+                nameKey="name"
+                labelLine={false}
+                label={renderPieLabel}
+              >
                 {rechartData.map((_, index) => (
                   <Cell key={index} fill={SERIES_COLORS[index % SERIES_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip {...tooltipStyle} formatter={(value: number) => [formatTooltipValue(value), '']} />
+              <Tooltip
+                content={<CustomBarTooltip />}
+                wrapperStyle={{ zIndex: 9999 }}
+              />
               <Legend
                 formatter={(value) => (
                   <span style={{ color: chartColors.content.secondary, fontSize: '12px' }}>{value}</span>
@@ -271,6 +307,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
             </PieChart>
           </ResponsiveContainer>
         );
+      }
 
       case 'table':
         return (
