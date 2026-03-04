@@ -8,6 +8,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  LabelList,
   LineChart,
   Line,
   PieChart,
@@ -106,6 +107,48 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
     },
   };
 
+  /**
+   * Tooltip customizado para BarChart:
+   * Exibe o label (data) + Total somado de todas as séries no cabeçalho.
+   * Abaixo mostra cada série c/ seu valor, na cor da série.
+   */
+  const CustomBarTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || payload.length === 0) return null;
+
+    const total = payload.reduce((sum: number, entry: any) => sum + (Number(entry.value) || 0), 0);
+    const formattedTotal = formatTooltipValue(total);
+
+    return (
+      <div
+        style={{
+          backgroundColor: chartColors.surface.elevated,
+          border: `1px solid ${chartColors.border.default}`,
+          borderRadius: '8px',
+          padding: '8px 12px',
+          fontSize: '12px',
+          color: chartColors.content.primary,
+          zIndex: 9999,
+          minWidth: 160,
+        }}
+      >
+        {/* Cabeçalho: apenas a data */}
+        <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
+        {/* Linhas por série */}
+        {payload.map((entry: any, idx: number) => (
+          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, color: entry.color }}>
+            <span>{hasSeries ? entry.name : config.title}</span>
+            <span style={{ fontWeight: 600 }}>{formatTooltipValue(Number(entry.value))}</span>
+          </div>
+        ))}
+        {/* Total no final com separador */}
+        <div style={{ borderTop: `1px solid ${chartColors.border.default}`, marginTop: 6, paddingTop: 6, display: 'flex', justifyContent: 'space-between', gap: 16, color: darkMode ? '#ffffff' : '#0f172a', fontWeight: 700 }}>
+          <span>Total</span>
+          <span>{formattedTotal}</span>
+        </div>
+      </div>
+    );
+  };
+
   /** Renderiza o Legend com cor de texto do tema */
   const renderLegend = () => (
     <Legend
@@ -139,16 +182,13 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
         const barKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
         return (
           <ResponsiveContainer width="100%" height={hasSeries ? 240 : 220}>
-            <BarChart data={rechartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <BarChart data={rechartData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
               <XAxis dataKey="name" {...axisProps} />
               <YAxis {...axisProps} />
               <Tooltip
-                {...tooltipStyle}
-                formatter={(value: number, name: string) => [
-                  formatTooltipValue(value),
-                  hasSeries ? name : config.title,
-                ]}
+                content={<CustomBarTooltip />}
+                wrapperStyle={{ zIndex: 9999 }}
               />
               {hasSeries && renderLegend()}
               {barKeys.map((key, i) => (
@@ -157,7 +197,21 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                   dataKey={key}
                   fill={SERIES_COLORS[i % SERIES_COLORS.length]}
                   radius={[4, 4, 0, 0]}
-                />
+                >
+                  <LabelList
+                    dataKey={key}
+                    position="top"
+                    style={{
+                      fill: darkMode ? '#ffffff' : '#0f172a',
+                      fontSize: 11,
+                      fontWeight: 600,
+                    }}
+                    formatter={(val: unknown) => {
+                      const n = Number(val);
+                      return n === 0 ? '' : formatTooltipValue(n);
+                    }}
+                  />
+                </Bar>
               ))}
             </BarChart>
           </ResponsiveContainer>

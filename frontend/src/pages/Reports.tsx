@@ -496,7 +496,7 @@ const Reports: React.FC = () => {
           </main>
 
           {/* Painel direito — desktop only */}
-          <div className="hidden lg:block">
+          <div className="hidden h-full overflow-y-auto lg:block">
             <ChartConfigPanel
               allowedSources={currentReport.allowed_sources}
               active={configPanelActive}

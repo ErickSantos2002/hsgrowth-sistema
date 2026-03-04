@@ -419,7 +419,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
   if (!active) {
     return (
-      <aside className="flex w-80 shrink-0 flex-col items-center justify-center border-l border-gray-200 bg-white p-6 text-center dark:border-slate-700/50 dark:bg-slate-900">
+      <aside className="flex h-full w-80 shrink-0 flex-col items-center justify-center overflow-y-auto border-l border-gray-200 bg-white p-6 text-center dark:border-slate-700/50 dark:bg-slate-900">
         <div className="rounded-full bg-gray-100 p-5 dark:bg-slate-800">
           <MousePointerClick size={28} className="text-slate-400 dark:text-slate-500" />
         </div>
@@ -616,7 +616,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
   // ========================
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-l border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-900">
+    <aside className="flex h-full w-80 shrink-0 flex-col border-l border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-900">
       {/* Cabeçalho */}
       <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-4 dark:border-slate-700/50">
         <p className="text-sm font-semibold text-slate-900 dark:text-white">
