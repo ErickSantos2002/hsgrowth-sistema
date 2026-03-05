@@ -417,9 +417,9 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_CLASSES: Record<string, string> = {
-  success: "bg-green-500/20 text-green-400",
-  failed: "bg-red-500/20 text-red-400",
-  pending: "bg-yellow-500/20 text-yellow-400",
+  success: "bg-green-500/20 text-slate-900 dark:text-green-400",
+  failed: "bg-red-500/20 text-slate-900 dark:text-red-400",
+  pending: "bg-yellow-500/20 text-slate-900 dark:text-yellow-400",
 };
 
 /**
