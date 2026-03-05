@@ -235,7 +235,7 @@ app.middleware("http")(session_activity_middleware)
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
-async def health_check(request: Request):
+async def health_check():
     """
     Endpoint de health check para verificar se a API está funcionando.
     Inclui status do Redis de sessões para diagnóstico.
@@ -270,23 +270,12 @@ async def health_check(request: Request):
         redis_status = "error"
         redis_detail = f"host={settings.REDIS_HOST} port={settings.REDIS_PORT} db={settings.REDIS_SESSION_DB} | erro: {type(exc).__name__}: {exc}"
 
-    # Diagnóstico de IP — mostra todos os headers relevantes para identificar qual usar
-    ip_headers = {
-        "client_host": request.client.host if request.client else None,
-        "x-forwarded-for": request.headers.get("X-Forwarded-For"),
-        "x-real-ip": request.headers.get("X-Real-IP"),
-        "x-original-forwarded-for": request.headers.get("X-Original-Forwarded-For"),
-        "cf-connecting-ip": request.headers.get("CF-Connecting-IP"),
-        "true-client-ip": request.headers.get("True-Client-IP"),
-    }
-
     return {
         "status": "healthy",
         "environment": settings.ENVIRONMENT,
         "version": settings.VERSION,
         "redis_sessions": redis_status,
         "redis_detail": redis_detail,
-        "ip_debug": ip_headers,
     }
 
 
