@@ -1,6 +1,6 @@
 # TODO - HSGrowth CRM
 
-**Última atualização**: 05/03/2026 (v1.3.10)
+**Última atualização**: 05/03/2026 (v1.3.11)
 **Responsável**: Erick (Cientista de Dados / Full Stack)
 
 ---
@@ -47,10 +47,10 @@
 - [x] Notificar quando card é movido entre boards — já implementado no `card_service.py`
 
 #### Backend — Redis Session Management
-- [ ] `SessionManager` em `core/redis_sessions.py` (create, update, get_active, remove)
-- [ ] Endpoint `GET /api/v1/users/active` (admin only) — lista usuários online
-- [ ] Endpoints `GET/PUT /api/v1/users/me/notification-settings`
-- [ ] Middleware para atualizar `last_activity` em cada request
+- [x] `SessionManager` em `core/redis_sessions.py` (create, update, get_active, remove) — v1.3.11
+- [x] Endpoint `GET /api/v1/users/online` (admin/manager) — lista usuários online — v1.3.11
+- [x] Endpoints `GET/PUT /api/v1/users/me/notification-settings` — v1.3.11
+- [x] Middleware para atualizar `last_activity` em cada request — v1.3.11
 
 #### Frontend — Melhorias
 - [x] Auto-save com debounce (800ms) nos campos editáveis do CardDetails — implementado em `EditableField.tsx` (v1.3.10)
@@ -125,6 +125,7 @@
 - ✅ **v1.3.8** (04/03/2026) - Drill-down em relatórios
 - ✅ **v1.3.9** (04/03/2026) - Role "Visualizador" (somente leitura)
 - ✅ **v1.3.10** (05/03/2026) - Auto-save com debounce nos cards + filtro por data de fechamento no Kanban
+- ✅ **v1.3.11** (05/03/2026) - Redis Session Management: sessões em tempo real, blacklist de tokens, usuários online, notification settings
 
 ---
 

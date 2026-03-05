@@ -7,6 +7,71 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.11] - 2026-03-05
+
+### Adicionado
+
+#### Redis Session Management — Controle de sessões em tempo real
+
+Sistema completo de gerenciamento de sessões via Redis, com blacklist de tokens e visibilidade de usuários online.
+
+**Backend — Infraestrutura Redis**
+- `app/core/redis_client.py` — singleton async Redis (DB 1, separado do Celery que usa DB 0); graceful degradation: sistema continua funcionando se Redis cair; reconecta automaticamente via `connect_redis()` no lifespan
+- `app/core/redis_sessions.py` — classe `SessionManager` com métodos: `create_session`, `update_activity`, `remove_session`, `blacklist_token`, `is_blacklisted`, `get_active_sessions`; chaves `session:{user_id}:{session_id}` (hash, TTL 15min) e `blacklist:{token_hash}` (string, TTL = tempo restante do JWT); usa SHA-256 para hash do token na blacklist; SCAN em vez de KEYS para não bloquear Redis em produção
+- `app/middleware/session_middleware.py` — atualiza `last_activity` a cada request autenticado via `asyncio.create_task()` (fire-and-forget, zero latência); verifica `exists()` antes de `hset` para não recriar sessão após logout
+- `app/core/config.py` — novos campos: `REDIS_PASSWORD`, `REDIS_SESSION_DB` (default 1), `REDIS_SESSION_TTL_SECONDS` (default 900)
+- `app/main.py` — Redis conectado/desconectado no lifespan; `session_activity_middleware` registrado
+
+**Backend — Auth**
+- `app/api/deps.py` — `get_current_user` verifica blacklist antes de validar; retorna HTTP 401 "Token revogado" se blacklistado; graceful se Redis offline
+- `app/api/v1/endpoints/auth.py` — login cria sessão no Redis e regera token com `session_id` no payload; logout blacklista token com TTL restante e remove sessão
+
+**Backend — Usuários Online e Notification Settings**
+- `GET /api/v1/users/online` (admin/manager) — lista usuários com sessão ativa, agrupados por `user_id`, com nome, email, IP, last_activity e contagem de sessões abertas; rota registrada antes de `/{user_id}` para evitar conflito de captura
+- `GET /api/v1/users/me/notification-settings` — retorna configurações de notificação do usuário (cria com defaults True se não existir)
+- `PUT /api/v1/users/me/notification-settings` — atualiza campos individualmente
+- `app/models/user_notification_setting.py` — model `UserNotificationSetting` (one-to-one com User, CASCADE delete)
+- `app/schemas/user_notification_setting.py` — `UserNotificationSettingResponse` e `UserNotificationSettingUpdate`
+- `app/services/user_notification_service.py` — `get_or_create` e `update` com `exclude_unset=True`
+- Migration `2026_03_05_1000-add_user_notification_settings.py` (revision: `notif_settings_2026`)
+
+**Frontend**
+- `types/index.ts` — interfaces `OnlineUser`, `OnlineUsersResponse`, `NotificationSettings`, `NotificationSettingsUpdate`
+- `services/userService.ts` — funções `getOnlineUsers()`, `getNotificationSettings()`, `updateNotificationSettings()`
+- `pages/Settings.tsx` — aba Segurança exibe seção "Sessões Ativas" com grid de usuários online (avatar, indicador verde, last_activity relativo, IP, badge "Você", contagem de abas); botão Atualizar manual; visível apenas para admin/manager
+
+### Corrigido
+
+- `requirements.txt` / `requirements-prod.txt` — migração de `python-jose[cryptography]==3.3.0` (descontinuado/removido do PyPI) para `PyJWT==2.8.0`; `cryptography==42.0.2` adicionado explicitamente (era dependência transitiva do python-jose, usada diretamente em `api4com_repository.py` via `Fernet`)
+- `app/health` — endpoint `/health` agora inclui diagnóstico do Redis (`redis_sessions: ok/error/disconnected`) para facilitar troubleshooting em produção
+
+### Infraestrutura
+
+- Easypanel produção — serviço Redis criado (`erick_redis:6379`); variáveis `REDIS_HOST`, `REDIS_PASSWORD`, `CELERY_BROKER_URL` e `CELERY_RESULT_BACKEND` atualizadas
+
+### Arquivos Modificados/Criados
+- `backend/app/core/redis_client.py` (novo)
+- `backend/app/core/redis_sessions.py` (novo)
+- `backend/app/middleware/session_middleware.py` (novo)
+- `backend/app/models/user_notification_setting.py` (novo)
+- `backend/app/schemas/user_notification_setting.py` (novo)
+- `backend/app/services/user_notification_service.py` (novo)
+- `backend/alembic/versions/2026_03_05_1000-add_user_notification_settings.py` (novo)
+- `backend/app/core/config.py`
+- `backend/app/main.py`
+- `backend/app/api/deps.py`
+- `backend/app/api/v1/endpoints/auth.py`
+- `backend/app/api/v1/endpoints/users.py`
+- `backend/app/models/__init__.py`
+- `backend/app/models/user.py`
+- `backend/requirements.txt`
+- `backend/requirements-prod.txt`
+- `frontend/src/types/index.ts`
+- `frontend/src/services/userService.ts`
+- `frontend/src/pages/Settings.tsx`
+
+---
+
 ## [1.3.10] - 2026-03-05
 
 ### Adicionado
