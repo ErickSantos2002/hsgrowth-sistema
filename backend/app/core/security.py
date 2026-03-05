@@ -4,7 +4,7 @@ Centraliza funções de autenticação e criptografia.
 """
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from jose import JWTError, jwt
+import jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
@@ -125,7 +125,7 @@ def decode_token(token: str) -> Optional[Dict[str, Any]]:
             algorithms=[settings.JWT_ALGORITHM]
         )
         return payload
-    except JWTError:
+    except jwt.PyJWTError:
         return None
 
 
@@ -192,5 +192,5 @@ def verify_password_reset_token(token: str) -> Optional[str]:
 
         email: str = payload.get("sub")
         return email
-    except JWTError:
+    except jwt.PyJWTError:
         return None

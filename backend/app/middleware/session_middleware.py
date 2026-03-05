@@ -6,7 +6,7 @@ Usa fire-and-forget (asyncio.ensure_future) para não adicionar latência.
 import asyncio
 
 from fastapi import Request
-from jose import jwt, JWTError
+import jwt
 from loguru import logger
 
 from app.core.config import settings
@@ -45,7 +45,7 @@ async def session_activity_middleware(request: Request, call_next):
                 asyncio.create_task(
                     session_manager.update_activity(int(user_id), session_id)
                 )
-        except JWTError:
+        except jwt.PyJWTError:
             # Token inválido ou malformado — ignora silenciosamente
             pass
         except Exception as exc:
