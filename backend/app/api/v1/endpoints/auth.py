@@ -105,7 +105,12 @@ async def login(
     ).first()
 
     # Captura informações da requisição para possível log de falha
-    client_ip = request.client.host if request.client else "unknown"
+    # X-Forwarded-For é preenchido pelo proxy reverso (Traefik/Nginx) com o IP real do cliente
+    client_ip = (
+        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or request.headers.get("X-Real-IP", "")
+        or (request.client.host if request.client else "unknown")
+    )
     user_agent = request.headers.get("user-agent", "unknown")
 
     # Verifica se o usuário existe e a senha está correta
@@ -320,7 +325,12 @@ async def logout(
     from app.core.security import decode_token
 
     # Registra no audit log
-    client_ip = request.client.host if request.client else "unknown"
+    # X-Forwarded-For é preenchido pelo proxy reverso (Traefik/Nginx) com o IP real do cliente
+    client_ip = (
+        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or request.headers.get("X-Real-IP", "")
+        or (request.client.host if request.client else "unknown")
+    )
     user_agent = request.headers.get("user-agent", "unknown")
 
     audit_log = AuditLog(
@@ -662,7 +672,12 @@ async def reset_password(
     db.commit()
 
     # Registra no audit log
-    client_ip = request.client.host if request.client else "unknown"
+    # X-Forwarded-For é preenchido pelo proxy reverso (Traefik/Nginx) com o IP real do cliente
+    client_ip = (
+        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or request.headers.get("X-Real-IP", "")
+        or (request.client.host if request.client else "unknown")
+    )
     user_agent = request.headers.get("user-agent", "unknown")
 
     audit_log = AuditLog(

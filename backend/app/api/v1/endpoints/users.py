@@ -323,6 +323,7 @@ async def get_online_users_route(
         if uid not in sessions_by_user:
             sessions_by_user[uid] = {
                 "last_activity": session.get("last_activity", ""),
+                "created_at": session.get("created_at", ""),  # Hora do login (primeira sessão)
                 "ip": session.get("ip", ""),
                 "count": 0,
             }
@@ -331,6 +332,9 @@ async def get_online_users_route(
         if session.get("last_activity", "") > sessions_by_user[uid]["last_activity"]:
             sessions_by_user[uid]["last_activity"] = session.get("last_activity", "")
             sessions_by_user[uid]["ip"] = session.get("ip", "")
+        # Mantém o created_at mais antigo (primeiro login do usuário)
+        if session.get("created_at", "") < sessions_by_user[uid]["created_at"]:
+            sessions_by_user[uid]["created_at"] = session.get("created_at", "")
 
     if not sessions_by_user:
         return {"total": 0, "users": []}
@@ -355,6 +359,7 @@ async def get_online_users_route(
             "name": user.name,
             "email": user.email,
             "last_activity": data["last_activity"],
+            "created_at": data["created_at"],  # Hora do login mais antigo ativo
             "ip": data["ip"],
             "active_sessions": data["count"],
         })

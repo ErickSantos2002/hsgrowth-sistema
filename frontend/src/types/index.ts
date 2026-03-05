@@ -720,6 +720,8 @@ export interface OnlineUser {
   email: string;
   /** Timestamp ISO da última atividade (UTC) */
   last_activity: string;
+  /** Timestamp ISO do login mais antigo ativo (UTC) */
+  created_at: string;
   ip: string;
   /** Número de abas/sessões abertas pelo mesmo usuário */
   active_sessions: number;

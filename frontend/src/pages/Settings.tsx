@@ -1374,12 +1374,13 @@ const Settings: React.FC = () => {
                     ) : (
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {onlineUsers.map((online) => {
-                          // Calcula há quanto tempo foi a última atividade
-                          const getLastActivityLabel = (isoDate: string) => {
+                          // Calcula há quanto tempo o usuário fez login (baseado no created_at da sessão)
+                          const getLoginTimeLabel = (isoDate: string) => {
                             const diff = Math.floor((Date.now() - new Date(isoDate + "Z").getTime()) / 1000);
-                            if (diff < 60) return "Agora mesmo";
-                            if (diff < 3600) return `Há ${Math.floor(diff / 60)}min`;
-                            return `Há ${Math.floor(diff / 3600)}h`;
+                            if (diff < 60) return "Entrou agora";
+                            if (diff < 3600) return `Entrou há ${Math.floor(diff / 60)}min`;
+                            if (diff < 86400) return `Entrou há ${Math.floor(diff / 3600)}h`;
+                            return `Entrou há ${Math.floor(diff / 86400)}d`;
                           };
 
                           // Iniciais para o avatar
@@ -1429,7 +1430,7 @@ const Settings: React.FC = () => {
                                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                                   <span className="flex items-center gap-1">
                                     <Clock size={11} />
-                                    {getLastActivityLabel(online.last_activity)}
+                                    {getLoginTimeLabel(online.created_at)}
                                   </span>
                                   <span className="flex items-center gap-1">
                                     <Globe size={11} />
