@@ -250,25 +250,25 @@ async def health_check():
         from app.core.config import settings as _s
 
         # Tenta conectar se ainda não conectou
-        if _rs is None:
-            await connect_redis()
-            from app.core.redis_client import redis_session as _rs2
-            test_client = _rs2
-        else:
-            test_client = _rs
-
-        if test_client is not None:
-            await test_client.ping()
-            # Testa escrita e leitura no DB1
-            await test_client.set("health:check", "1", ex=10)
-            val = await test_client.get("health:check")
-            redis_status = "ok" if val == "1" else "write_failed"
-        else:
-            redis_status = "disconnected"
-            redis_detail = f"host={_s.REDIS_HOST} port={_s.REDIS_PORT} db={_s.REDIS_SESSION_DB}"
+        # Tenta conexão direta sem depender do singleton (para diagnóstico)
+        test_client = _aioredis.Redis(
+            host=_s.REDIS_HOST,
+            port=_s.REDIS_PORT,
+            db=_s.REDIS_SESSION_DB,
+            password=_s.REDIS_PASSWORD or None,
+            decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+        )
+        await test_client.ping()
+        await test_client.set("health:check", "1", ex=10)
+        val = await test_client.get("health:check")
+        await test_client.aclose()
+        redis_status = "ok" if val == "1" else "write_failed"
+        redis_detail = f"host={_s.REDIS_HOST} port={_s.REDIS_PORT} db={_s.REDIS_SESSION_DB} password={'set' if _s.REDIS_PASSWORD else 'none'}"
     except Exception as exc:
         redis_status = "error"
-        redis_detail = str(exc)
+        redis_detail = f"host={settings.REDIS_HOST} port={settings.REDIS_PORT} db={settings.REDIS_SESSION_DB} | erro: {type(exc).__name__}: {exc}"
 
     return {
         "status": "healthy",
