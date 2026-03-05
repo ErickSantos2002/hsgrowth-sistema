@@ -27,6 +27,7 @@ import AutomationRoundRobinForm from "../components/AutomationRoundRobinForm";
 import { showSuccess, showError } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
 import { LoadingSpinner, SearchInput, Pagination } from "../components/common";
+import BaseModal from "../components/common/BaseModal";
 import { PageHeader } from "../components/layout";
 
 interface Board {
@@ -439,15 +440,6 @@ const ExecutionHistoryModal: React.FC<ExecutionHistoryModalProps> = ({ automatio
     loadExecutions();
   }, [page, statusFilter]);
 
-  // Fecha com ESC
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [onClose]);
-
   const loadExecutions = async () => {
     try {
       setLoading(true);
@@ -467,109 +459,90 @@ const ExecutionHistoryModal: React.FC<ExecutionHistoryModalProps> = ({ automatio
     }
   };
 
-  /**
-   * Formata duração em ms para exibição legível (ex: "1.2s" ou "320ms")
-   */
   const formatDuration = (ms?: number): string => {
     if (!ms) return "—";
     if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
     return `${ms}ms`;
   };
 
+  const STATUS_FILTER_OPTIONS = [
+    { value: "" as const, label: "Todas" },
+    { value: "success" as const, label: "Sucesso" },
+    { value: "failed" as const, label: "Falha" },
+    { value: "pending" as const, label: "Pendente" },
+  ];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative z-10 flex w-full max-w-3xl flex-col rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 p-5 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <History size={20} className="text-cyan-400" />
-            <div>
-              <h2 className="font-semibold text-slate-900 dark:text-white">Histórico de Execuções</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{automation.name}</p>
-            </div>
-          </div>
+    <BaseModal
+      isOpen
+      onClose={onClose}
+      title="Histórico de Execuções"
+      subtitle={automation.name}
+      size="xl"
+    >
+      {/* Filtros de status + contador */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {STATUS_FILTER_OPTIONS.map((opt) => (
           <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+            key={opt.value || "all"}
+            onClick={() => { setStatusFilter(opt.value); setPage(1); }}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+              statusFilter === opt.value
+                ? "border-emerald-500 bg-emerald-600 text-white"
+                : "border-gray-200 bg-white text-slate-700 hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            }`}
           >
-            <X size={20} />
+            {opt.label}
           </button>
-        </div>
+        ))}
+        <span className="ml-auto text-sm text-slate-500 dark:text-slate-400">
+          {total} execuç{total !== 1 ? "ões" : "ão"}
+        </span>
+      </div>
 
-        {/* Filtros de status */}
-        <div className="flex gap-2 border-b border-gray-200 px-5 py-3 dark:border-slate-700">
-          {(["", "success", "failed", "pending"] as const).map((s) => (
-            <button
-              key={s || "all"}
-              onClick={() => { setStatusFilter(s); setPage(1); }}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                statusFilter === s
-                  ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/40"
-                  : "text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              {s === "" ? "Todas" : STATUS_LABELS[s]}
-            </button>
-          ))}
-          <span className="ml-auto text-xs text-slate-400">{total} execuç{total !== 1 ? "ões" : "ão"}</span>
+      {/* Conteúdo */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 size={24} className="animate-spin text-emerald-500" />
         </div>
-
-        {/* Conteúdo */}
-        <div className="min-h-[300px] overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 size={24} className="animate-spin text-cyan-400" />
-            </div>
-          ) : executions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-              <History size={40} className="text-slate-600" />
-              <p className="text-sm text-slate-400">Nenhuma execução encontrada</p>
-            </div>
-          ) : (
+      ) : executions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+          <History size={40} className="text-slate-400 dark:text-slate-600" />
+          <p className="text-sm text-slate-500 dark:text-slate-400">Nenhuma execução encontrada</p>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-slate-700">
-                  <th className="px-5 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Data / Hora</th>
-                  <th className="px-5 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Status</th>
-                  <th className="px-5 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Duração</th>
-                  <th className="px-5 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Detalhe</th>
+                <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50">
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Data / Hora</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Duração</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Detalhe</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                 {executions.map((exec) => (
                   <tr
                     key={exec.id}
-                    className="border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-slate-800 dark:hover:bg-slate-800/40"
+                    className="hover:bg-gray-50 dark:hover:bg-slate-800/40"
                   >
-                    {/* Data e hora */}
-                    <td className="px-5 py-3 text-slate-700 dark:text-slate-300">
+                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
                       {new Date(exec.started_at).toLocaleString("pt-BR")}
                     </td>
-
-                    {/* Status */}
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[exec.status] ?? "bg-gray-200 text-slate-600"}`}>
                         {STATUS_LABELS[exec.status] ?? exec.status}
                       </span>
                     </td>
-
-                    {/* Duração */}
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3">
                       <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                         <Timer size={12} />
                         {formatDuration(exec.duration_ms)}
                       </span>
                     </td>
-
-                    {/* Erro ou OK */}
-                    <td className="max-w-xs px-5 py-3">
+                    <td className="max-w-xs px-4 py-3">
                       {exec.error_message ? (
                         <span className="flex items-start gap-1 text-red-400">
                           <AlertCircle size={14} className="mt-0.5 shrink-0" />
@@ -583,33 +556,54 @@ const ExecutionHistoryModal: React.FC<ExecutionHistoryModalProps> = ({ automatio
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
-
-        {/* Paginação */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-gray-200 px-5 py-3 dark:border-slate-700">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-gray-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
-            >
-              Anterior
-            </button>
-            <span className="text-sm text-slate-500 dark:text-slate-400">
-              Página {page} de {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-gray-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
-            >
-              Próxima
-            </button>
           </div>
-        )}
-      </div>
-    </div>
+
+          {/* Paginação */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                Mostrando {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} de {total} execuções
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                >
+                  Anterior
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => {
+                    const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+                    const end = Math.min(totalPages, start + 4);
+                    return p >= start && p <= end;
+                  })
+                  .map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`min-w-[2rem] rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                        pageNum === page
+                          ? "bg-emerald-600 text-white"
+                          : "border border-gray-200 bg-white text-slate-900 hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                >
+                  Próxima
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </BaseModal>
   );
 };
 

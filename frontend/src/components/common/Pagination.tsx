@@ -3,7 +3,6 @@ import React from "react";
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
-  pageNumbers: number[];
   totalItems: number;
   startIndex: number;
   endIndex: number;
@@ -13,10 +12,13 @@ interface PaginationProps {
   goToNextPage: () => void;
   goToPrevPage: () => void;
   itemLabel?: string; // Ex: "usuários", "produtos", "registros"
+  // pageNumbers é aceito mas ignorado — calculamos internamente a janela deslizante
+  pageNumbers?: number[];
 }
 
 /**
- * Componente reutilizável de paginação UI com suporte a modo claro e escuro
+ * Componente reutilizável de paginação UI com suporte a modo claro e escuro.
+ * Exibe uma janela deslizante de até 5 páginas ao redor da página atual.
  *
  * Funciona perfeitamente com o hook usePagination.
  * Basta passar as props retornadas pelo hook diretamente.
@@ -31,10 +33,24 @@ interface PaginationProps {
  * />
  * ```
  */
+
+const WINDOW_SIZE = 5;
+
+/** Calcula a janela deslizante de até WINDOW_SIZE páginas ao redor da página atual */
+function getVisiblePages(current: number, total: number): number[] {
+  const half = Math.floor(WINDOW_SIZE / 2);
+  let start = Math.max(1, current - half);
+  let end = start + WINDOW_SIZE - 1;
+  if (end > total) {
+    end = total;
+    start = Math.max(1, end - WINDOW_SIZE + 1);
+  }
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
 export const Pagination: React.FC<PaginationProps> = ({
   currentPage,
   totalPages,
-  pageNumbers,
   totalItems,
   startIndex,
   endIndex,
@@ -49,6 +65,8 @@ export const Pagination: React.FC<PaginationProps> = ({
   if (totalPages <= 1) {
     return null;
   }
+
+  const visiblePages = getVisiblePages(currentPage, totalPages);
 
   return (
     <div className="mt-6 border-t border-gray-200 px-6 pb-4 pt-4 dark:border-slate-700">
@@ -66,9 +84,9 @@ export const Pagination: React.FC<PaginationProps> = ({
             Anterior
           </button>
 
-          {/* Números de página */}
+          {/* Números de página — janela deslizante de 5 */}
           <div className="flex gap-1">
-            {pageNumbers.map((pageNum) => (
+            {visiblePages.map((pageNum) => (
               <button
                 key={pageNum}
                 onClick={() => goToPage(pageNum)}
