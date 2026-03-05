@@ -53,6 +53,9 @@ from app.models.api4com import API4ComConfig, UserExtension, CallLog
 # Modelos de relatórios customizados
 from app.models.custom_report import CustomReport
 
+# Configurações de notificação por usuário
+from app.models.user_notification_setting import UserNotificationSetting
+
 # Histórico de movimentação de cards entre listas
 from app.models.card_list_history import CardListHistory
 
@@ -92,4 +95,5 @@ __all__ = [
     "CallLog",
     "CustomReport",
     "CardListHistory",
+    "UserNotificationSetting",
 ]

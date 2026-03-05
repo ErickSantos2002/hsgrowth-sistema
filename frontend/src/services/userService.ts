@@ -6,6 +6,9 @@ import {
   CreateUserRequest,
   UpdateUserRequest,
   ChangePasswordRequest,
+  OnlineUsersResponse,
+  NotificationSettings,
+  NotificationSettingsUpdate,
 } from "../types";
 
 /**
@@ -80,6 +83,32 @@ class UserService {
    */
   async listActive(): Promise<User[]> {
     const response = await api.get<User[]>("/api/v1/users/active");
+    return response.data;
+  }
+
+  /**
+   * [ADMIN/MANAGER] Retorna usuários com sessão ativa no Redis (últimos 15 min)
+   */
+  async getOnlineUsers(): Promise<OnlineUsersResponse> {
+    const response = await api.get<OnlineUsersResponse>("/api/v1/users/online");
+    return response.data;
+  }
+
+  /**
+   * Busca as configurações de notificação do usuário logado
+   * Cria com valores padrão se ainda não existir
+   */
+  async getNotificationSettings(): Promise<NotificationSettings> {
+    const response = await api.get<NotificationSettings>("/api/v1/users/me/notification-settings");
+    return response.data;
+  }
+
+  /**
+   * Atualiza as configurações de notificação do usuário logado
+   * Apenas os campos enviados são alterados
+   */
+  async updateNotificationSettings(data: NotificationSettingsUpdate): Promise<NotificationSettings> {
+    const response = await api.put<NotificationSettings>("/api/v1/users/me/notification-settings", data);
     return response.data;
   }
 

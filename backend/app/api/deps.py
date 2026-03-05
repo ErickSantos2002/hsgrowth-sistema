@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import SessionLocal
 from app.core.security import decode_token, verify_token_type
+from app.core.redis_sessions import session_manager
 from app.models.user import User
 from app.models.role import Role
 from app.models.integration_client import IntegrationClient
@@ -61,6 +62,15 @@ async def get_current_user(
 
     # Extrai o token
     token = credentials.credentials
+
+    # Verifica se o token está na blacklist do Redis (logout/revogação)
+    # Graceful: se Redis estiver offline, não bloqueia (retorna False)
+    if await session_manager.is_blacklisted(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token revogado. Faça login novamente.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Decodifica o token
     payload = decode_token(token)

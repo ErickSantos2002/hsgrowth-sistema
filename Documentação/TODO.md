@@ -1,6 +1,6 @@
 # TODO - HSGrowth CRM
 
-**Última atualização**: 03/03/2026 (v1.3.7)
+**Última atualização**: 05/03/2026 (v1.3.10)
 **Responsável**: Erick (Cientista de Dados / Full Stack)
 
 ---
@@ -8,7 +8,7 @@
 ## ✅ Módulos Concluídos e em Produção
 
 - ✅ **Autenticação e Autorização**
-- ✅ **Boards (Kanban)** — incluindo filtros por lista, status, vendedor, SDR, valor e data de criação
+- ✅ **Boards (Kanban)** — incluindo filtros por lista, status, vendedor, SDR, valor e data de fechamento (com período personalizado)
 - ✅ **Cards (Negócios)** — CRUD completo, CardDetails com todas as abas
 - ✅ **Clientes (Organizações)** — CRUD completo
 - ✅ **Pessoas (Contatos)** — CRUD completo
@@ -38,7 +38,7 @@
 
 #### Backend — Permissões
 - [x] `CardTaskService`: apenas responsável ou admin pode editar/deletar tarefa
-- [ ] `CardService`: controle de acesso a cards por board/time (se necessário)
+- [x] `CardService`: controle de acesso a cards por board/time — corrigido em `assign_card`, `add_or_update_field_value`, `link_person_to_card` e `unlink_person_from_card` (passavam `get_card_by_id` sem `current_user`, permitindo que salesperson acessasse cards de outros vendedores) (v1.3.10)
 
 #### Backend — Notificações automáticas
 - [x] Notificar quando tarefa é atribuída a um usuário (TODO no `card_task_service.py` linha 91)
@@ -53,20 +53,20 @@
 - [ ] Middleware para atualizar `last_activity` em cada request
 
 #### Frontend — Melhorias
-- [ ] Auto-save com debounce (500ms) nos campos editáveis do CardDetails
+- [x] Auto-save com debounce (800ms) nos campos editáveis do CardDetails — implementado em `EditableField.tsx` (v1.3.10)
 - [ ] Validação de formulários mais completa em modais de criação
 
 ### 🟢 Baixa Prioridade / Opcional
 
 - [ ] Integração com Google Calendar (opcional)
 - [ ] Integração com Microsoft Teams/Outlook (opcional)
-- [ ] Responsividade mobile — revisar todas as páginas
+- [x] Responsividade mobile — revisão concluída
 - [ ] Gráficos com Recharts nos relatórios (aguarda backend)
 - [ ] Exportação Excel/PDF nos relatórios (aguarda backend)
 - [ ] Paginação no histórico de atividades do card (scroll infinito)
 - [ ] Cache de dados frequentemente acessados
 - [ ] Compressão de respostas API
-- [ ] Testes unitários (frontend e backend)
+- [x] Testes unitários (frontend e backend) — concluídos
 - [ ] Webhooks externos como triggers de automação
 - [ ] Sistema de condições avançadas nas automações (if/else)
 - [ ] Notificações de conquistas de gamificação em tempo real
@@ -75,7 +75,7 @@
 
 ## 🐛 Bugs Conhecidos
 
-- [ ] **Bug na configuração de pontos** — comportamento incorreto ao salvar configurações de pontos por ação (reportado, não investigado ainda)
+- [ ] **Bug na configuração de pontos** — comportamento incorreto ao salvar configurações de pontos por ação (aguardando priorização — não será trabalhado no momento)
 
 ---
 
@@ -92,8 +92,8 @@
 - **Integração**: Services registram eventos automaticamente nas operações
 
 ### Kanban — Filtros
-- Filtros implementados: lista, status (aberto/ganho/perdido), vendedor, SDR, valor (faixas) e data de criação
-- O filtro de "data" filtra por `created_at` (data de criação do card), não por `due_date` — comportamento intencional
+- Filtros implementados: lista, status (aberto/ganho/perdido), vendedor, SDR, valor (faixas) e data de fechamento (com período personalizado)
+- O filtro de "data" filtra por `closed_at` (data de fechamento do card) — só exibe cards que foram fechados (ganhos ou perdidos)
 - Permissões automáticas: salesperson vê apenas seus próprios cards; SDR vê apenas cards onde é SDR
 
 ### Automações — Arquitetura
@@ -122,6 +122,9 @@
 - ✅ **v1.3.5** (03/03/2026) - Automações completas + Tratamento de erros unificado
 - ✅ **v1.3.6** (03/03/2026) - Histórico de pontos de gamificação
 - ✅ **v1.3.7** (03/03/2026) - Histórico contextual por perfil + fix require_manager_or_admin
+- ✅ **v1.3.8** (04/03/2026) - Drill-down em relatórios
+- ✅ **v1.3.9** (04/03/2026) - Role "Visualizador" (somente leitura)
+- ✅ **v1.3.10** (05/03/2026) - Auto-save com debounce nos cards + filtro por data de fechamento no Kanban
 
 ---
 

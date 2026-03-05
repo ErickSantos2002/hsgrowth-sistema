@@ -6,9 +6,14 @@ from typing import Any, Optional, List
 from fastapi import APIRouter, Depends, Query, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user, require_role
+from app.api.deps import get_db, get_current_active_user, require_role, require_manager_or_admin
 from app.services.user_service import UserService
+from app.services.user_notification_service import UserNotificationService
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, UserListResponse, ChangePasswordRequest
+from app.schemas.user_notification_setting import (
+    UserNotificationSettingResponse,
+    UserNotificationSettingUpdate,
+)
 from app.models.user import User
 from app.models.audit_log import AuditLog
 
@@ -251,6 +256,113 @@ async def list_active_users(
         )
         for user in users
     ]
+
+
+@router.get(
+    "/online",
+    summary="Usuários online (sessões ativas)",
+    description="""
+    Lista todos os usuários com sessão ativa no Redis (últimos 15 minutos de atividade).
+
+    **Disponível para:** admin e manager
+
+    **Retorna:**
+    - Lista de usuários com sessão ativa, agrupados por usuário
+    - last_activity: timestamp da última ação
+    - ip: endereço IP da sessão
+    - active_sessions: número de abas/sessões abertas pelo mesmo usuário
+
+    **Nota:** Se o Redis estiver offline, retorna lista vazia (graceful degradation).
+    """,
+    responses={
+        200: {
+            "description": "Lista de usuários online retornada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "total": 2,
+                        "users": [
+                            {
+                                "user_id": 1,
+                                "name": "João Silva",
+                                "email": "joao@exemplo.com",
+                                "last_activity": "2026-03-05T14:30:00",
+                                "ip": "192.168.1.10",
+                                "active_sessions": 2
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+)
+async def get_online_users_route(
+    current_user: User = Depends(require_manager_or_admin()),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Endpoint de usuários com sessão ativa no Redis.
+    Agrupa por user_id (um usuário pode ter múltiplas abas abertas).
+    Precisa estar antes de /{user_id} para evitar conflito de rota.
+    """
+    from app.core.redis_sessions import session_manager
+
+    # Busca todas as sessões ativas no Redis
+    active_sessions = await session_manager.get_active_sessions()
+
+    if not active_sessions:
+        return {"total": 0, "users": []}
+
+    # Agrupa sessões por user_id
+    sessions_by_user: dict = {}
+    for session in active_sessions:
+        uid = session.get("user_id")
+        if not uid:
+            continue
+        if uid not in sessions_by_user:
+            sessions_by_user[uid] = {
+                "last_activity": session.get("last_activity", ""),
+                "ip": session.get("ip", ""),
+                "count": 0,
+            }
+        sessions_by_user[uid]["count"] += 1
+        # Mantém a atividade mais recente (ISO string — comparação lexicográfica funciona)
+        if session.get("last_activity", "") > sessions_by_user[uid]["last_activity"]:
+            sessions_by_user[uid]["last_activity"] = session.get("last_activity", "")
+            sessions_by_user[uid]["ip"] = session.get("ip", "")
+
+    if not sessions_by_user:
+        return {"total": 0, "users": []}
+
+    # Busca os usuários no banco para obter nome e email
+    user_ids = [int(uid) for uid in sessions_by_user.keys()]
+    users_in_db = (
+        db.query(User)
+        .filter(User.id.in_(user_ids), User.is_deleted == False)
+        .all()
+    )
+    user_map = {u.id: u for u in users_in_db}
+
+    result = []
+    for uid_str, data in sessions_by_user.items():
+        uid = int(uid_str)
+        user = user_map.get(uid)
+        if not user:
+            continue
+        result.append({
+            "user_id": uid,
+            "name": user.name,
+            "email": user.email,
+            "last_activity": data["last_activity"],
+            "ip": data["ip"],
+            "active_sessions": data["count"],
+        })
+
+    # Ordena por last_activity decrescente (mais recente primeiro)
+    result.sort(key=lambda x: x["last_activity"], reverse=True)
+
+    return {"total": len(result), "users": result}
 
 
 @router.get("/{user_id}", response_model=UserResponse, summary="Buscar usuário")
@@ -540,3 +652,97 @@ async def change_password(
     db.commit()
 
     return {"message": "Senha alterada com sucesso"}
+
+
+@router.get(
+    "/me/notification-settings",
+    response_model=UserNotificationSettingResponse,
+    summary="Configurações de notificação do usuário logado",
+    description="""
+    Retorna as configurações de notificação in-app do usuário autenticado.
+    Se o usuário ainda não configurou as preferências, cria automaticamente com todos os tipos ativos.
+
+    **Tipos de notificação disponíveis:**
+    - `task_assigned`: Tarefa atribuída ao usuário
+    - `task_due_soon`: Tarefa com prazo próximo (< 24h)
+    - `card_moved`: Card movido para outra lista
+    - `card_product_changed`: Produto do card alterado
+    - `achievement_unlocked`: Conquista/badge desbloqueada (gamificação)
+    """,
+    responses={
+        200: {
+            "description": "Configurações retornadas com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "user_id": 1,
+                        "task_assigned": True,
+                        "task_due_soon": True,
+                        "card_moved": False,
+                        "card_product_changed": True,
+                        "achievement_unlocked": True,
+                        "created_at": "2026-03-05T10:00:00",
+                        "updated_at": "2026-03-05T14:30:00"
+                    }
+                }
+            }
+        }
+    }
+)
+async def get_notification_settings(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Retorna (ou cria com defaults) as configurações de notificação do usuário.
+    """
+    service = UserNotificationService(db)
+    return service.get_or_create(current_user.id)
+
+
+@router.put(
+    "/me/notification-settings",
+    response_model=UserNotificationSettingResponse,
+    summary="Atualizar configurações de notificação",
+    description="""
+    Atualiza as preferências de notificação in-app do usuário autenticado.
+    Apenas os campos enviados serão alterados (demais permanecem com valor atual).
+
+    **Exemplo:** Para desativar apenas notificações de card movido:
+    ```json
+    { "card_moved": false }
+    ```
+    """,
+    responses={
+        200: {
+            "description": "Configurações atualizadas com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "user_id": 1,
+                        "task_assigned": True,
+                        "task_due_soon": True,
+                        "card_moved": False,
+                        "card_product_changed": True,
+                        "achievement_unlocked": True,
+                        "created_at": "2026-03-05T10:00:00",
+                        "updated_at": "2026-03-05T15:00:00"
+                    }
+                }
+            }
+        }
+    }
+)
+async def update_notification_settings(
+    data: UserNotificationSettingUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Atualiza as configurações de notificação do usuário.
+    Cria o registro se ainda não existir.
+    """
+    service = UserNotificationService(db)
+    return service.update(current_user.id, data)

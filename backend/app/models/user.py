@@ -72,6 +72,14 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     # Notificações
     notifications = relationship("Notification", back_populates="user", lazy="dynamic")
 
+    # Configurações de notificação (one-to-one)
+    notification_setting = relationship(
+        "UserNotificationSetting",
+        back_populates="user",
+        uselist=False,  # Garante que é one-to-one (retorna objeto, não lista)
+        lazy="select",
+    )
+
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', name='{self.name}')>"
 

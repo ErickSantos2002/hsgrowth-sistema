@@ -7,6 +7,39 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.10] - 2026-03-05
+
+### Adicionado
+
+#### Auto-save com debounce nos campos editáveis do CardDetails
+
+- `EditableField.tsx` — auto-save de 800ms após pausa na digitação (debounce); `onBlur` salva imediatamente ao sair do campo; `isCancellingRef` + `onMouseDown` no botão Cancelar evita que o blur dispare um save indesejado; `editValueRef` resolve closures desatualizadas dentro do `setTimeout`; spinner `Loader2` substituí o botão Salvar enquanto o request está em andamento
+
+#### Filtro por data de fechamento no Kanban
+
+- `KanbanBoard.tsx` — filtro de data trocado de `created_at` para `closed_at`; novas opções: "Fechado hoje", "Fechado esta semana", "Fechado este mês", "Fechado mês passado", "Período personalizado" (com inputs de data início/fim)
+- `schemas/card.py` + `services/card_service.py` — campo `closed_at` adicionado ao `CardMinimalResponse` e à construção do schema minimal
+- `types/index.ts` — campo `closed_at: string | null` adicionado à interface `Card`
+
+#### Melhorias de UX na barra de filtros do Kanban
+
+- `SelectMenu.tsx` — novo prop `size?: "md" | "sm"`; modo `sm` usa `px-3 py-2 text-sm` para filtros compactos
+- `KanbanBoard.tsx` — todos os selects da barra de filtros usam `size="sm"` para caber em uma linha na maioria das telas
+
+### Corrigido
+
+- `card_service.py` — mensagem de validação de avanço de etapa alterada de `"área do contato"` para `"área/departamento do contato"` para maior clareza no toast de aviso
+
+### Arquivos Modificados
+- `backend/app/schemas/card.py`
+- `backend/app/services/card_service.py`
+- `frontend/src/types/index.ts`
+- `frontend/src/pages/KanbanBoard.tsx`
+- `frontend/src/components/common/SelectMenu.tsx`
+- `frontend/src/components/cardDetails/EditableField.tsx`
+
+---
+
 ## [1.3.9] - 2026-03-04
 
 ### Adicionado

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { User as UserIcon, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe, FileText, Filter, Calendar } from "lucide-react";
+import { User as UserIcon, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe, FileText, Filter, Calendar, RefreshCw, Wifi } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 import authService from "../services/authService";
@@ -10,7 +10,7 @@ import api4comService, { API4ComConfig, UserExtension, API4ComConfigCreate, User
 import auditLogService, { AuditLog } from "../services/auditLogService";
 import { showSuccess, showError, showWarning } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
-import type { User } from "../types";
+import type { User, OnlineUser } from "../types";
 import { LoadingSpinner } from "../components/common";
 import avatarService from "../services/avatarService";
 
@@ -100,6 +100,10 @@ const Settings: React.FC = () => {
   }>>([]);
   const [loadingLoginHistory, setLoadingLoginHistory] = useState(false);
 
+  // Estados das Sessões Ativas (Redis)
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [loadingOnlineUsers, setLoadingOnlineUsers] = useState(false);
+
   // Estados dos Logs de Auditoria
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -162,10 +166,14 @@ const Settings: React.FC = () => {
     }
   }, [activeTab, user, logsFilters]);
 
-  // Carrega histórico de logins quando a tab security é ativada
+  // Carrega histórico de logins e sessões ativas quando a tab security é ativada
   useEffect(() => {
     if (activeTab === "security") {
       loadLoginHistory();
+      // Sessões ativas só disponíveis para admin/manager
+      if (user?.role === "admin" || user?.role === "manager") {
+        loadOnlineUsers();
+      }
     }
   }, [activeTab]);
 
@@ -505,6 +513,21 @@ const Settings: React.FC = () => {
       showError("Erro ao carregar histórico de logins");
     } finally {
       setLoadingLoginHistory(false);
+    }
+  };
+
+  // Função para carregar sessões ativas do Redis (admin/manager)
+  const loadOnlineUsers = async () => {
+    try {
+      setLoadingOnlineUsers(true);
+      const data = await userService.getOnlineUsers();
+      setOnlineUsers(data.users);
+    } catch (error) {
+      console.error("Erro ao carregar sessões ativas:", error);
+      // Não mostra toast de erro — Redis pode estar offline (graceful)
+      setOnlineUsers([]);
+    } finally {
+      setLoadingOnlineUsers(false);
     }
   };
 
@@ -1302,6 +1325,135 @@ const Settings: React.FC = () => {
             {/* Tab: Segurança */}
             {activeTab === "security" && (
               <>
+                {/* Seção: Sessões Ativas (Redis) — somente admin/manager */}
+                {isManagerOrAdmin && (
+                  <div className="mb-8 space-y-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Sessões Ativas</h2>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                          Usuários com atividade nos últimos 15 minutos (dados em tempo real via Redis)
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {/* Badge de contagem */}
+                        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">
+                          <Wifi size={16} className="text-emerald-400" />
+                          <span className="text-sm font-medium text-emerald-400">
+                            {onlineUsers.length} online
+                          </span>
+                        </div>
+                        {/* Botão de refresh */}
+                        <button
+                          onClick={loadOnlineUsers}
+                          disabled={loadingOnlineUsers}
+                          className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-400 hover:text-slate-900 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-white"
+                          title="Atualizar sessões"
+                        >
+                          <RefreshCw size={15} className={loadingOnlineUsers ? "animate-spin" : ""} />
+                          Atualizar
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Lista de sessões ativas */}
+                    {loadingOnlineUsers ? (
+                      <div className="flex items-center justify-center py-8">
+                        <LoadingSpinner size="md" />
+                      </div>
+                    ) : onlineUsers.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-slate-300 py-8 text-center dark:border-slate-600">
+                        <Wifi size={36} className="mx-auto mb-3 text-slate-400" />
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Nenhuma sessão ativa no momento
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                          Redis pode estar offline ou sem sessões nos últimos 15 minutos
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {onlineUsers.map((online) => {
+                          // Calcula há quanto tempo foi a última atividade
+                          const getLastActivityLabel = (isoDate: string) => {
+                            const diff = Math.floor((Date.now() - new Date(isoDate + "Z").getTime()) / 1000);
+                            if (diff < 60) return "Agora mesmo";
+                            if (diff < 3600) return `Há ${Math.floor(diff / 60)}min`;
+                            return `Há ${Math.floor(diff / 3600)}h`;
+                          };
+
+                          // Iniciais para o avatar
+                          const initials = online.name
+                            .split(" ")
+                            .slice(0, 2)
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase();
+
+                          // Destaca o próprio usuário
+                          const isSelf = online.user_id === user?.id;
+
+                          return (
+                            <div
+                              key={online.user_id}
+                              className={`flex items-start gap-3 rounded-lg border p-4 transition-colors ${
+                                isSelf
+                                  ? "border-emerald-500/40 bg-emerald-500/5 dark:border-emerald-500/30 dark:bg-emerald-500/5"
+                                  : "border-gray-200 bg-gray-50 dark:border-slate-600 dark:bg-slate-700/50"
+                              }`}
+                            >
+                              {/* Avatar com indicador online */}
+                              <div className="relative shrink-0">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-600 text-sm font-semibold text-white dark:bg-slate-500">
+                                  {initials}
+                                </div>
+                                {/* Indicador verde de "online" */}
+                                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-700" />
+                              </div>
+
+                              {/* Dados */}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                                    {online.name}
+                                  </p>
+                                  {isSelf && (
+                                    <span className="shrink-0 rounded bg-emerald-500/20 px-1.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                      Você
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                                  {online.email}
+                                </p>
+                                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                                  <span className="flex items-center gap-1">
+                                    <Clock size={11} />
+                                    {getLastActivityLabel(online.last_activity)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Globe size={11} />
+                                    {online.ip}
+                                  </span>
+                                  {online.active_sessions > 1 && (
+                                    <span className="flex items-center gap-1">
+                                      <Monitor size={11} />
+                                      {online.active_sessions} abas
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Separador */}
+                    <div className="border-t border-slate-200 pt-2 dark:border-slate-700" />
+                  </div>
+                )}
+
                 <div className="space-y-6">
                   <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>

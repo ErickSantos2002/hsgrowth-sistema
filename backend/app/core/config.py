@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
+    REDIS_PASSWORD: str = ""  # Senha do Redis (vazio = sem autenticação)
+    REDIS_SESSION_DB: int = 1  # DB separado do Celery (DB 0) para sessões de usuário
+
+    # Sessões Redis
+    REDIS_SESSION_TTL_SECONDS: int = 900  # 15 minutos de inatividade
 
     # Logs
     LOG_LEVEL: str = "DEBUG"

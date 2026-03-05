@@ -713,6 +713,44 @@ export interface ChangePasswordRequest {
   new_password: string;
 }
 
+// Usuário com sessão ativa no Redis
+export interface OnlineUser {
+  user_id: number;
+  name: string;
+  email: string;
+  /** Timestamp ISO da última atividade (UTC) */
+  last_activity: string;
+  ip: string;
+  /** Número de abas/sessões abertas pelo mesmo usuário */
+  active_sessions: number;
+}
+
+export interface OnlineUsersResponse {
+  total: number;
+  users: OnlineUser[];
+}
+
+// Configurações de notificação do usuário
+export interface NotificationSettings {
+  id: number;
+  user_id: number;
+  task_assigned: boolean;
+  task_due_soon: boolean;
+  card_moved: boolean;
+  card_product_changed: boolean;
+  achievement_unlocked: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationSettingsUpdate {
+  task_assigned?: boolean;
+  task_due_soon?: boolean;
+  card_moved?: boolean;
+  card_product_changed?: boolean;
+  achievement_unlocked?: boolean;
+}
+
 export interface CreateBoardRequest {
   name: string;
   description?: string;

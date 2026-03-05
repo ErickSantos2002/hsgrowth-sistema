@@ -19,6 +19,7 @@ from app.core.security import (
     verify_password_reset_token,
 )
 from app.core.config import settings
+from app.core.redis_sessions import session_manager
 from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.schemas.auth import (
@@ -152,9 +153,26 @@ async def login(
     db.add(audit_log)
     db.commit()
 
-    # Cria os tokens
+    # Cria o access token sem session_id por enquanto (precisamos do token para criar a sessão)
+    # e depois cria a sessão passando o token
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+    # Cria sessão no Redis e obtém o session_id
+    # Se Redis estiver offline, session_id será None (graceful degradation)
+    session_id = await session_manager.create_session(
+        user_id=user.id,
+        token=access_token,
+        ip=client_ip,
+        user_agent=user_agent,
+    )
+
+    # Se criou sessão, regera o token incluindo session_id no payload
+    # Isso permite ao middleware rastrear qual sessão atualizar a cada request
+    if session_id:
+        access_token = create_access_token(
+            data={"sub": str(user.id), "session_id": session_id}
+        )
 
     # Prepara dados do usuário para resposta
     user_data = {
@@ -295,11 +313,12 @@ async def logout(
 ) -> Any:
     """
     Realiza logout do usuário autenticado.
-
-    Nota: Como estamos usando JWT stateless, o logout é realizado no cliente
-    (descartando o token). Este endpoint pode ser usado para logging ou
-    para implementar uma blacklist de tokens no futuro.
+    Blacklista o token no Redis para invalidação imediata (sem esperar expiração natural).
+    Remove a sessão ativa do usuário.
     """
+    from datetime import datetime, timezone
+    from app.core.security import decode_token
+
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")
@@ -316,8 +335,29 @@ async def logout(
     db.add(audit_log)
     db.commit()
 
-    # Aqui poderia adicionar o token a uma blacklist (Redis, por exemplo)
-    # Por enquanto, apenas retorna sucesso
+    # Extrai o token do header para blacklistar e remover a sessão
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+
+        # Calcula o TTL restante para definir quanto tempo o token fica na blacklist
+        payload = decode_token(token)
+        if payload:
+            exp = payload.get("exp")
+            if exp:
+                remaining_ttl = max(int(exp - datetime.now(timezone.utc).timestamp()), 0)
+            else:
+                # Sem exp definido — usa o TTL padrão do access token
+                remaining_ttl = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+            # Adiciona o token à blacklist (token não poderá mais ser usado)
+            await session_manager.blacklist_token(token, remaining_ttl)
+
+            # Remove a sessão ativa do Redis
+            session_id = payload.get("session_id")
+            if session_id:
+                await session_manager.remove_session(current_user.id, session_id)
+
     return {
         "message": "Logout realizado com sucesso",
         "user_id": current_user.id

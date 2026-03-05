@@ -1416,8 +1416,8 @@ class CardService:
         Returns:
             Card atualizado
         """
-        # Busca e verifica acesso ao card
-        card = self.get_card_by_id(card_id)
+        # Busca e verifica acesso ao card (valida role do usuário)
+        card = self.get_card_by_id(card_id, current_user)
 
         # Se user_id é None, desatribui o card
         if user_id is None:
@@ -1459,8 +1459,8 @@ class CardService:
         """
         from app.schemas.field import FieldDefinitionCreate
 
-        # Verifica acesso ao card
-        card = self.get_card_by_id(card_id)
+        # Verifica acesso ao card (valida role do usuário)
+        card = self.get_card_by_id(card_id, current_user)
 
         # Busca o board do card
         list_obj = self.list_repository.find_by_id(card.list_id)
@@ -1979,8 +1979,8 @@ class CardService:
         Raises:
             HTTPException: Se card ou pessoa não forem encontrados
         """
-        # Busca o card
-        card = self.get_card_by_id(card_id)
+        # Busca o card (valida role do usuário)
+        card = self.get_card_by_id(card_id, current_user)
 
         # Verifica se a pessoa existe
         person = self.person_repository.find_by_id(person_id)
@@ -2019,8 +2019,8 @@ class CardService:
         Raises:
             HTTPException: Se card não for encontrado
         """
-        # Busca o card
-        card = self.get_card_by_id(card_id)
+        # Busca o card (valida role do usuário)
+        card = self.get_card_by_id(card_id, current_user)
 
         # Guarda o nome da pessoa antes de desvincular (para o log)
         person_name = card.person.name if card.person else "Desconhecido"
