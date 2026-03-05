@@ -238,12 +238,44 @@ app.middleware("http")(session_activity_middleware)
 async def health_check():
     """
     Endpoint de health check para verificar se a API está funcionando.
+    Inclui status do Redis de sessões para diagnóstico.
     Usado por load balancers e monitoramento.
     """
+    # Testa conexão com o Redis de sessões (DB1)
+    redis_status = "unavailable"
+    redis_detail = None
+    try:
+        from app.core.redis_client import redis_session as _rs, connect_redis
+        import redis.asyncio as _aioredis
+        from app.core.config import settings as _s
+
+        # Tenta conectar se ainda não conectou
+        if _rs is None:
+            await connect_redis()
+            from app.core.redis_client import redis_session as _rs2
+            test_client = _rs2
+        else:
+            test_client = _rs
+
+        if test_client is not None:
+            await test_client.ping()
+            # Testa escrita e leitura no DB1
+            await test_client.set("health:check", "1", ex=10)
+            val = await test_client.get("health:check")
+            redis_status = "ok" if val == "1" else "write_failed"
+        else:
+            redis_status = "disconnected"
+            redis_detail = f"host={_s.REDIS_HOST} port={_s.REDIS_PORT} db={_s.REDIS_SESSION_DB}"
+    except Exception as exc:
+        redis_status = "error"
+        redis_detail = str(exc)
+
     return {
         "status": "healthy",
         "environment": settings.ENVIRONMENT,
         "version": settings.VERSION,
+        "redis_sessions": redis_status,
+        "redis_detail": redis_detail,
     }
 
 
