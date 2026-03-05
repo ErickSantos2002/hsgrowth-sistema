@@ -292,7 +292,8 @@ class CardService:
                         due_date=card.due_date,
                         created_at=card.created_at,
                         is_won=card.is_won,
-                        is_lost=card.is_lost
+                        is_lost=card.is_lost,
+                        closed_at=card.closed_at
                     )
                 )
 
@@ -877,7 +878,7 @@ class CardService:
                     if not (person.position or "").strip():
                         missing.append("cargo do contato")
                     if not (person.area or "").strip():
-                        missing.append("área do contato")
+                        missing.append("área/departamento do contato")
 
             if not (card.acquisition_channel or "").strip():
                 missing.append("canal de aquisição")

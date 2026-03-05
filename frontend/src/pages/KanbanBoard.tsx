@@ -78,7 +78,9 @@ const KanbanBoard: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [listFilter, setListFilter] = useState("");
   const [valueFilter, setValueFilter] = useState("");
-  const [dueDateFilter, setDueDateFilter] = useState("");
+  const [closingDateFilter, setClosingDateFilter] = useState("");
+  const [customDateStart, setCustomDateStart] = useState("");
+  const [customDateEnd, setCustomDateEnd] = useState("");
   const [assignedToFilter, setAssignedToFilter] = useState(""); // Filtro de vendedor
   const [sdrFilter, setSdrFilter] = useState(""); // Filtro de SDR
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
@@ -508,52 +510,72 @@ const KanbanBoard: React.FC = () => {
         if (!matches) return false;
       }
 
-      // Filtro por data de criação
-      if (dueDateFilter) {
-        // Se o card não tem created_at por algum motivo, exclui do resultado
-        if (!card.created_at) return false;
+      // Filtro por data de fechamento (ganho ou perdido)
+      if (closingDateFilter) {
+        // Cards sem data de fechamento são excluídos quando o filtro está ativo
+        if (!card.closed_at) return false;
 
-        const createdDate = new Date(card.created_at);
+        const closedDate = new Date(card.closed_at);
 
-        // Se a data é inválida, exclui do resultado
-        if (isNaN(createdDate.getTime())) return false;
+        // Data inválida: exclui do resultado
+        if (isNaN(closedDate.getTime())) return false;
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         let matches = false;
 
-        switch (dueDateFilter) {
-          case "overdue": {
-            // Antes desta semana: criado antes do início da semana atual (segunda-feira)
-            const startOfWeek = new Date(today);
-            const day = startOfWeek.getDay();
-            startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1));
-            matches = createdDate < startOfWeek;
-            break;
-          }
+        switch (closingDateFilter) {
           case "today": {
-            // Hoje: criado hoje
-            const createdOnly = new Date(createdDate);
-            createdOnly.setHours(0, 0, 0, 0);
-            matches = createdOnly.getTime() === today.getTime();
+            // Fechado hoje
+            const closedOnly = new Date(closedDate);
+            closedOnly.setHours(0, 0, 0, 0);
+            matches = closedOnly.getTime() === today.getTime();
             break;
           }
           case "week": {
-            // Esta semana: criado desde segunda-feira até hoje
+            // Fechado nesta semana (desde segunda-feira até hoje)
             const startOfWeek = new Date(today);
             const day = startOfWeek.getDay();
             startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1));
             startOfWeek.setHours(0, 0, 0, 0);
-            matches = createdDate >= startOfWeek && createdDate <= new Date();
+            matches = closedDate >= startOfWeek && closedDate <= new Date();
             break;
           }
-          case "month":
-            // Este mês: criado no mês atual
+          case "month": {
+            // Fechado neste mês
             matches =
-              createdDate.getMonth() === today.getMonth() &&
-              createdDate.getFullYear() === today.getFullYear();
+              closedDate.getMonth() === today.getMonth() &&
+              closedDate.getFullYear() === today.getFullYear();
             break;
+          }
+          case "last_month": {
+            // Fechado no mês passado
+            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            matches =
+              closedDate.getMonth() === lastMonth.getMonth() &&
+              closedDate.getFullYear() === lastMonth.getFullYear();
+            break;
+          }
+          case "custom": {
+            // Período personalizado definido pelo usuário
+            if (!customDateStart && !customDateEnd) {
+              matches = true; // Sem datas definidas, não filtra
+              break;
+            }
+            const closedOnly = new Date(closedDate);
+            closedOnly.setHours(0, 0, 0, 0);
+            if (customDateStart) {
+              const start = new Date(customDateStart + "T00:00:00");
+              if (closedOnly < start) { matches = false; break; }
+            }
+            if (customDateEnd) {
+              const end = new Date(customDateEnd + "T23:59:59");
+              if (closedOnly > end) { matches = false; break; }
+            }
+            matches = true;
+            break;
+          }
         }
 
         if (!matches) return false;
@@ -838,12 +860,13 @@ const KanbanBoard: React.FC = () => {
       {/* Painel de Filtros (expansível) */}
       {showFilters && (
         <div className="relative z-10 flex-shrink-0 border-b border-gray-200 bg-white px-6 py-3 dark:border-slate-700/50 dark:bg-slate-900/50 lg:z-40">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Filtros:</span>
 
             {/* Filtro por lista */}
-            <div className="w-full sm:w-auto sm:min-w-[190px]">
+            <div className="min-w-[155px]">
               <SelectMenu
+                size="sm"
                 value={listFilter}
                 options={[
                   { value: "", label: "Todas as listas" },
@@ -857,8 +880,9 @@ const KanbanBoard: React.FC = () => {
             </div>
 
             {/* Filtro por status (ganho/perdido/aberto) */}
-            <div className="w-full sm:w-auto sm:min-w-[160px]">
+            <div className="min-w-[135px]">
               <SelectMenu
+                size="sm"
                 value={statusFilter}
                 options={[
                   { value: "open", label: "Apenas Abertos" },
@@ -871,8 +895,9 @@ const KanbanBoard: React.FC = () => {
             </div>
 
             {/* Filtro por vendedor (responsável) */}
-            <div className="w-full sm:w-auto sm:min-w-[200px]">
+            <div className="min-w-[160px]">
               <SelectMenu
+                size="sm"
                 value={assignedToFilter}
                 options={[
                   { value: "", label: "Todos os vendedores" },
@@ -889,8 +914,9 @@ const KanbanBoard: React.FC = () => {
             </div>
 
             {/* Filtro por SDR */}
-            <div className="w-full sm:w-auto sm:min-w-[200px]">
+            <div className="min-w-[145px]">
               <SelectMenu
+                size="sm"
                 value={sdrFilter}
                 options={[
                   { value: "", label: "Todos os SDRs" },
@@ -907,8 +933,9 @@ const KanbanBoard: React.FC = () => {
             </div>
 
             {/* Filtro por valor */}
-            <div className="w-full sm:w-auto sm:min-w-[180px]">
+            <div className="min-w-[150px]">
               <SelectMenu
+                size="sm"
                 value={valueFilter}
                 options={[
                   { value: "", label: "Qualquer valor" },
@@ -921,25 +948,54 @@ const KanbanBoard: React.FC = () => {
               />
             </div>
 
-            {/* Filtro por data de criação */}
-            <div className="w-full sm:w-auto sm:min-w-[170px]">
+            {/* Filtro por data de fechamento */}
+            <div className="min-w-[160px]">
               <SelectMenu
-                value={dueDateFilter}
+                size="sm"
+                value={closingDateFilter}
                 options={[
-                  { value: "", label: "Qualquer data" },
-                  { value: "overdue", label: "Antes desta semana" },
-                  { value: "today", label: "Hoje" },
-                  { value: "week", label: "Esta semana" },
-                  { value: "month", label: "Este mês" },
+                  { value: "", label: "Qualquer fechamento" },
+                  { value: "today", label: "Fechado hoje" },
+                  { value: "week", label: "Fechado esta semana" },
+                  { value: "month", label: "Fechado este mês" },
+                  { value: "last_month", label: "Fechado mês passado" },
+                  { value: "custom", label: "Período personalizado" },
                 ]}
-                onChange={setDueDateFilter}
+                onChange={(val) => {
+                  setClosingDateFilter(val);
+                  // Limpa as datas personalizadas ao trocar para outra opção
+                  if (val !== "custom") {
+                    setCustomDateStart("");
+                    setCustomDateEnd("");
+                  }
+                }}
               />
             </div>
 
-            {/* Limpar filtros */}
+            {/* Inputs de data personalizada - aparece apenas quando "Período personalizado" está selecionado */}
+            {closingDateFilter === "custom" && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={customDateStart}
+                  onChange={(e) => setCustomDateStart(e.target.value)}
+                  className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                />
+                <span className="text-sm text-slate-500 dark:text-slate-400">até</span>
+                <input
+                  type="date"
+                  value={customDateEnd}
+                  onChange={(e) => setCustomDateEnd(e.target.value)}
+                  min={customDateStart}
+                  className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                />
+              </div>
+            )}
+
+            {/* Fechar painel */}
             <button
               onClick={() => setShowFilters(false)}
-              className="px-3 py-1.5 text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white sm:ml-auto"
+              className="ml-auto px-3 py-1.5 text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
             >
               Fechar
             </button>

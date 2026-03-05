@@ -2,7 +2,7 @@
 Endpoints de Gamificação.
 Rotas para pontos, badges e rankings.
 """
-from typing import Any, List
+from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body, Request, status
 from sqlalchemy.orm import Session
 

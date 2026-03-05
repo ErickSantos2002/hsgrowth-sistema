@@ -101,6 +101,7 @@ export interface Card {
   is_lost: boolean; // true se perdido (backend converte -1 para true)
   won_at: string | null;
   lost_at: string | null;
+  closed_at: string | null;
   created_at: string;
   updated_at: string;
 

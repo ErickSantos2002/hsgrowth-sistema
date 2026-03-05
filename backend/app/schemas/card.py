@@ -484,6 +484,7 @@ class CardMinimalResponse(BaseModel):
     created_at: Optional[datetime] = Field(None, description="Data de criação")
     is_won: bool = Field(..., description="Card ganho")
     is_lost: bool = Field(..., description="Card perdido")
+    closed_at: Optional[datetime] = Field(None, description="Data de fechamento (ganho ou perdido)")
 
     @field_validator('value', 'position', mode='before')
     @classmethod
