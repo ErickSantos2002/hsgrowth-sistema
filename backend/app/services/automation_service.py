@@ -504,7 +504,43 @@ class AutomationService:
                             elif target_board.id == 8 and not card.expansion_entry_date:  # Expansão
                                 card.expansion_entry_date = now
 
-                    self.card_repository.move_to_list(card, target_list_id)
+                    moved_card = self.card_repository.move_to_list(card, target_list_id)
+
+                    # Dispara o trigger card_moved para a lista de destino, permitindo que
+                    # outras automações (ex: send_webhook) reajam ao movimento feito por esta automação.
+                    # O guardião de profundidade (chain_depth) previne loops infinitos: se a cadeia
+                    # já ultrapassou 10 níveis, o trigger não é disparado novamente.
+                    try:
+                        current_chain_depth = (execution.execution_data or {}).get("chain_depth", 0)
+
+                        if current_chain_depth < 10:
+                            dest_list = self.list_repository.find_by_id(target_list_id)
+                            if dest_list:
+                                dest_board = self.board_repository.find_by_id(dest_list.board_id)
+                                if dest_board:
+                                    # Busca o usuário que originou esta execução para repassar ao trigger
+                                    from app.models.user import User as UserModel
+                                    trigger_user = (
+                                        self.db.query(UserModel)
+                                        .filter(UserModel.id == execution.triggered_by_id)
+                                        .first()
+                                    ) if execution.triggered_by_id else None
+
+                                    if trigger_user:
+                                        self.process_trigger(
+                                            board_id=dest_board.id,
+                                            trigger_event="card_moved",
+                                            card=moved_card or card,
+                                            user=trigger_user,
+                                            trigger_data={
+                                                "to_list_id": int(target_list_id),
+                                                "triggered_by_automation": True,
+                                                "chain_depth": current_chain_depth + 1,
+                                            },
+                                        )
+                    except Exception as e:
+                        # Erro no trigger encadeado não deve interromper a execução principal
+                        print(f"[AUTOMATION] Erro ao disparar trigger encadeado card_moved: {e}")
 
             elif action_type == "assign_card" and card:
                 user_id = params.get("user_id")

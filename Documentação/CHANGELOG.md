@@ -7,6 +7,25 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.16] - 2026-03-09
+
+### Corrigido
+
+#### Webhook não disparava quando card era movido por outra automação
+
+**Problema:** A action `send_webhook` só era executada quando um card era movido **manualmente** para a lista configurada. Se outra automação movia o card (ex: automação no board "Agendado" move card para "Reunião Agendada"), o webhook nunca disparava.
+
+**Causa raiz:** Em `_execute_actions()`, a action `move_card` chama `card_repository.move_to_list()` diretamente — esse método bypassa completamente o `card_service.move_card()`, que é onde `process_trigger("card_moved")` é invocado. Logo, a lista de destino nunca era avaliada como trigger para outras automações.
+
+**Solução:** Após `move_to_list()`, o código agora chama `process_trigger("card_moved")` na lista e board de destino, propagando o evento para que automações configuradas naquele destino (como o `send_webhook`) sejam executadas corretamente.
+
+**Proteção contra loops infinitos:** Um guardião de profundidade (`chain_depth`) foi adicionado ao `execution_data`. O campo é incrementado a cada nível de automação encadeada e o encadeamento é bloqueado automaticamente ao atingir 10 níveis — evitando que automações A→B→A→B... rodem indefinidamente.
+
+### Arquivos Modificados
+- `backend/app/services/automation_service.py` — método `_execute_actions()`, bloco `move_card`
+
+---
+
 ## [1.3.15] - 2026-03-09
 
 ### Adicionado

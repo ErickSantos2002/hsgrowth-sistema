@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.3.16",
+    date: "09/03/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Corrigido problema onde o Webhook de automação não disparava quando o card era movido automaticamente por outra automação — apenas disparava em movimentos manuais. Agora o encadeamento de automações funciona corretamente.",
+      },
+    ],
+  },
+  {
     version: "1.3.15",
     date: "09/03/2026",
     entries: [
