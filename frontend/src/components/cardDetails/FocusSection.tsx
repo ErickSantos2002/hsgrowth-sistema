@@ -72,6 +72,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
   const [person, setPerson] = useState<Person | null>(null);
   const [callingTaskId, setCallingTaskId] = useState<number | null>(null);
   const [noShowTaskId, setNoShowTaskId] = useState<number | null>(null);
+  const [phoneSelectTaskId, setPhoneSelectTaskId] = useState<number | null>(null);
 
   // Usa os dados que vem do backend
   const activities = tasks || [];
@@ -337,45 +338,16 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
   };
 
   /**
-   * Faz chamada telefônica via API4COM
-   * Prioridade de número: Principal → WhatsApp → Comercial
+   * Executa a chamada para um número já selecionado.
+   * Usado tanto no fluxo de número único (após confirmação) quanto no modal de seleção.
    */
-  const handleMakeCall = async (activityId: number) => {
-    // Verifica se tem pessoa vinculada
-    if (!person) {
-      showWarning("Não há pessoa vinculada a este card");
-      return;
-    }
-
-    // Seleciona o número por ordem de prioridade
-    const phoneNumber = person.phone || person.phone_whatsapp || person.phone_commercial;
-
-    if (!phoneNumber) {
-      showWarning("A pessoa não possui nenhum número de telefone cadastrado");
-      return;
-    }
-
-    // Indica qual campo está sendo usado na confirmação
-    const phoneLabel = person.phone
-      ? "Principal"
-      : person.phone_whatsapp
-      ? "WhatsApp"
-      : "Comercial";
-
-    const confirmedCall = await confirm({
-      title: "Iniciar chamada",
-      message: `Ligar para ${person.name} no número ${phoneNumber} (${phoneLabel})?`,
-      confirmText: "Ligar",
-      isDanger: false,
-    });
-    if (!confirmedCall) return;
-
+  const executeCall = async (activityId: number, phoneNumber: string) => {
     try {
       setCallingTaskId(activityId);
 
       const result = await api4comService.makeCall({
         phone: phoneNumber,
-        card_id: card.id
+        card_id: card.id,
       });
 
       if (result.success) {
@@ -389,6 +361,47 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
     } finally {
       setCallingTaskId(null);
     }
+  };
+
+  /**
+   * Inicia o fluxo de chamada telefônica via API4COM.
+   * - 1 número disponível: abre confirmação direta.
+   * - 2+ números disponíveis: abre modal de seleção de número.
+   */
+  const handleMakeCall = async (activityId: number) => {
+    if (!person) {
+      showWarning("Não há pessoa vinculada a este card");
+      return;
+    }
+
+    // Monta a lista de números disponíveis com seus rótulos
+    const availableNumbers = [
+      person.phone && { label: "Principal", number: person.phone },
+      person.phone_whatsapp && { label: "WhatsApp", number: person.phone_whatsapp },
+      person.phone_commercial && { label: "Comercial", number: person.phone_commercial },
+    ].filter(Boolean) as { label: string; number: string }[];
+
+    if (availableNumbers.length === 0) {
+      showWarning("A pessoa não possui nenhum número de telefone cadastrado");
+      return;
+    }
+
+    // Com apenas 1 número, mantém o fluxo de confirmação direta
+    if (availableNumbers.length === 1) {
+      const { number, label } = availableNumbers[0];
+      const confirmed = await confirm({
+        title: "Iniciar chamada",
+        message: `Ligar para ${person.name} no número ${number} (${label})?`,
+        confirmText: "Ligar",
+        isDanger: false,
+      });
+      if (!confirmed) return;
+      await executeCall(activityId, number);
+      return;
+    }
+
+    // Com 2 ou 3 números, abre o modal de seleção
+    setPhoneSelectTaskId(activityId);
   };
 
   /**
@@ -775,6 +788,64 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Modal de seleção de número para ligação */}
+      {phoneSelectTaskId && person && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-xl">
+            <div className="border-b border-gray-200 dark:border-slate-700 p-4">
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
+                <Phone size={20} className="text-blue-400" />
+                Selecionar número
+              </h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Para qual número deseja ligar para{" "}
+                <span className="font-medium text-slate-900 dark:text-white">{person.name}</span>?
+              </p>
+            </div>
+
+            <div className="space-y-2 p-4">
+              {[
+                person.phone && { label: "Principal", number: person.phone },
+                person.phone_whatsapp && { label: "WhatsApp", number: person.phone_whatsapp },
+                person.phone_commercial && { label: "Comercial", number: person.phone_commercial },
+              ]
+                .filter(Boolean)
+                .map((item) => {
+                  const { label, number } = item as { label: string; number: string };
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => {
+                        setPhoneSelectTaskId(null);
+                        executeCall(phoneSelectTaskId, number);
+                      }}
+                      disabled={callingTaskId === phoneSelectTaskId}
+                      className="flex w-full items-center gap-3 rounded-lg border border-blue-400/30 bg-blue-500/10 px-4 py-3 text-left transition-colors hover:border-blue-400/60 hover:bg-blue-500/20 disabled:opacity-50"
+                    >
+                      <Phone size={16} className="flex-shrink-0 text-blue-400" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-400">
+                          {label}
+                        </p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{number}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+
+            <div className="border-t border-gray-200 dark:border-slate-700 p-4">
+              <button
+                onClick={() => setPhoneSelectTaskId(null)}
+                className="w-full rounded bg-gray-200 dark:bg-slate-700 px-4 py-2 text-sm font-medium text-slate-900 dark:text-white transition-colors hover:bg-gray-300 dark:hover:bg-slate-600"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

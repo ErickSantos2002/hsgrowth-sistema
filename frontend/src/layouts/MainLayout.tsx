@@ -24,6 +24,7 @@ import logo from "../assets/logo.png";
 import NotificationDropdown from "../components/NotificationDropdown";
 import GlobalSearch from "../components/GlobalSearch";
 import { UserAvatar } from "../components/common";
+import ChangelogModal from "../components/common/ChangelogModal";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -45,6 +46,7 @@ export default function MainLayout() {
     const { user, logout } = useAuth();
     const { darkMode, toggleDarkMode } = useTheme();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [changelogOpen, setChangelogOpen] = useState(false);
 
     // Define estado inicial da sidebar baseado no tamanho da tela
     useEffect(() => {
@@ -210,9 +212,14 @@ export default function MainLayout() {
                     {sidebarOpen && (
                         <div className="mt-auto border-t border-gray-200 px-3 py-4 dark:border-slate-700/50">
                             <div className="space-y-1 text-center">
-                                <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
-                                    HSGrowth CRM v1.3.11
-                                </p>
+                                {/* Versão clicável — abre o changelog resumido */}
+                                <button
+                                    onClick={() => setChangelogOpen(true)}
+                                    className="text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                                    title="Ver o que há de novo nessa versão"
+                                >
+                                    HSGrowth CRM v1.3.13
+                                </button>
                                 <p className="text-[10px] text-slate-300 dark:text-slate-600">
                                     © 2026 Health & Safety Tech
                                 </p>
@@ -303,6 +310,12 @@ export default function MainLayout() {
                     <Outlet />
                 </main>
             </div>
+
+            {/* Modal de changelog — aberto ao clicar na versão na sidebar */}
+            <ChangelogModal
+                isOpen={changelogOpen}
+                onClose={() => setChangelogOpen(false)}
+            />
         </div>
     );
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Building, User, Mail, Phone, FileText, MapPin, Globe, StickyNote, ChevronDown, Briefcase, Linkedin } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import { FormField, Input, Select, Textarea, Button } from "../common";
-import clientService, { Client, CreateClientRequest } from "../../services/clientService";
+import clientService, { Client, CreateClientRequest, UpdateClientRequest } from "../../services/clientService";
 import {
   RELATIONSHIP_TYPES,
   COMMERCIAL_ACTIVITIES,
@@ -227,33 +227,56 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
       setIsSaving(true);
       setError(null);
 
-      // Prepara dados para enviar (remove campos vazios)
-      const dataToSend: CreateClientRequest = {
-        name: formData.name.trim(),
-        email: formData.email.trim() || undefined,
-        phone: formData.phone.replace(/\D/g, "") || undefined, // Remove máscara
-        company_name: formData.company_name.trim() || undefined,
-        document: formData.document.replace(/\D/g, "") || undefined, // Remove máscara
-        address: formData.address.trim() || undefined,
-        city: formData.city.trim() || undefined,
-        state: formData.state || undefined,
-        country: formData.country.trim() || undefined,
-        website: formData.website.trim() || undefined,
-        notes: formData.notes.trim() || undefined,
-        is_active: formData.is_active,
-        cnae: formData.cnae.replace(/\D/g, "") || undefined, // Remove máscara
-        linkedin_url: formData.linkedin_url.trim() || undefined,
-        relationship_type: formData.relationship_type || undefined,
-        commercial_activity: formData.commercial_activity || undefined,
-        sector: formData.sector || undefined,
-        employee_count: formData.employee_count || undefined,
-        annual_revenue: formData.annual_revenue || undefined,
-      };
-
       if (isEditing) {
-        await clientService.update(client.id, dataToSend);
+        // Na edição, campos opcionais vazios enviam null para limpar o valor no banco.
+        // Enviar undefined omite o campo do body, fazendo o backend ignorar a atualização
+        // (comportamento do exclude_unset=True no Pydantic).
+        const updateData: UpdateClientRequest = {
+          name: formData.name.trim(),
+          email: formData.email.trim() || null,
+          phone: formData.phone.replace(/\D/g, "") || null, // Remove máscara
+          company_name: formData.company_name.trim() || null,
+          document: formData.document.replace(/\D/g, "") || null, // Remove máscara
+          address: formData.address.trim() || null,
+          city: formData.city.trim() || null,
+          state: formData.state || null,
+          country: formData.country.trim() || null,
+          website: formData.website.trim() || null,
+          notes: formData.notes.trim() || null,
+          is_active: formData.is_active,
+          cnae: formData.cnae.replace(/\D/g, "") || null, // Remove máscara
+          linkedin_url: formData.linkedin_url.trim() || null,
+          relationship_type: formData.relationship_type || null,
+          commercial_activity: formData.commercial_activity || null,
+          sector: formData.sector || null,
+          employee_count: formData.employee_count || null,
+          annual_revenue: formData.annual_revenue || null,
+        };
+        await clientService.update(client.id, updateData);
       } else {
-        await clientService.create(dataToSend);
+        // Na criação, campos opcionais vazios são omitidos (undefined) para usar o padrão do backend
+        const createData: CreateClientRequest = {
+          name: formData.name.trim(),
+          email: formData.email.trim() || undefined,
+          phone: formData.phone.replace(/\D/g, "") || undefined, // Remove máscara
+          company_name: formData.company_name.trim() || undefined,
+          document: formData.document.replace(/\D/g, "") || undefined, // Remove máscara
+          address: formData.address.trim() || undefined,
+          city: formData.city.trim() || undefined,
+          state: formData.state || undefined,
+          country: formData.country.trim() || undefined,
+          website: formData.website.trim() || undefined,
+          notes: formData.notes.trim() || undefined,
+          is_active: formData.is_active,
+          cnae: formData.cnae.replace(/\D/g, "") || undefined, // Remove máscara
+          linkedin_url: formData.linkedin_url.trim() || undefined,
+          relationship_type: formData.relationship_type || undefined,
+          commercial_activity: formData.commercial_activity || undefined,
+          sector: formData.sector || undefined,
+          employee_count: formData.employee_count || undefined,
+          annual_revenue: formData.annual_revenue || undefined,
+        };
+        await clientService.create(createData);
       }
 
       onSave(); // Recarrega a lista

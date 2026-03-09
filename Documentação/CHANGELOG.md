@@ -7,6 +7,50 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.13] - 2026-03-09
+
+### Adicionado
+
+#### Seleção de número ao ligar — CardDetails > Foco
+
+Ao clicar em "Ligar" em uma atividade do tipo ligação, o sistema agora verifica quantos números de telefone estão cadastrados para a pessoa vinculada ao card.
+
+- **1 número disponível:** comportamento anterior mantido — modal de confirmação direta antes de iniciar a chamada.
+- **2 ou 3 números disponíveis:** exibe um modal de seleção listando os números com seus rótulos (Principal, WhatsApp, Comercial). O clique no número já inicia a chamada diretamente, sem etapa de confirmação extra, pois a seleção em si é a confirmação.
+
+**Arquivos Modificados:**
+- `frontend/src/components/cardDetails/FocusSection.tsx`
+  - Novo estado `phoneSelectTaskId` para controlar o modal de seleção
+  - Função `executeCall` extraída do `handleMakeCall` para ser reutilizada nos dois fluxos
+  - `handleMakeCall` refatorado: monta lista de números disponíveis e redireciona para o fluxo correto (confirmação direta ou modal de seleção)
+  - Modal de seleção adicionado inline, seguindo o mesmo padrão visual do modal de reagendamento existente
+
+---
+
+## [1.3.12] - 2026-03-09
+
+### Corrigido
+
+#### Bug: campos opcionais não eram limpos ao editar cliente
+
+Ao editar um cliente e apagar um campo opcional (ex: Nome Fantasia), o valor antigo era mantido após salvar.
+
+**Causa raiz:** o backend usa `model_dump(exclude_unset=True)` no Pydantic, o que faz com que apenas os campos presentes no body da requisição sejam atualizados. O frontend enviava `undefined` para campos vazios, que o `JSON.stringify` omite do body — fazendo o backend ignorar completamente o campo e manter o valor anterior.
+
+**Correção:**
+- `frontend/src/services/clientService.ts` — interface `UpdateClientRequest` atualizada: campos opcionais passam a aceitar `string | null` (além de `string | undefined`), deixando o TypeScript ciente de que valores nulos são válidos em operações de edição
+- `frontend/src/components/clients/ClientModal.tsx` — função `handleSave` separada em dois blocos:
+  - **Criação:** continua enviando `undefined` para campos vazios (correto — backend usa o valor padrão)
+  - **Edição:** envia `null` para campos vazios, forçando o backend a limpar o valor no banco
+
+O fix cobre todos os campos opcionais do formulário: Nome Fantasia, Email, Telefone, CPF/CNPJ, Endereço, Cidade, Estado, País, Website, Observações, CNAE, LinkedIn, Tipo de Relacionamento, Atividade Comercial, Setor, Número de Colaboradores e Faturamento Anual.
+
+### Arquivos Modificados
+- `frontend/src/services/clientService.ts`
+- `frontend/src/components/clients/ClientModal.tsx`
+
+---
+
 ## [1.3.11] - 2026-03-05
 
 ### Adicionado

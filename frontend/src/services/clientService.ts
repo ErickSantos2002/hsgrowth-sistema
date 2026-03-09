@@ -67,26 +67,27 @@ export interface CreateClientRequest {
 
 export interface UpdateClientRequest {
   name?: string;
-  email?: string;
-  phone?: string;
-  company_name?: string;
-  document?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  website?: string;
-  notes?: string;
+  // Campos opcionais aceitam null para permitir limpeza de valores existentes
+  email?: string | null;
+  phone?: string | null;
+  company_name?: string | null;
+  document?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  website?: string | null;
+  notes?: string | null;
   is_active?: boolean;
 
   // Campos do blueprint da consultora
-  cnae?: string;
-  linkedin_url?: string;
-  relationship_type?: string;
-  commercial_activity?: string;
-  sector?: string;
-  employee_count?: string;
-  annual_revenue?: string;
+  cnae?: string | null;
+  linkedin_url?: string | null;
+  relationship_type?: string | null;
+  commercial_activity?: string | null;
+  sector?: string | null;
+  employee_count?: string | null;
+  annual_revenue?: string | null;
 }
 
 /**
