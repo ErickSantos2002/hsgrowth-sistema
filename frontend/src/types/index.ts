@@ -118,6 +118,12 @@ export interface Card {
   has_implementation?: boolean | null;
   has_personnel?: boolean | null;
 
+  // Campos de rastreamento de origem
+  origin?: string | null;
+  utm_campaign?: string | null;
+  utm_source?: string | null;
+  utm_term?: string | null;
+
   // Campos relacionados (retornados pelo backend)
   assigned_to_name: string | null;
   assigned_to_avatar_url: string | null;
@@ -832,6 +838,12 @@ export interface UpdateCardRequest {
   loss_reason?: string | null;
   has_implementation?: boolean | null;
   has_personnel?: boolean | null;
+
+  // Campos de rastreamento de origem
+  origin?: string | null;
+  utm_campaign?: string | null;
+  utm_source?: string | null;
+  utm_term?: string | null;
 }
 
 export interface MoveCardRequest {

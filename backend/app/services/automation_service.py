@@ -549,6 +549,10 @@ class AutomationService:
                 # Atualiza um campo padrão do card
                 self._update_field_action(card, params)
 
+            elif action_type == "send_webhook" and card:
+                # Dispara webhook HTTP POST para URL externa configurada
+                self._execute_webhook_action(card, params)
+
     def _assign_round_robin(self, automation: Automation, card: Card) -> None:
         """
         Atribui o card ao próximo vendedor em sistema de rodízio.
@@ -902,6 +906,129 @@ class AutomationService:
             created_at=automation.created_at,
             updated_at=automation.updated_at
         )
+
+    def _execute_webhook_action(self, card: Card, params: dict) -> None:
+        """
+        Dispara uma requisição HTTP POST para uma URL externa (webhook).
+
+        Monta um payload rico com os dados do card, incluindo cliente, pessoa,
+        responsável e campos de rastreamento de origem (UTM). Se um secret for
+        configurado, assina o payload com HMAC-SHA256 no header X-HSGrowth-Signature
+        para que o receptor possa validar a autenticidade da requisição.
+
+        Args:
+            card: Card que disparou a automação
+            params: Parâmetros com 'url' (obrigatório) e 'secret' (opcional)
+        """
+        import httpx
+        import json
+        import hmac
+        import hashlib
+
+        url = params.get("url", "").strip()
+        secret = params.get("secret", "").strip()
+
+        if not url:
+            print(f"[AUTOMATION] send_webhook: URL não configurada")
+            return
+
+        # Garante que o card tem os relacionamentos carregados
+        try:
+            from sqlalchemy.orm import joinedload
+            from app.models.card import Card as CardModel
+            card_loaded = (
+                self.db.query(CardModel)
+                .options(
+                    joinedload(CardModel.client),
+                    joinedload(CardModel.person),
+                    joinedload(CardModel.assigned_to),
+                    joinedload(CardModel.list),
+                )
+                .filter(CardModel.id == card.id)
+                .first()
+            ) or card
+        except Exception:
+            card_loaded = card
+
+        # Monta o payload com os dados do card
+        payload = {
+            "event": "card.list_changed",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "card": {
+                "id": card_loaded.id,
+                "title": card_loaded.title,
+                "description": card_loaded.description,
+                "value": float(card_loaded.value) if card_loaded.value is not None else None,
+                "list_id": card_loaded.list_id,
+                "list_name": card_loaded.list.name if card_loaded.list else None,
+                "board_id": card_loaded.list.board_id if card_loaded.list else None,
+                # Campos de rastreamento de origem
+                "origin": card_loaded.origin,
+                "utm_campaign": card_loaded.utm_campaign,
+                "utm_source": card_loaded.utm_source,
+                "utm_term": card_loaded.utm_term,
+                # Cliente vinculado
+                "client": {
+                    "id": card_loaded.client.id,
+                    "name": card_loaded.client.name,
+                    "document": card_loaded.client.document,
+                    "email": card_loaded.client.email,
+                    "phone": card_loaded.client.phone,
+                } if card_loaded.client else None,
+                # Pessoa de contato vinculada
+                "person": {
+                    "id": card_loaded.person.id,
+                    "name": card_loaded.person.name,
+                    "email": card_loaded.person.email,
+                    "phone": card_loaded.person.phone,
+                    "phone_whatsapp": card_loaded.person.phone_whatsapp,
+                    "phone_commercial": card_loaded.person.phone_commercial,
+                } if card_loaded.person else None,
+                # Vendedor responsável
+                "assigned_to": {
+                    "id": card_loaded.assigned_to.id,
+                    "name": card_loaded.assigned_to.name,
+                } if card_loaded.assigned_to else None,
+            }
+        }
+
+        # Serializa o payload para string (necessário para a assinatura)
+        payload_str = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+
+        # Monta os headers da requisição
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "HSGrowth-CRM-Webhook/1.0",
+            "X-HSGrowth-Event": "card.list_changed",
+        }
+
+        # Assina o payload com HMAC-SHA256 se um secret foi configurado
+        if secret:
+            signature = hmac.new(
+                secret.encode("utf-8"),
+                payload_str.encode("utf-8"),
+                hashlib.sha256
+            ).hexdigest()
+            headers["X-HSGrowth-Signature"] = f"sha256={signature}"
+
+        try:
+            response = httpx.post(
+                url,
+                content=payload_str,
+                headers=headers,
+                timeout=10.0,
+            )
+            response.raise_for_status()
+            print(f"[AUTOMATION] send_webhook: POST {url} → {response.status_code} OK (card {card.id})")
+        except httpx.TimeoutException:
+            print(f"[AUTOMATION] send_webhook: timeout ao chamar {url} (card {card.id})")
+            raise
+        except httpx.HTTPStatusError as e:
+            print(f"[AUTOMATION] send_webhook: erro HTTP {e.response.status_code} em {url} (card {card.id})")
+            raise
+        except Exception as e:
+            print(f"[AUTOMATION] send_webhook: erro inesperado ao chamar {url}: {e} (card {card.id})")
+            raise
 
     def _to_execution_response(self, execution: Any) -> AutomationExecutionResponse:
         """Converte AutomationExecution para AutomationExecutionResponse."""

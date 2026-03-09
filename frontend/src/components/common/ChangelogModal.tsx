@@ -25,6 +25,26 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.3.15",
+    date: "09/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Nova ação no editor de automações: Enviar Webhook. Configure uma URL e o sistema enviará os dados completos do card automaticamente quando a automação disparar. Suporta assinatura de segurança (HMAC) para o receptor validar a autenticidade.",
+      },
+    ],
+  },
+  {
+    version: "1.3.14",
+    date: "09/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Quatro novos campos adicionados no Resumo do card: Origem (editável), UTM Campaign, UTM Source e UTM Term. Os três campos UTM são preenchidos automaticamente via integração com sistemas externos.",
+      },
+    ],
+  },
+  {
     version: "1.3.13",
     date: "09/03/2026",
     entries: [

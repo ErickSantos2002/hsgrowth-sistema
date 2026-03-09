@@ -65,7 +65,14 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     deal_type = Column(String(50), nullable=True)  # Tipo de negócio: Nova Venda, Cross Sell, Up Sell
     acquisition_channel = Column(String(100), nullable=True)  # Canal de aquisição: Inbound, Outbound, etc
     acquisition_channel_detail = Column(String(200), nullable=True)  # Detalhamento do canal
-    utm_params = Column(Text, nullable=True)  # Parâmetros UTM
+    utm_params = Column(Text, nullable=True)  # Parâmetros UTM (campo legado)
+
+    # Campos de rastreamento de origem (preenchidos via API externa)
+    origin = Column(String(200), nullable=True)  # Origem do lead (editável pelo frontend)
+    utm_campaign = Column(String(200), nullable=True)  # Parâmetro UTM: campanha
+    utm_source = Column(String(200), nullable=True)  # Parâmetro UTM: fonte
+    utm_term = Column(String(200), nullable=True)  # Parâmetro UTM: termo
+
     loss_reason = Column(String(200), nullable=True)  # Motivo da perda
     has_implementation = Column(Integer, nullable=True)  # Tem implementação? 0=false, 1=true, null=não informado
     has_personnel = Column(Integer, nullable=True)  # Tem pessoas para manusear? 0=false, 1=true, null=não informado

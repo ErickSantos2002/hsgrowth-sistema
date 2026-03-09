@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Save, AlertCircle, ChevronDown } from "lucide-react";
+import { X, Save, AlertCircle, ChevronDown, Webhook, Lock } from "lucide-react";
 import { Node as FlowNode } from "reactflow";
 import boardService from "../../services/boardService";
 import userService from "../../services/userService";
@@ -541,6 +541,74 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                   {config.value && ` → Valor: ${config.value}`}
                 </p>
               )}
+            </div>
+          </>
+        );
+
+      case "send_webhook":
+        return (
+          <>
+            {/* URL do webhook */}
+            <div className="mb-4">
+              <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
+                URL do Webhook *
+              </label>
+              <input
+                type="url"
+                value={config.url || ""}
+                onChange={(e) => updateConfig("url", e.target.value)}
+                placeholder="https://sua-ferramenta.com/webhook/xyz"
+                className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-200 dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 focus:border-transparent focus:ring-2 focus:ring-emerald-500"
+              />
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">
+                Endpoint que receberá o POST quando a automação disparar.
+              </p>
+            </div>
+
+            {/* Secret para assinatura HMAC (opcional) */}
+            <div className="mb-4">
+              <label className="mb-2 flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+                <Lock size={13} className="text-slate-400" />
+                Secret (opcional)
+              </label>
+              <input
+                type="text"
+                value={config.secret || ""}
+                onChange={(e) => updateConfig("secret", e.target.value)}
+                placeholder="Chave secreta para validar a requisição"
+                className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-200 dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 focus:border-transparent focus:ring-2 focus:ring-emerald-500"
+              />
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">
+                Se preenchido, o sistema assina o payload com HMAC-SHA256 e envia no header{" "}
+                <code className="rounded bg-gray-300 dark:bg-slate-600 px-1">X-HSGrowth-Signature</code>.
+              </p>
+            </div>
+
+            {/* Preview do payload que será enviado */}
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm">
+              <div className="mb-2 flex items-center gap-2 text-emerald-400">
+                <Webhook size={15} />
+                <strong>Payload enviado (POST)</strong>
+              </div>
+              <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded bg-gray-200/50 dark:bg-slate-900/50 p-2 text-xs text-slate-600 dark:text-slate-300">
+{`{
+  "event": "card.list_changed",
+  "timestamp": "2026-03-09T10:00:00Z",
+  "card": {
+    "id": 123,
+    "title": "Lead - Empresa X",
+    "value": 15000.00,
+    "list_name": "Reunião Agendada",
+    "origin": "Site",
+    "utm_campaign": "webinar",
+    "utm_source": "google",
+    "utm_term": "crm",
+    "client": { "name": "Empresa X", ... },
+    "person": { "name": "João", ... },
+    "assigned_to": { "name": "Maria" }
+  }
+}`}
+              </pre>
             </div>
           </>
         );

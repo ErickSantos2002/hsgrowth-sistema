@@ -209,10 +209,16 @@ class CardCreate(CardBase):
     deal_type: Optional[str] = Field(None, max_length=100, description="Tipo de negócio (Nova Venda, Cross Sell, Up Sell)")
     acquisition_channel: Optional[str] = Field(None, max_length=100, description="Canal de aquisição (Inbound, Outbound, Indicação, etc)")
     acquisition_channel_detail: Optional[str] = Field(None, max_length=200, description="Detalhamento do canal de aquisição")
-    utm_params: Optional[str] = Field(None, max_length=500, description="Parâmetros UTM (tracking de marketing)")
+    utm_params: Optional[str] = Field(None, max_length=500, description="Parâmetros UTM (tracking de marketing, campo legado)")
     loss_reason: Optional[str] = Field(None, max_length=200, description="Motivo da perda (quando card é perdido)")
     has_implementation: Optional[bool] = Field(None, description="Se tem implementação")
     has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
+
+    # Campos de rastreamento de origem
+    origin: Optional[str] = Field(None, max_length=200, description="Origem do lead (ex: Site, Indicação, LinkedIn)")
+    utm_campaign: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: campanha (preenchido via API externa)")
+    utm_source: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: fonte (preenchido via API externa)")
+    utm_term: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: termo (preenchido via API externa)")
 
     model_config = {
         "json_schema_extra": {
@@ -268,10 +274,16 @@ class CardUpdate(BaseModel):
     deal_type: Optional[str] = Field(None, max_length=100, description="Tipo de negócio (Nova Venda, Cross Sell, Up Sell)")
     acquisition_channel: Optional[str] = Field(None, max_length=100, description="Canal de aquisição (Inbound, Outbound, Indicação, etc)")
     acquisition_channel_detail: Optional[str] = Field(None, max_length=200, description="Detalhamento do canal de aquisição")
-    utm_params: Optional[str] = Field(None, max_length=500, description="Parâmetros UTM (tracking de marketing)")
+    utm_params: Optional[str] = Field(None, max_length=500, description="Parâmetros UTM (tracking de marketing, campo legado)")
     loss_reason: Optional[str] = Field(None, max_length=200, description="Motivo da perda (quando card é perdido)")
     has_implementation: Optional[bool] = Field(None, description="Se tem implementação")
     has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
+
+    # Campos de rastreamento de origem
+    origin: Optional[str] = Field(None, max_length=200, description="Origem do lead (ex: Site, Indicação, LinkedIn)")
+    utm_campaign: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: campanha (preenchido via API externa)")
+    utm_source: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: fonte (preenchido via API externa)")
+    utm_term: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: termo (preenchido via API externa)")
 
     model_config = {
         "json_schema_extra": {
@@ -374,10 +386,16 @@ class CardResponse(CardBase):
     deal_type: Optional[str] = Field(None, description="Tipo de negócio (Nova Venda, Cross Sell, Up Sell)")
     acquisition_channel: Optional[str] = Field(None, description="Canal de aquisição (Inbound, Outbound, Indicação, etc)")
     acquisition_channel_detail: Optional[str] = Field(None, description="Detalhamento do canal de aquisição")
-    utm_params: Optional[str] = Field(None, description="Parâmetros UTM (tracking de marketing)")
+    utm_params: Optional[str] = Field(None, description="Parâmetros UTM (tracking de marketing, campo legado)")
     loss_reason: Optional[str] = Field(None, description="Motivo da perda (quando card é perdido)")
     has_implementation: Optional[bool] = Field(None, description="Se tem implementação")
     has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
+
+    # Campos de rastreamento de origem
+    origin: Optional[str] = Field(None, description="Origem do lead (ex: Site, Indicação, LinkedIn)")
+    utm_campaign: Optional[str] = Field(None, description="Parâmetro UTM: campanha")
+    utm_source: Optional[str] = Field(None, description="Parâmetro UTM: fonte")
+    utm_term: Optional[str] = Field(None, description="Parâmetro UTM: termo")
 
     # Campos relacionados (opcional)
     assigned_to_name: Optional[str] = Field(None, description="Nome do responsável")

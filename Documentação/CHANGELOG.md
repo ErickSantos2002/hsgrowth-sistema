@@ -7,6 +7,98 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.15] - 2026-03-09
+
+### Adicionado
+
+#### Nova action de automação: Enviar Webhook (`send_webhook`)
+
+Estende o sistema de automações existente com um novo tipo de action que dispara uma requisição HTTP POST para qualquer URL externa quando a automação for executada.
+
+**Como usar:** No editor de automações, configure:
+- **Trigger:** `Card Movido` → lista "Reunião Agendada"
+- **Action:** `Enviar Webhook` → preencha a URL de destino
+
+**Backend — `app/schemas/automation.py`:**
+- Novo valor no enum `ActionType`: `SEND_WEBHOOK = "send_webhook"`
+
+**Backend — `app/services/automation_service.py`:**
+- Novo `elif action_type == "send_webhook"` em `_execute_actions()`
+- Novo método `_execute_webhook_action(card, params)`:
+  - Monta payload JSON rico com dados do card (id, título, valor, lista, cliente, pessoa, responsável e campos de rastreamento: `origin`, `utm_campaign`, `utm_source`, `utm_term`)
+  - Assina o payload com HMAC-SHA256 e envia no header `X-HSGrowth-Signature: sha256=...` quando um secret for configurado
+  - Usa `httpx` (síncrono, já presente no projeto) com timeout de 10 segundos
+  - Loga sucesso/erro com prefixo `[AUTOMATION] send_webhook:`
+  - Relança exceções para o sistema de retry/log de execuções da automação
+
+**Frontend — `components/automations/NodesSidebar.tsx`:**
+- Nova action "Enviar Webhook" disponível na sidebar de blocos (ícone `Webhook`, cor emerald)
+
+**Frontend — `components/automations/NodeConfigPanel.tsx`:**
+- Novo `case "send_webhook"` em `renderActionConfig()`:
+  - Campo **URL** (obrigatório): endpoint que receberá o POST
+  - Campo **Secret** (opcional): chave para assinatura HMAC-SHA256
+  - Preview do payload que será enviado
+
+**Payload enviado:**
+```json
+{
+  "event": "card.list_changed",
+  "timestamp": "2026-03-09T10:00:00Z",
+  "card": {
+    "id": 123, "title": "...", "value": 15000.00,
+    "list_name": "Reunião Agendada", "board_id": 2,
+    "origin": "Site", "utm_campaign": "...", "utm_source": "...", "utm_term": "...",
+    "client": { "id": 42, "name": "...", "document": "...", "email": "...", "phone": "..." },
+    "person": { "id": 10, "name": "...", "email": "...", "phone": "...", "phone_whatsapp": "..." },
+    "assigned_to": { "id": 3, "name": "..." }
+  }
+}
+```
+
+### Arquivos Modificados
+- `backend/app/schemas/automation.py`
+- `backend/app/services/automation_service.py`
+- `frontend/src/components/automations/NodesSidebar.tsx`
+- `frontend/src/components/automations/NodeConfigPanel.tsx`
+
+---
+
+## [1.3.14] - 2026-03-09
+
+### Adicionado
+
+#### Campos de rastreamento de origem no Resumo do CardDetails
+
+Quatro novos campos adicionados na seção "Resumo" do card, agrupados numa nova subseção "Rastreamento de Origem":
+
+| Campo | Editável por | Descrição |
+|---|---|---|
+| **Origem** | Frontend (usuário) | Origem do lead: Site, Indicação, LinkedIn, etc. |
+| **UTM Campaign** | API externa (somente leitura no frontend) | Campanha de marketing rastreada |
+| **UTM Source** | API externa (somente leitura no frontend) | Fonte de tráfego rastreada |
+| **UTM Term** | API externa (somente leitura no frontend) | Termo de busca rastreado |
+
+**Backend:**
+- `app/models/card.py` — 4 novas colunas: `origin`, `utm_campaign`, `utm_source`, `utm_term` (todas `String(200), nullable`)
+- `app/schemas/card.py` — campos adicionados em `CardCreate`, `CardUpdate` e `CardResponse`
+- Migration `2026_03_09_1000-add_origin_utm_fields_to_cards.py` (revision: `add_origin_utm_fields_2026`, down_revision: `notif_settings_2026`)
+
+**Frontend:**
+- `types/index.ts` — campos adicionados na interface `Card` e `UpdateCardRequest`
+- `components/cardDetails/SummarySection.tsx` — nova seção "Rastreamento de Origem":
+  - `origin`: `EditableField` (editável pelo usuário)
+  - `utm_campaign`, `utm_source`, `utm_term`: campos somente leitura (exibem "Não informado" quando vazios)
+
+### Arquivos Modificados/Criados
+- `backend/app/models/card.py`
+- `backend/app/schemas/card.py`
+- `backend/alembic/versions/2026_03_09_1000-add_origin_utm_fields_to_cards.py` (novo)
+- `frontend/src/types/index.ts`
+- `frontend/src/components/cardDetails/SummarySection.tsx`
+
+---
+
 ## [1.3.13] - 2026-03-09
 
 ### Adicionado

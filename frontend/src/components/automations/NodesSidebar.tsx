@@ -10,6 +10,7 @@ import {
   UserPlus,
   Tag,
   Edit,
+  Webhook,
 } from "lucide-react";
 
 interface NodeType {
@@ -127,6 +128,13 @@ const availableNodes: NodeType[] = [
     icon: <Edit size={18} />,
     category: "action",
     color: "yellow",
+  },
+  {
+    type: "send_webhook",
+    label: "Enviar Webhook",
+    icon: <Webhook size={18} />,
+    category: "action",
+    color: "emerald",
   },
 ];
 

@@ -54,6 +54,7 @@ class ActionType(str, Enum):
     AWARD_POINTS = "award_points"
     MARK_WON = "mark_won"
     MARK_LOST = "mark_lost"
+    SEND_WEBHOOK = "send_webhook"  # Dispara requisição HTTP POST para URL externa
 
 
 class ExecutionStatus(str, Enum):

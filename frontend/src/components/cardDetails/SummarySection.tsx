@@ -19,6 +19,7 @@ import {
   Upload,
   Trash2,
   Download,
+  MapPin,
 } from "lucide-react";
 import ExpandableSection from "./ExpandableSection";
 import EditableField from "./EditableField";
@@ -257,6 +258,13 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
   //   await cardService.update(card.id, { utm_params: value || undefined });
   //   onUpdate();
   // };
+
+  /**
+   * Atualiza a origem do lead (único campo de rastreamento editável pelo frontend)
+   */
+  const handleUpdateOrigin = async (value: string) => {
+    await onUpdate({ origin: value || null });
+  };
 
   /**
    * Atualiza motivo da perda
@@ -625,6 +633,70 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
             placeholder="Não definido"
             icon={<Users size={14} />}
           />
+        </div>
+
+        {/* ======== SEÇÃO: RASTREAMENTO DE ORIGEM ======== */}
+        <div className="space-y-4 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+            <MapPin size={16} />
+            Rastreamento de Origem
+          </h4>
+
+          {/* Origem — editável pelo frontend */}
+          <EditableField
+            label="Origem"
+            value={card.origin ?? ""}
+            onSave={handleUpdateOrigin}
+            type="text"
+            placeholder="Ex: Site, Indicação, LinkedIn, Google Ads"
+            icon={<MapPin size={14} />}
+          />
+
+          {/* UTM Campaign — somente leitura (preenchido via API externa) */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <LinkIcon size={14} className="text-slate-400 dark:text-slate-400" />
+              <span>UTM Campaign</span>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
+              <span className={`text-sm ${card.utm_campaign ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
+                {card.utm_campaign || "Não informado"}
+              </span>
+            </div>
+          </div>
+
+          {/* UTM Source — somente leitura (preenchido via API externa) */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <LinkIcon size={14} className="text-slate-400 dark:text-slate-400" />
+              <span>UTM Source</span>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
+              <span className={`text-sm ${card.utm_source ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
+                {card.utm_source || "Não informado"}
+              </span>
+            </div>
+          </div>
+
+          {/* UTM Term — somente leitura (preenchido via API externa) */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <LinkIcon size={14} className="text-slate-400 dark:text-slate-400" />
+              <span>UTM Term</span>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
+              <span className={`text-sm ${card.utm_term ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
+                {card.utm_term || "Não informado"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-2">
+            <Info size={14} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-400" />
+            <p className="text-xs text-slate-400 dark:text-slate-400">
+              Os campos UTM são preenchidos automaticamente via integração com sistemas externos.
+            </p>
+          </div>
         </div>
 
         {/* ======== SEÇÃO: PROPOSTA FORMAL (BOARD DE AQUISIÇÃO) ======== */}
