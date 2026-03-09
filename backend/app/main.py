@@ -143,6 +143,10 @@ tags_metadata = [
         "name": "Audit Logs",
         "description": "Logs de auditoria do sistema (requer role admin). Registro detalhado de todas as ações realizadas no CRM com filtros avançados.",
     },
+    {
+        "name": "AI",
+        "description": "Funcionalidades de Inteligência Artificial com LLM (OpenAI). Resumo automático de cards, geração de e-mails e textos personalizados para auxiliar os vendedores.",
+    },
 ]
 
 # Criar instância do FastAPI

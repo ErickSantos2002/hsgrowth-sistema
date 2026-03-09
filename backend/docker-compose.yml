@@ -108,6 +108,10 @@ services:
       # Seed (apenas dev)
       RUN_SEED: ${RUN_SEED:-false}
 
+      # OpenAI
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+
     volumes:
       - ./app:/app/app
       - ./alembic:/app/alembic

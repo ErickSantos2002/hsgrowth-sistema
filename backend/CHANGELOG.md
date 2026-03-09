@@ -7,6 +7,35 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
+## [2.2.0] - 2026-03-09
+
+### Adicionado
+
+#### Módulo de Inteligência Artificial (OpenAI)
+- **Integração com a API da OpenAI** usando o SDK oficial (`openai>=1.40.0`)
+- **3 novos endpoints** sob o prefix `/api/v1/ai`:
+  - `GET /ai/health` — Verifica se a conexão com a OpenAI está ativa e a API key é válida
+  - `POST /ai/cards/{card_id}/summarize` — Gera resumo executivo de um card em até 4 frases (situação atual, última interação, ponto de atenção e próximo passo sugerido)
+  - `POST /ai/generate-text` — Gera textos personalizados (e-mail de follow-up, e-mail de proposta, e-mail livre) com base nos dados do card e instruções adicionais
+- **Contexto automático**: ao fornecer `card_id`, o serviço busca automaticamente título, cliente, contato, vendedor, etapa do funil, valor, prazo e últimas 15 notas para enriquecer o prompt
+- **Tratamento de erros** específico para `AuthenticationError`, `RateLimitError` e `APIConnectionError` da OpenAI com mensagens claras em português
+
+### Detalhes Técnicos
+
+**Novos arquivos:**
+- `app/schemas/ai.py` — Schemas Pydantic: `AIHealthResponse`, `AICardSummaryResponse`, `AITextGenerateRequest`, `AITextGenerateResponse`, enum `TextGenerateType`
+- `app/services/ai_service.py` — `AIService` com métodos `check_connection()`, `summarize_card()`, `generate_text()` e helpers privados de montagem de prompt
+- `app/api/v1/endpoints/ai.py` — Router FastAPI com os 3 endpoints documentados
+
+**Arquivos modificados:**
+- `app/core/config.py` — Adicionadas variáveis `OPENAI_API_KEY` e `OPENAI_MODEL` (padrão: `gpt-4o-mini`)
+- `app/api/v1/__init__.py` — Router `ai` registrado com prefix `/ai` e tag `AI`
+- `app/main.py` — Tag `AI` adicionada nos metadados do Swagger
+- `requirements.txt` — Adicionado `openai>=1.40.0`
+- `docker-compose.yml` — Adicionado mapeamento das variáveis `OPENAI_API_KEY` e `OPENAI_MODEL` na seção `environment` do service `api`
+
+---
+
 ## [2.1.0] - 2026-02-06
 
 ### Adicionado
