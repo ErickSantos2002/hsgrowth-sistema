@@ -367,23 +367,15 @@ const CalendarPage: React.FC = () => {
       });
     const withoutDate = tasks.filter((t) => !t.due_date);
 
-    if (tasks.length === 0) {
-      return (
-        <div className="rounded-lg border border-dashed border-gray-200 dark:border-slate-700 p-8 text-center">
-          <CalendarDays size={28} className="mx-auto mb-2 text-slate-400" />
-          <p className="text-sm text-slate-400">Nenhuma atividade encontrada</p>
-        </div>
-      );
-    }
+    // Tarefas do mês atual (filtradas por currentMonth)
+    const monthTasks = withDate.filter((t) => {
+      const brazilDate = convertUTCToBrazil(t.due_date!);
+      return isSameMonth(brazilDate, currentMonth);
+    });
 
-    // Agrupa tarefas com data por mês para exibição em seções
-    const grouped: Record<string, CardTask[]> = {};
-    for (const task of withDate) {
-      const brazilDate = convertUTCToBrazil(task.due_date!);
-      const monthKey = format(brazilDate, "MMMM yyyy", { locale: ptBR });
-      if (!grouped[monthKey]) grouped[monthKey] = [];
-      grouped[monthKey].push(task);
-    }
+    // Rótulo do mês atual formatado com inicial maiúscula
+    const monthLabel = format(currentMonth, "MMMM yyyy", { locale: ptBR });
+    const monthLabelCap = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
     const renderTaskRow = (task: CardTask) => {
       const config = TYPE_CONFIG[task.task_type as TaskType] ?? TYPE_CONFIG.other;
@@ -461,16 +453,61 @@ const CalendarPage: React.FC = () => {
 
     return (
       <div className="space-y-6">
-        {Object.entries(grouped).map(([month, monthTasks]) => (
-          <div key={month}>
-            <h4 className="mb-2 capitalize text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              {month}
-            </h4>
+        {/* Navegação de mês */}
+        <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+          <button
+            type="button"
+            onClick={handlePrevMonth}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-gray-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+          >
+            <ChevronLeft size={16} />
+            Anterior
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenMonthPicker}
+            className="text-sm font-semibold text-slate-900 transition-colors hover:text-blue-500 dark:text-white dark:hover:text-blue-400"
+          >
+            {monthLabelCap}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleNextMonth}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-gray-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+          >
+            Próximo
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {/* Atividades do mês */}
+        {monthTasks.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-gray-200 dark:border-slate-700 p-8 text-center">
+            <CalendarDays size={28} className="mx-auto mb-2 text-slate-400" />
+            <p className="text-sm text-slate-400">
+              Nenhuma atividade em {monthLabelCap}
+            </p>
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+              Use os botões acima para navegar entre os meses
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Mostrando{" "}
+              <span className="font-semibold text-slate-600 dark:text-slate-300">
+                {monthTasks.length}
+              </span>{" "}
+              {monthTasks.length === 1 ? "atividade" : "atividades"}
+            </p>
             <div className="space-y-2">{monthTasks.map(renderTaskRow)}</div>
           </div>
-        ))}
+        )}
 
-        {withoutDate.length > 0 && (
+        {/* Tarefas sem data — só exibe quando o mês tem atividades */}
+        {monthTasks.length > 0 && withoutDate.length > 0 && (
           <div>
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Sem data
