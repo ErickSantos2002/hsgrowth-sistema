@@ -711,7 +711,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                             <button
                               onClick={() => handleMakeCall(activity.id)}
                               disabled={callingTaskId === activity.id || (!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial)}
-                              className="flex flex-1 items-center justify-center gap-1 rounded border border-blue-400/70 bg-blue-500/30 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-blue-300 transition-colors hover:bg-blue-500/45 disabled:opacity-50"
+                              className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
                               title={!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial ? "Pessoa sem nenhum número cadastrado" : "Ligar agora"}
                             >
                               {callingTaskId === activity.id ? (
@@ -719,7 +719,14 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                               ) : (
                                 <Phone size={14} />
                               )}
-                              Ligar
+                              {/* Tracinho diagonal quando sem número */}
+                              {!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial && callingTaskId !== activity.id && (
+                                <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                  <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden="true">
+                                    <line x1="4" y1="4" x2="20" y2="20" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                                  </svg>
+                                </span>
+                              )}
                             </button>
                           )}
 

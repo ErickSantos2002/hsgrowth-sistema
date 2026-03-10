@@ -943,14 +943,21 @@ const CardDetails: React.FC = () => {
                         ? "Nenhuma pessoa vinculada ao card"
                         : "Ligar agora sem criar atividade manualmente"
                     }
-                    className="ml-auto flex items-center gap-2 rounded-lg border border-blue-400/60 bg-blue-500/20 px-3 pb-2 pt-1 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/30 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="relative ml-auto flex h-10 w-10 flex-shrink-0 self-center mb-1.5 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isQuickCalling ? (
                       <Loader2 size={15} className="animate-spin" />
                     ) : (
                       <Phone size={15} />
                     )}
-                    Ligar
+                    {/* Tracinho diagonal quando indisponível */}
+                    {(hasOpenCallActivity || !card.person_id) && !isQuickCalling && (
+                      <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden="true">
+                          <line x1="4" y1="4" x2="20" y2="20" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                      </span>
+                    )}
                   </button>
                 )}
               </div>
