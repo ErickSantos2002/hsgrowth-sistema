@@ -13,11 +13,16 @@ import {
   Sparkles,
   RefreshCw,
   UserX,
+  Phone,
+  Loader2,
 } from "lucide-react";
 import { Card } from "../types";
 import cardService from "../services/cardService";
 import userService from "../services/userService";
 import automationService from "../services/automationService";
+import cardTaskService from "../services/cardTaskService";
+import api4comService from "../services/api4comService";
+import personService from "../services/personService";
 import { User as UserType } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { SummarySection, ClientSection, ContactSection, CustomFieldsSection, ProductSection, QuickActivityForm, FocusSection, HistorySection } from "../components/cardDetails";
@@ -66,6 +71,9 @@ const CardDetails: React.FC = () => {
 
   // Estado da contagem de arquivos
   const [attachmentsCount, setAttachmentsCount] = useState<number>(0);
+
+  // Estado do botão de ligação rápida
+  const [isQuickCalling, setIsQuickCalling] = useState(false);
 
   /**
    * Carrega dados do card ao montar o componente
@@ -301,6 +309,76 @@ const CardDetails: React.FC = () => {
   };
 
   /**
+   * Dispara uma ligação rápida sem precisar criar uma atividade manualmente.
+   * - Se já existe atividade de ligação aberta: bloqueia e avisa o usuário.
+   * - Se não existe: cria automaticamente uma atividade de ligação e disca para
+   *   o primeiro número disponível da pessoa vinculada ao card.
+   */
+  const handleQuickCall = async () => {
+    if (!card) return;
+
+    // Sem pessoa vinculada, não há número para ligar
+    if (!card.person_id) {
+      showError("Não há pessoa vinculada a este card");
+      return;
+    }
+
+    // Bloqueia se já existe atividade de ligação em aberto
+    const hasOpenCallActivity = (card.pending_tasks || []).some(
+      (t) => t.task_type === "call" && !t.is_completed
+    );
+    if (hasOpenCallActivity) {
+      showError("Já existe uma atividade de ligação em aberto. Vá até ela para ligar.");
+      return;
+    }
+
+    try {
+      setIsQuickCalling(true);
+
+      // Carrega os dados da pessoa para obter nome e telefone
+      const person = await personService.getById(card.person_id);
+
+      // Usa o primeiro número disponível na ordem: Principal > WhatsApp > Comercial
+      const firstPhone = person.phone || person.phone_whatsapp || person.phone_commercial;
+      if (!firstPhone) {
+        showError("A pessoa vinculada não possui nenhum número de telefone cadastrado");
+        return;
+      }
+
+      // Cria a atividade automaticamente com dados pré-definidos
+      const firstName = person.name.split(" ")[0];
+      await cardTaskService.create({
+        card_id: card.id,
+        title: firstName,
+        description: "Atividade criada automaticamente ao clicar no botão ligar",
+        task_type: "call",
+        priority: "normal",
+        due_date: new Date().toISOString(),
+      });
+
+      // Recarrega o card para refletir a nova atividade na UI
+      await loadCardData();
+
+      // Dispara a chamada via API4COM
+      const result = await api4comService.makeCall({
+        phone: firstPhone,
+        card_id: card.id,
+      });
+
+      if (result.success) {
+        showSuccess("Chamada iniciada! O webphone abrirá automaticamente.");
+      } else {
+        showError(`Erro ao iniciar chamada: ${result.error || result.message}`);
+      }
+    } catch (error: any) {
+      console.error("Erro ao fazer ligação rápida:", error);
+      showError(error.response?.data?.detail || "Erro ao iniciar chamada");
+    } finally {
+      setIsQuickCalling(false);
+    }
+  };
+
+  /**
    * Volta para o board
    */
   const handleBack = () => {
@@ -371,6 +449,11 @@ const CardDetails: React.FC = () => {
 
   // Verifica se o usuário pode alterar o responsável
   const canChangeAssignee = currentUser?.role === "admin" || currentUser?.role === "manager";
+
+  // Verifica se já existe atividade de ligação em aberto (bloqueia o botão de ligação rápida)
+  const hasOpenCallActivity = (card?.pending_tasks || []).some(
+    (t) => t.task_type === "call" && !t.is_completed
+  );
 
   // Visualizadores têm acesso somente leitura — nenhuma ação de escrita permitida
   const isViewer = currentUser?.role === "viewer";
@@ -847,6 +930,29 @@ const CardDetails: React.FC = () => {
                     {attachmentsCount}
                   </span>
                 </button>
+
+                {/* Botão de ligação rápida — oculto para viewers e cards fechados */}
+                {!isViewer && !card.is_won && !card.is_lost && (
+                  <button
+                    onClick={handleQuickCall}
+                    disabled={isQuickCalling || hasOpenCallActivity || !card.person_id}
+                    title={
+                      hasOpenCallActivity
+                        ? "Já existe uma atividade de ligação em aberto"
+                        : !card.person_id
+                        ? "Nenhuma pessoa vinculada ao card"
+                        : "Ligar agora sem criar atividade manualmente"
+                    }
+                    className="ml-auto flex items-center gap-2 rounded-lg border border-blue-400/60 bg-blue-500/20 px-3 pb-2 pt-1 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/30 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {isQuickCalling ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : (
+                      <Phone size={15} />
+                    )}
+                    Ligar
+                  </button>
+                )}
               </div>
             </div>
 
