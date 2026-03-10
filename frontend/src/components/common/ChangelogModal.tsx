@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.3.17",
+    date: "10/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Novo botão 'Ligar' na barra de abas do card (ao lado de Atividade, Anotações, Calendário e Arquivos). Com um clique, o sistema cria a atividade de ligação automaticamente e já inicia a chamada — sem precisar preencher formulário. Se já houver uma atividade de ligação em aberto, o botão fica bloqueado e indica que você deve ir até ela para ligar.",
+      },
+      {
+        type: "improvement",
+        text: "Ao criar um novo card, agora é obrigatório informar o Tipo de Negócio, o Canal de Aquisição, vincular uma empresa e um contato. O card já nasce com tudo preenchido — sem precisar voltar depois para completar.",
+      },
+      {
+        type: "improvement",
+        text: "É possível buscar empresas e contatos existentes diretamente na modal de criação de card, ou cadastrar novos na hora sem perder o que já preencheu.",
+      },
+    ],
+  },
+  {
     version: "1.3.16",
     date: "09/03/2026",
     entries: [

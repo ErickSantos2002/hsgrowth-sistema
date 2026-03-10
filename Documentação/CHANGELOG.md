@@ -7,6 +7,89 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.17] - 2026-03-10
+
+### Adicionado
+
+#### Botão de ligação rápida no CardDetails
+
+Novo botão "Ligar" posicionado na barra de abas do CardDetails (ao lado de Atividade, Anotações, Calendário e Arquivos), permitindo iniciar uma chamada via API4COM sem a necessidade de criar uma atividade manualmente antes de ligar.
+
+**Comportamento:**
+- Ao clicar, o sistema verifica se já existe uma atividade de ligação em aberto no card:
+  - **Se sim:** o botão fica bloqueado e exibe um tooltip informando que já há uma atividade de ligação aberta — o usuário deve ir até ela para ligar.
+  - **Se não:** cria automaticamente uma atividade de ligação com os seguintes dados pré-definidos:
+    - **Título:** primeiro nome da pessoa vinculada ao card
+    - **Descrição:** "Atividade criada automaticamente ao clicar no botão ligar"
+    - **Tipo:** Ligação (`call`)
+    - **Prioridade:** Normal
+    - **Data:** data e hora atuais
+  - Em seguida, disca imediatamente para o primeiro número disponível da pessoa (ordem: Principal > WhatsApp > Comercial).
+
+**Validações:**
+- Sem pessoa vinculada ao card → botão desabilitado
+- Pessoa sem nenhum número cadastrado → exibe erro e encerra
+- Já existe atividade de ligação aberta → botão desabilitado com tooltip explicativo
+
+**Visibilidade:**
+- Oculto para usuários com role `viewer`
+- Oculto em cards marcados como Ganho ou Perdido
+
+### Arquivos Modificados
+- `frontend/src/pages/CardDetails.tsx` — novos imports (`Phone`, `Loader2`, `cardTaskService`, `api4comService`, `personService`), estado `isQuickCalling`, variável computada `hasOpenCallActivity`, função `handleQuickCall`, botão na barra de abas
+
+---
+
+#### Campos obrigatórios na criação de card (frontend)
+
+A modal de criação de card foi expandida com novos campos obrigatórios, exigidos pela consultora para garantir qualidade dos dados desde o cadastro.
+
+**Campos adicionados e obrigatórios na criação:**
+- **Tipo de Negócio** (`deal_type`) — Nova Venda, Cross Sell ou Up Sell
+- **Canal de Aquisição** (`acquisition_channel`) — Inbound, Outbound, Indicação, Parcerias, Eventos ou Base
+- **Empresa (Organização)** — busca e vínculo obrigatório de uma empresa existente ou cadastro de nova empresa inline
+- **Contato (Pessoa)** — busca e vínculo obrigatório de um contato existente ou cadastro de novo contato inline
+
+**Comportamento das seções de Empresa e Contato:**
+- Campo de busca com debounce de 500ms buscando no banco em tempo real
+- Dropdown inline com resultados — clique para selecionar
+- Ao selecionar, exibe chip com os dados principais e botão para remover
+- Botão "Cadastrar nova empresa / novo contato" abre o modal de cadastro correspondente e já vincula automaticamente ao ser criado
+- Se a empresa selecionada não tiver **Setor** e **Tipo de Relacionamento** preenchidos: exibe aviso e bloqueia o submit com botão para editar a empresa
+- Se o contato selecionado não tiver **e-mail ou telefone**: exibe aviso e bloqueia o submit com botão para editar o contato
+- Sub-modais de criação/edição abertos em `z-index` elevado (`z-[60]`) para não ficarem atrás da modal principal
+
+**Modo edição:** a modal de edição de card não exige esses campos — empresa e contato continuam sendo gerenciados pelo CardDetails.
+
+**Card nasce vinculado:** ao criar, `client_id` e `person_id` são enviados diretamente no `POST /cards`, sem chamadas adicionais após a criação.
+
+#### Validação de completude no backend ao criar card
+
+O backend agora valida os dados da empresa e do contato quando vinculados na criação do card, garantindo integridade independente do canal de entrada (frontend, n8n, API direta).
+
+**Regras implementadas no `card_service.create_card()`:**
+- Se `client_id` for enviado → valida se a empresa existe e se possui `sector` e `relationship_type` preenchidos → rejeita com **HTTP 422** caso contrário
+- Se `person_id` for enviado → valida se o contato existe e se possui pelo menos um de: `email`, `email_commercial`, `phone`, `phone_whatsapp`, `phone_commercial` → rejeita com **HTTP 422** caso contrário
+- `client_id` e `person_id` continuam opcionais no backend (obrigatoriedade é regra do frontend)
+
+#### `person_id` adicionado ao schema de criação de card
+
+O campo `person_id` existia na tabela do banco mas nunca havia sido exposto no schema de criação. Agora é possível vincular uma pessoa diretamente no `POST /cards`.
+
+#### `ClientModal` devolve o cliente criado/editado no callback
+
+O `onSave` do `ClientModal` foi atualizado de `() => void` para `(client?: Client) => void`, permitindo que chamadores capturem o objeto retornado e façam vínculo automático sem precisar buscar o cliente mais recente como heurística.
+
+### Arquivos Modificados
+- `backend/app/schemas/card.py` — adicionado `person_id: Optional[int]` ao `CardCreate`
+- `backend/app/services/card_service.py` — validação de completude de empresa e contato; import de `ClientRepository`
+- `frontend/src/types/index.ts` — adicionado `person_id` ao `CreateCardRequest`
+- `frontend/src/components/kanban/CardModal.tsx` — reescrita com seções de Tipo de Negócio, Canal de Aquisição, Empresa e Contato
+- `frontend/src/components/clients/ClientModal.tsx` — `onSave` atualizado para devolver o cliente salvo
+- `frontend/src/pages/KanbanBoard.tsx` — `handleSaveCard` mapeia `deal_type`, `acquisition_channel`, `client_id` e `person_id`
+
+---
+
 ## [1.3.16] - 2026-03-09
 
 ### Corrigido
