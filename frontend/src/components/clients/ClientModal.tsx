@@ -18,7 +18,8 @@ import { maskCPF, maskCNPJ, maskDocument, maskPhone, maskCNAE } from "../../util
 interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
+  /** Recebe o cliente criado/editado para permitir vínculo automático ao card */
+  onSave: (client?: Client) => void;
   client: Client | null; // null = criar, objeto = editar
 }
 
@@ -227,6 +228,8 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
       setIsSaving(true);
       setError(null);
 
+      let savedClient: Client;
+
       if (isEditing) {
         // Na edição, campos opcionais vazios enviam null para limpar o valor no banco.
         // Enviar undefined omite o campo do body, fazendo o backend ignorar a atualização
@@ -252,7 +255,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
           employee_count: formData.employee_count || null,
           annual_revenue: formData.annual_revenue || null,
         };
-        await clientService.update(client.id, updateData);
+        savedClient = await clientService.update(client.id, updateData);
       } else {
         // Na criação, campos opcionais vazios são omitidos (undefined) para usar o padrão do backend
         const createData: CreateClientRequest = {
@@ -276,10 +279,10 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
           employee_count: formData.employee_count || undefined,
           annual_revenue: formData.annual_revenue || undefined,
         };
-        await clientService.create(createData);
+        savedClient = await clientService.create(createData);
       }
 
-      onSave(); // Recarrega a lista
+      onSave(savedClient); // Passa o cliente salvo para permitir vínculo automático
       onClose(); // Fecha o modal
     } catch (err: any) {
       console.error("Erro ao salvar cliente:", err);

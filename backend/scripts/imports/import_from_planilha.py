@@ -21,7 +21,8 @@ from unicodedata import normalize as unicode_normalize
 import openpyxl
 
 # Adiciona o diretório raiz do backend ao PYTHONPATH
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# O script está em scripts/imports/ — precisa subir dois níveis para chegar em backend/
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from app.db.session import SessionLocal
 from app.models.card import Card
@@ -535,9 +536,12 @@ def create_activities(
 # IMPORTAÇÃO PRINCIPAL
 # ============================================================
 
-def import_from_sheet():
+def import_from_sheet(filename: str | None = None):
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    sheet_path = os.path.join(script_dir, "Planilha_Importacao_CRM_JOAO_VICTOR.xlsx")
+    # Aceita arquivo via argumento ou usa o nome passado como parâmetro
+    if filename is None:
+        filename = sys.argv[1] if len(sys.argv) > 1 else "Planilha_Importacao_CRM_JOAO_VICTOR.xlsx"
+    sheet_path = os.path.join(script_dir, filename)
 
     print("=" * 70)
     print("IMPORTACAO DA PLANILHA SDR PARA CARDS")

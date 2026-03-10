@@ -616,6 +616,11 @@ const KanbanBoard: React.FC = () => {
         assigned_to_id: data.assigned_to_id || undefined,
         sdr_id: data.sdr_id || undefined,
         contact_info: data.contact_info || undefined,
+        // Campos do blueprint (obrigatórios na criação)
+        deal_type: data.deal_type || undefined,
+        acquisition_channel: data.acquisition_channel || undefined,
+        client_id: data.client_id || undefined,
+        person_id: data.person_id || undefined,
       };
 
       // Converter due_date de YYYY-MM-DD para datetime ISO

@@ -13,6 +13,7 @@ from app.repositories.field_repository import FieldRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.activity_repository import ActivityRepository
 from app.repositories.person_repository import PersonRepository
+from app.repositories.client_repository import ClientRepository
 from app.schemas.card import CardCreate, CardUpdate, CardResponse, CardListResponse
 from app.schemas.field import CardFieldValueCreate, CardFieldValueResponse
 from app.models.card import Card
@@ -39,6 +40,7 @@ class CardService:
         self.activity_repository = ActivityRepository(db)
         self.notification_repository = NotificationRepository(db)
         self.person_repository = PersonRepository(db)
+        self.client_repository = ClientRepository(db)
 
     def _verify_card_access(self, card: Card) -> None:
         """
@@ -469,6 +471,47 @@ class CardService:
                         "Você só pode criar negócios na lista 'Lead Novo' "
                         "do quadro Prospecção"
                     ),
+                )
+
+        # Valida empresa vinculada: deve ter setor e tipo de relacionamento
+        if card_data.client_id:
+            client = self.client_repository.find_by_id(card_data.client_id)
+            if not client:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Empresa não encontrada"
+                )
+            if not client.sector or not client.relationship_type:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        "A empresa vinculada não possui Setor e/ou Tipo de Relacionamento. "
+                        "Complete os dados da empresa antes de criar o card."
+                    )
+                )
+
+        # Valida contato vinculado: deve ter pelo menos e-mail ou telefone
+        if card_data.person_id:
+            person = self.person_repository.find_by_id(card_data.person_id)
+            if not person:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Contato não encontrado"
+                )
+            has_contact = any([
+                person.email,
+                person.email_commercial,
+                person.phone,
+                person.phone_whatsapp,
+                person.phone_commercial,
+            ])
+            if not has_contact:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        "O contato vinculado não possui e-mail ou telefone. "
+                        "Complete os dados do contato antes de criar o card."
+                    )
                 )
 
         # Cria o card

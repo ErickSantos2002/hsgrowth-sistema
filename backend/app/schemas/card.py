@@ -195,6 +195,7 @@ class CardCreate(CardBase):
     """
     list_id: int = Field(..., description="ID da lista onde o card será criado")
     client_id: Optional[int] = Field(None, description="ID do cliente/organização")
+    person_id: Optional[int] = Field(None, description="ID da pessoa de contato vinculada")
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável (Vendedor)")
     sdr_id: Optional[int] = Field(None, description="ID do usuário SDR responsável")
     value: Optional[float] = Field(None, ge=0, description="Valor monetário do card")

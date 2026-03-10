@@ -792,6 +792,7 @@ export interface CreateCardRequest {
   title: string;
   description?: string;
   client_id?: number;
+  person_id?: number;
   assigned_to_id?: number;
   value?: number;
   currency?: string;
