@@ -32,6 +32,9 @@ python-dotenv==1.0.0
 # HTTP Client
 httpx==0.26.0
 
+# AI / LLM
+openai>=1.40.0
+
 # Email
 fastapi-mail==1.4.1
 
