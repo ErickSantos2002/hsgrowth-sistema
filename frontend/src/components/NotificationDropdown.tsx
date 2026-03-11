@@ -32,17 +32,6 @@ const NotificationDropdown: React.FC = () => {
   const shownBrowserNotificationIds = useRef<Set<number>>(new Set());
 
   /**
-   * Solicita permissão para exibir notificações nativas do browser.
-   * Chamado uma única vez ao montar o componente.
-   */
-  const requestBrowserPermission = useCallback(async () => {
-    if (!("Notification" in window)) return;
-    if (Notification.permission === "default") {
-      await Notification.requestPermission();
-    }
-  }, []);
-
-  /**
    * Exibe uma notificação nativa do browser para cada notificação nova recebida.
    * Ao clicar, foca a aba e navega para o card correspondente.
    */
@@ -109,11 +98,6 @@ const NotificationDropdown: React.FC = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Solicita permissão para notificações nativas do browser ao montar o componente
-  useEffect(() => {
-    requestBrowserPermission();
-  }, [requestBrowserPermission]);
 
   // Carrega notificações iniciais e contador
   useEffect(() => {

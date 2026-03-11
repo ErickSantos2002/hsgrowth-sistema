@@ -16,6 +16,7 @@ import {
     Contact,
     Sun,
     Moon,
+    BellOff,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -47,6 +48,25 @@ export default function MainLayout() {
     const { darkMode, toggleDarkMode } = useTheme();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [changelogOpen, setChangelogOpen] = useState(false);
+
+    // Controla visibilidade do aviso de permissão de notificações do browser
+    const [showNotificationBanner, setShowNotificationBanner] = useState(false);
+
+    // Verifica se o browser suporta notificações e se ainda não foi concedida permissão
+    useEffect(() => {
+        if ("Notification" in window && Notification.permission === "default") {
+            setShowNotificationBanner(true);
+        }
+    }, []);
+
+    /**
+     * Solicita permissão para notificações nativas do browser ao clicar no banner.
+     * Esconde o banner independente da resposta do usuário.
+     */
+    const handleRequestNotificationPermission = async () => {
+        setShowNotificationBanner(false);
+        await Notification.requestPermission();
+    };
 
     // Define estado inicial da sidebar baseado no tamanho da tela
     useEffect(() => {
@@ -304,6 +324,33 @@ export default function MainLayout() {
                         </div>
                     </div>
                 </nav>
+
+                {/* Banner de permissão de notificações — aparece enquanto o usuário não decidiu */}
+                {showNotificationBanner && (
+                    <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5 sm:px-6">
+                        <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                            <BellOff size={16} className="flex-shrink-0" />
+                            <span>
+                                Você ainda não autorizou as notificações do sistema.
+                                Para ser avisado quando um card for atribuído a você,{" "}
+                                <button
+                                    onClick={handleRequestNotificationPermission}
+                                    className="font-semibold underline underline-offset-2 transition-colors hover:text-amber-900 dark:hover:text-amber-300"
+                                >
+                                    clique aqui para ativar
+                                </button>
+                                .
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setShowNotificationBanner(false)}
+                            className="flex-shrink-0 text-amber-600 transition-colors hover:text-amber-900 dark:text-amber-500 dark:hover:text-amber-300"
+                            title="Fechar aviso"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
 
                 {/* Page Content */}
                 <main className="flex-1 overflow-y-auto">
