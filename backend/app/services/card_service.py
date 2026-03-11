@@ -546,6 +546,43 @@ class CardService:
         except Exception as e:
             print(f"[CARD_LIST_HISTORY] Erro ao registrar entrada inicial: {e}")
 
+        # Notifica responsável e SDR se já vieram definidos na criação do card
+        if card.assigned_to_id:
+            try:
+                self.notification_repository.create({
+                    "user_id": card.assigned_to_id,
+                    "notification_type": "card_assigned",
+                    "title": "Card atribuído a você",
+                    "message": f"O card '{card.title}' foi atribuído a você",
+                    "icon": "bell",
+                    "color": "info",
+                    "notification_metadata": {
+                        "card_id": card.id,
+                        "card_title": card.title,
+                        "url": f"/cards/{card.id}"
+                    }
+                })
+            except Exception as e:
+                print(f"[NOTIFICATION] Erro ao notificar responsável na criação do card: {e}")
+
+        if card.sdr_id:
+            try:
+                self.notification_repository.create({
+                    "user_id": card.sdr_id,
+                    "notification_type": "card_assigned",
+                    "title": "Card atribuído a você",
+                    "message": f"O card '{card.title}' foi atribuído a você como SDR",
+                    "icon": "bell",
+                    "color": "info",
+                    "notification_metadata": {
+                        "card_id": card.id,
+                        "card_title": card.title,
+                        "url": f"/cards/{card.id}"
+                    }
+                })
+            except Exception as e:
+                print(f"[NOTIFICATION] Erro ao notificar SDR na criação do card: {e}")
+
         # Dispara automações do tipo "card_created"
         try:
             print(f"[AUTOMATION] Buscando automações para board_id={board.id}, trigger=card_created")

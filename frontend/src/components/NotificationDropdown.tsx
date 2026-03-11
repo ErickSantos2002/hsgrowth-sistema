@@ -17,6 +17,7 @@ import {
 import notificationService from "../services/notificationService";
 import { Notification, NotificationType } from "../types";
 import { showError } from "../utils/toast";
+import logo from "../assets/logo.png";
 
 const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,13 +28,65 @@ const NotificationDropdown: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  // Guarda IDs das notificações já exibidas como browser notification para não repetir
+  const shownBrowserNotificationIds = useRef<Set<number>>(new Set());
+
+  /**
+   * Solicita permissão para exibir notificações nativas do browser.
+   * Chamado uma única vez ao montar o componente.
+   */
+  const requestBrowserPermission = useCallback(async () => {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+  }, []);
+
+  /**
+   * Exibe uma notificação nativa do browser para cada notificação nova recebida.
+   * Ao clicar, foca a aba e navega para o card correspondente.
+   */
+  const showBrowserNotifications = useCallback((newNotifications: Notification[]) => {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+    newNotifications.forEach((notification) => {
+      // Ignora se já foi exibida anteriormente nesta sessão
+      if (shownBrowserNotificationIds.current.has(notification.id)) return;
+
+      shownBrowserNotificationIds.current.add(notification.id);
+
+      const browserNotification = new Notification(notification.title, {
+        body: notification.message,
+        icon: logo,
+        tag: `hsgrowth-${notification.id}`, // Evita duplicatas no próprio browser
+      });
+
+      // Ao clicar na notificação do browser: foca a aba e navega para o link
+      browserNotification.onclick = () => {
+        window.focus();
+        if (notification.link) {
+          navigate(notification.link);
+        }
+        browserNotification.close();
+      };
+
+      // Fecha automaticamente após 6 segundos
+      setTimeout(() => browserNotification.close(), 6000);
+    });
+  }, [navigate]);
+
   // Função para carregar notificações (definida antes dos useEffects)
-  const loadNotifications = useCallback(async () => {
+  const loadNotifications = useCallback(async (triggerBrowserNotification = false) => {
     setLoading(true);
     try {
       const response = await notificationService.list(1, 10, true); // Últimas 10 não lidas
       setNotifications(response.notifications);
       setUnreadCount(response.unread_count);
+
+      // Dispara browser notifications apenas quando chamada por nova detecção de contagem
+      if (triggerBrowserNotification) {
+        showBrowserNotifications(response.notifications);
+      }
     } catch (error) {
       console.error("Erro ao carregar notificações:", error);
       // Mock de notificações para demonstração (filtra apenas não lidas)
@@ -43,7 +96,7 @@ const NotificationDropdown: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showBrowserNotifications]);
 
   // Fecha dropdown ao clicar fora
   useEffect(() => {
@@ -57,6 +110,11 @@ const NotificationDropdown: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Solicita permissão para notificações nativas do browser ao montar o componente
+  useEffect(() => {
+    requestBrowserPermission();
+  }, [requestBrowserPermission]);
+
   // Carrega notificações iniciais e contador
   useEffect(() => {
     loadUnreadCount();
@@ -68,8 +126,8 @@ const NotificationDropdown: React.FC = () => {
   // Detecta quando contador aumenta (nova notificação) e recarrega lista automaticamente
   useEffect(() => {
     if (unreadCount > previousUnreadCount && previousUnreadCount > 0) {
-      // Nova notificação detectada! Recarrega a lista
-      loadNotifications();
+      // Nova notificação detectada — recarrega lista e dispara browser notifications
+      loadNotifications(true);
     }
     setPreviousUnreadCount(unreadCount);
     // previousUnreadCount não é incluído nas dependências intencionalmente para evitar loop infinito
