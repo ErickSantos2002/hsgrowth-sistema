@@ -117,19 +117,6 @@ class GamificationService:
         )
         point = self.repository.create_point(point_data)
 
-        # Cria notificação de pontos ganhos
-        self._create_gamification_notification(
-            user_id=user_id,
-            notification_type="points_awarded",
-            title=f"+{points} pontos ganhos!",
-            message=f"Você ganhou {points} pontos por: {description or reason}",
-            metadata={
-                "points": points,
-                "reason": reason,
-                "total_points": self.repository.get_user_total_points(user_id)
-            }
-        )
-
         # Verifica se o usuário conquistou algum badge baseado em pontos
         self._check_and_award_point_badges(user_id)
 
