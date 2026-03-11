@@ -7,6 +7,28 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.18] - 2026-03-11
+
+### Corrigido
+
+#### Botão "Ligar Rápido" agora suporta seleção de número quando há múltiplos telefones
+
+O botão de ligação rápida no CardDetails passava a ligar sempre para o primeiro número disponível da pessoa (ordem: Principal > WhatsApp > Comercial), ignorando os demais números cadastrados.
+
+**Novo comportamento:**
+- **1 número disponível:** liga diretamente, sem interrupção (comportamento anterior mantido)
+- **2 ou 3 números disponíveis:** abre modal de seleção de número antes de discar, permitindo que o usuário escolha entre Principal, WhatsApp e/ou Comercial
+
+**Detalhes da implementação:**
+- Lógica de criação de atividade + chamada API4COM extraída para a função `executeQuickCall(person, phoneNumber)`, reutilizada tanto no fluxo direto quanto após a seleção no modal
+- Novo estado `quickCallData` armazena pessoa e lista de números enquanto o modal está aberto
+- Modal de seleção com o mesmo layout e comportamento já existente no `FocusSection.tsx`
+
+### Arquivos Modificados
+- `frontend/src/pages/CardDetails.tsx` — import do tipo `Person`, estado `quickCallData`, função `executeQuickCall`, refatoração de `handleQuickCall`, modal de seleção de número no JSX
+
+---
+
 ## [1.3.17] - 2026-03-10
 
 ### Adicionado

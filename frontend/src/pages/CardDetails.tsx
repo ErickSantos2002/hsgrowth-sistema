@@ -22,7 +22,7 @@ import userService from "../services/userService";
 import automationService from "../services/automationService";
 import cardTaskService from "../services/cardTaskService";
 import api4comService from "../services/api4comService";
-import personService from "../services/personService";
+import personService, { Person } from "../services/personService";
 import { User as UserType } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { SummarySection, ClientSection, ContactSection, CustomFieldsSection, ProductSection, QuickActivityForm, FocusSection, HistorySection } from "../components/cardDetails";
@@ -74,6 +74,13 @@ const CardDetails: React.FC = () => {
 
   // Estado do botão de ligação rápida
   const [isQuickCalling, setIsQuickCalling] = useState(false);
+
+  // Estado do modal de seleção de número para a ligação rápida
+  // Preenchido quando a pessoa tem 2+ números disponíveis
+  const [quickCallData, setQuickCallData] = useState<{
+    person: Person;
+    numbers: { label: string; number: string }[];
+  } | null>(null);
 
   /**
    * Carrega dados do card ao montar o componente
@@ -314,6 +321,54 @@ const CardDetails: React.FC = () => {
    * - Se não existe: cria automaticamente uma atividade de ligação e disca para
    *   o primeiro número disponível da pessoa vinculada ao card.
    */
+  /**
+   * Executa a chamada após o número já ter sido escolhido.
+   * Cria a atividade automaticamente e dispara a chamada via API4COM.
+   */
+  const executeQuickCall = async (person: Person, phoneNumber: string) => {
+    if (!card) return;
+
+    try {
+      setIsQuickCalling(true);
+
+      // Cria a atividade automaticamente com dados pré-definidos
+      const firstName = person.name.split(" ")[0];
+      await cardTaskService.create({
+        card_id: card.id,
+        title: firstName,
+        description: "Atividade criada automaticamente ao clicar no botão ligar",
+        task_type: "call",
+        priority: "normal",
+        due_date: new Date().toISOString(),
+      });
+
+      // Recarrega o card para refletir a nova atividade na UI
+      await loadCardData();
+
+      // Dispara a chamada via API4COM
+      const result = await api4comService.makeCall({
+        phone: phoneNumber,
+        card_id: card.id,
+      });
+
+      if (result.success) {
+        showSuccess("Chamada iniciada! O webphone abrirá automaticamente.");
+      } else {
+        showError(`Erro ao iniciar chamada: ${result.error || result.message}`);
+      }
+    } catch (error: any) {
+      console.error("Erro ao fazer ligação rápida:", error);
+      showError(error.response?.data?.detail || "Erro ao iniciar chamada");
+    } finally {
+      setIsQuickCalling(false);
+    }
+  };
+
+  /**
+   * Inicia o fluxo de ligação rápida.
+   * - 1 número disponível: liga diretamente.
+   * - 2+ números disponíveis: abre modal de seleção de número.
+   */
   const handleQuickCall = async () => {
     if (!card) return;
 
@@ -335,45 +390,33 @@ const CardDetails: React.FC = () => {
     try {
       setIsQuickCalling(true);
 
-      // Carrega os dados da pessoa para obter nome e telefone
+      // Carrega os dados da pessoa para obter nome e telefones
       const person = await personService.getById(card.person_id);
 
-      // Usa o primeiro número disponível na ordem: Principal > WhatsApp > Comercial
-      const firstPhone = person.phone || person.phone_whatsapp || person.phone_commercial;
-      if (!firstPhone) {
+      // Monta a lista de números disponíveis com seus rótulos
+      const availableNumbers = [
+        person.phone && { label: "Principal", number: person.phone },
+        person.phone_whatsapp && { label: "WhatsApp", number: person.phone_whatsapp },
+        person.phone_commercial && { label: "Comercial", number: person.phone_commercial },
+      ].filter(Boolean) as { label: string; number: string }[];
+
+      if (availableNumbers.length === 0) {
         showError("A pessoa vinculada não possui nenhum número de telefone cadastrado");
         return;
       }
 
-      // Cria a atividade automaticamente com dados pré-definidos
-      const firstName = person.name.split(" ")[0];
-      await cardTaskService.create({
-        card_id: card.id,
-        title: firstName,
-        description: "Atividade criada automaticamente ao clicar no botão ligar",
-        task_type: "call",
-        priority: "normal",
-        due_date: new Date().toISOString(),
-      });
-
-      // Recarrega o card para refletir a nova atividade na UI
-      await loadCardData();
-
-      // Dispara a chamada via API4COM
-      const result = await api4comService.makeCall({
-        phone: firstPhone,
-        card_id: card.id,
-      });
-
-      if (result.success) {
-        showSuccess("Chamada iniciada! O webphone abrirá automaticamente.");
-      } else {
-        showError(`Erro ao iniciar chamada: ${result.error || result.message}`);
+      // Com 1 número: liga diretamente sem abrir modal
+      if (availableNumbers.length === 1) {
+        await executeQuickCall(person, availableNumbers[0].number);
+        return;
       }
+
+      // Com 2+ números: abre o modal de seleção e aguarda o usuário escolher
+      setIsQuickCalling(false);
+      setQuickCallData({ person, numbers: availableNumbers });
     } catch (error: any) {
-      console.error("Erro ao fazer ligação rápida:", error);
+      console.error("Erro ao iniciar ligação rápida:", error);
       showError(error.response?.data?.detail || "Erro ao iniciar chamada");
-    } finally {
       setIsQuickCalling(false);
     }
   };
@@ -1033,6 +1076,60 @@ const CardDetails: React.FC = () => {
           originalTitle={card.title}
           isLoading={isReopening}
         />
+      )}
+
+      {/* Modal de seleção de número para ligação rápida (aparece quando a pessoa tem 2+ números) */}
+      {quickCallData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-xl">
+            <div className="border-b border-gray-200 dark:border-slate-700 p-4">
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
+                <Phone size={20} className="text-blue-400" />
+                Selecionar número
+              </h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Para qual número deseja ligar para{" "}
+                <span className="font-medium text-slate-900 dark:text-white">
+                  {quickCallData.person.name}
+                </span>
+                ?
+              </p>
+            </div>
+
+            <div className="space-y-2 p-4">
+              {quickCallData.numbers.map(({ label, number }) => (
+                <button
+                  key={label}
+                  onClick={() => {
+                    const person = quickCallData.person;
+                    setQuickCallData(null);
+                    executeQuickCall(person, number);
+                  }}
+                  disabled={isQuickCalling}
+                  className="flex w-full items-center gap-3 rounded-lg border border-blue-400/30 bg-blue-500/10 px-4 py-3 text-left transition-colors hover:border-blue-400/60 hover:bg-blue-500/20 disabled:opacity-50"
+                >
+                  <Phone size={16} className="flex-shrink-0 text-blue-400" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-400">
+                      {label}
+                    </p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{number}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="border-t border-gray-200 dark:border-slate-700 p-4">
+              <button
+                onClick={() => setQuickCallData(null)}
+                disabled={isQuickCalling}
+                className="w-full rounded bg-gray-200 dark:bg-slate-700 px-4 py-2 text-sm font-medium text-slate-900 dark:text-white transition-colors hover:bg-gray-300 dark:hover:bg-slate-600 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

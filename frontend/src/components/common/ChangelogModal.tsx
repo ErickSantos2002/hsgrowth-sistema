@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.3.18",
+    date: "11/03/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "O botão 'Ligar' rápido (no canto da barra de abas do card) agora abre uma tela de seleção quando a pessoa tem mais de um número cadastrado — igual ao botão de ligar dentro das atividades. Se tiver apenas um número, continua ligando diretamente.",
+      },
+    ],
+  },
+  {
     version: "1.3.17",
     date: "10/03/2026",
     entries: [
