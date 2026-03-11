@@ -335,7 +335,7 @@ const CardDetails: React.FC = () => {
       const firstName = person.name.split(" ")[0];
       await cardTaskService.create({
         card_id: card.id,
-        title: firstName,
+        title: `Ligação ${firstName}`,
         description: "Atividade criada automaticamente ao clicar no botão ligar",
         task_type: "call",
         priority: "normal",
