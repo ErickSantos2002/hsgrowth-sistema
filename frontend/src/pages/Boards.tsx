@@ -279,7 +279,7 @@ const Boards: React.FC = () => {
               onDuplicate={handleDuplicateBoard}
               onToggleArchive={handleToggleArchive}
               onDelete={handleDeleteBoard}
-              isViewer={isViewer}
+              canManageBoard={canCreateBoard}
             />
           ))}
         </div>

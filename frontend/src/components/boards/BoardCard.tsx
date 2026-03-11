@@ -30,7 +30,7 @@ interface BoardCardProps {
   onDuplicate: (_board: Board) => void;
   onToggleArchive: (_board: Board) => void;
   onDelete: (_board: Board) => void;
-  isViewer?: boolean;
+  canManageBoard?: boolean;
 }
 
 const BoardCard: React.FC<BoardCardProps> = ({
@@ -39,7 +39,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
   onDuplicate,
   onToggleArchive,
   onDelete,
-  isViewer = false,
+  canManageBoard = false,
 }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
@@ -182,8 +182,8 @@ const BoardCard: React.FC<BoardCardProps> = ({
             Visualizar
           </button>
 
-          {/* Menu de opções - oculto para visualizadores */}
-          {!isViewer && (
+          {/* Menu de opções - apenas para Admin e Gerente */}
+          {canManageBoard && (
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}

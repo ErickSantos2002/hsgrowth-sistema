@@ -1049,9 +1049,9 @@ const KanbanBoard: React.FC = () => {
                   list={list}
                   cards={filteredCards}
                   onAddCard={canAddCardToList ? () => handleAddCard(list.id) : undefined}
-                  onEditList={isViewer ? undefined : () => handleEditList(list)}
-                  onArchiveList={isViewer ? undefined : () => handleArchiveList(list)}
-                  onDeleteList={isViewer ? undefined : () => handleDeleteListClick(list)}
+                  onEditList={canCreateList ? () => handleEditList(list) : undefined}
+                  onArchiveList={canCreateList ? () => handleArchiveList(list) : undefined}
+                  onDeleteList={canCreateList ? () => handleDeleteListClick(list) : undefined}
                   onCardClick={(card) => handleViewCard(card)}
                   onMoveLeft={isViewer ? undefined : () => handleMoveListLeft(list)}
                   onMoveRight={isViewer ? undefined : () => handleMoveListRight(list)}
