@@ -15,13 +15,13 @@ import {
   Info,
 } from "lucide-react";
 import notificationService from "../services/notificationService";
-import { Notification, NotificationType } from "../types";
+import { Notification as AppNotification, NotificationType } from "../types";
 import { showError } from "../utils/toast";
 import logo from "../assets/logo.png";
 
 const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [previousUnreadCount, setPreviousUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -46,7 +46,7 @@ const NotificationDropdown: React.FC = () => {
    * Exibe uma notificação nativa do browser para cada notificação nova recebida.
    * Ao clicar, foca a aba e navega para o card correspondente.
    */
-  const showBrowserNotifications = useCallback((newNotifications: Notification[]) => {
+  const showBrowserNotifications = useCallback((newNotifications: AppNotification[]) => {
     if (!("Notification" in window) || Notification.permission !== "granted") return;
 
     newNotifications.forEach((notification) => {
@@ -175,7 +175,7 @@ const NotificationDropdown: React.FC = () => {
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: AppNotification) => {
     // Marca como lida
     if (!notification.is_read) {
       handleMarkAsRead(notification.id);
@@ -321,7 +321,7 @@ const NotificationDropdown: React.FC = () => {
 };
 
 // Mock de notificações para demonstração (backend ainda não implementado)
-const getMockNotifications = (): Notification[] => {
+const getMockNotifications = (): AppNotification[] => {
   const now = new Date();
   const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
