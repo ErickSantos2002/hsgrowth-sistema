@@ -88,6 +88,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""  # Chave da API da OpenAI (definir no .env)
     OPENAI_MODEL: str = "gpt-4o-mini"  # Modelo padrão (melhor custo-benefício)
 
+    # Rate limiting de IA (Redis DB 2)
+    REDIS_AI_RATE_DB: int = 2  # DB separado para contadores de rate limiting da IA
+    AI_RATE_LIMIT_PER_HOUR: int = 20  # Máximo de chamadas ao Agent por hora por usuário
+    AI_RATE_LIMIT_PER_DAY: int = 80  # Máximo de chamadas ao Agent por dia por usuário
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

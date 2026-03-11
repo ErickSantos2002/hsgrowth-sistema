@@ -979,3 +979,56 @@ export interface CreateNotificationRequest {
   link?: string;
   metadata?: Record<string, any>;
 }
+
+// ==================== AGENT GROWTH ====================
+
+export type AgentPageContext = "card_detail" | "board" | "clients" | "general";
+
+export type AgentActionId =
+  | "summarize_card"
+  | "email_followup"
+  | "email_proposal"
+  | "suggest_next_steps"
+  | "objection_handling"
+  | "analyze_pipeline"
+  | "quick_win_today"
+  | "cold_call_tips"
+  | "productivity_tips"
+  | "my_day_tasks"
+  | "how_was_my_day";
+
+export interface AgentOption {
+  action_id: AgentActionId;
+  label: string; // Rótulo em português exibido no chip
+}
+
+export interface AgentMessage {
+  id: string; // Gerado localmente com crypto.randomUUID()
+  role: "user" | "agent";
+  content: string;
+  timestamp: Date;
+  is_copyable?: boolean; // Exibe botão "Copiar" para mensagens do agente
+}
+
+export interface AgentChatRequest {
+  action_id: AgentActionId;
+  card_id?: number;
+  page_context: AgentPageContext;
+  extra_params?: Record<string, string | number>;
+}
+
+export interface AgentChatResponse {
+  message: string;
+  action_id: string;
+  suggestions: AgentActionId[];
+  rate_limit_remaining_day: number;
+  tokens_used: number;
+}
+
+export interface AgentRateLimitStatus {
+  remaining_hour: number;
+  remaining_day: number;
+  limit_hour: number;
+  limit_day: number;
+  is_limited: boolean;
+}

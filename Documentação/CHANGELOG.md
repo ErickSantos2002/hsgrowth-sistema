@@ -7,6 +7,158 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.4.0] - 2026-03-11
+
+### Adicionado
+
+#### Agent Growth — Widget de IA contextual
+
+Novo widget flutuante de inteligência artificial disponível em todas as páginas autenticadas (exceto para usuários com role `viewer`). O Agent Growth oferece ações pré-definidas baseadas no contexto da página e no role do usuário, sem campo de texto livre — o usuário escolhe chips e recebe respostas geradas pelo LLM.
+
+**Interface:**
+- Botão circular fixo no canto inferior direito da tela (ícone Sparkles)
+- Janela de chat de 380×520px com header, área de mensagens e chips de ação
+- Responses renderizadas em Markdown (negrito, listas numeradas, listas com bullets)
+- Badge no header indica o contexto ativo: Card atual / Board atual / Clientes / Geral
+- Chips já usados ficam visíveis com ícone ✓ e desabilitados (sem sumir da tela)
+- Quando todos os chips foram usados, o sistema oferece "Limpar conversa e recomeçar"
+- Histórico de conversa armazenado apenas no frontend — reinicia ao fechar o widget
+
+**Contexto e chips por página:**
+
+| Página | Contexto detectado | Dados enviados ao backend |
+|---|---|---|
+| `/boards/:boardId/cards/:cardId` | `card_detail` | card_id + board_id |
+| `/boards/:boardId` | `board` | board_id |
+| `/clients` | `clients` | — |
+| qualquer outra | `general` | — |
+
+**Chips disponíveis por role e contexto (Vendedor):**
+- `card_detail`: Resumir este negócio, Sugerir próximos passos, Gerar e-mail de follow-up, Gerar e-mail de proposta, Como lidar com objeções
+- `board`: O que tenho para fazer hoje, Quick win para hoje, Como foi meu dia hoje, Analisar meu pipeline
+- `clients`: O que tenho para fazer hoje, Dicas de cold call, Como foi meu dia hoje
+- `general`: O que tenho para fazer hoje, Como foi meu dia hoje, Dicas de produtividade
+
+**Chips disponíveis por role e contexto (SDR):**
+- `card_detail`: Resumir este negócio, Sugerir próximos passos, Gerar e-mail de follow-up, Dicas de cold call, Como lidar com objeções
+- `board`: O que tenho para fazer hoje, Como foi meu dia hoje, Dicas de cold call, Quick win para hoje
+- `clients`: O que tenho para fazer hoje, Dicas de cold call, Como foi meu dia hoje, Dicas de produtividade
+- `general`: O que tenho para fazer hoje, Como foi meu dia hoje, Dicas de cold call, Dicas de produtividade
+
+**Ações implementadas no backend:**
+
+| action_id | Descrição |
+|---|---|
+| `summarize_card` | Resume o card atual: título, valor, etapa, responsáveis e notas recentes |
+| `suggest_next_steps` | Sugere 3 a 5 ações concretas priorizadas para avançar o negócio |
+| `email_followup` | Gera rascunho de e-mail de follow-up personalizado com dados do card |
+| `email_proposal` | Gera rascunho de e-mail de proposta comercial com dados do card |
+| `objection_handling` | Lista objeções prováveis para o negócio e scripts de resposta |
+| `analyze_pipeline` | Analisa cards do board e identifica gargalos (gerentes veem equipe toda; vendedores veem só os próprios cards) |
+| `quick_win_today` | Identifica o card com maior chance de fechar hoje e sugere 2–3 ações imediatas |
+| `cold_call_tips` | Roteiro de cold call para vendas B2B com dicas de abordagem |
+| `productivity_tips` | Dicas de produtividade direcionadas a vendedores |
+| `my_day_tasks` | Lista atividades agendadas para hoje e atrasadas do usuário |
+| `how_was_my_day` | Analisa as movimentações de cards e atividades criadas/concluídas no dia |
+
+**Rate limiting via Redis (DB 2):**
+- 20 chamadas por hora por usuário
+- 80 chamadas por dia por usuário
+- Retorna HTTP 429 com mensagem clara ao atingir o limite
+- Graceful degradation: se Redis estiver offline, o sistema continua funcionando sem rate limit
+
+**Endpoints adicionados:**
+- `POST /api/v1/ai/agent/chat` — executa uma ação do agente
+- `GET /api/v1/ai/agent/rate-limit-status` — consulta contadores sem incrementar
+
+### Arquivos Adicionados
+- `backend/app/core/ai_rate_limiter.py` — classe `AIRateLimiter` com pipeline Redis atômico
+- `frontend/src/services/agentService.ts` — service para consumir os endpoints do agente
+- `frontend/src/hooks/useAgentContext.ts` — hook que detecta contexto da página e role do usuário
+- `frontend/src/components/agentGrowth/AgentLoadingIndicator.tsx` — três pontos animados
+- `frontend/src/components/agentGrowth/AgentMessageBubble.tsx` — bubble de mensagem com suporte a Markdown
+- `frontend/src/components/agentGrowth/AgentMessageList.tsx` — lista com auto-scroll
+- `frontend/src/components/agentGrowth/AgentOptionChips.tsx` — grade de chips com três estados visuais
+- `frontend/src/components/agentGrowth/AgentHeader.tsx` — header com badge de contexto ativo
+- `frontend/src/components/agentGrowth/AgentChatWindow.tsx` — container principal do chat
+- `frontend/src/components/agentGrowth/AgentGrowthWidget.tsx` — botão flutuante e toggle
+- `frontend/src/components/agentGrowth/index.ts` — re-export do widget
+
+### Arquivos Modificados
+- `backend/app/core/config.py` — 3 novas variáveis: `REDIS_AI_RATE_DB`, `AI_RATE_LIMIT_PER_HOUR`, `AI_RATE_LIMIT_PER_DAY`
+- `backend/app/core/redis_client.py` — segundo singleton Redis para rate limiting (DB 2)
+- `backend/app/main.py` — startup/shutdown do novo cliente Redis
+- `backend/app/schemas/ai.py` — enums `AgentActionId`, `AgentPageContext` e schemas `AgentChatRequest`, `AgentChatResponse`, `AgentRateLimitStatus`
+- `backend/app/services/ai_service.py` — método `agent_chat()` e 11 prompts privados
+- `backend/app/api/v1/endpoints/ai.py` — 2 novos endpoints do agente
+- `frontend/src/types/index.ts` — tipos `AgentPageContext`, `AgentActionId`, `AgentOption`, `AgentMessage`, `AgentChatRequest`, `AgentChatResponse`, `AgentRateLimitStatus`
+- `frontend/src/layouts/MainLayout.tsx` — montagem do `AgentGrowthWidget` (oculto para role `viewer`)
+
+---
+
+## [1.3.19] - 2026-03-11
+
+### Adicionado
+
+#### Notificações nativas do browser (estilo Chrome)
+
+Quando um card é atribuído ao vendedor ou SDR, o sistema agora exibe uma notificação nativa do browser no canto da tela — igual às notificações do Gmail, Slack e outros serviços — mesmo que o sistema esteja em outra aba ou minimizado.
+
+**Comportamento:**
+- Aparece automaticamente quando uma nova notificação chega (polling de 30s)
+- Exibe título, mensagem e ícone do HSGrowth
+- Fecha sozinha após 6 segundos
+- Ao clicar, foca a aba e navega diretamente para o card
+- Não repete a mesma notificação na mesma sessão
+
+**Permissão:**
+- Ao carregar o sistema, um banner amarelo discreto aparece abaixo da navbar para usuários que ainda não concederam permissão
+- O banner exibe a mensagem "Você ainda não autorizou as notificações do sistema" com link "clique aqui para ativar"
+- O banner reaparece a cada F5/reload enquanto o usuário não decidir
+- Não aparece para quem já aceitou ou bloqueou
+
+#### Notificação de card atribuído ativada no sistema
+
+O sistema de notificações agora dispara automaticamente em todos os cenários de atribuição de card:
+
+- Card criado com vendedor ou SDR já definido
+- Vendedor alterado manualmente no card
+- SDR alterado manualmente no card
+- Atribuição direta via endpoint dedicado
+- Automação com ação `assign_card`
+- Automação com rodízio de vendedor (`assign_round_robin`)
+- Automação com rodízio de SDR (`assign_sdr_round_robin`)
+
+Em todos os casos o sistema verifica se o responsável realmente mudou antes de notificar, evitando duplicatas.
+
+### Corrigido
+
+#### Notificações de "card avançou" e "pontos ganhos" desativadas
+
+Removidas as notificações in-app de parabenização ao mover um card e de pontos ganhos por gamificação, a pedido da equipe. A concessão de pontos e o sistema de gamificação continuam funcionando normalmente — apenas as notificações foram desativadas.
+
+#### Campo `link` das notificações agora populado corretamente
+
+O campo `link` do schema `NotificationResponse` estava sempre retornando `null` pois não havia lógica para extraí-lo do `metadata.url`. Adicionado `model_validator` no Pydantic que popula automaticamente o `link` a partir de `metadata.url`. O frontend também recebeu fallback para `metadata.url` em notificações antigas criadas antes da correção.
+
+#### Clique em notificação agora navega até o card
+
+Tanto o clique na notificação do browser quanto o clique na notificação dentro do dropdown agora navegam corretamente até o card correspondente.
+
+#### Browser notification não disparava quando contador ia de 0 para 1
+
+Quando o vendedor tinha todas as notificações lidas e chegava uma nova (contador: 0 → 1), a notificação do browser não aparecia. Corrigido substituindo a condição `previousUnreadCount > 0` por um ref `isInitialCountLoad` que ignora apenas a carga inicial da página.
+
+### Arquivos Modificados
+- `frontend/src/components/NotificationDropdown.tsx` — browser notifications, fallback metadata.url, fix 0→1, remoção de navigate das deps
+- `frontend/src/layouts/MainLayout.tsx` — banner de permissão de notificações
+- `backend/app/schemas/notification.py` — model_validator para popular link do metadata.url
+- `backend/app/services/card_service.py` — notificação card_assigned em create_card, update_card e assign_card; remoção de notify_card_moved e notify_points_awarded
+- `backend/app/services/gamification_service.py` — remoção de notify_points_awarded
+- `backend/app/services/automation_service.py` — notificação card_assigned em assign_card, assign_round_robin e assign_sdr_round_robin
+
+---
+
 ## [1.3.18] - 2026-03-11
 
 ### Corrigido

@@ -26,6 +26,7 @@ import NotificationDropdown from "../components/NotificationDropdown";
 import GlobalSearch from "../components/GlobalSearch";
 import { UserAvatar } from "../components/common";
 import ChangelogModal from "../components/common/ChangelogModal";
+import { AgentGrowthWidget } from "../components/agentGrowth";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -238,7 +239,7 @@ export default function MainLayout() {
                                     className="text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                                     title="Ver o que há de novo nessa versão"
                                 >
-                                    HSGrowth CRM v1.3.18
+                                    HSGrowth CRM v1.4.0
                                 </button>
                                 <p className="text-[10px] text-slate-300 dark:text-slate-600">
                                     © 2026 Health & Safety Tech
@@ -363,6 +364,9 @@ export default function MainLayout() {
                 isOpen={changelogOpen}
                 onClose={() => setChangelogOpen(false)}
             />
+
+            {/* Agent Growth — widget flutuante de chat com IA, não exibido para viewer */}
+            {user?.role !== "viewer" && <AgentGrowthWidget />}
         </div>
     );
 }

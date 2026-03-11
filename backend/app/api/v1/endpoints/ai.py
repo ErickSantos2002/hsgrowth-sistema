@@ -4,7 +4,7 @@ Fornece funcionalidades baseadas em LLM para auxiliar os vendedores no CRM.
 """
 from typing import Any
 
-from fastapi import APIRouter, Depends, Path, Body
+from fastapi import APIRouter, Depends, Path, Body, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user
@@ -14,8 +14,13 @@ from app.schemas.ai import (
     AICardSummaryResponse,
     AITextGenerateRequest,
     AITextGenerateResponse,
+    AgentChatRequest,
+    AgentChatResponse,
+    AgentRateLimitStatus,
 )
 from app.services.ai_service import AIService
+from app.core.ai_rate_limiter import AIRateLimiter
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -148,4 +153,126 @@ async def generate_text(
         client_name=request_data.client_name,
         person_name=request_data.person_name,
         extra_context=request_data.extra_context
+    )
+
+
+@router.post(
+    "/agent/chat",
+    response_model=AgentChatResponse,
+    summary="Interagir com o Agent Growth",
+    description="""
+Processa uma ação selecionada pelo usuário no widget **Agent Growth** e retorna
+uma resposta gerada pelo LLM junto com sugestões de próximos chips.
+
+### Rate Limiting
+Cada usuário tem limite de **20 chamadas por hora** e **80 por dia**.
+Exceder o limite retorna `HTTP 429` com mensagem explicativa.
+
+### Ações disponíveis por contexto:
+**Card Detail:** `summarize_card`, `email_followup`, `email_proposal`, `suggest_next_steps`, `objection_handling`
+
+**Board:** `analyze_pipeline`, `quick_win_today`, `cold_call_tips`
+
+**Geral:** `productivity_tips`
+""",
+    responses={
+        200: {
+            "description": "Resposta gerada com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Próximos passos recomendados: 1) Enviar proposta revisada até sexta...",
+                        "action_id": "suggest_next_steps",
+                        "suggestions": ["email_followup", "objection_handling", "email_proposal"],
+                        "rate_limit_remaining_day": 75,
+                        "tokens_used": 420
+                    }
+                }
+            }
+        },
+        429: {"description": "Rate limit excedido — aguarde para fazer novas chamadas"},
+        404: {"description": "Card não encontrado (se card_id foi fornecido)"},
+    }
+)
+async def agent_chat(
+    request_data: AgentChatRequest = Body(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """Processa uma ação do Agent Growth e retorna resposta do LLM."""
+    rate_limiter = AIRateLimiter()
+    result = await rate_limiter.check_and_increment(current_user.id)
+
+    if not result.allowed:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Limite de chamadas ao Agent Growth atingido. "
+                f"Você usou todas as {settings.AI_RATE_LIMIT_PER_HOUR} chamadas desta hora "
+                f"ou as {settings.AI_RATE_LIMIT_PER_DAY} do dia. "
+                f"Restam {result.remaining_day} chamadas hoje."
+            )
+        )
+
+    service = AIService(db)
+    response = await service.agent_chat(
+        action_id=request_data.action_id,
+        card_id=request_data.card_id,
+        page_context=request_data.page_context,
+        extra_params=request_data.extra_params,
+        user_id=current_user.id,
+        # current_user.role é um relacionamento — extrai o nome da role como string
+        user_role=current_user.role.name if current_user.role else "salesperson",
+        user_name=current_user.name or "",
+    )
+
+    return AgentChatResponse(
+        message=response["message"],
+        action_id=request_data.action_id.value,
+        suggestions=response["suggestions"],
+        rate_limit_remaining_day=result.remaining_day,
+        tokens_used=response["tokens_used"],
+    )
+
+
+@router.get(
+    "/agent/rate-limit-status",
+    response_model=AgentRateLimitStatus,
+    summary="Consultar rate limit do Agent Growth",
+    description="""
+Retorna o status atual do rate limit para o usuário autenticado **sem incrementar os contadores**.
+
+Use este endpoint para exibir ao usuário quantas chamadas ele ainda tem disponíveis
+no widget Agent Growth antes de fazer uma nova requisição.
+""",
+    responses={
+        200: {
+            "description": "Status do rate limit retornado com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "remaining_hour": 18,
+                        "remaining_day": 74,
+                        "limit_hour": 20,
+                        "limit_day": 80,
+                        "is_limited": False
+                    }
+                }
+            }
+        }
+    }
+)
+async def get_agent_rate_limit_status(
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """Retorna o status do rate limit do Agent Growth para o usuário autenticado."""
+    rate_limiter = AIRateLimiter()
+    result = await rate_limiter.get_status(current_user.id)
+
+    return AgentRateLimitStatus(
+        remaining_hour=result.remaining_hour,
+        remaining_day=result.remaining_day,
+        limit_hour=settings.AI_RATE_LIMIT_PER_HOUR,
+        limit_day=settings.AI_RATE_LIMIT_PER_DAY,
+        is_limited=not result.allowed,
     )

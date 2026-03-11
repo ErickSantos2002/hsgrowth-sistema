@@ -12,7 +12,12 @@ from loguru import logger
 
 from app.core.config import settings
 from app.core.logging import configure_logging
-from app.core.redis_client import connect_redis, disconnect_redis
+from app.core.redis_client import (
+    connect_redis,
+    disconnect_redis,
+    connect_redis_ai_rate,
+    disconnect_redis_ai_rate,
+)
 from app.middleware.error_handler import catch_exceptions_middleware
 from app.middleware.session_middleware import session_activity_middleware
 from app.workers.scheduler import start_scheduler, stop_scheduler
@@ -36,6 +41,9 @@ async def lifespan(app: FastAPI):
     # Inicializar conexão Redis de sessões (graceful — não falha se Redis cair)
     await connect_redis()
 
+    # Inicializar conexão Redis de rate limiting de IA (graceful — não falha se Redis cair)
+    await connect_redis_ai_rate()
+
     # Inicializar scheduler (APScheduler) - exceto durante testes
     if settings.ENVIRONMENT != "testing":
         await start_scheduler()
@@ -55,6 +63,9 @@ async def lifespan(app: FastAPI):
 
     # Fechar conexão Redis de sessões
     await disconnect_redis()
+
+    # Fechar conexão Redis de rate limiting de IA
+    await disconnect_redis_ai_rate()
 
 
 # Metadados da API para documentação Swagger/OpenAPI

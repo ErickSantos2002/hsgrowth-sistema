@@ -25,6 +25,42 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.4.0",
+    date: "11/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Agent Growth: novo assistente de IA disponível em todas as páginas (botão azul no canto inferior direito). Clique para abrir e escolha uma das opções disponíveis — o assistente responde com base no que você está fazendo no momento. As sugestões mudam dependendo se você está dentro de um card, em um board ou em outra página.",
+      },
+      {
+        type: "feature",
+        text: "As ações disponíveis variam de acordo com o seu perfil: Vendedores têm acesso a resumo do negócio, sugestão de próximos passos, geração de e-mails e análise de pipeline. SDRs têm foco em prospecção, cold call e rotina do dia.",
+      },
+      {
+        type: "feature",
+        text: "Ações disponíveis para todos: 'O que tenho para fazer hoje' lista suas atividades pendentes e atrasadas; 'Como foi meu dia hoje' analisa suas movimentações, cards avançados e atividades concluídas no dia.",
+      },
+    ],
+  },
+  {
+    version: "1.3.19",
+    date: "11/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Notificações nativas do browser: quando um card é atribuído a você, aparece uma notificação no canto da tela — igual às do Gmail e Slack — mesmo com o sistema em outra aba. Ao clicar, vai direto para o card.",
+      },
+      {
+        type: "feature",
+        text: "Na primeira vez que entrar no sistema, um aviso aparece pedindo para ativar as notificações do browser. Basta clicar em 'clique aqui para ativar' e aceitar.",
+      },
+      {
+        type: "fix",
+        text: "Ao clicar em uma notificação dentro do sistema, agora navega corretamente até o card correspondente.",
+      },
+    ],
+  },
+  {
     version: "1.3.18",
     date: "11/03/2026",
     entries: [
