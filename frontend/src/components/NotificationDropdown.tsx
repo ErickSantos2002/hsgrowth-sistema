@@ -51,11 +51,13 @@ const NotificationDropdown: React.FC = () => {
       });
 
       // Ao clicar na notificação do browser: foca a aba e navega para o link.
-      // Usa window.location.href pois o handler é executado fora do contexto React
+      // Usa window.location.href pois o handler é executado fora do contexto React.
+      // Fallback para metadata.url em notificações antigas que têm link null.
+      const destination = notification.link || notification.metadata?.url;
       browserNotification.onclick = () => {
         window.focus();
-        if (notification.link) {
-          window.location.href = notification.link;
+        if (destination) {
+          window.location.href = destination;
         }
         browserNotification.close();
       };
@@ -166,9 +168,11 @@ const NotificationDropdown: React.FC = () => {
       handleMarkAsRead(notification.id);
     }
 
-    // Navega para o link se existir
-    if (notification.link) {
-      navigate(notification.link);
+    // Navega para o link — usa link direto ou fallback para metadata.url
+    // (notificações antigas podem ter link null mas url dentro do metadata)
+    const destination = notification.link || notification.metadata?.url;
+    if (destination) {
+      navigate(destination);
       setIsOpen(false);
     }
   };
@@ -258,7 +262,7 @@ const NotificationDropdown: React.FC = () => {
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
                     className={`p-4 transition-colors ${
-                      notification.link ? "cursor-pointer hover:bg-gray-200/50 dark:hover:bg-slate-700/50" : ""
+                      (notification.link || notification.metadata?.url) ? "cursor-pointer hover:bg-gray-200/50 dark:hover:bg-slate-700/50" : ""
                     } ${!notification.is_read ? "bg-gray-200/30 dark:bg-slate-700/30" : ""}`}
                   >
                     <div className="flex items-start gap-3">
