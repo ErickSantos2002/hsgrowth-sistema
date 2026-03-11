@@ -1012,11 +1012,11 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Header: navegação do mês (só na view mês) + toggles de view + botão de agendar */}
-      <div className="flex items-center justify-between gap-2">
+      {/* Header responsivo: linha 1 → nav do mês | linha 2 → Mês/Lista/Agendar (no mobile) */}
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
         {/* Navegação entre meses — oculta na view lista */}
         {viewMode === "month" ? (
-          <div className="flex items-center gap-1">
+          <div className="flex flex-1 items-center gap-1">
             <button
               type="button"
               onClick={handlePrevMonth}
@@ -1113,13 +1113,13 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
             </button>
           </div>
         ) : (
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">
+          <p className="flex-1 text-sm font-semibold text-slate-900 dark:text-white">
             Todas as atividades
           </p>
         )}
 
-        {/* Controles direitos: toggle Mês/Lista + botão Agendar */}
-        <div className="flex items-center gap-2">
+        {/* Controles: toggle Mês/Lista + botão Agendar — ocupa linha inteira no mobile */}
+        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
           {/* Pill toggle de view */}
           <div className="flex items-center rounded-lg border border-gray-200 p-0.5 dark:border-slate-700">
             <button

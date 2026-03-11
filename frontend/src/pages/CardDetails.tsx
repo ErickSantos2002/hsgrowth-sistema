@@ -916,65 +916,69 @@ const CardDetails: React.FC = () => {
           <div className="p-6 sm:min-h-full">
             {/* Sistema de Abas */}
             <div className="mb-6 border-b border-gray-200 dark:border-slate-700/50">
-              <div className="scrollbar-hidden flex flex-nowrap gap-4 overflow-x-auto sm:gap-6 sm:overflow-visible">
-                <button
-                  onClick={() => setActiveTab("atividade")}
-                  className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
-                    activeTab === "atividade"
-                      ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                  }`}
-                >
-                  <Calendar size={18} />
-                  Atividade
-                  <span className="ml-1 rounded-full border border-blue-500/30 bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
-                    {card.pending_tasks?.length || 0}
-                  </span>
-                </button>
+              {/* Wrapper: abas scrolláveis à esquerda, botão Ligar fixo à direita */}
+              <div className="flex items-end gap-2">
+                {/* Abas com scroll horizontal */}
+                <div className="scrollbar-hidden flex flex-1 min-w-0 flex-nowrap gap-2 overflow-x-auto lg:gap-6">
+                  <button
+                    onClick={() => setActiveTab("atividade")}
+                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
+                      activeTab === "atividade"
+                        ? "border-blue-500 font-medium text-blue-400"
+                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    }`}
+                  >
+                    <Calendar size={18} />
+                    <span className="hidden lg:inline">Atividade</span>
+                    <span className="ml-1 rounded-full border border-blue-500/30 bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
+                      {card.pending_tasks?.length || 0}
+                    </span>
+                  </button>
 
-                <button
-                  onClick={() => setActiveTab("anotacoes")}
-                  className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
-                    activeTab === "anotacoes"
-                      ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                  }`}
-                >
-                  <FileText size={18} />
-                  Anotações
-                  <span className="ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
-                    {card.notes?.length || 0}
-                  </span>
-                </button>
+                  <button
+                    onClick={() => setActiveTab("anotacoes")}
+                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
+                      activeTab === "anotacoes"
+                        ? "border-blue-500 font-medium text-blue-400"
+                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    }`}
+                  >
+                    <FileText size={18} />
+                    <span className="hidden lg:inline">Anotações</span>
+                    <span className="hidden lg:inline ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
+                      {card.notes?.length || 0}
+                    </span>
+                  </button>
 
-                <button
-                  onClick={() => setActiveTab("agendador")}
-                  className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
-                    activeTab === "agendador"
-                      ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                  }`}
-                >
-                  <CalendarDays size={18} />
-                  Calendário
-                </button>
+                  <button
+                    onClick={() => setActiveTab("agendador")}
+                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
+                      activeTab === "agendador"
+                        ? "border-blue-500 font-medium text-blue-400"
+                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    }`}
+                  >
+                    <CalendarDays size={18} />
+                    <span className="hidden lg:inline">Calendário</span>
+                  </button>
 
-                <button
-                  onClick={() => setActiveTab("arquivos")}
-                  className={`flex items-center gap-2 border-b-2 px-1 pb-3 transition-colors ${
-                    activeTab === "arquivos"
-                      ? "border-blue-500 font-medium text-blue-400"
-                      : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                  }`}
-                >
-                  <Paperclip size={18} />
-                  Arquivos
-                  <span className="ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
-                    {attachmentsCount}
-                  </span>
-                </button>
+                  <button
+                    onClick={() => setActiveTab("arquivos")}
+                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
+                      activeTab === "arquivos"
+                        ? "border-blue-500 font-medium text-blue-400"
+                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    }`}
+                  >
+                    <Paperclip size={18} />
+                    <span className="hidden lg:inline">Arquivos</span>
+                    <span className="hidden lg:inline ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
+                      {attachmentsCount}
+                    </span>
+                  </button>
+                </div>
 
-                {/* Botão de ligação rápida — oculto para viewers e cards fechados */}
+                {/* Botão Ligar — sempre visível fora da área de scroll */}
                 {!isViewer && !card.is_won && !card.is_lost && (
                   <button
                     onClick={handleQuickCall}
@@ -986,7 +990,7 @@ const CardDetails: React.FC = () => {
                         ? "Nenhuma pessoa vinculada ao card"
                         : "Ligar agora sem criar atividade manualmente"
                     }
-                    className="relative ml-auto flex h-10 w-10 flex-shrink-0 self-center mb-1.5 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="relative mb-2 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isQuickCalling ? (
                       <Loader2 size={15} className="animate-spin" />
