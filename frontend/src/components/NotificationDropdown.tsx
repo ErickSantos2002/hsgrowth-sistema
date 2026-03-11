@@ -50,11 +50,12 @@ const NotificationDropdown: React.FC = () => {
         tag: `hsgrowth-${notification.id}`, // Evita duplicatas no próprio browser
       });
 
-      // Ao clicar na notificação do browser: foca a aba e navega para o link
+      // Ao clicar na notificação do browser: foca a aba e navega para o link.
+      // Usa window.location.href pois o handler é executado fora do contexto React
       browserNotification.onclick = () => {
         window.focus();
         if (notification.link) {
-          navigate(notification.link);
+          window.location.href = notification.link;
         }
         browserNotification.close();
       };

@@ -4,7 +4,7 @@ Define os modelos de entrada/saída para notificações in-app.
 """
 from typing import Optional, Dict, Any, List
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from enum import Enum
 
 
@@ -124,6 +124,13 @@ class NotificationResponse(BaseModel):
     read_at: Optional[datetime] = Field(None, description="Data/hora de leitura")
     created_at: datetime = Field(..., description="Data/hora de criação")
     updated_at: Optional[datetime] = Field(None, description="Data/hora de última atualização")
+
+    @model_validator(mode="after")
+    def extract_link_from_metadata(self) -> "NotificationResponse":
+        """Popula o campo link a partir de metadata.url se não estiver explicitamente definido."""
+        if not self.link and self.notification_metadata:
+            self.link = self.notification_metadata.get("url")
+        return self
 
     model_config = {
         "from_attributes": True,
