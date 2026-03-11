@@ -31,6 +31,9 @@ const NotificationDropdown: React.FC = () => {
   // Guarda IDs das notificações já exibidas como browser notification para não repetir
   const shownBrowserNotificationIds = useRef<Set<number>>(new Set());
 
+  // Controla se o próximo disparo do useEffect de contagem é a carga inicial
+  const isInitialCountLoad = useRef(true);
+
   /**
    * Exibe uma notificação nativa do browser para cada notificação nova recebida.
    * Ao clicar, foca a aba e navega para o card correspondente.
@@ -65,7 +68,9 @@ const NotificationDropdown: React.FC = () => {
       // Fecha automaticamente após 6 segundos
       setTimeout(() => browserNotification.close(), 6000);
     });
-  }, [navigate]);
+  // navigate removido das dependências pois não é mais usado (usa window.location.href)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Função para carregar notificações (definida antes dos useEffects)
   const loadNotifications = useCallback(async (triggerBrowserNotification = false) => {
@@ -112,8 +117,13 @@ const NotificationDropdown: React.FC = () => {
 
   // Detecta quando contador aumenta (nova notificação) e recarrega lista automaticamente
   useEffect(() => {
-    if (unreadCount > previousUnreadCount && previousUnreadCount > 0) {
-      // Nova notificação detectada — recarrega lista e dispara browser notifications
+    if (isInitialCountLoad.current) {
+      // Ignora a primeira execução (carga inicial da página) para não disparar
+      // browser notifications para notificações que já existiam antes de entrar
+      isInitialCountLoad.current = false;
+    } else if (unreadCount > previousUnreadCount) {
+      // Nova notificação detectada — recarrega lista e dispara browser notifications.
+      // Funciona mesmo quando o contador vai de 0 para 1 (todas lidas + nova chegando)
       loadNotifications(true);
     }
     setPreviousUnreadCount(unreadCount);
