@@ -50,11 +50,11 @@ const SelectMenu: React.FC<{
   const selected = options.find((o) => o.value === value);
 
   return (
-    <div ref={menuRef} className="relative">
+    <div ref={menuRef} className="relative w-full">
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className="flex h-9 min-w-[150px] items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+        className="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
       >
         <span className={`truncate ${selected ? "" : "text-slate-400"}`}>
           {selected?.label ?? "Selecione"}
@@ -134,9 +134,9 @@ const ActivityFilters: React.FC<ActivityFiltersProps> = ({
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-3 p-4">
+    <div className="flex flex-col items-center gap-4 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
       {/* Botões pill de período */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
         {periodOptions.map((option) => (
           <button
             key={option.value}
@@ -154,28 +154,34 @@ const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 
       <div className="hidden h-6 w-px bg-gray-200 dark:bg-slate-700 sm:block" />
 
-      {/* SelectMenu de tipo */}
-      <SelectMenu
-        value={filters.taskType}
-        options={typeOptions}
-        onChange={(v) => update("taskType", v)}
-      />
+      {/* Wrappers flex-col nos selects para ficarem w-full no mobile */}
+      <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+        <div className="w-full sm:w-auto">
+          <SelectMenu
+            value={filters.taskType}
+            options={typeOptions}
+            onChange={(v) => update("taskType", v)}
+          />
+        </div>
 
-      {/* SelectMenu de prioridade */}
-      <SelectMenu
-        value={filters.priority}
-        options={priorityOptions}
-        onChange={(v) => update("priority", v)}
-      />
+        <div className="w-full sm:w-auto">
+          <SelectMenu
+            value={filters.priority}
+            options={priorityOptions}
+            onChange={(v) => update("priority", v)}
+          />
+        </div>
 
-      {/* SelectMenu de responsável — visível apenas para admin/manager */}
-      {isAdminOrManager && (
-        <SelectMenu
-          value={filters.assignedToId != null ? String(filters.assignedToId) : ""}
-          options={userOptions}
-          onChange={(v) => update("assignedToId", v ? Number(v) : null)}
-        />
-      )}
+        {isAdminOrManager && (
+          <div className="w-full sm:w-auto">
+            <SelectMenu
+              value={filters.assignedToId != null ? String(filters.assignedToId) : ""}
+              options={userOptions}
+              onChange={(v) => update("assignedToId", v ? Number(v) : null)}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

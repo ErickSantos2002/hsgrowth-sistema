@@ -142,10 +142,14 @@ const FocusModeCard: React.FC<FocusModeCardProps> = ({
   };
 
   return (
-    <div className="flex h-full flex-col gap-0 overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-900/50 lg:flex-row">
-      {/* ── Coluna esquerda: resumo do negócio (30%) ─────────────────────────── */}
-      <div className="flex flex-col gap-4 border-b border-gray-200 bg-gray-50 p-5 dark:border-slate-700/50 dark:bg-slate-800/50 lg:w-[30%] lg:border-b-0 lg:border-r">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
+      
+      {/* ── Wrapper que rola no Mobile e é lado-a-lado no Desktop ── */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
+        
+        {/* ── Coluna esquerda: informações do negócio (30%) ────────────────────── */}
+        <div className="flex flex-col border-b border-gray-200 bg-gray-50 p-5 dark:border-slate-700/50 dark:bg-slate-800/50 md:h-full md:w-80 md:flex-shrink-0 md:border-b-0 md:border-r md:overflow-y-auto lg:w-[30%]">
+          <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           Negócio
         </h3>
 
@@ -324,9 +328,9 @@ const FocusModeCard: React.FC<FocusModeCardProps> = ({
       </div>
 
       {/* ── Coluna direita: detalhes da atividade (70%) ──────────────────────── */}
-      <div className="flex min-w-0 flex-1 flex-col bg-white dark:bg-transparent">
-        {/* Container principal rolável (Header + Notas) */}
-        <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex min-w-0 flex-col bg-white dark:bg-transparent md:h-full md:flex-1 md:overflow-y-auto">
+        {/* Container principal (Header + Notas) */}
+        <div className="flex-1 p-5">
           {/* Badges + data */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span
@@ -566,10 +570,12 @@ const FocusModeCard: React.FC<FocusModeCardProps> = ({
             </div>
           </BaseModal>
         )}
+      </div>
+      </div>
 
-        {/* Footer: Botões de ação */}
-        {!isViewer && (
-          <div className="flex flex-wrap gap-2 border-t border-gray-200 bg-gray-50 p-4 dark:border-slate-700/50 dark:bg-slate-800/30">
+      {/* Footer: Botões de ação */}
+      {!isViewer && (
+        <div className="flex flex-shrink-0 flex-wrap gap-2 border-t border-gray-200 bg-gray-50 p-4 dark:border-slate-700/50 dark:bg-slate-800/30">
             {/* Ligar — apenas para atividades do tipo "call" */}
             {task.task_type === "call" && cardInfo && (
               <button
@@ -652,7 +658,6 @@ const FocusModeCard: React.FC<FocusModeCardProps> = ({
             </Button>
           </div>
         )}
-      </div>
 
       {/* Modal de seleção de número de telefone */}
       {actions.phoneSelectState && (

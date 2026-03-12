@@ -203,8 +203,8 @@ const Activities: React.FC = () => {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="mb-6 flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400">
             <CheckSquare size={20} />
           </div>
@@ -229,6 +229,7 @@ const Activities: React.FC = () => {
             onClick={handleStartFocus}
             icon={<Play size={16} />}
             title={sortedTasks.length === 0 ? "Nenhuma atividade para iniciar" : "Iniciar sessão de foco"}
+            className="w-full sm:w-auto"
           >
             Iniciar Atividades
           </Button>
