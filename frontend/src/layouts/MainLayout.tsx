@@ -17,6 +17,7 @@ import {
     Sun,
     Moon,
     BellOff,
+    CheckSquare,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -30,6 +31,7 @@ import { AgentGrowthWidget } from "../components/agentGrowth";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/activities", icon: CheckSquare, label: "Atividades", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/boards", icon: Trello, label: "Boards", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -239,7 +241,7 @@ export default function MainLayout() {
                                     className="text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                                     title="Ver o que há de novo nessa versão"
                                 >
-                                    HSGrowth CRM v1.4.0
+                                    HSGrowth CRM v1.5.0
                                 </button>
                                 <p className="text-[10px] text-slate-300 dark:text-slate-600">
                                     © 2026 Health & Safety Tech

@@ -16,3 +16,4 @@ export { default as LoadingSpinner, LoadingOverlay } from "./LoadingSpinner";
 export { SearchInput } from "./SearchInput";
 export { Pagination } from "./Pagination";
 export { default as UserAvatar } from "./UserAvatar";
+export { default as EmptyState } from "./EmptyState";

@@ -34,7 +34,13 @@ def card_to_response(
     sdr_name: Optional[str] = None,
     sdr_avatar_url: Optional[str] = None,
     list_name: Optional[str] = None,
-    board_id: Optional[int] = None
+    board_id: Optional[int] = None,
+    client_name: Optional[str] = None,
+    person_name: Optional[str] = None,
+    person_email: Optional[str] = None,
+    person_phone: Optional[str] = None,
+    person_phone_whatsapp: Optional[str] = None,
+    person_phone_commercial: Optional[str] = None,
 ) -> CardResponse:
     """
     Converte um Card do modelo para CardResponse do schema.
@@ -46,14 +52,14 @@ def card_to_response(
         description=card.description,
         list_id=card.list_id,
         assigned_to_id=card.assigned_to_id,
-        sdr_id=card.sdr_id,  # ✅ Incluído campo sdr_id
+        sdr_id=card.sdr_id,
         value=card.value,
-        shipping_cost=card.shipping_cost,  # Custo de frete/envio
+        shipping_cost=card.shipping_cost,
         due_date=card.due_date,
         is_won=card.is_won == 1,  # Converte Integer para bool
         is_lost=card.is_lost,  # Já é property que retorna bool
-        won_at=card.won_at,  # Property que retorna datetime ou None
-        lost_at=card.lost_at,  # Property que retorna datetime ou None
+        won_at=card.won_at,
+        lost_at=card.lost_at,
         position=card.position,
         created_at=card.created_at,
         updated_at=card.updated_at,
@@ -63,6 +69,13 @@ def card_to_response(
         sdr_avatar_url=sdr_avatar_url,
         list_name=list_name,
         board_id=board_id,
+        client_name=client_name,
+        person_id=card.person_id,
+        person_name=person_name,
+        person_email=person_email,
+        person_phone=person_phone,
+        person_phone_whatsapp=person_phone_whatsapp,
+        person_phone_commercial=person_phone_commercial,
         # Campos do blueprint da consultora
         prospection_entry_date=card.prospection_entry_date,
         acquisition_entry_date=card.acquisition_entry_date,
@@ -200,7 +213,43 @@ async def get_card(
     list_name = list_obj.name if list_obj else None
     board_id = list_obj.board_id if list_obj else None
 
-    return card_to_response(card, assigned_to_name, assigned_to_avatar_url, list_name, board_id)
+    # Busca nome do cliente vinculado
+    client_name = None
+    if card.client_id:
+        from app.models.client import Client
+        client = db.query(Client).filter(Client.id == card.client_id).first()
+        if client:
+            client_name = client.name
+
+    # Busca dados da pessoa de contato vinculada
+    person_name = None
+    person_email = None
+    person_phone = None
+    person_phone_whatsapp = None
+    person_phone_commercial = None
+    if card.person_id:
+        from app.models.person import Person
+        person = db.query(Person).filter(Person.id == card.person_id).first()
+        if person:
+            person_name = person.name
+            person_email = person.email or person.email_commercial or person.email_personal
+            person_phone = person.phone
+            person_phone_whatsapp = person.phone_whatsapp
+            person_phone_commercial = person.phone_commercial
+
+    return card_to_response(
+        card,
+        assigned_to_name,
+        assigned_to_avatar_url,
+        list_name=list_name,
+        board_id=board_id,
+        client_name=client_name,
+        person_name=person_name,
+        person_email=person_email,
+        person_phone=person_phone,
+        person_phone_whatsapp=person_phone_whatsapp,
+        person_phone_commercial=person_phone_commercial,
+    )
 
 
 @router.post(

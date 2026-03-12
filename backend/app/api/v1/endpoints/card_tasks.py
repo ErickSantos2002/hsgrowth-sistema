@@ -1,9 +1,10 @@
 """
 Endpoints da API para CardTask (Tarefas/Atividades dos Cards).
 """
+from datetime import datetime
+from typing import List, Optional
 from fastapi import APIRouter, Depends, status, Request
 from sqlalchemy.orm import Session
-from typing import List
 
 from app.db.session import get_db
 from app.services.card_task_service import CardTaskService
@@ -147,6 +148,8 @@ def create_task(
     - `task_type`: Filtrar por tipo (call, meeting, task, deadline, email, lunch, other)
     - `priority`: Filtrar por prioridade (normal, high, urgent)
     - `is_completed`: Filtrar por status de conclusão (true/false)
+    - `due_date_start`: Filtrar tarefas com due_date >= este valor (datetime ISO UTC)
+    - `due_date_end`: Filtrar tarefas com due_date <= este valor (datetime ISO UTC)
 
     **Paginação:**
     - `page`: Número da página (padrão: 1)
@@ -187,11 +190,13 @@ def create_task(
     }
 )
 def list_tasks(
-    card_id: int = None,
-    assigned_to_id: int = None,
-    task_type: str = None,
-    priority: str = None,
-    is_completed: bool = None,
+    card_id: Optional[int] = None,
+    assigned_to_id: Optional[int] = None,
+    task_type: Optional[str] = None,
+    priority: Optional[str] = None,
+    is_completed: Optional[bool] = None,
+    due_date_start: Optional[datetime] = None,
+    due_date_end: Optional[datetime] = None,
     page: int = 1,
     page_size: int = 50,
     db: Session = Depends(get_db),
@@ -206,6 +211,8 @@ def list_tasks(
     - task_type: Filtrar por tipo (call, meeting, task, etc)
     - priority: Filtrar por prioridade (normal, high, urgent)
     - is_completed: Filtrar por status (true/false)
+    - due_date_start: Filtrar por due_date >= valor (datetime UTC)
+    - due_date_end: Filtrar por due_date <= valor (datetime UTC)
     """
     filters = CardTaskFilters(
         card_id=card_id,
@@ -213,6 +220,8 @@ def list_tasks(
         task_type=task_type,
         priority=priority,
         is_completed=is_completed,
+        due_date_start=due_date_start,
+        due_date_end=due_date_end,
         page=page,
         page_size=page_size
     )

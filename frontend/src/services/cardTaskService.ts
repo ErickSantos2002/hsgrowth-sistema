@@ -87,6 +87,8 @@ class CardTaskService {
     task_type?: string;
     priority?: string;
     is_completed?: boolean;
+    due_date_start?: string;
+    due_date_end?: string;
     page?: number;
     page_size?: number;
   }): Promise<CardTaskListResponse> {

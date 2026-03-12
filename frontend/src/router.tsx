@@ -23,6 +23,7 @@ import Settings from './pages/Settings';
 import Users from './pages/Users';
 import BadgesAdmin from './pages/BadgesAdmin';
 import Calendar from './pages/Calendar';
+import Activities from './pages/Activities';
 import NotFound from './pages/NotFound';
 
 /**
@@ -77,6 +78,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/boards" element={<Boards />} />
       <Route path="/boards/:boardId" element={<KanbanBoard />} />
       <Route path="/cards/:cardId" element={<CardDetails />} />
+      <Route path="/activities" element={<Activities />} />
       <Route path="/clients" element={<Clients />} />
       <Route path="/persons" element={<Persons />} />
       <Route path="/products" element={<Products />} />

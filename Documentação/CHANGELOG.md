@@ -7,6 +7,91 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.5.0] - 2026-03-12
+
+### Adicionado
+
+#### Página de Atividades (`/activities`)
+
+Nova página centralizada para gerenciar todas as atividades pendentes do usuário sem precisar navegar pelos cards individualmente.
+
+**Filtros disponíveis:**
+- Período: Hoje, Atrasadas, Amanhã, Esta semana, Todas
+- Tipo de atividade (call, meeting, task, follow_up, other)
+- Prioridade (normal, high, urgent)
+- Responsável — visível apenas para Admin e Gerente
+
+**Comportamento por role:**
+- `admin` / `manager`: veem filtro de responsável, sem botão "Iniciar Atividades" (uso para monitoramento)
+- `salesperson` / `sdr`: botão "Iniciar Atividades" disponível para iniciar o Modo Foco
+- `viewer`: acesso somente leitura, sem ações
+
+**Paginação:** 10 atividades por página, server-side para todos os filtros exceto "Atrasadas" (client-side, pois usa endpoint `/overdue` sem suporte a paginação)
+
+**Ordenação frontend:** atrasadas → hoje → amanhã → futuras, depois por data dentro de cada grupo
+
+#### Modo Foco — `FocusMode` + `FocusModeCard`
+
+Modal fullscreen (`z-[2500]`) para trabalhar nas atividades em sequência. Abre com snapshot das atividades no momento do clique.
+
+**Layout duas colunas:**
+- Esquerda (30%): resumo completo do negócio — título, cliente, pessoa de contato (nome, email, telefone, WhatsApp, tel. comercial), valor, etapa/board, responsável, SDR, data de fechamento esperada, atividades pendentes, descrição, anotações do negócio
+- Direita (70%): detalhes da atividade — tipo, prioridade, StatusBadge, data, título, descrição, localização, link de vídeo, notas, anotações do card
+
+**Fila de trabalho:** array mutável — tarefas concluídas/reagendadas/noshow são removidas da fila; tarefas puladas permanecem para revisita posterior
+
+**Ações disponíveis:**
+- `Ligar`: apenas para `task_type === "call"` com `cardInfo` carregado; abre modal de seleção de número se houver múltiplos
+- `NoShow`: apenas para `task_type === "meeting"`; dispara automação ID 12 + marca como concluída
+- `Concluir`: marca como concluída e remove da fila
+- `Reagendar`: painel inline com data/hora; remove da fila após salvar
+- `Editar`: painel inline com título, prioridade, descrição, notas e (para meetings) localização e link de vídeo; atualiza via `PUT /api/v1/card-tasks/:id`
+- `Pular`: avança sem remover da fila
+
+**Cache:** `cardCache` e `notesCache` via `useRef<Map>` — evita rebuscar card e anotações já carregados
+
+**Contadores da sessão:** concluídas, reagendadas, puladas — exibidos na tela de conclusão (Trophy)
+
+#### Hook `useActivityActions`
+
+Hook central com toda a lógica de ações extraída, eliminando duplicação. Gerencia `loadingStates` granular por task ID e `phoneSelectState` para seleção de número.
+
+### Modificado
+
+#### Backend — `GET /api/v1/cards/:card_id`
+
+- Adicionado busca de `client_name` via model `Client`
+- Adicionado busca de dados completos da pessoa de contato: `person_name`, `person_email`, `person_phone`, `person_phone_whatsapp`, `person_phone_commercial`
+- Corrigido bug: `card_to_response` recebia `list_name` e `board_id` nas posições de `sdr_name` e `sdr_avatar_url` (args posicionais incorretos → `sdr_avatar_url` recebia `int` causando `ValidationError`)
+
+#### Backend — `GET /api/v1/card-tasks`
+
+- Adicionados query params `due_date_start` e `due_date_end` para filtro de período
+
+#### Schema `CardResponse`
+
+- Adicionados campos: `client_name`, `person_name`, `person_email`, `person_phone`, `person_phone_whatsapp`, `person_phone_commercial`
+
+#### Sidebar (`MainLayout`)
+
+- "Atividades" movido para antes de "Boards" no menu lateral
+- Versão atualizada para `v1.5.0`
+
+#### `common/index.ts`
+
+- Adicionado export de `EmptyState`
+
+### Arquivos Adicionados
+
+- `frontend/src/pages/Activities.tsx` — página principal de atividades
+- `frontend/src/components/activities/ActivityCard.tsx` — card individual na listagem (somente leitura)
+- `frontend/src/components/activities/ActivityFilters.tsx` — barra de filtros stateless
+- `frontend/src/components/activities/FocusMode.tsx` — modal fullscreen de foco
+- `frontend/src/components/activities/FocusModeCard.tsx` — conteúdo interno do FocusMode
+- `frontend/src/hooks/useActivityActions.ts` — hook central de ações
+
+---
+
 ## [1.4.0] - 2026-03-11
 
 ### Adicionado

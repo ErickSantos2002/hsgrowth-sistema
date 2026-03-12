@@ -86,6 +86,11 @@ export interface Card {
   client_id: number | null;
   assigned_to_id: number | null;
   person_id: number | null; // ID da pessoa de contato (usado em ContactSection)
+  person_name: string | null; // Nome da pessoa de contato
+  person_email: string | null; // Email principal da pessoa de contato
+  person_phone: string | null; // Telefone principal da pessoa de contato
+  person_phone_whatsapp: string | null; // WhatsApp da pessoa de contato
+  person_phone_commercial: string | null; // Telefone comercial da pessoa de contato
   title: string;
   description: string | null;
   position: number;

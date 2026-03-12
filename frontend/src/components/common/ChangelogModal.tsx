@@ -25,6 +25,32 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.5.0",
+    date: "12/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Nova página de Atividades: visualize todas as suas atividades pendentes em um único lugar, com filtros por período (hoje, atrasadas, amanhã, semana, todas), tipo, prioridade e responsável. Acessível pelo menu lateral.",
+      },
+      {
+        type: "feature",
+        text: "Modo Foco (Iniciar Atividades): disponível para Vendedores e SDRs, permite trabalhar nas atividades em sequência sem sair da página. Cada atividade mostra os dados completos do negócio ao lado — cliente, pessoa de contato, telefones, email, valor, etapa, anotações e mais.",
+      },
+      {
+        type: "feature",
+        text: "Dentro do Modo Foco é possível Concluir, Reagendar, marcar NoShow (reuniões), Ligar (ligações), Editar os dados da atividade e Pular para a próxima — tudo sem sair da tela.",
+      },
+      {
+        type: "improvement",
+        text: "Atividades processadas (concluídas, reagendadas ou NoShow) são removidas da fila do Modo Foco automaticamente. Atividades puladas permanecem na fila para serem revisitadas.",
+      },
+      {
+        type: "improvement",
+        text: "Atividades na página agora exibem no máximo 10 por página, com paginação em todos os filtros incluindo Atrasadas.",
+      },
+    ],
+  },
+  {
     version: "1.4.0",
     date: "11/03/2026",
     entries: [

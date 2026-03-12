@@ -410,6 +410,10 @@ class CardResponse(CardBase):
     client_name: Optional[str] = Field(None, description="Nome do cliente/organização")
     person_id: Optional[int] = Field(None, description="ID da pessoa vinculada")
     person_name: Optional[str] = Field(None, description="Nome da pessoa vinculada")
+    person_email: Optional[str] = Field(None, description="Email principal da pessoa vinculada")
+    person_phone: Optional[str] = Field(None, description="Telefone principal da pessoa vinculada")
+    person_phone_whatsapp: Optional[str] = Field(None, description="WhatsApp da pessoa vinculada")
+    person_phone_commercial: Optional[str] = Field(None, description="Telefone comercial da pessoa vinculada")
     custom_fields: Optional[list] = Field(None, description="Campos customizados do card")
 
     @field_validator('value', 'shipping_cost', 'position', mode='before')
