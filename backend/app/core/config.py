@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:5300", "http://127.0.0.1:5300", "http://localhost:3000"]
 
     # Email (Microsoft 365 SMTP)
     SMTP_HOST: str = "smtp.office365.com"
@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     TRANSFER_MAX_BATCH_SIZE: int = 50
 
     # Frontend URL
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "http://localhost:5300"
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
