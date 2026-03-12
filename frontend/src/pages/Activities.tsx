@@ -201,43 +201,44 @@ const Activities: React.FC = () => {
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-full bg-gray-50 dark:bg-transparent">
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-        {/* Header */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400">
-              <CheckSquare size={20} />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                Atividades
-              </h1>
-              {!loading && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {total} {total === 1 ? "atividade pendente" : "atividades pendentes"}
-                </p>
-              )}
-            </div>
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400">
+            <CheckSquare size={20} />
           </div>
-
-          {/* Botão Iniciar Atividades — apenas para vendedor e SDR */}
-          {canStartFocus && (
-            <Button
-              variant="primary"
-              size="md"
-              disabled={sortedTasks.length === 0 || loading}
-              onClick={handleStartFocus}
-              icon={<Play size={16} />}
-              title={sortedTasks.length === 0 ? "Nenhuma atividade para iniciar" : "Iniciar sessão de foco"}
-            >
-              Iniciar Atividades
-            </Button>
-          )}
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+              Atividades
+            </h1>
+            {!loading && (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {total} {total === 1 ? "atividade pendente" : "atividades pendentes"}
+              </p>
+            )}
+          </div>
         </div>
 
+        {/* Botão Iniciar Atividades — apenas para vendedor e SDR */}
+        {canStartFocus && (
+          <Button
+            variant="primary"
+            size="md"
+            disabled={sortedTasks.length === 0 || loading}
+            onClick={handleStartFocus}
+            icon={<Play size={16} />}
+            title={sortedTasks.length === 0 ? "Nenhuma atividade para iniciar" : "Iniciar sessão de foco"}
+          >
+            Iniciar Atividades
+          </Button>
+        )}
+      </div>
+
+      {/* Container principal — envolve filtros + lista + paginação */}
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/30">
         {/* Barra de filtros */}
-        <div className="mb-5">
+        <div className="border-b border-gray-200 dark:border-slate-700/50">
           <ActivityFilters
             filters={filters}
             onChange={handleFiltersChange}
@@ -247,27 +248,29 @@ const Activities: React.FC = () => {
         </div>
 
         {/* Conteúdo: loading / empty / lista */}
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <LoadingSpinner size="lg" label="Carregando atividades..." />
-          </div>
-        ) : sortedTasks.length === 0 ? (
-          <EmptyState
-            icon={CheckSquare}
-            title="Nenhuma atividade encontrada"
-            description="Tente ajustar os filtros ou aproveite o tempo livre!"
-          />
-        ) : (
-          <div className="space-y-3">
-            {sortedTasks.map((task) => (
-              <ActivityCard
-                key={task.id}
-                task={task}
-                onNavigateToCard={handleNavigateToCard}
-              />
-            ))}
-          </div>
-        )}
+        <div className="p-4">
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <LoadingSpinner size="lg" label="Carregando atividades..." />
+            </div>
+          ) : sortedTasks.length === 0 ? (
+            <EmptyState
+              icon={CheckSquare}
+              title="Nenhuma atividade encontrada"
+              description="Tente ajustar os filtros ou aproveite o tempo livre!"
+            />
+          ) : (
+            <div className="space-y-3">
+              {sortedTasks.map((task) => (
+                <ActivityCard
+                  key={task.id}
+                  task={task}
+                  onNavigateToCard={handleNavigateToCard}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Paginação */}
         {!loading && sortedTasks.length > 0 && (

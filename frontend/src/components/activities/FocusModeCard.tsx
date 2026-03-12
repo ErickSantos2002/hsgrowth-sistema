@@ -324,254 +324,266 @@ const FocusModeCard: React.FC<FocusModeCardProps> = ({
       </div>
 
       {/* ── Coluna direita: detalhes da atividade (70%) ──────────────────────── */}
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
-        {/* Badges + data */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-medium ${typeConfig.pillBg} ${typeConfig.pillText} ${typeConfig.pillBorder}`}
-          >
-            <typeConfig.Icon size={12} />
-            {typeConfig.label}
-          </span>
-          <span className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${priorityConfig.badgeClass}`}>
-            {priorityConfig.label}
-          </span>
-          {task.due_date && <StatusBadge status={activityStatus} />}
-          {task.due_date && (
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {formatBrazilDateTime(task.due_date)}
+      <div className="flex min-w-0 flex-1 flex-col bg-white dark:bg-transparent">
+        {/* Container principal rolável (Header + Notas) */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {/* Badges + data */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-medium ${typeConfig.pillBg} ${typeConfig.pillText} ${typeConfig.pillBorder}`}
+            >
+              <typeConfig.Icon size={12} />
+              {typeConfig.label}
             </span>
+            <span className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${priorityConfig.badgeClass}`}>
+              {priorityConfig.label}
+            </span>
+            {task.due_date && <StatusBadge status={activityStatus} />}
+            {task.due_date && (
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {formatBrazilDateTime(task.due_date)}
+              </span>
+            )}
+          </div>
+
+          {/* Título */}
+          <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">{task.title}</h2>
+
+          {/* Descrição */}
+          {task.description && (
+            <div className="mb-4 flex items-start gap-2 text-sm">
+              <FileText size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
+              <p className="text-slate-700 dark:text-slate-300">{task.description}</p>
+            </div>
+          )}
+
+          {/* Localização */}
+          {(task as any).location && (
+            <div className="mb-4 flex items-start gap-2 text-sm">
+              <MapPin size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
+              <p className="text-slate-700 dark:text-slate-300">{(task as any).location}</p>
+            </div>
+          )}
+
+          {/* Link de vídeo */}
+          {(task as any).video_link && (
+            <div className="mb-4 flex items-start gap-2 text-sm">
+              <Video size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
+              <a
+                href={(task as any).video_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 underline hover:text-blue-400"
+              >
+                Entrar na videochamada
+              </a>
+            </div>
+          )}
+
+          {/* Notas */}
+          {task.notes && (
+            <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/50">
+              <p className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Notas:</p>
+              <p className="text-slate-700 dark:text-slate-300">{task.notes}</p>
+            </div>
+          )}
+
+          {/* Anotações do negócio — ocupam espaço restante se for > 0 */}
+          {cardNotes.length > 0 && (
+            <div className="flex flex-col space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Anotações do negócio
+              </p>
+              <div className="space-y-2">
+                {cardNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/50"
+                  >
+                    <div
+                      className="prose prose-sm max-w-none text-slate-700 dark:prose-invert dark:text-slate-300 [&>p]:mb-2 [&>p:last-child]:mb-0"
+                      dangerouslySetInnerHTML={{ __html: note.content }}
+                    />
+                    <p className="mt-1.5 text-xs text-slate-400">
+                      {note.user_name && <span className="font-medium">{note.user_name} · </span>}
+                      {formatBrazilDateTime(note.created_at)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Título */}
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">{task.title}</h2>
-
-        {/* Descrição */}
-        {task.description && (
-          <div className="flex items-start gap-2 text-sm">
-            <FileText size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
-            <p className="text-slate-700 dark:text-slate-300">{task.description}</p>
-          </div>
-        )}
-
-        {/* Localização */}
-        {(task as any).location && (
-          <div className="flex items-start gap-2 text-sm">
-            <MapPin size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
-            <p className="text-slate-700 dark:text-slate-300">{(task as any).location}</p>
-          </div>
-        )}
-
-        {/* Link de vídeo */}
-        {(task as any).video_link && (
-          <div className="flex items-start gap-2 text-sm">
-            <Video size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
-            <a
-              href={(task as any).video_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 underline hover:text-blue-400"
-            >
-              Entrar na videochamada
-            </a>
-          </div>
-        )}
-
-        {/* Notas */}
-        {task.notes && (
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/50">
-            <p className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Notas:</p>
-            <p className="text-slate-700 dark:text-slate-300">{task.notes}</p>
-          </div>
-        )}
-
-        {/* Anotações do negócio */}
-        {cardNotes.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Anotações do negócio
-            </p>
-            <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
-              {cardNotes.map((note) => (
-                <div
-                  key={note.id}
-                  className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/50"
-                >
-                  <p className="whitespace-pre-wrap text-slate-700 dark:text-slate-300">{note.content}</p>
-                  <p className="mt-1.5 text-xs text-slate-400">
-                    {note.user_name && <span className="font-medium">{note.user_name} · </span>}
-                    {formatBrazilDateTime(note.created_at)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="flex-1" />
-
-        {/* Painel de edição inline */}
+        {/* Modal de edição */}
         {!isViewer && showEdit && (
-          <div className="space-y-3 rounded-lg border border-blue-300 bg-blue-50/50 p-4 dark:border-blue-700/50 dark:bg-blue-900/10">
-            <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-              Editar atividade
-            </p>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Título *</label>
-              <Input
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="py-2 text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Prioridade</label>
-              <Select
-                value={editPriority}
-                onChange={(e) => setEditPriority(e.target.value as CardTask["priority"])}
-                fullWidth={false}
-                className="py-2 text-sm"
-              >
-                <option value="normal">Normal</option>
-                <option value="high">Alta</option>
-                <option value="urgent">Urgente</option>
-              </Select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Descrição</label>
-              <textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                rows={3}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Notas internas</label>
-              <textarea
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-                rows={3}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-              />
-            </div>
-
-            {task.task_type === "meeting" && (
+          <BaseModal
+            isOpen={true}
+            onClose={() => setShowEdit(false)}
+            title="Editar Atividade"
+            size="md"
+          >
+            <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Localização</label>
+                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Título *</label>
                 <Input
-                  value={editLocation}
-                  onChange={(e) => setEditLocation(e.target.value)}
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
                   className="py-2 text-sm"
                 />
               </div>
-            )}
 
-            {task.task_type === "meeting" && (
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Link de vídeo</label>
-                <Input
-                  value={editVideoLink}
-                  onChange={(e) => setEditVideoLink(e.target.value)}
-                  className="py-2 text-sm"
+                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Prioridade</label>
+                <Select
+                  value={editPriority}
+                  onChange={(e) => setEditPriority(e.target.value as CardTask["priority"])}
+                  className="w-full py-2 text-sm"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="high">Alta</option>
+                  <option value="urgent">Urgente</option>
+                </Select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Descrição</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                 />
               </div>
-            )}
 
-            <div className="flex gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSaveEdit}
-                disabled={savingEdit || !editTitle.trim()}
-                loading={savingEdit}
-                icon={<Check size={12} />}
-              >
-                Salvar
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowEdit(false)}
-                disabled={savingEdit}
-              >
-                Cancelar
-              </Button>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Notas internas</label>
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+
+              {task.task_type === "meeting" && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Localização</label>
+                  <Input
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    className="py-2 text-sm"
+                  />
+                </div>
+              )}
+
+              {task.task_type === "meeting" && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Link de vídeo</label>
+                  <Input
+                    value={editVideoLink}
+                    onChange={(e) => setEditVideoLink(e.target.value)}
+                    className="py-2 text-sm"
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit || !editTitle.trim()}
+                  loading={savingEdit}
+                  icon={<Check size={16} />}
+                >
+                  Salvar Alterações
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setShowEdit(false)}
+                  disabled={savingEdit}
+                >
+                  Cancelar
+                </Button>
+              </div>
             </div>
-          </div>
+          </BaseModal>
         )}
 
-        {/* Painel de reagendamento inline */}
+        {/* Modal de reagendamento */}
         {!isViewer && showReschedule && (
-          <div className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-300 bg-gray-50 p-4 dark:border-slate-600 dark:bg-slate-800/50">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-                Nova data *
-              </label>
-              <Input
-                type="date"
-                value={rescheduleDate}
-                onChange={(e) => setRescheduleDate(e.target.value)}
-                fullWidth={false}
-                className="py-2 text-sm"
-              />
+          <BaseModal
+            isOpen={true}
+            onClose={() => setShowReschedule(false)}
+            title="Reagendar Atividade"
+            size="sm"
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Nova data *
+                </label>
+                <Input
+                  type="date"
+                  value={rescheduleDate}
+                  onChange={(e) => setRescheduleDate(e.target.value)}
+                  className="py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Horário (opcional)
+                </label>
+                <Input
+                  type="time"
+                  value={rescheduleTime}
+                  onChange={(e) => setRescheduleTime(e.target.value)}
+                  className="py-2 text-sm"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={handleConfirmReschedule}
+                  disabled={isLoadingReschedule || !rescheduleDate}
+                  loading={isLoadingReschedule}
+                  icon={<Check size={16} />}
+                >
+                  Reagendar
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setShowReschedule(false)}
+                  disabled={isLoadingReschedule}
+                >
+                  Cancelar
+                </Button>
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-                Horário (opcional)
-              </label>
-              <Input
-                type="time"
-                value={rescheduleTime}
-                onChange={(e) => setRescheduleTime(e.target.value)}
-                fullWidth={false}
-                className="py-2 text-sm"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleConfirmReschedule}
-                disabled={isLoadingReschedule || !rescheduleDate}
-                loading={isLoadingReschedule}
-                icon={<Check size={12} />}
-              >
-                Salvar
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowReschedule(false)}
-                disabled={isLoadingReschedule}
-              >
-                Cancelar
-              </Button>
-            </div>
-          </div>
+          </BaseModal>
         )}
 
-        {/* Botões de ação */}
+        {/* Footer: Botões de ação */}
         {!isViewer && (
-          <div className="flex flex-wrap gap-2 border-t border-gray-200 pt-4 dark:border-slate-700">
+          <div className="flex flex-wrap gap-2 border-t border-gray-200 bg-gray-50 p-4 dark:border-slate-700/50 dark:bg-slate-800/30">
             {/* Ligar — apenas para atividades do tipo "call" */}
             {task.task_type === "call" && cardInfo && (
-              <Button
-                variant="success"
-                size="sm"
+              <button
                 onClick={() => actions.handleMakeCall(task, cardInfo)}
                 disabled={isAnyLoading || !cardInfo.person_id}
-                loading={isLoadingCall}
-                icon={<Phone size={14} />}
                 title={!cardInfo.person_id ? "Nenhuma pessoa vinculada ao card" : "Ligar agora"}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white shadow-sm transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 dark:shadow-none"
               >
-                Ligar
-              </Button>
+                {isLoadingCall ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                ) : (
+                  <Phone size={18} />
+                )}
+              </button>
             )}
 
             {/* NoShow — apenas para reuniões */}
@@ -579,7 +591,7 @@ const FocusModeCard: React.FC<FocusModeCardProps> = ({
               <button
                 onClick={() => actions.handleNoShow(task.id, task.card_id)}
                 disabled={isAnyLoading}
-                className="flex items-center gap-1.5 rounded-lg border border-orange-500/50 bg-orange-500/20 px-3 py-1.5 text-sm font-medium text-orange-500 transition-colors hover:bg-orange-500/30 disabled:cursor-not-allowed disabled:opacity-50 dark:text-orange-400"
+                className="flex h-10 items-center gap-1.5 rounded-lg border border-orange-500/50 bg-orange-500/20 px-3 py-1.5 text-sm font-medium text-orange-500 transition-colors hover:bg-orange-500/30 disabled:cursor-not-allowed disabled:opacity-50 dark:text-orange-400"
               >
                 {isLoadingNoShow ? (
                   <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-orange-300/30 border-t-orange-400" />
@@ -598,19 +610,16 @@ const FocusModeCard: React.FC<FocusModeCardProps> = ({
               disabled={isAnyLoading}
               loading={isLoadingComplete}
               icon={<Check size={14} />}
+              className="h-10"
             >
               Concluir
             </Button>
 
             {/* Reagendar */}
             <button
-              onClick={showReschedule ? () => setShowReschedule(false) : handleOpenReschedule}
+              onClick={() => setShowReschedule(true)}
               disabled={isAnyLoading}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                showReschedule
-                  ? "border-yellow-500 bg-yellow-500/20 text-yellow-600 dark:text-yellow-300"
-                  : "border-yellow-500/50 bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 dark:text-yellow-400"
-              }`}
+              className="flex h-10 items-center gap-1.5 rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-3 py-1.5 text-sm font-medium text-yellow-600 transition-colors hover:bg-yellow-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:text-yellow-400"
             >
               {isLoadingReschedule ? (
                 <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-yellow-300/30 border-t-yellow-400" />
@@ -622,13 +631,9 @@ const FocusModeCard: React.FC<FocusModeCardProps> = ({
 
             {/* Editar */}
             <button
-              onClick={showEdit ? () => setShowEdit(false) : handleOpenEdit}
+              onClick={() => setShowEdit(true)}
               disabled={isAnyLoading}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                showEdit
-                  ? "border-blue-500 bg-blue-500/20 text-blue-600 dark:text-blue-300"
-                  : "border-blue-500/50 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 dark:text-blue-400"
-              }`}
+              className="flex h-10 items-center gap-1.5 rounded-lg border border-blue-500/50 bg-blue-500/10 px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:text-blue-400"
             >
               <Pencil size={14} />
               Editar
@@ -641,7 +646,7 @@ const FocusModeCard: React.FC<FocusModeCardProps> = ({
               onClick={onSkip}
               disabled={isAnyLoading}
               icon={<SkipForward size={14} />}
-              className="ml-auto"
+              className="ml-auto h-10"
             >
               Pular
             </Button>

@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { User } from "../../types";
-import { Select } from "../common";
 import { TYPE_CONFIG, PRIORITY_CONFIG } from "../../constants/cardTaskConfig";
 
 export interface ActivityFilterState {
@@ -24,6 +24,69 @@ interface ActivityFiltersProps {
   isAdminOrManager: boolean;
 }
 
+// ─── SelectMenu inline (mesmo padrão de KanbanBoard/Persons) ─────────────────
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+const SelectMenu: React.FC<{
+  value: string;
+  options: SelectOption[];
+  onChange: (value: string) => void;
+}> = ({ value, options, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((o) => !o)}
+        className="flex h-9 min-w-[150px] items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+      >
+        <span className={`truncate ${selected ? "" : "text-slate-400"}`}>
+          {selected?.label ?? "Selecione"}
+        </span>
+        <ChevronDown
+          size={14}
+          className={`flex-shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 top-full z-20 mt-1 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { onChange(opt.value); setIsOpen(false); }}
+              className={`w-full px-3 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                opt.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Componente principal ─────────────────────────────────────────────────────
+
 /**
  * Barra de filtros da página de atividades.
  * Stateless — todo o estado fica no Activities.tsx.
@@ -46,8 +109,32 @@ const ActivityFilters: React.FC<ActivityFiltersProps> = ({
     { value: "all", label: "Todas" },
   ];
 
+  const typeOptions: SelectOption[] = [
+    { value: "", label: "Todos os tipos" },
+    ...Object.entries(TYPE_CONFIG).map(([key, config]) => ({
+      value: key,
+      label: config.label,
+    })),
+  ];
+
+  const priorityOptions: SelectOption[] = [
+    { value: "", label: "Todas as prioridades" },
+    ...Object.entries(PRIORITY_CONFIG).map(([key, config]) => ({
+      value: key,
+      label: config.label,
+    })),
+  ];
+
+  const userOptions: SelectOption[] = [
+    { value: "", label: "Todos os responsáveis" },
+    ...users.map((u) => ({
+      value: String(u.id),
+      label: u.full_name || u.name,
+    })),
+  ];
+
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700/50 dark:bg-slate-900/50">
+    <div className="flex flex-wrap items-center gap-3 p-4">
       {/* Botões pill de período */}
       <div className="flex flex-wrap gap-2">
         {periodOptions.map((option) => (
@@ -67,47 +154,27 @@ const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 
       <div className="hidden h-6 w-px bg-gray-200 dark:bg-slate-700 sm:block" />
 
-      {/* Select de tipo */}
-      <Select
+      {/* SelectMenu de tipo */}
+      <SelectMenu
         value={filters.taskType}
-        onChange={(e) => update("taskType", e.target.value)}
-        fullWidth={false}
-        className="py-2 text-sm"
-      >
-        <option value="">Todos os tipos</option>
-        {Object.entries(TYPE_CONFIG).map(([key, config]) => (
-          <option key={key} value={key}>{config.label}</option>
-        ))}
-      </Select>
+        options={typeOptions}
+        onChange={(v) => update("taskType", v)}
+      />
 
-      {/* Select de prioridade */}
-      <Select
+      {/* SelectMenu de prioridade */}
+      <SelectMenu
         value={filters.priority}
-        onChange={(e) => update("priority", e.target.value)}
-        fullWidth={false}
-        className="py-2 text-sm"
-      >
-        <option value="">Todas as prioridades</option>
-        {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
-          <option key={key} value={key}>{config.label}</option>
-        ))}
-      </Select>
+        options={priorityOptions}
+        onChange={(v) => update("priority", v)}
+      />
 
-      {/* Select de responsável — visível apenas para admin/manager */}
+      {/* SelectMenu de responsável — visível apenas para admin/manager */}
       {isAdminOrManager && (
-        <Select
-          value={filters.assignedToId ?? ""}
-          onChange={(e) => update("assignedToId", e.target.value ? Number(e.target.value) : null)}
-          fullWidth={false}
-          className="py-2 text-sm"
-        >
-          <option value="">Todos os responsáveis</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.full_name || user.name || user.username}
-            </option>
-          ))}
-        </Select>
+        <SelectMenu
+          value={filters.assignedToId != null ? String(filters.assignedToId) : ""}
+          options={userOptions}
+          onChange={(v) => update("assignedToId", v ? Number(v) : null)}
+        />
       )}
     </div>
   );

@@ -237,7 +237,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       </div>
 
       {/* ── Conteúdo ───────────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6">
+      <div className="flex-1 overflow-hidden p-4 sm:p-6">
         {sessionDone ? (
           // Tela de conclusão
           <div className="flex h-full flex-col items-center justify-center text-center">
@@ -284,7 +284,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
           </div>
         ) : (
           // Card da atividade atual
-          <div className="mx-auto h-full max-w-5xl">
+          <div className="mx-auto h-full w-full max-w-7xl">
             <FocusModeCard
               task={currentTask}
               cardInfo={currentCard}
