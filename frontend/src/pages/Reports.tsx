@@ -16,6 +16,7 @@ import {
   LayoutGrid,
   Save,
   ArrowLeft,
+  Download,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { PageHeader } from '../components/layout';
@@ -27,6 +28,7 @@ import ChartWidget from '../components/reports/ChartWidget';
 import ChartConfigPanel from '../components/reports/ChartConfigPanel';
 import NewReportModal from '../components/reports/NewReportModal';
 import DrillDownModal from '../components/reports/DrillDownModal';
+import CalculatedFieldModal from '../components/reports/CalculatedFieldModal';
 import reportService from '../services/reportService';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -37,6 +39,8 @@ import {
   SavedReport,
   FieldCatalog,
   DrillDownCard,
+  CalculatedField,
+  CalculatedYFieldConfig,
 } from '../components/reports/reportTypes';
 
 // Catálogo vazio inicial (enquanto carrega da API)
@@ -106,6 +110,13 @@ const Reports: React.FC = () => {
   // Busca na lista de relatórios
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Controla qual exportação está em andamento (para mostrar loading no botão)
+  const [exportingId, setExportingId] = useState<number | null>(null);
+
+  // Modal de campos calculados
+  const [showCalcFieldModal, setShowCalcFieldModal] = useState(false);
+  const [editingCalcField, setEditingCalcField] = useState<CalculatedField | null>(null);
+
   // Edição inline do título do relatório (no builder)
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const [titleValue, setTitleValue] = useState('Novo Relatório');
@@ -155,6 +166,13 @@ const Reports: React.FC = () => {
     }
   }, [isTitleEditing]);
 
+  // Mantém a ref de campos calculados sincronizada com o estado atual
+  // sem precisar recriar callbacks que dependem dela
+  useEffect(() => {
+    calcFieldsRef.current = currentReport.calculated_fields;
+  }, [currentReport.calculated_fields]);
+
+
   /**
    * Ref para o timer de debounce da chamada à API de query do gráfico.
    * Garante que keystokes rápidos no título não disparem múltiplas chamadas,
@@ -162,19 +180,28 @@ const Reports: React.FC = () => {
    */
   const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /**
+   * Ref que espelha currentReport.calculated_fields para uso dentro de callbacks com
+   * useCallback sem precisar adicionar currentReport como dependência (evitaria recriação
+   * do callback a cada mudança de qualquer campo do relatório).
+   */
+  const calcFieldsRef = useRef<CalculatedField[] | undefined>(undefined);
+
   // ========================
   // Helpers: busca de dados
   // ========================
 
   /**
    * Busca os dados reais de um gráfico via API e atualiza chartData.
+   * Passa os campos calculados do relatório atual para que o backend
+   * possa avaliar as fórmulas DAX-like para os campos Y calculados.
    * Silencia erros individuais de chart para não bloquear o builder.
    */
-  const fetchChartData = useCallback(async (config: ChartConfig) => {
+  const fetchChartData = useCallback(async (config: ChartConfig, calcFields?: CalculatedField[]) => {
     if (!config.x_field || config.y_fields.length === 0) return;
 
     try {
-      const data = await reportService.queryChart(config);
+      const data = await reportService.queryChart(config, calcFields);
       setChartData((prev) => ({ ...prev, [config.id]: data }));
     } catch {
       // Mantém dados anteriores em caso de falha (não limpa o gráfico)
@@ -208,13 +235,14 @@ const Reports: React.FC = () => {
     setActiveSources(report.config.allowed_sources ?? []);
     setMode('builder');
 
-    // Carrega dados reais de cada gráfico em paralelo
+    // Carrega dados reais de cada gráfico em paralelo, passando campos calculados
     const charts = report.config.charts.filter(
       (c) => c.x_field && c.y_fields.length > 0
     );
+    const savedCalcFields = report.config.calculated_fields;
 
     const results = await Promise.allSettled(
-      charts.map((chart) => reportService.queryChart(chart))
+      charts.map((chart) => reportService.queryChart(chart, savedCalcFields))
     );
 
     const newData: Record<string, QueryResponse> = {};
@@ -310,7 +338,8 @@ const Reports: React.FC = () => {
       clearTimeout(fetchDebounceRef.current);
     }
     fetchDebounceRef.current = setTimeout(() => {
-      fetchChartData(config);
+      // Usa a ref para ler os campos calculados sem precisar de currentReport como dep do callback
+      fetchChartData(config, calcFieldsRef.current);
     }, 400);
   }, [fetchChartData]);
 
@@ -340,7 +369,57 @@ const Reports: React.FC = () => {
 
   /** Recarrega os dados de um gráfico específico via API */
   const handleRefreshChart = (chart: ChartConfig) => {
-    fetchChartData(chart);
+    fetchChartData(chart, calcFieldsRef.current);
+  };
+
+  // ========================
+  // Handlers: campos calculados
+  // ========================
+
+  /**
+   * Salva (cria ou atualiza) um campo calculado no relatório atual.
+   * Após salvar, recarrega todos os gráficos que referenciam esse campo.
+   */
+  const handleSaveCalculatedField = (field: CalculatedField) => {
+    setCurrentReport((prev) => {
+      const existing = prev.calculated_fields ?? [];
+      const idx = existing.findIndex((cf) => cf.id === field.id);
+      const updated = idx >= 0
+        ? existing.map((cf, i) => (i === idx ? field : cf))
+        : [...existing, field];
+      return { ...prev, calculated_fields: updated };
+    });
+
+    // Recarrega gráficos que usam este campo calculado
+    setCurrentReport((prev) => {
+      const updatedCalcFields = prev.calculated_fields ?? [];
+      prev.charts.forEach((chart) => {
+        const usesThisField = chart.y_fields.some(
+          (yf) => yf.is_calculated && (yf as CalculatedYFieldConfig).calculated_field_id === field.id
+        );
+        if (usesThisField) {
+          fetchChartData(chart, updatedCalcFields);
+        }
+      });
+      return prev;
+    });
+  };
+
+  /**
+   * Remove um campo calculado do relatório e limpa suas referências em todos os gráficos.
+   */
+  const handleDeleteCalculatedField = (fieldId: string) => {
+    setCurrentReport((prev) => ({
+      ...prev,
+      calculated_fields: (prev.calculated_fields ?? []).filter((cf) => cf.id !== fieldId),
+      charts: prev.charts.map((chart) => ({
+        ...chart,
+        // Remove o campo calculado excluído do eixo Y de todos os gráficos
+        y_fields: chart.y_fields.filter(
+          (yf) => !(yf.is_calculated && (yf as CalculatedYFieldConfig).calculated_field_id === fieldId)
+        ),
+      })),
+    }));
   };
 
   // Ativa o painel em modo "novo gráfico" (formulário em branco)
@@ -388,6 +467,25 @@ const Reports: React.FC = () => {
     setDrillDownChart(null);
     setDrillDownLabel(null);
     setDrillDownCards([]);
+  };
+
+  // ========================
+  // Handler: exportação
+  // ========================
+
+  /**
+   * Inicia o download do relatório no formato escolhido.
+   * Exibe estado de loading no botão e fecha o menu ao concluir.
+   */
+  const handleDownloadReport = async (id: number, format: 'excel' | 'csv') => {
+    setExportingId(id);
+    try {
+      await reportService.downloadReport(id, format);
+    } catch {
+      showError('Erro ao exportar relatório');
+    } finally {
+      setExportingId(null);
+    }
   };
 
   // ========================
@@ -488,10 +586,19 @@ const Reports: React.FC = () => {
         {/* Corpo do builder: painel esquerdo + área central + painel direito */}
         <div className="flex flex-1 overflow-hidden">
           {/* Painel esquerdo — campos disponíveis (desktop only) */}
-          <div className="hidden lg:block">
+          <div className="hidden h-full lg:block">
             <FieldPanel
               activeSources={activeSources}
               fieldCatalog={catalogLoading ? EMPTY_CATALOG : fieldCatalog}
+              calculatedFields={currentReport.calculated_fields}
+              onAddCalculatedField={() => {
+                setEditingCalcField(null);
+                setShowCalcFieldModal(true);
+              }}
+              onEditCalculatedField={(field) => {
+                setEditingCalcField(field);
+                setShowCalcFieldModal(true);
+              }}
             />
           </div>
 
@@ -576,6 +683,23 @@ const Reports: React.FC = () => {
               handleCloseDrillDown();
               navigate(`/cards/${cardId}`);
             }}
+          />
+        )}
+
+        {/* Modal de campo calculado — criar ou editar */}
+        {showCalcFieldModal && activeSources.length > 0 && (
+          <CalculatedFieldModal
+            isOpen={showCalcFieldModal}
+            onClose={() => {
+              setShowCalcFieldModal(false);
+              setEditingCalcField(null);
+            }}
+            onSave={handleSaveCalculatedField}
+            editingField={editingCalcField}
+            allowedSource={activeSources[0]}
+            availableMetrics={
+              (catalogLoading ? EMPTY_CATALOG : fieldCatalog)[activeSources[0]] ?? []
+            }
           />
         )}
       </div>
@@ -676,6 +800,13 @@ const Reports: React.FC = () => {
                 >
                   Abrir
                 </button>
+
+                {/* Botão de exportação com menu dropdown (componente local com ref) */}
+                <ExportButton
+                  loading={exportingId === report.id}
+                  onSelect={(format) => handleDownloadReport(report.id, format)}
+                />
+
                 <button
                   onClick={() => handleDeleteReport(report.id)}
                   title="Excluir relatório"
@@ -700,3 +831,78 @@ const Reports: React.FC = () => {
 };
 
 export default Reports;
+
+// ========================
+// COMPONENTE AUXILIAR: BOTÃO DE EXPORTAÇÃO
+// ========================
+
+interface ExportButtonProps {
+  loading: boolean;
+  onSelect: (format: 'excel' | 'csv') => void;
+}
+
+/**
+ * Botão de download com mini-menu de formato (Excel / CSV).
+ * Usa ref para fechar o menu ao clicar fora — mesmo padrão do SelectMenu.
+ */
+const ExportButton: React.FC<ExportButtonProps> = ({ loading, onSelect }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Fecha ao clicar fora do container
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fecha ao pressionar Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => !loading && setIsOpen((prev) => !prev)}
+        disabled={loading}
+        title="Exportar relatório"
+        className="rounded-lg bg-blue-600/10 p-2 text-blue-500 transition-colors hover:bg-blue-600/20 disabled:opacity-50 dark:text-blue-400"
+      >
+        {loading ? (
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+        ) : (
+          <Download size={16} />
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="absolute bottom-full right-0 z-20 mb-1 min-w-[140px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800">
+          <button
+            type="button"
+            onClick={() => { setIsOpen(false); onSelect('excel'); }}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            Excel (.xlsx)
+          </button>
+          <button
+            type="button"
+            onClick={() => { setIsOpen(false); onSelect('csv'); }}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            CSV (.csv)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};

@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.5.1",
+    date: "12/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Campos Calculados nos Relatórios: crie métricas derivadas combinando campos existentes com fórmulas aritméticas (ex: [won_count] / [count] * 100 para Taxa de Conversão). Arraste o campo calculado para o eixo Y de qualquer gráfico.",
+      },
+      {
+        type: "feature",
+        text: "Autocomplete de campos ao digitar [ na fórmula — selecione o campo da lista sem precisar decorar os nomes.",
+      },
+      {
+        type: "feature",
+        text: "Validação da fórmula em tempo real: erros de sintaxe, campos inexistentes e parênteses desbalanceados são detectados antes de salvar.",
+      },
+    ],
+  },
+  {
     version: "1.5.0",
     date: "12/03/2026",
     entries: [

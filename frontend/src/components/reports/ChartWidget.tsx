@@ -89,7 +89,13 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
    */
   const formatTooltipValue = (value: number): string => {
     const firstYField = config.y_fields[0];
-    if (firstYField?.field.key === 'value' && firstYField?.aggregation !== 'count') {
+    // Campos calculados não têm .field/.aggregation — trata como número simples
+    if (
+      firstYField &&
+      !firstYField.is_calculated &&
+      (firstYField as { field: { key: string }; aggregation: string }).field.key === 'value' &&
+      (firstYField as { aggregation: string }).aggregation !== 'count'
+    ) {
       return formatCurrency(value);
     }
     return value.toLocaleString('pt-BR');
@@ -384,8 +390,11 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
   // Label do eixo Y: '—' quando vazio, label do campo quando 1, 'N métricas' quando múltiplos
   const yLabel =
     config.y_fields.length === 0 ? '—'
-    : config.y_fields.length === 1 ? config.y_fields[0].field.label
-    : `${config.y_fields.length} métricas`;
+    : config.y_fields.length === 1
+      ? (config.y_fields[0].is_calculated
+          ? (config.y_fields[0] as import('./reportTypes').CalculatedYFieldConfig).label
+          : (config.y_fields[0] as { field: import('./reportTypes').AxisField }).field.label)
+      : `${config.y_fields.length} métricas`;
 
   const chartMeta = `${typeLabel} • ${config.x_field?.label ?? '—'} / ${yLabel}`;
 

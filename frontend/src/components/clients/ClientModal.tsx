@@ -120,7 +120,8 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
   });
 
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Erros por campo — cada chave corresponde a um campo do formulário
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   /**
    * Preenche o formulário quando estiver editando
@@ -172,50 +173,46 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
         annual_revenue: "",
       });
     }
-    setError(null);
+    setErrors({});
   }, [client, isOpen]);
 
   /**
    * Valida os dados do formulário
    */
   const validate = (): boolean => {
+    const next: Record<string, string> = {};
+
     if (!formData.name.trim()) {
-      setError("Nome é obrigatório");
-      return false;
+      next.name = "Nome é obrigatório";
     }
 
     // Validação de CPF/CNPJ obrigatório
     if (!formData.document.trim()) {
-      setError("CPF/CNPJ é obrigatório");
-      return false;
-    }
-
-    // Valida se o documento tem tamanho correto (11 para CPF ou 14 para CNPJ)
-    const documentNumbers = formData.document.replace(/\D/g, "");
-    if (documentNumbers.length !== 11 && documentNumbers.length !== 14) {
-      setError("CPF/CNPJ inválido. CPF deve ter 11 dígitos e CNPJ 14 dígitos");
-      return false;
+      next.document = "CPF/CNPJ é obrigatório";
+    } else {
+      const documentNumbers = formData.document.replace(/\D/g, "");
+      if (documentNumbers.length !== 11 && documentNumbers.length !== 14) {
+        next.document = "CPF/CNPJ inválido. CPF deve ter 11 dígitos e CNPJ 14 dígitos";
+      }
     }
 
     // Validação básica de email (se preenchido)
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError("Email inválido");
-      return false;
+      next.email = "Email inválido";
     }
 
     // Validação básica de website (se preenchido)
     if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
-      setError("Website deve começar com http:// ou https://");
-      return false;
+      next.website = "Website deve começar com http:// ou https://";
     }
 
     // Validação básica de LinkedIn (se preenchido)
     if (formData.linkedin_url && !formData.linkedin_url.includes("linkedin.com")) {
-      setError("LinkedIn deve ser uma URL válida do LinkedIn");
-      return false;
+      next.linkedin_url = "LinkedIn deve ser uma URL válida do LinkedIn";
     }
 
-    return true;
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   /**
@@ -226,7 +223,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
 
     try {
       setIsSaving(true);
-      setError(null);
+      setErrors({});
 
       let savedClient: Client;
 
@@ -286,7 +283,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
       onClose(); // Fecha o modal
     } catch (err: any) {
       console.error("Erro ao salvar cliente:", err);
-      setError(err.response?.data?.detail || "Erro ao salvar cliente");
+      setErrors({ _api: err.response?.data?.detail || "Erro ao salvar cliente" });
     } finally {
       setIsSaving(false);
     }
@@ -300,7 +297,14 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
       ...prev,
       [field]: value,
     }));
-    setError(null); // Limpa erro ao editar
+    // Limpa o erro do campo editado
+    if (errors[field as string]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field as string];
+        return next;
+      });
+    }
   };
 
   return (
@@ -313,8 +317,8 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
       footer={
         <div className="flex items-center justify-between">
           <div>
-            {error && (
-              <p className="text-sm text-red-400">{error}</p>
+            {errors._api && (
+              <p className="text-sm text-red-400">{errors._api}</p>
             )}
           </div>
           <div className="flex gap-3">
@@ -345,12 +349,14 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 </span>
               }
               hint="Razão social ou nome da empresa"
+              error={errors.name}
             >
               <Input
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="Ex: Empresa LTDA"
                 autoFocus
+                error={!!errors.name}
               />
             </FormField>
 
@@ -380,12 +386,14 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 </span>
               }
               hint="Endereço de email principal"
+              error={errors.email}
             >
               <Input
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 placeholder="Ex: joao@empresa.com"
+                error={!!errors.email}
               />
             </FormField>
 
@@ -416,12 +424,14 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 </span>
               }
               hint="Documento de identificação (obrigatório)"
+              error={errors.document}
             >
               <Input
                 value={formData.document}
                 onChange={(e) => handleChange("document", maskDocument(e.target.value))}
                 placeholder="000.000.000-00 ou 00.000.000/0000-00"
                 maxLength={18}
+                error={!!errors.document}
               />
             </FormField>
           </div>
@@ -461,11 +471,13 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 </span>
               }
               hint="URL da página da empresa no LinkedIn"
+              error={errors.linkedin_url}
             >
               <Input
                 value={formData.linkedin_url}
                 onChange={(e) => handleChange("linkedin_url", e.target.value)}
                 placeholder="https://www.linkedin.com/company/empresa"
+                error={!!errors.linkedin_url}
               />
             </FormField>
 
@@ -634,11 +646,13 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 </span>
               }
               hint="Endereço do site (incluir http:// ou https://)"
+              error={errors.website}
             >
               <Input
                 value={formData.website}
                 onChange={(e) => handleChange("website", e.target.value)}
                 placeholder="https://www.exemplo.com.br"
+                error={!!errors.website}
               />
             </FormField>
 

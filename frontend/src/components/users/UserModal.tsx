@@ -24,6 +24,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
   const [roleId, setRoleId] = useState(3);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Erros por campo — exibidos inline em vez de toast
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Estados do avatar
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -59,6 +61,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
     setIsActive(true);
     setAvatarFile(null);
     setAvatarPreview(null);
+    setErrors({});
   };
 
   /**
@@ -118,38 +121,33 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
   };
 
   const validateForm = (): boolean => {
-    if (!email.trim()) {
-      showWarning("Email é obrigatório");
-      return false;
-    }
-
+    const next: Record<string, string> = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      showWarning("Email inválido");
-      return false;
+
+    if (!email.trim()) {
+      next.email = "Email é obrigatório";
+    } else if (!emailRegex.test(email)) {
+      next.email = "Email inválido";
     }
 
     if (!name.trim()) {
-      showWarning("Nome é obrigatório");
-      return false;
+      next.name = "Nome é obrigatório";
     }
 
-    if (!isEditing && !password.trim()) {
-      showWarning("Senha é obrigatória ao criar usuário");
-      return false;
+    if (!isEditing) {
+      if (!password.trim()) {
+        next.password = "Senha é obrigatória ao criar usuário";
+      } else if (password.length < 6) {
+        next.password = "Senha deve ter pelo menos 6 caracteres";
+      }
+
+      if (password && password !== confirmPassword) {
+        next.confirmPassword = "As senhas não coincidem";
+      }
     }
 
-    if (!isEditing && password.length < 6) {
-      showWarning("Senha deve ter pelo menos 6 caracteres");
-      return false;
-    }
-
-    if (!isEditing && password !== confirmPassword) {
-      showWarning("As senhas não coincidem");
-      return false;
-    }
-
-    return true;
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -316,14 +314,16 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                 </span>
               }
               className="md:col-span-2"
+              error={errors.email}
             >
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setErrors((p) => { const n = {...p}; delete n.email; return n; }); }}
                 placeholder="usuario@exemplo.com"
                 required
                 disabled={saving}
+                error={!!errors.email}
               />
             </FormField>
 
@@ -335,15 +335,17 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                       Senha <span className="text-red-400">*</span>
                     </span>
                   }
+                  error={errors.password}
                 >
                   <Input
                     type="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); setErrors((p) => { const n = {...p}; delete n.password; return n; }); }}
                     placeholder="Mínimo 6 caracteres"
                     required
                     minLength={6}
                     disabled={saving}
+                    error={!!errors.password}
                   />
                 </FormField>
 
@@ -353,14 +355,16 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                       Confirmar Senha <span className="text-red-400">*</span>
                     </span>
                   }
+                  error={errors.confirmPassword}
                 >
                   <Input
                     type="password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => { setConfirmPassword(e.target.value); setErrors((p) => { const n = {...p}; delete n.confirmPassword; return n; }); }}
                     placeholder="Digite a senha novamente"
                     required
                     disabled={saving}
+                    error={!!errors.confirmPassword}
                   />
                 </FormField>
               </>
@@ -378,14 +382,16 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                 </span>
               }
               className="md:col-span-2"
+              error={errors.name}
             >
               <Input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => { setName(e.target.value); setErrors((p) => { const n = {...p}; delete n.name; return n; }); }}
                 placeholder="João Silva"
                 required
                 disabled={saving}
+                error={!!errors.name}
               />
             </FormField>
 

@@ -6,6 +6,8 @@ import type {
   CustomReportConfig,
   SavedReport,
   DrillDownResponse,
+  CalculatedField,
+  CalculatedYFieldConfig,
 } from "../components/reports/reportTypes";
 
 /**
@@ -224,20 +226,57 @@ class ReportService {
 
   /**
    * Executa a query de um gráfico customizado e retorna os dados para renderização.
-   * Substitui o generateMockData do frontend.
+   *
+   * Separa os y_fields em normais e calculados, enviando cada um no campo correto
+   * do payload para que o backend processe as fórmulas DAX-like.
+   *
+   * calculatedFields: lista completa de campos calculados do relatório (opcional).
    */
-  async queryChart(config: ChartConfig): Promise<QueryResponse> {
-    // Converte o ChartConfig do frontend para o formato esperado pelo backend
+  async queryChart(
+    config: ChartConfig,
+    calculatedFields?: CalculatedField[]
+  ): Promise<QueryResponse> {
+    // Separa campos Y normais dos campos Y calculados
+    const normalYFields = config.y_fields.filter((yf) => !yf.is_calculated);
+    const calcYFields = config.y_fields.filter(
+      (yf): yf is CalculatedYFieldConfig => yf.is_calculated === true
+    );
+
+    // Filtra apenas os campos calculados referenciados por este gráfico
+    const referencedCalcFieldIds = new Set(calcYFields.map((yf) => yf.calculated_field_id));
+    const relevantCalcFields = (calculatedFields ?? []).filter((cf) =>
+      referencedCalcFieldIds.has(cf.id)
+    );
+
     const payload = {
       x_field: config.x_field,
       x_group_by: config.x_group_by ?? null,
-      y_fields: config.y_fields,
+      y_fields: normalYFields,
+      calculated_y_fields: calcYFields.length > 0 ? calcYFields : null,
+      calculated_fields: relevantCalcFields.length > 0 ? relevantCalcFields : null,
       period: config.period,
       start_date: config.start_date ?? null,
       end_date: config.end_date ?? null,
       split_by: config.split_by ?? null,
     };
     const response = await api.post<QueryResponse>("/api/v1/reports/query", payload);
+    return response.data;
+  }
+
+  /**
+   * Valida uma fórmula DAX-like para campo calculado via API.
+   * Verifica sintaxe e que todas as referências [field_key] são válidas para a fonte.
+   */
+  async validateFormula(
+    formula: string,
+    source: string,
+    availableKeys: string[]
+  ): Promise<{ is_valid: boolean; errors: string[]; dependencies: string[] }> {
+    const response = await api.post("/api/v1/reports/calculated-fields/validate", {
+      formula,
+      source,
+      available_keys: availableKeys,
+    });
     return response.data;
   }
 
@@ -276,6 +315,35 @@ class ReportService {
   }
 
   /**
+   * Faz download de um relatório customizado como arquivo Excel ou CSV.
+   * Utiliza responseType 'blob' para receber o binário e aciona o download
+   * no browser criando um link temporário.
+   */
+  async downloadReport(reportId: number, format: "excel" | "csv"): Promise<void> {
+    const ext = format === "excel" ? "xlsx" : "csv";
+
+    const response = await api.get(`/api/v1/reports/custom/${reportId}/export`, {
+      params: { format },
+      responseType: "blob",
+    });
+
+    // Extrai o nome do arquivo do header Content-Disposition se disponível
+    const contentDisposition = (response.headers["content-disposition"] as string) || "";
+    const match = contentDisposition.match(/filename="?([^"]+)"?/);
+    const filename = match ? match[1] : `relatorio.${ext}`;
+
+    // Cria um link temporário e aciona o download no browser
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
+
+  /**
    * Busca os cards que compõem uma barra/fatia específica do gráfico (drill-down).
    * xLabel: o label do eixo X da barra clicada (ex: "Prospecção", "Jan/25").
    * splitLabel: nome da série clicada quando o gráfico usa split_by.
@@ -287,9 +355,8 @@ class ReportService {
   ): Promise<DrillDownResponse> {
     // Envia o y_field principal para que o backend replique o filtro implícito
     // da agregação (ex: won_count → is_won=1, meeting_count → task_type=meeting).
-    // Sem isso, o drill-down mostraria todos os cards do grupo, não apenas os que
-    // contribuíram para o valor exibido no gráfico.
-    const primaryYField = config.y_fields[0] ?? null;
+    // Campos calculados não têm filtro implícito — usa o primeiro campo normal encontrado.
+    const primaryYField = config.y_fields.find((yf) => !yf.is_calculated) ?? null;
 
     const payload = {
       x_field: config.x_field,
@@ -300,8 +367,9 @@ class ReportService {
       x_label: xLabel,
       split_by: config.split_by ?? null,
       split_label: splitLabel ?? null,
-      y_source: primaryYField?.field.source ?? null,
-      y_key: primaryYField?.field.key ?? null,
+      // Acessa .field apenas se não for calculado (union type narrowing)
+      y_source: primaryYField && !primaryYField.is_calculated ? primaryYField.field.source : null,
+      y_key: primaryYField && !primaryYField.is_calculated ? primaryYField.field.key : null,
     };
     const response = await api.post<DrillDownResponse>("/api/v1/reports/drill-down", payload);
     return response.data;

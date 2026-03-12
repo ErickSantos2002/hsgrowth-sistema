@@ -1,6 +1,6 @@
 # TODO - HSGrowth CRM
 
-**Última atualização**: 05/03/2026 (v1.3.11)
+**Última atualização**: 12/03/2026 (v1.5.0)
 **Responsável**: Erick (Cientista de Dados / Full Stack)
 
 ---
@@ -13,7 +13,8 @@
 - ✅ **Clientes (Organizações)** — CRUD completo
 - ✅ **Pessoas (Contatos)** — CRUD completo
 - ✅ **Produtos** — Catálogo e vinculação a cards
-- ✅ **Usuários e Roles** — Admin, Manager, Salesperson, SDR
+- ✅ **Usuários e Roles** — Admin, Manager, Salesperson, SDR, Viewer (somente leitura)
+- ✅ **Página de Atividades** — Listagem centralizada com filtros, paginação e FocusMode (v1.5.0)
 - ✅ **Sistema de Atividades/Tarefas**
 - ✅ **Sistema de Gamificação** — Pontos, badges, ranking
 - ✅ **Sistema de Logs de Auditoria**
@@ -54,15 +55,15 @@
 
 #### Frontend — Melhorias
 - [x] Auto-save com debounce (800ms) nos campos editáveis do CardDetails — implementado em `EditableField.tsx` (v1.3.10)
-- [ ] Validação de formulários mais completa em modais de criação
+- [x] Validação de formulários mais completa em modais de criação — erros inline por campo em ClientModal, PersonModal e UserModal (v1.5.0)
 
 ### 🟢 Baixa Prioridade / Opcional
 
 - [ ] Integração com Google Calendar (opcional)
 - [ ] Integração com Microsoft Teams/Outlook (opcional)
 - [x] Responsividade mobile — revisão concluída
-- [ ] Gráficos com Recharts nos relatórios (aguarda backend)
-- [ ] Exportação Excel/PDF nos relatórios (aguarda backend)
+- [x] Gráficos com Recharts nos relatórios — implementado no ChartWidget.tsx (bar, line, pie, table) com multi-série e drill-down
+- [x] Exportação Excel/PDF nos relatórios — endpoint GET /reports/custom/{id}/export retorna .xlsx ou .csv; botão de download nos cards da listagem (v1.5.1)
 - [ ] Paginação no histórico de atividades do card (scroll infinito)
 - [ ] Cache de dados frequentemente acessados
 - [ ] Compressão de respostas API
@@ -126,6 +127,8 @@
 - ✅ **v1.3.9** (04/03/2026) - Role "Visualizador" (somente leitura)
 - ✅ **v1.3.10** (05/03/2026) - Auto-save com debounce nos cards + filtro por data de fechamento no Kanban
 - ✅ **v1.3.11** (05/03/2026) - Redis Session Management: sessões em tempo real, blacklist de tokens, usuários online, notification settings
+- ✅ **v1.5.0** (12/03/2026) - Página de Atividades com filtros, paginação, FocusMode e validação inline nos modais
+- ✅ **v1.5.1** (12/03/2026) - Exportação de relatórios customizados em Excel e CSV
 
 ---
 
