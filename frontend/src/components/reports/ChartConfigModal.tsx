@@ -65,7 +65,7 @@ const GROUP_BY_OPTIONS: { value: GroupByType; label: string }[] = [
  * "Pré-visualizar", garantindo que ele viu o resultado antes de confirmar.
  */
 // Catálogo vazio padrão enquanto carrega (evita erros antes do prop chegar)
-const EMPTY_FIELD_CATALOG: FieldCatalog = { cards: [], clients: [], persons: [], activities: [] };
+const EMPTY_FIELD_CATALOG: FieldCatalog = { cards: [], clients: [], persons: [], activities: [], tasks: [] };
 
 const ChartConfigModal: React.FC<ChartConfigModalProps> = ({
   isOpen,
@@ -111,9 +111,18 @@ const ChartConfigModal: React.FC<ChartConfigModalProps> = ({
       setDataSource(editingConfig.x_field?.source ?? defaultSource);
       setXField(editingConfig.x_field?.key ?? '');
       setXGroupBy(editingConfig.x_group_by || 'month');
-      // Compatibilidade: usa o primeiro campo Y (modal legado suporta apenas 1)
-      setYField(editingConfig.y_fields[0]?.field.key ?? 'count');
-      setAggregation(editingConfig.y_fields[0]?.aggregation ?? 'count');
+      // Compatibilidade: usa o primeiro campo Y normal (modal legado não suporta calculados)
+      const firstNormalYField = editingConfig.y_fields.find((yf) => !yf.is_calculated);
+      setYField(
+        firstNormalYField && !firstNormalYField.is_calculated
+          ? (firstNormalYField as { field: { key: string } }).field.key
+          : 'count'
+      );
+      setAggregation(
+        firstNormalYField && !firstNormalYField.is_calculated
+          ? (firstNormalYField as { aggregation: import('./reportTypes').AggregationType }).aggregation
+          : 'count'
+      );
       setPeriod(editingConfig.period);
       setStartDate(editingConfig.start_date || '');
       setEndDate(editingConfig.end_date || '');

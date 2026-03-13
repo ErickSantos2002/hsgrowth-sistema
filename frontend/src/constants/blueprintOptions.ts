@@ -139,6 +139,7 @@ export const LOSS_REASONS_PROSPECTION = [
   "Revenda",
   "Já cliente / em atendimento interno",
   "Cenário externo",
+  "Produto não atende",
   "Demanda Calibração",
   "Demanda Suporte",
   "Não deu retorno",

@@ -36,7 +36,9 @@ from app.schemas.custom_report import (
     DrillDownRequest,
     DrillDownCard,
     DrillDownResponse,
+    CalculatedFieldSchema,
 )
+from app.core.formula_evaluator import FormulaEvaluator
 from app.schemas.report import PeriodEnum
 
 # Rótulos legíveis por fonte (espelha o frontend para nomes únicos de série)
@@ -1279,18 +1281,87 @@ class CustomReportService:
         return result
 
     # ========================
+    # CAMPOS CALCULADOS — DAX-like
+    # ========================
+
+    def _resolve_calculated_field(
+        self,
+        calc_field: CalculatedFieldSchema,
+        label_raw_pairs: List[Tuple[str, Any]],
+        metric_cache: Dict[str, List[float]],
+        request: 'QueryRequest',
+        start: date,
+        end: date,
+    ) -> List[float]:
+        """
+        Avalia um campo calculado para cada label do eixo X.
+
+        Algoritmo:
+          1. Extrai as dependências da fórmula ([field_key] → {field_key}).
+          2. Para cada dependência ausente no cache, executa a query de métrica
+             silenciosamente e armazena no cache.
+          3. Para cada label, monta o contexto e avalia a fórmula.
+          4. Divisão por zero → 0.0 (padrão do sistema).
+
+        O cache usa a chave "source:field_key:aggregation" para evitar
+        queries duplicadas quando dois campos calculados compartilham dependências.
+        """
+        evaluator = FormulaEvaluator()
+        dependencies = evaluator.extract_dependencies(calc_field.formula)
+
+        # Garante que todas as dependências estão no cache
+        for dep_key in dependencies:
+            # Chave de cache padrão: source:key:count (contagem é a agregação padrão para deps)
+            cache_key = f"{calc_field.source}:{dep_key}:count"
+
+            if cache_key not in metric_cache:
+                # Busca a métrica silenciosamente usando count como agregação padrão
+                # (usuário deve usar métricas já definidas; count é safe para qualquer campo)
+                values = self._get_y_values_for_labels(
+                    x_field_source=request.x_field.source,
+                    x_field_key=request.x_field.key,
+                    x_group_by=request.x_group_by,
+                    y_source=calc_field.source,
+                    y_key=dep_key,
+                    y_aggregation='count',
+                    label_raw_pairs=label_raw_pairs,
+                    start=start,
+                    end=end,
+                )
+                metric_cache[cache_key] = values
+
+        # Avalia a fórmula para cada label usando os valores do cache
+        results: List[float] = []
+        for label_idx in range(len(label_raw_pairs)):
+            # Monta contexto com os valores de cada dependência para este label
+            field_values: Dict[str, float] = {}
+            for dep_key in dependencies:
+                cache_key = f"{calc_field.source}:{dep_key}:count"
+                cached = metric_cache.get(cache_key, [])
+                field_values[dep_key] = cached[label_idx] if label_idx < len(cached) else 0.0
+
+            context = evaluator.build_value_context(field_values)
+            result = evaluator.evaluate(calc_field.formula, context)
+
+            # Divisão por zero (None) vira 0.0 — padrão do sistema
+            results.append(float(result) if result is not None else 0.0)
+
+        return results
+
+    # ========================
     # QUERY ENGINE — PÚBLICO
     # ========================
 
-    def execute_query(self, request: QueryRequest) -> QueryResponse:
+    def execute_query(self, request: 'QueryRequest') -> QueryResponse:
         """
         Executa a query de um gráfico e retorna os dados para renderização.
 
         Fluxo:
           1. Calcula o intervalo de datas.
           2. Busca os grupos X (labels + raw keys).
-          3. Para cada campo Y, calcula os valores agregados alinhados aos labels.
-          4. Retorna QueryResponse no formato single-série ou multi-série.
+          3. Para cada campo Y normal, calcula os valores agregados alinhados aos labels.
+          4. Para cada campo Y calculado, avalia a fórmula usando o cache de métricas.
+          5. Retorna QueryResponse no formato single-série ou multi-série.
         """
         start, end = self._get_date_range(request.period, request.start_date, request.end_date)
 
@@ -1308,6 +1379,7 @@ class CustomReportService:
         labels = [pair[0] for pair in label_raw_pairs]
 
         # Passo 2a: se split_by estiver definido, gera uma série por valor único da dimensão
+        # (campos calculados não são suportados em modo split_by — usamos apenas y_fields normais)
         if request.split_by and request.y_fields:
             split_values = self._get_split_values(
                 request.split_by.source, request.split_by.key
@@ -1338,8 +1410,12 @@ class CustomReportService:
 
                 return QueryResponse(labels=labels, series=series)
 
-        # Passo 2b: calcula valores para cada y_field (modo normal, sem split_by)
-        y_results: List[List[float]] = []
+        # Passo 2b: calcula valores para cada y_field normal (modo sem split_by)
+        # Cache de métricas: chave "source:field_key:aggregation" → List[float]
+        # Reutilizado pelo _resolve_calculated_field para evitar queries redundantes.
+        metric_cache: Dict[str, List[float]] = {}
+
+        y_normal_results: List[Tuple[str, List[float]]] = []  # (nome_série, valores)
         for yf in request.y_fields:
             values = self._get_y_values_for_labels(
                 x_field_source=request.x_field.source,
@@ -1352,34 +1428,70 @@ class CustomReportService:
                 start=start,
                 end=end,
             )
-            y_results.append(values)
+            # Alimenta o cache para que campos calculados possam reutilizar
+            cache_key = f"{yf.field.source}:{yf.field.key}:{yf.aggregation}"
+            metric_cache[cache_key] = values
 
-        # Passo 3: monta a resposta
-        if len(request.y_fields) == 1:
-            # Single-série
-            values_flat = y_results[0] if y_results else [0.0] * len(labels)
+            source_label = _SOURCE_LABELS.get(yf.field.source, yf.field.source)
+            y_normal_results.append((yf.field.label, source_label, values))
+
+        # Passo 2c: resolve campos Y calculados (fórmulas DAX-like)
+        y_calc_results: List[Tuple[str, List[float]]] = []  # (label_série, valores)
+        if request.calculated_y_fields and request.calculated_fields:
+            # Indexa os campos calculados disponíveis pelo id para acesso O(1)
+            calc_field_map: Dict[str, CalculatedFieldSchema] = {
+                cf.id: cf for cf in request.calculated_fields
+            }
+
+            for calc_yf in request.calculated_y_fields:
+                calc_field = calc_field_map.get(calc_yf.calculated_field_id)
+                if calc_field is None:
+                    # Campo calculado não encontrado — retorna zeros
+                    y_calc_results.append((calc_yf.label, [0.0] * len(labels)))
+                    continue
+
+                resolved = self._resolve_calculated_field(
+                    calc_field=calc_field,
+                    label_raw_pairs=label_raw_pairs,
+                    metric_cache=metric_cache,
+                    request=request,
+                    start=start,
+                    end=end,
+                )
+                y_calc_results.append((calc_yf.label, resolved))
+
+        # Passo 3: monta a resposta combinando campos normais e calculados
+        total_series_count = len(y_normal_results) + len(y_calc_results)
+
+        if total_series_count == 0:
+            return QueryResponse(labels=labels, values=[0.0] * len(labels), total=0.0)
+
+        if total_series_count == 1:
+            # Single-série — pode ser normal ou calculado
+            if y_normal_results:
+                values_flat = y_normal_results[0][2]
+            else:
+                values_flat = y_calc_results[0][1]
             total = sum(values_flat)
             return QueryResponse(labels=labels, values=values_flat, total=total)
 
-        else:
-            # Multi-série — detecta labels duplicados para nomes únicos
-            y_labels_list = [yf.field.label for yf in request.y_fields]
-            has_duplicates = len(y_labels_list) != len(set(y_labels_list))
+        # Multi-série — detecta labels duplicados para nomes únicos entre os campos normais
+        normal_labels = [r[0] for r in y_normal_results]
+        has_duplicates = len(normal_labels) != len(set(normal_labels))
 
-            series = []
-            for i, yf in enumerate(request.y_fields):
-                source_label = _SOURCE_LABELS.get(yf.field.source, yf.field.source)
-                name = (
-                    f"{yf.field.label} ({source_label})"
-                    if has_duplicates
-                    else yf.field.label
-                )
-                series.append(SeriesDataSchema(
-                    name=name,
-                    values=y_results[i] if i < len(y_results) else [0.0] * len(labels),
-                ))
+        series = []
+        for field_label, source_label, values in y_normal_results:
+            name = (
+                f"{field_label} ({source_label})"
+                if has_duplicates
+                else field_label
+            )
+            series.append(SeriesDataSchema(name=name, values=values))
 
-            return QueryResponse(labels=labels, series=series)
+        for serie_label, values in y_calc_results:
+            series.append(SeriesDataSchema(name=serie_label, values=values))
+
+        return QueryResponse(labels=labels, series=series)
 
     # ========================
     # DRILL-DOWN — detalhamento de barra

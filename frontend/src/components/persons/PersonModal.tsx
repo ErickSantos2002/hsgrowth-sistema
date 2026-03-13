@@ -88,7 +88,8 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
   });
 
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Erros por campo — cada chave corresponde a um campo do formulário
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<UserType[]>([]);
 
   /**
@@ -155,39 +156,38 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         is_active: true,
       });
     }
-    setError(null);
+    setErrors({});
   }, [person, isOpen]);
 
   /**
    * Valida os dados do formulário
    */
   const validate = (): boolean => {
+    const next: Record<string, string> = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!formData.name.trim()) {
-      setError("Nome completo é obrigatório");
-      return false;
+      next.name = "Nome completo é obrigatório";
     }
 
-    // Validação básica de emails (se preenchidos)
-    const emails = [
-      formData.email,
-      formData.email_commercial,
-      formData.email_personal,
-    ];
-
-    for (const email of emails) {
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        setError(`Email inválido: ${email}`);
-        return false;
-      }
+    // Validação de cada email individualmente (se preenchido)
+    if (formData.email && !emailRegex.test(formData.email)) {
+      next.email = "Email inválido";
+    }
+    if (formData.email_commercial && !emailRegex.test(formData.email_commercial)) {
+      next.email_commercial = "Email inválido";
+    }
+    if (formData.email_personal && !emailRegex.test(formData.email_personal)) {
+      next.email_personal = "Email inválido";
     }
 
     // Validação básica de LinkedIn (se preenchido)
     if (formData.linkedin && !formData.linkedin.includes("linkedin.com")) {
-      setError("LinkedIn deve ser uma URL válida do LinkedIn");
-      return false;
+      next.linkedin = "LinkedIn deve ser uma URL válida do LinkedIn";
     }
 
-    return true;
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   /**
@@ -198,7 +198,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
 
     try {
       setIsSaving(true);
-      setError(null);
+      setErrors({});
 
       // Prepara dados para enviar
       // Envia null explicitamente para campos vazios (permite limpar no backend)
@@ -233,7 +233,7 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
       onClose(); // Fecha o modal
     } catch (err: any) {
       console.error("Erro ao salvar pessoa:", err);
-      setError(err.response?.data?.detail || "Erro ao salvar pessoa");
+      setErrors({ _api: err.response?.data?.detail || "Erro ao salvar pessoa" });
     } finally {
       setIsSaving(false);
     }
@@ -247,7 +247,14 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
       ...prev,
       [field]: value,
     }));
-    setError(null); // Limpa erro ao editar
+    // Limpa o erro do campo editado
+    if (errors[field as string]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field as string];
+        return next;
+      });
+    }
   };
 
   return (
@@ -260,8 +267,8 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
       footer={
         <div className="flex items-center justify-between">
           <div>
-            {error && (
-              <p className="text-sm text-red-400">{error}</p>
+            {errors._api && (
+              <p className="text-sm text-red-400">{errors._api}</p>
             )}
           </div>
           <div className="flex gap-3">
@@ -293,12 +300,14 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
               }
               hint="Nome completo da pessoa"
               className="md:col-span-2"
+              error={errors.name}
             >
               <Input
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="Ex: João Silva Santos"
                 autoFocus
+                error={!!errors.name}
               />
             </FormField>
 
@@ -408,12 +417,14 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
                 </span>
               }
               hint="Email principal de contato"
+              error={errors.email}
             >
               <Input
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 placeholder="joao@exemplo.com"
+                error={!!errors.email}
               />
             </FormField>
 
@@ -421,12 +432,14 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
             <FormField
               label="Email Comercial"
               hint="Email corporativo/comercial"
+              error={errors.email_commercial}
             >
               <Input
                 type="email"
                 value={formData.email_commercial}
                 onChange={(e) => handleChange("email_commercial", e.target.value)}
                 placeholder="joao@empresa.com"
+                error={!!errors.email_commercial}
               />
             </FormField>
 
@@ -435,12 +448,14 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
               label="Email Pessoal"
               hint="Email pessoal"
               className="md:col-span-2"
+              error={errors.email_personal}
             >
               <Input
                 type="email"
                 value={formData.email_personal}
                 onChange={(e) => handleChange("email_personal", e.target.value)}
                 placeholder="joao.pessoal@gmail.com"
+                error={!!errors.email_personal}
               />
             </FormField>
           </div>
@@ -516,11 +531,13 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
                 </span>
               }
               hint="URL do perfil no LinkedIn"
+              error={errors.linkedin}
             >
               <Input
                 value={formData.linkedin}
                 onChange={(e) => handleChange("linkedin", e.target.value)}
                 placeholder="https://www.linkedin.com/in/joao-silva"
+                error={!!errors.linkedin}
               />
             </FormField>
 

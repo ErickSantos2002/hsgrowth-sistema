@@ -8,6 +8,7 @@ import {
   AggregationType,
   GroupByType,
   YFieldConfig,
+  CalculatedYFieldConfig,
   ChartConfig,
   PeriodType,
   DATA_SOURCE_LABELS,
@@ -272,9 +273,11 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     // Eixo X só aceita campos groupable
     if (!field.groupable) return;
 
-    // Proíbe o mesmo campo nos dois eixos
+    // Proíbe o mesmo campo nos dois eixos (ignora campos calculados na comparação)
     const isInY = yFields.some(
-      (yf) => yf.field.key === field.key && yf.field.source === field.source
+      (yf) => !yf.is_calculated &&
+        (yf as { field: AxisField }).field.key === field.key &&
+        (yf as { field: AxisField }).field.source === field.source
     );
     if (isInY) return;
 
@@ -300,12 +303,41 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     e.preventDefault();
     setYDropState('idle');
 
-    let field: AxisField;
+    let parsed: Record<string, unknown>;
     try {
-      field = JSON.parse(e.dataTransfer.getData('application/json')) as AxisField;
+      parsed = JSON.parse(e.dataTransfer.getData('application/json')) as Record<string, unknown>;
     } catch {
       return;
     }
+
+    // Detecta se é um campo calculado pelo flag is_calculated
+    if (parsed.is_calculated === true) {
+      const calcField = parsed as { is_calculated: true; calculated_field_id: string; label: string; source: string };
+      const newCalcYField: CalculatedYFieldConfig = {
+        calculated_field_id: calcField.calculated_field_id,
+        label: calcField.label,
+        is_calculated: true,
+      };
+
+      if (chartType === 'pie' || chartType === 'table') {
+        // pie/table: substitui tudo por este campo calculado
+        setYFields([newCalcYField]);
+      } else {
+        setYFields((prev) => {
+          if (prev.length >= 4) return prev;
+          // Evita duplicata do mesmo campo calculado
+          const isDuplicate = prev.some(
+            (yf) => yf.is_calculated && (yf as CalculatedYFieldConfig).calculated_field_id === calcField.calculated_field_id
+          );
+          if (isDuplicate) return prev;
+          return [...prev, newCalcYField];
+        });
+      }
+      return;
+    }
+
+    // Campo normal: fluxo existente
+    const field = parsed as unknown as AxisField;
 
     // Proíbe o mesmo campo nos dois eixos
     if (xAxisField && field.key === xAxisField.key && field.source === xAxisField.source) return;
@@ -320,7 +352,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       setYFields((prev) => {
         if (prev.length >= 4) return prev;
         const isDuplicate = prev.some(
-          (yf) => yf.field.key === field.key && yf.field.source === field.source
+          (yf) => !yf.is_calculated && (yf as { field: AxisField }).field.key === field.key && (yf as { field: AxisField }).field.source === field.source
         );
         if (isDuplicate) return prev;
         return [...prev, { field, aggregation: defaultAgg }];
@@ -380,6 +412,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
   /**
    * Cicla a agregação do chip Y pelo índice.
+   * Campos calculados não têm agregação — ignora silenciosamente.
    * - number/currency: count → distinct_count → sum → avg → count
    * - outros: count → distinct_count → count
    */
@@ -387,6 +420,8 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     setYFields((prev) =>
       prev.map((yf, i) => {
         if (i !== index) return yf;
+        // Campos calculados não têm agregação — retorna sem modificar
+        if (yf.is_calculated) return yf;
         return { ...yf, aggregation: cycleAggregation(yf.aggregation, yf.field) };
       })
     );
@@ -538,7 +573,10 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
           <div className="mb-2 space-y-1.5">
             {yFields.map((yf, index) => (
               <div
-                key={`${yf.field.source}-${yf.field.key}-${index}`}
+                key={yf.is_calculated
+                  ? `calc-${(yf as CalculatedYFieldConfig).calculated_field_id}-${index}`
+                  : `${(yf as { field: AxisField }).field.source}-${(yf as { field: AxisField }).field.key}-${index}`
+                }
                 className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
               >
                 {/*
@@ -551,24 +589,45 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
                     style={{ backgroundColor: SERIES_COLORS[index % SERIES_COLORS.length] }}
                   />
                 )}
-                <FieldTypeIcon fieldType={yf.field.field_type} size={13} />
-                <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-300">
-                  {yf.field.label}
-                </span>
-                {/* Badge da fonte de dados */}
-                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-                  {DATA_SOURCE_LABELS[yf.field.source]}
-                </span>
-                {/* Badge de agregação — clicável, cicla pelas opções disponíveis */}
-                <button
-                  type="button"
-                  onClick={() => handleCycleAggregation(index)}
-                  title="Clique para mudar a agregação"
-                  className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
-                >
-                  {AGGREGATION_LABELS[yf.aggregation]}
-                </button>
-                {/* Botão de remoção */}
+
+                {yf.is_calculated ? (
+                  // Chip de campo calculado — exibe badge "fx" azul em vez de ícone de tipo
+                  <>
+                    <span className="shrink-0 font-mono text-xs font-bold text-blue-500 dark:text-blue-400">
+                      fx
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-300">
+                      {(yf as CalculatedYFieldConfig).label}
+                    </span>
+                    {/* Badge que identifica o campo como calculado */}
+                    <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                      Calculado
+                    </span>
+                  </>
+                ) : (
+                  // Chip de campo normal — exibe ícone de tipo + badge de agregação clicável
+                  <>
+                    <FieldTypeIcon fieldType={(yf as { field: AxisField }).field.field_type} size={13} />
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-300">
+                      {(yf as { field: AxisField }).field.label}
+                    </span>
+                    {/* Badge da fonte de dados */}
+                    <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                      {DATA_SOURCE_LABELS[(yf as { field: AxisField }).field.source]}
+                    </span>
+                    {/* Badge de agregação — clicável, cicla pelas opções disponíveis */}
+                    <button
+                      type="button"
+                      onClick={() => handleCycleAggregation(index)}
+                      title="Clique para mudar a agregação"
+                      className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+                    >
+                      {AGGREGATION_LABELS[(yf as { aggregation: AggregationType }).aggregation]}
+                    </button>
+                  </>
+                )}
+
+                {/* Botão de remoção — igual para ambos os tipos */}
                 <button
                   type="button"
                   onClick={() => handleRemoveYField(index)}

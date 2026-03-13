@@ -30,6 +30,52 @@ class YFieldConfigSchema(BaseModel):
 
 
 # ========================
+# SCHEMAS DE CAMPOS CALCULADOS
+# ========================
+
+class CalculatedFieldSchema(BaseModel):
+    """
+    Definição de um campo calculado via fórmula DAX-like.
+
+    A fórmula referencia campos existentes com a sintaxe [field_key].
+    Ex: "[won_count] / [count] * 100" → Taxa de Conversão (%)
+    """
+    id: str
+    name: str
+    formula: str
+    source: Literal['cards', 'clients', 'persons', 'activities', 'tasks']
+    field_type: Literal['number', 'currency']
+
+
+class CalculatedYFieldSchema(BaseModel):
+    """
+    Representa um campo calculado posicionado no eixo Y do gráfico.
+    Diferente do YFieldConfigSchema, não tem agregação — o valor já é calculado.
+    """
+    calculated_field_id: str
+    label: str
+    is_calculated: Literal[True] = True
+
+
+# ========================
+# SCHEMAS DE VALIDAÇÃO DE FÓRMULA
+# ========================
+
+class ValidateFormulaRequest(BaseModel):
+    """Request para validação de fórmula DAX-like."""
+    formula: str
+    source: Literal['cards', 'clients', 'persons', 'activities', 'tasks']
+    available_keys: List[str]
+
+
+class ValidateFormulaResponse(BaseModel):
+    """Resposta da validação de fórmula."""
+    is_valid: bool
+    errors: List[str]
+    dependencies: List[str]
+
+
+# ========================
 # SCHEMAS DE REQUEST
 # ========================
 
@@ -41,10 +87,15 @@ class QueryRequest(BaseModel):
     Quando split_by está definido, o resultado retorna múltiplas séries —
     uma por valor único do campo split_by (ex: uma série por vendedor).
     Nesse modo apenas o primeiro y_field é usado.
+
+    calculated_fields: lista de campos calculados definidos no relatório.
+    Os y_fields do tipo CalculatedYFieldSchema referenciam esses campos pelo id.
     """
     x_field: AxisFieldSchema
     x_group_by: Optional[Literal['day', 'week', 'month', 'year']] = None
     y_fields: List[YFieldConfigSchema]
+    calculated_y_fields: Optional[List[CalculatedYFieldSchema]] = None
+    calculated_fields: Optional[List[CalculatedFieldSchema]] = None
     period: PeriodEnum
     start_date: Optional[date] = None
     end_date: Optional[date] = None

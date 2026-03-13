@@ -54,17 +54,49 @@ export interface AxisField {
 }
 
 // ========================
+// CAMPOS CALCULADOS (DAX-like)
+// ========================
+
+/**
+ * Definição de um campo calculado via fórmula aritmética.
+ * A fórmula referencia campos existentes com a sintaxe [field_key].
+ * Ex: "[won_count] / [count] * 100" → Taxa de Conversão (%)
+ */
+export interface CalculatedField {
+  /** UUID gerado com crypto.randomUUID() */
+  id: string;
+  name: string;
+  /** Fórmula aritmética com referências [field_key] */
+  formula: string;
+  /** Fonte de dados — todos os campos da fórmula devem ser da mesma fonte */
+  source: DataSource;
+  field_type: 'number' | 'currency';
+}
+
+/**
+ * Campo calculado posicionado no eixo Y de um gráfico.
+ * Não possui agregação — o valor já é calculado pela fórmula.
+ */
+export interface CalculatedYFieldConfig {
+  calculated_field_id: string;
+  /** Label exibido na legenda do gráfico (geralmente o nome do campo calculado) */
+  label: string;
+  is_calculated: true;
+}
+
+// ========================
 // CONFIGURAÇÃO DE GRÁFICO
 // ========================
 
 /**
- * Um campo do eixo Y com sua própria agregação.
- * Permite múltiplas métricas no mesmo gráfico (bar/line).
+ * Um campo do eixo Y — pode ser um campo normal com agregação
+ * ou um campo calculado via fórmula DAX-like.
+ *
+ * Discriminante: is_calculated (true = calculado, false/ausente = normal)
  */
-export interface YFieldConfig {
-  field: AxisField;
-  aggregation: AggregationType;
-}
+export type YFieldConfig =
+  | { field: AxisField; aggregation: AggregationType; is_calculated?: false }
+  | CalculatedYFieldConfig;
 
 /** Configuração completa de um gráfico dentro de um relatório */
 export interface ChartConfig {
@@ -155,6 +187,8 @@ export interface CustomReportConfig {
   charts: ChartConfig[];
   /** Fontes de dados permitidas neste relatório — definidas na criação */
   allowed_sources: DataSource[];
+  /** Campos calculados definidos no relatório — compartilhados por todos os gráficos */
+  calculated_fields?: CalculatedField[];
 }
 
 /** Relatório salvo na lista (com metadados para exibição) */

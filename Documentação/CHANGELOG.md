@@ -7,6 +7,83 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.5.1] - 2026-03-12
+
+### Adicionado
+
+#### Campos Calculados nos Relatórios (DAX-like)
+
+Permite criar métricas derivadas combinando campos existentes com expressões aritméticas, inspirado no DAX do Power BI.
+
+**Exemplos de uso:**
+- `[won_count] / [count] * 100` → Taxa de Conversão (%)
+- `[value] / [won_count]` → Ticket Médio
+
+**Backend — `app/core/formula_evaluator.py`** (novo arquivo)
+
+Avaliador seguro de fórmulas usando `ast.parse()` + `NodeVisitor` com whitelist explícita de nós permitidos (`BinOp`, `UnaryOp`, `Constant`, `Name`, operadores aritméticos). Nunca usa `eval()` puro.
+
+Métodos:
+- `validate(formula)` → lista de erros de sintaxe e nós proibidos
+- `extract_dependencies(formula)` → set de `field_key` referenciados
+- `evaluate(formula, values)` → `float | None` (None em divisão por zero)
+- `build_value_context(field_values)` → converte `{key: value}` para o formato de contexto interno
+
+**Backend — schemas** (`app/schemas/custom_report.py`)
+- `CalculatedFieldSchema` — id, name, formula, source, field_type
+- `CalculatedYFieldSchema` — calculated_field_id, label, is_calculated=True
+- `ValidateFormulaRequest` / `ValidateFormulaResponse` — is_valid, errors, dependencies
+- `QueryRequest` recebe `calculated_y_fields` e `calculated_fields` opcionais
+
+**Backend — service** (`app/services/custom_report_service.py`)
+- `_resolve_calculated_field()` — extrai dependências da fórmula, busca métricas no cache (ou executa queries silenciosamente), avalia a fórmula label por label. Divisão por zero retorna `0.0`.
+- `execute_query()` adaptado para processar campos Y normais primeiro (populando `metric_cache`) e depois os calculados
+- Exportação Excel/CSV inclui campos calculados no `QueryRequest` de cada gráfico
+
+**Backend — endpoint** (`POST /api/v1/reports/calculated-fields/validate`)
+
+Valida fórmula via `FormulaEvaluator` + verifica se os `[field_key]` referenciados existem nos campos disponíveis da fonte informada.
+
+**Frontend — `CalculatedFieldModal.tsx`** (novo componente)
+
+Modal para criar e editar campos calculados:
+- Autocomplete ao digitar `[` — dropdown sem biblioteca externa, posicionado absolutamente. Seleção insere `[field_key]` no cursor via `setSelectionRange`
+- Validação local imediata (parênteses balanceados, chars permitidos, keys válidas)
+- Validação via API com debounce de 500ms
+- Feedback visual: borda verde/vermelha no textarea + ícone de status
+- Botão Salvar desabilitado enquanto fórmula inválida ou nome vazio
+
+**Frontend — `FieldPanel.tsx`**
+- Nova seção "Calculados" ao final do painel com botão `+` para abrir modal
+- Cada campo calculado é draggable, exibe badge `fx` azul e botão de editar (visível no hover)
+- Drag serializa `{ is_calculated: true, calculated_field_id, label, source }`
+
+**Frontend — `ChartConfigPanel.tsx`**
+- Drop Y detecta `is_calculated: true` no payload e cria `CalculatedYFieldConfig`
+- Chips de campos calculados exibem badge "Calculado" azul em vez do badge de agregação
+- Type guards em todos os acessos ao union type `YFieldConfig`
+
+**Frontend — `reportTypes.ts`**
+- `CalculatedField` — id, name, formula, source, field_type
+- `CalculatedYFieldConfig` — calculated_field_id, label, is_calculated: true
+- `YFieldConfig` virou union type: campo normal com agregação **ou** campo calculado
+- `CustomReportConfig` recebe `calculated_fields?: CalculatedField[]`
+
+**Frontend — `reportService.ts`**
+- `queryChart()` separa `y_fields` em normais e calculados, filtra campos calculados referenciados pelo gráfico
+- `validateFormula(formula, source, availableKeys)` — chama `POST /calculated-fields/validate`
+- `drillDown()` usa type narrowing para acessar `.field.source` e `.field.key` apenas em campos não-calculados
+
+### Limitações conhecidas (fase 1)
+
+- Escopo da fórmula: apenas operadores `+ - * /`, parênteses e literais numéricos
+- Todos os `[field_key]` devem pertencer à mesma fonte do campo calculado
+- Campos calculados não funcionam em modo `split_by`
+- Dependências de campos calculados são sempre buscadas com agregação `count` — fórmulas que dependem de `sum` ou `avg` de um campo (ex: `[value] / [won_count]`) retornarão resultado incorreto até a correção planejada
+- Um campo calculado não pode referenciar outro campo calculado
+
+---
+
 ## [1.5.0] - 2026-03-12
 
 ### Adicionado
