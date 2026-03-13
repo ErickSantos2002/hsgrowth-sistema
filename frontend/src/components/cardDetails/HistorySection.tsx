@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { convertUTCToBrazil } from "../../utils/timezone";
 import { showInfo } from "../../utils/toast";
+import ExpandableText from "../common/ExpandableText";
 
 interface HistorySectionProps {
   activities: any[];
@@ -517,19 +518,22 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
                 <div className="mt-0.5">{getEventIcon(event.type)}</div>
 
                 {/* Conteúdo do evento */}
-                <div className="min-w-0 flex-1">
-                  <p
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <ExpandableText
+                    htmlContent={event.title}
+                    maxLines={5}
                     className="history-html overflow-wrap-anywhere mb-1 whitespace-pre-wrap break-words font-medium text-slate-900 dark:text-white"
-                    dangerouslySetInnerHTML={{ __html: event.title }}
                   />
 
                   {event.description && (
-                    <p className="mb-2 whitespace-pre-wrap break-words text-sm text-slate-400 dark:text-slate-400">
-                      {event.description}
-                    </p>
+                    <ExpandableText
+                      content={event.description}
+                      maxLines={5}
+                      className="mb-2 whitespace-pre-wrap break-words text-sm text-slate-400 dark:text-slate-400"
+                    />
                   )}
 
-                  <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                  <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 mt-1">
                     <span>{formatRelativeTime(event.created_at)}</span>
                     <span>•</span>
                     <span>{event.user_name}</span>

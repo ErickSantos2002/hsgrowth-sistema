@@ -1,5 +1,6 @@
 import React from "react";
 import { MessageCircle, Image as ImageIcon } from "lucide-react";
+import ExpandableText from "../common/ExpandableText";
 
 interface ParsedMessage {
   author: string;
@@ -27,15 +28,15 @@ const NoteRenderer: React.FC<NoteRendererProps> = ({ content }) => {
 
   if (!hasEditorImages && !isImportedHTML) {
     // Texto puro (incluindo quebras de linha \n) - renderiza normalmente
-    return <p className="whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{content}</p>;
+    return <ExpandableText content={content} className="text-sm text-slate-600 dark:text-slate-300" />;
   }
 
   if (hasEditorImages) {
     // Nota com imagem(ns) colada(s) pelo editor — renderiza o HTML sem aviso
     return (
-      <div
+      <ExpandableText
+        htmlContent={sanitizeHTML(content)}
         className="note-content text-sm text-slate-600 dark:text-slate-300 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1"
-        dangerouslySetInnerHTML={{ __html: sanitizeHTML(content) }}
       />
     );
   }
@@ -50,9 +51,9 @@ const NoteRenderer: React.FC<NoteRendererProps> = ({ content }) => {
         <div className="mb-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
           ⚠️ Nota importada (HTML) - visualização limitada
         </div>
-        <div
+        <ExpandableText
+          htmlContent={sanitizeHTML(content)}
           className="prose prose-invert prose-sm max-w-none"
-          dangerouslySetInnerHTML={{ __html: sanitizeHTML(content) }}
         />
       </div>
     );
@@ -92,9 +93,10 @@ const WhatsAppMessage: React.FC<{ message: ParsedMessage }> = ({ message }) => {
       </div>
 
       {/* Conteúdo da mensagem */}
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-        {message.content}
-      </p>
+      <ExpandableText 
+        content={message.content} 
+        className="text-sm leading-relaxed text-slate-600 dark:text-slate-300"
+      />
 
       {/* Imagens anexadas */}
       {message.images && message.images.length > 0 && (
