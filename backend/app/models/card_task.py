@@ -67,6 +67,8 @@ class CardTask(Base, TimestampMixin):
     # Status
     is_completed = Column(Boolean, default=False, nullable=False, index=True)
     completed_at = Column(DateTime, nullable=True)
+    # Indica que a reunião ocorreu mas o contato não compareceu (NoShow)
+    is_noshow = Column(Boolean, default=False, nullable=False)
 
     # Informações adicionais
     location = Column(String(255), nullable=True)  # Local (físico ou virtual)
@@ -87,6 +89,12 @@ class CardTask(Base, TimestampMixin):
     def mark_as_completed(self):
         """Marca a tarefa como concluída"""
         self.is_completed = True
+        self.completed_at = datetime.utcnow()
+
+    def mark_as_noshow(self):
+        """Marca a reunião como concluída com NoShow — contato não compareceu"""
+        self.is_completed = True
+        self.is_noshow = True
         self.completed_at = datetime.utcnow()
 
     def mark_as_pending(self):

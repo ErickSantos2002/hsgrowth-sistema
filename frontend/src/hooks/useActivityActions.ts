@@ -237,8 +237,8 @@ export function useActivityActions({ onSuccess, isViewer = false }: UseActivityA
         activity_id: taskId,
       });
 
-      // Marca atividade como concluída após o NoShow
-      await cardTaskService.toggleComplete(taskId, true);
+      // Marca a reunião como NoShow (is_completed + is_noshow = true) via endpoint dedicado
+      await cardTaskService.markNoShow(taskId);
 
       showSuccess("Reunião marcada como NoShow e card movido para Reagendamento");
       onSuccess();

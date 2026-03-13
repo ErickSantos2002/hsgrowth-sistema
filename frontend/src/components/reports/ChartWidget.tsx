@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, X, BarChart3 } from 'lucide-react';
+import { RefreshCw, X, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -15,6 +15,17 @@ import {
   Pie,
   Cell,
   Legend,
+  AreaChart,
+  Area,
+  ScatterChart,
+  Scatter,
+  ZAxis,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  Radar,
+  FunnelChart,
+  Funnel,
 } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
 import { getChartColors } from '../../constants/colors';
@@ -176,6 +187,65 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
       return (
         <div className="flex h-52 items-center justify-center">
           <LoadingSpinner size="md" />
+        </div>
+      );
+    }
+
+    // KPI é tratado antes da verificação de labels — funciona com total mesmo sem série temporal
+    if (config.type === 'kpi') {
+      const total = data.total ?? (data.values ? data.values.reduce((a, b) => a + b, 0) : null);
+
+      if (total === null) {
+        return (
+          <div className="flex h-52 flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500">
+            <BarChart3 size={32} />
+            <span className="text-sm">Sem dados para exibir</span>
+          </div>
+        );
+      }
+
+      // Tendência: variação percentual entre o primeiro e o último valor da série
+      const trendPercent =
+        data.values && data.values.length >= 2 && data.values[0] !== 0
+          ? ((data.values[data.values.length - 1] - data.values[0]) / data.values[0]) * 100
+          : null;
+
+      // Label da métrica principal para exibir como subtítulo
+      const metricLabel =
+        config.y_fields.length > 0
+          ? config.y_fields[0].is_calculated
+            ? (config.y_fields[0] as import('./reportTypes').CalculatedYFieldConfig).label
+            : (config.y_fields[0] as { field: import('./reportTypes').AxisField }).field.label
+          : null;
+
+      return (
+        <div className="flex h-52 flex-col items-center justify-center gap-3 px-6">
+          {/* Valor principal em destaque */}
+          <p className="text-5xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {formatTooltipValue(total)}
+          </p>
+
+          {/* Indicador de tendência quando há dados de série */}
+          {trendPercent !== null && (
+            <div
+              className={`flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
+                trendPercent >= 0
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                  : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+              }`}
+            >
+              {trendPercent >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+              <span>
+                {trendPercent >= 0 ? '+' : ''}
+                {trendPercent.toFixed(1)}%
+              </span>
+            </div>
+          )}
+
+          {/* Subtítulo com a métrica configurada */}
+          {metricLabel && (
+            <p className="text-xs text-slate-400 dark:text-slate-500">{metricLabel}</p>
+          )}
         </div>
       );
     }
@@ -377,15 +447,197 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
           </div>
         );
 
+      case 'area': {
+        // Área: idêntico ao line mas com preenchimento abaixo da curva
+        const areaKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
+        return (
+          <ResponsiveContainer width="100%" height={hasSeries ? 240 : 220}>
+            <AreaChart
+              data={rechartData}
+              margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
+              style={{ cursor: onBarClick ? 'pointer' : 'default' }}
+              onClick={
+                onBarClick
+                  ? (chartData: any) => {
+                      if (chartData?.activeLabel) {
+                        const seriesName: string | undefined = hasSeries
+                          ? chartData.activePayload?.[0]?.name
+                          : undefined;
+                        onBarClick(chartData.activeLabel, seriesName);
+                      }
+                    }
+                  : undefined
+              }
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
+              <XAxis dataKey="name" {...axisProps} />
+              <YAxis {...axisProps} />
+              <Tooltip content={<CustomBarTooltip />} wrapperStyle={{ zIndex: 9999 }} />
+              {hasSeries && renderLegend()}
+              {areaKeys.map((key, i) => {
+                const color = SERIES_COLORS[i % SERIES_COLORS.length];
+                return (
+                  <Area
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    stroke={color}
+                    fill={color}
+                    fillOpacity={0.2}
+                    strokeWidth={2}
+                    dot={{ fill: color, r: 3 }}
+                    activeDot={{ r: 5 }}
+                  >
+                    <LabelList
+                      dataKey={key}
+                      position="top"
+                      style={{ fill: darkMode ? '#ffffff' : '#0f172a', fontSize: 11, fontWeight: 600 }}
+                      formatter={(val: unknown) => {
+                        const n = Number(val);
+                        return n === 0 ? '' : formatTooltipValue(n);
+                      }}
+                    />
+                  </Area>
+                );
+              })}
+            </AreaChart>
+          </ResponsiveContainer>
+        );
+      }
+
+      case 'scatter': {
+        // Dispersão: cada categoria vira um ponto posicionado pelo seu valor
+        const scatterData = (data.labels ?? []).map((label, i) => ({
+          label,
+          y: data.values?.[i] ?? 0,
+        }));
+
+        // Tooltip customizado para mostrar o nome da categoria + valor
+        const CustomScatterTooltip = ({ active, payload }: any) => {
+          if (!active || !payload || payload.length === 0) return null;
+          const point = payload[0]?.payload;
+          return (
+            <div
+              style={{
+                backgroundColor: chartColors.surface.elevated,
+                border: `1px solid ${chartColors.border.default}`,
+                borderRadius: '8px',
+                padding: '8px 12px',
+                fontSize: '12px',
+                color: chartColors.content.primary,
+              }}
+            >
+              <div style={{ fontWeight: 600 }}>{point?.label}</div>
+              <div style={{ color: SERIES_COLORS[0], fontWeight: 600 }}>
+                {formatTooltipValue(Number(point?.y))}
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <ResponsiveContainer width="100%" height={240}>
+            <ScatterChart margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} />
+              <XAxis
+                dataKey="label"
+                type="category"
+                name="Categoria"
+                {...axisProps}
+                allowDuplicatedCategory={false}
+              />
+              <YAxis
+                dataKey="y"
+                type="number"
+                name="Valor"
+                {...axisProps}
+              />
+              <ZAxis range={[60, 60]} />
+              <Tooltip content={<CustomScatterTooltip />} wrapperStyle={{ zIndex: 9999 }} cursor={{ strokeDasharray: '3 3' }} />
+              <Scatter
+                data={scatterData}
+                fill={SERIES_COLORS[0]}
+                style={{ cursor: onBarClick ? 'pointer' : 'default' }}
+                onClick={onBarClick ? (point: any) => onBarClick(point?.label) : undefined}
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
+        );
+      }
+
+      case 'radar': {
+        // Radar (aranha): cada label vira um eixo radial, o valor define a área preenchida
+        return (
+          <ResponsiveContainer width="100%" height={260}>
+            <RadarChart cx="50%" cy="50%" outerRadius="65%" data={rechartData}>
+              <PolarGrid stroke={chartColors.border.default} />
+              <PolarAngleAxis
+                dataKey="name"
+                tick={{ fill: chartColors.content.secondary, fontSize: 10 }}
+              />
+              <Radar
+                name={config.title}
+                dataKey="valor"
+                stroke={SERIES_COLORS[0]}
+                fill={SERIES_COLORS[0]}
+                fillOpacity={0.35}
+                strokeWidth={2}
+              />
+              <Tooltip content={<CustomBarTooltip />} wrapperStyle={{ zIndex: 9999 }} />
+            </RadarChart>
+          </ResponsiveContainer>
+        );
+      }
+
+      case 'funnel': {
+        // Funil: ordena do maior para o menor para manter a forma de funil
+        const funnelData = [...rechartData]
+          .sort((a, b) => (b.valor as number) - (a.valor as number))
+          .map((row, i) => ({
+            ...row,
+            fill: SERIES_COLORS[i % SERIES_COLORS.length],
+          }));
+
+        return (
+          <ResponsiveContainer width="100%" height={240}>
+            <FunnelChart>
+              <Tooltip content={<CustomBarTooltip />} wrapperStyle={{ zIndex: 9999 }} />
+              <Funnel
+                dataKey="valor"
+                data={funnelData}
+                isAnimationActive
+                style={{ cursor: onBarClick ? 'pointer' : 'default' }}
+                onClick={onBarClick ? (seg: any) => onBarClick(seg?.name) : undefined}
+              >
+                <LabelList
+                  position="right"
+                  stroke="none"
+                  dataKey="name"
+                  style={{ fill: darkMode ? '#ffffff' : '#0f172a', fontSize: 11, fontWeight: 500 }}
+                />
+              </Funnel>
+            </FunnelChart>
+          </ResponsiveContainer>
+        );
+      }
+
       default:
         return null;
     }
   };
 
-  const typeLabel =
-    config.type === 'bar' ? 'Barras' :
-    config.type === 'line' ? 'Linha' :
-    config.type === 'pie' ? 'Pizza' : 'Tabela';
+  const TYPE_LABELS: Record<import('./reportTypes').ChartType, string> = {
+    bar: 'Barras',
+    line: 'Linha',
+    pie: 'Pizza',
+    table: 'Tabela',
+    area: 'Área',
+    scatter: 'Dispersão',
+    radar: 'Radar',
+    funnel: 'Funil',
+    kpi: 'KPI',
+  };
+  const typeLabel = TYPE_LABELS[config.type] ?? config.type;
 
   // Label do eixo Y: '—' quando vazio, label do campo quando 1, 'N métricas' quando múltiplos
   const yLabel =

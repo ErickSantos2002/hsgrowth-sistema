@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.5.2",
+    date: "13/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Cinco novos tipos de gráfico nos Relatórios: Área (igual ao de linha, mas com preenchimento abaixo da curva), Dispersão (pontos por categoria), Radar (gráfico aranha, ideal para comparar vendedores em múltiplas métricas), Funil (etapas ordenadas do maior para o menor) e KPI (número grande em destaque com indicador de tendência).",
+      },
+      {
+        type: "feature",
+        text: "Novas métricas disponíveis nos Relatórios — fonte Tarefas: Ligações (total), Ligações Concluídas e NoShow (Reuniões). Agora é possível criar gráficos mostrando quantas ligações concluídas e quantos NoShow cada vendedor acumulou por semana.",
+      },
+      {
+        type: "feature",
+        text: "Rastreamento de NoShow: reuniões marcadas como NoShow agora ficam registradas no banco de dados com um campo próprio (is_noshow), separando-as de reuniões concluídas normalmente.",
+      },
+    ],
+  },
+  {
     version: "1.5.1",
     date: "12/03/2026",
     entries: [

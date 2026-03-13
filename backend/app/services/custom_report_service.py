@@ -345,6 +345,9 @@ class CustomReportService:
                 field('is_completed', 'Status', 'category', True, False),
                 field('count', 'Quantidade', 'number', False, True),
                 field('meeting_count', 'Reuniões', 'number', False, True),
+                field('call_count', 'Ligações', 'number', False, True),
+                field('completed_call_count', 'Ligações Concluídas', 'number', False, True),
+                field('noshow_count', 'NoShow (Reuniões)', 'number', False, True),
             ],
         )
 
@@ -904,6 +907,37 @@ class CustomReportService:
         # Campo especial: meeting_count — COUNT(CASE WHEN task_type='meeting' THEN 1 END)
         if y_source == 'tasks' and y_key == 'meeting_count':
             expr = func.count(case((CardTask.task_type == TaskType.MEETING, 1), else_=None))
+            return expr, (x_source != 'tasks')
+
+        # Campo especial: call_count — COUNT(CASE WHEN task_type='call' THEN 1 END)
+        if y_source == 'tasks' and y_key == 'call_count':
+            expr = func.count(case((CardTask.task_type == TaskType.CALL, 1), else_=None))
+            return expr, (x_source != 'tasks')
+
+        # Campo especial: completed_call_count — COUNT(CASE WHEN task_type='call' AND is_completed THEN 1 END)
+        if y_source == 'tasks' and y_key == 'completed_call_count':
+            expr = func.count(
+                case(
+                    (
+                        (CardTask.task_type == TaskType.CALL) & (CardTask.is_completed == True),  # noqa: E712
+                        1,
+                    ),
+                    else_=None,
+                )
+            )
+            return expr, (x_source != 'tasks')
+
+        # Campo especial: noshow_count — COUNT(CASE WHEN task_type='meeting' AND is_noshow THEN 1 END)
+        if y_source == 'tasks' and y_key == 'noshow_count':
+            expr = func.count(
+                case(
+                    (
+                        (CardTask.task_type == TaskType.MEETING) & (CardTask.is_noshow == True),  # noqa: E712
+                        1,
+                    ),
+                    else_=None,
+                )
+            )
             return expr, (x_source != 'tasks')
 
         # Mapeamento de colunas Y por fonte
@@ -1598,9 +1632,15 @@ class CustomReportService:
             if split_filter is not None:
                 q = q.filter(split_filter)
 
-        # Filtro da métrica Y: meeting_count conta apenas tarefas do tipo MEETING
+        # Filtro da métrica Y: restringe o conjunto de tarefas conforme o tipo de métrica
         if y_key == 'meeting_count':
             q = q.filter(CardTask.task_type == TaskType.MEETING)
+        elif y_key == 'call_count':
+            q = q.filter(CardTask.task_type == TaskType.CALL)
+        elif y_key == 'completed_call_count':
+            q = q.filter(CardTask.task_type == TaskType.CALL, CardTask.is_completed == True)  # noqa: E712
+        elif y_key == 'noshow_count':
+            q = q.filter(CardTask.task_type == TaskType.MEETING, CardTask.is_noshow == True)  # noqa: E712
 
         return q
 

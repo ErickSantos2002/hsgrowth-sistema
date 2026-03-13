@@ -7,6 +7,67 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.5.2] - 2026-03-13
+
+### Adicionado
+
+#### Novos tipos de gráfico nos Relatórios Customizados
+
+Cinco novos tipos disponíveis no seletor de tipo de gráfico (`ChartConfigPanel`):
+
+- **Área** (`area`) — igual ao de linha, mas com preenchimento abaixo da curva. Suporta multi-série e split_by, assim como bar/line.
+- **Dispersão** (`scatter`) — dot plot por categoria. Cada label do eixo X vira um ponto posicionado pelo valor do eixo Y. Útil para visualizar distribuição e outliers.
+- **Radar** (`radar`) — gráfico aranha. Cada label do eixo X vira um eixo radial, ideal para comparar vendedores em múltiplas métricas simultaneamente.
+- **Funil** (`funnel`) — etapas ordenadas automaticamente do maior para o menor valor. Ideal para visualizar a conversão entre etapas do pipeline.
+- **KPI** (`kpi`) — exibe o total da métrica em destaque (número grande), com indicador de tendência percentual calculado a partir da variação entre o primeiro e o último valor da série.
+
+**Arquivos alterados:**
+- `frontend/src/components/reports/reportTypes.ts` — `ChartType` expandido com os 5 novos tipos
+- `frontend/src/components/reports/ChartWidget.tsx` — novos `case`s no `renderChart()`, imports do Recharts (`AreaChart`, `ScatterChart`, `RadarChart`, `FunnelChart` e componentes auxiliares) e tratamento especial do KPI antes do empty-state check
+- `frontend/src/components/reports/ChartConfigPanel.tsx` — `CHART_TYPE_OPTIONS` atualizado (grid `3×3`), `isMultiSeriesType` inclui `area`, lógica de single-series estendida para os novos tipos
+
+#### Novas métricas de tarefas nos Relatórios
+
+Três novos campos agregáveis na fonte **Tarefas**:
+
+| Campo | Expressão SQL |
+|-------|---------------|
+| `call_count` | `COUNT(CASE WHEN task_type='call' THEN 1 END)` |
+| `completed_call_count` | `COUNT(CASE WHEN task_type='call' AND is_completed=true THEN 1 END)` |
+| `noshow_count` | `COUNT(CASE WHEN task_type='meeting' AND is_noshow=true THEN 1 END)` |
+
+**Arquivo alterado:** `backend/app/services/custom_report_service.py`
+- Catálogo de campos (`get_field_catalog`)
+- Expressões de agregação (`_build_y_expr`)
+- Filtros da query base de tasks
+
+#### Rastreamento de NoShow em reuniões
+
+Reuniões marcadas como NoShow agora persistem um campo próprio no banco, separando-as de reuniões concluídas normalmente.
+
+**Migration:** `alembic/versions/2026_03_13_1100-add_is_noshow_to_card_tasks.py`
+- Coluna `is_noshow BOOLEAN NOT NULL DEFAULT FALSE` na tabela `card_tasks`
+
+**Backend — model** (`app/models/card_task.py`)
+- Campo `is_noshow` adicionado ao `CardTask`
+- Helper `mark_as_noshow()` seta `is_completed`, `completed_at` e `is_noshow` de uma vez
+
+**Backend — schema** (`app/schemas/card_task.py`)
+- Campo `is_noshow: bool = False` exposto no `CardTaskResponse`
+
+**Backend — endpoint** `PATCH /api/v1/card-tasks/{task_id}/noshow`
+- Valida que a tarefa é do tipo `meeting` (HTTP 400 caso contrário)
+- Chama `mark_as_noshow()` e registra no audit log com action `"NOSHOW"`
+- Bloqueado para role Viewer via `require_not_viewer`
+
+**Frontend — `cardTaskService.ts`**
+- Novo método `markNoShow(id)` — chama `PATCH /api/v1/card-tasks/{id}/noshow`
+
+**Frontend — `useActivityActions.ts` e `FocusSection.tsx`**
+- `handleNoShow` substituiu `cardTaskService.toggleComplete(taskId, true)` pelo novo `cardTaskService.markNoShow(taskId)`
+
+---
+
 ## [1.5.1] - 2026-03-12
 
 ### Adicionado

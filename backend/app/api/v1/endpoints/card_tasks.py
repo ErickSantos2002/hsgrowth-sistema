@@ -19,7 +19,7 @@ from app.schemas.card_task import (
 from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.models.card_task import CardTask
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, require_not_viewer
 
 router = APIRouter()
 
@@ -643,6 +643,95 @@ def toggle_complete(
     )
     db.add(audit_log)
     db.commit()
+
+    return task
+
+
+@router.patch(
+    "/{task_id}/noshow",
+    response_model=CardTaskResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Marcar reunião como NoShow",
+    description="""
+    Marca uma reunião como NoShow: o contato não compareceu.
+
+    **Comportamento:**
+    - Seta `is_completed = true`, `completed_at = agora` e `is_noshow = true`
+    - Só pode ser aplicado em tarefas do tipo `meeting`
+    - Registra no audit log
+
+    **Permissões:** Não disponível para role Viewer
+    """,
+    responses={
+        200: {
+            "description": "Reunião marcada como NoShow com sucesso",
+            "content": {
+                "application/json": {
+                    "example": {"id": 1, "is_completed": True, "is_noshow": True}
+                }
+            }
+        },
+        400: {
+            "description": "Tarefa não é do tipo meeting",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Apenas reuniões podem ser marcadas como NoShow"}
+                }
+            }
+        },
+        404: {
+            "description": "Tarefa não encontrada",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Tarefa não encontrada"}
+                }
+            }
+        }
+    }
+)
+def mark_noshow(
+    request: Request,
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_not_viewer),
+):
+    """
+    Marca uma reunião como NoShow.
+    Seta is_completed, completed_at e is_noshow=True de uma vez.
+    """
+    from fastapi import HTTPException
+    from app.models.card_task import TaskType as ModelTaskType
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    # Somente reuniões podem receber NoShow
+    if task.task_type != ModelTaskType.MEETING:
+        raise HTTPException(
+            status_code=400,
+            detail="Apenas reuniões podem ser marcadas como NoShow"
+        )
+
+    task.mark_as_noshow()
+    db.flush()
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="NOSHOW",
+        entity_type="Task",
+        entity_id=task.id,
+        description=f"Reunião marcada como NoShow: {task.title}",
+        ip_address=client_ip,
+        user_agent=user_agent,
+    )
+    db.add(audit_log)
+    db.commit()
+    db.refresh(task)
 
     return task
 

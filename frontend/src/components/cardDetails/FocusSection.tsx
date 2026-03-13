@@ -423,8 +423,8 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
         manual_trigger: true,
         activity_id: activityId
       });
-      // Marca a atividade como concluída
-      await cardTaskService.toggleComplete(activityId, true);
+      // Marca a reunião como NoShow (is_completed + is_noshow = true) via endpoint dedicado
+      await cardTaskService.markNoShow(activityId);
       onUpdate();
       showSuccess("Reunião marcada como NoShow e card movido para Reagendamento");
     } catch (error: any) {

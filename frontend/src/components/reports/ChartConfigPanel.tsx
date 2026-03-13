@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, BarChart3, TrendingUp, PieChart, Table, MousePointerClick, Calendar, DollarSign, Tag, User, Hash, GripVertical } from 'lucide-react';
+import { X, BarChart3, TrendingUp, PieChart, Table, MousePointerClick, Calendar, DollarSign, Tag, User, Hash, GripVertical, Activity, Crosshair, Hexagon, Filter, Target } from 'lucide-react';
 import { SelectMenu } from '../common/SelectMenu';
 import {
   DataSource,
@@ -40,10 +40,15 @@ interface ChartConfigPanelProps {
 type DropState = 'idle' | 'valid' | 'invalid';
 
 const CHART_TYPE_OPTIONS: { type: ChartType; label: string; icon: React.ReactNode }[] = [
-  { type: 'bar', label: 'Barras', icon: <BarChart3 size={18} /> },
-  { type: 'line', label: 'Linha', icon: <TrendingUp size={18} /> },
-  { type: 'pie', label: 'Pizza', icon: <PieChart size={18} /> },
-  { type: 'table', label: 'Tabela', icon: <Table size={18} /> },
+  { type: 'bar',     label: 'Barras',    icon: <BarChart3   size={18} /> },
+  { type: 'line',    label: 'Linha',     icon: <TrendingUp  size={18} /> },
+  { type: 'area',    label: 'Área',      icon: <Activity    size={18} /> },
+  { type: 'pie',     label: 'Pizza',     icon: <PieChart    size={18} /> },
+  { type: 'scatter', label: 'Dispersão', icon: <Crosshair   size={18} /> },
+  { type: 'radar',   label: 'Radar',     icon: <Hexagon     size={18} /> },
+  { type: 'funnel',  label: 'Funil',     icon: <Filter      size={18} /> },
+  { type: 'table',   label: 'Tabela',    icon: <Table       size={18} /> },
+  { type: 'kpi',     label: 'KPI',       icon: <Target      size={18} /> },
 ];
 
 const GROUP_BY_OPTIONS: { value: GroupByType; label: string }[] = [
@@ -319,8 +324,9 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
         is_calculated: true,
       };
 
-      if (chartType === 'pie' || chartType === 'table') {
-        // pie/table: substitui tudo por este campo calculado
+      // Tipos de série única: substitui o campo existente em vez de empilhar
+      const isSingleSeries = !isMultiSeriesType;
+      if (isSingleSeries) {
         setYFields([newCalcYField]);
       } else {
         setYFields((prev) => {
@@ -344,11 +350,11 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
     const defaultAgg = getDefaultAggregation(field);
 
-    if (chartType === 'pie' || chartType === 'table') {
-      // pie/table: drop sempre substitui — lista tem no máximo 1 item
+    if (!isMultiSeriesType) {
+      // Tipos de série única: drop sempre substitui — lista tem no máximo 1 item
       setYFields([{ field, aggregation: defaultAgg }]);
     } else {
-      // bar/line: adiciona à lista até 4 campos, ignorando duplicatas
+      // bar/line/area: adiciona à lista até 4 campos, ignorando duplicatas
       setYFields((prev) => {
         if (prev.length >= 4) return prev;
         const isDuplicate = prev.some(
@@ -433,7 +439,8 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
   const xFieldIsDate = xAxisField?.field_type === 'date';
 
-  const isMultiSeriesType = chartType === 'bar' || chartType === 'line';
+  // area se comporta igual a bar/line: suporta múltiplas séries e split_by
+  const isMultiSeriesType = chartType === 'bar' || chartType === 'line' || chartType === 'area';
 
   /**
    * Determina se a zona dashed de drop Y deve ser exibida.
@@ -712,15 +719,16 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
           <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400">
             Tipo de gráfico
           </label>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-3 gap-1.5">
             {CHART_TYPE_OPTIONS.map(({ type, label, icon }) => (
               <button
                 key={type}
                 type="button"
                 onClick={() => {
                   setChartType(type);
-                  // pie/table só aceitam 1 métrica — descarta as extras e o split_by
-                  if (type === 'pie' || type === 'table') {
+                  // Tipos de série única só aceitam 1 métrica — descarta as extras e o split_by
+                  const willBeSingleSeries = type !== 'bar' && type !== 'line' && type !== 'area';
+                  if (willBeSingleSeries) {
                     if (yFields.length > 1) setYFields((prev) => prev.slice(0, 1));
                     setSplitByField(null);
                   }

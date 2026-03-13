@@ -154,6 +154,15 @@ class CardTaskService {
   }
 
   /**
+   * Marca uma reunião como NoShow — seta is_completed, completed_at e is_noshow=true de uma vez.
+   * Deve ser usado exclusivamente para tarefas do tipo "meeting".
+   */
+  async markNoShow(id: number): Promise<CardTask> {
+    const response = await api.patch<CardTask>(`/api/v1/card-tasks/${id}/noshow`);
+    return response.data;
+  }
+
+  /**
    * Busca todas as tarefas de um card (pendentes e concluídas) para o calendário.
    * Usa page_size máximo permitido pelo backend (100) para trazer o máximo possível de uma vez.
    * Em casos raros de cards com mais de 100 tarefas, faz múltiplas requisições.

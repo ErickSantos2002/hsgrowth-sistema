@@ -127,6 +127,7 @@ class CardTaskResponse(BaseModel):
     status: str = Field(..., description="Status de disponibilidade")
     is_completed: bool = Field(..., description="Se a tarefa está concluída")
     completed_at: Optional[datetime] = Field(None, description="Data/hora de conclusão")
+    is_noshow: bool = Field(False, description="Se a reunião teve NoShow (contato não compareceu)")
     created_at: datetime = Field(..., description="Data de criação")
     updated_at: datetime = Field(..., description="Data da última atualização")
 
@@ -158,6 +159,7 @@ class CardTaskResponse(BaseModel):
                 "status": "free",
                 "is_completed": False,
                 "completed_at": None,
+                "is_noshow": False,
                 "created_at": "2026-01-15T10:00:00",
                 "updated_at": "2026-01-15T10:00:00",
                 "assigned_to_name": "João Silva",
