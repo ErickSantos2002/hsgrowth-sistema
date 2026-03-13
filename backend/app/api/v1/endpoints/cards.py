@@ -86,7 +86,12 @@ def card_to_response(
         utm_params=card.utm_params,
         loss_reason=card.loss_reason,
         has_implementation=card.has_implementation,
-        has_personnel=card.has_personnel
+        has_personnel=card.has_personnel,
+        # Campos de rastreamento de origem (integração n8n / RD Station)
+        origin=card.origin,
+        utm_campaign=card.utm_campaign,
+        utm_source=card.utm_source,
+        utm_term=card.utm_term
     )
 
 
