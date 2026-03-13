@@ -1805,6 +1805,12 @@ class CardService:
             "has_implementation": card.has_implementation,
             "has_personnel": card.has_personnel,
 
+            # Campos de rastreamento de origem (integração n8n / RD Station)
+            "origin": card.origin,
+            "utm_campaign": card.utm_campaign,
+            "utm_source": card.utm_source,
+            "utm_term": card.utm_term,
+
             # Informações relacionadas
             "assigned_to_name": card.assigned_to.name if card.assigned_to else None,
             "sdr_name": card.sdr.name if card.sdr else None,  # ✅ Nome do SDR
