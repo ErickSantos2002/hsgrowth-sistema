@@ -216,10 +216,10 @@ class CardCreate(CardBase):
     has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
 
     # Campos de rastreamento de origem
-    origin: Optional[str] = Field(None, max_length=200, description="Origem do lead (ex: Site, Indicação, LinkedIn)")
-    utm_campaign: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: campanha (preenchido via API externa)")
-    utm_source: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: fonte (preenchido via API externa)")
-    utm_term: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: termo (preenchido via API externa)")
+    origin: Optional[str] = Field(None, max_length=500, description="Origem do lead (ex: Site, Indicação, LinkedIn)")
+    utm_campaign: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: campanha (preenchido via API externa)")
+    utm_source: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: fonte (preenchido via API externa)")
+    utm_term: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: termo (preenchido via API externa)")
 
     model_config = {
         "json_schema_extra": {
@@ -281,10 +281,10 @@ class CardUpdate(BaseModel):
     has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
 
     # Campos de rastreamento de origem
-    origin: Optional[str] = Field(None, max_length=200, description="Origem do lead (ex: Site, Indicação, LinkedIn)")
-    utm_campaign: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: campanha (preenchido via API externa)")
-    utm_source: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: fonte (preenchido via API externa)")
-    utm_term: Optional[str] = Field(None, max_length=200, description="Parâmetro UTM: termo (preenchido via API externa)")
+    origin: Optional[str] = Field(None, max_length=500, description="Origem do lead (ex: Site, Indicação, LinkedIn)")
+    utm_campaign: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: campanha (preenchido via API externa)")
+    utm_source: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: fonte (preenchido via API externa)")
+    utm_term: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: termo (preenchido via API externa)")
 
     model_config = {
         "json_schema_extra": {
