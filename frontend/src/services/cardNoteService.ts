@@ -8,6 +8,8 @@ export interface CardNote {
   card_id: number;
   user_id: number;
   content: string;
+  /** Tipo da anotação (ex: 'ligacao'). Null quando não categorizada. */
+  note_type?: string | null;
   created_at: string;
   updated_at: string;
   user_name?: string;
@@ -16,10 +18,14 @@ export interface CardNote {
 export interface CreateCardNoteRequest {
   card_id: number;
   content: string;
+  /** Tipo da anotação. Opcional — agente externo envia 'ligacao'. */
+  note_type?: string | null;
 }
 
 export interface UpdateCardNoteRequest {
   content: string;
+  /** Tipo da anotação. Opcional. */
+  note_type?: string | null;
 }
 
 /**

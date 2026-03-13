@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FileText, Plus, Trash2, Edit, Save, X, Image } from "lucide-react";
+import { FileText, Plus, Trash2, Edit, Save, X, Image, Phone, Filter } from "lucide-react";
 import cardNoteService from "../../services/cardNoteService";
 import NoteRenderer from "./NoteRenderer";
 import { showError, showWarning } from "../../utils/toast";
@@ -8,6 +8,7 @@ import { useConfirm } from "../../contexts/ConfirmContext";
 interface Note {
   id: number;
   content: string;
+  note_type?: string | null;
   created_at: string;
   updated_at: string;
   user_name: string;
@@ -31,6 +32,16 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate, re
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [isPastingImage, setIsPastingImage] = useState(false);
+  // Filtro: null = todas, 'ligacao' = apenas ligações
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  // Conta quantas notas de ligação existem para exibir no botão de filtro
+  const callNotesCount = notes.filter((n) => n.note_type === "ligacao").length;
+
+  // Aplica o filtro ativo na lista de notas
+  const filteredNotes = activeFilter
+    ? notes.filter((n) => n.note_type === activeFilter)
+    : notes;
 
   // Refs para os divs contentEditable (criação e edição)
   const newNoteRef = useRef<HTMLDivElement>(null);
@@ -407,6 +418,32 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate, re
         </div>
       )}
 
+      {/* Filtro por tipo - só exibe se houver ao menos uma nota de ligação */}
+      {callNotesCount > 0 && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveFilter(activeFilter === "ligacao" ? null : "ligacao")}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              activeFilter === "ligacao"
+                ? "bg-blue-600 text-white"
+                : "border border-slate-600 text-slate-400 hover:border-blue-500 hover:text-blue-400"
+            }`}
+          >
+            <Phone size={11} />
+            Ligações ({callNotesCount})
+          </button>
+          {activeFilter && (
+            <button
+              onClick={() => setActiveFilter(null)}
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+            >
+              <X size={11} />
+              Limpar filtro
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Lista de notas */}
       {notes.length === 0 ? (
         <div className="rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-8 text-center">
@@ -416,9 +453,14 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate, re
             Adicione observações, lembretes ou informações importantes
           </p>
         </div>
+      ) : filteredNotes.length === 0 ? (
+        <div className="rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-6 text-center">
+          <Phone size={28} className="mx-auto mb-2 text-slate-600" />
+          <p className="text-sm text-slate-400">Nenhuma anotação de ligação encontrada</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {notes.map((note) => (
+          {filteredNotes.map((note) => (
             <div
               key={note.id}
               className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4 transition-colors hover:bg-slate-700/30"
@@ -475,7 +517,16 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate, re
                         {note.user_name.substring(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">{note.user_name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-slate-900 dark:text-white">{note.user_name}</p>
+                          {/* Badge de tipo — exibido apenas quando a nota tem um tipo definido */}
+                          {note.note_type === "ligacao" && (
+                            <span className="flex items-center gap-1 rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400 border border-blue-500/30">
+                              <Phone size={10} />
+                              Ligação
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-slate-400 dark:text-slate-500">
                           {formatRelativeTime(note.created_at)}
                         </p>

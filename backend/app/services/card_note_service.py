@@ -32,7 +32,8 @@ class CardNoteService:
         note = self.repository.create(
             card_id=note_data.card_id,
             user_id=current_user.id,
-            content=note_data.content
+            content=note_data.content,
+            note_type=note_data.note_type
         )
 
         # Retorna response
@@ -41,6 +42,7 @@ class CardNoteService:
             card_id=note.card_id,
             user_id=note.user_id,
             content=note.content,
+            note_type=note.note_type,
             created_at=note.created_at,
             updated_at=note.updated_at,
             user_name=current_user.name
@@ -72,6 +74,7 @@ class CardNoteService:
             card_id=note.card_id,
             user_id=note.user_id,
             content=note.content,
+            note_type=note.note_type,
             created_at=note.created_at,
             updated_at=note.updated_at,
             user_name=note.user.name if note.user else None
@@ -95,6 +98,7 @@ class CardNoteService:
                 card_id=note.card_id,
                 user_id=note.user_id,
                 content=note.content,
+                note_type=note.note_type,
                 created_at=note.created_at,
                 updated_at=note.updated_at,
                 user_name=note.user.name if note.user else None
@@ -134,13 +138,14 @@ class CardNoteService:
             )
 
         # Atualiza
-        updated_note = self.repository.update(note_id, note_data.content)
+        updated_note = self.repository.update(note_id, note_data.content, note_data.note_type)
 
         return CardNoteResponse(
             id=updated_note.id,
             card_id=updated_note.card_id,
             user_id=updated_note.user_id,
             content=updated_note.content,
+            note_type=updated_note.note_type,
             created_at=updated_note.created_at,
             updated_at=updated_note.updated_at,
             user_name=updated_note.user.name if updated_note.user else None

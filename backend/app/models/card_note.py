@@ -17,6 +17,7 @@ class CardNote(Base):
     card_id = Column(Integer, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content = Column(Text, nullable=False, comment="Conteúdo da anotação")
+    note_type = Column(String(50), nullable=True, comment="Tipo da anotação (ex: ligacao, geral)")
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

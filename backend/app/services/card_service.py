@@ -1758,6 +1758,7 @@ class CardService:
             {
                 "id": note.id,
                 "content": note.content,
+                "note_type": note.note_type,
                 "created_at": note.created_at.isoformat() if note.created_at else None,
                 "updated_at": note.updated_at.isoformat() if note.updated_at else None,
                 "user_name": note.user.name if note.user else None

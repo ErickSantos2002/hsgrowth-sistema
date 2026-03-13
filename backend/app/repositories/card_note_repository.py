@@ -13,7 +13,7 @@ class CardNoteRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, card_id: int, user_id: int, content: str) -> CardNote:
+    def create(self, card_id: int, user_id: int, content: str, note_type: Optional[str] = None) -> CardNote:
         """
         Cria uma nova anotação
 
@@ -21,6 +21,7 @@ class CardNoteRepository:
             card_id: ID do card
             user_id: ID do usuário autor
             content: Conteúdo da anotação
+            note_type: Tipo da anotação (opcional, ex: 'ligacao')
 
         Returns:
             CardNote criada
@@ -28,7 +29,8 @@ class CardNoteRepository:
         note = CardNote(
             card_id=card_id,
             user_id=user_id,
-            content=content
+            content=content,
+            note_type=note_type
         )
 
         self.db.add(note)
@@ -66,13 +68,14 @@ class CardNoteRepository:
             .all()
         )
 
-    def update(self, note_id: int, content: str) -> Optional[CardNote]:
+    def update(self, note_id: int, content: str, note_type: Optional[str] = None) -> Optional[CardNote]:
         """
         Atualiza o conteúdo de uma anotação
 
         Args:
             note_id: ID da anotação
             content: Novo conteúdo
+            note_type: Novo tipo da anotação (opcional)
 
         Returns:
             CardNote atualizada ou None se não encontrado
@@ -83,6 +86,10 @@ class CardNoteRepository:
             return None
 
         note.content = content
+        # Atualiza o tipo somente se foi explicitamente enviado
+        if note_type is not None:
+            note.note_type = note_type
+
         self.db.commit()
         self.db.refresh(note)
 
