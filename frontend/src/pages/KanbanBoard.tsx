@@ -1039,9 +1039,9 @@ const KanbanBoard: React.FC = () => {
               // Regra de criação de cards:
               // Viewer nunca pode criar.
               // Admin e Manager podem criar em qualquer lista.
-              // Demais roles só podem criar na primeira lista do board de Prospecção (id=6).
+              // Demais roles só podem criar na lista "Prospecção" do board de Prospecção (id=6).
               const canAddCardToList =
-                !isViewer && (canCreateList || (board?.id === 6 && isFirstList));
+                !isViewer && (canCreateList || (board?.id === 6 && list.name.trim() === "Prospecção"));
 
               return (
                 <KanbanList

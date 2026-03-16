@@ -50,11 +50,21 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
   const [isExpanded, setIsExpanded] = useState(defaultDate !== undefined);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
   const timeInputRef = useRef<HTMLInputElement | null>(null);
+  const getTodayDate = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const getNowTime = () => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
   const [formData, setFormData] = useState({
     title: "",
     type: "call" as ActivityType,
-    date: defaultDate ?? "",
-    time: "",
+    date: defaultDate ?? getTodayDate(),
+    time: getNowTime(),
     duration: "30", // minutos
     priority: "normal" as "normal" | "high" | "urgent",
     description: "",
@@ -159,8 +169,8 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       setFormData({
         title: "",
         type: "call",
-        date: "",
-        time: "",
+        date: defaultDate ?? getTodayDate(),
+        time: getNowTime(),
         duration: "30",
         priority: "normal",
         description: "",
@@ -185,10 +195,19 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     onCancel();
   };
 
+  const handleExpand = () => {
+    setFormData(prev => ({
+      ...prev,
+      date: defaultDate ?? getTodayDate(),
+      time: getNowTime()
+    }));
+    setIsExpanded(true);
+  };
+
   if (!isExpanded) {
     return (
       <button
-        onClick={() => setIsExpanded(true)}
+        onClick={handleExpand}
         className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-4 py-3 text-slate-900 dark:text-emerald-300 transition-colors hover:bg-emerald-500/25 hover:text-slate-900 dark:hover:text-emerald-200"
       >
         <Plus size={18} />
@@ -201,7 +220,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     <div className="space-y-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
       {/* Título */}
       <div>
-        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-400">Título da atividade</label>
+        <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-400">Título da atividade *</label>
         <input
           type="text"
           value={formData.title}

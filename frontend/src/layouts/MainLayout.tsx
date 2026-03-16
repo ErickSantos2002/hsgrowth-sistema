@@ -322,8 +322,10 @@ export default function MainLayout() {
                         </div>
 
                         {/* Busca Global */}
-                        <div className="order-3 w-full sm:order-2 sm:w-auto sm:flex-1 lg:absolute lg:left-1/2 lg:top-1/2 lg:w-full lg:max-w-2xl lg:-translate-x-1/2 lg:-translate-y-1/2">
-                            <GlobalSearch />
+                        <div className="order-3 mt-4 w-full sm:mt-0 sm:order-2 sm:flex-1 sm:px-4 flex justify-center items-center">
+                            <div className="w-full max-w-2xl">
+                                <GlobalSearch />
+                            </div>
                         </div>
                     </div>
                 </nav>
