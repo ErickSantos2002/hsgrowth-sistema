@@ -7,6 +7,71 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.0] - 2026-03-16
+
+### Adicionado / Alterado
+
+#### Remodelação completa do sistema de gamificação (v2)
+
+Reescrita total do módulo de gamificação para corrigir problemas estruturais e adicionar suporte a boards separados, sistema de comissão SDR e rankings calculados por scheduler.
+
+---
+
+**Problemas resolvidos:**
+
+1. **Pontos hardcoded no código** — `ACTION_POINTS` era um dicionário estático no código. Agora `award_points()` consulta a tabela `gamification_action_points` no banco. Se uma ação não estiver configurada, é ignorada silenciosamente sem exceção.
+
+2. **Sem separação por board** — todos os pontos e rankings eram misturados. Agora cada ponto, ranking e configuração de ação pertence a um `board_type` (`prospecting` ou `acquisition`). Boards sem `board_type` (Expansão) não pontuam.
+
+3. **Rankings misturavam SDR e Vendedor** — agora há dois rankings independentes, um por board. Apenas roles `salesperson` e `sdr` participam.
+
+4. **Maioria das ações nunca disparava pontos** — adicionados disparos em `card_service`, `card_task_service` e `attachment_service` para cobrir: `card_created`, `card_moved`, `card_won`, `card_lost`, `meeting_created`, `meeting_completed`, `call_completed`, `followup_completed`, `task_completed`, `proposal_attached`.
+
+5. **Critérios de badges incompletos** — `_evaluate_badge_criteria()` agora suporta três tipos: `total_points`, `action_count` (com `action_type`) e `rank` (com `board_type` e `period`).
+
+6. **Hard delete de badges apagava histórico** — badges agora têm soft delete via campo `deleted_at`. O histórico de conquistas dos usuários é preservado.
+
+7. **Rankings recalculados por requisição** — agora calculados pelo scheduler a cada hora (8 combinações: 2 boards × 4 períodos). Endpoints apenas leem da tabela `gamification_rankings`.
+
+---
+
+**Sistema de comissão SDR:**
+
+- `card_won` no board Aquisição: se o card tiver `sdr_id`, o SDR recebe 1/4 dos pontos como comissão
+- `meeting_completed` no board Aquisição: se a task foi criada por um SDR (`task.created_by_id`), o SDR recebe 1/3 dos pontos como comissão
+- Comissões são registradas como pontos no board `prospecting` do SDR com flag `is_commission = true`
+
+---
+
+**Arquivos alterados — Backend:**
+
+- `app/models/board.py` — campo `board_type`
+- `app/models/card_task.py` — campo `created_by_id` (FK para users)
+- `app/models/gamification_point.py` — campos `board_type`, `is_commission`, `commission_source_user_id`, `commission_ratio`, `original_points`
+- `app/models/gamification_badge.py` — campo `deleted_at` (soft delete)
+- `app/models/gamification_ranking.py` — campo `board_type`, nova unique constraint `(user_id, board_type, period_type, period_start)`
+- `app/models/gamification_action_points.py` — campo `board_type`, nova unique constraint `(board_type, action_type)`
+- `app/schemas/gamification.py` — reescrita completa com `BoardPointsSummary`, `UserGamificationSummary` atualizado
+- `app/repositories/gamification_repository.py` — todos os métodos atualizados com filtro `board_type`
+- `app/services/gamification_service.py` — reescrita completa
+- `app/services/card_service.py` — disparos de pontos em `move_card` e `create_card`
+- `app/services/card_task_service.py` — disparos de pontos em `toggle_complete` e `create_task`; campo `created_by_id` preenchido
+- `app/services/attachment_service.py` — disparo `proposal_attached` na primeira proposta do card
+- `app/api/v1/endpoints/gamification.py` — endpoints atualizados com `board_type`
+- `app/workers/scheduler.py` — job de recálculo horário dos rankings
+- `app/workers/badge_checker.py` — delega avaliação ao service
+- `alembic/versions/2026_03_17_1000-gamification_remodulacao_v2.py` — migration completa
+
+**Arquivos alterados — Frontend:**
+
+- `src/services/gamificationService.ts` — tipos e assinaturas atualizados
+- `src/pages/Gamification.tsx` — seletor de board nos rankings, cards de perfil por board, posições separadas por board, role exibida na tabela
+- `src/pages/BadgesAdmin.tsx` — critérios automáticos com `action_count`, `rank`, `board_type`
+- `src/components/settings/BadgeModal.tsx` — formulário de critérios expandido
+- `src/pages/Settings.tsx` — action-points com coluna board, chave composta `board_type|action_type`
+
+---
+
 ## [1.5.3] - 2026-03-17
 
 ### Corrigido

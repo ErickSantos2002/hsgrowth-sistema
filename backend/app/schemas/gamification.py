@@ -5,39 +5,50 @@ Define estruturas de dados para pontos, badges e rankings.
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from decimal import Decimal
 
 
 # ========== GAMIFICATION POINT SCHEMAS ==========
 
-class GamificationPointBase(BaseModel):
-    """Schema base para pontos de gamificação."""
-    points: int = Field(..., description="Quantidade de pontos")
-    reason: str = Field(..., description="Tipo de ação que gerou os pontos (ex: card_won, task_completed)")
-    description: Optional[str] = Field(None, description="Descrição detalhada da ação")
-
-
-class GamificationPointCreate(GamificationPointBase):
+class GamificationPointCreate(BaseModel):
     """Cria uma entrada de pontos de gamificação para um usuário."""
     user_id: int = Field(..., description="ID do usuário que receberá os pontos")
+    board_type: Optional[str] = Field(None, description="Board onde os pontos foram ganhos (prospecting/acquisition)")
+    points: int = Field(..., description="Quantidade de pontos (negativo = penalidade)")
+    reason: str = Field(..., description="Tipo de ação que gerou os pontos")
+    description: Optional[str] = Field(None, description="Descrição detalhada da ação")
+    is_commission: bool = Field(False, description="Se é ponto de comissão (split)")
+    commission_source_user_id: Optional[int] = Field(None, description="Usuário que gerou a ação original")
+    commission_ratio: Optional[str] = Field(None, description="Fração recebida (ex: '1/3', '1/4')")
+    original_points: Optional[int] = Field(None, description="Pontos totais antes do split")
+    related_entity_type: Optional[str] = Field(None, description="Tipo da entidade relacionada")
+    related_entity_id: Optional[int] = Field(None, description="ID da entidade relacionada")
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "user_id": 5,
-                "points": 20,
+                "board_type": "acquisition",
+                "points": 100,
                 "reason": "card_won",
-                "description": "Card 'Projeto Alpha' ganho - valor R$ 50.000"
+                "description": "Card 'Projeto Alpha' ganho"
             }
         }
     )
 
 
-class GamificationPointResponse(GamificationPointBase):
+class GamificationPointResponse(BaseModel):
     """Dados de uma entrada de pontos de gamificação."""
-    id: int = Field(..., description="ID único do registro de pontos")
+    id: int = Field(..., description="ID único do registro")
     user_id: int = Field(..., description="ID do usuário")
-    user_name: Optional[str] = Field(None, description="Nome do usuário que ganhou os pontos")
+    user_name: Optional[str] = Field(None, description="Nome do usuário")
+    board_type: Optional[str] = Field(None, description="Board onde os pontos foram ganhos")
+    points: int = Field(..., description="Quantidade de pontos")
+    reason: str = Field(..., description="Tipo de ação")
+    description: Optional[str] = Field(None, description="Descrição detalhada")
+    is_commission: bool = Field(False, description="Se é ponto de comissão")
+    commission_source_user_id: Optional[int] = Field(None)
+    commission_ratio: Optional[str] = Field(None)
+    original_points: Optional[int] = Field(None)
     created_at: datetime = Field(..., description="Data e hora do registro")
 
     model_config = ConfigDict(
@@ -47,9 +58,11 @@ class GamificationPointResponse(GamificationPointBase):
                 "id": 1,
                 "user_id": 5,
                 "user_name": "João Silva",
-                "points": 20,
+                "board_type": "acquisition",
+                "points": 100,
                 "reason": "card_won",
-                "description": "Card 'Projeto Alpha' ganho - valor R$ 50.000",
+                "description": "Card 'Projeto Alpha' ganho",
+                "is_commission": False,
                 "created_at": "2026-01-15T10:00:00"
             }
         }
@@ -57,7 +70,7 @@ class GamificationPointResponse(GamificationPointBase):
 
 
 class GamificationPointListResponse(BaseModel):
-    """Resposta paginada do histórico de pontos de gamificação."""
+    """Resposta paginada do histórico de pontos."""
     points: List[GamificationPointResponse] = Field(..., description="Lista de registros de pontos")
     total: int = Field(..., description="Total de registros")
     page: int = Field(..., description="Página atual")
@@ -69,11 +82,11 @@ class GamificationPointListResponse(BaseModel):
 
 class BadgeBase(BaseModel):
     """Schema base para badges."""
-    name: str = Field(..., max_length=100, description="Nome do badge (ex: 'Vendedor do Mês')")
+    name: str = Field(..., max_length=100, description="Nome do badge")
     description: Optional[str] = Field(None, description="Descrição do badge e como conquistá-lo")
     icon_url: Optional[str] = Field(None, description="URL do ícone ou imagem do badge")
-    criteria_type: str = Field(..., description="Tipo de critério: manual (atribuído manualmente) ou automatic (baseado em regras)")
-    criteria: Optional[dict] = Field(None, description="Critérios JSON para badges automáticos (ex: {\"min_points\": 100})")
+    criteria_type: str = Field(..., description="Tipo de critério: manual ou automatic")
+    criteria: Optional[dict] = Field(None, description="Critérios JSON para badges automáticos")
 
 
 class BadgeCreate(BadgeBase):
@@ -116,6 +129,7 @@ class BadgeResponse(BadgeBase):
     """Dados completos de um badge."""
     id: int = Field(..., description="ID único do badge")
     is_active: bool = Field(True, description="Se o badge está ativo")
+    deleted_at: Optional[datetime] = Field(None, description="Data de exclusão (soft delete)")
     created_at: datetime = Field(..., description="Data de criação")
 
     model_config = ConfigDict(
@@ -129,6 +143,7 @@ class BadgeResponse(BadgeBase):
                 "criteria_type": "manual",
                 "criteria": None,
                 "is_active": True,
+                "deleted_at": None,
                 "created_at": "2026-01-01T10:00:00"
             }
         }
@@ -136,11 +151,6 @@ class BadgeResponse(BadgeBase):
 
 
 # ========== USER BADGE SCHEMAS ==========
-
-class UserBadgeBase(BaseModel):
-    """Schema base para badge de usuário."""
-    pass
-
 
 class UserBadgeCreate(BaseModel):
     """Atribui um badge a um usuário."""
@@ -157,7 +167,7 @@ class UserBadgeCreate(BaseModel):
     )
 
 
-class UserBadgeResponse(UserBadgeBase):
+class UserBadgeResponse(BaseModel):
     """Dados de um badge atribuído a um usuário."""
     id: int = Field(..., description="ID único da atribuição")
     user_id: int = Field(..., description="ID do usuário")
@@ -187,20 +197,18 @@ class UserBadgeResponse(UserBadgeBase):
 
 # ========== RANKING SCHEMAS ==========
 
-class RankingBase(BaseModel):
-    """Schema base para ranking."""
-    period_type: str = Field(..., description="Tipo de período: weekly, monthly, quarterly, annual")
-    period_start: datetime = Field(..., description="Início do período")
-    period_end: datetime = Field(..., description="Fim do período")
-
-
-class RankingResponse(RankingBase):
+class RankingResponse(BaseModel):
     """Dados de uma posição no ranking."""
     id: int = Field(..., description="ID único do registro")
     user_id: int = Field(..., description="ID do usuário")
+    board_type: str = Field(..., description="Board do ranking (prospecting/acquisition)")
+    period_type: str = Field(..., description="Tipo de período: weekly, monthly, quarterly, annual")
+    period_start: datetime = Field(..., description="Início do período")
+    period_end: datetime = Field(..., description="Fim do período")
     total_points: int = Field(..., description="Total de pontos no período")
     rank_position: int = Field(..., description="Posição no ranking")
     user_name: Optional[str] = Field(None, description="Nome do usuário")
+    user_role: Optional[str] = Field(None, description="Role do usuário (salesperson/sdr)")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -208,46 +216,37 @@ class RankingResponse(RankingBase):
             "example": {
                 "id": 1,
                 "user_id": 5,
+                "board_type": "acquisition",
                 "total_points": 245,
                 "rank_position": 1,
                 "period_type": "monthly",
                 "period_start": "2026-01-01T00:00:00",
                 "period_end": "2026-01-31T23:59:59",
-                "user_name": "João Silva"
+                "user_name": "João Silva",
+                "user_role": "salesperson"
             }
         }
     )
 
 
 class RankingListResponse(BaseModel):
-    """Lista de posições do ranking de um período."""
+    """Lista de posições do ranking de um período e board."""
     rankings: List[RankingResponse] = Field(..., description="Lista de posições do ranking")
+    board_type: str = Field(..., description="Board do ranking")
     period_type: str = Field(..., description="Tipo de período")
     period_start: datetime = Field(..., description="Início do período")
     period_end: datetime = Field(..., description="Fim do período")
+    last_calculated_at: Optional[datetime] = Field(None, description="Quando o ranking foi calculado")
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "rankings": [
-                    {
-                        "id": 1,
-                        "user_id": 5,
-                        "total_points": 245,
-                        "rank_position": 1,
-                        "user_name": "João Silva"
-                    },
-                    {
-                        "id": 2,
-                        "user_id": 3,
-                        "total_points": 198,
-                        "rank_position": 2,
-                        "user_name": "Maria Santos"
-                    }
-                ],
+                "rankings": [],
+                "board_type": "acquisition",
                 "period_type": "monthly",
                 "period_start": "2026-01-01T00:00:00",
-                "period_end": "2026-01-31T23:59:59"
+                "period_end": "2026-01-31T23:59:59",
+                "last_calculated_at": "2026-01-15T10:00:00"
             }
         }
     )
@@ -255,82 +254,77 @@ class RankingListResponse(BaseModel):
 
 # ========== USER GAMIFICATION SUMMARY ==========
 
-class UserGamificationSummary(BaseModel):
-    """Resumo completo de gamificação de um usuário."""
-    user_id: int = Field(..., description="ID do usuário")
-    user_name: str = Field(..., description="Nome do usuário")
-    total_points: int = Field(..., description="Total de pontos acumulados desde o início")
-    badges: List[UserBadgeResponse] = Field(default_factory=list, description="Lista de badges conquistados")
-    current_week_points: int = Field(0, description="Pontos acumulados na semana atual")
-    current_month_points: int = Field(0, description="Pontos acumulados no mês atual")
+class BoardPointsSummary(BaseModel):
+    """Resumo de pontos de um usuário em um board específico."""
+    board_type: str = Field(..., description="Board (prospecting/acquisition)")
+    total_points: int = Field(0, description="Total de pontos acumulados no board")
+    week_points: int = Field(0, description="Pontos na semana atual")
+    month_points: int = Field(0, description="Pontos no mês atual")
     weekly_rank: Optional[int] = Field(None, description="Posição no ranking semanal")
     monthly_rank: Optional[int] = Field(None, description="Posição no ranking mensal")
     quarterly_rank: Optional[int] = Field(None, description="Posição no ranking trimestral")
     annual_rank: Optional[int] = Field(None, description="Posição no ranking anual")
+
+
+class UserGamificationSummary(BaseModel):
+    """Resumo completo de gamificação de um usuário."""
+    user_id: int = Field(..., description="ID do usuário")
+    user_name: str = Field(..., description="Nome do usuário")
+    user_role: Optional[str] = Field(None, description="Role do usuário")
+    total_points: int = Field(0, description="Total de pontos acumulados (todos os boards)")
+    badges: List[UserBadgeResponse] = Field(default_factory=list, description="Lista de badges conquistados")
+    prospecting: BoardPointsSummary = Field(..., description="Dados do board Prospecção")
+    acquisition: BoardPointsSummary = Field(..., description="Dados do board Aquisição")
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "user_id": 5,
                 "user_name": "João Silva",
+                "user_role": "salesperson",
                 "total_points": 1250,
                 "badges": [],
-                "current_week_points": 45,
-                "current_month_points": 245,
-                "weekly_rank": 2,
-                "monthly_rank": 1,
-                "quarterly_rank": 3,
-                "annual_rank": 5
+                "prospecting": {
+                    "board_type": "prospecting",
+                    "total_points": 150,
+                    "week_points": 20,
+                    "month_points": 80,
+                    "weekly_rank": 2,
+                    "monthly_rank": 1
+                },
+                "acquisition": {
+                    "board_type": "acquisition",
+                    "total_points": 1100,
+                    "week_points": 200,
+                    "month_points": 450,
+                    "weekly_rank": 1,
+                    "monthly_rank": 1
+                }
             }
         }
     )
-
-
-# ========== ACTION TYPES CONSTANTS ==========
-
-class ActionType:
-    """Constantes para tipos de ação."""
-    CARD_CREATED = "card_created"
-    CARD_WON = "card_won"
-    CARD_MOVED = "card_moved"
-    BOARD_CREATED = "board_created"
-    USER_INVITED = "user_invited"
-    TASK_COMPLETED = "task_completed"
-    FIRST_LOGIN = "first_login"
-    DAILY_LOGIN = "daily_login"
-
-
-# Mapeamento de pontos por ação (pode ser configurável no futuro)
-ACTION_POINTS = {
-    ActionType.CARD_CREATED: 5,
-    ActionType.CARD_WON: 20,
-    ActionType.CARD_MOVED: 2,
-    ActionType.BOARD_CREATED: 10,
-    ActionType.USER_INVITED: 15,
-    ActionType.TASK_COMPLETED: 10,
-    ActionType.FIRST_LOGIN: 10,
-    ActionType.DAILY_LOGIN: 3,
-}
 
 
 # ========== ACTION POINTS CONFIGURATION SCHEMAS ==========
 
 class ActionPointsBase(BaseModel):
     """Schema base para configuração de pontos por ação."""
-    action_type: str = Field(..., description="Tipo de ação (ex: card_won, task_completed)")
-    points: int = Field(..., description="Quantidade de pontos (pode ser negativo para penalidades)")
+    board_type: str = Field(..., description="Board ao qual esta configuração pertence (prospecting/acquisition)")
+    action_type: str = Field(..., description="Tipo de ação (ex: card_won, meeting_completed)")
+    points: int = Field(..., description="Quantidade de pontos (negativo = penalidade)")
     is_active: bool = Field(True, description="Se a ação está ativa para pontuar")
     description: Optional[str] = Field(None, description="Descrição da ação e quando ela é disparada")
 
 
 class ActionPointsCreate(ActionPointsBase):
-    """Cria uma configuração de pontos para um tipo de ação."""
+    """Cria uma configuração de pontos para um tipo de ação em um board."""
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
+                "board_type": "acquisition",
                 "action_type": "card_won",
-                "points": 20,
+                "points": 100,
                 "is_active": True,
                 "description": "Pontos concedidos quando um card é marcado como ganho"
             }
@@ -347,7 +341,7 @@ class ActionPointsUpdate(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "points": 25,
+                "points": 120,
                 "description": "Pontos atualizados para card_won"
             }
         }
@@ -365,8 +359,9 @@ class ActionPointsResponse(ActionPointsBase):
         json_schema_extra={
             "example": {
                 "id": 1,
+                "board_type": "acquisition",
                 "action_type": "card_won",
-                "points": 20,
+                "points": 100,
                 "is_active": True,
                 "description": "Pontos concedidos quando um card é marcado como ganho",
                 "created_at": "2026-01-01T10:00:00",
@@ -374,3 +369,23 @@ class ActionPointsResponse(ActionPointsBase):
             }
         }
     )
+
+
+# ========== ACTION TYPE CONSTANTS ==========
+
+class ActionType:
+    """Constantes para tipos de ação de gamificação."""
+
+    # Board Prospecção
+    MEETING_CREATED = "meeting_created"      # Reunião agendada
+    CARD_CREATED = "card_created"            # Card criado
+    CARD_MOVED = "card_moved"                # Card movido entre etapas
+    CALL_COMPLETED = "call_completed"        # Ligação realizada
+    FOLLOWUP_COMPLETED = "followup_completed"  # Follow-up realizado
+    TASK_COMPLETED = "task_completed"        # Tarefa genérica concluída
+
+    # Board Aquisição
+    CARD_WON = "card_won"                    # Card ganho (won)
+    CARD_LOST = "card_lost"                  # Card perdido (lost) — penalidade
+    MEETING_COMPLETED = "meeting_completed"  # Reunião realizada
+    PROPOSAL_ATTACHED = "proposal_attached"  # Primeira proposta anexada

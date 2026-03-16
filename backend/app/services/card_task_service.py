@@ -70,6 +70,34 @@ class CardTaskService:
                 detail="Apenas o responsável pela tarefa, gerentes e administradores podem modificá-la."
             )
 
+    def _get_board_type_for_task(self, task: CardTask) -> Optional[str]:
+        """
+        Obtém o board_type do board ao qual o card da tarefa pertence.
+        Navega pelo relacionamento: task → card → list → board.
+
+        Args:
+            task: Instância de CardTask
+
+        Returns:
+            board_type (ex: 'prospecting', 'acquisition') ou None
+        """
+        try:
+            from app.models.card import Card
+            from app.models.list import List
+            from app.models.board import Board
+
+            card = self.db.query(Card).filter(Card.id == task.card_id).first()
+            if not card:
+                return None
+            list_obj = self.db.query(List).filter(List.id == card.list_id).first()
+            if not list_obj:
+                return None
+            board = self.db.query(Board).filter(Board.id == list_obj.board_id).first()
+            return board.board_type if board else None
+        except Exception as e:
+            print(f"[GAMIFICATION] Erro ao obter board_type para tarefa: {e}")
+            return None
+
     def create_task(self, task_data: CardTaskCreate, current_user: User) -> CardTaskResponse:
         """Cria uma nova tarefa"""
         # TODO: Verificar se o card existe e se o usuário tem permissão
@@ -79,6 +107,10 @@ class CardTaskService:
             task_data.assigned_to_id = current_user.id
 
         task = self.repository.create(task_data)
+
+        # Salva quem criou a tarefa (necessário para comissão de gamificação)
+        task.created_by_id = current_user.id
+        self.db.commit()
 
         # Registra no histórico
         task_type_names = {
@@ -104,6 +136,26 @@ class CardTaskService:
                 "due_date": str(task_data.due_date) if task_data.due_date else None
             }
         )
+
+        # Gamificação: pontua por reunião agendada no board Prospecção
+        # Quem recebe os pontos é o criador da tarefa (current_user), não o responsável
+        task_type_value = task_data.task_type if isinstance(task_data.task_type, str) else task_data.task_type.value
+        if task_type_value == "meeting":
+            try:
+                board_type = self._get_board_type_for_task(task)
+                if board_type == "prospecting":
+                    from app.services.gamification_service import GamificationService
+                    gamification_service = GamificationService(self.db)
+                    gamification_service.award_points(
+                        user_id=current_user.id,
+                        action_type="meeting_created",
+                        board_type="prospecting",
+                        description=f"Reunião agendada: '{task.title}'",
+                        related_entity_type="CardTask",
+                        related_entity_id=task.id,
+                    )
+            except Exception as e:
+                print(f"[GAMIFICATION] Erro ao pontuar meeting_created: {e}")
 
         # Notifica o responsável se for diferente de quem criou a tarefa
         if task.assigned_to_id and task.assigned_to_id != current_user.id:
@@ -253,7 +305,89 @@ class CardTaskService:
                 }
             )
 
-            # TODO: Dar pontos de gamificação
+            # Gamificação: pontua por conclusão de tarefa com base no board e tipo
+            try:
+                board_type = self._get_board_type_for_task(task)
+                if board_type:
+                    from app.services.gamification_service import GamificationService
+                    gamification_service = GamificationService(self.db)
+
+                    task_type_value = task.task_type.value if hasattr(task.task_type, "value") else task.task_type
+
+                    if task_type_value == "meeting" and board_type == "acquisition":
+                        # Reunião concluída no board Aquisição — verifica comissão para SDR
+                        created_by_id = task.created_by_id
+                        if (
+                            created_by_id
+                            and created_by_id != current_user.id
+                        ):
+                            # Verifica se quem criou é SDR
+                            sdr_user = self.db.query(User).filter(User.id == created_by_id).first()
+                            if sdr_user and sdr_user.role and sdr_user.role.name == "sdr":
+                                gamification_service.award_points_with_commission(
+                                    primary_user_id=current_user.id,
+                                    commission_user_id=created_by_id,
+                                    action_type="meeting_completed",
+                                    board_type="acquisition",
+                                    commission_ratio="1/3",
+                                    description=f"Reunião concluída: '{task.title}'",
+                                    related_entity_type="CardTask",
+                                    related_entity_id=task.id,
+                                )
+                            else:
+                                gamification_service.award_points(
+                                    user_id=current_user.id,
+                                    action_type="meeting_completed",
+                                    board_type="acquisition",
+                                    description=f"Reunião concluída: '{task.title}'",
+                                    related_entity_type="CardTask",
+                                    related_entity_id=task.id,
+                                )
+                        else:
+                            gamification_service.award_points(
+                                user_id=current_user.id,
+                                action_type="meeting_completed",
+                                board_type="acquisition",
+                                description=f"Reunião concluída: '{task.title}'",
+                                related_entity_type="CardTask",
+                                related_entity_id=task.id,
+                            )
+
+                    elif task_type_value == "call":
+                        # Ligação concluída (pontua apenas em Prospecção)
+                        gamification_service.award_points(
+                            user_id=current_user.id,
+                            action_type="call_completed",
+                            board_type=board_type,
+                            description=f"Ligação concluída: '{task.title}'",
+                            related_entity_type="CardTask",
+                            related_entity_id=task.id,
+                        )
+
+                    elif task_type_value == "follow_up":
+                        # Follow-up concluído (pontua em qualquer board configurado)
+                        gamification_service.award_points(
+                            user_id=current_user.id,
+                            action_type="followup_completed",
+                            board_type=board_type,
+                            description=f"Follow-up concluído: '{task.title}'",
+                            related_entity_type="CardTask",
+                            related_entity_id=task.id,
+                        )
+
+                    else:
+                        # Tarefa genérica concluída
+                        gamification_service.award_points(
+                            user_id=current_user.id,
+                            action_type="task_completed",
+                            board_type=board_type,
+                            description=f"Tarefa concluída: '{task.title}'",
+                            related_entity_type="CardTask",
+                            related_entity_id=task.id,
+                        )
+            except Exception as e:
+                print(f"[GAMIFICATION] Erro ao pontuar conclusão de tarefa: {e}")
+
         else:
             updated_task = self.repository.mark_as_pending(task_id)
 

@@ -25,6 +25,40 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.0",
+    date: "16/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Gamificação agora separa pontos e rankings por board: Prospecção e Aquisição têm rankings independentes, com pontuações distintas para cada tipo de ação realizada em cada board.",
+      },
+      {
+        type: "feature",
+        text: "Sistema de comissão para SDR: ao fechar um negócio, o SDR vinculado ao card recebe automaticamente 1/4 dos pontos. Em reuniões realizadas no board Aquisição, o SDR que agendou recebe 1/3 dos pontos.",
+      },
+      {
+        type: "feature",
+        text: "Pontos agora são concedidos em mais momentos: criar card, mover card, perder negócio, agendar reunião, realizar ligação, fazer follow-up, concluir tarefa e enviar proposta — cada ação vale pontos de acordo com o board.",
+      },
+      {
+        type: "improvement",
+        text: "Rankings calculados automaticamente a cada hora pelo sistema, em vez de recalcular a cada consulta — mais rápido e consistente.",
+      },
+      {
+        type: "improvement",
+        text: "Página de Gamificação atualizada: novo seletor de board (Prospecção / Aquisição) nos rankings, cards de perfil com pontos separados por board e posições no ranking exibidas por board.",
+      },
+      {
+        type: "improvement",
+        text: "Badges com critério automático agora suportam três tipos de regra: pontos totais, contagem de ações específicas e posição no ranking — todos podendo ser filtrados por board.",
+      },
+      {
+        type: "fix",
+        text: "Deletar um badge agora preserva o histórico de conquistas dos usuários que já o tinham — o badge some da lista mas não apaga o registro de quem conquistou.",
+      },
+    ],
+  },
+  {
     version: "1.5.3",
     date: "17/03/2026",
     entries: [

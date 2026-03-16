@@ -2,7 +2,7 @@
 Modelo de GamificationBadge (Badge/Conquista).
 Define badges que podem ser conquistadas pelos usuários.
 """
-from sqlalchemy import Column, Integer, ForeignKey, String, Text, Boolean, JSON
+from sqlalchemy import Column, Integer, ForeignKey, String, Text, Boolean, JSON, DateTime
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -13,6 +13,7 @@ class GamificationBadge(Base, TimestampMixin):
     """
     Representa uma badge (conquista) do sistema.
     Pode ser padrão do sistema ou customizada pelo admin.
+    Usa soft delete para preservar histórico de conquistas dos usuários.
     """
     __tablename__ = "gamification_badges"
 
@@ -28,12 +29,17 @@ class GamificationBadge(Base, TimestampMixin):
     criteria_type = Column(String(50), nullable=False)  # manual, automatic
 
     # Critérios para badge automática (JSON)
-    # Exemplo: {"field": "total_points", "operator": ">=", "value": 10000}
-    # Exemplo: {"field": "rank", "operator": "==", "value": 1, "period": "monthly"}
+    # Exemplos:
+    #   {"field": "total_points", "operator": ">=", "value": 500, "board_type": "prospecting"}
+    #   {"field": "rank", "operator": "<=", "value": 3, "period": "monthly", "board_type": "acquisition"}
+    #   {"field": "action_count", "action_type": "card_won", "operator": ">=", "value": 10}
     criteria = Column(JSON, nullable=True)
 
     # Status
     is_active = Column(Boolean, default=True, nullable=False)
+
+    # Soft delete — preserva histórico de user_badges ao deletar
+    deleted_at = Column(DateTime, nullable=True)
 
     # Relacionamentos
     user_badges = relationship("UserBadge", back_populates="badge", lazy="dynamic", cascade="all, delete-orphan")

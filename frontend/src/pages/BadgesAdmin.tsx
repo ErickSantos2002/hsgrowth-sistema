@@ -10,7 +10,7 @@ import {
   Save,
   X,
 } from "lucide-react";
-import gamificationService, { Badge, UserBadge } from "../services/gamificationService";
+import gamificationService, { Badge, BoardType, PeriodType } from "../services/gamificationService";
 import userService from "../services/userService";
 import { User } from "../types";
 import { showSuccess, showError, showWarning } from "../utils/toast";
@@ -30,13 +30,20 @@ const BadgesAdmin: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
 
-  // Form data
+  // Form data — critérios automáticos usam: field, operator, value, board_type?, action_type?, period?
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     icon_url: "",
     criteria_type: "manual" as "manual" | "automatic",
-    criteria: { field: "total_points", operator: ">=", value: 0 },
+    criteria: {
+      field: "total_points" as string,
+      operator: ">=" as string,
+      value: 0,
+      board_type: "" as BoardType | "",
+      action_type: "" as string,
+      period: "monthly" as PeriodType,
+    },
   });
 
   // Award modal data
@@ -54,7 +61,8 @@ const BadgesAdmin: React.FC = () => {
         userService.listActive(),
       ]);
       setBadges(badgesData);
-      setUsers(usersData.filter((u) => u.role === "salesperson"));
+      // Inclui vendedores e SDRs — admin pode atribuir badges a qualquer um
+      setUsers(usersData.filter((u) => u.role === "salesperson" || u.role === "sdr"));
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     } finally {
@@ -68,7 +76,7 @@ const BadgesAdmin: React.FC = () => {
       description: "",
       icon_url: "",
       criteria_type: "manual",
-      criteria: { field: "total_points", operator: ">=", value: 0 },
+      criteria: { field: "total_points", operator: ">=", value: 0, board_type: "", action_type: "", period: "monthly" },
     });
     setIsEditMode(false);
     setSelectedBadge(null);
@@ -81,7 +89,14 @@ const BadgesAdmin: React.FC = () => {
       description: badge.description || "",
       icon_url: badge.icon_url || "",
       criteria_type: badge.criteria_type,
-      criteria: (badge.criteria || { field: "total_points", operator: ">=", value: 0 }) as any,
+      criteria: {
+        field: badge.criteria?.field || "total_points",
+        operator: badge.criteria?.operator || ">=",
+        value: badge.criteria?.value ?? 0,
+        board_type: (badge.criteria?.board_type || "") as BoardType | "",
+        action_type: badge.criteria?.action_type || "",
+        period: (badge.criteria?.period || "monthly") as PeriodType,
+      },
     });
     setIsEditMode(true);
     setSelectedBadge(badge);
@@ -95,12 +110,38 @@ const BadgesAdmin: React.FC = () => {
   };
 
   const handleSaveBadge = async () => {
+    // Monta o objeto de critérios apenas com campos relevantes para o tipo selecionado
+    const buildCriteria = () => {
+      if (formData.criteria_type !== "automatic") return null;
+      const base: Record<string, any> = {
+        field: formData.criteria.field,
+        operator: formData.criteria.operator,
+        value: formData.criteria.value,
+      };
+      if (formData.criteria.board_type) base.board_type = formData.criteria.board_type;
+      if (formData.criteria.field === "action_count" && formData.criteria.action_type) {
+        base.action_type = formData.criteria.action_type;
+      }
+      if (formData.criteria.field === "rank") {
+        base.period = formData.criteria.period;
+      }
+      return base;
+    };
+
+    const payload = {
+      name: formData.name,
+      description: formData.description,
+      icon_url: formData.icon_url,
+      criteria_type: formData.criteria_type,
+      criteria: buildCriteria(),
+    };
+
     try {
       if (isEditMode && selectedBadge) {
-        await gamificationService.updateBadge(selectedBadge.id, formData);
+        await gamificationService.updateBadge(selectedBadge.id, payload);
         showSuccess("Badge atualizado com sucesso!");
       } else {
-        await gamificationService.createBadge(formData);
+        await gamificationService.createBadge(payload);
         showSuccess("Badge criado com sucesso!");
       }
       setIsModalOpen(false);
@@ -228,7 +269,10 @@ const BadgesAdmin: React.FC = () => {
 
             {badge.criteria_type === "automatic" && badge.criteria && (
               <div className="mb-4 rounded bg-gray-100 p-2 text-xs text-slate-500 dark:bg-slate-900/50 dark:text-slate-400">
-                Critério: {badge.criteria.field} {badge.criteria.operator} {badge.criteria.value}
+                <span className="font-medium">Critério:</span>{" "}
+                {badge.criteria.field} {badge.criteria.operator} {badge.criteria.value}
+                {badge.criteria.board_type && ` (${badge.criteria.board_type === "prospecting" ? "Prospecção" : "Aquisição"})`}
+                {badge.criteria.action_type && ` | ação: ${badge.criteria.action_type}`}
               </div>
             )}
 
@@ -323,9 +367,11 @@ const BadgesAdmin: React.FC = () => {
                 {formData.criteria_type === "automatic" && (
                   <div className="space-y-3 rounded-lg bg-gray-100 p-4 dark:bg-slate-900/50">
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Critério Automático</p>
+
+                    {/* Linha 1: Campo, Operador, Valor */}
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="mb-1 block text-xs text-slate-400">Campo</label>
+                        <label className="mb-1 block text-xs text-slate-400">Tipo</label>
                         <select
                           value={formData.criteria.field}
                           onChange={(e) =>
@@ -337,6 +383,8 @@ const BadgesAdmin: React.FC = () => {
                           className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                         >
                           <option value="total_points">Pontos Totais</option>
+                          <option value="action_count">Contagem de Ações</option>
+                          <option value="rank">Posição no Ranking</option>
                         </select>
                       </div>
                       <div>
@@ -354,6 +402,7 @@ const BadgesAdmin: React.FC = () => {
                           <option value=">=">&gt;=</option>
                           <option value=">">&gt;</option>
                           <option value="==">=</option>
+                          <option value="<=">&lt;=</option>
                         </select>
                       </div>
                       <div>
@@ -364,13 +413,94 @@ const BadgesAdmin: React.FC = () => {
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              criteria: { ...formData.criteria, value: parseInt(e.target.value) },
+                              criteria: { ...formData.criteria, value: parseInt(e.target.value) || 0 },
                             })
                           }
                           className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                         />
                       </div>
                     </div>
+
+                    {/* Linha 2: Board e campos condicionais */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-400">Board (opcional)</label>
+                        <select
+                          value={formData.criteria.board_type}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              criteria: { ...formData.criteria, board_type: e.target.value as BoardType | "" },
+                            })
+                          }
+                          className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        >
+                          <option value="">Todos os boards</option>
+                          <option value="prospecting">Prospecção</option>
+                          <option value="acquisition">Aquisição</option>
+                        </select>
+                      </div>
+
+                      {/* Tipo de ação — apenas para action_count */}
+                      {formData.criteria.field === "action_count" && (
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-400">Tipo de Ação</label>
+                          <select
+                            value={formData.criteria.action_type}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                criteria: { ...formData.criteria, action_type: e.target.value },
+                              })
+                            }
+                            className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                          >
+                            <option value="">Selecione...</option>
+                            <option value="card_created">card_created</option>
+                            <option value="card_moved">card_moved</option>
+                            <option value="card_won">card_won</option>
+                            <option value="card_lost">card_lost</option>
+                            <option value="meeting_created">meeting_created</option>
+                            <option value="meeting_completed">meeting_completed</option>
+                            <option value="call_completed">call_completed</option>
+                            <option value="followup_completed">followup_completed</option>
+                            <option value="task_completed">task_completed</option>
+                            <option value="proposal_attached">proposal_attached</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Período — apenas para rank */}
+                      {formData.criteria.field === "rank" && (
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-400">Período</label>
+                          <select
+                            value={formData.criteria.period}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                criteria: { ...formData.criteria, period: e.target.value as PeriodType },
+                              })
+                            }
+                            className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                          >
+                            <option value="weekly">Semanal</option>
+                            <option value="monthly">Mensal</option>
+                            <option value="quarterly">Trimestral</option>
+                            <option value="annual">Anual</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dica contextual */}
+                    <p className="text-xs text-slate-400">
+                      {formData.criteria.field === "rank"
+                        ? "Para rank, o board é obrigatório. O valor deve ser a posição (ex: 1 para 1º lugar)."
+                        : formData.criteria.field === "action_count"
+                        ? "Conta quantas vezes a ação foi realizada no histórico do usuário."
+                        : "Soma de pontos acumulados (total ou filtrado por board)."}
+                    </p>
                   </div>
                 )}
 

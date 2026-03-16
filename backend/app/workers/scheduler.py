@@ -52,54 +52,44 @@ def job_check_scheduled_automations():
         logger.error(f"[CRON] Erro ao verificar automações: {e}")
 
 
-def job_update_sales_ranking():
+def job_recalculate_gamification_rankings():
     """
-    Job: Atualiza ranking de vendedores.
-    Frequência: Diariamente às 00:00
+    Job: Recalcula rankings de gamificação para os dois boards e todos os períodos.
+    Frequência: A cada 1 hora.
+
+    Rankings são separados por board_type (prospecting/acquisition) e período
+    (semanal, mensal, trimestral, anual). Apenas usuários com role salesperson
+    e sdr participam dos rankings.
     """
     db = SessionLocal()
     try:
-        logger.info("[CRON] Atualizando ranking de vendedores...")
+        logger.info("[CRON] Recalculando rankings de gamificação...")
 
-        from app.repositories.user_repository import UserRepository
-        from app.models.user import User
-        from app.models.card import Card
-        from sqlalchemy import func, and_
-        from datetime import date
+        from app.services.gamification_service import GamificationService
 
-        user_repo = UserRepository(db)
+        service = GamificationService(db)
+        boards = ["prospecting", "acquisition"]
+        periods = ["weekly", "monthly", "quarterly", "annual"]
 
-        # Busca todos os vendedores ativos
-        users = db.query(User).filter(
-            User.is_deleted == False,
-            User.is_active == True,
-            User.role.in_(["salesperson", "manager"])
-        ).all()
+        total_calculated = 0
+        for board_type in boards:
+            for period_type in periods:
+                try:
+                    result = service.calculate_rankings_for_board(board_type, period_type)
+                    total_calculated += len(result.rankings)
+                    logger.debug(
+                        f"[CRON] Rankings calculados: board={board_type}, "
+                        f"period={period_type}, usuários={len(result.rankings)}"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"[CRON] Erro ao calcular ranking {board_type}/{period_type}: {e}"
+                    )
 
-        # Atualiza pontos de gamificação baseado em vendas do mês
-        today = date.today()
-        month_start = today.replace(day=1)
-
-        for user in users:
-            # Conta cards ganhos no mês
-            won_cards = db.query(func.count(Card.id)).filter(
-                and_(
-                    Card.assigned_to_id == user.id,
-                    Card.stage == "won",
-                    func.date(Card.updated_at) >= month_start
-                )
-            ).scalar() or 0
-
-            # Atualiza estatísticas de gamificação (se existir)
-            if hasattr(user, 'gamification_stats') and user.gamification_stats:
-                user.gamification_stats.monthly_points = won_cards * 10  # 10 pontos por venda
-                user.gamification_stats.total_points = user.gamification_stats.monthly_points
-
-        db.commit()
-        logger.success(f"[CRON] Ranking atualizado para {len(users)} vendedores")
+        logger.success(f"[CRON] Rankings recalculados: {total_calculated} posições atualizadas")
 
     except Exception as e:
-        logger.error(f"[CRON] Erro ao atualizar ranking: {e}")
+        logger.error(f"[CRON] Erro ao recalcular rankings de gamificação: {e}")
         db.rollback()
     finally:
         db.close()
@@ -489,12 +479,12 @@ def configure_jobs():
         replace_existing=True
     )
 
-    # 2. Atualizar ranking de vendedores - Diariamente às 00:00
+    # 2. Recalcular rankings de gamificação - A cada 1 hora
     sched.add_job(
-        job_update_sales_ranking,
-        trigger=CronTrigger(hour=0, minute=0),
-        id="update_sales_ranking",
-        name="Atualizar Ranking de Vendedores",
+        job_recalculate_gamification_rankings,
+        trigger=IntervalTrigger(hours=1),
+        id="recalculate_gamification_rankings",
+        name="Recalcular Rankings de Gamificação",
         replace_existing=True
     )
 
@@ -540,15 +530,6 @@ def configure_jobs():
         trigger=CronTrigger(hour=10, minute=0),
         id="check_pending_transfers",
         name="Verificar Transferências Pendentes",
-        replace_existing=True
-    )
-
-    # 7. Atualizar estatísticas de gamificação - Diariamente às 23:00
-    sched.add_job(
-        job_update_gamification_stats,
-        trigger=CronTrigger(hour=23, minute=0),
-        id="update_gamification_stats",
-        name="Atualizar Estatísticas de Gamificação",
         replace_existing=True
     )
 

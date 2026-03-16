@@ -13,6 +13,7 @@ class GamificationRanking(Base, TimestampMixin):
     """
     Representa a posição de um usuário em um ranking periódico.
     Rankings resetam periodicamente (semanal, mensal, trimestral, anual).
+    Cada ranking é separado por board_type (prospecting / acquisition).
     """
     __tablename__ = "gamification_rankings"
 
@@ -20,6 +21,10 @@ class GamificationRanking(Base, TimestampMixin):
 
     # Relacionamento com User
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Board ao qual este ranking pertence
+    board_type = Column(String(20), nullable=False, index=True)
+    # Valores: 'prospecting', 'acquisition'
 
     # Período do ranking
     period_type = Column(String(20), nullable=False, index=True)  # weekly, monthly, quarterly, annual
@@ -31,13 +36,13 @@ class GamificationRanking(Base, TimestampMixin):
     points = Column(Integer, default=0, nullable=False)  # Pontos acumulados neste período
     cards_won = Column(Integer, default=0, nullable=False)  # Cartões ganhos neste período
 
-    # Constraint: um usuário não pode ter múltiplos registros para o mesmo período
+    # Constraint: um usuário não pode ter múltiplos registros para o mesmo período e board
     __table_args__ = (
-        UniqueConstraint('user_id', 'period_type', 'period_start', name='unique_user_ranking_period'),
+        UniqueConstraint('user_id', 'board_type', 'period_type', 'period_start', name='unique_user_board_ranking_period'),
     )
 
     # Relacionamentos
     user = relationship("User", back_populates="rankings")
 
     def __repr__(self):
-        return f"<GamificationRanking(user_id={self.user_id}, period='{self.period_type}', rank={self.rank})>"
+        return f"<GamificationRanking(user_id={self.user_id}, board='{self.board_type}', period='{self.period_type}', rank={self.rank})>"

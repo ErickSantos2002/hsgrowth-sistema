@@ -48,7 +48,7 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
       if (mode === "edit" && badge) {
         setFormData({
           name: badge.name,
-          description: badge.description,
+          description: badge.description || "",
           icon_url: badge.icon_url || "",
           criteria_type: badge.criteria_type,
           criteria: badge.criteria || {},
@@ -265,17 +265,18 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
             <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900">
               <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Regra de Concessão Automática</p>
 
+              {/* Linha 1: Tipo, Operador, Valor */}
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                {/* Campo */}
+                {/* Campo/Tipo */}
                 <div>
-                  <label className="mb-1 block text-xs text-slate-600 dark:text-slate-400">Campo</label>
+                  <label className="mb-1 block text-xs text-slate-600 dark:text-slate-400">Tipo</label>
                   <SelectMenu
                     value={formData.criteria.field || ""}
                     options={[
                       { value: "", label: "Selecione" },
-                      { value: "total_points", label: "Total de Pontos" },
+                      { value: "total_points", label: "Pontos Totais" },
+                      { value: "action_count", label: "Contagem de Ações" },
                       { value: "rank", label: "Posição no Ranking" },
-                      { value: "cards_won", label: "Cards Ganhos" },
                     ]}
                     onChange={(value) => handleCriteriaChange("field", value)}
                   />
@@ -291,7 +292,6 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
                       { value: ">=", label: ">= (maior ou igual)" },
                       { value: ">", label: "> (maior)" },
                       { value: "==", label: "== (igual)" },
-                      { value: "<", label: "< (menor)" },
                       { value: "<=", label: "<= (menor ou igual)" },
                     ]}
                     onChange={(value) => handleCriteriaChange("operator", value)}
@@ -303,7 +303,7 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
                   <label className="mb-1 block text-xs text-slate-600 dark:text-slate-400">Valor</label>
                   <input
                     type="number"
-                    value={formData.criteria.value || ""}
+                    value={formData.criteria.value ?? ""}
                     onChange={(e) => handleCriteriaChange("value", parseInt(e.target.value) || 0)}
                     className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                     placeholder="Ex: 1000"
@@ -312,19 +312,80 @@ const BadgeModal: React.FC<BadgeModalProps> = ({ isOpen, onClose, onSave, badge,
                 </div>
               </div>
 
+              {/* Linha 2: campos condicionais */}
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {/* Board (opcional para total_points e action_count; obrigatório para rank) */}
+                <div>
+                  <label className="mb-1 block text-xs text-slate-600 dark:text-slate-400">
+                    Board {formData.criteria.field === "rank" ? <span className="text-red-400">*</span> : "(opcional)"}
+                  </label>
+                  <SelectMenu
+                    value={formData.criteria.board_type || ""}
+                    options={[
+                      { value: "", label: "Todos os boards" },
+                      { value: "prospecting", label: "Prospecção" },
+                      { value: "acquisition", label: "Aquisição" },
+                    ]}
+                    onChange={(value) => handleCriteriaChange("board_type", value || null)}
+                  />
+                </div>
+
+                {/* Tipo de ação — apenas para action_count */}
+                {formData.criteria.field === "action_count" && (
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-600 dark:text-slate-400">
+                      Tipo de Ação <span className="text-red-400">*</span>
+                    </label>
+                    <SelectMenu
+                      value={formData.criteria.action_type || ""}
+                      options={[
+                        { value: "", label: "Selecione" },
+                        { value: "card_created", label: "card_created" },
+                        { value: "card_moved", label: "card_moved" },
+                        { value: "card_won", label: "card_won" },
+                        { value: "card_lost", label: "card_lost" },
+                        { value: "meeting_created", label: "meeting_created" },
+                        { value: "meeting_completed", label: "meeting_completed" },
+                        { value: "call_completed", label: "call_completed" },
+                        { value: "followup_completed", label: "followup_completed" },
+                        { value: "task_completed", label: "task_completed" },
+                        { value: "proposal_attached", label: "proposal_attached" },
+                      ]}
+                      onChange={(value) => handleCriteriaChange("action_type", value)}
+                    />
+                  </div>
+                )}
+
+                {/* Período — apenas para rank */}
+                {formData.criteria.field === "rank" && (
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-600 dark:text-slate-400">Período</label>
+                    <SelectMenu
+                      value={formData.criteria.period || "monthly"}
+                      options={[
+                        { value: "weekly", label: "Semanal" },
+                        { value: "monthly", label: "Mensal" },
+                        { value: "quarterly", label: "Trimestral" },
+                        { value: "annual", label: "Anual" },
+                      ]}
+                      onChange={(value) => handleCriteriaChange("period", value)}
+                    />
+                  </div>
+                )}
+              </div>
+
               {errors.criteria && <p className="text-sm text-red-400">{errors.criteria}</p>}
 
-              {/* Exemplo */}
+              {/* Resumo do critério */}
               {formData.criteria.field && formData.criteria.operator && formData.criteria.value !== undefined && (
                 <div className="rounded-lg border border-blue-700 bg-blue-900/20 p-3">
                   <p className="text-xs text-blue-300">
-                    <strong>Exemplo:</strong> Badge será concedida automaticamente quando{" "}
-                    <strong>
-                      {formData.criteria.field === "total_points" && "Total de Pontos"}
-                      {formData.criteria.field === "rank" && "Posição no Ranking"}
-                      {formData.criteria.field === "cards_won" && "Cards Ganhos"}
-                    </strong>{" "}
-                    for <strong>{formData.criteria.operator}</strong> <strong>{formData.criteria.value}</strong>
+                    <strong>Critério:</strong>{" "}
+                    {formData.criteria.field === "total_points" && "Pontos Totais"}
+                    {formData.criteria.field === "action_count" && `Contagem de "${formData.criteria.action_type || "ação"}"`}
+                    {formData.criteria.field === "rank" && "Posição no Ranking"}
+                    {" "}{formData.criteria.operator} {formData.criteria.value}
+                    {formData.criteria.board_type && ` (${formData.criteria.board_type === "prospecting" ? "Prospecção" : "Aquisição"})`}
                   </p>
                 </div>
               )}

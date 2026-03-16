@@ -600,6 +600,22 @@ class CardService:
             import traceback
             traceback.print_exc()
 
+        # Gamificação: pontua o responsável pelo card criado (se board pontua)
+        if card.assigned_to_id and board.board_type:
+            try:
+                from app.services.gamification_service import GamificationService
+                gamification_service = GamificationService(self.db)
+                gamification_service.award_points(
+                    user_id=card.assigned_to_id,
+                    action_type="card_created",
+                    board_type=board.board_type,
+                    description=f"Card '{card.title}' criado",
+                    related_entity_type="Card",
+                    related_entity_id=card.id,
+                )
+            except Exception as e:
+                print(f"[GAMIFICATION] Erro ao pontuar card_created: {e}")
+
         return card
 
     def update_card(self, card_id: int, card_data: CardUpdate, current_user: User) -> Card:
@@ -1336,16 +1352,12 @@ class CardService:
 
         # Verifica se a lista de destino é uma lista "won" ou "lost"
         # e marca o card adequadamente
-        points_awarded = 0
         if target_list.is_done_stage:
             card.is_won = 1  # 1 = ganho (Integer no banco)
             card.closed_at = datetime.now()  # won_at é uma property que usa closed_at
-            points_awarded = 20  # Pontos por ganhar card
         elif target_list.is_lost_stage:
             card.is_won = -1  # -1 = perdido (Integer no banco)
             card.closed_at = datetime.now()  # lost_at é uma property que usa closed_at
-        else:
-            points_awarded = 2  # Pontos por mover card
 
         # Move o card
         moved_card = self.card_repository.move_to_list(card, target_list_id, position)
@@ -1380,26 +1392,74 @@ class CardService:
         except Exception as e:
             print(f"[CARD_LIST_HISTORY] Erro ao registrar movimentação: {e}")
 
-        # Atribui pontos e cria parabenização (se card tiver responsável)
+        # Atribui pontos de gamificação com base no board_type e tipo de movimento
         if moved_card.assigned_to_id:
             try:
                 # Import lazy para evitar importação circular
                 from app.services.gamification_service import GamificationService
                 gamification_service = GamificationService(self.db)
 
-                # Atribui pontos
-                reason = "card_won" if target_list.is_done_stage else "card_moved"
-                gamification_service.award_points(
-                    user_id=moved_card.assigned_to_id,
-                    reason=reason,
-                    description=f"Card '{moved_card.title}' movido de '{source_list_name}' para '{target_list.name}'",
-                    custom_points=points_awarded
-                )
+                board_type = target_board.board_type  # prospecting, acquisition ou None
 
+                if board_type and target_list.is_done_stage:
+                    # Card ganho — pode ter comissão para o SDR via card.sdr_id
+                    if moved_card.sdr_id and moved_card.sdr_id != moved_card.assigned_to_id:
+                        # Verifica se o SDR tem role 'sdr'
+                        sdr_user = self.db.query(User).filter(User.id == moved_card.sdr_id).first()
+                        if sdr_user and sdr_user.role == "sdr":
+                            gamification_service.award_points_with_commission(
+                                primary_user_id=moved_card.assigned_to_id,
+                                commission_user_id=moved_card.sdr_id,
+                                action_type="card_won",
+                                board_type=board_type,
+                                commission_ratio="1/4",
+                                description=f"Card '{moved_card.title}' ganho",
+                                related_entity_type="Card",
+                                related_entity_id=moved_card.id,
+                            )
+                        else:
+                            gamification_service.award_points(
+                                user_id=moved_card.assigned_to_id,
+                                action_type="card_won",
+                                board_type=board_type,
+                                description=f"Card '{moved_card.title}' ganho",
+                                related_entity_type="Card",
+                                related_entity_id=moved_card.id,
+                            )
+                    else:
+                        gamification_service.award_points(
+                            user_id=moved_card.assigned_to_id,
+                            action_type="card_won",
+                            board_type=board_type,
+                            description=f"Card '{moved_card.title}' ganho",
+                            related_entity_type="Card",
+                            related_entity_id=moved_card.id,
+                        )
+
+                elif board_type and target_list.is_lost_stage:
+                    # Card perdido — penalidade apenas no board Aquisição
+                    gamification_service.award_points(
+                        user_id=moved_card.assigned_to_id,
+                        action_type="card_lost",
+                        board_type=board_type,
+                        description=f"Card '{moved_card.title}' perdido",
+                        related_entity_type="Card",
+                        related_entity_id=moved_card.id,
+                    )
+
+                elif board_type:
+                    # Movimentação normal entre etapas
+                    gamification_service.award_points(
+                        user_id=moved_card.assigned_to_id,
+                        action_type="card_moved",
+                        board_type=board_type,
+                        description=f"Card '{moved_card.title}' movido para '{target_list.name}'",
+                        related_entity_type="Card",
+                        related_entity_id=moved_card.id,
+                    )
 
             except Exception as e:
-                # Log erro mas não quebra o fluxo principal
-                print(f"Erro ao criar parabenização: {e}")
+                print(f"[GAMIFICATION] Erro ao atribuir pontos por movimentação: {e}")
 
         # Dispara automações baseado no tipo de movimento
         try:

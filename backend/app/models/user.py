@@ -54,10 +54,10 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     activities = relationship("Activity", back_populates="user", lazy="dynamic")
 
     # Tarefas atribuídas a este usuário
-    tasks = relationship("CardTask", back_populates="assigned_to", lazy="dynamic")
+    tasks = relationship("CardTask", foreign_keys="CardTask.assigned_to_id", back_populates="assigned_to", lazy="dynamic")
 
     # Pontos de gamificação
-    gamification_points = relationship("GamificationPoint", back_populates="user", lazy="dynamic")
+    gamification_points = relationship("GamificationPoint", foreign_keys="GamificationPoint.user_id", back_populates="user", lazy="dynamic")
 
     # Badges conquistadas
     user_badges = relationship("UserBadge", foreign_keys="UserBadge.user_id", back_populates="user", lazy="dynamic")

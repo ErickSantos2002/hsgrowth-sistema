@@ -127,6 +127,43 @@ class AttachmentService:
 
         attachment = self.repository.create(attachment_data)
 
+        # Gamificação: pontua por proposta anexada (apenas a primeira por card no board Aquisição)
+        if attachment_type == "proposal":
+            try:
+                from app.models.attachment import Attachment
+                from app.models.card import Card
+                from app.models.list import List
+                from app.models.board import Board
+
+                # Verifica se é a primeira proposta deste card (exclui o recém-criado)
+                existing_count = self.db.query(Attachment).filter(
+                    Attachment.card_id == card_id,
+                    Attachment.attachment_type == "proposal",
+                    Attachment.id != attachment.id,
+                    Attachment.deleted_at.is_(None)
+                ).count()
+
+                if existing_count == 0:
+                    # É a primeira proposta — verifica o board
+                    card = self.db.query(Card).filter(Card.id == card_id).first()
+                    if card:
+                        list_obj = self.db.query(List).filter(List.id == card.list_id).first()
+                        if list_obj:
+                            board = self.db.query(Board).filter(Board.id == list_obj.board_id).first()
+                            if board and board.board_type == "acquisition":
+                                from app.services.gamification_service import GamificationService
+                                gamification_service = GamificationService(self.db)
+                                gamification_service.award_points(
+                                    user_id=uploaded_by.id,
+                                    action_type="proposal_attached",
+                                    board_type="acquisition",
+                                    description=f"Proposta anexada ao card '{card.title}'",
+                                    related_entity_type="Attachment",
+                                    related_entity_id=attachment.id,
+                                )
+            except Exception as e:
+                print(f"[GAMIFICATION] Erro ao pontuar proposal_attached: {e}")
+
         # Retornar response com propriedades calculadas
         return self._to_response(attachment)
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Trophy, Medal, Award, Star, TrendingUp, Crown, Target, Zap, Users as UsersIcon, ChevronDown, History } from "lucide-react";
-import gamificationService, { GamificationSummary, Badge, UserBadge, Ranking, GamificationPointRecord } from "../services/gamificationService";
+import { Trophy, Medal, Award, Star, TrendingUp, Crown, Target, Zap, Users as UsersIcon, ChevronDown, History, Briefcase, Search } from "lucide-react";
+import gamificationService, { GamificationSummary, Badge, UserBadge, Ranking, GamificationPointRecord, BoardType, PeriodType } from "../services/gamificationService";
 import { useAuth } from "../hooks/useAuth";
 import userService from "../services/userService";
 import { User } from "../types";
@@ -43,7 +43,8 @@ const Gamification: React.FC = () => {
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [myBadges, setMyBadges] = useState<UserBadge[]>([]);
   const [rankings, setRankings] = useState<Ranking[]>([]);
-  const [rankingPeriod, setRankingPeriod] = useState<"weekly" | "monthly" | "quarterly" | "annual">("monthly");
+  const [rankingPeriod, setRankingPeriod] = useState<PeriodType>("monthly");
+  const [rankingBoard, setRankingBoard] = useState<BoardType>("acquisition");
   const [rankingsLoading, setRankingsLoading] = useState(false);
 
   // Estatísticas da equipe (para gerente/admin)
@@ -62,7 +63,7 @@ const Gamification: React.FC = () => {
     if (activeTab === "rankings") {
       loadRankings();
     }
-  }, [activeTab, rankingPeriod]);
+  }, [activeTab, rankingPeriod, rankingBoard]);
 
   // Carrega histórico de pontos quando entra na aba, muda de página, muda filtros ou muda o usuário selecionado
   useEffect(() => {
@@ -103,7 +104,8 @@ const Gamification: React.FC = () => {
       // Se for gerente/admin, carrega lista de usuários
       if (isManagerOrAdmin) {
         const users = await userService.listActive();
-        setAvailableUsers(users.filter(u => u.role === "salesperson"));
+        // Inclui vendedores e SDRs pois ambos participam dos rankings
+        setAvailableUsers(users.filter(u => u.role === "salesperson" || u.role === "sdr"));
         setSelectedUserId("team"); // Inicia com visão da equipe
       }
 
@@ -187,7 +189,7 @@ const Gamification: React.FC = () => {
   const loadRankings = async () => {
     try {
       setRankingsLoading(true);
-      const response = await gamificationService.getRankings(rankingPeriod);
+      const response = await gamificationService.getRankings(rankingBoard, rankingPeriod);
       setRankings(response.rankings || []);
     } catch (error) {
       console.error("Erro ao carregar rankings:", error);
@@ -532,28 +534,34 @@ const Gamification: React.FC = () => {
               </div>
             </div>
 
-            {/* Pontos esta semana */}
+            {/* Pontos — Prospecção */}
             <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
               <div className="mb-2 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
-                  <Target className="text-blue-400" size={20} />
+                  <Search className="text-blue-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Esta Semana</p>
-                  <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.current_week_points}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Prospecção</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.prospecting.total_points}</p>
+                  <p className="text-xs text-slate-400">
+                    Semana: {summary.prospecting.week_points} | Mês: {summary.prospecting.month_points}
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Pontos este mês */}
+            {/* Pontos — Aquisição */}
             <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
               <div className="mb-2 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20">
-                  <TrendingUp className="text-emerald-400" size={20} />
+                  <Briefcase className="text-emerald-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Este Mês</p>
-                  <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.current_month_points}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Aquisição</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.acquisition.total_points}</p>
+                  <p className="text-xs text-slate-400">
+                    Semana: {summary.acquisition.week_points} | Mês: {summary.acquisition.month_points}
+                  </p>
                 </div>
               </div>
             </div>
@@ -572,23 +580,52 @@ const Gamification: React.FC = () => {
             </div>
           </div>
 
-          {/* Posição nos rankings */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
-            <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Posição nos Rankings</h3>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {[
-                { label: "Semanal", rank: summary.weekly_rank },
-                { label: "Mensal", rank: summary.monthly_rank },
-                { label: "Trimestral", rank: summary.quarterly_rank },
-                { label: "Anual", rank: summary.annual_rank },
-              ].map((item) => (
-                <div key={item.label} className="text-center">
-                  <p className="mb-1 text-sm text-slate-500 dark:text-slate-400">{item.label}</p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {item.rank ? `${item.rank}º` : "-"}
-                  </p>
-                </div>
-              ))}
+          {/* Posição nos rankings por board */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Rankings de Prospecção */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
+                <Search size={18} className="text-blue-400" />
+                Ranking de Prospecção
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: "Semanal", rank: summary.prospecting.weekly_rank },
+                  { label: "Mensal", rank: summary.prospecting.monthly_rank },
+                  { label: "Trimestral", rank: summary.prospecting.quarterly_rank },
+                  { label: "Anual", rank: summary.prospecting.annual_rank },
+                ].map((item) => (
+                  <div key={item.label} className="text-center">
+                    <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">{item.label}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {item.rank ? `${item.rank}º` : "-"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Rankings de Aquisição */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/50">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
+                <Briefcase size={18} className="text-emerald-400" />
+                Ranking de Aquisição
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: "Semanal", rank: summary.acquisition.weekly_rank },
+                  { label: "Mensal", rank: summary.acquisition.monthly_rank },
+                  { label: "Trimestral", rank: summary.acquisition.quarterly_rank },
+                  { label: "Anual", rank: summary.acquisition.annual_rank },
+                ].map((item) => (
+                  <div key={item.label} className="text-center">
+                    <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">{item.label}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {item.rank ? `${item.rank}º` : "-"}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -622,6 +659,32 @@ const Gamification: React.FC = () => {
       {/* Tab: Rankings */}
       {activeTab === "rankings" && (
         <div className="space-y-6">
+          {/* Seletor de board */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setRankingBoard("prospecting")}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                rankingBoard === "prospecting"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-slate-600 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              }`}
+            >
+              <Search size={16} />
+              Prospecção
+            </button>
+            <button
+              onClick={() => setRankingBoard("acquisition")}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                rankingBoard === "acquisition"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-gray-100 text-slate-600 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              }`}
+            >
+              <Briefcase size={16} />
+              Aquisição
+            </button>
+          </div>
+
           {/* Filtro de período */}
           <div className="flex justify-center gap-2 sm:justify-start">
             {(["weekly", "monthly", "quarterly", "annual"] as const).map((period) => (
@@ -699,7 +762,7 @@ const Gamification: React.FC = () => {
                           <td className="px-3 py-2 sm:px-6 sm:py-4">
                             <div className="flex items-center gap-2 sm:gap-3">
                               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-xs font-semibold text-white sm:h-10 sm:w-10 sm:text-sm">
-                                {getInitials(ranking.user_name)}
+                                {getInitials(ranking.user_name || "")}
                               </div>
                               <div>
                                 <p className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white sm:text-base">
@@ -710,6 +773,11 @@ const Gamification: React.FC = () => {
                                     </span>
                                   )}
                                 </p>
+                                {ranking.user_role && (
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    {ranking.user_role === "sdr" ? "SDR" : "Vendedor"}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -771,8 +839,16 @@ const Gamification: React.FC = () => {
               value={filterReason}
               options={[
                 { value: "", label: "Todas as ações" },
-                { value: "card_moved", label: "card_moved — Moveu card" },
+                { value: "card_created", label: "card_created — Card criado" },
+                { value: "card_moved", label: "card_moved — Card movido" },
                 { value: "card_won", label: "card_won — Card ganho" },
+                { value: "card_lost", label: "card_lost — Card perdido" },
+                { value: "meeting_created", label: "meeting_created — Reunião agendada" },
+                { value: "meeting_completed", label: "meeting_completed — Reunião realizada" },
+                { value: "call_completed", label: "call_completed — Ligação realizada" },
+                { value: "followup_completed", label: "followup_completed — Follow-up realizado" },
+                { value: "task_completed", label: "task_completed — Tarefa concluída" },
+                { value: "proposal_attached", label: "proposal_attached — Proposta enviada" },
               ]}
               onChange={(val) => { setFilterReason(val); setHistoryPage(1); }}
             />
@@ -940,9 +1016,9 @@ const Gamification: React.FC = () => {
                           Conquistado em {new Date(userBadge.awarded_at).toLocaleDateString("pt-BR")}
                         </p>
                       )}
-                      {!isEarned && badge.criteria_type === "automatic" && (
+                      {!isEarned && badge.criteria_type === "automatic" && badge.criteria && (
                         <p className="text-xs text-slate-500">
-                          Critério: {badge.criteria.field} {badge.criteria.operator} {badge.criteria.value}
+                          Critério automático
                         </p>
                       )}
                     </div>

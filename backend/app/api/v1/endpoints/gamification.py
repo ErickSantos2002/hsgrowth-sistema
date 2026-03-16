@@ -172,22 +172,27 @@ async def get_user_gamification(
 async def award_points(
     request: Request,
     user_id: int = Body(..., description="ID do usuário"),
-    reason: str = Body(..., description="Tipo de ação"),
+    action_type: str = Body(..., description="Tipo de ação (ex: card_won, meeting_completed)"),
+    board_type: str = Body(..., description="Board da ação: prospecting ou acquisition"),
     description: str = Body(None, description="Descrição da ação"),
-    custom_points: int = Body(None, description="Pontos customizados"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Atribui pontos a um usuário por uma ação.
+    Atribui pontos a um usuário por uma ação (manual, para testes e correções).
 
     - **user_id**: ID do usuário que receberá os pontos
-    - **reason**: Tipo de ação (card_created, card_won, etc.)
+    - **action_type**: Tipo de ação (card_created, card_won, etc.)
+    - **board_type**: Board da ação (prospecting ou acquisition)
     - **description**: Descrição da ação (opcional)
-    - **custom_points**: Pontos customizados (opcional, sobrescreve padrão)
     """
     service = GamificationService(db)
-    points_record = service.award_points(user_id, reason, description, custom_points)
+    points_record = service.award_points(user_id, action_type, board_type, description)
+    if not points_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ação '{action_type}' não configurada ou inativa no board '{board_type}'"
+        )
 
     # Busca o nome do usuário para o log
     user = db.query(User).filter(User.id == user_id).first()
@@ -777,23 +782,23 @@ async def delete_badge(
     }
 )
 async def get_rankings(
+    board_type: str = Query(..., description="Board do ranking: prospecting ou acquisition"),
     period_type: str = Query("weekly", description="Tipo de período: weekly, monthly, quarterly, annual"),
     limit: int = Query(100, ge=1, le=500, description="Limite de resultados"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Lista rankings do sistema para um período específico.
+    Lista rankings do sistema para um board e período específicos.
 
+    - **board_type**: Board do ranking (prospecting ou acquisition)
     - **period_type**: Tipo de período (weekly, monthly, quarterly, annual)
     - **limit**: Limite de resultados (padrão: 100, máx: 500)
 
-    Retorna:
-    - Lista de rankings ordenados por posição
-    - Informações do período (início e fim)
+    Retorna o último ranking calculado pelo scheduler (atualizado a cada hora).
     """
     service = GamificationService(db)
-    return service.get_rankings(period_type, limit)
+    return service.get_rankings(board_type, period_type, limit)
 
 
 @router.post(
@@ -846,19 +851,21 @@ async def get_rankings(
     }
 )
 async def calculate_rankings(
+    board_type: str = Body(..., embed=True, description="Board do ranking: prospecting ou acquisition"),
     period_type: str = Body(..., embed=True, description="Tipo de período: weekly, monthly, quarterly, annual"),
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Força recalcular rankings para um período.
+    Força recalcular rankings para um board e período.
 
+    - **board_type**: Board do ranking (prospecting ou acquisition)
     - **period_type**: Tipo de período (weekly, monthly, quarterly, annual)
 
-    Útil para atualizar rankings em tempo real.
+    Útil para forçar atualização antes do próximo ciclo do scheduler.
     """
     service = GamificationService(db)
-    return service.calculate_rankings(period_type)
+    return service.calculate_rankings_for_board(board_type, period_type)
 
 
 # ========== ACTION POINTS CONFIGURATION ==========
@@ -907,20 +914,22 @@ async def calculate_rankings(
     }
 )
 async def list_action_points(
+    board_type: Optional[str] = Query(None, description="Filtrar por board: prospecting ou acquisition"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Lista todas as configurações de pontos por ação.
+    Lista configurações de pontos por ação.
 
-    Retorna lista com action_type, points, is_active e description.
+    - **board_type**: Filtrar por board (opcional). Sem filtro retorna todos.
+    Retorna lista com board_type, action_type, points, is_active e description.
     """
     service = GamificationService(db)
-    return service.list_action_points()
+    return service.list_action_points(board_type=board_type)
 
 
 @router.get(
-    "/action-points/{action_type}",
+    "/action-points/{board_type}/{action_type}",
     response_model=ActionPointsResponse,
     summary="Buscar configuração de pontos",
     responses={
@@ -951,23 +960,34 @@ async def list_action_points(
     }
 )
 async def get_action_points(
+    board_type: str = Path(..., description="Board da ação: prospecting ou acquisition"),
     action_type: str = Path(..., description="Tipo de ação"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Busca configuração de pontos por tipo de ação.
+    Busca configuração de pontos por board e tipo de ação.
 
+    - **board_type**: Board da ação (prospecting ou acquisition)
     - **action_type**: Tipo de ação (ex: card_created, card_won)
     """
-    service = GamificationService(db)
-    action_points = service.get_action_points_by_type(action_type)
+    repository = GamificationRepository(db)
+    action_points = repository.find_action_points(board_type, action_type)
     if not action_points:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Configuração para ação '{action_type}' não encontrada"
+            detail=f"Configuração para '{action_type}' no board '{board_type}' não encontrada"
         )
-    return action_points
+    return ActionPointsResponse(
+        id=action_points.id,
+        board_type=action_points.board_type,
+        action_type=action_points.action_type,
+        points=action_points.points,
+        is_active=action_points.is_active,
+        description=action_points.description,
+        created_at=action_points.created_at,
+        updated_at=action_points.updated_at,
+    )
 
 
 @router.post(
@@ -1039,7 +1059,7 @@ async def create_action_points(
 
 
 @router.put(
-    "/action-points/{action_type}",
+    "/action-points/{board_type}/{action_type}",
     response_model=ActionPointsResponse,
     summary="Atualizar configuração de pontos",
     responses={
@@ -1079,21 +1099,23 @@ async def create_action_points(
 )
 async def update_action_points(
     request: Request,
+    board_type: str = Path(..., description="Board da ação: prospecting ou acquisition"),
     action_type: str = Path(..., description="Tipo de ação"),
     action_data: ActionPointsUpdate = Body(..., description="Dados para atualizar"),
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Atualiza configuração de pontos (apenas admin).
+    Atualiza configuração de pontos para um par (board_type, action_type) (apenas admin).
 
+    - **board_type**: Board da ação (prospecting ou acquisition)
     - **action_type**: Tipo de ação
     - **points**: Nova quantidade de pontos (opcional)
     - **is_active**: Novo status (opcional)
     - **description**: Nova descrição (opcional)
     """
     service = GamificationService(db)
-    config = service.update_action_points(action_type, action_data, current_user)
+    config = service.update_action_points(board_type, action_type, action_data, current_user)
 
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"
@@ -1153,13 +1175,10 @@ async def initialize_action_points(
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Inicializa configurações padrão de pontos se não existirem (apenas admin).
-
-    Cria configurações para: card_created, card_won, card_moved, etc.
+    Endpoint de compatibilidade — as configurações padrão são inseridas pela migration.
+    Retorna mensagem informativa.
     """
-    service = GamificationService(db)
-    service.initialize_default_action_points()
-    return {"message": "Configurações inicializadas com sucesso"}
+    return {"message": "As configurações padrão são gerenciadas pela migration do banco de dados."}
 
 
 # ========== HISTÓRICO DE PONTOS ==========
@@ -1174,9 +1193,14 @@ def _build_point_responses(points: list, user_name_map: dict) -> list:
             id=p.id,
             user_id=p.user_id,
             user_name=user_name_map.get(p.user_id),
+            board_type=p.board_type,
             points=p.points,
             reason=p.reason,
             description=p.description,
+            is_commission=p.is_commission,
+            commission_source_user_id=p.commission_source_user_id,
+            commission_ratio=p.commission_ratio,
+            original_points=p.original_points,
             created_at=p.created_at,
         )
         for p in points
@@ -1218,6 +1242,7 @@ async def get_my_points_history(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(20, ge=1, le=100, description="Itens por página"),
     reason: Optional[str] = Query(None, description="Filtrar por tipo de ação (ex: card_moved)"),
+    board_type: Optional[str] = Query(None, description="Filtrar por board: prospecting ou acquisition"),
     date_from: Optional[str] = Query(None, description="Data inicial (YYYY-MM-DD)"),
     date_to: Optional[str] = Query(None, description="Data final (YYYY-MM-DD)"),
     current_user: User = Depends(get_current_active_user),
@@ -1233,8 +1258,8 @@ async def get_my_points_history(
 
     repo = GamificationRepository(db)
     skip = (page - 1) * page_size
-    points = repo.list_user_points(current_user.id, skip, page_size, reason=reason, date_from=df, date_to=dt2)
-    total = repo.count_user_points(current_user.id, reason=reason, date_from=df, date_to=dt2)
+    points = repo.list_user_points(current_user.id, skip, page_size, reason=reason, board_type=board_type, date_from=df, date_to=dt2)
+    total = repo.count_user_points(current_user.id, reason=reason, board_type=board_type, date_from=df, date_to=dt2)
     total_pages = max(1, (total + page_size - 1) // page_size)
 
     user_name_map = {current_user.id: current_user.name}
@@ -1266,6 +1291,7 @@ async def get_all_points_history(
     page_size: int = Query(20, ge=1, le=100, description="Itens por página"),
     reason: Optional[str] = Query(None, description="Filtrar por tipo de ação"),
     filter_user_id: Optional[int] = Query(None, alias="user_id", description="Filtrar por usuário"),
+    board_type: Optional[str] = Query(None, description="Filtrar por board: prospecting ou acquisition"),
     date_from: Optional[str] = Query(None, description="Data inicial (YYYY-MM-DD)"),
     date_to: Optional[str] = Query(None, description="Data final (YYYY-MM-DD)"),
     current_user: User = Depends(require_manager_or_admin()),
@@ -1281,8 +1307,8 @@ async def get_all_points_history(
 
     repo = GamificationRepository(db)
     skip = (page - 1) * page_size
-    points = repo.list_all_points(skip, page_size, reason=reason, user_id=filter_user_id, date_from=df, date_to=dt2)
-    total = repo.count_all_points(reason=reason, user_id=filter_user_id, date_from=df, date_to=dt2)
+    points = repo.list_all_points(skip, page_size, reason=reason, user_id=filter_user_id, board_type=board_type, date_from=df, date_to=dt2)
+    total = repo.count_all_points(reason=reason, user_id=filter_user_id, board_type=board_type, date_from=df, date_to=dt2)
     total_pages = max(1, (total + page_size - 1) // page_size)
 
     user_ids = list({p.user_id for p in points})

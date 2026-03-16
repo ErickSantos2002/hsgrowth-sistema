@@ -52,6 +52,9 @@ class CardTask(Base, TimestampMixin):
     # Relacionamento com User responsável pela atividade
     assigned_to_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
+    # Quem criou a tarefa (para sistema de comissão de gamificação)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # Informações básicas
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
@@ -81,7 +84,8 @@ class CardTask(Base, TimestampMixin):
 
     # Relacionamentos
     card = relationship("Card", back_populates="tasks")
-    assigned_to = relationship("User", back_populates="tasks")
+    assigned_to = relationship("User", foreign_keys=[assigned_to_id], back_populates="tasks")
+    created_by = relationship("User", foreign_keys=[created_by_id])
 
     def __repr__(self):
         return f"<CardTask(id={self.id}, card_id={self.card_id}, type='{self.task_type}', title='{self.title}')>"

@@ -199,7 +199,7 @@ const Settings: React.FC = () => {
     if (badgeSearch.trim()) {
       const search = badgeSearch.toLowerCase();
       filtered = filtered.filter(
-        (b) => b.name.toLowerCase().includes(search) || b.description.toLowerCase().includes(search)
+        (b) => b.name.toLowerCase().includes(search) || (b.description || "").toLowerCase().includes(search)
       );
     }
 
@@ -439,10 +439,10 @@ const Settings: React.FC = () => {
       setLoadingPoints(true);
       const data = await gamificationService.listActionPoints();
       setActionPoints(data);
-      // Inicializa valores de edição
+      // Usa "board_type|action_type" como chave para diferenciar ações do mesmo tipo em boards diferentes
       const initialEditing: Record<string, number> = {};
       data.forEach(action => {
-        initialEditing[action.action_type] = action.points;
+        initialEditing[`${action.board_type}|${action.action_type}`] = action.points;
       });
       setEditingPoints(initialEditing);
     } catch (error) {
@@ -453,12 +453,13 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleUpdatePoints = async (actionType: string) => {
+  const handleUpdatePoints = async (boardType: string, actionType: string) => {
     try {
-      const newPoints = editingPoints[actionType];
+      const key = `${boardType}|${actionType}`;
+      const newPoints = editingPoints[key];
       if (newPoints === undefined) return;
 
-      await gamificationService.updateActionPoints(actionType, { points: newPoints });
+      await gamificationService.updateActionPoints(boardType as any, actionType, { points: newPoints });
       showSuccess("Pontos atualizados com sucesso!");
       await loadActionPoints();
     } catch (error) {
@@ -469,7 +470,7 @@ const Settings: React.FC = () => {
 
   const handleToggleActionStatus = async (action: ActionPoints) => {
     try {
-      await gamificationService.updateActionPoints(action.action_type, {
+      await gamificationService.updateActionPoints(action.board_type, action.action_type, {
         is_active: !action.is_active,
       });
       showSuccess(`Ação ${!action.is_active ? "ativada" : "desativada"} com sucesso!`);
@@ -477,28 +478,6 @@ const Settings: React.FC = () => {
     } catch (error) {
       console.error("Erro ao alterar status da ação:", error);
       showError("Erro ao alterar status da ação");
-    }
-  };
-
-  const handleInitializeActionPoints = async () => {
-    const confirmed = await confirm({
-      title: "Inicializar configurações de pontos",
-      message: "Deseja inicializar as configurações padrão de pontos? Isso irá criar as ações padrão do sistema.",
-      confirmText: "Inicializar",
-      isDanger: false,
-    });
-    if (!confirmed) return;
-
-    try {
-      setLoadingPoints(true);
-      await gamificationService.initializeActionPoints();
-      showSuccess("Configurações padrão inicializadas com sucesso!");
-      await loadActionPoints();
-    } catch (error) {
-      console.error("Erro ao inicializar configurações:", error);
-      showError("Erro ao inicializar configurações padrão");
-    } finally {
-      setLoadingPoints(false);
     }
   };
 
@@ -1896,15 +1875,12 @@ const Settings: React.FC = () => {
                       Defina quantos pontos vale cada ação no sistema de gamificação
                     </p>
                   </div>
-                  {actionPoints.length === 0 && !loadingPoints && (
-                    <button
-                      onClick={handleInitializeActionPoints}
-                      className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 px-4 py-2 text-white shadow-lg transition-all hover:from-emerald-600 hover:to-green-600 hover:shadow-emerald-500/50"
-                    >
-                      <Plus size={20} />
-                      Inicializar Configurações Padrão
-                    </button>
-                  )}
+                  <button
+                    onClick={loadActionPoints}
+                    className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                  >
+                    Atualizar
+                  </button>
                 </div>
 
                 {/* Estatísticas */}
@@ -1952,6 +1928,9 @@ const Settings: React.FC = () => {
                         <thead className="bg-gray-50 dark:bg-slate-800">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                              Board
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Ação
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -1971,6 +1950,17 @@ const Settings: React.FC = () => {
                         <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                           {actionPoints.map((action) => (
                             <tr key={action.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                              {/* Board */}
+                              <td className="px-6 py-4">
+                                <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                                  action.board_type === "prospecting"
+                                    ? "bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                                    : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                                }`}>
+                                  {action.board_type === "prospecting" ? "Prospecção" : "Aquisição"}
+                                </span>
+                              </td>
+
                               {/* Tipo de Ação */}
                               <td className="px-6 py-4">
                                 <code className="rounded bg-gray-100 px-2 py-1 text-sm text-cyan-600 dark:bg-slate-800 dark:text-cyan-400">
@@ -1988,18 +1978,18 @@ const Settings: React.FC = () => {
                                 <div className="flex items-center justify-center gap-2">
                                   <input
                                     type="number"
-                                    value={editingPoints[action.action_type] || 0}
+                                    value={editingPoints[`${action.board_type}|${action.action_type}`] ?? 0}
                                     onChange={(e) =>
                                       setEditingPoints({
                                         ...editingPoints,
-                                        [action.action_type]: parseInt(e.target.value) || 0,
+                                        [`${action.board_type}|${action.action_type}`]: parseInt(e.target.value) || 0,
                                       })
                                     }
                                     className="w-20 rounded border border-gray-300 bg-white px-3 py-1 text-center text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                   />
-                                  {editingPoints[action.action_type] !== action.points && (
+                                  {editingPoints[`${action.board_type}|${action.action_type}`] !== action.points && (
                                     <button
-                                      onClick={() => handleUpdatePoints(action.action_type)}
+                                      onClick={() => handleUpdatePoints(action.board_type, action.action_type)}
                                       className="rounded bg-emerald-600 p-1.5 text-white transition-colors hover:bg-emerald-700"
                                       title="Salvar alteração"
                                     >
