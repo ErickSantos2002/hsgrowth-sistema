@@ -100,6 +100,10 @@ const CardModal: React.FC<CardModalProps> = ({
 
   const isSalesperson = currentUser?.role?.toLowerCase() === "salesperson";
   const isSDR = currentUser?.role?.toLowerCase() === "sdr";
+  // Admin e Manager podem escolher qualquer lista; demais roles ficam travados em "Prospecção"
+  const isPrivileged =
+    currentUser?.role?.toLowerCase() === "admin" ||
+    currentUser?.role?.toLowerCase() === "manager";
 
   // ─── Empresa ──────────────────────────────────────────────────────────────
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -413,12 +417,20 @@ const CardModal: React.FC<CardModalProps> = ({
           {/* ── Seção: Informações Básicas ── */}
           <div className="space-y-4">
             {/* Lista de destino */}
-            <FormField label="Lista" hint="Selecione em qual lista o card será criado">
+            <FormField
+              label="Lista"
+              hint={
+                isPrivileged
+                  ? "Selecione em qual lista o card será criado"
+                  : "Vendedores e SDRs só podem criar cards na lista Prospecção"
+              }
+            >
               <Select
                 value={formData.list_id}
                 onChange={(e) =>
                   setFormData({ ...formData, list_id: Number(e.target.value) })
                 }
+                disabled={!isPrivileged}
               >
                 {lists.map((list) => (
                   <option key={list.id} value={list.id}>

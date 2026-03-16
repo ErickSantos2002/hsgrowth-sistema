@@ -452,23 +452,21 @@ class CardService:
 
         # Verifica se o usuário tem permissão para criar card nessa lista.
         # Apenas Admin e Manager podem criar em qualquer lista.
-        # Demais roles só podem criar na primeira lista do board de Prospecção (id=6).
+        # Demais roles só podem criar na lista "Prospecção" do board de Prospecção (id=6),
+        # pois cards criados manualmente já chegam com algum contexto prévio.
         is_privileged = (
             current_user.role and current_user.role.name in ("admin", "manager")
         )
         if not is_privileged:
-            from app.models.list import List as ListModel
-            first_list = (
-                self.db.query(ListModel)
-                .filter(ListModel.board_id == 6)
-                .order_by(ListModel.position.asc())
-                .first()
+            allowed = (
+                list_obj.board_id == 6
+                and list_obj.name.strip() == "Prospecção"
             )
-            if not first_list or list_obj.id != first_list.id:
+            if not allowed:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=(
-                        "Você só pode criar negócios na lista 'Lead Novo' "
+                        "Você só pode criar negócios na lista 'Prospecção' "
                         "do quadro Prospecção"
                     ),
                 )

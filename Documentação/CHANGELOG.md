@@ -7,6 +7,56 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.5.3] - 2026-03-17
+
+### Corrigido
+
+#### Botão "Reabrir Negócio" não vinculava empresa e contato corretamente
+
+Ao reabrir um card perdido, o clone era criado na lista de destino mas sem o cliente (`client_id`) e o contato (`person_id`) vinculados corretamente.
+
+**Causa raiz — dois problemas combinados:**
+
+1. **`person_id` nunca chegava ao banco** — o campo não era incluído no `CardCreate` do reopen. O repositório usa `model_dump(exclude_unset=True)`, então campos não declarados explicitamente no construtor eram silenciosamente ignorados. O bloco `try/except` que tentava corrigi-los após a criação falhava silenciosamente (apenas printava no console).
+
+2. **`client_id` podia derrubar o reopen inteiro com HTTP 422** — o `create_card` aplica validações do blueprint da consultora (exige `sector` e `relationship_type` no cliente). Clientes importados do Pipedrive frequentemente não têm esses campos, fazendo o reopen falhar completamente para esses registros.
+
+**Correção** (`backend/app/services/card_service.py` — `reopen_card`):
+- `client_id` e `person_id` removidos do `CardCreate` do reopen
+- Ambos agora são vinculados diretamente no ORM após a criação, num único `commit`, junto com `contact_info` — bypassando as validações do blueprint que não fazem sentido no contexto de reabertura
+
+#### Erro 403 ao criar card como vendedor/SDR
+
+Vendedores e SDRs recebiam `403 Forbidden` ao tentar criar um card no board Prospecção.
+
+**Causa:** o backend validava se o card estava sendo criado na **primeira lista por posição** do board 6, mas a regra de negócio foi atualizada para permitir criação apenas na lista chamada **"Prospecção"** (segunda lista, onde cards criados manualmente já chegam com contexto prévio). O frontend já refletia essa regra, mas o backend ainda usava a lógica antiga.
+
+**Correção** (`backend/app/services/card_service.py` — `create_card`):
+- Validação alterada de "primeira lista por posição" para "lista com `name == 'Prospecção'` no board 6"
+- Mensagem de erro atualizada para refletir a nova regra
+
+### Alterado
+
+#### Seletor de lista travado para vendedores e SDRs no modal "Novo Card"
+
+No modal de criação de card, o campo **"Lista"** agora fica desabilitado para roles que não são admin nem manager. A regra de negócio exige que vendedores e SDRs só criem cards na lista "Prospecção" do board Prospecção, então não faz sentido exibir o seletor como editável para esses usuários.
+
+**Arquivo alterado:** `frontend/src/components/kanban/CardModal.tsx`
+- Adicionada flag `isPrivileged` (true apenas para `admin` e `manager`)
+- `Select` de lista recebe `disabled={!isPrivileged}` para os demais roles
+- `hint` do campo atualizado dinamicamente: exibe a restrição quando travado
+
+#### Componente `SelectMenu` local removido do `KanbanBoard.tsx`
+
+O arquivo `KanbanBoard.tsx` continha uma cópia local do componente `SelectMenu` que não tinha a prop `size`, causando erro de TypeScript nos filtros do Kanban (`Property 'size' does not exist on type 'IntrinsicAttributes & SelectMenuProps'`).
+
+**Correção** (`frontend/src/pages/KanbanBoard.tsx`):
+- Componente local `SelectMenu` (interface + implementação) removido
+- Adicionado import do `SelectMenu` já existente em `components/common`, que já suporta `size?: "md" | "sm"`
+- Import `ChevronDown` do lucide-react removido (ficou órfão após remoção do componente local)
+
+---
+
 ## [1.5.2] - 2026-03-13
 
 ### Adicionado

@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.5.3",
+    date: "17/03/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Corrigido bug no botão 'Reabrir Negócio': o card era criado mas ficava sem empresa e contato vinculados. Agora empresa e contato do card original são copiados corretamente para o novo card.",
+      },
+      {
+        type: "fix",
+        text: "Corrigido erro 403 ao criar card como vendedor ou SDR — o sistema agora permite criar corretamente na lista Prospecção.",
+      },
+      {
+        type: "improvement",
+        text: "Na modal de criação de card, o campo 'Lista' agora fica travado para vendedores e SDRs, que só podem criar na lista Prospecção. Admin e Gerente continuam podendo escolher livremente.",
+      },
+    ],
+  },
+  {
     version: "1.5.2",
     date: "13/03/2026",
     entries: [
