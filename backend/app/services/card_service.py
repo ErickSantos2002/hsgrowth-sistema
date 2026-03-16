@@ -1933,7 +1933,7 @@ class CardService:
 
     def reopen_card(self, card_id: int, reopen_data, current_user: User) -> Card:
         """
-        Reabre um negócio perdido criando um clone na lista de destino (list_id=22, board_id=6).
+        Reabre um negócio perdido criando um clone na lista Prospecção (list_id=23, board_id=6).
 
         O card original permanece inalterado (continua perdido).
         O clone herda os dados completos do original:
@@ -1964,8 +1964,8 @@ class CardService:
         from app.models.attachment import Attachment
         from app.models.card_product import CardProduct
 
-        # ID fixo da lista de destino (Prospecção - board_id=6)
-        TARGET_LIST_ID = 22
+        # ID fixo da lista de destino (Prospecção - board_id=6, id=23)
+        TARGET_LIST_ID = 23
 
         # Busca e valida o card original
         original_card = self.get_card_by_id(card_id)
