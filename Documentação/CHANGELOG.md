@@ -7,6 +7,19 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.1] - 2026-03-16
+
+### Corrigido
+
+#### Botão "Reabrir Negócio" retornando erro 403
+
+O reopen criava o card clone na lista **Lead Novo** (id=22), mas a regra de negócio exige criação apenas na lista **Prospecção** (id=23) — onde a validação do `create_card` permite a entrada de vendedores e SDRs. Com isso, qualquer tentativa de reabrir um negócio resultava em 403 Forbidden.
+
+**Correção** (`backend/app/services/card_service.py` — `reopen_card`):
+- `TARGET_LIST_ID` corrigido de `22` para `23`
+
+---
+
 ## [1.6.0] - 2026-03-16
 
 ### Adicionado / Alterado

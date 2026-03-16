@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.1",
+    date: "16/03/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Corrigido erro ao clicar em 'Reabrir Negócio' — o sistema tentava criar o card na lista errada e bloqueava a ação. Agora o card reaberto vai direto para a lista Prospecção, como esperado.",
+      },
+    ],
+  },
+  {
     version: "1.6.0",
     date: "16/03/2026",
     entries: [
