@@ -1926,11 +1926,14 @@ class CardService:
                 detail=f"Lista de destino (ID {TARGET_LIST_ID}) não encontrada"
             )
 
-        # Monta os dados do clone copiando campos relevantes do original
+        # Monta os dados do clone copiando campos relevantes do original.
+        # client_id e person_id são intencionalmente omitidos aqui: o create_card
+        # aplica validações rígidas de blueprint (sector, relationship_type, contato obrigatório)
+        # que podem falhar para registros antigos importados do Pipedrive.
+        # Eles serão vinculados diretamente no ORM após a criação.
         clone_data = CardCreate(
             title=reopen_data.title,
             list_id=TARGET_LIST_ID,
-            client_id=original_card.client_id,
             assigned_to_id=original_card.assigned_to_id,
             sdr_id=original_card.sdr_id,
             value=float(original_card.value) if original_card.value else None,
@@ -1947,18 +1950,20 @@ class CardService:
         # Cria o clone (create_card já preenche prospection_entry_date automaticamente)
         new_card = self.create_card(clone_data, current_user)
 
-        # Copia campos que não estão no CardCreate mas existem no model
-        # contact_info e person_id precisam ser setados diretamente após a criação
+        # Vincula client_id, person_id e contact_info diretamente no ORM, num único
+        # commit, evitando as validações do blueprint que poderiam bloquear o reopen
         try:
-            if original_card.contact_info:
-                new_card.contact_info = original_card.contact_info
+            if original_card.client_id:
+                new_card.client_id = original_card.client_id
             if original_card.person_id:
                 new_card.person_id = original_card.person_id
+            if original_card.contact_info:
+                new_card.contact_info = original_card.contact_info
             self.db.commit()
             self.db.refresh(new_card)
         except Exception as e:
             self.db.rollback()
-            print(f"[REOPEN] Aviso: erro ao copiar contact_info/person_id: {e}")
+            print(f"[REOPEN] Aviso: erro ao vincular client_id/person_id/contact_info: {e}")
 
         # Copia os campos customizados do card original para o clone
         try:

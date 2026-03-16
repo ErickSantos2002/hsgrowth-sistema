@@ -21,7 +21,6 @@ import {
   Rocket,
   Star,
   Heart,
-  ChevronDown,
   LucideIcon,
 } from "lucide-react";
 import boardService from "../services/boardService";
@@ -33,7 +32,7 @@ import { COLORS } from "../constants/colors";
 import KanbanList from "../components/kanban/KanbanList";
 import { showSuccess, showError, showWarning } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
-import { LoadingSpinner } from "../components/common";
+import { LoadingSpinner, SelectMenu } from "../components/common";
 import KanbanCard from "../components/kanban/KanbanCard";
 import ListModal from "../components/kanban/ListModal";
 import ConfirmModal from "../components/kanban/ConfirmModal";
@@ -1125,86 +1124,6 @@ const KanbanBoard: React.FC = () => {
         board={board}
         title="Editar Board"
       />
-    </div>
-  );
-};
-
-// ==================== COMPONENTE AUXILIAR: SELECT MENU ====================
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-interface SelectMenuProps {
-  value: string;
-  options: SelectOption[];
-  placeholder?: string;
-  onChange: (value: string) => void;
-  disabled?: boolean; // Nova prop para desabilitar o select
-}
-
-const SelectMenu: React.FC<SelectMenuProps> = ({
-  value,
-  options,
-  placeholder,
-  onChange,
-  disabled = false,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find((option) => option.value === value);
-  const selectedLabel = selectedOption?.label || placeholder || "Selecione";
-
-  return (
-    <div ref={menuRef} className="relative">
-      <button
-        type="button"
-        onClick={() => !disabled && setIsOpen((open) => !open)}
-        disabled={disabled}
-        className={`flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white ${
-          disabled ? "cursor-not-allowed opacity-60" : ""
-        }`}
-      >
-        <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
-          {selectedLabel}
-        </span>
-        <ChevronDown
-          size={16}
-          className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
-      {isOpen && !disabled && (
-        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-          {options.map((option) => (
-            <button
-              key={option.value || option.label}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
-                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
-              }`}
-            >
-              <span className="truncate">{option.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
