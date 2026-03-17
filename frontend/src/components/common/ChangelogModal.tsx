@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.2",
+    date: "17/03/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Agora é possível voltar um card para a etapa anterior do pipeline — mas somente uma etapa por vez. A regra de não pular etapas continua valendo tanto ao avançar quanto ao voltar.",
+      },
+      {
+        type: "improvement",
+        text: "Vendedores e SDRs agora visualizam todos os cards do pipeline, independentemente de estarem atribuídos. A restrição de edição continua: cada um só pode editar os cards vinculados a ele.",
+      },
+    ],
+  },
+  {
     version: "1.6.1",
     date: "16/03/2026",
     entries: [

@@ -7,6 +7,51 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.2] - 2026-03-17
+
+### Alterado
+
+#### Movimentação retroativa de cards no pipeline
+
+Vendedores agora podem mover um card para a etapa anterior do pipeline. A regra de "não pular etapas" continua valendo em ambas as direções — só é possível avançar ou voltar uma etapa por vez.
+
+**Regras após a mudança:**
+- Avançar: somente para a próxima etapa (sem pular)
+- Voltar: somente para a etapa imediatamente anterior (sem pular)
+- Admin e manager continuam com movimentação livre
+
+**Casos especiais — Board Prospecção (id=6):**
+O mapa de transições foi atualizado para incluir os retornos possíveis, respeitando o fluxo especial da etapa "Reagendamento" (que só é alimentada pelo botão No Show):
+- `Lead Novo` → `Prospecção` (somente avança)
+- `Prospecção` ↔ `Lead Novo` / `Conectado`
+- `Conectado` ↔ `Prospecção` / `Agendado`
+- `Agendado` → `Conectado` (volta direto para Conectado, pulando Reagendamento)
+- `Reagendamento` → `Agendado` (sem retorno, fluxo exclusivo do No Show)
+
+**Arquivo alterado:** `backend/app/services/card_service.py` — `_validate_stage_advancement`
+
+---
+
+#### Visibilidade de cards liberada para todos os roles
+
+Vendedores (`salesperson`) e SDRs passaram a visualizar todos os cards do pipeline, independente de estarem atribuídos. A restrição de escrita foi mantida — cada role só pode editar cards aos quais está vinculado.
+
+**Regras após a mudança:**
+
+| Ação | Admin / Manager | Salesperson | SDR |
+|------|----------------|-------------|-----|
+| Visualizar card | Todos | Todos | Todos |
+| Editar card | Todos | Somente `assigned_to == seu id` | Somente `sdr_id == seu id` |
+| Mover card | Todos | Somente `assigned_to == seu id` | Somente `sdr_id == seu id` |
+| Deletar card | Todos | Não permitido | Não permitido |
+| Busca global | Todos | Todos | Todos |
+
+**Arquivos alterados:**
+- `backend/app/services/card_service.py` — removida restrição em `get_card_by_id`; adicionado método `_check_write_permission`; aplicado em `update_card` e `move_card`
+- `backend/app/api/v1/endpoints/cards.py` — removido filtro por role na busca global
+
+---
+
 ## [1.6.1] - 2026-03-16
 
 ### Corrigido

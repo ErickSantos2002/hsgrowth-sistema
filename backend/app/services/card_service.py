@@ -94,20 +94,38 @@ class CardService:
         # Verifica acesso estrutural (lista e board existem)
         self._verify_card_access(card)
 
-        # Verifica permissão por role quando o usuário é fornecido
-        if current_user is not None:
-            if current_user.role.name == "salesperson" and card.assigned_to_id != current_user.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Você não tem permissão para acessar este card"
-                )
-            if current_user.role.name == "sdr" and card.sdr_id != current_user.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Você não tem permissão para acessar este card"
-                )
+        # Todos os usuários podem visualizar qualquer card — sem restrição por role
 
         return card
+
+    def _check_write_permission(self, card: Card, current_user: User) -> None:
+        """
+        Verifica se o usuário tem permissão para editar o card.
+
+        Admins e managers podem editar qualquer card.
+        Salesperson só pode editar cards onde está atribuído como vendedor.
+        SDR só pode editar cards onde está atribuído como SDR.
+
+        Raises:
+            HTTPException 403: Se o usuário não tiver vínculo com o card
+        """
+        role_name = current_user.role.name if current_user.role else ""
+
+        # Roles privilegiados não têm restrição de escrita
+        if role_name in ("admin", "manager"):
+            return
+
+        if role_name == "salesperson" and card.assigned_to_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você não tem permissão para editar este card",
+            )
+
+        if role_name == "sdr" and card.sdr_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você não tem permissão para editar este card",
+            )
 
     def list_cards(
         self,
@@ -145,13 +163,7 @@ class CardService:
         """
         from app.schemas.card import CardMinimalResponse, CardMinimalListResponse
 
-        # Força filtros por role: salesperson só vê os seus; SDR só vê onde é o SDR
-        # Isso garante que o filtro não pode ser contornado via parâmetro de query
-        if current_user is not None:
-            if current_user.role.name == "salesperson":
-                assigned_to_id = current_user.id
-            elif current_user.role.name == "sdr":
-                sdr_id = current_user.id
+        # Todos os usuários podem listar cards de qualquer vendedor — sem restrição por role
 
         # Verifica se o board existe
         board = self.board_repository.find_by_id(board_id)
@@ -630,8 +642,11 @@ class CardService:
         Returns:
             Card atualizado
         """
-        # Busca e verifica acesso (inclui verificação de role)
+        # Busca o card (qualquer um pode ver)
         card = self.get_card_by_id(card_id, current_user)
+
+        # Verifica permissão de escrita — salesperson/SDR só editam seus próprios cards
+        self._check_write_permission(card, current_user)
 
         # Guarda valores antigos para detectar mudanças
         old_is_won = card.is_won
@@ -928,20 +943,17 @@ class CardService:
             # Mapa de transições permitidas por índice de origem no board 6.
             # "Reagendamento" (índice 3) não recebe cards pelo pipeline normal —
             # é populado exclusivamente pelo botão No Show no board de Aquisição.
+            # Retorno de uma etapa também é permitido (exceto pular Reagendamento ao voltar).
             allowed_transitions = {
-                0: [1],  # Lead Novo       → Prospecção
-                1: [2],  # Prospecção      → Conectado
-                2: [4],  # Conectado       → Agendado (pula Reagendamento propositalmente)
-                3: [4],  # Reagendamento   → Agendado (SDR reagendando após No Show)
+                0: [1],       # Lead Novo      → Prospecção (só avança)
+                1: [0, 2],    # Prospecção     → Lead Novo (volta) ou Conectado (avança)
+                2: [1, 4],    # Conectado      → Prospecção (volta) ou Agendado (avança)
+                3: [4],       # Reagendamento  → Agendado (SDR reagendando após No Show)
+                4: [2],       # Agendado       → Conectado (volta, pula Reagendamento pois não é etapa normal)
             }
             allowed = allowed_transitions.get(source_index, [])
 
             if target_index not in allowed:
-                if target_index < source_index:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Não é permitido voltar etapas pelo pipeline.",
-                    )
                 # Indica qual é o destino correto para a etapa de origem
                 correct_targets = ", ".join(
                     f"'{board_lists[i].name}'" for i in allowed if i < len(board_lists)
@@ -950,17 +962,23 @@ class CardService:
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=(
                         f"Transição não permitida. "
-                        f"De '{source_list.name}', o destino correto é: {correct_targets}."
+                        f"De '{source_list.name}', os destinos permitidos são: {correct_targets}."
                     ),
                 )
         else:
-            # Regra genérica para outros boards: só próxima etapa
-            if target_index != source_index + 1:
+            # Regra genérica para outros boards: só uma etapa por vez (avançar ou voltar)
+            if abs(target_index - source_index) != 1:
                 if target_index < source_index:
+                    # Tentou voltar mais de uma etapa
+                    prev_list = board_lists[source_index - 1]
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Não é permitido voltar etapas pelo pipeline.",
+                        detail=(
+                            f"Não é permitido pular etapas ao voltar. "
+                            f"Retorne o negócio para a etapa anterior: '{prev_list.name}'."
+                        ),
                     )
+                # Tentou avançar mais de uma etapa
                 next_list = board_lists[source_index + 1]
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -1286,8 +1304,11 @@ class CardService:
         """
         from datetime import datetime
 
-        # Busca e verifica acesso ao card (inclui verificação de role)
+        # Busca o card (qualquer um pode ver)
         card = self.get_card_by_id(card_id, current_user)
+
+        # Verifica permissão de escrita — salesperson/SDR só movem seus próprios cards
+        self._check_write_permission(card, current_user)
 
         # Verifica se a lista de destino existe e pertence à mesma conta
         target_list = self.list_repository.find_by_id(target_list_id)
