@@ -25,6 +25,9 @@ from app.schemas.custom_report import (
     ValidateFormulaRequest,
     ValidateFormulaResponse,
     CalculatedYFieldSchema,
+    SplitValuesRequest,
+    SplitValuesResponse,
+    SplitValueItem,
 )
 from app.core.formula_evaluator import FormulaEvaluator
 from app.schemas.report import PeriodEnum
@@ -165,6 +168,36 @@ async def validate_calculated_formula(
 
 
 @router.post(
+    "/split-values",
+    response_model=SplitValuesResponse,
+    summary="Busca os valores disponíveis para dividir séries",
+    responses={
+        200: {"description": "Lista de valores retornada com sucesso"},
+    },
+)
+async def get_split_values(
+    request: SplitValuesRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Retorna os valores disponíveis para o campo `split_by` informado.
+
+    Usado pelo frontend para popular os checkboxes de filtro de séries.
+    Cada item possui `label` (texto exibido) e `value` (raw value para filtragem).
+
+    **Exemplo:** source=card_history, key=stage_name →
+    retorna todas as etapas com seus IDs de lista como value.
+    """
+    _require_manager_or_admin(current_user)
+    service = CustomReportService(db)
+    pairs = service._get_split_values(request.source, request.key)
+    return SplitValuesResponse(
+        values=[SplitValueItem(label=label, value=raw) for label, raw in pairs]
+    )
+
+
+@router.post(
     "/drill-down",
     response_model=DrillDownResponse,
     summary="Detalha os cards de uma barra/fatia do gráfico",
@@ -253,6 +286,7 @@ async def export_custom_report(
                 "start_date": chart.get("date_start"),
                 "end_date": chart.get("date_end"),
                 "split_by": chart.get("split_by"),
+                "split_filter_values": chart.get("split_filter_values"),
             })
             result = service.execute_query(query_request)
             chart_results.append({

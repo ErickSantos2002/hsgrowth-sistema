@@ -258,9 +258,29 @@ class ReportService {
       start_date: config.start_date ?? null,
       end_date: config.end_date ?? null,
       split_by: config.split_by ?? null,
+      split_filter_values:
+        config.split_filter_values && config.split_filter_values.length > 0
+          ? config.split_filter_values
+          : null,
     };
     const response = await api.post<QueryResponse>("/api/v1/reports/query", payload);
     return response.data;
+  }
+
+  /**
+   * Busca os valores disponíveis para um campo split_by.
+   * Usado para popular os checkboxes de filtro de séries no ChartConfigPanel.
+   * Retorna pares {label, value} onde value é o raw_value enviado ao backend no filtro.
+   */
+  async fetchSplitValues(
+    source: string,
+    key: string
+  ): Promise<{ label: string; value: string | number }[]> {
+    const response = await api.post<{ values: { label: string; value: string | number }[] }>(
+      "/api/v1/reports/split-values",
+      { source, key }
+    );
+    return response.data.values;
   }
 
   /**

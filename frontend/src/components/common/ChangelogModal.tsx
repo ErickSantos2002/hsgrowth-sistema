@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.5",
+    date: "17/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Filtro de séries no 'Dividir por': ao configurar a divisão de um gráfico (ex: Etapa do Pipeline), agora aparecem checkboxes para escolher exatamente quais séries exibir — muito útil para focar em etapas específicas sem poluir o gráfico com todas as etapas.",
+      },
+    ],
+  },
+  {
     version: "1.6.4",
     date: "17/03/2026",
     entries: [

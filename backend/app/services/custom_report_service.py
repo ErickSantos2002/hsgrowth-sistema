@@ -1708,6 +1708,15 @@ class CustomReportService:
             split_values = self._get_split_values(
                 request.split_by.source, request.split_by.key
             )
+
+            # Aplica filtro de valores selecionados pelo usuário (se informado)
+            if request.split_filter_values:
+                allowed = {str(v) for v in request.split_filter_values}
+                split_values = [
+                    (label, raw) for label, raw in split_values
+                    if str(raw) in allowed
+                ]
+
             if split_values:
                 # Usa apenas o primeiro y_field quando split_by está ativo
                 yf = request.y_fields[0]

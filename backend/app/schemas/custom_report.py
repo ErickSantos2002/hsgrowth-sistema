@@ -2,7 +2,7 @@
 Schemas Pydantic para o módulo de Relatórios Customizados.
 Cobre o catálogo de campos, requests de query e CRUD de relatórios.
 """
-from typing import List, Optional, Literal
+from typing import Any, List, Optional, Literal, Union
 from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict
 
@@ -100,12 +100,40 @@ class QueryRequest(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     split_by: Optional[AxisFieldSchema] = None
+    split_filter_values: Optional[List[Union[str, int, float]]] = None
+    """
+    Filtro de valores do split_by.
+    Quando preenchido, apenas as séries cujo raw_value estiver nesta lista
+    serão incluídas no gráfico.
+    Vazio ou None = exibe todas as séries (sem filtro).
+    """
 
 
 class CustomReportCreate(BaseModel):
     """Payload para criar ou atualizar um relatório customizado."""
     name: str
     config: dict  # CustomReportConfig serializado do frontend
+
+
+# ========================
+# SCHEMAS DE SPLIT VALUES
+# ========================
+
+class SplitValuesRequest(BaseModel):
+    """Request para buscar os valores disponíveis de um campo split_by."""
+    source: Literal['cards', 'clients', 'persons', 'activities', 'tasks', 'card_history']
+    key: str
+
+
+class SplitValueItem(BaseModel):
+    """Um valor disponível para uso como filtro do split_by."""
+    label: str
+    value: Union[str, int, float]
+
+
+class SplitValuesResponse(BaseModel):
+    """Lista de valores disponíveis para o campo split_by informado."""
+    values: List[SplitValueItem]
 
 
 # ========================

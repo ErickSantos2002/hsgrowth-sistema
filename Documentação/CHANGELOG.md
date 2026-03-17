@@ -7,6 +7,39 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.5] - 2026-03-17
+
+### Adicionado
+
+#### Filtro de séries no "Dividir por" (Relatórios Customizados)
+
+Ao configurar o campo **Dividir por** em um gráfico, agora é possível selecionar exatamente quais séries devem ser exibidas — em vez de mostrar todas as etapas/vendedores/categorias disponíveis.
+
+**Como usar:**
+1. Arraste um campo para a zona **Dividir por** (ex: Etapa do Pipeline)
+2. Uma lista de checkboxes aparece abaixo com todas as séries disponíveis
+3. Desmarque as séries que não deseja ver no gráfico
+4. O gráfico atualiza em tempo real
+5. Clique em "Exibir todas" para remover o filtro
+
+**Detalhes técnicos:**
+- Novo endpoint `POST /api/v1/reports/split-values` retorna os valores disponíveis (label + raw_value) para qualquer campo split_by
+- `QueryRequest` recebe novo campo opcional `split_filter_values: List[Union[str, int, float]]` — quando preenchido, apenas as séries com matching raw_value são geradas
+- O filtro é persistido junto com a configuração do gráfico (salvo no relatório)
+- Exportação Excel/CSV respeita o filtro de séries
+
+**Arquivos alterados — Backend:**
+- `app/schemas/custom_report.py` — `QueryRequest.split_filter_values`; novos schemas `SplitValuesRequest`, `SplitValueItem`, `SplitValuesResponse`
+- `app/api/v1/endpoints/custom_reports.py` — endpoint `POST /split-values`; exportação passa `split_filter_values`
+- `app/services/custom_report_service.py` — `execute_query` filtra `split_values` por `split_filter_values` antes de gerar séries
+
+**Arquivos alterados — Frontend:**
+- `src/components/reports/reportTypes.ts` — `ChartConfig.split_filter_values?: (string | number)[]`
+- `src/services/reportService.ts` — método `fetchSplitValues(source, key)`; `queryChart` passa `split_filter_values`
+- `src/components/reports/ChartConfigPanel.tsx` — checkboxes de filtro abaixo do campo Dividir por; estados `splitFilterValues`, `availableSplitValues`; handler `toggleSplitFilterValue`
+
+---
+
 ## [1.6.4] - 2026-03-17
 
 ### Adicionado
