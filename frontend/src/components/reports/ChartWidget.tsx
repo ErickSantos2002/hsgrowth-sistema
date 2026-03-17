@@ -1,5 +1,5 @@
-import React from 'react';
-import { RefreshCw, X, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { RefreshCw, X, BarChart3, TrendingUp, TrendingDown, Maximize2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -72,6 +72,9 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
 }) => {
   const { darkMode } = useTheme();
   const chartColors = getChartColors(darkMode);
+  
+  // Estado para controlar o modal de expansão
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Detecta modo multi-série (bar/line com mais de 1 campo Y)
   const hasSeries = !!data.series && data.series.length > 1;
@@ -263,17 +266,18 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
       case 'bar': {
         // Chaves de dados: uma por série (multi) ou 'valor' (single)
         const barKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
+        const barHeight = isExpanded ? '100%' : (hasSeries ? 240 : 220);
         return (
-          <ResponsiveContainer width="100%" height={hasSeries ? 240 : 220}>
+          <ResponsiveContainer width="100%" height={barHeight}>
             <BarChart data={rechartData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
-              <XAxis dataKey="name" {...axisProps} />
-              <YAxis {...axisProps} />
+              <XAxis dataKey="name" {...axisProps} tick={{...axisProps.tick, fontSize: isExpanded ? 14 : 11}} />
+              <YAxis {...axisProps} tick={{...axisProps.tick, fontSize: isExpanded ? 14 : 11}} />
               <Tooltip
                 content={<CustomBarTooltip />}
                 wrapperStyle={{ zIndex: 9999 }}
               />
-              {hasSeries && renderLegend()}
+              {hasSeries && <Legend wrapperStyle={isExpanded ? { fontSize: '16px', marginTop: '20px' } : undefined} formatter={(value) => (<span style={{ color: chartColors.content.secondary, fontSize: isExpanded ? '14px' : '12px' }}>{value}</span>)} />}
               {barKeys.map((key, i) => (
                 <Bar
                   key={key}
@@ -293,7 +297,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                     position="top"
                     style={{
                       fill: darkMode ? '#ffffff' : '#0f172a',
-                      fontSize: 11,
+                      fontSize: isExpanded ? 14 : 11,
                       fontWeight: 600,
                     }}
                     formatter={(val: unknown) => {
@@ -310,8 +314,9 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
 
       case 'line': {
         const lineKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
+        const lineHeight = isExpanded ? '100%' : (hasSeries ? 240 : 220);
         return (
-          <ResponsiveContainer width="100%" height={hasSeries ? 240 : 220}>
+          <ResponsiveContainer width="100%" height={lineHeight}>
             <LineChart
               data={rechartData}
               margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
@@ -330,13 +335,13 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 : undefined}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
-              <XAxis dataKey="name" {...axisProps} />
-              <YAxis {...axisProps} />
+              <XAxis dataKey="name" {...axisProps} tick={{...axisProps.tick, fontSize: isExpanded ? 14 : 11}} />
+              <YAxis {...axisProps} tick={{...axisProps.tick, fontSize: isExpanded ? 14 : 11}} />
               <Tooltip
                 content={<CustomBarTooltip />}
                 wrapperStyle={{ zIndex: 9999 }}
               />
-              {hasSeries && renderLegend()}
+              {hasSeries && <Legend wrapperStyle={isExpanded ? { fontSize: '16px', marginTop: '20px' } : undefined} formatter={(value) => (<span style={{ color: chartColors.content.secondary, fontSize: isExpanded ? '14px' : '12px' }}>{value}</span>)} />}
               {lineKeys.map((key, i) => {
                 const color = SERIES_COLORS[i % SERIES_COLORS.length];
                 return (
@@ -345,16 +350,16 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                     type="monotone"
                     dataKey={key}
                     stroke={color}
-                    strokeWidth={2}
-                    dot={{ fill: color, r: 4 }}
-                    activeDot={{ r: 6 }}
+                    strokeWidth={isExpanded ? 3 : 2}
+                    dot={{ fill: color, r: isExpanded ? 6 : 4 }}
+                    activeDot={{ r: isExpanded ? 8 : 6 }}
                   >
                     <LabelList
                       dataKey={key}
                       position="top"
                       style={{
                         fill: darkMode ? '#ffffff' : '#0f172a',
-                        fontSize: 11,
+                        fontSize: isExpanded ? 14 : 11,
                         fontWeight: 600,
                       }}
                       formatter={(val: unknown) => {
@@ -377,21 +382,29 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
           const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
           const x = cx + radius * Math.cos(-midAngle * RADIAN);
           const y = cy + radius * Math.sin(-midAngle * RADIAN);
+          // Fonte maior se expandido
+          const fontSize = isExpanded ? 14 : 11;
           return (
-            <text x={x} y={y} fill="#ffffff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
+            <text x={x} y={y} fill="#ffffff" textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={700}>
               {formatTooltipValue(value)}
             </text>
           );
         };
+        
+        // Se expandido, usa tamanho muito maior, se não, usa o tamanho original
+        const pieHeight = isExpanded ? '100%' : 260;
+        const outerRadius = isExpanded ? 240 : 88;
+        const innerRadius = isExpanded ? 150 : 55;
+
         return (
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={pieHeight}>
             <PieChart>
               <Pie
                 data={rechartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={55}
-                outerRadius={88}
+                innerRadius={innerRadius}
+                outerRadius={outerRadius}
                 dataKey="valor"
                 nameKey="name"
                 labelLine={false}
@@ -410,8 +423,9 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 wrapperStyle={{ zIndex: 9999 }}
               />
               <Legend
+                wrapperStyle={isExpanded ? { fontSize: '16px', marginTop: '20px' } : undefined}
                 formatter={(value) => (
-                  <span style={{ color: chartColors.content.secondary, fontSize: '12px' }}>{value}</span>
+                  <span style={{ color: chartColors.content.secondary, fontSize: isExpanded ? '14px' : '12px' }}>{value}</span>
                 )}
               />
             </PieChart>
@@ -421,12 +435,12 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
 
       case 'table':
         return (
-          <div className="max-h-52 overflow-auto rounded-lg">
-            <table className="w-full text-sm">
+          <div className={`overflow-auto rounded-lg ${isExpanded ? 'w-[80%] mx-auto max-h-[70vh]' : 'max-h-52'}`}>
+            <table className={`w-full ${isExpanded ? 'text-base' : 'text-sm'}`}>
               <thead className="sticky top-0 bg-gray-50 dark:bg-slate-800">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Categoria</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">Valor</th>
+                  <th className={`px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-400 ${isExpanded ? 'text-sm py-3' : 'text-xs'}`}>Categoria</th>
+                  <th className={`px-3 py-2 text-right font-semibold text-slate-500 dark:text-slate-400 ${isExpanded ? 'text-sm py-3' : 'text-xs'}`}>Valor</th>
                 </tr>
               </thead>
               <tbody>
@@ -436,8 +450,8 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                     className={`border-t border-gray-100 dark:border-slate-700 ${onBarClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/40' : ''}`}
                     onClick={onBarClick ? () => onBarClick(row.name as string) : undefined}
                   >
-                    <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{row.name}</td>
-                    <td className="px-3 py-2 text-right font-medium text-slate-900 dark:text-white">
+                    <td className={`px-3 py-2 text-slate-700 dark:text-slate-300 ${isExpanded ? 'py-4' : ''}`}>{row.name}</td>
+                    <td className={`px-3 py-2 text-right font-medium text-slate-900 dark:text-white ${isExpanded ? 'py-4 text-lg' : ''}`}>
                       {formatTooltipValue(row.valor as number)}
                     </td>
                   </tr>
@@ -450,8 +464,9 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
       case 'area': {
         // Área: idêntico ao line mas com preenchimento abaixo da curva
         const areaKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
+        const areaHeight = isExpanded ? '100%' : (hasSeries ? 240 : 220);
         return (
-          <ResponsiveContainer width="100%" height={hasSeries ? 240 : 220}>
+          <ResponsiveContainer width="100%" height={areaHeight}>
             <AreaChart
               data={rechartData}
               margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
@@ -470,10 +485,10 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
               }
             >
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
-              <XAxis dataKey="name" {...axisProps} />
-              <YAxis {...axisProps} />
+              <XAxis dataKey="name" {...axisProps} tick={{...axisProps.tick, fontSize: isExpanded ? 14 : 11}} />
+              <YAxis {...axisProps} tick={{...axisProps.tick, fontSize: isExpanded ? 14 : 11}} />
               <Tooltip content={<CustomBarTooltip />} wrapperStyle={{ zIndex: 9999 }} />
-              {hasSeries && renderLegend()}
+              {hasSeries && <Legend wrapperStyle={isExpanded ? { fontSize: '16px', marginTop: '20px' } : undefined} formatter={(value) => (<span style={{ color: chartColors.content.secondary, fontSize: isExpanded ? '14px' : '12px' }}>{value}</span>)} />}
               {areaKeys.map((key, i) => {
                 const color = SERIES_COLORS[i % SERIES_COLORS.length];
                 return (
@@ -484,14 +499,14 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                     stroke={color}
                     fill={color}
                     fillOpacity={0.2}
-                    strokeWidth={2}
-                    dot={{ fill: color, r: 3 }}
-                    activeDot={{ r: 5 }}
+                    strokeWidth={isExpanded ? 3 : 2}
+                    dot={{ fill: color, r: isExpanded ? 5 : 3 }}
+                    activeDot={{ r: isExpanded ? 7 : 5 }}
                   >
                     <LabelList
                       dataKey={key}
                       position="top"
-                      style={{ fill: darkMode ? '#ffffff' : '#0f172a', fontSize: 11, fontWeight: 600 }}
+                      style={{ fill: darkMode ? '#ffffff' : '#0f172a', fontSize: isExpanded ? 14 : 11, fontWeight: 600 }}
                       formatter={(val: unknown) => {
                         const n = Number(val);
                         return n === 0 ? '' : formatTooltipValue(n);
@@ -535,8 +550,10 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
           );
         };
 
+        const scatterHeight = isExpanded ? '100%' : 240;
+
         return (
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={scatterHeight}>
             <ScatterChart margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} />
               <XAxis
@@ -544,6 +561,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 type="category"
                 name="Categoria"
                 {...axisProps}
+                tick={{...axisProps.tick, fontSize: isExpanded ? 14 : 11}}
                 allowDuplicatedCategory={false}
               />
               <YAxis
@@ -551,6 +569,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 type="number"
                 name="Valor"
                 {...axisProps}
+                tick={{...axisProps.tick, fontSize: isExpanded ? 14 : 11}}
               />
               <ZAxis range={[60, 60]} />
               <Tooltip content={<CustomScatterTooltip />} wrapperStyle={{ zIndex: 9999 }} cursor={{ strokeDasharray: '3 3' }} />
@@ -567,13 +586,15 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
 
       case 'radar': {
         // Radar (aranha): cada label vira um eixo radial, o valor define a área preenchida
+        const radarHeight = isExpanded ? '100%' : 260;
+        const radarOuterRadius = isExpanded ? '85%' : '65%';
         return (
-          <ResponsiveContainer width="100%" height={260}>
-            <RadarChart cx="50%" cy="50%" outerRadius="65%" data={rechartData}>
+          <ResponsiveContainer width="100%" height={radarHeight}>
+            <RadarChart cx="50%" cy="50%" outerRadius={radarOuterRadius} data={rechartData}>
               <PolarGrid stroke={chartColors.border.default} />
               <PolarAngleAxis
                 dataKey="name"
-                tick={{ fill: chartColors.content.secondary, fontSize: 10 }}
+                tick={{ fill: chartColors.content.secondary, fontSize: isExpanded ? 14 : 10 }}
               />
               <Radar
                 name={config.title}
@@ -581,7 +602,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 stroke={SERIES_COLORS[0]}
                 fill={SERIES_COLORS[0]}
                 fillOpacity={0.35}
-                strokeWidth={2}
+                strokeWidth={isExpanded ? 3 : 2}
               />
               <Tooltip content={<CustomBarTooltip />} wrapperStyle={{ zIndex: 9999 }} />
             </RadarChart>
@@ -598,8 +619,10 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
             fill: SERIES_COLORS[i % SERIES_COLORS.length],
           }));
 
+        const funnelHeight = isExpanded ? '100%' : 240;
+
         return (
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={funnelHeight}>
             <FunnelChart>
               <Tooltip content={<CustomBarTooltip />} wrapperStyle={{ zIndex: 9999 }} />
               <Funnel
@@ -613,7 +636,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                   position="right"
                   stroke="none"
                   dataKey="name"
-                  style={{ fill: darkMode ? '#ffffff' : '#0f172a', fontSize: 11, fontWeight: 500 }}
+                  style={{ fill: darkMode ? '#ffffff' : '#0f172a', fontSize: isExpanded ? 15 : 11, fontWeight: 500 }}
                 />
               </Funnel>
             </FunnelChart>
@@ -674,6 +697,13 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
         {/* Botões de ação — stopPropagation garante que não ativam o onClick do cabeçalho */}
         <div className="flex shrink-0 items-center gap-0.5 px-2 py-3">
           <button
+            onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }}
+            title="Expandir gráfico"
+            className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+          >
+            <Maximize2 size={14} />
+          </button>
+          <button
             onClick={(e) => { e.stopPropagation(); onRefresh(); }}
             title="Atualizar dados"
             className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
@@ -692,6 +722,46 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
 
       {/* Área do gráfico */}
       <div className="p-4">{renderChart()}</div>
+
+      {/* Modal de Expansão */}
+      {isExpanded && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 lg:p-8">
+          {/* Overlay escuro */}
+          <div 
+            className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm"
+            onClick={() => setIsExpanded(false)}
+          />
+          
+          {/* Container do gráfico expandido */}
+          <div className="relative z-10 flex h-[85vh] w-[90vw] flex-col rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
+            {/* Cabeçalho do modal */}
+            <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-800">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+                  {config.title}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {chartMeta}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsExpanded(false)}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            {/* Área do gráfico renderizado */}
+            <div className="flex-1 overflow-hidden p-6 flex flex-col">
+               {/* Assegura que o gráfico ocupe o máximo do container mantendo o centro */}
+               <div className="flex-1 w-full flex items-center justify-center [&_.recharts-responsive-container]:!h-full [&_.recharts-wrapper]:!mx-auto">
+                 {renderChart()}
+               </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

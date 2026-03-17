@@ -17,6 +17,8 @@ import {
   Save,
   ArrowLeft,
   Download,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { PageHeader } from '../components/layout';
@@ -60,6 +62,10 @@ const Reports: React.FC = () => {
   // ========================
   // Estado principal
   // ========================
+
+  // Controle dos painéis laterais
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
   // Modo de exibição: lista de relatórios ou builder
   const [mode, setMode] = useState<'list' | 'builder'>('list');
@@ -584,26 +590,43 @@ const Reports: React.FC = () => {
         </div>
 
         {/* Corpo do builder: painel esquerdo + área central + painel direito */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden relative">
+          
           {/* Painel esquerdo — campos disponíveis (desktop only) */}
-          <div className="hidden h-full lg:block">
-            <FieldPanel
-              activeSources={activeSources}
-              fieldCatalog={catalogLoading ? EMPTY_CATALOG : fieldCatalog}
-              calculatedFields={currentReport.calculated_fields}
-              onAddCalculatedField={() => {
-                setEditingCalcField(null);
-                setShowCalcFieldModal(true);
-              }}
-              onEditCalculatedField={(field) => {
-                setEditingCalcField(field);
-                setShowCalcFieldModal(true);
-              }}
-            />
+          <div
+            className={`hidden h-full lg:block transition-all duration-300 relative ${
+              leftPanelOpen ? 'w-64 shrink-0 opacity-100' : 'w-0 shrink-0 overflow-hidden opacity-0'
+            }`}
+          >
+            <div className="w-64 h-full">
+              <FieldPanel
+                activeSources={activeSources}
+                fieldCatalog={catalogLoading ? EMPTY_CATALOG : fieldCatalog}
+                calculatedFields={currentReport.calculated_fields}
+                onAddCalculatedField={() => {
+                  setEditingCalcField(null);
+                  setShowCalcFieldModal(true);
+                }}
+                onEditCalculatedField={(field) => {
+                  setEditingCalcField(field);
+                  setShowCalcFieldModal(true);
+                }}
+              />
+            </div>
           </div>
 
+          {/* Toggle Esquerdo */}
+          <button
+            onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+            className="hidden lg:flex absolute top-1/2 -translate-y-1/2 z-10 items-center justify-center w-5 h-16 bg-white dark:bg-slate-800 border-y border-r border-gray-200 dark:border-slate-700 rounded-r-xl shadow-sm text-slate-400 hover:text-emerald-500 transition-all duration-300"
+            style={{ left: leftPanelOpen ? '16rem' : '0' }}
+            title={leftPanelOpen ? "Recolher painel" : "Expandir painel"}
+          >
+            <ChevronLeft size={16} className={`transition-transform duration-300 ${!leftPanelOpen ? 'rotate-180' : ''}`} />
+          </button>
+
           {/* Área central — grid de gráficos */}
-          <main className="flex-1 overflow-y-auto bg-gray-50 p-6 dark:bg-slate-950">
+          <main className="flex-1 overflow-y-auto bg-gray-50 p-6 dark:bg-slate-950 min-w-0">
             {currentReport.charts.length === 0 ? (
               // Estado vazio: nenhum gráfico adicionado ainda
               <div className="flex h-full min-h-[400px] flex-col items-center justify-center gap-4 text-center">
@@ -658,16 +681,32 @@ const Reports: React.FC = () => {
             )}
           </main>
 
+          {/* Toggle Direito */}
+          <button
+            onClick={() => setRightPanelOpen(!rightPanelOpen)}
+            className="hidden lg:flex absolute top-1/2 -translate-y-1/2 z-10 items-center justify-center w-5 h-16 bg-white dark:bg-slate-800 border-y border-l border-gray-200 dark:border-slate-700 rounded-l-xl shadow-sm text-slate-400 hover:text-emerald-500 transition-all duration-300"
+            style={{ right: rightPanelOpen ? '20rem' : '0' }}
+            title={rightPanelOpen ? "Recolher configurações" : "Expandir configurações"}
+          >
+            <ChevronRight size={16} className={`transition-transform duration-300 ${!rightPanelOpen ? 'rotate-180' : ''}`} />
+          </button>
+
           {/* Painel direito — desktop only */}
-          <div className="hidden h-full overflow-y-auto lg:block">
-            <ChartConfigPanel
-              key={editingChart?.id ?? `new-${newChartSessionKey}`}
-              allowedSources={currentReport.allowed_sources}
-              active={configPanelActive}
-              editingConfig={editingChart}
-              onLiveChange={handleLiveChartChange}
-              onClose={handleResetConfigPanel}
-            />
+          <div
+            className={`hidden h-full lg:block transition-all duration-300 relative ${
+              rightPanelOpen ? 'w-80 shrink-0 opacity-100' : 'w-0 shrink-0 overflow-hidden opacity-0'
+            }`}
+          >
+            <div className="w-80 h-full overflow-hidden">
+              <ChartConfigPanel
+                key={editingChart?.id ?? `new-${newChartSessionKey}`}
+                allowedSources={currentReport.allowed_sources}
+                active={configPanelActive}
+                editingConfig={editingChart}
+                onLiveChange={handleLiveChartChange}
+                onClose={handleResetConfigPanel}
+              />
+            </div>
           </div>
         </div>
 
