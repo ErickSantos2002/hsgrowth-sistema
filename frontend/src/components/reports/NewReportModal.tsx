@@ -9,7 +9,7 @@ interface NewReportModalProps {
   onConfirm: (name: string, sources: DataSource[]) => void;
 }
 
-const ALL_SOURCES: DataSource[] = ['cards', 'clients', 'persons', 'activities', 'tasks'];
+const ALL_SOURCES: DataSource[] = ['cards', 'clients', 'persons', 'activities', 'tasks', 'card_history'];
 
 /**
  * Modal de criação de novo relatório.
