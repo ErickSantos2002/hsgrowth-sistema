@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, BarChart3, TrendingUp, PieChart, Table, MousePointerClick, Calendar, DollarSign, Tag, User, Hash, GripVertical, Activity, Crosshair, Hexagon, Filter, Target } from 'lucide-react';
+import { X, BarChart3, TrendingUp, PieChart, Table, MousePointerClick, Calendar, DollarSign, Tag, User, Hash, GripVertical, Activity, Crosshair, Hexagon, Filter, Target, ListFilter } from 'lucide-react';
+import reportService from '../../services/reportService';
 import { SelectMenu } from '../common/SelectMenu';
 import {
   DataSource,
@@ -153,6 +154,14 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
   const [endDate, setEndDate] = useState('');
   /** Campo de divisão de séries — só válido para bar/line */
   const [splitByField, setSplitByField] = useState<AxisField | null>(null);
+  /**
+   * Valores raw selecionados para filtrar as séries do split_by.
+   * Vazio = exibe todas as séries. Preenchido = exibe apenas as selecionadas.
+   */
+  const [splitFilterValues, setSplitFilterValues] = useState<(string | number)[]>([]);
+  /** Valores disponíveis para o campo split_by atual (buscados da API). */
+  const [availableSplitValues, setAvailableSplitValues] = useState<{ label: string; value: string | number }[]>([]);
+  const [loadingSplitValues, setLoadingSplitValues] = useState(false);
 
   /** Estado visual das zonas de drop */
   const [xDropState, setXDropState] = useState<DropState>('idle');
@@ -190,6 +199,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       setStartDate(editingConfig.start_date || '');
       setEndDate(editingConfig.end_date || '');
       setSplitByField(editingConfig.split_by ?? null);
+      setSplitFilterValues(editingConfig.split_filter_values ?? []);
       setCurrentChartId(editingConfig.id);
     } else {
       // Novo gráfico: reseta tudo e gera ID novo
@@ -202,10 +212,36 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       setStartDate('');
       setEndDate('');
       setSplitByField(null);
+      setSplitFilterValues([]);
       setCurrentChartId(crypto.randomUUID());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingConfig?.id]);
+
+  // ========================
+  // Carrega valores disponíveis do split_by
+  // ========================
+
+  /**
+   * Busca os valores únicos disponíveis para o campo split_by sempre que ele muda.
+   * Não reseta splitFilterValues aqui — o reset ocorre nos handlers de interação
+   * (handleSplitDrop e botão de remoção) para não sobrescrever a restauração do editingConfig.
+   */
+  useEffect(() => {
+    if (!splitByField) {
+      setAvailableSplitValues([]);
+      return;
+    }
+
+    setLoadingSplitValues(true);
+    reportService
+      .fetchSplitValues(splitByField.source, splitByField.key)
+      .then((values) => setAvailableSplitValues(values))
+      .catch(() => setAvailableSplitValues([]))
+      .finally(() => setLoadingSplitValues(false));
+  // Depende dos campos que identificam o campo split_by (não o objeto inteiro para evitar loop)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [splitByField?.source, splitByField?.key]);
 
   // ========================
   // Atualização em tempo real
@@ -234,6 +270,11 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       end_date: period === 'custom' ? endDate : undefined,
       // split_by só é incluído para bar/line; para pie/table não faz sentido
       split_by: isMultiSeriesType && splitByField ? splitByField : undefined,
+      // Filtro de séries: só inclui quando split_by está ativo e há valores selecionados
+      split_filter_values:
+        isMultiSeriesType && splitByField && splitFilterValues.length > 0
+          ? splitFilterValues
+          : undefined,
     };
 
     // Notifica o pai com a config atualizada — Reports.tsx busca os dados via API
@@ -249,6 +290,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     startDate,
     endDate,
     splitByField,
+    splitFilterValues,
     active,
     currentChartId,
   ]);
@@ -403,6 +445,8 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     if (xAxisField && field.key === xAxisField.key && field.source === xAxisField.source) return;
 
     setSplitByField(field);
+    // Reseta o filtro sempre que o usuário troca o campo split_by manualmente
+    setSplitFilterValues([]);
 
     // Quando split_by está ativo, Y fica limitado a 1 campo (split gera as múltiplas séries)
     if (yFields.length > 1) {
@@ -434,6 +478,46 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
         return { ...yf, aggregation: cycleAggregation(yf.aggregation, yf.field) };
       })
     );
+  };
+
+  // ========================
+  // Handler do filtro de valores split_by
+  // ========================
+
+  /**
+   * Alterna a inclusão de um valor no filtro de séries.
+   * - splitFilterValues vazio = todos incluídos. Ao desmarcar um, os demais são adicionados ao filtro.
+   * - splitFilterValues preenchido = apenas esses incluídos. Ao alternar, inclui/exclui o item.
+   * - Quando todos voltam a estar incluídos, o filtro é resetado para vazio (sem filtro explícito).
+   */
+  const toggleSplitFilterValue = (rawValue: string | number) => {
+    const strValue = String(rawValue);
+    const allStrValues = new Set(availableSplitValues.map((v) => String(v.value)));
+
+    // Determina o conjunto atual de valores incluídos
+    const currentIncluded: Set<string> =
+      splitFilterValues.length === 0
+        ? new Set(allStrValues)
+        : new Set(splitFilterValues.map((v) => String(v)));
+
+    // Alterna o valor clicado
+    if (currentIncluded.has(strValue)) {
+      currentIncluded.delete(strValue);
+    } else {
+      currentIncluded.add(strValue);
+    }
+
+    // Se todos estão incluídos → reseta (sem filtro explícito)
+    const allIncluded = [...allStrValues].every((v) => currentIncluded.has(v));
+    if (allIncluded) {
+      setSplitFilterValues([]);
+    } else {
+      // Reconstrói a lista a partir dos valores disponíveis (preserva tipo original int/str)
+      const newFilter = availableSplitValues
+        .filter((item) => currentIncluded.has(String(item.value)))
+        .map((item) => item.value);
+      setSplitFilterValues(newFilter);
+    }
   };
 
   // ========================
@@ -798,7 +882,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
                 </span>
                 <button
                   type="button"
-                  onClick={() => setSplitByField(null)}
+                  onClick={() => { setSplitByField(null); setSplitFilterValues([]); }}
                   title="Remover divisão"
                   className="shrink-0 rounded p-0.5 text-violet-400 transition-colors hover:bg-violet-100 hover:text-violet-600 dark:hover:bg-violet-800/50"
                 >
@@ -841,6 +925,69 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
               <p className="mt-1.5 text-xs text-violet-500 dark:text-violet-400">
                 O gráfico exibirá uma série por valor de "{splitByField.label}"
               </p>
+            )}
+
+            {/* Filtro de séries — exibido quando split_by está ativo e há valores disponíveis */}
+            {splitByField && (availableSplitValues.length > 0 || loadingSplitValues) && (
+              <div className="mt-3">
+                {/* Cabeçalho do filtro */}
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                    <ListFilter size={12} />
+                    Filtrar séries exibidas
+                  </label>
+                  {splitFilterValues.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSplitFilterValues([])}
+                      className="text-xs text-violet-500 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
+                    >
+                      Exibir todas
+                    </button>
+                  )}
+                </div>
+
+                {/* Lista de checkboxes */}
+                <div className="max-h-44 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-slate-700 dark:bg-slate-800/50">
+                  {loadingSplitValues ? (
+                    <p className="py-1 text-center text-xs text-slate-400 dark:text-slate-500">
+                      Carregando...
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      {availableSplitValues.map(({ label, value }) => {
+                        const isChecked =
+                          splitFilterValues.length === 0 ||
+                          splitFilterValues.some((v) => String(v) === String(value));
+
+                        return (
+                          <label
+                            key={String(value)}
+                            className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-gray-100 dark:hover:bg-slate-700"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleSplitFilterValue(value)}
+                              className="h-3 w-3 rounded border-gray-300 accent-violet-600 dark:border-slate-500"
+                            />
+                            <span className="text-xs text-slate-700 dark:text-slate-300">
+                              {label}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Contador de seleção */}
+                {splitFilterValues.length > 0 && (
+                  <p className="mt-1 text-xs text-violet-500 dark:text-violet-400">
+                    {splitFilterValues.length} de {availableSplitValues.length} séries selecionadas
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}

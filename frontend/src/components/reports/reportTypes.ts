@@ -124,6 +124,13 @@ export interface ChartConfig {
    * Disponível apenas para bar/line; desativa múltiplos campos Y.
    */
   split_by?: AxisField;
+  /**
+   * Filtro de valores do split_by.
+   * Quando preenchido, apenas as séries com raw_value nesta lista são exibidas.
+   * Vazio ou ausente = exibe todas as séries (sem filtro).
+   * Os valores são os raw_values retornados por GET /reports/split-values.
+   */
+  split_filter_values?: (string | number)[];
 }
 
 // ========================
