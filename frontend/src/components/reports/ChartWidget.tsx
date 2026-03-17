@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshCw, X, BarChart3, TrendingUp, TrendingDown, Maximize2 } from 'lucide-react';
+import { RefreshCw, X, BarChart3, TrendingUp, TrendingDown, Maximize2, Eye, EyeOff } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -75,6 +75,8 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
   
   // Estado para controlar o modal de expansão
   const [isExpanded, setIsExpanded] = useState(false);
+  // Estado para mostrar/ocultar os valores nos pontos do gráfico
+  const [showLabels, setShowLabels] = useState(true);
 
   // Detecta modo multi-série (bar/line com mais de 1 campo Y)
   const hasSeries = !!data.series && data.series.length > 1;
@@ -302,7 +304,8 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                     }}
                     formatter={(val: unknown) => {
                       const n = Number(val);
-                      return n === 0 ? '' : formatTooltipValue(n);
+                      if (!showLabels || n === 0) return '';
+                      return formatTooltipValue(n);
                     }}
                   />
                 </Bar>
@@ -375,7 +378,8 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                     }}
                     formatter={(val: unknown) => {
                       const n = Number(val);
-                      return n === 0 ? '' : formatTooltipValue(n);
+                      if (!showLabels || n === 0) return '';
+                      return formatTooltipValue(n);
                     }}
                   />
                 </Bar>
@@ -417,6 +421,31 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
               {hasSeries && <Legend wrapperStyle={isExpanded ? { fontSize: '16px', marginTop: '20px' } : undefined} formatter={(value) => (<span style={{ color: chartColors.content.secondary, fontSize: isExpanded ? '14px' : '12px' }}>{value}</span>)} />}
               {lineKeys.map((key, i) => {
                 const color = SERIES_COLORS[i % SERIES_COLORS.length];
+                // Renderer customizado: oculta label se showLabels=false, valor=0
+                // ou se uma série anterior já exibe o mesmo valor neste ponto (evita duplicatas)
+                const renderLineLabel = (props: any) => {
+                  if (!showLabels) return null;
+                  const { x, y, value, index } = props;
+                  const n = Number(value);
+                  if (!n) return null;
+                  // Se alguma série anterior tem o mesmo valor neste índice, não exibe
+                  const isDuplicate = i > 0 && lineKeys.slice(0, i).some(
+                    prevKey => Number(rechartData[index]?.[prevKey]) === n
+                  );
+                  if (isDuplicate) return null;
+                  return (
+                    <text
+                      x={x}
+                      y={(y as number) - 8}
+                      textAnchor="middle"
+                      fill={darkMode ? '#ffffff' : '#0f172a'}
+                      fontSize={isExpanded ? 14 : 11}
+                      fontWeight={600}
+                    >
+                      {formatTooltipValue(n)}
+                    </text>
+                  );
+                };
                 return (
                   <Line
                     key={key}
@@ -427,19 +456,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                     dot={{ fill: color, r: isExpanded ? 6 : 4 }}
                     activeDot={{ r: isExpanded ? 8 : 6 }}
                   >
-                    <LabelList
-                      dataKey={key}
-                      position="top"
-                      style={{
-                        fill: darkMode ? '#ffffff' : '#0f172a',
-                        fontSize: isExpanded ? 14 : 11,
-                        fontWeight: 600,
-                      }}
-                      formatter={(val: unknown) => {
-                        const n = Number(val);
-                        return n === 0 ? '' : formatTooltipValue(n);
-                      }}
-                    />
+                    <LabelList dataKey={key} content={renderLineLabel} />
                   </Line>
                 );
               })}
@@ -580,7 +597,8 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                       style={{ fill: darkMode ? '#ffffff' : '#0f172a', fontSize: isExpanded ? 14 : 11, fontWeight: 600 }}
                       formatter={(val: unknown) => {
                         const n = Number(val);
-                        return n === 0 ? '' : formatTooltipValue(n);
+                        if (!showLabels || n === 0) return '';
+                        return formatTooltipValue(n);
                       }}
                     />
                   </Area>
@@ -767,6 +785,13 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
 
         {/* Botões de ação — stopPropagation garante que não ativam o onClick do cabeçalho */}
         <div className="flex shrink-0 items-center gap-0.5 px-2 py-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowLabels(v => !v); }}
+            title={showLabels ? 'Ocultar valores' : 'Mostrar valores'}
+            className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+          >
+            {showLabels ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
           <button
             onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }}
             title="Expandir gráfico"
