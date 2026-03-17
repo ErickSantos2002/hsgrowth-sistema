@@ -64,6 +64,7 @@ const AGGREGATION_LABELS: Record<AggregationType, string> = {
   distinct_count: 'Cont. Distinta',
   sum: 'Soma',
   avg: 'Média',
+  cumulative_count: 'Cont. Cumulativa',
 };
 
 /** Ícone correspondente ao tipo de campo (usado nos chips das drop zones) */
@@ -108,7 +109,8 @@ const getDefaultAggregation = (field: AxisField): AggregationType => {
 const cycleAggregation = (current: AggregationType, field: AxisField): AggregationType => {
   const isNumeric = field.field_type === 'number' || field.field_type === 'currency';
   if (isNumeric) {
-    const cycle: AggregationType[] = ['count', 'distinct_count', 'sum', 'avg'];
+    // Campos numéricos/moeda incluem soma cumulativa no ciclo
+    const cycle: AggregationType[] = ['count', 'distinct_count', 'sum', 'avg', 'cumulative_count'];
     const idx = cycle.indexOf(current);
     return cycle[(idx + 1) % cycle.length];
   }

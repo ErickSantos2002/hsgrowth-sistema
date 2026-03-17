@@ -5,7 +5,7 @@ Define jobs programados para executar automaticamente em intervalos específicos
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from loguru import logger
 from typing import Optional
 
@@ -480,12 +480,15 @@ def configure_jobs():
     )
 
     # 2. Recalcular rankings de gamificação - A cada 1 hora
+    # next_run_time=datetime.utcnow() garante execução imediata no startup,
+    # corrigindo o problema de restarts frequentes que zerariam o timer
     sched.add_job(
         job_recalculate_gamification_rankings,
         trigger=IntervalTrigger(hours=1),
         id="recalculate_gamification_rankings",
         name="Recalcular Rankings de Gamificação",
-        replace_existing=True
+        replace_existing=True,
+        next_run_time=datetime.now(timezone.utc)
     )
 
     # 3. Verificar badges - Diariamente às 01:00

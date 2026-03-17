@@ -26,7 +26,7 @@ class AxisFieldSchema(BaseModel):
 class YFieldConfigSchema(BaseModel):
     """Configuração de um campo no eixo Y: o campo e sua função de agregação."""
     field: AxisFieldSchema
-    aggregation: Literal['count', 'sum', 'avg', 'distinct_count']
+    aggregation: Literal['count', 'sum', 'avg', 'distinct_count', 'cumulative_count']
 
 
 # ========================

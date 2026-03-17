@@ -791,6 +791,15 @@ class CustomReportService:
         if not label_raw_pairs:
             return []
 
+        # Contagem cumulativa: tratamento especial — delega para método dedicado
+        # que sempre usa y_key='count' (ID primário da fonte) dentro do período selecionado
+        if y_aggregation == 'cumulative_count':
+            return self._get_cumulative_count(
+                x_field_source, x_field_key, x_group_by,
+                y_source, label_raw_pairs, start, end,
+                extra_filters=extra_filters,
+            )
+
         # Executa a query de agregação e monta um dict {raw_key: value}
         raw_to_value: Dict[Any, float] = self._run_y_agg_query(
             x_field_source, x_field_key, x_group_by,
@@ -803,6 +812,47 @@ class CustomReportService:
         for label, raw_key in label_raw_pairs:
             val = raw_to_value.get(raw_key, 0.0)
             values.append(float(val))
+
+        return values
+
+    def _get_cumulative_count(
+        self,
+        x_field_source: str,
+        x_field_key: str,
+        x_group_by: Optional[str],
+        y_source: str,
+        label_raw_pairs: List[Tuple[str, Any]],
+        start: date,
+        end: date,
+        extra_filters: Optional[List] = None,
+    ) -> List[float]:
+        """
+        Calcula contagem cumulativa: conta registros da fonte Y por bucket X
+        dentro do período selecionado e acumula progressivamente.
+
+        Sempre usa y_key='count' (ID primário) para garantir contagem de registros,
+        independente do campo Y que o usuário configurou (evita somar valores monetários).
+        O resultado final é limitado ao período — ex: "Este Mês" acumula apenas março.
+        """
+        # Conta registros da fonte Y por bucket X, filtrado ao período
+        raw_to_value: Dict[Any, float] = self._run_y_agg_query(
+            x_field_source, x_field_key, x_group_by,
+            y_source, 'count', 'count',  # sempre conta pelo ID primário da fonte
+            start, end,
+            extra_filters=extra_filters,
+        )
+
+        # Alinha na ordem dos labels (0 para buckets sem dados)
+        values = []
+        for _label, raw_key in label_raw_pairs:
+            val = raw_to_value.get(raw_key, 0.0)
+            values.append(float(val))
+
+        # Acumula: cada ponto recebe a soma de todos os pontos anteriores + ele mesmo
+        cumulative = 0.0
+        for i, v in enumerate(values):
+            cumulative += v
+            values[i] = cumulative
 
         return values
 

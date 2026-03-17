@@ -49,9 +49,12 @@ class AuthService {
 
     const response = await api.post<LoginResponse>("/api/v1/auth/refresh", payload);
 
-    // Atualiza o access token
+    // Atualiza os tokens — salva tanto access quanto refresh (token rotation)
     if (response.data.access_token) {
       localStorage.setItem("access_token", response.data.access_token);
+      if (response.data.refresh_token) {
+        localStorage.setItem("refresh_token", response.data.refresh_token);
+      }
     }
 
     return response.data;

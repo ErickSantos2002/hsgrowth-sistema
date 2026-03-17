@@ -49,10 +49,17 @@ api.interceptors.response.use(
             { refresh_token: refreshToken }
           );
 
-          const { access_token } = response.data;
+          const { access_token, refresh_token: new_refresh_token } = response.data;
 
-          // Atualiza o token no localStorage
+          // Atualiza o access_token no localStorage
           localStorage.setItem("access_token", access_token);
+
+          // Atualiza o refresh_token também — o backend faz token rotation,
+          // gerando um novo a cada refresh. Sem isso, após 7 dias do último login,
+          // o refresh_token original expira e o usuário é deslogado
+          if (new_refresh_token) {
+            localStorage.setItem("refresh_token", new_refresh_token);
+          }
 
           // Atualiza o header da requisição original com o novo token
           if (originalRequest.headers) {
