@@ -266,7 +266,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
       case 'bar': {
         // Chaves de dados: uma por série (multi) ou 'valor' (single)
         const barKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
-        const barHeight = isExpanded ? '100%' : (hasSeries ? 240 : 220);
+        const barHeight = isExpanded ? (hasSeries ? 480 : 440) : (hasSeries ? 240 : 220);
         return (
           <ResponsiveContainer width="100%" height={barHeight}>
             <BarChart data={rechartData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
@@ -314,7 +314,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
 
       case 'line': {
         const lineKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
-        const lineHeight = isExpanded ? '100%' : (hasSeries ? 240 : 220);
+        const lineHeight = isExpanded ? (hasSeries ? 480 : 440) : (hasSeries ? 240 : 220);
         return (
           <ResponsiveContainer width="100%" height={lineHeight}>
             <LineChart
@@ -350,7 +350,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                     type="monotone"
                     dataKey={key}
                     stroke={color}
-                    strokeWidth={isExpanded ? 3 : 2}
+                    strokeWidth={isExpanded ? 4 : 2}
                     dot={{ fill: color, r: isExpanded ? 6 : 4 }}
                     activeDot={{ r: isExpanded ? 8 : 6 }}
                   >
@@ -382,19 +382,17 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
           const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
           const x = cx + radius * Math.cos(-midAngle * RADIAN);
           const y = cy + radius * Math.sin(-midAngle * RADIAN);
-          // Fonte maior se expandido
-          const fontSize = isExpanded ? 14 : 11;
+          const fontSize = isExpanded ? 15 : 11;
           return (
             <text x={x} y={y} fill="#ffffff" textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={700}>
               {formatTooltipValue(value)}
             </text>
           );
         };
-        
-        // Se expandido, usa tamanho muito maior, se não, usa o tamanho original
-        const pieHeight = isExpanded ? '100%' : 260;
-        const outerRadius = isExpanded ? 240 : 88;
-        const innerRadius = isExpanded ? 150 : 55;
+
+        const pieHeight = isExpanded ? 520 : 260;
+        const outerRadius = isExpanded ? 176 : 88;
+        const innerRadius = isExpanded ? 110 : 55;
 
         return (
           <ResponsiveContainer width="100%" height={pieHeight}>
@@ -464,7 +462,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
       case 'area': {
         // Área: idêntico ao line mas com preenchimento abaixo da curva
         const areaKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
-        const areaHeight = isExpanded ? '100%' : (hasSeries ? 240 : 220);
+        const areaHeight = isExpanded ? (hasSeries ? 480 : 440) : (hasSeries ? 240 : 220);
         return (
           <ResponsiveContainer width="100%" height={areaHeight}>
             <AreaChart
@@ -499,7 +497,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                     stroke={color}
                     fill={color}
                     fillOpacity={0.2}
-                    strokeWidth={isExpanded ? 3 : 2}
+                    strokeWidth={isExpanded ? 4 : 2}
                     dot={{ fill: color, r: isExpanded ? 5 : 3 }}
                     activeDot={{ r: isExpanded ? 7 : 5 }}
                   >
@@ -550,7 +548,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
           );
         };
 
-        const scatterHeight = isExpanded ? '100%' : 240;
+        const scatterHeight = isExpanded ? 480 : 240;
 
         return (
           <ResponsiveContainer width="100%" height={scatterHeight}>
@@ -571,7 +569,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 {...axisProps}
                 tick={{...axisProps.tick, fontSize: isExpanded ? 14 : 11}}
               />
-              <ZAxis range={[60, 60]} />
+              <ZAxis range={isExpanded ? [120, 120] : [60, 60]} />
               <Tooltip content={<CustomScatterTooltip />} wrapperStyle={{ zIndex: 9999 }} cursor={{ strokeDasharray: '3 3' }} />
               <Scatter
                 data={scatterData}
@@ -586,11 +584,10 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
 
       case 'radar': {
         // Radar (aranha): cada label vira um eixo radial, o valor define a área preenchida
-        const radarHeight = isExpanded ? '100%' : 260;
-        const radarOuterRadius = isExpanded ? '85%' : '65%';
+        const radarHeight = isExpanded ? 520 : 260;
         return (
           <ResponsiveContainer width="100%" height={radarHeight}>
-            <RadarChart cx="50%" cy="50%" outerRadius={radarOuterRadius} data={rechartData}>
+            <RadarChart cx="50%" cy="50%" outerRadius={isExpanded ? "80%" : "65%"} data={rechartData}>
               <PolarGrid stroke={chartColors.border.default} />
               <PolarAngleAxis
                 dataKey="name"
@@ -602,7 +599,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 stroke={SERIES_COLORS[0]}
                 fill={SERIES_COLORS[0]}
                 fillOpacity={0.35}
-                strokeWidth={isExpanded ? 3 : 2}
+                strokeWidth={isExpanded ? 4 : 2}
               />
               <Tooltip content={<CustomBarTooltip />} wrapperStyle={{ zIndex: 9999 }} />
             </RadarChart>
@@ -619,7 +616,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
             fill: SERIES_COLORS[i % SERIES_COLORS.length],
           }));
 
-        const funnelHeight = isExpanded ? '100%' : 240;
+        const funnelHeight = isExpanded ? 480 : 240;
 
         return (
           <ResponsiveContainer width="100%" height={funnelHeight}>
@@ -636,7 +633,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                   position="right"
                   stroke="none"
                   dataKey="name"
-                  style={{ fill: darkMode ? '#ffffff' : '#0f172a', fontSize: isExpanded ? 15 : 11, fontWeight: 500 }}
+                  style={{ fill: darkMode ? '#ffffff' : '#0f172a', fontSize: isExpanded ? 14 : 11, fontWeight: 500 }}
                 />
               </Funnel>
             </FunnelChart>
