@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.3",
+    date: "17/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Nova fonte de dados nos relatórios: 'Histórico de Etapas'. Permite criar gráficos de funil mostrando quantos negócios entraram em cada etapa do pipeline dentro de um período — basta selecionar Eixo X = Etapa do Pipeline e Eixo Y = Negócios que Entraram.",
+      },
+    ],
+  },
+  {
     version: "1.6.2",
     date: "17/03/2026",
     entries: [

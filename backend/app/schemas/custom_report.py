@@ -17,7 +17,7 @@ class AxisFieldSchema(BaseModel):
     """Representa um campo selecionado para o eixo X ou Y do gráfico."""
     key: str
     label: str
-    source: Literal['cards', 'clients', 'persons', 'activities', 'tasks']
+    source: Literal['cards', 'clients', 'persons', 'activities', 'tasks', 'card_history']
     field_type: Literal['date', 'currency', 'category', 'user', 'number']
     groupable: bool
     aggregatable: bool
@@ -43,7 +43,7 @@ class CalculatedFieldSchema(BaseModel):
     id: str
     name: str
     formula: str
-    source: Literal['cards', 'clients', 'persons', 'activities', 'tasks']
+    source: Literal['cards', 'clients', 'persons', 'activities', 'tasks', 'card_history']
     field_type: Literal['number', 'currency']
 
 
@@ -64,7 +64,7 @@ class CalculatedYFieldSchema(BaseModel):
 class ValidateFormulaRequest(BaseModel):
     """Request para validação de fórmula DAX-like."""
     formula: str
-    source: Literal['cards', 'clients', 'persons', 'activities', 'tasks']
+    source: Literal['cards', 'clients', 'persons', 'activities', 'tasks', 'card_history']
     available_keys: List[str]
 
 
@@ -158,6 +158,7 @@ class FieldCatalogResponse(BaseModel):
     persons: List[FieldDefinitionSchema]
     activities: List[FieldDefinitionSchema]
     tasks: List[FieldDefinitionSchema]
+    card_history: List[FieldDefinitionSchema]
 
 
 # ========================

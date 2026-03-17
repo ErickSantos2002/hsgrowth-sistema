@@ -349,6 +349,12 @@ class CustomReportService:
                 field('completed_call_count', 'Ligações Concluídas', 'number', False, True),
                 field('noshow_count', 'NoShow (Reuniões)', 'number', False, True),
             ],
+            card_history=[
+                # Dimensão: agrupa por nome da etapa, ordenado pela posição no pipeline
+                field('stage_name', 'Etapa do Pipeline', 'category', True, False),
+                # Métrica: conta negócios distintos que entraram na etapa no período
+                field('entry_count', 'Negócios que Entraram', 'number', False, True),
+            ],
         )
 
     # ========================
@@ -499,6 +505,28 @@ class CustomReportService:
 
             return results
 
+        # --- Etapa do pipeline por histórico de entrada (card_history.stage_name) ---
+        # Retorna as etapas que tiveram ao menos um card entrando no período,
+        # ordenadas por board e posição para refletir a ordem real do pipeline.
+        if source == 'card_history' and key == 'stage_name':
+            rows = (
+                self.db.query(
+                    BoardList.name.label('group_val'),
+                    BoardList.id.label('raw_key'),
+                )
+                .join(CardListHistory, CardListHistory.list_id == BoardList.id)
+                .filter(
+                    func.date(CardListHistory.entered_at) >= start,
+                    func.date(CardListHistory.entered_at) <= end,
+                )
+                .group_by(BoardList.id, BoardList.name, BoardList.board_id, BoardList.position)
+                .order_by(BoardList.board_id, BoardList.position)
+                .all()
+            )
+            for row in rows:
+                results.append((str(row.group_val or 'Sem etapa'), row.raw_key))
+            return results
+
         # --- Etapa (list_name) — requer JOIN com BoardList ---
         if source == 'cards' and key == 'list_name':
             rows = (
@@ -630,7 +658,7 @@ class CustomReportService:
         # Person não tem soft delete — filtra is_active
         if source == 'persons':
             return Person.is_active == True
-        # Activity e CardTask não têm soft delete
+        # Activity, CardTask e card_history não têm soft delete
         return None
 
     def _get_source_primary_date_col(self, source: str):
@@ -645,6 +673,8 @@ class CustomReportService:
             'persons': Person.created_at,
             'activities': Activity.created_at,
             'tasks': CardTask.created_at,
+            # card_history: filtra por quando o card entrou na etapa
+            'card_history': CardListHistory.entered_at,
         }
         return cols.get(source)
 
@@ -879,6 +909,9 @@ class CustomReportService:
                 return self._run_valid_count_query(
                     x_source, x_key, x_group_by, start, end, extra_filters
                 )
+            # Funil de conversão: conta negócios distintos que ENTRARAM em cada etapa
+            if x_source == 'card_history' and y_key == 'entry_count':
+                return self._run_stage_entry_query(start, end, extra_filters)
 
             # Determina a expressão da chave X (para GROUP BY)
             x_raw_expr = self._build_x_raw_expr(x_source, x_key, x_group_by)
@@ -1353,6 +1386,48 @@ class CustomReportService:
                 .join(CardListHistory, CardListHistory.card_id == Card.id)
                 .filter(*base_filter)
                 .group_by(x_raw_expr)
+                .all()
+            )
+
+            for row in rows:
+                result[row.x_key] = float(row.y_val or 0)
+
+        except Exception:
+            pass
+
+        return result
+
+    def _run_stage_entry_query(
+        self,
+        start: date,
+        end: date,
+        extra_filters: Optional[List] = None,
+    ) -> Dict[Any, float]:
+        """
+        Conta negócios distintos que ENTRARAM em cada etapa do pipeline no período.
+
+        Usa a tabela card_list_history com filtro por entered_at para refletir
+        o volume de entrada em cada lista — base para gráficos de funil de conversão.
+
+        O raw_key retornado é list_id, que bate com os labels gerados em
+        _get_x_labels_and_order para card_history/stage_name.
+        """
+        result: Dict[Any, float] = {}
+
+        try:
+            extra = list(extra_filters or [])
+            base_filter = [
+                func.date(CardListHistory.entered_at) >= start,
+                func.date(CardListHistory.entered_at) <= end,
+            ] + extra
+
+            rows = (
+                self.db.query(
+                    CardListHistory.list_id.label('x_key'),
+                    func.count(func.distinct(CardListHistory.card_id)).label('y_val'),
+                )
+                .filter(*base_filter)
+                .group_by(CardListHistory.list_id)
                 .all()
             )
 

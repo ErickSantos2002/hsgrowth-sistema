@@ -7,6 +7,39 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.3] - 2026-03-17
+
+### Adicionado
+
+#### Nova fonte de dados no relatórios: Histórico de Etapas (`card_history`)
+
+Adicionada a fonte de dados **"Histórico de Etapas"** no construtor de relatórios, permitindo criar gráficos de funil de conversão por etapa do pipeline.
+
+A fonte consulta diretamente a tabela `card_list_history`, que registra toda movimentação de cards entre listas com carimbo de data/hora de entrada (`entered_at`). Com isso, é possível saber quantos negócios *entraram* em cada etapa dentro de um período — diferente da fonte `cards`, que mostra onde os negócios *estão* no momento.
+
+**Campos disponíveis na fonte:**
+- `stage_name` (Etapa do Pipeline) — dimensão categórica agrupável pelo eixo X; etapas ordenadas por board e posição do pipeline
+- `entry_count` (Negócios que Entraram) — métrica agregável pelo eixo Y; usa `COUNT(DISTINCT card_id)` para evitar duplicatas
+
+**Como montar o gráfico de funil:**
+1. Criar relatório com fonte **"Histórico de Etapas"**
+2. Eixo X → **"Etapa do Pipeline"**
+3. Eixo Y → **"Negócios que Entraram"** (agregação: Contagem)
+4. Selecionar o período desejado
+5. Tipo de gráfico: **bar** ou **funnel**
+
+**Observação:** a fonte retorna etapas de todos os boards (Prospecção, Aquisição, Expansão) ordenadas por board e posição. O filtro de período aplica-se sobre `entered_at` — a data em que o card entrou naquela etapa, não a data de criação do card.
+
+**Arquivos alterados — Backend:**
+- `app/schemas/custom_report.py` — `card_history` adicionado ao `Literal` de source em `AxisFieldSchema`, `CalculatedFieldSchema` e `ValidateFormulaRequest`; campo `card_history` adicionado ao `FieldCatalogResponse`
+- `app/services/custom_report_service.py` — nova source `card_history` no catálogo; `_get_source_primary_date_col` mapeado para `CardListHistory.entered_at`; handler `stage_name` em `_get_x_labels_and_order`; hook em `_run_y_agg_query`; novo método `_run_stage_entry_query`
+
+**Arquivos alterados — Frontend:**
+- `src/components/reports/reportTypes.ts` — `'card_history'` adicionado ao tipo `DataSource` e ao `DATA_SOURCE_LABELS`
+- `src/components/reports/NewReportModal.tsx` — `'card_history'` adicionado ao `ALL_SOURCES`
+
+---
+
 ## [1.6.2] - 2026-03-17
 
 ### Alterado
