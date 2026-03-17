@@ -312,6 +312,79 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
         );
       }
 
+      case 'bar_horizontal': {
+        // Barras horizontais: layout="vertical" no Recharts — categorias no eixo Y, valores no X
+        const hBarKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
+        // Altura proporcional ao número de categorias para evitar barras muito finas
+        const hBarHeight = isExpanded ? '100%' : Math.max(220, (rechartData.length * 36) + 60);
+        // Largura do eixo Y proporcional ao label mais longo
+        const yAxisWidth = Math.min(160, Math.max(80, Math.max(...rechartData.map((d) => String(d.name).length)) * 7));
+        return (
+          <ResponsiveContainer width="100%" height={hBarHeight}>
+            <BarChart
+              layout="vertical"
+              data={rechartData}
+              margin={{ top: 10, right: 40, left: 0, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} horizontal={false} />
+              {/* Eixo Y exibe as categorias (nomes); eixo X exibe os valores numéricos */}
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={yAxisWidth}
+                {...axisProps}
+                tick={{ ...axisProps.tick, fontSize: isExpanded ? 13 : 11 }}
+              />
+              <XAxis
+                type="number"
+                {...axisProps}
+                tick={{ ...axisProps.tick, fontSize: isExpanded ? 13 : 11 }}
+              />
+              <Tooltip content={<CustomBarTooltip />} wrapperStyle={{ zIndex: 9999 }} />
+              {hasSeries && (
+                <Legend
+                  wrapperStyle={isExpanded ? { fontSize: '16px', marginTop: '20px' } : undefined}
+                  formatter={(value) => (
+                    <span style={{ color: chartColors.content.secondary, fontSize: isExpanded ? '14px' : '12px' }}>
+                      {value}
+                    </span>
+                  )}
+                />
+              )}
+              {hBarKeys.map((key, i) => (
+                <Bar
+                  key={key}
+                  dataKey={key}
+                  fill={SERIES_COLORS[i % SERIES_COLORS.length]}
+                  radius={[0, 4, 4, 0]}
+                  style={{ cursor: onBarClick ? 'pointer' : 'default' }}
+                  onClick={onBarClick
+                    ? (barData) => {
+                        if (barData?.name != null)
+                          onBarClick(String(barData.name), hasSeries ? key : undefined);
+                      }
+                    : undefined}
+                >
+                  <LabelList
+                    dataKey={key}
+                    position="right"
+                    style={{
+                      fill: darkMode ? '#ffffff' : '#0f172a',
+                      fontSize: isExpanded ? 13 : 11,
+                      fontWeight: 600,
+                    }}
+                    formatter={(val: unknown) => {
+                      const n = Number(val);
+                      return n === 0 ? '' : formatTooltipValue(n);
+                    }}
+                  />
+                </Bar>
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      }
+
       case 'line': {
         const lineKeys = hasSeries ? data.series!.map((s) => s.name) : ['valor'];
         const lineHeight = isExpanded ? (hasSeries ? 480 : 440) : (hasSeries ? 240 : 220);
@@ -648,6 +721,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
 
   const TYPE_LABELS: Record<import('./reportTypes').ChartType, string> = {
     bar: 'Barras',
+    bar_horizontal: 'Barras Horizontais',
     line: 'Linha',
     pie: 'Pizza',
     table: 'Tabela',

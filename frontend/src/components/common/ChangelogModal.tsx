@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.4",
+    date: "17/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Novo tipo de gráfico: Barras Horizontais. Ideal para funis e rankings com nomes de etapas longos — os rótulos ficam no eixo Y com espaço para leitura confortável.",
+      },
+      {
+        type: "feature",
+        text: "Novos campos na fonte 'Histórico de Etapas': Data de Entrada na Etapa (por dia/semana/mês), Data Entrada Prospecção, Aquisição e Expansão. Agora é possível criar gráficos de contagem cumulativa por dia usando 'Dividir por Etapa' para ver o ritmo de entrada de cada etapa ao longo do tempo.",
+      },
+      {
+        type: "improvement",
+        text: "Seletor de tipo de gráfico redesenhado: agora exibe 5 ícones por linha sem rótulo de texto, ficando mais compacto. O nome do tipo aparece ao passar o mouse.",
+      },
+    ],
+  },
+  {
     version: "1.6.3",
     date: "17/03/2026",
     entries: [

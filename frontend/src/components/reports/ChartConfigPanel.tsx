@@ -40,7 +40,8 @@ interface ChartConfigPanelProps {
 type DropState = 'idle' | 'valid' | 'invalid';
 
 const CHART_TYPE_OPTIONS: { type: ChartType; label: string; icon: React.ReactNode }[] = [
-  { type: 'bar',     label: 'Barras',    icon: <BarChart3   size={18} /> },
+  { type: 'bar',            label: 'Barras',        icon: <BarChart3 size={18} /> },
+  { type: 'bar_horizontal', label: 'Barras Horiz.', icon: <BarChart3 size={18} style={{ transform: 'rotate(90deg)' }} /> },
   { type: 'line',    label: 'Linha',     icon: <TrendingUp  size={18} /> },
   { type: 'area',    label: 'Área',      icon: <Activity    size={18} /> },
   { type: 'pie',     label: 'Pizza',     icon: <PieChart    size={18} /> },
@@ -441,8 +442,8 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
   const xFieldIsDate = xAxisField?.field_type === 'date';
 
-  // area se comporta igual a bar/line: suporta múltiplas séries e split_by
-  const isMultiSeriesType = chartType === 'bar' || chartType === 'line' || chartType === 'area';
+  // area e bar_horizontal se comportam igual a bar/line: suporta múltiplas séries e split_by
+  const isMultiSeriesType = chartType === 'bar' || chartType === 'bar_horizontal' || chartType === 'line' || chartType === 'area';
 
   /**
    * Determina se a zona dashed de drop Y deve ser exibida.
@@ -721,28 +722,28 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
           <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400">
             Tipo de gráfico
           </label>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-5 gap-1.5">
             {CHART_TYPE_OPTIONS.map(({ type, label, icon }) => (
               <button
                 key={type}
                 type="button"
+                title={label}
                 onClick={() => {
                   setChartType(type);
                   // Tipos de série única só aceitam 1 métrica — descarta as extras e o split_by
-                  const willBeSingleSeries = type !== 'bar' && type !== 'line' && type !== 'area';
+                  const willBeSingleSeries = type !== 'bar' && type !== 'bar_horizontal' && type !== 'line' && type !== 'area';
                   if (willBeSingleSeries) {
                     if (yFields.length > 1) setYFields((prev) => prev.slice(0, 1));
                     setSplitByField(null);
                   }
                 }}
-                className={`flex flex-col items-center gap-1 rounded-lg border p-2.5 text-xs font-medium transition-colors ${
+                className={`flex items-center justify-center rounded-lg border p-2.5 transition-colors ${
                   chartType === type
                     ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                     : 'border-gray-200 bg-white text-slate-500 hover:border-gray-300 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
                 }`}
               >
                 {icon}
-                <span>{label}</span>
               </button>
             ))}
           </div>

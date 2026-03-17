@@ -18,7 +18,7 @@ export type { PeriodType };
 // ========================
 
 export type DataSource = 'cards' | 'clients' | 'persons' | 'activities' | 'tasks' | 'card_history';
-export type ChartType = 'bar' | 'line' | 'pie' | 'table' | 'area' | 'scatter' | 'radar' | 'funnel' | 'kpi';
+export type ChartType = 'bar' | 'bar_horizontal' | 'line' | 'pie' | 'table' | 'area' | 'scatter' | 'radar' | 'funnel' | 'kpi';
 export type AggregationType = 'count' | 'sum' | 'avg' | 'distinct_count' | 'cumulative_count';
 export type GroupByType = 'day' | 'week' | 'month' | 'year';
 

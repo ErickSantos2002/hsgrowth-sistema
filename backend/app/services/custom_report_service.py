@@ -352,7 +352,14 @@ class CustomReportService:
             card_history=[
                 # Dimensão: agrupa por nome da etapa, ordenado pela posição no pipeline
                 field('stage_name', 'Etapa do Pipeline', 'category', True, False),
-                # Métrica: conta negócios distintos que entraram na etapa no período
+                # Data de entrada na etapa — permite agrupar por dia/semana/mês/ano
+                # Combinado com split_by=stage_name: série por etapa ao longo do tempo
+                field('entered_at', 'Data de Entrada na Etapa', 'date', True, False),
+                # Datas de entrada por board — agrupáveis por dia/semana/mês/ano
+                field('prospection_entry_date', 'Data Entrada Prospecção', 'date', True, False),
+                field('acquisition_entry_date', 'Data Entrada Aquisição', 'date', True, False),
+                field('expansion_entry_date', 'Data Entrada Expansão', 'date', True, False),
+                # Métrica: conta negócios distintos que entraram na etapa/board no período
                 field('entry_count', 'Negócios que Entraram', 'number', False, True),
             ],
         )
@@ -406,6 +413,14 @@ class CustomReportService:
                 'completed_at': CardTask.completed_at,
             }
             return cols.get(key, CardTask.due_date)
+        elif source == 'card_history':
+            # Campos de data de entrada por board — vêm diretamente do model Card
+            cols = {
+                'prospection_entry_date': Card.prospection_entry_date,
+                'acquisition_entry_date': Card.acquisition_entry_date,
+                'expansion_entry_date': Card.expansion_entry_date,
+            }
+            return cols.get(key)
         return None
 
     def _get_x_category_col(self, source: str, key: str):
@@ -473,6 +488,26 @@ class CustomReportService:
         if key == 'count':
             # Caso especial: 'count' não é groupável — não deveria chegar aqui
             return []
+
+        # --- Data de entrada na etapa (card_history.entered_at) ---
+        # Tratado ANTES do handler genérico de datas porque a coluna vem de CardListHistory,
+        # não de Card — o handler genérico retornaria [] (date_col None) e adicionaria
+        # Card.is_deleted erroneamente se chegasse a rodar.
+        if source == 'card_history' and key == 'entered_at' and x_group_by:
+            trunc_expr = func.date_trunc(x_group_by, CardListHistory.entered_at)
+            rows = (
+                self.db.query(trunc_expr.label('group_val'))
+                .filter(
+                    func.date(CardListHistory.entered_at) >= start,
+                    func.date(CardListHistory.entered_at) <= end,
+                )
+                .group_by(trunc_expr)
+                .order_by(trunc_expr)
+                .all()
+            )
+            for row in rows:
+                results.append((self._format_date_label(row[0], x_group_by), row[0]))
+            return results
 
         # --- Campos de data ---
         if x_group_by:
@@ -658,7 +693,10 @@ class CustomReportService:
         # Person não tem soft delete — filtra is_active
         if source == 'persons':
             return Person.is_active == True
-        # Activity, CardTask e card_history não têm soft delete
+        # card_history com campos de data de board: queries vão na tabela Card
+        if source == 'card_history':
+            return Card.is_deleted == False
+        # Activity e CardTask não têm soft delete
         return None
 
     def _get_source_primary_date_col(self, source: str):
@@ -687,6 +725,18 @@ class CustomReportService:
         Campos de usuário retornam o nome; campos categóricos retornam o valor.
         """
         results: List[Tuple[str, Any]] = []
+
+        # Etapa do pipeline em Histórico de Etapas — requer JOIN com BoardList via CardListHistory
+        if source == 'card_history' and key == 'stage_name':
+            rows = (
+                self.db.query(BoardList.name.label('label'), BoardList.id.label('raw'))
+                .join(CardListHistory, CardListHistory.list_id == BoardList.id)
+                .group_by(BoardList.id, BoardList.name, BoardList.board_id, BoardList.position)
+                .order_by(BoardList.board_id, BoardList.position)
+                .limit(50)
+                .all()
+            )
+            return [(str(row.label or 'Sem etapa'), row.raw) for row in rows]
 
         # Etapa (list_name) em Negócios — requer JOIN com BoardList
         if source == 'cards' and key == 'list_name':
@@ -778,6 +828,10 @@ class CustomReportService:
         Retorna a expressão SQLAlchemy para filtrar um valor específico do campo split_by.
         Usado para gerar cada série individualmente na execução da query com split.
         """
+        # Filtro de etapa no Histórico de Etapas: filtra pelo list_id na CardListHistory
+        if source == 'card_history' and key == 'stage_name':
+            return CardListHistory.list_id == raw_value
+
         if source == 'cards':
             if key == 'assigned_to':
                 return Card.assigned_to_id == raw_value
@@ -909,9 +963,15 @@ class CustomReportService:
                 return self._run_valid_count_query(
                     x_source, x_key, x_group_by, start, end, extra_filters
                 )
-            # Funil de conversão: conta negócios distintos que ENTRARAM em cada etapa
-            if x_source == 'card_history' and y_key == 'entry_count':
-                return self._run_stage_entry_query(start, end, extra_filters)
+            # card_history: 'entry_count' e 'count' são equivalentes — ambos contam negócios
+            # distintos que entraram. 'count' é usado internamente pelo cumulative_count.
+            if x_source == 'card_history' and y_key in ('entry_count', 'count'):
+                if x_key == 'stage_name':
+                    return self._run_stage_entry_query(start, end, extra_filters)
+                if x_key == 'entered_at':
+                    return self._run_entered_at_query(x_group_by, start, end, extra_filters)
+                if x_key in ('prospection_entry_date', 'acquisition_entry_date', 'expansion_entry_date'):
+                    return self._run_board_entry_query(x_key, x_group_by, start, end, extra_filters)
 
             # Determina a expressão da chave X (para GROUP BY)
             x_raw_expr = self._build_x_raw_expr(x_source, x_key, x_group_by)
@@ -1428,6 +1488,111 @@ class CustomReportService:
                 )
                 .filter(*base_filter)
                 .group_by(CardListHistory.list_id)
+                .all()
+            )
+
+            for row in rows:
+                result[row.x_key] = float(row.y_val or 0)
+
+        except Exception:
+            pass
+
+        return result
+
+    def _run_board_entry_query(
+        self,
+        x_key: str,
+        x_group_by: Optional[str],
+        start: date,
+        end: date,
+        extra_filters: Optional[List] = None,
+    ) -> Dict[Any, float]:
+        """
+        Conta negócios distintos que ENTRARAM em cada board no período,
+        agrupados pelo campo de data de entrada (prospection/acquisition/expansion).
+
+        Usa os campos entry_date do model Card em vez de CardListHistory,
+        pois registram especificamente quando o card chegou em cada board.
+        Ignora cards onde o campo é NULL (nunca chegaram naquele board).
+        """
+        result: Dict[Any, float] = {}
+
+        try:
+            date_col = self._get_x_date_col('card_history', x_key)
+            if date_col is None:
+                return result
+
+            # Agrupa por bucket de data (mês, semana, etc.) se x_group_by estiver definido
+            x_expr = func.date_trunc(x_group_by, date_col) if x_group_by else date_col
+
+            extra = list(extra_filters or [])
+            base_filter = [
+                Card.is_deleted == False,
+                date_col.isnot(None),  # exclui cards que nunca entraram neste board
+                func.date(date_col) >= start,
+                func.date(date_col) <= end,
+            ] + extra
+
+            rows = (
+                self.db.query(
+                    x_expr.label('x_key'),
+                    func.count(func.distinct(Card.id)).label('y_val'),
+                )
+                .filter(*base_filter)
+                .group_by(x_expr)
+                .order_by(x_expr)
+                .all()
+            )
+
+            for row in rows:
+                result[row.x_key] = float(row.y_val or 0)
+
+        except Exception:
+            pass
+
+        return result
+
+    def _run_entered_at_query(
+        self,
+        x_group_by: Optional[str],
+        start: date,
+        end: date,
+        extra_filters: Optional[List] = None,
+    ) -> Dict[Any, float]:
+        """
+        Conta negócios distintos que ENTRARAM em qualquer etapa no período,
+        agrupados pelo bucket de data de entered_at (dia/semana/mês/ano).
+
+        Diferente de _run_stage_entry_query (agrupa por etapa) e _run_board_entry_query
+        (usa datas do Card), este método usa CardListHistory.entered_at como eixo X
+        temporal — ideal para gráficos de linha/área cumulativa por dia do mês.
+
+        Quando combinado com split_by=stage_name no frontend, cada etapa vira
+        uma série separada, permitindo comparar o ritmo de entrada por etapa ao longo do tempo.
+        """
+        result: Dict[Any, float] = {}
+
+        try:
+            x_expr = (
+                func.date_trunc(x_group_by, CardListHistory.entered_at)
+                if x_group_by
+                else CardListHistory.entered_at
+            )
+
+            extra = list(extra_filters or [])
+            base_filter = [
+                func.date(CardListHistory.entered_at) >= start,
+                func.date(CardListHistory.entered_at) <= end,
+            ] + extra
+
+            rows = (
+                self.db.query(
+                    x_expr.label('x_key'),
+                    func.count(func.distinct(CardListHistory.card_id)).label('y_val'),
+                )
+                .filter(*base_filter)
+                .group_by(x_expr)
+                .order_by(x_expr)
                 .all()
             )
 

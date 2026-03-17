@@ -7,6 +7,57 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.4] - 2026-03-17
+
+### Adicionado
+
+#### Novos campos na fonte "Histórico de Etapas" e suporte a barras horizontais
+
+**Barras Horizontais (`bar_horizontal`)**
+
+Novo tipo de gráfico disponível no construtor de relatórios. Ideal para visualizar rankings e funis com etapas de nomes longos, pois os rótulos ficam no eixo Y com espaço suficiente para leitura.
+
+- Categorias no eixo Y, valores no eixo X
+- Suporta múltiplas séries e split_by (igual ao `bar` vertical)
+- Altura dinâmica proporcional ao número de categorias
+- Largura do eixo Y calculada pelo label mais longo para evitar corte de texto
+
+**Arquivos alterados:**
+- `src/components/reports/reportTypes.ts` — `'bar_horizontal'` adicionado ao tipo `ChartType`
+- `src/components/reports/ChartConfigPanel.tsx` — nova opção no seletor de tipo; `isMultiSeriesType` e `willBeSingleSeries` atualizados; grid 5 colunas sem rótulos (só ícones com tooltip)
+- `src/components/reports/ChartWidget.tsx` — `case 'bar_horizontal'` com `layout="vertical"`; `TYPE_LABELS` atualizado
+
+---
+
+**Novos campos na fonte "Histórico de Etapas" (`card_history`)**
+
+Quatro novos campos adicionados à fonte, expandindo as possibilidades analíticas:
+
+| Campo | Tipo | Uso |
+|---|---|---|
+| Data de Entrada na Etapa (`entered_at`) | Data | Eixo X por dia/semana/mês — ideal para contagem cumulativa |
+| Data Entrada Prospecção | Data | Quantos cards entraram no board Prospecção por período |
+| Data Entrada Aquisição | Data | Quantos cards entraram no board Aquisição por período |
+| Data Entrada Expansão | Data | Quantos cards entraram no board Expansão por período |
+
+**Como montar contagem cumulativa por dia da etapa:**
+1. Fonte: Histórico de Etapas
+2. Eixo X → **Data de Entrada na Etapa**, agrupar por **Dia**
+3. Eixo Y → Negócios que Entraram + **Contagem Cumulativa**
+4. Dividir por → **Etapa do Pipeline** (uma série por etapa)
+5. Tipo: Linha ou Área
+
+**Correções internas:**
+- `_get_split_values`: adicionado handler para `card_history` + `stage_name` — busca etapas distintas via `CardListHistory JOIN BoardList`, ordenadas por board e posição
+- `_build_split_filter`: adicionado handler para `card_history` + `stage_name` — gera filtro `CardListHistory.list_id == raw_value`
+- Handler de `entered_at` em `_get_x_labels_and_order` movido para antes do bloco genérico de datas (evitava retorno `[]` por `date_col None`)
+- `_run_y_agg_query`: `cumulative_count` agora funciona com `card_history` (detecta `y_key='count'` além de `'entry_count'`)
+
+**Arquivos alterados — Backend:**
+- `app/services/custom_report_service.py` — catálogo atualizado; `_get_x_date_col`, `_get_x_labels_and_order`, `_get_split_values`, `_build_split_filter`, `_run_y_agg_query` atualizados; novos métodos `_run_entered_at_query` e `_run_board_entry_query`
+
+---
+
 ## [1.6.3] - 2026-03-17
 
 ### Adicionado
