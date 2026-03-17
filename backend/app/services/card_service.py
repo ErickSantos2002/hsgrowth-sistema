@@ -524,6 +524,19 @@ class CardService:
                     )
                 )
 
+        # Aplica regras de atribuição por role — garante que a lógica do frontend
+        # seja reforçada no backend, mesmo em chamadas diretas à API.
+        role_name = current_user.role.name if current_user.role else ""
+
+        if role_name == "sdr":
+            # SDR não pode escolher o vendedor: sempre sem responsável e SDR = si mesmo
+            card_data.assigned_to_id = None
+            card_data.sdr_id = current_user.id
+        elif role_name == "salesperson":
+            # Vendedor é sempre o próprio responsável e não pode atribuir SDR
+            card_data.assigned_to_id = current_user.id
+            card_data.sdr_id = None
+
         # Cria o card
         card = self.card_repository.create(card_data)
         print(f"[AUTOMATION] Card criado ID={card.id}, Board={board.id}")

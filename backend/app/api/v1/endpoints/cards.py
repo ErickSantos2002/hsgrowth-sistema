@@ -337,12 +337,38 @@ async def create_card(
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")
 
+    # Constrói descrição rica mencionando responsável e lista (facilita auditoria)
+    desc_parts = [f"Card criado: {card.title}"]
+    if card.assigned_to and card.assigned_to.name:
+        desc_parts.append(f"Responsável: {card.assigned_to.name}")
+    if card.sdr and card.sdr.name:
+        desc_parts.append(f"SDR: {card.sdr.name}")
+    if card.list:
+        desc_parts.append(f"Lista: {card.list.name}")
+    if card.value:
+        desc_parts.append(f"Valor: R$ {float(card.value):,.2f}")
+
+    # Snapshot dos campos relevantes no momento da criação
+    data_after = {
+        "id": card.id,
+        "title": card.title,
+        "list_id": card.list_id,
+        "list_name": card.list.name if card.list else None,
+        "assigned_to_id": card.assigned_to_id,
+        "assigned_to_name": card.assigned_to.name if card.assigned_to else None,
+        "sdr_id": card.sdr_id,
+        "sdr_name": card.sdr.name if card.sdr else None,
+        "value": float(card.value) if card.value is not None else None,
+        "due_date": card.due_date.isoformat() if card.due_date else None,
+    }
+
     audit_log = AuditLog(
         user_id=current_user.id,
         action="CREATE",
         entity_type="Card",
         entity_id=card.id,
-        description=f"Card criado: {card.title}",
+        description=" | ".join(desc_parts),
+        data_after=data_after,
         ip_address=client_ip,
         user_agent=user_agent
     )

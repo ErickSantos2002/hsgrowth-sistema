@@ -108,14 +108,20 @@ const Settings: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [logsPage, setLogsPage] = useState(1);
+  /** Controla se o usuário já realizou pelo menos uma pesquisa. Enquanto false, exibe placeholder. */
+  const [logsSearched, setLogsSearched] = useState(false);
+  /** IDs das linhas de log com a linha de detalhes expandida. */
+  const [expandedLogIds, setExpandedLogIds] = useState<Set<number>>(new Set());
   const [logsFilters, setLogsFilters] = useState({
     action: "",
     entity_type: "",
+    user_id: "",
     start_date: "",
     end_date: "",
   });
   const [availableActions, setAvailableActions] = useState<string[]>([]);
   const [availableEntityTypes, setAvailableEntityTypes] = useState<string[]>([]);
+  const [availableLogUsers, setAvailableLogUsers] = useState<{ id: number; name: string }[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -157,14 +163,17 @@ const Settings: React.FC = () => {
     }
   }, [activeTab, user]);
 
-  // Carrega logs de auditoria quando a tab logs é ativada (admin ou gerente)
+  // Carrega opções de filtro quando a tab logs é ativada (admin ou gerente).
+  // Não carrega os logs automaticamente — o usuário precisa clicar em "Pesquisar".
   useEffect(() => {
     const isManagerOrAdmin = user?.role === "admin" || user?.role === "manager";
     if (activeTab === "logs" && isManagerOrAdmin) {
-      loadLogs();
       loadFilterOptions();
+      // Reseta o estado de pesquisa ao trocar de tab
+      setLogsSearched(false);
+      setAuditLogs([]);
     }
-  }, [activeTab, user, logsFilters]);
+  }, [activeTab, user]);
 
   // Carrega histórico de logins e sessões ativas quando a tab security é ativada
   useEffect(() => {
@@ -514,13 +523,15 @@ const Settings: React.FC = () => {
   const loadLogs = async () => {
     try {
       setLoadingLogs(true);
+      setLogsSearched(true);
 
-      // Busca 100 logs da API com os filtros aplicados
+      // Busca até 500 logs da API com os filtros aplicados
       const data = await auditLogService.getLogs({
         page: 1,
-        page_size: 100,
+        page_size: 500,
         action: logsFilters.action || undefined,
         entity_type: logsFilters.entity_type || undefined,
+        user_id: logsFilters.user_id ? Number(logsFilters.user_id) : undefined,
         start_date: logsFilters.start_date || undefined,
         end_date: logsFilters.end_date || undefined,
       });
@@ -535,14 +546,55 @@ const Settings: React.FC = () => {
     }
   };
 
+  /**
+   * Aplica atalho de período nos filtros de data.
+   * - today: apenas hoje
+   * - yesterday: apenas ontem
+   * - this_week: últimos 7 dias
+   * - this_month: do dia 1 do mês atual até hoje
+   */
+  const applyDateShortcut = (shortcut: "today" | "yesterday" | "this_week" | "this_month") => {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    switch (shortcut) {
+      case "today":
+        setLogsFilters((prev) => ({ ...prev, start_date: fmt(today), end_date: fmt(today) }));
+        break;
+      case "yesterday":
+        setLogsFilters((prev) => ({ ...prev, start_date: fmt(yesterday), end_date: fmt(yesterday) }));
+        break;
+      case "this_week": {
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 6);
+        setLogsFilters((prev) => ({ ...prev, start_date: fmt(weekAgo), end_date: fmt(today) }));
+        break;
+      }
+      case "this_month": {
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        setLogsFilters((prev) => ({ ...prev, start_date: fmt(monthStart), end_date: fmt(today) }));
+        break;
+      }
+    }
+  };
+
   const loadFilterOptions = async () => {
     try {
-      const [actions, entityTypes] = await Promise.all([
+      const [actions, entityTypes, users] = await Promise.all([
         auditLogService.getActions(),
         auditLogService.getEntityTypes(),
+        userService.listActive(),
       ]);
       setAvailableActions(actions);
       setAvailableEntityTypes(entityTypes);
+      // Ordena por nome para facilitar a busca no select
+      setAvailableLogUsers(
+        [...users].sort((a, b) => a.name.localeCompare(b.name))
+      );
     } catch (error) {
       console.error("Erro ao carregar opções de filtro:", error);
     }
@@ -559,8 +611,25 @@ const Settings: React.FC = () => {
     setLogsFilters({
       action: "",
       entity_type: "",
+      user_id: "",
       start_date: "",
       end_date: "",
+    });
+    setAuditLogs([]);
+    setLogsSearched(false);
+    setExpandedLogIds(new Set());
+  };
+
+  /** Alterna a expansão da linha de detalhes de um log. */
+  const toggleLogExpand = (id: number) => {
+    setExpandedLogIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
     });
   };
 
@@ -763,18 +832,18 @@ const Settings: React.FC = () => {
 
   const loginPageNumbers = getLoginPageNumbers();
 
-  const logsItemsPerPage = 20;
-  const logsMaxItems = 100;
+  const logsItemsPerPage = 25;
+  // Backend já retorna os logs filtrados e ordenados (mais recente primeiro)
+  // A ordenação local garante consistência mesmo que o backend mude
   const sortedAuditLogs = [...auditLogs].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
-  const limitedAuditLogs = sortedAuditLogs.slice(0, logsMaxItems);
-  const logsTotalItems = limitedAuditLogs.length;
+  const logsTotalItems = sortedAuditLogs.length;
   const logsTotalPages = Math.max(1, Math.ceil(logsTotalItems / logsItemsPerPage));
   const safeLogsPage = Math.min(logsPage, logsTotalPages);
   const logsStartIndex = (safeLogsPage - 1) * logsItemsPerPage;
   const logsEndIndex = Math.min(logsStartIndex + logsItemsPerPage, logsTotalItems);
-  const paginatedAuditLogs = limitedAuditLogs.slice(logsStartIndex, logsEndIndex);
+  const paginatedAuditLogs = sortedAuditLogs.slice(logsStartIndex, logsEndIndex);
 
   const getLogsPageNumbers = () => {
     const maxButtons = 5;
@@ -2376,7 +2445,7 @@ const Settings: React.FC = () => {
                 <div className="mb-6">
                   <h2 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">Logs de Auditoria</h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Visualize os últimos 100 logs de ações realizadas no sistema pelos usuários
+                    Aplique os filtros desejados e clique em <strong>Pesquisar</strong> para visualizar os registros de atividade do sistema
                   </p>
                 </div>
 
@@ -2387,7 +2456,45 @@ const Settings: React.FC = () => {
                     Filtros
                   </h3>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  {/* Atalhos de período */}
+                  <div className="mb-4 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Período rápido:</span>
+                    {(
+                      [
+                        { key: "today", label: "Hoje" },
+                        { key: "yesterday", label: "Ontem" },
+                        { key: "this_week", label: "Últimos 7 dias" },
+                        { key: "this_month", label: "Este mês" },
+                      ] as const
+                    ).map(({ key, label }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => applyDateShortcut(key)}
+                        className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800/50 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                    {/* Filtro por Usuário */}
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <UserIcon size={14} className="mr-1 inline" />
+                        Usuário
+                      </label>
+                      <SelectMenu
+                        value={logsFilters.user_id}
+                        options={[
+                          { value: "", label: "Todos" },
+                          ...availableLogUsers.map((u) => ({ value: String(u.id), label: u.name })),
+                        ]}
+                        onChange={(value) => handleLogsFilterChange("user_id", value)}
+                      />
+                    </div>
+
                     {/* Filtro por Ação */}
                     <div>
                       <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -2447,25 +2554,54 @@ const Settings: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex gap-3">
+                  <div className="mt-5 flex items-center gap-3">
+                    {/* Botão principal de pesquisa */}
+                    <button
+                      onClick={loadLogs}
+                      disabled={loadingLogs}
+                      className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60 dark:bg-emerald-700 dark:hover:bg-emerald-600"
+                    >
+                      <Search size={15} />
+                      {loadingLogs ? "Pesquisando..." : "Pesquisar"}
+                    </button>
                     <button
                       onClick={handleClearLogsFilters}
-                      className="rounded-lg bg-gray-200 px-4 py-2 text-slate-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
+                      className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                     >
-                      Limpar Filtros
+                      Limpar
                     </button>
+                    {/* Contador de resultados */}
+                    {logsSearched && !loadingLogs && (
+                      <span className="ml-auto text-sm text-slate-500 dark:text-slate-400">
+                        {logsTotalItems === 0
+                          ? "Nenhum resultado"
+                          : `${logsTotalItems} registro${logsTotalItems !== 1 ? "s" : ""} encontrado${logsTotalItems !== 1 ? "s" : ""}`}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 {/* Tabela de Logs */}
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-                  {loadingLogs ? (
+                  {!logsSearched ? (
+                    /* Placeholder inicial — nenhuma pesquisa realizada ainda */
+                    <div className="flex flex-col items-center justify-center px-8 py-16 text-center">
+                      <div className="mb-4 rounded-full bg-slate-100 p-5 dark:bg-slate-800">
+                        <Search size={28} className="text-slate-400 dark:text-slate-500" />
+                      </div>
+                      <p className="font-medium text-slate-600 dark:text-slate-400">Nenhuma pesquisa realizada</p>
+                      <p className="mt-1 max-w-sm text-sm text-slate-400 dark:text-slate-500">
+                        Use os atalhos de período ou configure as datas acima e clique em{" "}
+                        <strong className="text-slate-500 dark:text-slate-400">Pesquisar</strong> para visualizar os logs
+                      </p>
+                    </div>
+                  ) : loadingLogs ? (
                     <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                      Carregando logs...
+                      Pesquisando logs...
                     </div>
                   ) : auditLogs.length === 0 ? (
                     <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                      Nenhum log encontrado
+                      Nenhum log encontrado para os filtros selecionados
                     </div>
                   ) : (
                     <>
@@ -2491,11 +2627,32 @@ const Settings: React.FC = () => {
                               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
                                 IP
                               </th>
+                              <th className="w-8 px-2 py-3" />
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                          {paginatedAuditLogs.map((log) => (
-                                <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                          {paginatedAuditLogs.map((log) => {
+                            const hasDetails = !!(log.data_after || log.data_before);
+                            const isExpanded = expandedLogIds.has(log.id);
+                            const details = log.data_after ?? log.data_before ?? {};
+                            // Campos legíveis para exibição dos detalhes
+                            const detailLabels: Record<string, string> = {
+                              title: "Título",
+                              list_name: "Lista",
+                              assigned_to_name: "Responsável",
+                              sdr_name: "SDR",
+                              value: "Valor",
+                              due_date: "Vencimento",
+                              id: "ID",
+                            };
+
+                            return (
+                              <>
+                                <tr
+                                  key={log.id}
+                                  className={`${hasDetails ? "cursor-pointer" : ""} hover:bg-gray-50 dark:hover:bg-slate-800/50`}
+                                  onClick={() => hasDetails && toggleLogExpand(log.id)}
+                                >
                                   <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                     {new Date(log.created_at).toLocaleString("pt-BR")}
                                   </td>
@@ -2528,8 +2685,44 @@ const Settings: React.FC = () => {
                                   <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                                     {log.ip_address}
                                   </td>
+                                  <td className="px-2 py-3 text-center">
+                                    {hasDetails && (
+                                      <ChevronDown
+                                        size={14}
+                                        className={`text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                      />
+                                    )}
+                                  </td>
                                 </tr>
-                              ))}
+                                {/* Linha expandida com snapshot dos dados */}
+                                {hasDetails && isExpanded && (
+                                  <tr key={`${log.id}-details`} className="bg-slate-50 dark:bg-slate-800/30">
+                                    <td colSpan={7} className="px-6 py-3">
+                                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                        Detalhes do evento
+                                      </p>
+                                      <div className="flex flex-wrap gap-x-6 gap-y-1.5">
+                                        {Object.entries(details)
+                                          .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== "")
+                                          .map(([key, value]) => (
+                                            <div key={key} className="flex items-baseline gap-1.5">
+                                              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                                {detailLabels[key] ?? key}:
+                                              </span>
+                                              <span className="text-xs text-slate-700 dark:text-slate-200">
+                                                {typeof value === "number" && key === "value"
+                                                  ? `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                                                  : String(value)}
+                                              </span>
+                                            </div>
+                                          ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </>
+                            );
+                          })}
                           </tbody>
                         </table>
                       </div>

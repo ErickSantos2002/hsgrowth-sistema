@@ -7,6 +7,53 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.6] - 2026-03-17
+
+### Adicionado
+
+#### Logs de Auditoria — pesquisa manual com filtro por usuário
+
+A aba de Logs de Auditoria foi reformulada para trabalhar sob demanda em vez de carregar automaticamente.
+
+**Melhorias na interface:**
+- Logs **não carregam mais automaticamente** ao abrir a aba — era inviável pois o dia inteiro já ultrapassava 100 registros
+- Novo botão **Pesquisar** dispara a busca com os filtros selecionados
+- Atalhos de período: **Hoje**, **Ontem**, **Últimos 7 dias**, **Este mês** preenchem as datas com um clique
+- Novo filtro por **Usuário** — afunila a busca para as ações de uma pessoa específica
+- Contador de resultados exibido após a pesquisa ("X registros encontrados")
+- Placeholder orientativo enquanto nenhuma pesquisa foi realizada
+- Paginação aumentada de 20 para 25 itens por página
+
+**Melhorias técnicas:**
+- Limite do backend aumentado de 100 para 500 registros por requisição
+- Log de criação de card agora registra snapshot completo em `data_after`: responsável, SDR, lista, valor, vencimento
+- Descrição do log de criação enriquecida: `"Card criado: Título | Responsável: João | Lista: Lead Novo | Valor: R$ 5.000,00"`
+- Endpoint `GET /api/v1/audit-logs` agora retorna `data_before` e `data_after` na resposta
+- Linhas com detalhes expandíveis na tabela: clique em qualquer registro com snapshot para ver os dados do evento
+
+**Arquivos alterados — Backend:**
+- `app/api/v1/endpoints/audit_logs.py` — limite `le=500`; `data_before`/`data_after` incluídos na resposta
+- `app/api/v1/endpoints/cards.py` — log de criação com `data_after` e descrição rica
+
+**Arquivos alterados — Frontend:**
+- `src/pages/Settings.tsx` — botão Pesquisar; atalhos de período; filtro por usuário; linha expandível; estados `logsSearched`, `expandedLogIds`, `availableLogUsers`
+- `src/services/auditLogService.ts` — interface `AuditLog` com `data_before`/`data_after`
+
+### Corrigido
+
+#### Segurança: SDR não pode atribuir vendedor via API direta
+
+O frontend já bloqueava visualmente o campo "Responsável" para usuários SDR na criação de cards, mas a restrição **não era aplicada no backend** — qualquer chamada direta à API podia ignorá-la.
+
+- **SDR**: `assigned_to_id` é forçado para `null` e `sdr_id` é forçado para o próprio usuário, independente do payload recebido
+- **Vendedor (salesperson)**: `assigned_to_id` é forçado para o próprio usuário e `sdr_id` é forçado para `null`
+- **Admin/Manager**: sem restrição, podem definir qualquer combinação livremente
+
+**Arquivo alterado:**
+- `app/services/card_service.py` — validação de role em `create_card` antes de persistir
+
+---
+
 ## [1.6.5] - 2026-03-17
 
 ### Adicionado

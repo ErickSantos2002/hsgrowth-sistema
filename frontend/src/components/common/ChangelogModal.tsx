@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.6",
+    date: "17/03/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Logs de Auditoria reformulados: pesquisa manual com botão 'Pesquisar', atalhos de período (Hoje, Ontem, Últimos 7 dias, Este mês), novo filtro por usuário e limite aumentado para 500 registros. Cada log de criação de card agora registra responsável, SDR, lista e valor.",
+      },
+      {
+        type: "fix",
+        text: "Correção de segurança: SDR não podia atribuir vendedor pela interface, mas a restrição não era validada no servidor — uma chamada direta à API conseguia burlar isso. Agora o backend força as regras de atribuição independente de como a requisição for feita.",
+      },
+    ],
+  },
+  {
     version: "1.6.5",
     date: "17/03/2026",
     entries: [

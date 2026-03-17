@@ -9,6 +9,10 @@ export interface AuditLog {
   entity_type: string;
   entity_id: number | null;
   description: string;
+  /** Snapshot do estado anterior ao evento (UPDATE/DELETE). Null para CREATEs. */
+  data_before: Record<string, unknown> | null;
+  /** Snapshot do estado no momento do evento (CREATE/UPDATE). */
+  data_after: Record<string, unknown> | null;
   ip_address: string;
   user_agent: string;
   created_at: string;

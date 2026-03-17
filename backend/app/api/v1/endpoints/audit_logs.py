@@ -78,7 +78,7 @@ router = APIRouter()
 )
 async def list_audit_logs(
     page: int = Query(1, ge=1, description="Número da página"),
-    page_size: int = Query(50, ge=1, le=100, description="Registros por página"),
+    page_size: int = Query(50, ge=1, le=500, description="Registros por página"),
     user_id: Optional[int] = Query(None, description="Filtrar por ID do usuário"),
     action: Optional[str] = Query(None, description="Filtrar por tipo de ação"),
     entity_type: Optional[str] = Query(None, description="Filtrar por tipo de entidade"),
@@ -164,6 +164,8 @@ async def list_audit_logs(
             "entity_type": log.entity_type,
             "entity_id": log.entity_id,
             "description": log.description,
+            "data_before": log.data_before,
+            "data_after": log.data_after,
             "ip_address": log.ip_address,
             "user_agent": log.user_agent,
             "created_at": log.created_at.isoformat() + 'Z' if log.created_at else None
