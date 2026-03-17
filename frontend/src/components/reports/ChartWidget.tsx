@@ -467,16 +467,51 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
 
       case 'pie': {
         const RADIAN = Math.PI / 180;
+        const pieTotal = rechartData.reduce((sum, d) => sum + (Number(d.valor) || 0), 0);
+
         const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }: any) => {
-          if (!value || value === 0) return null;
+          if (!value || value === 0 || !showLabels) return null;
+          const pct = pieTotal > 0 ? ((value / pieTotal) * 100).toFixed(1) : '0';
           const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
           const x = cx + radius * Math.cos(-midAngle * RADIAN);
           const y = cy + radius * Math.sin(-midAngle * RADIAN);
           const fontSize = isExpanded ? 15 : 11;
           return (
             <text x={x} y={y} fill="#ffffff" textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={700}>
-              {formatTooltipValue(value)}
+              {`${pct}%`}
             </text>
+          );
+        };
+
+        // Tooltip específico para pizza: Nome + Qtd + % (sem linha de Total)
+        const CustomPieTooltip = ({ active, payload }: any) => {
+          if (!active || !payload || payload.length === 0) return null;
+          const entry = payload[0];
+          const value = Number(entry.value);
+          const pct = pieTotal > 0 ? ((value / pieTotal) * 100).toFixed(1) : '0';
+          return (
+            <div style={{
+              backgroundColor: chartColors.surface.elevated,
+              border: `1px solid ${chartColors.border.default}`,
+              borderRadius: '8px',
+              padding: '8px 12px',
+              fontSize: '12px',
+              color: chartColors.content.primary,
+              zIndex: 9999,
+              minWidth: 160,
+            }}>
+              <div style={{ fontWeight: 700, marginBottom: 6, color: entry.payload.fill }}>
+                {entry.name}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                <span style={{ color: chartColors.content.secondary }}>Qtd</span>
+                <span style={{ fontWeight: 600 }}>{formatTooltipValue(value)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                <span style={{ color: chartColors.content.secondary }}>%</span>
+                <span style={{ fontWeight: 600 }}>{pct}%</span>
+              </div>
+            </div>
           );
         };
 
@@ -507,7 +542,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 ))}
               </Pie>
               <Tooltip
-                content={<CustomBarTooltip />}
+                content={<CustomPieTooltip />}
                 wrapperStyle={{ zIndex: 9999 }}
               />
               <Legend
