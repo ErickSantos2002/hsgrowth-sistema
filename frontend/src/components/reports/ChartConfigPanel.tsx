@@ -587,7 +587,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
         {xAxisField ? (
           // Campo preenchido — chip com informações do campo
-          <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800">
+          <div title={`${xAxisField.label} · ${DATA_SOURCE_LABELS[xAxisField.source]}`} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800">
             <FieldTypeIcon fieldType={xAxisField.field_type} size={13} />
             <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-300">
               {xAxisField.label}
@@ -670,6 +670,10 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
                 key={yf.is_calculated
                   ? `calc-${(yf as CalculatedYFieldConfig).calculated_field_id}-${index}`
                   : `${(yf as { field: AxisField }).field.source}-${(yf as { field: AxisField }).field.key}-${index}`
+                }
+                title={yf.is_calculated
+                  ? (yf as CalculatedYFieldConfig).label
+                  : `${(yf as { field: AxisField }).field.label} · ${DATA_SOURCE_LABELS[(yf as { field: AxisField }).field.source]} · ${AGGREGATION_LABELS[(yf as { aggregation: AggregationType }).aggregation]}`
                 }
                 className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
               >
