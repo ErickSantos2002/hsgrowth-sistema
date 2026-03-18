@@ -58,6 +58,7 @@ const CardDetails: React.FC = () => {
   const [isMovingCard, setIsMovingCard] = useState(false);
   const [isAutoAssigning, setIsAutoAssigning] = useState(false);
   const [isAutoAssigningSdr, setIsAutoAssigningSdr] = useState(false);
+  const [showAssignConfirm, setShowAssignConfirm] = useState(false);
 
   // Estado das abas
   const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos">("atividade");
@@ -800,24 +801,48 @@ const CardDetails: React.FC = () => {
 
               {/* Botão Atribuir Vendedor Automaticamente (Rodízio) */}
               {!isViewer && !card.is_won && !card.is_lost && !card.assigned_to_id && (
-                <button
-                  onClick={handleAutoAssign}
-                  disabled={isAutoAssigning}
-                  className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 px-4 font-medium text-white shadow-lg shadow-purple-500/20 transition-all hover:from-purple-700 hover:to-purple-600 disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Atribui automaticamente um vendedor via rodízio"
-                >
-                  {isAutoAssigning ? (
-                    <>
-                      <Sparkles size={18} className="animate-spin" />
-                      Atribuindo...
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus size={18} />
-                      Atribuir Vendedor
-                    </>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowAssignConfirm(v => !v)}
+                    disabled={isAutoAssigning}
+                    className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 px-4 font-medium text-white shadow-lg shadow-purple-500/20 transition-all hover:from-purple-700 hover:to-purple-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Atribui automaticamente um vendedor via rodízio"
+                  >
+                    {isAutoAssigning ? (
+                      <>
+                        <Sparkles size={18} className="animate-spin" />
+                        Atribuindo...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus size={18} />
+                        Atribuir Vendedor
+                      </>
+                    )}
+                  </button>
+
+                  {showAssignConfirm && !isAutoAssigning && (
+                    <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-purple-200 bg-white p-3 shadow-xl dark:border-purple-700/50 dark:bg-slate-800">
+                      <p className="mb-3 text-center text-sm font-medium text-slate-700 dark:text-slate-200">
+                        Confirmar atribuição?
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setShowAssignConfirm(false); handleAutoAssign(); }}
+                          className="flex-1 rounded-lg bg-purple-600 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
+                        >
+                          Sim
+                        </button>
+                        <button
+                          onClick={() => setShowAssignConfirm(false)}
+                          className="flex-1 rounded-lg bg-slate-100 py-1.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                        >
+                          Não
+                        </button>
+                      </div>
+                    </div>
                   )}
-                </button>
+                </div>
               )}
 
               {/* Botão Atribuir SDR Automaticamente (Rodízio) - DESABILITADO NO MOMENTO */}
