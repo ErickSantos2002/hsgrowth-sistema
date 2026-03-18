@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.10",
+    date: "18/03/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Botões 'Ganho' e 'Perdido' no card agora movem o negócio automaticamente para a lista correta do board (ex: 'Negócio Ganho' no board de Aquisição) — antes apenas marcavam um flag sem mover.",
+      },
+      {
+        type: "improvement",
+        text: "Botão 'Ganho' é ocultado automaticamente em boards que não possuem lista de ganho (ex: board de Prospecção), evitando ação inválida.",
+      },
+      {
+        type: "fix",
+        text: "Movimentos de card disparados por automações agora aparecem no histórico do card e nos relatórios de Histórico de Etapas — antes ficavam invisíveis.",
+      },
+    ],
+  },
+  {
     version: "1.6.9",
     date: "18/03/2026",
     entries: [

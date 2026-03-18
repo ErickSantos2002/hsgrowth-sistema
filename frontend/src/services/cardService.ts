@@ -83,7 +83,8 @@ class CardService {
   }
 
   /**
-   * Marca um card como ganho
+   * Marca um card como ganho.
+   * O backend localiza automaticamente a lista is_done_stage do board atual.
    */
   async markAsWon(id: number): Promise<Card> {
     const response = await api.post<Card>(`/api/v1/cards/${id}/win`);
@@ -91,10 +92,13 @@ class CardService {
   }
 
   /**
-   * Marca um card como perdido
+   * Marca um card como perdido com o motivo informado.
+   * O backend localiza automaticamente a lista is_lost_stage do board atual.
    */
-  async markAsLost(id: number): Promise<Card> {
-    const response = await api.post<Card>(`/api/v1/cards/${id}/lose`);
+  async markAsLost(id: number, lossReason: string): Promise<Card> {
+    const response = await api.post<Card>(`/api/v1/cards/${id}/lose`, {
+      loss_reason: lossReason,
+    });
     return response.data;
   }
 

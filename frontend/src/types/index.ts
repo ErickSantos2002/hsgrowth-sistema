@@ -138,6 +138,7 @@ export interface Card {
   pending_tasks_status: string | null;
   list_name: string | null;
   board_id: number | null;
+  board_has_done_stage: boolean | null; // Indica se o board tem lista de "Negócio Ganho"
   board_name: string | null; // Nome do board (usado em CardDetails)
   client_name: string | null;
 

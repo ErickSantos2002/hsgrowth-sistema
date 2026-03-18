@@ -1576,6 +1576,122 @@ class CardService:
 
         return moved_card
 
+    def mark_card_won(self, card_id: int, current_user: User) -> Card:
+        """
+        Marca um card como ganho movendo-o para a lista is_done_stage do board atual.
+
+        Localiza automaticamente a lista de 'Negócio Ganho' do board e chama move_card,
+        que registra o histórico, gamificação e automações normalmente.
+
+        Raises:
+            HTTPException 422: Caso o board não tenha lista de ganho configurada,
+                               ou o card já esteja em estado terminal.
+        """
+        from app.models.list import List as BoardList
+
+        card = self.get_card_by_id(card_id, current_user)
+
+        # Valida estado atual do card
+        if card.is_won == 1:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Este negócio já está marcado como ganho."
+            )
+        if card.is_won == -1:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Este negócio está perdido. Reabra-o antes de marcar como ganho."
+            )
+
+        # Descobre o board atual do card
+        source_list = self.list_repository.find_by_id(card.list_id)
+        if not source_list:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lista do card não encontrada."
+            )
+
+        # Localiza a lista de ganho do board
+        done_list = (
+            self.db.query(BoardList)
+            .filter(
+                BoardList.board_id == source_list.board_id,
+                BoardList.is_done_stage == True,
+            )
+            .first()
+        )
+        if not done_list:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "Este board não possui uma lista de 'Negócio Ganho'. "
+                    "Apenas negócios no board de Aquisição podem ser marcados como ganhos."
+                )
+            )
+
+        # Delega para move_card — registra histórico, gamificação e automações
+        return self.move_card(card_id, done_list.id, None, current_user)
+
+    def mark_card_lost(self, card_id: int, loss_reason: str, current_user: User) -> Card:
+        """
+        Marca um card como perdido movendo-o para a lista is_lost_stage do board atual.
+
+        Localiza automaticamente a lista de 'Negócio Perdido' do board, chama move_card
+        e em seguida persiste o motivo da perda fornecido pelo usuário.
+
+        Raises:
+            HTTPException 422: Caso o board não tenha lista de perda configurada,
+                               ou o card já esteja em estado terminal.
+        """
+        from app.models.list import List as BoardList
+
+        card = self.get_card_by_id(card_id, current_user)
+
+        # Valida estado atual do card
+        if card.is_won == 1:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Este negócio já está ganho. Não é possível marcá-lo como perdido."
+            )
+        if card.is_won == -1:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Este negócio já está marcado como perdido."
+            )
+
+        # Descobre o board atual do card
+        source_list = self.list_repository.find_by_id(card.list_id)
+        if not source_list:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lista do card não encontrada."
+            )
+
+        # Localiza a lista de perda do board
+        lost_list = (
+            self.db.query(BoardList)
+            .filter(
+                BoardList.board_id == source_list.board_id,
+                BoardList.is_lost_stage == True,
+            )
+            .first()
+        )
+        if not lost_list:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Este board não possui uma lista de 'Negócio Perdido'."
+            )
+
+        # Delega para move_card — registra histórico, gamificação e automações
+        moved_card = self.move_card(card_id, lost_list.id, None, current_user)
+
+        # Persiste o motivo da perda informado pelo usuário
+        moved_card.loss_reason = loss_reason
+        self.db.commit()
+        self.db.refresh(moved_card)
+
+        return moved_card
+
     def _generate_congratulation_message(
         self,
         card: Card,
@@ -1874,6 +1990,15 @@ class CardService:
         list_obj = self.list_repository.find_by_id(card.list_id)
         board = self.board_repository.find_by_id(list_obj.board_id) if list_obj else None
 
+        # Verifica se o board possui lista de ganho — usado no frontend para exibir/ocultar botão "Ganho"
+        from app.models.list import List as ListModel
+        board_has_done_stage = (
+            self.db.query(ListModel).filter(
+                ListModel.board_id == board.id,
+                ListModel.is_done_stage == True,
+            ).first() is not None
+        ) if board else False
+
         # Monta a resposta
         response_data = {
             # Dados básicos do card
@@ -1920,6 +2045,7 @@ class CardService:
             "sdr_name": card.sdr.name if card.sdr else None,  # ✅ Nome do SDR
             "list_name": list_obj.name if list_obj else None,
             "board_id": board.id if board else None,
+            "board_has_done_stage": board_has_done_stage,
             "client_name": card.client.name if card.client else None,
             "person_name": card.person.name if card.person else None,
 

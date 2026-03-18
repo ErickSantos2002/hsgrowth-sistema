@@ -407,6 +407,7 @@ class CardResponse(CardBase):
     pending_tasks_status: Optional[str] = Field(None, description="Status das atividades: overdue, today, future, none")
     list_name: Optional[str] = Field(None, description="Nome da lista")
     board_id: Optional[int] = Field(None, description="ID do board")
+    board_has_done_stage: Optional[bool] = Field(None, description="Indica se o board possui uma lista de 'Negócio Ganho' (is_done_stage=True)")
     client_name: Optional[str] = Field(None, description="Nome do cliente/organização")
     person_id: Optional[int] = Field(None, description="ID da pessoa vinculada")
     person_name: Optional[str] = Field(None, description="Nome da pessoa vinculada")
@@ -548,6 +549,22 @@ class CardMinimalListResponse(BaseModel):
     page: int = Field(..., description="Página atual")
     page_size: int = Field(..., description="Tamanho da página")
     total_pages: int = Field(..., description="Total de páginas")
+
+
+class CardMarkLostRequest(BaseModel):
+    """
+    Schema para marcar um card como perdido via endpoint dedicado.
+    O backend localiza automaticamente a lista de 'Negócio Perdido' do board atual.
+    """
+    loss_reason: str = Field(..., min_length=1, max_length=200, description="Motivo da perda")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"loss_reason": "Preço acima do orçamento"}
+            ]
+        }
+    }
 
 
 class CardReopenRequest(BaseModel):

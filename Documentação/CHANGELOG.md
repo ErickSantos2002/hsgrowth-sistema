@@ -7,6 +7,49 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.10] - 2026-03-18
+
+### Adicionado
+
+#### Cards — endpoint dedicado para Marcar como Ganho / Perdido
+
+Dois novos endpoints substituem o uso genérico de `PATCH /cards/{id}` para fechar negócios:
+
+- `POST /api/v1/cards/{id}/win` — marca como ganho
+- `POST /api/v1/cards/{id}/lose` — marca como perdido (body: `{ "loss_reason": "..." }`)
+
+Ambos localizam automaticamente a lista `is_done_stage` / `is_lost_stage` do board atual e chamam `move_card` internamente, garantindo que **todo o fluxo seja executado**: movimentação real na lista, `CardListHistory`, gamificação, automações e activity log.
+
+**Regra de negócio implementada:** o botão "Ganho" é ocultado no frontend quando o board não possui lista de ganho (ex: Prospecção só permite perda). O campo `board_has_done_stage` foi adicionado à resposta do `CardResponse` e calculado tanto em `GET /cards/{id}` quanto em `GET /cards/{id}/expanded`.
+
+**Arquivos alterados — Backend:**
+- `app/schemas/card.py` — `CardMarkLostRequest`; `board_has_done_stage` em `CardResponse`
+- `app/services/card_service.py` — `mark_card_won()` e `mark_card_lost()`
+- `app/api/v1/endpoints/cards.py` — endpoints `/win` e `/lose`; `board_has_done_stage` em `get_card` e `card_to_response`; `board_has_done_stage` em `get_card_expanded` via service
+
+**Arquivos alterados — Frontend:**
+- `types/index.ts` — `board_has_done_stage: boolean | null` na interface `Card`
+- `services/cardService.ts` — `markAsWon()` e `markAsLost(id, lossReason)` apontando para os novos endpoints
+- `pages/CardDetails.tsx` — `handleMarkAsWon` e `handleConfirmLoss` usam os novos métodos; botão "Ganho" condicional em `board_has_done_stage`
+
+---
+
+### Corrigido
+
+#### Automações — movimentos de card não apareciam no histórico
+
+Quando uma automação movia um card (ex: "ao entrar em Agendado → mover para Reunião Agendada"), o `AutomationService` chamava `card_repository.move_to_list()` diretamente — sem gravar `CardListHistory` nem activity log. Resultado: o movimento aparecia no board mas ficava invisível no histórico do card e nos relatórios de Histórico de Etapas.
+
+**Correção:** após `move_to_list`, o `AutomationService` agora:
+1. Fecha o registro `CardListHistory` da etapa anterior e cria o novo para a etapa de destino
+2. Cria entrada no activity log com `activity_type="card_moved"` e descrição `"Etapa alterada (automação): X → Y"`
+
+Ambos os registros são feitos em `try/except` independentes para não interromper a execução da automação em caso de erro.
+
+**Arquivo alterado:** `app/services/automation_service.py`
+
+---
+
 ## [1.6.9] - 2026-03-18
 
 ### Adicionado

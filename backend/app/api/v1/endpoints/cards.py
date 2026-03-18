@@ -16,6 +16,7 @@ from app.schemas.card import (
     CardMoveRequest,
     CardAssignRequest,
     CardExpandedResponse,
+    CardMarkLostRequest,
     CardReopenRequest,
     CardReopenResponse
 )
@@ -35,6 +36,7 @@ def card_to_response(
     sdr_avatar_url: Optional[str] = None,
     list_name: Optional[str] = None,
     board_id: Optional[int] = None,
+    board_has_done_stage: Optional[bool] = None,
     client_name: Optional[str] = None,
     person_name: Optional[str] = None,
     person_email: Optional[str] = None,
@@ -69,6 +71,7 @@ def card_to_response(
         sdr_avatar_url=sdr_avatar_url,
         list_name=list_name,
         board_id=board_id,
+        board_has_done_stage=board_has_done_stage,
         client_name=client_name,
         person_id=card.person_id,
         person_name=person_name,
@@ -213,10 +216,19 @@ async def get_card(
             assigned_to_avatar_url = assigned_user.avatar_url
 
     from app.repositories.list_repository import ListRepository
+    from app.models.list import List as BoardList
     list_repo = ListRepository(db)
     list_obj = list_repo.find_by_id(card.list_id)
     list_name = list_obj.name if list_obj else None
     board_id = list_obj.board_id if list_obj else None
+
+    # Verifica se o board possui lista de ganho — usado no frontend para exibir/ocultar botão "Ganho"
+    board_has_done_stage = False
+    if board_id:
+        board_has_done_stage = db.query(BoardList).filter(
+            BoardList.board_id == board_id,
+            BoardList.is_done_stage == True,
+        ).first() is not None
 
     # Busca nome do cliente vinculado
     client_name = None
@@ -248,6 +260,7 @@ async def get_card(
         assigned_to_avatar_url,
         list_name=list_name,
         board_id=board_id,
+        board_has_done_stage=board_has_done_stage,
         client_name=client_name,
         person_name=person_name,
         person_email=person_email,
@@ -745,6 +758,164 @@ async def reopen_card(
         new_card_title=new_card.title,
         original_card_id=card_id,
         message="Negócio reaberto com sucesso"
+    )
+
+
+# ========== ENDPOINTS DE MARCAR GANHO / PERDIDO ==========
+
+@router.post(
+    "/{card_id}/win",
+    response_model=CardResponse,
+    summary="Marcar negócio como ganho",
+    responses={
+        200: {"description": "Negócio marcado como ganho e movido para a lista correspondente"},
+        422: {"description": "Board não possui lista de ganho, ou card já em estado terminal",
+              "content": {"application/json": {"example": {
+                  "detail": "Este board não possui uma lista de 'Negócio Ganho'."
+              }}}},
+        403: {"description": "Permissão negada (viewer)"},
+        404: {"description": "Card não encontrado"},
+    }
+)
+async def mark_card_won(
+    request: Request,
+    card_id: int = Path(..., description="ID do card a ser marcado como ganho"),
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Marca um negócio como ganho, movendo-o automaticamente para a lista
+    **is_done_stage** do board atual (ex: 'Negócio Ganho' no board de Aquisição).
+
+    O endpoint localiza a lista de ganho do board — não é necessário informar o list_id.
+    Todo o fluxo de gamificação, histórico de etapas e automações é executado normalmente.
+
+    **Restrições:**
+    - Board de Prospecção não possui lista de ganho — somente Aquisição/Expansão permitem ganho.
+    - Card já ganho ou já perdido retorna erro 422.
+    """
+    service = CardService(db)
+    moved_card = service.mark_card_won(card_id, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="UPDATE",
+        entity_type="Card",
+        entity_id=card_id,
+        description=f"Negócio #{card_id} marcado como ganho",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    # Monta resposta com campos relacionados
+    from app.models.list import List as BoardList
+    from app.repositories.list_repository import ListRepository
+    list_repo = ListRepository(db)
+    list_obj = list_repo.find_by_id(moved_card.list_id)
+    list_name = list_obj.name if list_obj else None
+    board_id = list_obj.board_id if list_obj else None
+
+    # Após ganho, o board certamente tem done_stage (foi para lá agora)
+    board_has_done_stage = True
+
+    assigned_to_name = None
+    if moved_card.assigned_to_id:
+        from app.models.user import User as UserModel
+        assigned_user = db.query(UserModel).filter(UserModel.id == moved_card.assigned_to_id).first()
+        if assigned_user:
+            assigned_to_name = assigned_user.name
+
+    return card_to_response(
+        moved_card,
+        assigned_to_name=assigned_to_name,
+        list_name=list_name,
+        board_id=board_id,
+        board_has_done_stage=board_has_done_stage,
+    )
+
+
+@router.post(
+    "/{card_id}/lose",
+    response_model=CardResponse,
+    summary="Marcar negócio como perdido",
+    responses={
+        200: {"description": "Negócio marcado como perdido e movido para a lista correspondente"},
+        422: {"description": "Board não possui lista de perda, ou card já em estado terminal",
+              "content": {"application/json": {"example": {
+                  "detail": "Este negócio já está marcado como perdido."
+              }}}},
+        403: {"description": "Permissão negada (viewer)"},
+        404: {"description": "Card não encontrado"},
+    }
+)
+async def mark_card_lost(
+    request: Request,
+    card_id: int = Path(..., description="ID do card a ser marcado como perdido"),
+    data: CardMarkLostRequest = ...,
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Marca um negócio como perdido, movendo-o automaticamente para a lista
+    **is_lost_stage** do board atual (ex: 'Negócio Perdido') e salvando o motivo da perda.
+
+    O endpoint localiza a lista de perda do board — não é necessário informar o list_id.
+    Todo o fluxo de gamificação, histórico de etapas e automações é executado normalmente.
+
+    **Restrições:**
+    - Card já ganho ou já perdido retorna erro 422.
+    """
+    service = CardService(db)
+    moved_card = service.mark_card_lost(card_id, data.loss_reason, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="UPDATE",
+        entity_type="Card",
+        entity_id=card_id,
+        description=f"Negócio #{card_id} marcado como perdido — motivo: {data.loss_reason}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    # Monta resposta com campos relacionados
+    from app.models.list import List as BoardList
+    from app.repositories.list_repository import ListRepository
+    list_repo = ListRepository(db)
+    list_obj = list_repo.find_by_id(moved_card.list_id)
+    list_name = list_obj.name if list_obj else None
+    board_id = list_obj.board_id if list_obj else None
+
+    board_has_done_stage = False
+    if board_id:
+        board_has_done_stage = db.query(BoardList).filter(
+            BoardList.board_id == board_id,
+            BoardList.is_done_stage == True,
+        ).first() is not None
+
+    assigned_to_name = None
+    if moved_card.assigned_to_id:
+        from app.models.user import User as UserModel
+        assigned_user = db.query(UserModel).filter(UserModel.id == moved_card.assigned_to_id).first()
+        if assigned_user:
+            assigned_to_name = assigned_user.name
+
+    return card_to_response(
+        moved_card,
+        assigned_to_name=assigned_to_name,
+        list_name=list_name,
+        board_id=board_id,
+        board_has_done_stage=board_has_done_stage,
     )
 
 

@@ -506,6 +506,65 @@ class AutomationService:
 
                     moved_card = self.card_repository.move_to_list(card, target_list_id)
 
+                    # Registra no CardListHistory (fonte de dados de relatórios e histórico do card)
+                    try:
+                        from app.models.card_list_history import CardListHistory
+                        from datetime import datetime as _dt
+                        history_now = _dt.utcnow()
+
+                        # Fecha o registro aberto anterior para este card
+                        open_entry = (
+                            self.db.query(CardListHistory)
+                            .filter(
+                                CardListHistory.card_id == card.id,
+                                CardListHistory.exited_at == None,  # noqa: E711
+                            )
+                            .first()
+                        )
+                        if open_entry:
+                            open_entry.exited_at = history_now
+
+                        # Cria novo registro de entrada na lista de destino
+                        dest_board_id = target_list.board_id if target_list else None
+                        if dest_board_id:
+                            new_history = CardListHistory(
+                                card_id=card.id,
+                                list_id=target_list_id,
+                                board_id=dest_board_id,
+                                entered_at=history_now,
+                            )
+                            self.db.add(new_history)
+                            self.db.commit()
+                    except Exception as e:
+                        print(f"[AUTOMATION][CARD_LIST_HISTORY] Erro ao registrar movimentação: {e}")
+
+                    # Registra no activity log do card para aparecer no histórico do CardDetails
+                    try:
+                        from app.repositories.activity_repository import ActivityRepository
+                        activity_repo = ActivityRepository(self.db)
+                        source_list_name = source_list.name if source_list else "Etapa anterior"
+                        target_list_name = target_list.name if target_list else "Nova etapa"
+                        actor_id = execution.triggered_by_id or (card.assigned_to_id)
+                        if actor_id:
+                            activity_repo.create(
+                                card_id=card.id,
+                                user_id=actor_id,
+                                activity_type="card_moved",
+                                description=(
+                                    f"Etapa alterada (automação): "
+                                    f"<strong>{source_list_name}</strong> → <strong>{target_list_name}</strong>"
+                                ),
+                                activity_metadata={
+                                    "from_list": source_list_name,
+                                    "to_list": target_list_name,
+                                    "from_list_id": source_list.id if source_list else None,
+                                    "to_list_id": target_list_id,
+                                    "triggered_by_automation": True,
+                                },
+                            )
+                    except Exception as e:
+                        print(f"[AUTOMATION][ACTIVITY] Erro ao registrar movimentação no histórico: {e}")
+
                     # Dispara o trigger card_moved para a lista de destino, permitindo que
                     # outras automações (ex: send_webhook) reajam ao movimento feito por esta automação.
                     # O guardião de profundidade (chain_depth) previne loops infinitos: se a cadeia

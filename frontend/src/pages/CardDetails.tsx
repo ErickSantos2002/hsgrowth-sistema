@@ -198,7 +198,7 @@ const CardDetails: React.FC = () => {
   };
 
   /**
-   * Marca como ganho
+   * Marca como ganho — chama endpoint dedicado que move o card para a lista is_done_stage
    */
   const handleMarkAsWon = async () => {
     if (!card) return;
@@ -212,7 +212,7 @@ const CardDetails: React.FC = () => {
 
     if (confirmed) {
       try {
-        await cardService.update(card.id, { is_won: true, is_lost: false });
+        await cardService.markAsWon(card.id);
         await loadCardData();
       } catch (error) {
         console.error("Erro ao marcar como ganho:", error);
@@ -230,16 +230,13 @@ const CardDetails: React.FC = () => {
   };
 
   /**
-   * Confirma a perda do card com o motivo selecionado
+   * Confirma a perda do card com o motivo selecionado.
+   * Chama endpoint dedicado que move o card para a lista is_lost_stage do board atual.
    */
   const handleConfirmLoss = async (reason: string) => {
     if (!card) return;
     try {
-      await cardService.update(card.id, {
-        is_won: false,
-        is_lost: true,
-        loss_reason: reason,
-      });
+      await cardService.markAsLost(card.id, reason);
       setShowLossReasonModal(false);
       await loadCardData();
     } catch (error) {
@@ -777,8 +774,8 @@ const CardDetails: React.FC = () => {
 
               {/* Botões de ação - ocultos para visualizadores */}
 
-              {/* Botão Ganho */}
-              {!isViewer && !card.is_won && !card.is_lost && (
+              {/* Botão Ganho — oculto em boards sem lista de ganho (ex: Prospecção) */}
+              {!isViewer && !card.is_won && !card.is_lost && card.board_has_done_stage && (
                 <button
                   onClick={handleMarkAsWon}
                   className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 font-medium text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-700 hover:to-emerald-600"
