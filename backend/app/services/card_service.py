@@ -526,16 +526,28 @@ class CardService:
 
         # Aplica regras de atribuição por role — garante que a lógica do frontend
         # seja reforçada no backend, mesmo em chamadas diretas à API.
+        #
+        # IMPORTANTE: usa model_copy(update={...}) em vez de atribuição direta.
+        # A atribuição direta (card_data.campo = valor) muda o valor mas NÃO atualiza
+        # o __pydantic_fields_set__ do modelo. Como o repositório usa
+        # model_dump(exclude_unset=True), campos enviados no payload original
+        # sobrevivem com os valores originais, ignorando o override do service.
+        # model_copy(update={...}) cria uma nova instância com os campos sobrescritos
+        # corretamente marcados como "setados", garantindo que o override seja persistido.
         role_name = current_user.role.name if current_user.role else ""
 
         if role_name == "sdr":
-            # SDR não pode escolher o vendedor: sempre sem responsável e SDR = si mesmo
-            card_data.assigned_to_id = None
-            card_data.sdr_id = current_user.id
+            # SDR nunca pode definir responsável: assigned_to_id sempre None, SDR = si mesmo
+            card_data = card_data.model_copy(update={
+                "assigned_to_id": None,
+                "sdr_id": current_user.id,
+            })
         elif role_name == "salesperson":
             # Vendedor é sempre o próprio responsável e não pode atribuir SDR
-            card_data.assigned_to_id = current_user.id
-            card_data.sdr_id = None
+            card_data = card_data.model_copy(update={
+                "assigned_to_id": current_user.id,
+                "sdr_id": None,
+            })
 
         # Cria o card
         card = self.card_repository.create(card_data)

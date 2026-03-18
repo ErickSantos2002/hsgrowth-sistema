@@ -7,6 +7,55 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.8] - 2026-03-18
+
+### Corrigido
+
+#### Bug crítico — SDR conseguia vincular responsável ao criar/editar card
+
+SDRs não deveriam poder criar cards com um `assigned_to_id` (vendedor responsável) definido — a regra de negócio exige que o card seja atribuído ao próprio SDR automaticamente. O bug ocorria em dois pontos independentes:
+
+**Backend — `app/services/card_service.py`:**
+O service sobrescrevia `assigned_to_id` via atribuição direta (`card_data.assigned_to_id = None`), mas o repositório usava `model_dump(exclude_unset=True)`, que lê `__pydantic_fields_set__` (definido na construção do objeto). Atribuição direta **não atualiza** esse conjunto interno, então o valor original do request payload continuava sendo gravado.
+
+Correção: substituído por `model_copy(update={...})`, que é a forma idiomática do Pydantic v2 para sobrescrever campos mantendo o tracking de `__pydantic_fields_set__` correto.
+
+```python
+# Antes (quebrado)
+card_data.assigned_to_id = None   # não atualiza __pydantic_fields_set__
+
+# Depois (correto)
+card_data = card_data.model_copy(update={"assigned_to_id": None, "sdr_id": current_user.id})
+```
+
+**Frontend — `frontend/src/components/kanban/CardModal.tsx`:**
+No modo de **edição**, o `formData` era inicializado com os dados do card existente (incluindo `assigned_to_id`). O campo era desabilitado na UI, mas o `...formData` no payload de submit ainda enviava o valor no PUT. Na criação, o campo começa como `undefined` e não vaza — o bug era exclusivo do modo edição.
+
+Correção: `delete payload.assigned_to_id` explícito para SDR e `delete payload.sdr_id` para salesperson antes de chamar `onSave`.
+
+**Arquivos alterados:**
+- `app/services/card_service.py` — `create_card`: `model_copy(update={...})` para SDR e salesperson
+- `frontend/src/components/kanban/CardModal.tsx` — `handleSubmit`: remoção explícita dos campos restritos por role
+
+---
+
+### Melhorado
+
+#### Painel de detalhes dos logs de auditoria — exibição antes/depois reformulada
+
+O painel expandido na aba de Logs de Auditoria em **Configurações** foi completamente reformulado:
+
+- **UPDATE / STATUS_CHANGE / TRANSFER**: exibe tabela comparativa com colunas "Antes" (laranja) e "Depois" (verde) — somente os campos que realmente mudaram ficam em destaque; os demais aparecem em lista compacta abaixo
+- **CREATE**: exibe snapshot completo com todos os campos, incluindo os que estavam vazios (exibidos como "—" em itálico cinza), com cabeçalho "Dados no momento da criação"
+- **DELETE**: mesmo formato do CREATE, com cabeçalho "Dados antes da exclusão"
+- Mapeamento de labels para 40+ campos de todas as entidades (card, board, usuário, cliente, contato)
+- Formatação automática de valores monetários (`R$ X,XX`), booleanos (`Sim`/`Não`), status de conta (`Ativo`/`Inativo`) e datas
+
+**Arquivo alterado:**
+- `frontend/src/pages/Settings.tsx` — componente de linha expandida do log de auditoria
+
+---
+
 ## [1.6.7] - 2026-03-18
 
 ### Melhorado

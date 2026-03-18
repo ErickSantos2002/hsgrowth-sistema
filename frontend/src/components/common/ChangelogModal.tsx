@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.8",
+    date: "18/03/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Corrigido bug crítico onde SDRs conseguiam criar cards com responsável vinculado diretamente — o valor era ignorado na criação via Pydantic mas passava em edições. Corrigido no backend (model_copy) e no frontend (remoção explícita do campo no payload de edição).",
+      },
+      {
+        type: "improvement",
+        text: "Painel de detalhes dos logs de auditoria em Configurações completamente reformulado: atualizações mostram tabela de comparação antes/depois (somente campos alterados), criações e exclusões mostram o snapshot completo incluindo campos vazios.",
+      },
+    ],
+  },
+  {
     version: "1.6.7",
     date: "18/03/2026",
     entries: [

@@ -356,12 +356,20 @@ const CardModal: React.FC<CardModalProps> = ({
     e.preventDefault();
     if (!validateForm()) return;
 
-    onSave({
+    const payload = {
       ...formData,
       title: formData.title.trim(),
       client_id: selectedClient?.id ?? null,
       person_id: selectedPerson?.id ?? null,
-    });
+    };
+
+    // Garante que SDR nunca envie assigned_to_id (nem em edições de cards
+    // que já tinham responsável — o valor existente vaza via formData).
+    // Salesperson nunca envia sdr_id pelo mesmo motivo.
+    if (isSDR) delete payload.assigned_to_id;
+    if (isSalesperson) delete payload.sdr_id;
+
+    onSave(payload);
     onClose();
   };
 
