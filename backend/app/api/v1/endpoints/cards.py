@@ -94,7 +94,8 @@ def card_to_response(
         origin=card.origin,
         utm_campaign=card.utm_campaign,
         utm_source=card.utm_source,
-        utm_term=card.utm_term
+        utm_term=card.utm_term,
+        reopened_from_card_id=card.reopened_from_card_id,
     )
 
 

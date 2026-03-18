@@ -864,6 +864,18 @@ const CardDetails: React.FC = () => {
                 </button>
               )} */}
 
+              {/* Badge de reabertura — visível sempre que o card foi clonado de um perdido */}
+              {card.reopened_from_card_id && (
+                <button
+                  onClick={() => navigate(`/cards/${card.reopened_from_card_id}`)}
+                  className="flex h-12 items-center gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 font-medium text-amber-400 transition-colors hover:bg-amber-500/20"
+                  title={`Ver card original #${card.reopened_from_card_id}`}
+                >
+                  <RefreshCw size={16} />
+                  Reabertura — ver card original #{card.reopened_from_card_id}
+                </button>
+              )}
+
               {/* Se já foi ganho ou perdido */}
               {card.is_won && (
                 <div className="flex h-12 items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-4 font-medium text-emerald-400">

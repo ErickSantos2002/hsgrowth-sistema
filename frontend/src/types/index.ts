@@ -139,6 +139,7 @@ export interface Card {
   list_name: string | null;
   board_id: number | null;
   board_has_done_stage: boolean | null; // Indica se o board tem lista de "Negócio Ganho"
+  reopened_from_card_id?: number | null; // ID do card original (preenchido se este card é uma reabertura)
   board_name: string | null; // Nome do board (usado em CardDetails)
   client_name: string | null;
 

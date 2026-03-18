@@ -29,6 +29,7 @@ import cardService from "../services/cardService";
 import userService from "../services/userService";
 import { Board, List, Card, User } from "../types";
 import { COLORS } from "../constants/colors";
+import { ACQUISITION_CHANNELS, ACQUISITION_CHANNEL_DETAILS } from "../constants/blueprintOptions";
 import KanbanList from "../components/kanban/KanbanList";
 import { showSuccess, showError, showWarning } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
@@ -82,7 +83,93 @@ const KanbanBoard: React.FC = () => {
   const [customDateEnd, setCustomDateEnd] = useState("");
   const [assignedToFilter, setAssignedToFilter] = useState(""); // Filtro de vendedor
   const [sdrFilter, setSdrFilter] = useState(""); // Filtro de SDR
+  const [acquisitionChannelFilter, setAcquisitionChannelFilter] = useState(""); // Filtro de canal de aquisição
+  const [acquisitionChannelDetailFilter, setAcquisitionChannelDetailFilter] = useState(""); // Filtro de detalhe do canal
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
+
+  // ─── Persistência de filtros no localStorage ───────────────────────────────
+
+  /**
+   * Guarda qual boardId já teve os filtros restaurados.
+   *
+   * Problema que resolve: na primeira renderização após o remount, o save effect
+   * rodaria com os valores padrão (estado inicial) e sobrescreveria o localStorage
+   * antes do restore effect atualizar os estados — race condition clássica de useEffect.
+   *
+   * A solução: o save só escreve quando restoredBoardId === boardId.
+   * O React 18 bate todos os setters do restore (incluindo setRestoredBoardId) em
+   * um único re-render, então quando o save effect ver restoredBoardId === boardId,
+   * os filtros já estarão com os valores restaurados.
+   */
+  const [restoredBoardId, setRestoredBoardId] = useState<string | undefined>(undefined);
+
+  /**
+   * Restaura os filtros salvos quando o board muda.
+   * Filtros travados por role (salesperson/sdr) serão sobrescritos pelo
+   * useEffect de usuários logo em seguida — comportamento intencional.
+   */
+  useEffect(() => {
+    if (!boardId) return;
+    const raw = localStorage.getItem(`kanban_filters_${boardId}`);
+    if (raw) {
+      try {
+        const saved = JSON.parse(raw);
+        setListFilter(saved.listFilter ?? "");
+        setStatusFilter(saved.statusFilter ?? "open");
+        setValueFilter(saved.valueFilter ?? "");
+        setClosingDateFilter(saved.closingDateFilter ?? "");
+        setCustomDateStart(saved.customDateStart ?? "");
+        setCustomDateEnd(saved.customDateEnd ?? "");
+        setAssignedToFilter(saved.assignedToFilter ?? "");
+        setSdrFilter(saved.sdrFilter ?? "");
+        setAcquisitionChannelFilter(saved.acquisitionChannelFilter ?? "");
+        setAcquisitionChannelDetailFilter(saved.acquisitionChannelDetailFilter ?? "");
+      } catch {
+        // JSON corrompido — ignora e mantém defaults
+      }
+    }
+    // Sinaliza que o restore deste board foi concluído.
+    // Todos os setters acima + este são batched pelo React 18 em um único re-render.
+    setRestoredBoardId(boardId);
+  }, [boardId]);
+
+  /**
+   * Salva todos os filtros no localStorage sempre que qualquer um mudar.
+   * A guarda restoredBoardId !== boardId impede que os valores padrão do estado
+   * inicial sobrescrevam o que estava salvo antes do restore terminar.
+   * searchTerm não é salvo — é busca pontual, não faz sentido persistir.
+   */
+  useEffect(() => {
+    if (!boardId || restoredBoardId !== boardId) return;
+    localStorage.setItem(
+      `kanban_filters_${boardId}`,
+      JSON.stringify({
+        listFilter,
+        statusFilter,
+        valueFilter,
+        closingDateFilter,
+        customDateStart,
+        customDateEnd,
+        assignedToFilter,
+        sdrFilter,
+        acquisitionChannelFilter,
+        acquisitionChannelDetailFilter,
+      })
+    );
+  }, [
+    boardId,
+    restoredBoardId,
+    listFilter,
+    statusFilter,
+    valueFilter,
+    closingDateFilter,
+    customDateStart,
+    customDateEnd,
+    assignedToFilter,
+    sdrFilter,
+    acquisitionChannelFilter,
+    acquisitionChannelDetailFilter,
+  ]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]); // Lista de usuários
   const boardScrollRef = useRef<HTMLDivElement | null>(null);
   const [isDraggingBoard, setIsDraggingBoard] = useState(false);
@@ -460,6 +547,20 @@ const KanbanBoard: React.FC = () => {
       if (sdrFilter) {
         const filterId = Number(sdrFilter);
         if ((card as any).sdr_id !== filterId) {
+          return false;
+        }
+      }
+
+      // Filtro por canal de aquisição
+      if (acquisitionChannelFilter) {
+        if (card.acquisition_channel !== acquisitionChannelFilter) {
+          return false;
+        }
+      }
+
+      // Filtro por detalhe do canal (só aplica se o canal também estiver selecionado)
+      if (acquisitionChannelFilter && acquisitionChannelDetailFilter) {
+        if (card.acquisition_channel_detail !== acquisitionChannelDetailFilter) {
           return false;
         }
       }
@@ -935,6 +1036,40 @@ const KanbanBoard: React.FC = () => {
                 disabled={user?.role === "sdr"} // Trava se for SDR
               />
             </div>
+
+            {/* Filtro por canal de aquisição */}
+            <div className="min-w-[170px]">
+              <SelectMenu
+                size="sm"
+                value={acquisitionChannelFilter}
+                options={[
+                  { value: "", label: "Todos os canais" },
+                  ...ACQUISITION_CHANNELS.map((ch) => ({ value: ch, label: ch })),
+                ]}
+                onChange={(val) => {
+                  setAcquisitionChannelFilter(val);
+                  // Limpa o detalhe ao trocar o canal
+                  setAcquisitionChannelDetailFilter("");
+                }}
+              />
+            </div>
+
+            {/* Filtro por detalhe do canal — aparece apenas quando um canal está selecionado */}
+            {acquisitionChannelFilter && (
+              <div className="min-w-[200px]">
+                <SelectMenu
+                  size="sm"
+                  value={acquisitionChannelDetailFilter}
+                  options={[
+                    { value: "", label: "Todos os detalhes" },
+                    ...(ACQUISITION_CHANNEL_DETAILS[acquisitionChannelFilter] ?? []).map(
+                      (detail) => ({ value: detail, label: detail })
+                    ),
+                  ]}
+                  onChange={setAcquisitionChannelDetailFilter}
+                />
+              </div>
+            )}
 
             {/* Filtro por valor */}
             <div className="min-w-[150px]">

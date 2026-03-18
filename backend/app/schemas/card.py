@@ -408,6 +408,7 @@ class CardResponse(CardBase):
     list_name: Optional[str] = Field(None, description="Nome da lista")
     board_id: Optional[int] = Field(None, description="ID do board")
     board_has_done_stage: Optional[bool] = Field(None, description="Indica se o board possui uma lista de 'Negócio Ganho' (is_done_stage=True)")
+    reopened_from_card_id: Optional[int] = Field(None, description="ID do card original que gerou esta reabertura (None = criado do zero)")
     client_name: Optional[str] = Field(None, description="Nome do cliente/organização")
     person_id: Optional[int] = Field(None, description="ID da pessoa vinculada")
     person_name: Optional[str] = Field(None, description="Nome da pessoa vinculada")
@@ -509,6 +510,9 @@ class CardMinimalResponse(BaseModel):
     is_won: bool = Field(..., description="Card ganho")
     is_lost: bool = Field(..., description="Card perdido")
     closed_at: Optional[datetime] = Field(None, description="Data de fechamento (ganho ou perdido)")
+    acquisition_channel: Optional[str] = Field(None, description="Canal de aquisição")
+    acquisition_channel_detail: Optional[str] = Field(None, description="Detalhamento do canal de aquisição")
+    reopened_from_card_id: Optional[int] = Field(None, description="ID do card original que gerou esta reabertura (None = criado do zero)")
 
     @field_validator('value', 'position', mode='before')
     @classmethod

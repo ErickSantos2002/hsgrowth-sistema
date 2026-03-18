@@ -307,7 +307,10 @@ class CardService:
                         created_at=card.created_at,
                         is_won=card.is_won,
                         is_lost=card.is_lost,
-                        closed_at=card.closed_at
+                        closed_at=card.closed_at,
+                        acquisition_channel=card.acquisition_channel,
+                        acquisition_channel_detail=card.acquisition_channel_detail,
+                        reopened_from_card_id=card.reopened_from_card_id,
                     )
                 )
 
@@ -2046,6 +2049,7 @@ class CardService:
             "list_name": list_obj.name if list_obj else None,
             "board_id": board.id if board else None,
             "board_has_done_stage": board_has_done_stage,
+            "reopened_from_card_id": card.reopened_from_card_id,
             "client_name": card.client.name if card.client else None,
             "person_name": card.person.name if card.person else None,
 
@@ -2179,6 +2183,15 @@ class CardService:
 
         # Cria o clone (create_card já preenche prospection_entry_date automaticamente)
         new_card = self.create_card(clone_data, current_user)
+
+        # Marca o clone como reabertura referenciando o card original
+        try:
+            new_card.reopened_from_card_id = card_id
+            self.db.commit()
+            self.db.refresh(new_card)
+        except Exception as e:
+            self.db.rollback()
+            print(f"[REOPEN] Aviso: erro ao setar reopened_from_card_id: {e}")
 
         # Vincula client_id, person_id e contact_info diretamente no ORM, num único
         # commit, evitando as validações do blueprint que poderiam bloquear o reopen
@@ -2324,6 +2337,22 @@ class CardService:
         except Exception as e:
             self.db.rollback()
             print(f"[REOPEN] Aviso: erro ao registrar histórico no card original: {e}")
+
+        # Registra no histórico do card NOVO que ele é uma reabertura
+        try:
+            self.activity_repository.create(
+                card_id=new_card.id,
+                user_id=current_user.id,
+                activity_type="card_reopened_from",
+                description=f"Negócio reaberto a partir do card <strong>#{card_id}</strong>",
+                activity_metadata={
+                    "original_card_id": card_id,
+                    "original_card_title": original_card.title,
+                }
+            )
+        except Exception as e:
+            self.db.rollback()
+            print(f"[REOPEN] Aviso: erro ao registrar histórico no novo card: {e}")
 
         return new_card
 

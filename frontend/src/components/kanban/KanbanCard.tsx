@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Calendar, User, DollarSign, Clock, CheckSquare } from "lucide-react";
+import { Calendar, User, DollarSign, Clock, CheckSquare, RefreshCw } from "lucide-react";
 import { Card } from "../../types";
 import { UserAvatar } from "../common";
 import CardActivitiesModal from "./CardActivitiesModal";
@@ -98,6 +98,17 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
             className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${getStatusColor()}`}
           >
             {getStatusText()}
+          </span>
+        )}
+
+        {/* Badge de reabertura */}
+        {card.reopened_from_card_id && (
+          <span
+            className="flex items-center gap-0.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-400"
+            title={`Reabertura do card #${card.reopened_from_card_id}`}
+          >
+            <RefreshCw size={9} />
+            Reabertura
           </span>
         )}
 

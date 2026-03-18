@@ -25,6 +25,28 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.11",
+    date: "18/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Filtros de Canal de Aquisição no board Kanban: dois novos filtros permitem segmentar os cards por canal (ex: Outbound, Inbound) e, ao selecionar um canal, aparece automaticamente o filtro de detalhe correspondente (ex: Cold Call, LinkedIn).",
+      },
+      {
+        type: "improvement",
+        text: "Filtros do Kanban agora são salvos automaticamente por board — ao entrar em um card e voltar, os filtros permanecem exatamente como estavam.",
+      },
+      {
+        type: "feature",
+        text: "Cards reabertos a partir de negócios perdidos agora exibem um badge 'Reabertura' no kanban e um botão 'Ver card original' nos detalhes do card, facilitando rastrear o histórico do negócio.",
+      },
+      {
+        type: "improvement",
+        text: "Correção de dados: cards marcados como perdidos ou ganhos que estavam em listas erradas do pipeline foram movidos automaticamente para as listas corretas (Negócio Perdido / Negócio Ganho) nos boards Prospecção e Aquisição.",
+      },
+    ],
+  },
+  {
     version: "1.6.10",
     date: "18/03/2026",
     entries: [

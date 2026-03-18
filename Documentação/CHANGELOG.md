@@ -7,6 +7,77 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.11] - 2026-03-18
+
+### Adicionado
+
+#### Kanban — filtros de Canal de Aquisição e Canal de Aquisição Detalhe
+
+Dois novos filtros no board Kanban permitem segmentar os cards por canal de origem:
+
+- **Canal de Aquisição**: dropdown com todos os canais cadastrados (Outbound, Inbound, etc.)
+- **Canal de Aquisição Detalhe**: aparece automaticamente ao selecionar um canal, listando apenas os detalhes relevantes (ex: Cold Call, LinkedIn para Outbound)
+
+Os filtros funcionam em conjunto com os demais filtros já existentes (Vendedor, SDR, Responsável).
+
+**Arquivos alterados:**
+- `frontend/src/pages/KanbanBoard.tsx` — novos estados e seções de filtro no painel lateral
+
+---
+
+#### Kanban — persistência de filtros no localStorage
+
+Os filtros selecionados em cada board agora são salvos automaticamente no navegador. Ao entrar em um card e voltar para o kanban, todos os filtros são restaurados exatamente como estavam — sem precisar reconfigurar.
+
+A implementação usa um guard `restoredBoardId` para evitar race condition: o efeito de salvamento só começa a gravar após a restauração completa dos filtros.
+
+**Arquivo alterado:** `frontend/src/pages/KanbanBoard.tsx`
+
+---
+
+#### Cards — rastreamento de reabertura (`reopened_from_card_id`)
+
+Cards reabertos a partir de negócios perdidos agora armazenam a referência ao card original. Isso permite identificar visualmente cards que vieram de uma reabertura:
+
+- **Badge "Reabertura"** (âmbar) no kanban, ao lado do título do card
+- **Botão "Reabertura — ver card original #X"** na página de detalhes do card, abrindo o card de origem
+- Campo `reopened_from_card_id` armazenado no banco e disponível nas respostas de API
+
+**Migration:** `alembic/versions/2026_03_18_1000-add_reopened_from_card_id.py`
+
+**Arquivos alterados — Backend:**
+- `app/models/card.py` — coluna `reopened_from_card_id` e relationship
+- `app/schemas/card.py` — `reopened_from_card_id` em `CardResponse` e `CardMinimalResponse`
+- `app/services/card_service.py` — `reopen_card` agora preenche o campo no novo card
+
+**Arquivos alterados — Frontend:**
+- `types/index.ts` — `reopened_from_card_id?: number | null` na interface `Card`
+- `components/kanban/KanbanCard.tsx` — badge "Reabertura" com ícone `RefreshCw`
+- `pages/CardDetails.tsx` — botão âmbar "ver card original"
+
+---
+
+### Correção de Dados
+
+#### Scripts de correção de cards fora das listas terminais
+
+Três scripts foram executados para corrigir cards que tinham status de ganho/perdido mas estavam em listas de pipeline em vez das listas terminais corretas:
+
+| Board | Situação | Cards corrigidos |
+|---|---|---|
+| Prospecção (id=6) | Perdidos fora de "Negócio Perdido" (list_id=27) | 153 |
+| Aquisição (id=7) | Perdidos fora de "Negócio Perdido" (list_id=33) | 64 |
+| Aquisição (id=7) | Ganhos fora de "Negócio Ganho" (list_id=32) | 32 |
+
+Cada script atualiza também o `CardListHistory` (fecha o registro aberto da lista anterior e cria novo para a lista destino).
+
+**Scripts:**
+- `backend/scripts/fix_lost_cards_prospeccao.py`
+- `backend/scripts/fix_lost_cards_aquisicao.py`
+- `backend/scripts/fix_won_cards_aquisicao.py`
+
+---
+
 ## [1.6.10] - 2026-03-18
 
 ### Adicionado

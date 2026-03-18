@@ -74,10 +74,14 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     utm_term = Column(String(200), nullable=True)  # Parâmetro UTM: termo
 
     loss_reason = Column(String(200), nullable=True)  # Motivo da perda
+
+    # Rastreabilidade de reabertura: referência ao card original que originou este clone
+    reopened_from_card_id = Column(Integer, ForeignKey("cards.id", ondelete="SET NULL"), nullable=True, index=True)
     has_implementation = Column(Integer, nullable=True)  # Tem implementação? 0=false, 1=true, null=não informado
     has_personnel = Column(Integer, nullable=True)  # Tem pessoas para manusear? 0=false, 1=true, null=não informado
 
     # Relacionamentos
+    reopened_from = relationship("Card", foreign_keys=[reopened_from_card_id], remote_side="Card.id")
     list = relationship("List", back_populates="cards")
     client = relationship("Client", back_populates="cards")
     person = relationship("Person", foreign_keys=[person_id])
