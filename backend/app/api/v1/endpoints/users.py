@@ -485,12 +485,22 @@ async def create_user(
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")
 
+    data_after = {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "username": user.username,
+        "role_id": user.role_id,
+        "is_active": user.is_active,
+    }
+
     audit_log = AuditLog(
         user_id=current_user.id,
         action="CREATE",
         entity_type="User",
         entity_id=user.id,
         description=f"Usuário criado: {user.name} ({user.email})",
+        data_after=data_after,
         ip_address=client_ip,
         user_agent=user_agent
     )
@@ -529,6 +539,18 @@ async def update_user(
     - **user_id**: ID do usuário
     - Todos os campos são opcionais
     """
+    # Captura estado anterior ANTES de atualizar
+    user_before_obj = db.query(User).filter(User.id == user_id).first()
+    data_before = None
+    if user_before_obj:
+        data_before = {
+            "name": user_before_obj.name,
+            "email": user_before_obj.email,
+            "phone": getattr(user_before_obj, "phone", None),
+            "role_id": user_before_obj.role_id,
+            "is_active": user_before_obj.is_active,
+        }
+
     service = UserService(db)
     user = service.update_user(user_id, user_data, current_user)
 
@@ -551,12 +573,22 @@ async def update_user(
 
     fields_str = ", ".join(changed_fields) if changed_fields else "dados"
 
+    data_after = {
+        "name": user.name,
+        "email": user.email,
+        "phone": getattr(user, "phone", None),
+        "role_id": user.role_id,
+        "is_active": user.is_active,
+    }
+
     audit_log = AuditLog(
         user_id=current_user.id,
         action="UPDATE",
         entity_type="User",
         entity_id=user.id,
         description=f"Usuário atualizado: {user.name} - Campos alterados: {fields_str}",
+        data_before=data_before,
+        data_after=data_after,
         ip_address=client_ip,
         user_agent=user_agent
     )
@@ -593,10 +625,22 @@ async def delete_user(
 
     - **user_id**: ID do usuário
     """
-    # Busca o usuário antes de deletar para registrar no log
+    # Captura estado do usuário ANTES de deletar para registrar no log
     user = db.query(User).filter(User.id == user_id).first()
     user_name = user.name if user else f"ID {user_id}"
     user_email = user.email if user else "unknown"
+
+    data_before = None
+    if user:
+        data_before = {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "username": user.username,
+            "phone": getattr(user, "phone", None),
+            "role_id": user.role_id,
+            "is_active": user.is_active,
+        }
 
     service = UserService(db)
     service.delete_user(user_id, current_user)
@@ -611,6 +655,7 @@ async def delete_user(
         entity_type="User",
         entity_id=user_id,
         description=f"Usuário deletado: {user_name} ({user_email})",
+        data_before=data_before,
         ip_address=client_ip,
         user_agent=user_agent
     )

@@ -279,12 +279,21 @@ async def create_board(
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")
 
+    data_after = {
+        "id": board.id,
+        "name": board.name,
+        "description": board.description,
+        "color": board.color,
+        "icon": board.icon,
+    }
+
     audit_log = AuditLog(
         user_id=current_user.id,
         action="CREATE",
         entity_type="Board",
         entity_id=board.id,
         description=f"Board criado: {board.name}",
+        data_after=data_after,
         ip_address=client_ip,
         user_agent=user_agent
     )
@@ -344,6 +353,17 @@ async def update_board(
     - **board_id**: ID do board
     - Todos os campos são opcionais
     """
+    # Captura estado anterior ANTES de atualizar
+    board_before_obj = db.query(Board).filter(Board.id == board_id).first()
+    data_before = None
+    if board_before_obj:
+        data_before = {
+            "name": board_before_obj.name,
+            "description": board_before_obj.description,
+            "color": board_before_obj.color,
+            "icon": board_before_obj.icon,
+        }
+
     service = BoardService(db)
     board = service.update_board(board_id, board_data, current_user)
 
@@ -364,12 +384,21 @@ async def update_board(
 
     fields_str = ", ".join(changed_fields) if changed_fields else "dados"
 
+    data_after = {
+        "name": board.name,
+        "description": board.description,
+        "color": board.color,
+        "icon": board.icon,
+    }
+
     audit_log = AuditLog(
         user_id=current_user.id,
         action="UPDATE",
         entity_type="Board",
         entity_id=board.id,
         description=f"Board atualizado: {board.name} - Campos: {fields_str}",
+        data_before=data_before,
+        data_after=data_after,
         ip_address=client_ip,
         user_agent=user_agent
     )
@@ -414,9 +443,19 @@ async def delete_board(
 
     - **board_id**: ID do board
     """
-    # Busca o board antes de deletar para registrar no log
+    # Captura estado do board ANTES de deletar para registrar no log
     board = db.query(Board).filter(Board.id == board_id).first()
     board_name = board.name if board else f"ID {board_id}"
+
+    data_before = None
+    if board:
+        data_before = {
+            "id": board.id,
+            "name": board.name,
+            "description": board.description,
+            "color": board.color,
+            "icon": board.icon,
+        }
 
     service = BoardService(db)
     service.delete_board(board_id, current_user)
@@ -431,6 +470,7 @@ async def delete_board(
         entity_type="Board",
         entity_id=board_id,
         description=f"Board deletado: {board_name}",
+        data_before=data_before,
         ip_address=client_ip,
         user_agent=user_agent
     )

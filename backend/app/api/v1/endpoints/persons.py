@@ -3,13 +3,15 @@ Endpoints de Pessoas/Contatos.
 Rotas para gerenciamento de pessoas (CRUD).
 """
 from typing import Any, Optional
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.person_service import PersonService
 from app.schemas.person import PersonCreate, PersonUpdate, PersonResponse, PersonListResponse
 from app.models.user import User
+from app.models.audit_log import AuditLog
+from app.models.person import Person
 
 router = APIRouter()
 
@@ -206,6 +208,7 @@ async def get_person(
     }
 )
 async def create_person(
+    request: Request,
     person_data: PersonCreate,
     current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
@@ -215,6 +218,32 @@ async def create_person(
     """
     service = PersonService(db)
     person = service.create_person(person_data)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    data_after = {
+        "id": person.id,
+        "name": person.name,
+        "email_commercial": person.email_commercial,
+        "phone_whatsapp": person.phone_whatsapp,
+        "position": person.position,
+        "organization_id": person.organization_id,
+    }
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="CREATE",
+        entity_type="Person",
+        entity_id=person.id,
+        description=f"Pessoa criada: {person.name}",
+        data_after=data_after,
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     # Converte para response schema
     return PersonResponse.model_validate(person)
@@ -244,6 +273,7 @@ async def create_person(
     """
 )
 async def update_person(
+    request: Request,
     person_id: int,
     person_data: PersonUpdate,
     current_user: User = Depends(require_not_viewer()),
@@ -252,8 +282,50 @@ async def update_person(
     """
     Atualiza uma pessoa existente.
     """
+    # Captura estado anterior ANTES de atualizar
+    person_before_obj = db.query(Person).filter(Person.id == person_id).first()
+    data_before = None
+    if person_before_obj:
+        data_before = {
+            "name": person_before_obj.name,
+            "email_commercial": person_before_obj.email_commercial,
+            "phone_whatsapp": person_before_obj.phone_whatsapp,
+            "phone_commercial": person_before_obj.phone_commercial,
+            "position": person_before_obj.position,
+            "organization_id": person_before_obj.organization_id,
+            "is_active": person_before_obj.is_active,
+        }
+
     service = PersonService(db)
     person = service.update_person(person_id, person_data)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    data_after = {
+        "name": person.name,
+        "email_commercial": person.email_commercial,
+        "phone_whatsapp": person.phone_whatsapp,
+        "phone_commercial": person.phone_commercial,
+        "position": person.position,
+        "organization_id": person.organization_id,
+        "is_active": person.is_active,
+    }
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="UPDATE",
+        entity_type="Person",
+        entity_id=person.id,
+        description=f"Pessoa atualizada: {person.name}",
+        data_before=data_before,
+        data_after=data_after,
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     # Converte para response schema
     return PersonResponse.model_validate(person)
@@ -278,6 +350,7 @@ async def update_person(
     """
 )
 async def delete_person(
+    request: Request,
     person_id: int,
     current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
@@ -285,8 +358,40 @@ async def delete_person(
     """
     Deleta uma pessoa.
     """
+    # Captura estado da pessoa ANTES de deletar
+    person_before_obj = db.query(Person).filter(Person.id == person_id).first()
+    person_name = person_before_obj.name if person_before_obj else f"ID {person_id}"
+
+    data_before = None
+    if person_before_obj:
+        data_before = {
+            "id": person_before_obj.id,
+            "name": person_before_obj.name,
+            "email_commercial": person_before_obj.email_commercial,
+            "phone_whatsapp": person_before_obj.phone_whatsapp,
+            "position": person_before_obj.position,
+            "organization_id": person_before_obj.organization_id,
+        }
+
     service = PersonService(db)
     service.delete_person(person_id)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="DELETE",
+        entity_type="Person",
+        entity_id=person_id,
+        description=f"Pessoa deletada: {person_name}",
+        data_before=data_before,
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     return {"message": "Pessoa deletada com sucesso"}
 

@@ -7,6 +7,40 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.7] - 2026-03-18
+
+### Melhorado
+
+#### Logs de Auditoria — snapshots completos de antes e depois em todas as entidades principais
+
+A maioria das operações de escrita do sistema não registrava os dados `data_before` e `data_after` nos logs de auditoria — apenas a descrição textual era salva. Agora **todas as entidades principais** registram o estado completo antes e depois de cada alteração.
+
+**Cobertura por entidade:**
+
+| Entidade | CREATE | UPDATE | DELETE |
+|---|---|---|---|
+| Card | `data_after` já existia | `data_before` + `data_after` adicionados | `data_before` adicionado |
+| Board | `data_after` adicionado | `data_before` + `data_after` adicionados | `data_before` adicionado |
+| User | `data_after` adicionado | `data_before` + `data_after` adicionados | `data_before` adicionado |
+| Client | log inexistente — criado do zero com `data_after` | log inexistente — criado do zero com `data_before` + `data_after` | log inexistente — criado do zero com `data_before` |
+| Person | log inexistente — criado do zero com `data_after` | log inexistente — criado do zero com `data_before` + `data_after` | log inexistente — criado do zero com `data_before` |
+
+**Ações especiais de Card:**
+- `STATUS_CHANGE` (mover card): agora registra `list_id` e `list_name` da lista de origem em `data_before` e da lista de destino em `data_after`
+- `TRANSFER` (transferir responsável): agora registra `assigned_to_id` e `assigned_to_name` do responsável anterior em `data_before` e do novo em `data_after`
+
+**Estratégia técnica nos UPDATEs:**
+O estado anterior é capturado como `dict` simples antes de chamar o service — evitando que a referência ao objeto SQLAlchemy seja modificada na mesma sessão antes do log ser salvo.
+
+**Arquivos alterados — Backend:**
+- `app/api/v1/endpoints/cards.py` — `update_card`, `delete_card`, `move_card`, `assign_card` com snapshots
+- `app/api/v1/endpoints/boards.py` — `create_board`, `update_board`, `delete_board` com snapshots
+- `app/api/v1/endpoints/users.py` — `create_user`, `update_user`, `delete_user` com snapshots
+- `app/api/v1/endpoints/clients.py` — audit log criado do zero (import `Request`, `AuditLog`, `Client`); `create_client`, `update_client`, `delete_client`
+- `app/api/v1/endpoints/persons.py` — audit log criado do zero (import `Request`, `AuditLog`, `Person`); `create_person`, `update_person`, `delete_person`
+
+---
+
 ## [1.6.6] - 2026-03-17
 
 ### Adicionado

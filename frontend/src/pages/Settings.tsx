@@ -2634,17 +2634,116 @@ const Settings: React.FC = () => {
                           {paginatedAuditLogs.map((log) => {
                             const hasDetails = !!(log.data_after || log.data_before);
                             const isExpanded = expandedLogIds.has(log.id);
-                            const details = log.data_after ?? log.data_before ?? {};
-                            // Campos legíveis para exibição dos detalhes
+
+                            // Mapa completo de rótulos legíveis para todos os campos conhecidos
                             const detailLabels: Record<string, string> = {
+                              id: "ID",
+                              // card — identificação
                               title: "Título",
+                              description: "Descrição",
+                              list_id: "ID da lista",
                               list_name: "Lista",
+                              assigned_to_id: "ID do responsável",
                               assigned_to_name: "Responsável",
+                              sdr_id: "ID do SDR",
                               sdr_name: "SDR",
+                              client_id: "ID do cliente",
+                              client_name: "Cliente",
+                              person_id: "ID do contato",
+                              person_name: "Contato",
+                              // card — negócio
                               value: "Valor",
                               due_date: "Vencimento",
-                              id: "ID",
+                              deal_type: "Tipo de negócio",
+                              acquisition_channel: "Canal de aquisição",
+                              acquisition_channel_detail: "Detalhe do canal",
+                              origin: "Origem",
+                              has_implementation: "Tem implementação",
+                              has_personnel: "Tem pessoal",
+                              is_won: "Ganho",
+                              is_lost: "Perdido",
+                              // card — datas de entrada nos boards
+                              prospection_entry_date: "Entrada Prospecção",
+                              acquisition_entry_date: "Entrada Aquisição",
+                              expansion_entry_date: "Entrada Expansão",
+                              // card — UTM
+                              utm_campaign: "UTM Campaign",
+                              utm_source: "UTM Source",
+                              utm_term: "UTM Term",
+                              // board
+                              name: "Nome",
+                              color: "Cor",
+                              icon: "Ícone",
+                              // user
+                              email: "E-mail",
+                              username: "Usuário",
+                              phone: "Telefone",
+                              role_id: "ID do perfil",
+                              is_active: "Ativo",
+                              // client
+                              company_name: "Razão social",
+                              document: "CNPJ/CPF",
+                              city: "Cidade",
+                              state: "Estado",
+                              // person
+                              email_commercial: "E-mail comercial",
+                              phone_whatsapp: "WhatsApp",
+                              phone_commercial: "Tel. comercial",
+                              position: "Cargo",
+                              organization_id: "ID da organização",
                             };
+
+                            /**
+                             * Formata um valor do snapshot para exibição.
+                             * Valores nulos são exibidos como "—" em cinza.
+                             */
+                            const formatValue = (key: string, value: unknown): { text: string; empty: boolean } => {
+                              if (value === null || value === undefined || String(value).trim() === "") {
+                                return { text: "—", empty: true };
+                              }
+                              if (typeof value === "boolean") {
+                                return { text: value ? "Sim" : "Não", empty: false };
+                              }
+                              if (key === "value" && typeof value === "number") {
+                                return {
+                                  text: `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+                                  empty: false,
+                                };
+                              }
+                              if (key === "is_active") {
+                                return { text: value ? "Ativo" : "Inativo", empty: false };
+                              }
+                              return { text: String(value), empty: false };
+                            };
+
+                            // Determina o modo de exibição do painel expandido
+                            const hasBefore = !!log.data_before;
+                            const hasAfter = !!log.data_after;
+                            // Modo comparação: UPDATE e ações que têm antes e depois
+                            const isComparison = hasBefore && hasAfter;
+
+                            // Para comparação, separa os campos que mudaram dos que ficaram iguais
+                            const comparisonKeys = isComparison
+                              ? Array.from(
+                                  new Set([
+                                    ...Object.keys(log.data_before ?? {}),
+                                    ...Object.keys(log.data_after ?? {}),
+                                  ])
+                                )
+                              : [];
+                            const changedKeys = comparisonKeys.filter((k) => {
+                              const before = JSON.stringify((log.data_before ?? {})[k] ?? null);
+                              const after = JSON.stringify((log.data_after ?? {})[k] ?? null);
+                              return before !== after;
+                            });
+                            const unchangedKeys = comparisonKeys.filter(
+                              (k) => !changedKeys.includes(k)
+                            );
+
+                            // Para CREATE/DELETE, exibe todos os campos incluindo os nulos
+                            const singleSnapshot = isComparison
+                              ? null
+                              : (log.data_after ?? log.data_before ?? {});
 
                             return (
                               <>
@@ -2694,29 +2793,100 @@ const Settings: React.FC = () => {
                                     )}
                                   </td>
                                 </tr>
+
                                 {/* Linha expandida com snapshot dos dados */}
                                 {hasDetails && isExpanded && (
                                   <tr key={`${log.id}-details`} className="bg-slate-50 dark:bg-slate-800/30">
-                                    <td colSpan={7} className="px-6 py-3">
-                                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                        Detalhes do evento
-                                      </p>
-                                      <div className="flex flex-wrap gap-x-6 gap-y-1.5">
-                                        {Object.entries(details)
-                                          .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== "")
-                                          .map(([key, value]) => (
-                                            <div key={key} className="flex items-baseline gap-1.5">
-                                              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                                {detailLabels[key] ?? key}:
-                                              </span>
-                                              <span className="text-xs text-slate-700 dark:text-slate-200">
-                                                {typeof value === "number" && key === "value"
-                                                  ? `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-                                                  : String(value)}
-                                              </span>
+                                    <td colSpan={7} className="px-6 py-4">
+
+                                      {/* Modo comparação (UPDATE): mostra antes × depois apenas dos campos que mudaram */}
+                                      {isComparison ? (
+                                        <div className="space-y-3">
+                                          {changedKeys.length > 0 && (
+                                            <div>
+                                              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                                Campos alterados
+                                              </p>
+                                              <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700">
+                                                <table className="w-full text-xs">
+                                                  <thead>
+                                                    <tr className="border-b border-gray-200 bg-gray-100 dark:border-slate-700 dark:bg-slate-700/50">
+                                                      <th className="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-400">Campo</th>
+                                                      <th className="px-3 py-2 text-left font-semibold text-orange-500">Antes</th>
+                                                      <th className="px-3 py-2 text-left font-semibold text-emerald-500">Depois</th>
+                                                    </tr>
+                                                  </thead>
+                                                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                                                    {changedKeys.map((k) => {
+                                                      const before = formatValue(k, (log.data_before ?? {})[k]);
+                                                      const after = formatValue(k, (log.data_after ?? {})[k]);
+                                                      return (
+                                                        <tr key={k} className="bg-white dark:bg-slate-800">
+                                                          <td className="px-3 py-1.5 font-medium text-slate-600 dark:text-slate-300">
+                                                            {detailLabels[k] ?? k}
+                                                          </td>
+                                                          <td className={`px-3 py-1.5 ${before.empty ? "italic text-slate-400 dark:text-slate-500" : "text-orange-700 dark:text-orange-300"}`}>
+                                                            {before.text}
+                                                          </td>
+                                                          <td className={`px-3 py-1.5 ${after.empty ? "italic text-slate-400 dark:text-slate-500" : "text-emerald-700 dark:text-emerald-300"}`}>
+                                                            {after.text}
+                                                          </td>
+                                                        </tr>
+                                                      );
+                                                    })}
+                                                  </tbody>
+                                                </table>
+                                              </div>
                                             </div>
-                                          ))}
-                                      </div>
+                                          )}
+
+                                          {/* Campos que não mudaram, em destaque menor */}
+                                          {unchangedKeys.length > 0 && (
+                                            <div>
+                                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                                Campos sem alteração
+                                              </p>
+                                              <div className="flex flex-wrap gap-x-5 gap-y-1">
+                                                {unchangedKeys.map((k) => {
+                                                  const { text, empty } = formatValue(k, (log.data_after ?? {})[k]);
+                                                  return (
+                                                    <div key={k} className="flex items-baseline gap-1">
+                                                      <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                                                        {detailLabels[k] ?? k}:
+                                                      </span>
+                                                      <span className={`text-[11px] ${empty ? "italic text-slate-300 dark:text-slate-600" : "text-slate-500 dark:text-slate-400"}`}>
+                                                        {text}
+                                                      </span>
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        /* Modo snapshot único (CREATE ou DELETE): exibe todos os campos, inclusive os nulos */
+                                        <div>
+                                          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                            {hasBefore ? "Dados antes da exclusão" : "Dados no momento da criação"}
+                                          </p>
+                                          <div className="flex flex-wrap gap-x-6 gap-y-1.5">
+                                            {Object.entries(singleSnapshot ?? {}).map(([key, value]) => {
+                                              const { text, empty } = formatValue(key, value);
+                                              return (
+                                                <div key={key} className="flex items-baseline gap-1.5">
+                                                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                                    {detailLabels[key] ?? key}:
+                                                  </span>
+                                                  <span className={`text-xs ${empty ? "italic text-slate-400 dark:text-slate-500" : "text-slate-700 dark:text-slate-200"}`}>
+                                                    {text}
+                                                  </span>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
                                     </td>
                                   </tr>
                                 )}

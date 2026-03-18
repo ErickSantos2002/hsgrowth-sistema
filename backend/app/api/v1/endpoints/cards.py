@@ -348,18 +348,49 @@ async def create_card(
     if card.value:
         desc_parts.append(f"Valor: R$ {float(card.value):,.2f}")
 
-    # Snapshot dos campos relevantes no momento da criação
+    # Busca nomes do cliente e da pessoa para enriquecer o snapshot
+    client_name = None
+    if card.client_id:
+        from app.models.client import Client
+        client_obj = db.query(Client).filter(Client.id == card.client_id).first()
+        client_name = client_obj.name if client_obj else None
+
+    person_name = None
+    if card.person_id:
+        from app.models.person import Person
+        person_obj = db.query(Person).filter(Person.id == card.person_id).first()
+        person_name = person_obj.name if person_obj else None
+
+    # Snapshot COMPLETO de todos os campos preenchíveis na criação.
+    # Campos nulos indicam o que o usuário deixou em branco — facilita auditoria de qualidade.
     data_after = {
         "id": card.id,
         "title": card.title,
+        "description": card.description,
         "list_id": card.list_id,
         "list_name": card.list.name if card.list else None,
         "assigned_to_id": card.assigned_to_id,
         "assigned_to_name": card.assigned_to.name if card.assigned_to else None,
         "sdr_id": card.sdr_id,
         "sdr_name": card.sdr.name if card.sdr else None,
+        "client_id": card.client_id,
+        "client_name": client_name,
+        "person_id": card.person_id,
+        "person_name": person_name,
         "value": float(card.value) if card.value is not None else None,
         "due_date": card.due_date.isoformat() if card.due_date else None,
+        "deal_type": card.deal_type,
+        "acquisition_channel": card.acquisition_channel,
+        "acquisition_channel_detail": card.acquisition_channel_detail,
+        "origin": card.origin,
+        "has_implementation": card.has_implementation,
+        "has_personnel": card.has_personnel,
+        "prospection_entry_date": card.prospection_entry_date.isoformat() if card.prospection_entry_date else None,
+        "acquisition_entry_date": card.acquisition_entry_date.isoformat() if card.acquisition_entry_date else None,
+        "expansion_entry_date": card.expansion_entry_date.isoformat() if card.expansion_entry_date else None,
+        "utm_campaign": card.utm_campaign,
+        "utm_source": card.utm_source,
+        "utm_term": card.utm_term,
     }
 
     audit_log = AuditLog(
@@ -393,6 +424,23 @@ async def update_card(
     - Todos os campos são opcionais
     """
     service = CardService(db)
+
+    # Captura estado anterior ANTES de atualizar (extrai para dict para evitar referência à sessão)
+    card_before_obj = db.query(Card).filter(Card.id == card_id).first()
+    data_before = None
+    if card_before_obj:
+        data_before = {
+            "title": card_before_obj.title,
+            "description": card_before_obj.description,
+            "list_id": card_before_obj.list_id,
+            "assigned_to_id": card_before_obj.assigned_to_id,
+            "sdr_id": card_before_obj.sdr_id,
+            "value": float(card_before_obj.value) if card_before_obj.value is not None else None,
+            "due_date": card_before_obj.due_date.isoformat() if card_before_obj.due_date else None,
+            "client_id": card_before_obj.client_id,
+            "person_id": card_before_obj.person_id,
+        }
+
     card = service.update_card(card_id, card_data, current_user)
 
     # Registra no audit log
@@ -414,12 +462,27 @@ async def update_card(
 
     fields_str = ", ".join(changed_fields) if changed_fields else "dados"
 
+    # Snapshot do estado após a atualização
+    data_after = {
+        "title": card.title,
+        "description": card.description,
+        "list_id": card.list_id,
+        "assigned_to_id": card.assigned_to_id,
+        "sdr_id": card.sdr_id,
+        "value": float(card.value) if card.value is not None else None,
+        "due_date": card.due_date.isoformat() if card.due_date else None,
+        "client_id": card.client_id,
+        "person_id": card.person_id,
+    }
+
     audit_log = AuditLog(
         user_id=current_user.id,
         action="UPDATE",
         entity_type="Card",
         entity_id=card.id,
         description=f"Card atualizado: {card.title} - Campos: {fields_str}",
+        data_before=data_before,
+        data_after=data_after,
         ip_address=client_ip,
         user_agent=user_agent
     )
@@ -441,9 +504,27 @@ async def delete_card(
 
     - **card_id**: ID do card
     """
-    # Busca o card antes de deletar para registrar no log
+    # Captura estado do card ANTES de deletar para registrar no log
     card = db.query(Card).filter(Card.id == card_id).first()
     card_title = card.title if card else f"ID {card_id}"
+
+    # Snapshot completo do card antes da exclusão
+    data_before = None
+    if card:
+        data_before = {
+            "id": card.id,
+            "title": card.title,
+            "description": card.description,
+            "list_id": card.list_id,
+            "assigned_to_id": card.assigned_to_id,
+            "sdr_id": card.sdr_id,
+            "value": float(card.value) if card.value is not None else None,
+            "due_date": card.due_date.isoformat() if card.due_date else None,
+            "client_id": card.client_id,
+            "person_id": card.person_id,
+            "is_won": bool(card.is_won),
+            "is_lost": card.is_lost,
+        }
 
     service = CardService(db)
     service.delete_card(card_id, current_user)
@@ -458,6 +539,7 @@ async def delete_card(
         entity_type="Card",
         entity_id=card_id,
         description=f"Card deletado: {card_title}",
+        data_before=data_before,
         ip_address=client_ip,
         user_agent=user_agent
     )
@@ -482,6 +564,16 @@ async def move_card(
     - **target_list_id**: ID da lista de destino
     - **position**: Posição na lista de destino (opcional)
     """
+    from app.models.list import List as BoardList
+
+    # Captura lista de origem ANTES de mover
+    card_before_obj = db.query(Card).filter(Card.id == card_id).first()
+    origin_list = db.query(BoardList).filter(BoardList.id == card_before_obj.list_id).first() if card_before_obj else None
+    data_before = {
+        "list_id": card_before_obj.list_id if card_before_obj else None,
+        "list_name": origin_list.name if origin_list else None,
+    }
+
     service = CardService(db)
     card = service.move_card(
         card_id=card_id,
@@ -495,9 +587,13 @@ async def move_card(
     user_agent = request.headers.get("user-agent", "unknown")
 
     # Busca o nome da lista de destino
-    from app.models.list import List as BoardList
     target_list = db.query(BoardList).filter(BoardList.id == move_data.target_list_id).first()
     list_name = target_list.name if target_list else f"Lista ID {move_data.target_list_id}"
+
+    data_after = {
+        "list_id": move_data.target_list_id,
+        "list_name": list_name,
+    }
 
     audit_log = AuditLog(
         user_id=current_user.id,
@@ -505,6 +601,8 @@ async def move_card(
         entity_type="Card",
         entity_id=card.id,
         description=f"Card movido: {card.title} → {list_name}",
+        data_before=data_before,
+        data_after=data_after,
         ip_address=client_ip,
         user_agent=user_agent
     )
@@ -528,6 +626,15 @@ async def assign_card(
     - **card_id**: ID do card
     - **assigned_to_id**: ID do usuário responsável
     """
+    # Captura responsável anterior ANTES de reatribuir
+    card_before_obj = db.query(Card).filter(Card.id == card_id).first()
+    old_assigned_id = card_before_obj.assigned_to_id if card_before_obj else None
+    old_assigned_user = db.query(User).filter(User.id == old_assigned_id).first() if old_assigned_id else None
+    data_before = {
+        "assigned_to_id": old_assigned_id,
+        "assigned_to_name": old_assigned_user.name if old_assigned_user else None,
+    }
+
     service = CardService(db)
     card = service.assign_card(
         card_id=card_id,
@@ -543,12 +650,19 @@ async def assign_card(
     assigned_user = db.query(User).filter(User.id == assign_data.assigned_to_id).first()
     assigned_name = assigned_user.name if assigned_user else f"Usuário ID {assign_data.assigned_to_id}"
 
+    data_after = {
+        "assigned_to_id": assign_data.assigned_to_id,
+        "assigned_to_name": assigned_name,
+    }
+
     audit_log = AuditLog(
         user_id=current_user.id,
         action="TRANSFER",
         entity_type="Card",
         entity_id=card.id,
         description=f"Card transferido: {card.title} → {assigned_name}",
+        data_before=data_before,
+        data_after=data_after,
         ip_address=client_ip,
         user_agent=user_agent
     )

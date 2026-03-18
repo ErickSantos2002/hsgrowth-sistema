@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.7",
+    date: "18/03/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Logs de Auditoria agora registram o estado completo antes e depois de cada alteração. Em atualizações de cards, boards e usuários é possível ver exatamente o que mudou — valor anterior e valor novo. Em exclusões, o snapshot completo do registro fica salvo para consulta futura.",
+      },
+      {
+        type: "improvement",
+        text: "Clientes e Pessoas agora também geram logs de auditoria nas ações de criar, editar e excluir — antes essas ações não eram registradas.",
+      },
+      {
+        type: "improvement",
+        text: "Movimentação de card entre listas agora registra a lista de origem e a lista de destino no log. Transferência de responsável registra o responsável anterior e o novo.",
+      },
+    ],
+  },
+  {
     version: "1.6.6",
     date: "17/03/2026",
     entries: [

@@ -3,13 +3,15 @@ Endpoints de Clientes.
 Rotas para gerenciamento de clientes (CRUD).
 """
 from typing import Any, Optional
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.client_service import ClientService
 from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse, ClientListResponse
 from app.models.user import User
+from app.models.audit_log import AuditLog
+from app.models.client import Client
 
 router = APIRouter()
 
@@ -193,6 +195,7 @@ async def get_client(
     }
 )
 async def create_client(
+    request: Request,
     client_data: ClientCreate,
     current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
@@ -202,6 +205,34 @@ async def create_client(
     """
     service = ClientService(db)
     client = service.create_client(client_data)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    data_after = {
+        "id": client.id,
+        "name": client.name,
+        "email": client.email,
+        "phone": client.phone,
+        "company_name": client.company_name,
+        "document": client.document,
+        "city": client.city,
+        "state": client.state,
+    }
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="CREATE",
+        entity_type="Client",
+        entity_id=client.id,
+        description=f"Cliente criado: {client.name}",
+        data_after=data_after,
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     # Converte para response schema (automaticamente pega todos os campos incluindo blueprint)
     return ClientResponse.model_validate(client)
@@ -232,6 +263,7 @@ async def create_client(
     """
 )
 async def update_client(
+    request: Request,
     client_id: int,
     client_data: ClientUpdate,
     current_user: User = Depends(require_not_viewer()),
@@ -240,8 +272,52 @@ async def update_client(
     """
     Atualiza um cliente existente.
     """
+    # Captura estado anterior ANTES de atualizar
+    client_before_obj = db.query(Client).filter(Client.id == client_id).first()
+    data_before = None
+    if client_before_obj:
+        data_before = {
+            "name": client_before_obj.name,
+            "email": client_before_obj.email,
+            "phone": client_before_obj.phone,
+            "company_name": client_before_obj.company_name,
+            "document": client_before_obj.document,
+            "city": client_before_obj.city,
+            "state": client_before_obj.state,
+            "is_active": client_before_obj.is_active,
+        }
+
     service = ClientService(db)
     client = service.update_client(client_id, client_data)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    data_after = {
+        "name": client.name,
+        "email": client.email,
+        "phone": client.phone,
+        "company_name": client.company_name,
+        "document": client.document,
+        "city": client.city,
+        "state": client.state,
+        "is_active": client.is_active,
+    }
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="UPDATE",
+        entity_type="Client",
+        entity_id=client.id,
+        description=f"Cliente atualizado: {client.name}",
+        data_before=data_before,
+        data_after=data_after,
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     # Converte para response schema (automaticamente pega todos os campos incluindo blueprint)
     return ClientResponse.model_validate(client)
@@ -267,6 +343,7 @@ async def update_client(
     """
 )
 async def delete_client(
+    request: Request,
     client_id: int,
     current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
@@ -274,7 +351,41 @@ async def delete_client(
     """
     Deleta um cliente (soft delete).
     """
+    # Captura estado do cliente ANTES de deletar
+    client_before_obj = db.query(Client).filter(Client.id == client_id).first()
+    client_name = client_before_obj.name if client_before_obj else f"ID {client_id}"
+
+    data_before = None
+    if client_before_obj:
+        data_before = {
+            "id": client_before_obj.id,
+            "name": client_before_obj.name,
+            "email": client_before_obj.email,
+            "phone": client_before_obj.phone,
+            "company_name": client_before_obj.company_name,
+            "document": client_before_obj.document,
+            "city": client_before_obj.city,
+            "state": client_before_obj.state,
+        }
+
     service = ClientService(db)
     service.delete_client(client_id)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="DELETE",
+        entity_type="Client",
+        entity_id=client_id,
+        description=f"Cliente deletado: {client_name}",
+        data_before=data_before,
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
 
     return {"message": "Cliente deletado com sucesso"}
