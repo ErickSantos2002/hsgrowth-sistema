@@ -7,6 +7,71 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.9] - 2026-03-18
+
+### Adicionado
+
+#### Relatórios — campos Vendedor e SDR no Histórico de Etapas
+
+Os campos `assigned_to` (Vendedor) e `sdr` (SDR) foram adicionados à fonte **Histórico de Etapas** (`card_history`) no catálogo de campos do gerador de relatórios.
+
+Agora é possível:
+- **Eixo X = Vendedor / SDR**: agrupa as entradas de etapa por responsável, filtrando pelo período via `CardListHistory.entered_at` (não por `Card.created_at`, que seria incorreto neste contexto)
+- **Dividir por = Vendedor / SDR**: gera uma série por vendedor — ex: X=Etapa, Split=Vendedor → barras agrupadas mostrando quantos cards cada vendedor enviou para cada etapa
+
+**Implementação técnica:** as 3 funções críticas do query engine foram atualizadas para `card_history + assigned_to/sdr`:
+- `_get_x_labels_and_order`: JOIN `User → Card → CardListHistory` filtrando por `entered_at`
+- `_fetch_split_values`: mesma lógica para popular os checkboxes de séries
+- `_build_split_filter`: subquery `CardListHistory.card_id IN (SELECT id FROM cards WHERE assigned_to_id = X)` sem exigir JOIN extra nas queries especializadas
+
+---
+
+#### Relatórios — filtro de valores do Eixo X
+
+Nova seção "Filtrar valores do Eixo X" no painel de configuração de gráfico. Aparece automaticamente quando o campo X é categórico (não-date): etapas, vendedores, SDRs, canais, status, etc.
+
+Comportamento: checkboxes com todos os valores disponíveis — desmarcar remove o valor do gráfico. Útil para funis onde o usuário quer exibir apenas algumas etapas.
+
+**Implementação:**
+- `QueryRequest` ganhou `x_filter_values: Optional[List[Union[str, int, float]]]`
+- Em `execute_query`, após `_get_x_labels_and_order`, filtra `label_raw_pairs` pelos valores selecionados
+- Frontend (`ChartConfigPanel`): estado `xFilterValues`, `availableXValues`, useEffect que busca via `fetchSplitValues` (endpoint reaproveitado), handler `toggleXFilterValue` e UI de checkboxes em verde (distinto do violeta do "Dividir por")
+
+---
+
+#### Relatórios — agregação Soma Cumulativa
+
+Nova opção de agregação **Soma Cumulativa** (`cumulative_sum`) disponível para campos numéricos e monetários. Soma o valor do campo por período e acumula progressivamente — útil para ver receita acumulada de negócios ganhos ao longo do tempo.
+
+Diferença em relação à Contagem Cumulativa:
+- **Contagem Cumulativa**: conta registros por bucket e acumula (ex: 3 ganhos, 2 ganhos, 5 ganhos → 3, 5, 10)
+- **Soma Cumulativa**: soma valores por bucket e acumula (ex: R$3.500, R$1.200, R$8.100 → R$3.500, R$4.700, R$12.800)
+
+O ciclo de agregações para campos numéricos/moeda passa a ser: `Contagem → Cont. Distinta → Soma → Média → Cont. Cumulativa → Soma Cumulativa`.
+
+---
+
+### Corrigido
+
+#### Relatórios — Contagem Cumulativa iniciava com valor errado
+
+`_get_cumulative_count` ignorava o `y_key` original e sempre usava `y_key='count'` internamente, fazendo `COUNT(Card.id)` para qualquer campo. Para `won_count` (Negócios Ganhos), isso contava **todos** os cards fechados no dia em vez de apenas os ganhos.
+
+**Exemplo do bug:** dia 1 com 3 negócios ganhos e 53 outros cards fechados → cumulativa começava em 56 em vez de 3.
+
+**Correção:** `_get_cumulative_count` agora recebe e preserva o `y_key` original. O parâmetro `inner_agg` controla se a agregação por período é contagem (`'count'`) ou soma (`'sum'`). O `_build_y_agg_expr` já tinha todos os casos especiais (`won_count`, `meeting_count`, etc.) e os aplica corretamente.
+
+**Arquivos alterados — Backend:**
+- `app/schemas/custom_report.py` — `cumulative_sum` adicionado ao Literal de agregações
+- `app/services/custom_report_service.py` — `_get_cumulative_count` com parâmetros `y_key` e `inner_agg`; `_get_y_values_for_labels` com case `cumulative_sum`; campos `assigned_to`/`sdr` no catálogo e handlers de `card_history`; `x_filter_values` em `execute_query`
+
+**Arquivos alterados — Frontend:**
+- `components/reports/reportTypes.ts` — `AggregationType` e `ChartConfig.x_filter_values`
+- `services/reportService.ts` — `x_filter_values` no payload de `queryChart`
+- `components/reports/ChartConfigPanel.tsx` — estado e UI do filtro X; label e ciclo de `cumulative_sum`
+
+---
+
 ## [1.6.8] - 2026-03-18
 
 ### Corrigido
