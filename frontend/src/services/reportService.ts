@@ -262,6 +262,10 @@ class ReportService {
         config.split_filter_values && config.split_filter_values.length > 0
           ? config.split_filter_values
           : null,
+      x_filter_values:
+        config.x_filter_values && config.x_filter_values.length > 0
+          ? config.x_filter_values
+          : null,
     };
     const response = await api.post<QueryResponse>("/api/v1/reports/query", payload);
     return response.data;

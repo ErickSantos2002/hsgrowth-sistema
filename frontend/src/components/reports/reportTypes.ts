@@ -19,7 +19,7 @@ export type { PeriodType };
 
 export type DataSource = 'cards' | 'clients' | 'persons' | 'activities' | 'tasks' | 'card_history';
 export type ChartType = 'bar' | 'bar_horizontal' | 'line' | 'pie' | 'table' | 'area' | 'scatter' | 'radar' | 'funnel' | 'kpi';
-export type AggregationType = 'count' | 'sum' | 'avg' | 'distinct_count' | 'cumulative_count';
+export type AggregationType = 'count' | 'sum' | 'avg' | 'distinct_count' | 'cumulative_count' | 'cumulative_sum';
 export type GroupByType = 'day' | 'week' | 'month' | 'year';
 
 // ========================
@@ -131,6 +131,12 @@ export interface ChartConfig {
    * Os valores são os raw_values retornados por GET /reports/split-values.
    */
   split_filter_values?: (string | number)[];
+  /**
+   * Filtro de valores do eixo X — só para campos categóricos (não-date).
+   * Quando preenchido, apenas os grupos X com raw_key nesta lista são exibidos.
+   * Vazio ou ausente = exibe todos os valores do eixo X.
+   */
+  x_filter_values?: (string | number)[];
 }
 
 // ========================

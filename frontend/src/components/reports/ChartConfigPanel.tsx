@@ -67,6 +67,7 @@ const AGGREGATION_LABELS: Record<AggregationType, string> = {
   sum: 'Soma',
   avg: 'Média',
   cumulative_count: 'Cont. Cumulativa',
+  cumulative_sum: 'Soma Cumulativa',
 };
 
 /** Ícone correspondente ao tipo de campo (usado nos chips das drop zones) */
@@ -111,8 +112,8 @@ const getDefaultAggregation = (field: AxisField): AggregationType => {
 const cycleAggregation = (current: AggregationType, field: AxisField): AggregationType => {
   const isNumeric = field.field_type === 'number' || field.field_type === 'currency';
   if (isNumeric) {
-    // Campos numéricos/moeda incluem soma cumulativa no ciclo
-    const cycle: AggregationType[] = ['count', 'distinct_count', 'sum', 'avg', 'cumulative_count'];
+    // Campos numéricos/moeda incluem ambas as cumulativas no ciclo
+    const cycle: AggregationType[] = ['count', 'distinct_count', 'sum', 'avg', 'cumulative_count', 'cumulative_sum'];
     const idx = cycle.indexOf(current);
     return cycle[(idx + 1) % cycle.length];
   }
@@ -163,6 +164,16 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
   const [availableSplitValues, setAvailableSplitValues] = useState<{ label: string; value: string | number }[]>([]);
   const [loadingSplitValues, setLoadingSplitValues] = useState(false);
 
+  /**
+   * Valores raw selecionados para filtrar os grupos do eixo X.
+   * Só se aplica a campos categóricos (não-date).
+   * Vazio = exibe todos. Preenchido = exibe apenas os selecionados.
+   */
+  const [xFilterValues, setXFilterValues] = useState<(string | number)[]>([]);
+  /** Valores disponíveis para o filtro do eixo X (buscados da API). */
+  const [availableXValues, setAvailableXValues] = useState<{ label: string; value: string | number }[]>([]);
+  const [loadingXValues, setLoadingXValues] = useState(false);
+
   /** Estado visual das zonas de drop */
   const [xDropState, setXDropState] = useState<DropState>('idle');
   const [yDropState, setYDropState] = useState<DropState>('idle');
@@ -200,6 +211,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       setEndDate(editingConfig.end_date || '');
       setSplitByField(editingConfig.split_by ?? null);
       setSplitFilterValues(editingConfig.split_filter_values ?? []);
+      setXFilterValues(editingConfig.x_filter_values ?? []);
       setCurrentChartId(editingConfig.id);
     } else {
       // Novo gráfico: reseta tudo e gera ID novo
@@ -213,6 +225,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       setEndDate('');
       setSplitByField(null);
       setSplitFilterValues([]);
+      setXFilterValues([]);
       setCurrentChartId(crypto.randomUUID());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -242,6 +255,27 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
   // Depende dos campos que identificam o campo split_by (não o objeto inteiro para evitar loop)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [splitByField?.source, splitByField?.key]);
+
+  /**
+   * Busca os valores disponíveis para o eixo X sempre que o campo muda.
+   * Só faz sentido para campos categóricos (category/user) — datas têm infinitos valores.
+   * Reutiliza o mesmo endpoint de split-values pois a query é equivalente.
+   */
+  useEffect(() => {
+    if (!xAxisField || xAxisField.field_type === 'date') {
+      setAvailableXValues([]);
+      setXFilterValues([]);
+      return;
+    }
+
+    setLoadingXValues(true);
+    reportService
+      .fetchSplitValues(xAxisField.source, xAxisField.key)
+      .then((values) => setAvailableXValues(values))
+      .catch(() => setAvailableXValues([]))
+      .finally(() => setLoadingXValues(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [xAxisField?.source, xAxisField?.key, xAxisField?.field_type]);
 
   // ========================
   // Atualização em tempo real
@@ -275,6 +309,8 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
         isMultiSeriesType && splitByField && splitFilterValues.length > 0
           ? splitFilterValues
           : undefined,
+      // Filtro de valores do eixo X — só para campos categóricos
+      x_filter_values: xFilterValues.length > 0 ? xFilterValues : undefined,
     };
 
     // Notifica o pai com a config atualizada — Reports.tsx busca os dados via API
@@ -291,6 +327,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     endDate,
     splitByField,
     splitFilterValues,
+    xFilterValues,
     active,
     currentChartId,
   ]);
@@ -517,6 +554,36 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
         .filter((item) => currentIncluded.has(String(item.value)))
         .map((item) => item.value);
       setSplitFilterValues(newFilter);
+    }
+  };
+
+  /**
+   * Alterna a inclusão de um valor no filtro do eixo X.
+   * Mesma lógica do toggleSplitFilterValue — vazio = todos incluídos.
+   */
+  const toggleXFilterValue = (rawValue: string | number) => {
+    const strValue = String(rawValue);
+    const allStrValues = new Set(availableXValues.map((v) => String(v.value)));
+    const currentIncluded = new Set(
+      xFilterValues.length === 0
+        ? [...allStrValues]
+        : xFilterValues.map(String)
+    );
+
+    if (currentIncluded.has(strValue)) {
+      currentIncluded.delete(strValue);
+    } else {
+      currentIncluded.add(strValue);
+    }
+
+    const allIncluded = [...allStrValues].every((v) => currentIncluded.has(v));
+    if (allIncluded) {
+      setXFilterValues([]);
+    } else {
+      const newFilter = availableXValues
+        .filter((item) => currentIncluded.has(String(item.value)))
+        .map((item) => item.value);
+      setXFilterValues(newFilter);
     }
   };
 
@@ -865,6 +932,66 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
 
         {/* Eixo Y — chips múltiplos + zona de drop */}
         {renderYDropZone()}
+
+        {/* Filtro de valores do eixo X — visível quando X é um campo categórico e há valores disponíveis */}
+        {xAxisField && xAxisField.field_type !== 'date' && (availableXValues.length > 0 || loadingXValues) && (
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                <ListFilter size={12} />
+                Filtrar valores do Eixo X
+              </label>
+              {xFilterValues.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setXFilterValues([])}
+                  className="text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+                >
+                  Exibir todos
+                </button>
+              )}
+            </div>
+
+            <div className="max-h-44 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-slate-700 dark:bg-slate-800/50">
+              {loadingXValues ? (
+                <p className="py-1 text-center text-xs text-slate-400 dark:text-slate-500">
+                  Carregando...
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  {availableXValues.map(({ label, value }) => {
+                    const isChecked =
+                      xFilterValues.length === 0 ||
+                      xFilterValues.some((v) => String(v) === String(value));
+
+                    return (
+                      <label
+                        key={String(value)}
+                        className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleXFilterValue(value)}
+                          className="h-3 w-3 rounded border-gray-300 accent-emerald-600 dark:border-slate-500"
+                        />
+                        <span className="text-xs text-slate-700 dark:text-slate-300">
+                          {label}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {xFilterValues.length > 0 && (
+              <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                {xFilterValues.length} de {availableXValues.length} valores exibidos
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Dividir por — apenas para bar/line; gera uma série por valor da dimensão */}
         {isMultiSeriesType && (

@@ -25,6 +25,28 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.9",
+    date: "18/03/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Relatórios: campos Vendedor e SDR adicionados à fonte Histórico de Etapas — agora é possível usar como eixo X ou Dividir por para ver entradas de etapa por responsável.",
+      },
+      {
+        type: "improvement",
+        text: "Relatórios: novo filtro de valores do Eixo X — permite selecionar quais categorias exibir no gráfico (ex: mostrar apenas algumas etapas num funil).",
+      },
+      {
+        type: "improvement",
+        text: "Relatórios: nova agregação Soma Cumulativa — acumula o valor monetário ao longo do tempo, útil para ver receita acumulada de negócios ganhos.",
+      },
+      {
+        type: "fix",
+        text: "Relatórios: corrigido bug na Contagem Cumulativa onde o primeiro ponto já começava com valor incorreto — era contando todos os cards em vez de aplicar os filtros do campo (ex: Negócios Ganhos deveria contar só os ganhos).",
+      },
+    ],
+  },
+  {
     version: "1.6.8",
     date: "18/03/2026",
     entries: [

@@ -26,7 +26,7 @@ class AxisFieldSchema(BaseModel):
 class YFieldConfigSchema(BaseModel):
     """Configuração de um campo no eixo Y: o campo e sua função de agregação."""
     field: AxisFieldSchema
-    aggregation: Literal['count', 'sum', 'avg', 'distinct_count', 'cumulative_count']
+    aggregation: Literal['count', 'sum', 'avg', 'distinct_count', 'cumulative_count', 'cumulative_sum']
 
 
 # ========================
@@ -106,6 +106,13 @@ class QueryRequest(BaseModel):
     Quando preenchido, apenas as séries cujo raw_value estiver nesta lista
     serão incluídas no gráfico.
     Vazio ou None = exibe todas as séries (sem filtro).
+    """
+    x_filter_values: Optional[List[Union[str, int, float]]] = None
+    """
+    Filtro de valores do eixo X — só se aplica a campos categóricos (não-date).
+    Quando preenchido, apenas os grupos X cujo raw_key estiver nesta lista
+    são incluídos no gráfico (ex: mostrar só algumas etapas do funil).
+    Vazio ou None = exibe todos os valores do eixo X.
     """
 
 

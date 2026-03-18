@@ -361,6 +361,10 @@ class CustomReportService:
                 field('expansion_entry_date', 'Data Entrada Expansão', 'date', True, False),
                 # Métrica: conta negócios distintos que entraram na etapa/board no período
                 field('entry_count', 'Negócios que Entraram', 'number', False, True),
+                # Dimensões de usuário — permitem filtrar/dividir por vendedor ou SDR
+                # Úteis como split_by para ver o ritmo de entrada por pessoa
+                field('assigned_to', 'Vendedor', 'user', True, False),
+                field('sdr', 'SDR', 'user', True, False),
             ],
         )
 
@@ -583,6 +587,29 @@ class CustomReportService:
                 results.append((str(row.group_val or 'Sem etapa'), row.raw_key))
             return results
 
+        # --- Vendedor/SDR em Histórico de Etapas (card_history) ---
+        # Diferente do handler genérico abaixo, filtra por CardListHistory.entered_at
+        # (quando o card entrou na etapa) em vez de Card.created_at — reflete corretamente
+        # o período do gráfico de histórico.
+        if source == 'card_history' and key in ('assigned_to', 'sdr'):
+            fk_col = Card.assigned_to_id if key == 'assigned_to' else Card.sdr_id
+            rows = (
+                self.db.query(User.name.label('group_val'), User.id.label('raw_key'))
+                .join(Card, fk_col == User.id)
+                .join(CardListHistory, CardListHistory.card_id == Card.id)
+                .filter(
+                    Card.is_deleted == False,
+                    func.date(CardListHistory.entered_at) >= start,
+                    func.date(CardListHistory.entered_at) <= end,
+                )
+                .group_by(User.id, User.name)
+                .order_by(User.name)
+                .all()
+            )
+            for row in rows:
+                results.append((str(row.group_val or 'Sem usuário'), row.raw_key))
+            return results
+
         # --- Campos de user (assigned_to, sdr, activities.user) ---
         if key in ('assigned_to', 'sdr'):
             # JOIN com User para obter o nome; filtra pelo período via created_at do card
@@ -738,6 +765,21 @@ class CustomReportService:
             )
             return [(str(row.label or 'Sem etapa'), row.raw) for row in rows]
 
+        # Vendedor/SDR em Histórico de Etapas — requer JOIN CardListHistory → Card → User
+        if source == 'card_history' and key in ('assigned_to', 'sdr'):
+            fk_col = Card.assigned_to_id if key == 'assigned_to' else Card.sdr_id
+            rows = (
+                self.db.query(User.name.label('label'), User.id.label('raw'))
+                .join(Card, fk_col == User.id)
+                .join(CardListHistory, CardListHistory.card_id == Card.id)
+                .filter(Card.is_deleted == False)
+                .group_by(User.id, User.name)
+                .order_by(User.name)
+                .limit(20)
+                .all()
+            )
+            return [(str(row.label or 'Sem usuário'), row.raw) for row in rows]
+
         # Etapa (list_name) em Negócios — requer JOIN com BoardList
         if source == 'cards' and key == 'list_name':
             rows = (
@@ -832,6 +874,17 @@ class CustomReportService:
         if source == 'card_history' and key == 'stage_name':
             return CardListHistory.list_id == raw_value
 
+        # Filtro de vendedor/SDR no Histórico de Etapas: usa subquery para não exigir JOIN
+        # extra nas queries especializadas (_run_entered_at_query, _run_stage_entry_query)
+        if source == 'card_history' and key in ('assigned_to', 'sdr'):
+            fk_col = Card.assigned_to_id if key == 'assigned_to' else Card.sdr_id
+            subq = (
+                self.db.query(Card.id)
+                .filter(fk_col == raw_value, Card.is_deleted == False)
+                .subquery()
+            )
+            return CardListHistory.card_id.in_(subq)
+
         if source == 'cards':
             if key == 'assigned_to':
                 return Card.assigned_to_id == raw_value
@@ -875,12 +928,19 @@ class CustomReportService:
         if not label_raw_pairs:
             return []
 
-        # Contagem cumulativa: tratamento especial — delega para método dedicado
-        # que sempre usa y_key='count' (ID primário da fonte) dentro do período selecionado
+        # Cumulativas: contagem ou soma por bucket, depois acumuladas progressivamente
         if y_aggregation == 'cumulative_count':
             return self._get_cumulative_count(
                 x_field_source, x_field_key, x_group_by,
-                y_source, label_raw_pairs, start, end,
+                y_source, y_key, label_raw_pairs, start, end,
+                inner_agg='count',
+                extra_filters=extra_filters,
+            )
+        if y_aggregation == 'cumulative_sum':
+            return self._get_cumulative_count(
+                x_field_source, x_field_key, x_group_by,
+                y_source, y_key, label_raw_pairs, start, end,
+                inner_agg='sum',
                 extra_filters=extra_filters,
             )
 
@@ -905,23 +965,31 @@ class CustomReportService:
         x_field_key: str,
         x_group_by: Optional[str],
         y_source: str,
+        y_key: str,
         label_raw_pairs: List[Tuple[str, Any]],
         start: date,
         end: date,
+        inner_agg: str = 'count',
         extra_filters: Optional[List] = None,
     ) -> List[float]:
         """
-        Calcula contagem cumulativa: conta registros da fonte Y por bucket X
-        dentro do período selecionado e acumula progressivamente.
+        Calcula acumulativo (contagem ou soma) da fonte Y por bucket X dentro do período.
 
-        Sempre usa y_key='count' (ID primário) para garantir contagem de registros,
-        independente do campo Y que o usuário configurou (evita somar valores monetários).
+        inner_agg controla a agregação por período antes de acumular:
+          - 'count': conta registros por bucket (cumulative_count)
+          - 'sum': soma valores por bucket (cumulative_sum — útil para receita acumulada)
+
+        Preserva o y_key original para manter filtros condicionais (ex: won_count
+        conta apenas cards ganhos por bucket antes de acumular).
+
         O resultado final é limitado ao período — ex: "Este Mês" acumula apenas março.
         """
-        # Conta registros da fonte Y por bucket X, filtrado ao período
+        # Agrega a fonte Y por bucket X no período usando inner_agg.
+        # y_key original preservado para que won_count, meeting_count, etc.
+        # apliquem seus filtros condicionais (CASE WHEN) antes de acumular.
         raw_to_value: Dict[Any, float] = self._run_y_agg_query(
             x_field_source, x_field_key, x_group_by,
-            y_source, 'count', 'count',  # sempre conta pelo ID primário da fonte
+            y_source, y_key, inner_agg,
             start, end,
             extra_filters=extra_filters,
         )
@@ -1696,6 +1764,18 @@ class CustomReportService:
             request.x_group_by,
             start, end,
         )
+
+        if not label_raw_pairs:
+            return QueryResponse(labels=[], values=[], total=0.0)
+
+        # Aplica filtro de valores do eixo X — só para campos categóricos (não-date)
+        # Permite que o usuário mostre apenas algumas etapas, vendedores, etc.
+        if request.x_filter_values and request.x_field.field_type != 'date':
+            allowed_x = {str(v) for v in request.x_filter_values}
+            label_raw_pairs = [
+                (label, raw) for label, raw in label_raw_pairs
+                if str(raw) in allowed_x
+            ]
 
         if not label_raw_pairs:
             return QueryResponse(labels=[], values=[], total=0.0)
