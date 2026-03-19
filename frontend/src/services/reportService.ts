@@ -8,6 +8,7 @@ import type {
   DrillDownResponse,
   CalculatedField,
   CalculatedYFieldConfig,
+  GlobalFilter,
 } from "../components/reports/reportTypes";
 
 /**
@@ -265,6 +266,12 @@ class ReportService {
       x_filter_values:
         config.x_filter_values && config.x_filter_values.length > 0
           ? config.x_filter_values
+          : null,
+      global_filters:
+        config.global_filters && config.global_filters.length > 0
+          ? config.global_filters
+              .filter((gf: GlobalFilter) => gf.values.length > 0)
+              .map((gf: GlobalFilter) => ({ field: gf.field, values: gf.values }))
           : null,
     };
     const response = await api.post<QueryResponse>("/api/v1/reports/query", payload);

@@ -79,6 +79,12 @@ class ValidateFormulaResponse(BaseModel):
 # SCHEMAS DE REQUEST
 # ========================
 
+class GlobalFilterItemSchema(BaseModel):
+    """Um filtro global aplicado ao gráfico antes do agrupamento."""
+    field: AxisFieldSchema
+    values: List[Union[str, int, float]]
+
+
 class QueryRequest(BaseModel):
     """
     Requisição de execução de query para um gráfico.
@@ -113,6 +119,12 @@ class QueryRequest(BaseModel):
     Quando preenchido, apenas os grupos X cujo raw_key estiver nesta lista
     são incluídos no gráfico (ex: mostrar só algumas etapas do funil).
     Vazio ou None = exibe todos os valores do eixo X.
+    """
+    global_filters: Optional[List[GlobalFilterItemSchema]] = None
+    """
+    Filtros globais aplicados antes de qualquer agrupamento.
+    Cada item especifica um campo e os valores permitidos (cláusula IN).
+    Vazio ou None = sem filtro global.
     """
 
 

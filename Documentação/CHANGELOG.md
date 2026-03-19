@@ -7,6 +7,49 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.12] - 2026-03-19
+
+### Corrigido
+
+#### Relatórios — gráfico em branco ao filtrar "Dividir por" com apenas 1 série
+
+Quando o usuário filtrava as séries exibidas no "Dividir por" deixando apenas **uma série selecionada**, o gráfico ficava completamente em branco (sem dados).
+
+**Causa:** a flag `hasSeries` em `ChartWidget.tsx` usava `data.series.length > 1` como condição para ativar o modo multi-série. Com apenas 1 série, a condição era `false` e o Recharts tentava montar os dados no formato single-série (`entry.valor`), incompatível com a resposta do backend que usava o formato `entry[s.name]`.
+
+**Correção:** `hasSeries` agora é `true` sempre que `split_by` está configurado **e** existe pelo menos 1 série no resultado (`>= 1`).
+
+**Arquivo alterado:**
+- `frontend/src/components/reports/ChartWidget.tsx` — linha da flag `hasSeries`
+
+---
+
+### Adicionado
+
+#### Relatórios — Filtros Globais por campo
+
+Nova seção **"Filtros Globais"** no painel de configuração de gráficos. Permite filtrar os dados por qualquer campo categórico ou de usuário, independentemente do que está configurado nos eixos X, Y ou "Dividir por".
+
+**Caso de uso principal:** um gráfico com Eixo X = Data de Entrada na Etapa, Eixo Y = Negócios que Entraram e Dividir Por = Etapa do Pipeline pode agora ser filtrado para exibir apenas os negócios de um SDR ou Vendedor específico.
+
+**Comportamento:**
+- Botão "+ Adicionar" abre dropdown com os campos groupable da fonte do eixo X
+- Múltiplos filtros podem ser empilhados
+- Checkboxes por valor; "Exibir todos" limpa o filtro
+- Quando todos os valores estão marcados, o filtro ainda é aplicado como `IN clause` — excluindo assim registros sem o campo preenchido (ex: negócios sem SDR atribuído)
+- Persiste ao salvar/reabrir o relatório
+
+**Arquivos alterados — Frontend:**
+- `frontend/src/components/reports/reportTypes.ts` — interface `GlobalFilter`; campo `global_filters` em `ChartConfig`
+- `frontend/src/services/reportService.ts` — inclui `global_filters` no payload de `queryChart`
+- `frontend/src/components/reports/ChartConfigPanel.tsx` — estados, lógica e UI da seção Filtros Globais
+
+**Arquivos alterados — Backend:**
+- `backend/app/schemas/custom_report.py` — `GlobalFilterItemSchema`; campo `global_filters` em `QueryRequest`
+- `backend/app/services/custom_report_service.py` — método `_build_global_filter_expr` (cláusula IN multi-valor); aplicação dos filtros globais em `execute_query` nos modos split e normal
+
+---
+
 ## [1.6.11] - 2026-03-18
 
 ### Adicionado

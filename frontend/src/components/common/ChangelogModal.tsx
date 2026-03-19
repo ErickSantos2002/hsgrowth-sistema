@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.12",
+    date: "19/03/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Relatórios: gráfico não ficava mais em branco ao filtrar 'Dividir por' deixando apenas uma série selecionada.",
+      },
+      {
+        type: "feature",
+        text: "Relatórios: nova seção 'Filtros Globais' no painel de configuração — permite filtrar os dados por Vendedor, SDR, Etapa ou qualquer outro campo, mesmo quando esses campos já estão ocupados nos eixos X/Y ou no 'Dividir por'. Ideal para ver o desempenho de um vendedor específico sem alterar a estrutura do gráfico.",
+      },
+    ],
+  },
+  {
     version: "1.6.11",
     date: "18/03/2026",
     entries: [

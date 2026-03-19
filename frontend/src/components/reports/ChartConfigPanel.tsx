@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, BarChart3, TrendingUp, PieChart, Table, MousePointerClick, Calendar, DollarSign, Tag, User, Hash, GripVertical, Activity, Crosshair, Hexagon, Filter, Target, ListFilter } from 'lucide-react';
+import { X, BarChart3, TrendingUp, PieChart, Table, MousePointerClick, Calendar, DollarSign, Tag, User, Hash, GripVertical, Activity, Crosshair, Hexagon, Filter, Target, ListFilter, Plus } from 'lucide-react';
 import reportService from '../../services/reportService';
 import { SelectMenu } from '../common/SelectMenu';
 import {
@@ -11,6 +11,7 @@ import {
   YFieldConfig,
   CalculatedYFieldConfig,
   ChartConfig,
+  GlobalFilter,
   PeriodType,
   DATA_SOURCE_LABELS,
   PERIOD_OPTIONS,
@@ -174,6 +175,21 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
   const [availableXValues, setAvailableXValues] = useState<{ label: string; value: string | number }[]>([]);
   const [loadingXValues, setLoadingXValues] = useState(false);
 
+  /**
+   * Filtros globais ativos no gráfico.
+   * Cada item representa um campo + valores selecionados (IN clause no backend).
+   */
+  const [globalFilters, setGlobalFilters] = useState<GlobalFilter[]>([]);
+  /** Valores disponíveis por filtro global — chave: "source:key" */
+  const [globalFilterValues, setGlobalFilterValues] = useState<Record<string, { label: string; value: string | number }[]>>({});
+  const [globalFilterLoading, setGlobalFilterLoading] = useState<Record<string, boolean>>({});
+  /** Campos disponíveis para adicionar como filtro global (groupable, category/user) */
+  const [filterableFields, setFilterableFields] = useState<AxisField[]>([]);
+  /** Controla visibilidade do dropdown "Adicionar filtro" */
+  const [showAddFilter, setShowAddFilter] = useState(false);
+  /** Cache do catálogo por fonte — evita chamadas repetidas */
+  const filterableCacheRef = useRef<Partial<Record<DataSource, AxisField[]>>>({});
+
   /** Estado visual das zonas de drop */
   const [xDropState, setXDropState] = useState<DropState>('idle');
   const [yDropState, setYDropState] = useState<DropState>('idle');
@@ -212,6 +228,18 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       setSplitByField(editingConfig.split_by ?? null);
       setSplitFilterValues(editingConfig.split_filter_values ?? []);
       setXFilterValues(editingConfig.x_filter_values ?? []);
+      const restoredGlobalFilters = editingConfig.global_filters ?? [];
+      setGlobalFilters(restoredGlobalFilters);
+      // Carrega valores disponíveis para cada filtro global restaurado
+      restoredGlobalFilters.forEach((gf) => {
+        const cacheKey = `${gf.field.source}:${gf.field.key}`;
+        setGlobalFilterLoading((prev) => ({ ...prev, [cacheKey]: true }));
+        reportService
+          .fetchSplitValues(gf.field.source, gf.field.key)
+          .then((vals) => setGlobalFilterValues((prev) => ({ ...prev, [cacheKey]: vals })))
+          .catch(() => {})
+          .finally(() => setGlobalFilterLoading((prev) => ({ ...prev, [cacheKey]: false })));
+      });
       setCurrentChartId(editingConfig.id);
     } else {
       // Novo gráfico: reseta tudo e gera ID novo
@@ -226,6 +254,8 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
       setSplitByField(null);
       setSplitFilterValues([]);
       setXFilterValues([]);
+      setGlobalFilters([]);
+      setGlobalFilterValues({});
       setCurrentChartId(crypto.randomUUID());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -277,6 +307,38 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [xAxisField?.source, xAxisField?.key, xAxisField?.field_type]);
 
+  /**
+   * Carrega os campos disponíveis para filtros globais sempre que a fonte do eixo X muda.
+   * Filtra apenas campos groupable do tipo category/user (podem ter valores discretos).
+   * Usa cache por fonte para não refazer chamadas desnecessárias.
+   */
+  useEffect(() => {
+    if (!xAxisField) {
+      setFilterableFields([]);
+      return;
+    }
+    const source = xAxisField.source;
+    if (filterableCacheRef.current[source]) {
+      setFilterableFields(filterableCacheRef.current[source]!);
+      return;
+    }
+    reportService.fetchReportFields().then((catalog) => {
+      const fields: AxisField[] = catalog[source]
+        .filter((f) => f.groupable && (f.field_type === 'category' || f.field_type === 'user'))
+        .map((f) => ({
+          key: f.key,
+          label: f.label,
+          source,
+          field_type: f.field_type as AxisField['field_type'],
+          groupable: f.groupable,
+          aggregatable: f.aggregatable,
+        }));
+      filterableCacheRef.current[source] = fields;
+      setFilterableFields(fields);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [xAxisField?.source]);
+
   // ========================
   // Atualização em tempo real
   // ========================
@@ -311,6 +373,19 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
           : undefined,
       // Filtro de valores do eixo X — só para campos categóricos
       x_filter_values: xFilterValues.length > 0 ? xFilterValues : undefined,
+      // Filtros globais — quando adicionado, sempre aplica o IN clause no backend.
+      // values=[] significa "todos marcados" → resolve para a lista completa disponível,
+      // excluindo assim cards sem valor nesse campo (ex: negócios sem SDR atribuído).
+      global_filters: globalFilters.length > 0
+        ? globalFilters
+            .map((gf) => {
+              if (gf.values.length > 0) return gf;
+              const cacheKey = `${gf.field.source}:${gf.field.key}`;
+              const available = globalFilterValues[cacheKey] ?? [];
+              return { ...gf, values: available.map((item) => item.value) };
+            })
+            .filter((gf) => gf.values.length > 0) // descarta se valores ainda não carregaram
+        : undefined,
     };
 
     // Notifica o pai com a config atualizada — Reports.tsx busca os dados via API
@@ -328,6 +403,8 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     splitByField,
     splitFilterValues,
     xFilterValues,
+    globalFilters,
+    globalFilterValues,
     active,
     currentChartId,
   ]);
@@ -585,6 +662,69 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
         .map((item) => item.value);
       setXFilterValues(newFilter);
     }
+  };
+
+  // ========================
+  // Handlers de filtros globais
+  // ========================
+
+  /** Adiciona um campo como filtro global e carrega seus valores disponíveis. */
+  const addGlobalFilter = (field: AxisField) => {
+    const cacheKey = `${field.source}:${field.key}`;
+    setGlobalFilters((prev) => [...prev, { field, values: [] }]);
+    setShowAddFilter(false);
+    if (!globalFilterValues[cacheKey]) {
+      setGlobalFilterLoading((prev) => ({ ...prev, [cacheKey]: true }));
+      reportService
+        .fetchSplitValues(field.source, field.key)
+        .then((vals) => setGlobalFilterValues((prev) => ({ ...prev, [cacheKey]: vals })))
+        .catch(() => {})
+        .finally(() => setGlobalFilterLoading((prev) => ({ ...prev, [cacheKey]: false })));
+    }
+  };
+
+  /** Remove um filtro global pelo campo. */
+  const removeGlobalFilter = (fieldKey: string, source: DataSource) => {
+    setGlobalFilters((prev) =>
+      prev.filter((f) => !(f.field.key === fieldKey && f.field.source === source))
+    );
+  };
+
+  /**
+   * Alterna a inclusão de um valor no filtro global.
+   * Mesma lógica do toggleSplitFilterValue: vazio = todos incluídos.
+   */
+  const toggleGlobalFilterValue = (fieldKey: string, source: DataSource, rawValue: string | number) => {
+    const cacheKey = `${source}:${fieldKey}`;
+    const available = globalFilterValues[cacheKey] ?? [];
+    const allStrValues = new Set(available.map((v) => String(v.value)));
+    const strValue = String(rawValue);
+
+    setGlobalFilters((prev) =>
+      prev.map((f) => {
+        if (f.field.key !== fieldKey || f.field.source !== source) return f;
+
+        const currentIncluded: Set<string> =
+          f.values.length === 0
+            ? new Set(allStrValues)
+            : new Set(f.values.map(String));
+
+        if (currentIncluded.has(strValue)) {
+          currentIncluded.delete(strValue);
+        } else {
+          currentIncluded.add(strValue);
+        }
+
+        const allIncluded = [...allStrValues].every((v) => currentIncluded.has(v));
+        if (allIncluded) {
+          return { ...f, values: [] };
+        }
+        const newValues = available
+          .filter((item) => currentIncluded.has(String(item.value)))
+          .map((item) => item.value);
+        return { ...f, values: newValues };
+      })
+    );
   };
 
   // ========================
@@ -1119,6 +1259,162 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
                   </p>
                 )}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Filtros Globais — visível quando o eixo X está definido */}
+        {xAxisField && (
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                <Filter size={12} />
+                Filtros Globais
+              </label>
+              {/* Botão "Adicionar filtro" + dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowAddFilter((prev) => !prev)}
+                  className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+                >
+                  <Plus size={12} />
+                  Adicionar
+                </button>
+                {showAddFilter && (
+                  <div className="absolute right-0 top-5 z-20 w-48 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                    {filterableFields.filter(
+                      (f) => !globalFilters.some(
+                        (gf) => gf.field.key === f.key && gf.field.source === f.source
+                      )
+                    ).length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">
+                        Todos os campos já foram adicionados
+                      </p>
+                    ) : (
+                      <div className="max-h-44 overflow-y-auto py-1">
+                        {filterableFields
+                          .filter(
+                            (f) => !globalFilters.some(
+                              (gf) => gf.field.key === f.key && gf.field.source === f.source
+                            )
+                          )
+                          .map((f) => (
+                            <button
+                              key={`${f.source}:${f.key}`}
+                              type="button"
+                              onClick={() => addGlobalFilter(f)}
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700"
+                            >
+                              <FieldTypeIcon fieldType={f.field_type} size={11} />
+                              {f.label}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Filtros ativos */}
+            {globalFilters.length > 0 ? (
+              <div className="space-y-2">
+                {globalFilters.map((filter) => {
+                  const cacheKey = `${filter.field.source}:${filter.field.key}`;
+                  const available = globalFilterValues[cacheKey] ?? [];
+                  const loading = globalFilterLoading[cacheKey] ?? false;
+
+                  return (
+                    <div
+                      key={cacheKey}
+                      className="rounded-lg border border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50"
+                    >
+                      {/* Cabeçalho do filtro */}
+                      <div className="flex items-center justify-between px-2 py-1.5">
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                          <FieldTypeIcon fieldType={filter.field.field_type} size={11} />
+                          {filter.field.label}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeGlobalFilter(filter.field.key, filter.field.source)}
+                          className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+
+                      {/* Checkboxes de valores */}
+                      {loading ? (
+                        <p className="px-2 pb-2 text-xs text-slate-400 dark:text-slate-500">
+                          Carregando...
+                        </p>
+                      ) : (
+                        <div className="max-h-32 overflow-y-auto px-2 pb-2">
+                          <div className="space-y-0.5">
+                            {available.map(({ label, value }) => {
+                              const isChecked =
+                                filter.values.length === 0 ||
+                                filter.values.some((v) => String(v) === String(value));
+                              return (
+                                <label
+                                  key={String(value)}
+                                  className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-gray-100 dark:hover:bg-slate-700"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() =>
+                                      toggleGlobalFilterValue(
+                                        filter.field.key,
+                                        filter.field.source,
+                                        value
+                                      )
+                                    }
+                                    className="h-3 w-3 rounded border-gray-300 accent-emerald-600 dark:border-slate-500"
+                                  />
+                                  <span className="text-xs text-slate-700 dark:text-slate-300">
+                                    {label}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          {filter.values.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setGlobalFilters((prev) =>
+                                  prev.map((f) =>
+                                    f.field.key === filter.field.key &&
+                                    f.field.source === filter.field.source
+                                      ? { ...f, values: [] }
+                                      : f
+                                  )
+                                )
+                              }
+                              className="mt-1 text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+                            >
+                              Exibir todos
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {filter.values.length > 0 && (
+                        <p className="px-2 pb-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                          {filter.values.length} de {available.length} selecionado{filter.values.length > 1 ? 's' : ''}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Nenhum filtro adicionado
+              </p>
             )}
           </div>
         )}

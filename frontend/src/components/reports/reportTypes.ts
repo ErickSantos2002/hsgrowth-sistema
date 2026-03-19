@@ -53,6 +53,17 @@ export interface AxisField {
   aggregatable: boolean;
 }
 
+/**
+ * Filtro global aplicado ao gráfico independente dos eixos.
+ * Permite filtrar os dados por um campo específico (ex: Vendedor)
+ * mesmo quando esse campo não está nos eixos X/Y/split_by.
+ */
+export interface GlobalFilter {
+  field: AxisField;
+  /** Valores raw selecionados. Vazio = exibe todos (sem filtro). */
+  values: (string | number)[];
+}
+
 // ========================
 // CAMPOS CALCULADOS (DAX-like)
 // ========================
@@ -137,6 +148,12 @@ export interface ChartConfig {
    * Vazio ou ausente = exibe todos os valores do eixo X.
    */
   x_filter_values?: (string | number)[];
+  /**
+   * Filtros globais aplicados ao gráfico antes de qualquer agrupamento.
+   * Cada item especifica um campo e os valores permitidos (IN clause no backend).
+   * Vazio ou ausente = sem filtro global.
+   */
+  global_filters?: GlobalFilter[];
 }
 
 // ========================

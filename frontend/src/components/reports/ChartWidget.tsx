@@ -78,8 +78,8 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
   // Estado para mostrar/ocultar os valores nos pontos do gráfico
   const [showLabels, setShowLabels] = useState(true);
 
-  // Detecta modo multi-série (bar/line com mais de 1 campo Y)
-  const hasSeries = !!data.series && data.series.length > 1;
+  // Detecta modo multi-série: quando há split_by configurado ou quando há mais de 1 série no resultado
+  const hasSeries = !!(config.split_by && data.series && data.series.length >= 1) || (!!data.series && data.series.length > 1);
 
   /**
    * Monta o array de dados para o Recharts.

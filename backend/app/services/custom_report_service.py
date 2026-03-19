@@ -865,6 +865,53 @@ class CustomReportService:
 
         return results
 
+    def _build_global_filter_expr(self, source: str, key: str, values: List[Any]):
+        """
+        Retorna expressão SQLAlchemy (cláusula IN) para filtrar múltiplos valores.
+        Usado pelos filtros globais do gráfico — aplicados antes de qualquer agrupamento.
+        """
+        if not values:
+            return None
+
+        # Campos cujos raw_values são IDs inteiros
+        int_keys = {'assigned_to', 'sdr', 'list_name', 'stage_name'}
+        if key in int_keys:
+            try:
+                values = [int(v) for v in values]
+            except (ValueError, TypeError):
+                pass
+
+        if source == 'card_history' and key == 'stage_name':
+            return CardListHistory.list_id.in_(values)
+
+        if source == 'card_history' and key in ('assigned_to', 'sdr'):
+            fk_col = Card.assigned_to_id if key == 'assigned_to' else Card.sdr_id
+            subq = (
+                self.db.query(Card.id)
+                .filter(fk_col.in_(values), Card.is_deleted == False)
+                .subquery()
+            )
+            return CardListHistory.card_id.in_(subq)
+
+        if source == 'cards':
+            if key == 'assigned_to':
+                return Card.assigned_to_id.in_(values)
+            if key == 'sdr':
+                return Card.sdr_id.in_(values)
+            if key == 'list_name':
+                return Card.list_id.in_(values)
+            col = self._get_x_category_col(source, key)
+            return col.in_(values) if col is not None else None
+
+        if source == 'activities' and key == 'user':
+            return Activity.user_id.in_(values)
+
+        if source == 'tasks' and key == 'assigned_to':
+            return CardTask.assigned_to_id.in_(values)
+
+        col = self._get_x_category_col(source, key)
+        return col.in_(values) if col is not None else None
+
     def _build_split_filter(self, source: str, key: str, raw_value: Any):
         """
         Retorna a expressão SQLAlchemy para filtrar um valor específico do campo split_by.
@@ -1782,6 +1829,17 @@ class CustomReportService:
 
         labels = [pair[0] for pair in label_raw_pairs]
 
+        # Monta filtros globais (aplicados a todas as séries)
+        global_extra_filters = []
+        if request.global_filters:
+            for gf in request.global_filters:
+                if gf.values:
+                    expr = self._build_global_filter_expr(
+                        gf.field.source, gf.field.key, list(gf.values)
+                    )
+                    if expr is not None:
+                        global_extra_filters.append(expr)
+
         # Passo 2a: se split_by estiver definido, gera uma série por valor único da dimensão
         # (campos calculados não são suportados em modo split_by — usamos apenas y_fields normais)
         if request.split_by and request.y_fields:
@@ -1806,6 +1864,7 @@ class CustomReportService:
                         request.split_by.source, request.split_by.key, split_raw
                     )
                     extra = [split_filter] if split_filter is not None else []
+                    extra.extend(global_extra_filters)
 
                     values = self._get_y_values_for_labels(
                         x_field_source=request.x_field.source,
@@ -1840,6 +1899,7 @@ class CustomReportService:
                 label_raw_pairs=label_raw_pairs,
                 start=start,
                 end=end,
+                extra_filters=global_extra_filters if global_extra_filters else None,
             )
             # Alimenta o cache para que campos calculados possam reutilizar
             cache_key = f"{yf.field.source}:{yf.field.key}:{yf.aggregation}"
