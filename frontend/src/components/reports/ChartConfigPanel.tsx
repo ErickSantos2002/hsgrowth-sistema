@@ -294,7 +294,9 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
   useEffect(() => {
     if (!xAxisField || xAxisField.field_type === 'date') {
       setAvailableXValues([]);
-      setXFilterValues([]);
+      // Não reseta xFilterValues aqui — causaria conflito com a restauração do
+      // editingConfig no efeito principal (ambos rodam no mount inicial e o último vence).
+      // O reset ocorre somente em ações explícitas do usuário: handleXDrop e remoção do campo.
       return;
     }
 
@@ -446,8 +448,9 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
     if (isInY) return;
 
     setXAxisField(field);
-    // Reseta o agrupamento para o padrão ao trocar o campo
+    // Reseta o agrupamento e o filtro X ao trocar o campo (ação explícita do usuário)
     setXGroupBy('month');
+    setXFilterValues([]);
   };
 
   // ========================
@@ -804,7 +807,7 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
             </span>
             <button
               type="button"
-              onClick={() => setXAxisField(null)}
+              onClick={() => { setXAxisField(null); setXFilterValues([]); }}
               title="Remover campo"
               className="shrink-0 rounded p-0.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
             >

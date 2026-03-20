@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.13",
+    date: "20/03/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Relatórios: o filtro 'Filtrar valores do Eixo X' não resetava mais ao abrir o painel de edição de um gráfico já configurado.",
+      },
+      {
+        type: "fix",
+        text: "Relatórios: ao filtrar o Eixo X por usuários sem registros no período atual, o gráfico agora exibe as barras com valor 0 em vez de 'Sem dados para exibir'.",
+      },
+    ],
+  },
+  {
     version: "1.6.12",
     date: "19/03/2026",
     entries: [

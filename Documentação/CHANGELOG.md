@@ -7,6 +7,36 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.13] - 2026-03-20
+
+### Corrigido
+
+#### Relatórios — "Filtrar valores do Eixo X" resetava ao abrir o painel de edição
+
+Ao clicar para editar um gráfico que já tinha o filtro de Eixo X configurado (ex: apenas Claudia e Karolaine), o filtro era apagado automaticamente, forçando o usuário a reconfigurar toda vez.
+
+**Causa:** dois `useEffect` corriam em paralelo no mount inicial do componente. O primeiro (restauração do `editingConfig`) chamava `setXFilterValues([valores restaurados])`. O segundo (responsável por buscar os valores disponíveis do eixo X) sempre chamava `setXFilterValues([])` quando `xAxisField` ainda era `null` no estado inicial — sobrescrevendo a restauração, pois com o Automatic Batching do React 18 a última chamada de `setState` do lote vence.
+
+**Correção:** removido o `setXFilterValues([])` do segundo `useEffect`. O reset agora ocorre apenas em ações explícitas do usuário: ao arrastar um novo campo para o eixo X (`handleXDrop`) ou ao remover o campo pelo botão "×".
+
+**Arquivos alterados:**
+- `frontend/src/components/reports/ChartConfigPanel.tsx` — segundo `useEffect` do eixo X; `handleXDrop`; botão de remoção do campo X
+
+---
+
+#### Relatórios — "Sem dados para exibir" ao filtrar Eixo X por usuários sem dados no período
+
+Ao usar "Filtrar valores do Eixo X" e selecionar usuários que aparecem no dropdown mas não possuem registros **no período atual** (apenas no histórico), o gráfico exibia "Sem dados para exibir" em vez de mostrar barras com valor 0.
+
+**Causa:** o dropdown de opções do filtro X é populado pelo endpoint `/split-values` (sem filtro de período — dados de todo o tempo), enquanto `_get_x_labels_and_order` filtra pelo período vigente. Usuários com dados históricos mas sem registros no período selecionado não apareciam nos labels, tornando `label_raw_pairs` vazio após o filtro.
+
+**Correção:** após aplicar o filtro X em `execute_query`, os valores selecionados que não aparecem no período são inseridos manualmente em `label_raw_pairs` com label buscado no banco (para campos `user`) ou usando o raw value como label (para campos `category`). Os valores Y ficam naturalmente em 0, mas o gráfico exibe as barras corretamente.
+
+**Arquivo alterado:**
+- `backend/app/services/custom_report_service.py` — bloco de aplicação do `x_filter_values` em `execute_query`
+
+---
+
 ## [1.6.12] - 2026-03-19
 
 ### Corrigido

@@ -1824,6 +1824,34 @@ class CustomReportService:
                 if str(raw) in allowed_x
             ]
 
+            # Se algum valor selecionado no x_filter não apareceu no período (ex: usuário
+            # com dados históricos mas sem registros no período atual), adiciona com label
+            # buscado do banco. Os valores Y serão naturalmente 0, mas a barra/coluna aparece.
+            # Isso evita "Sem dados para exibir" quando o dropdown mostra itens all-time
+            # mas o período corrente não os contém.
+            present_raws = {str(raw) for _, raw in label_raw_pairs}
+            missing_str = allowed_x - present_raws
+            if missing_str:
+                if request.x_field.field_type == 'user':
+                    missing_ids = []
+                    for v in missing_str:
+                        try:
+                            missing_ids.append(int(v))
+                        except (ValueError, TypeError):
+                            pass
+                    if missing_ids:
+                        users = self.db.query(User).filter(User.id.in_(missing_ids)).all()
+                        for u in users:
+                            label_raw_pairs.append((u.name or 'Sem usuário', u.id))
+                else:
+                    # Para campos categóricos, usa o raw value diretamente como label
+                    for v in missing_str:
+                        try:
+                            raw = int(v)
+                        except (ValueError, TypeError):
+                            raw = v
+                        label_raw_pairs.append((str(v), raw))
+
         if not label_raw_pairs:
             return QueryResponse(labels=[], values=[], total=0.0)
 
