@@ -149,11 +149,13 @@ class ReportService {
    */
   async getDashboardKPIs(
     period?: "today" | "week" | "month" | "quarter" | "year",
-    board_id?: number
+    board_id?: number,
+    user_id?: number
   ): Promise<any> {
     const params: Record<string, any> = {};
     if (period) params.period = period;
     if (board_id) params.board_id = board_id;
+    if (user_id) params.user_id = user_id;
 
     const response = await api.get("/api/v1/reports/dashboard", { params });
     return response.data;

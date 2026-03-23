@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { reportService } from "../services";
 import { DashboardKPIs } from "../types";
+import { useAuth } from "../hooks/useAuth";
 import toast from "react-hot-toast";
 
 // Tipo para o período selecionado (exportado)
@@ -13,6 +14,8 @@ interface DashboardContextData {
   error: string | null;
   period: PeriodType;
   lastUpdate: Date | null;
+  selectedUserId: number | null;
+  setSelectedUserId: (userId: number | null) => void;
   fetchDashboardData: () => Promise<void>;
   handleRefresh: () => void;
   setPeriod: (period: PeriodType) => void;
@@ -36,11 +39,27 @@ interface DashboardProviderProps {
 }
 
 export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }) => {
+  const { user } = useAuth();
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriodState] = useState<PeriodType>("month");
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [selectedUserId, setSelectedUserIdState] = useState<number | null>(null);
+
+  // Para salesperson/sdr, força o filtro no próprio usuário (o backend já filtra,
+  // mas manter o estado evita que o seletor do frontend fique em "Todos")
+  useEffect(() => {
+    if (user?.role === "salesperson" || user?.role === "sdr") {
+      setSelectedUserIdState(user.id);
+    } else {
+      setSelectedUserIdState(null);
+    }
+  }, [user?.id, user?.role]);
+
+  const setSelectedUserId = (userId: number | null) => {
+    setSelectedUserIdState(userId);
+  };
 
   // Busca os dados do dashboard
   const fetchDashboardData = async () => {
@@ -48,9 +67,10 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
       setLoading(true);
       setError(null);
 
-      // Buscar KPIs do dashboard
-      const data = await reportService.getDashboardKPIs(period);
-      console.log("📊 KPIs retornados:", data);
+      const effectiveUserId =
+        user?.role === "salesperson" || user?.role === "sdr" ? user.id : selectedUserId ?? undefined;
+
+      const data = await reportService.getDashboardKPIs(period, undefined, effectiveUserId ?? undefined);
       setKpis(data);
       setLastUpdate(new Date());
     } catch (err: any) {
@@ -71,9 +91,12 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
   // Handler para alterar período (também recarrega dados)
   const setPeriod = (newPeriod: PeriodType) => {
     setPeriodState(newPeriod);
-    // Recarrega dados com novo período
     setLoading(true);
-    reportService.getDashboardKPIs(newPeriod).then((data) => {
+
+    const effectiveUserId =
+      user?.role === "salesperson" || user?.role === "sdr" ? user.id : selectedUserId ?? undefined;
+
+    reportService.getDashboardKPIs(newPeriod, undefined, effectiveUserId ?? undefined).then((data) => {
       setKpis(data);
       setLastUpdate(new Date());
       setLoading(false);
@@ -93,6 +116,8 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
         error,
         period,
         lastUpdate,
+        selectedUserId,
+        setSelectedUserId,
         fetchDashboardData,
         handleRefresh,
         setPeriod,

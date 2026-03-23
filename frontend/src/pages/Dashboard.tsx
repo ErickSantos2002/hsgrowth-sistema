@@ -25,13 +25,46 @@ import toast from "react-hot-toast";
 import { useDashboard, PeriodType } from "../context/DashboardContext";
 import { COLORS, getChartColors } from "../constants/colors";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../hooks/useAuth";
+import userService from "../services/userService";
+import { User } from "../types";
 
 const Dashboard: React.FC = () => {
   // Usa o contexto do Dashboard
-  const { kpis, loading, error, period, lastUpdate, fetchDashboardData, handleRefresh, setPeriod } = useDashboard();
+  const { kpis, loading, error, period, lastUpdate, selectedUserId, setSelectedUserId, fetchDashboardData, handleRefresh, setPeriod } = useDashboard();
   // Cores dos graficos adaptadas ao tema atual (Recharts nao suporta dark: do Tailwind)
   const { darkMode } = useTheme();
   const chartColors = getChartColors(darkMode);
+  const { user } = useAuth();
+
+  const isAdminOrManager = user?.role === "admin" || user?.role === "manager";
+  const isRestrictedRole = user?.role === "salesperson" || user?.role === "sdr";
+
+  const periodLabel: Record<string, string> = {
+    today: "Hoje",
+    week: "Esta Semana",
+    month: "Este Mês",
+    quarter: "Este Trimestre",
+    year: "Este Ano",
+  };
+
+  // Lista de usuários ativos para o seletor (apenas admin/manager)
+  const [activeUsers, setActiveUsers] = useState<User[]>([]);
+  useEffect(() => {
+    if (isAdminOrManager) {
+      userService.listActive().then(setActiveUsers).catch(() => {});
+    }
+  }, [isAdminOrManager]);
+
+  // Quando selectedUserId muda pelo seletor (não no mount), recarrega os dados
+  const userIdMountedRef = useRef(false);
+  useEffect(() => {
+    if (!userIdMountedRef.current) {
+      userIdMountedRef.current = true;
+      return;
+    }
+    fetchDashboardData();
+  }, [selectedUserId]);
 
   // Carrega dados apenas na primeira vez que monta o componente (se não tiver em cache)
   useEffect(() => {
@@ -74,13 +107,13 @@ const Dashboard: React.FC = () => {
       doc.text("Indicadores Principais", 14, 40);
 
       const kpisData = [
-        ["Total de Cards", kpis.total_cards.toString()],
-        ["Novos Este Mês", kpis.new_cards_this_month.toString()],
-        ["Cards Ganhos Este Mês", kpis.won_cards_this_month.toString()],
-        ["Cards Perdidos Este Mês", kpis.lost_cards_this_month.toString()],
+        [`Abertos ${periodLabel[period]}`, kpis.total_cards.toString()],
+        [`Novos ${periodLabel[period]}`, kpis.new_cards_this_month.toString()],
+        [`Cards Ganhos ${periodLabel[period]}`, kpis.won_cards_this_month.toString()],
+        [`Cards Perdidos ${periodLabel[period]}`, kpis.lost_cards_this_month.toString()],
         ["Cards Vencidos", kpis.overdue_cards.toString()],
         ["Valor em Pipeline", formatCurrency(kpis.pipeline_value)],
-        ["Valor Ganho Este Mês", formatCurrency(kpis.won_value_this_month)],
+        [`Valor Ganho ${periodLabel[period]}`, formatCurrency(kpis.won_value_this_month)],
         ["Taxa de Conversão", formatPercentage(kpis.conversion_rate_this_month)],
         ["Ticket Médio", formatCurrency(
           kpis.won_cards_this_month > 0
@@ -153,13 +186,13 @@ const Dashboard: React.FC = () => {
       // Aba 1: KPIs Principais
       const kpisData = [
         ["Indicador", "Valor"],
-        ["Total de Cards", kpis.total_cards],
-        ["Novos Este Mês", kpis.new_cards_this_month],
-        ["Cards Ganhos Este Mês", kpis.won_cards_this_month],
-        ["Cards Perdidos Este Mês", kpis.lost_cards_this_month],
+        [`Abertos ${periodLabel[period]}`, kpis.total_cards],
+        [`Novos ${periodLabel[period]}`, kpis.new_cards_this_month],
+        [`Cards Ganhos ${periodLabel[period]}`, kpis.won_cards_this_month],
+        [`Cards Perdidos ${periodLabel[period]}`, kpis.lost_cards_this_month],
         ["Cards Vencidos", kpis.overdue_cards],
         ["Valor em Pipeline", kpis.pipeline_value],
-        ["Valor Ganho Este Mês", kpis.won_value_this_month],
+        [`Valor Ganho ${periodLabel[period]}`, kpis.won_value_this_month],
         ["Taxa de Conversão (%)", kpis.conversion_rate_this_month],
         ["Ticket Médio", kpis.won_cards_this_month > 0 ? kpis.won_value_this_month / kpis.won_cards_this_month : 0],
         ["Tempo Médio (dias)", kpis.avg_time_to_win_days || "N/A"],
@@ -265,16 +298,42 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
         <div className="text-left">
-          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
+          <h1 className="mb-1 flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
             <LayoutDashboard className="text-slate-900 dark:text-white" size={32} />
             Dashboard
           </h1>
+          {isRestrictedRole && (
+            <p className="text-sm font-medium text-emerald-500">
+              Meu Dashboard — {user?.name}
+            </p>
+          )}
+          {isAdminOrManager && selectedUserId && (
+            <p className="text-sm font-medium text-emerald-500">
+              Visualizando: {activeUsers.find((u) => u.id === selectedUserId)?.name ?? ""}
+            </p>
+          )}
           <p className="text-sm text-slate-400">
             Última atualização: {lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR") : "Carregando..."}
           </p>
         </div>
 
         <div className="flex w-full flex-wrap justify-center gap-3 sm:w-auto sm:justify-start">
+          {/* Seletor de usuário — apenas admin/gerente */}
+          {isAdminOrManager && (
+            <div className="min-w-[180px]">
+              <SelectMenu
+                value={selectedUserId ? String(selectedUserId) : ""}
+                options={[
+                  { value: "", label: "Todos os usuários" },
+                  ...activeUsers.map((u) => ({ value: String(u.id), label: u.name })),
+                ]}
+                placeholder="Todos os usuários"
+                onChange={(val) => setSelectedUserId(val ? Number(val) : null)}
+                icon={<Users className="h-4 w-4 text-slate-400" />}
+              />
+            </div>
+          )}
+
           {/* Filtro de Período */}
           <div className="min-w-[180px]">
             <SelectMenu
@@ -335,7 +394,7 @@ const Dashboard: React.FC = () => {
               <Target className="h-6 w-6 text-blue-400" />
             </div>
             <div className="text-right">
-              <div className="text-sm text-slate-400">Total de Cards</div>
+              <div className="text-sm text-slate-400">Abertos no Período</div>
               <div className="text-3xl font-bold text-slate-900 dark:text-white">
                 <CountUp end={kpis?.total_cards || 0} duration={1.5} separator="." />
               </div>
@@ -385,7 +444,7 @@ const Dashboard: React.FC = () => {
               <TrendingUp className="h-6 w-6 text-purple-400" />
             </div>
             <div className="text-right">
-              <div className="text-sm text-slate-400">Ganho Este Mês</div>
+              <div className="text-sm text-slate-400">Ganho {periodLabel[period]}</div>
               <div className="text-2xl font-bold text-slate-900 dark:text-white">
                 <CountUp
                   end={kpis?.won_value_this_month || 0}
@@ -442,7 +501,7 @@ const Dashboard: React.FC = () => {
             <div className="rounded-lg bg-blue-500/20 p-2">
               <Target className="h-5 w-5 text-blue-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Novos Este Mês</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Novos {periodLabel[period]}</h3>
           </div>
           <div className="mb-2 text-3xl font-bold text-slate-900 dark:text-white">
             <CountUp end={kpis?.new_cards_this_month || 0} duration={1.5} separator="." />

@@ -133,9 +133,62 @@ class ReportService:
                 detail=f"Período inválido: {period}"
             )
 
-    def get_dashboard_kpis(self) -> DashboardKPIsResponse:
+    def _build_dashboard_user_filter(
+        self,
+        current_user: Optional[User] = None,
+        user_id: Optional[int] = None
+    ) -> list:
+        """
+        Retorna lista de filtros SQLAlchemy a aplicar em todas as queries do dashboard.
+
+        - salesperson: sempre filtra por assigned_to_id do próprio usuário
+        - sdr: sempre filtra por sdr_id do próprio usuário
+        - admin/manager + user_id: filtra pelo usuário selecionado usando a coluna correta
+        - admin/manager sem user_id: sem filtro (todos os dados)
+        """
+        if not current_user or not current_user.role:
+            return []
+
+        role_name = current_user.role.name
+
+        if role_name == "salesperson":
+            return [Card.assigned_to_id == current_user.id]
+
+        if role_name == "sdr":
+            return [Card.sdr_id == current_user.id]
+
+        if role_name in ("admin", "manager") and user_id:
+            target = self.db.query(User).filter(User.id == user_id).first()
+            if target and target.role:
+                if target.role.name == "salesperson":
+                    return [Card.assigned_to_id == user_id]
+                if target.role.name == "sdr":
+                    return [Card.sdr_id == user_id]
+
+        return []
+
+    # Mapeamento dos valores de período do frontend para PeriodEnum
+    _DASHBOARD_PERIOD_MAP = {
+        "today":   PeriodEnum.TODAY,
+        "week":    PeriodEnum.THIS_WEEK,
+        "month":   PeriodEnum.THIS_MONTH,
+        "quarter": PeriodEnum.THIS_QUARTER,
+        "year":    PeriodEnum.THIS_YEAR,
+    }
+
+    def get_dashboard_kpis(
+        self,
+        current_user: Optional[User] = None,
+        user_id: Optional[int] = None,
+        period_key: str = "month"
+    ) -> DashboardKPIsResponse:
         """
         Retorna os KPIs principais para o dashboard.
+
+        Args:
+            current_user: Usuário logado (para filtro automático por role)
+            user_id: ID de usuário específico a filtrar (apenas para admin/manager)
+            period_key: Período principal ('today', 'week', 'month', 'quarter', 'year')
 
         Returns:
             DashboardKPIsResponse
@@ -144,35 +197,51 @@ class ReportService:
         start_of_week, _ = self._get_date_range(PeriodEnum.THIS_WEEK)
         start_of_month, _ = self._get_date_range(PeriodEnum.THIS_MONTH)
 
+        period_enum = self._DASHBOARD_PERIOD_MAP.get(period_key, PeriodEnum.THIS_MONTH)
+        start_of_period, end_of_period = self._get_date_range(period_enum)
+
+        # Filtro de usuário: salesperson/sdr veem só os próprios dados; admin/manager podem filtrar por user_id
+        uf = self._build_dashboard_user_filter(current_user, user_id)
+
         # Busca todos os boards do sistema
         boards = self.db.query(Board).all()
         board_ids = [b.id for b in boards]
 
-        # Total de cards
+        # Cards ativos criados no período selecionado
         total_cards = self.db.query(func.count(Card.id)).join(
             BoardList, Card.list_id == BoardList.id
-        ).filter(BoardList.board_id.in_(board_ids)).scalar() or 0
+        ).filter(
+            BoardList.board_id.in_(board_ids),
+            Card.is_won == 0,
+            func.date(Card.created_at) >= start_of_period,
+            func.date(Card.created_at) <= end_of_period,
+            *uf
+        ).scalar() or 0
 
         # Novos cards
         new_cards_today = self.db.query(func.count(Card.id)).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            func.date(Card.created_at) == today
+            func.date(Card.created_at) == today,
+            *uf
         ).scalar() or 0
 
         new_cards_this_week = self.db.query(func.count(Card.id)).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            func.date(Card.created_at) >= start_of_week
+            func.date(Card.created_at) >= start_of_week,
+            *uf
         ).scalar() or 0
 
         new_cards_this_month = self.db.query(func.count(Card.id)).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            func.date(Card.created_at) >= start_of_month
+            func.date(Card.created_at) >= start_of_period,
+            func.date(Card.created_at) <= end_of_period,
+            *uf
         ).scalar() or 0
 
         # Cards ganhos
@@ -181,7 +250,8 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 1,
-            func.date(Card.closed_at) == today
+            func.date(Card.closed_at) == today,
+            *uf
         ).scalar() or 0
 
         won_cards_this_week = self.db.query(func.count(Card.id)).join(
@@ -189,7 +259,8 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 1,
-            func.date(Card.closed_at) >= start_of_week
+            func.date(Card.closed_at) >= start_of_week,
+            *uf
         ).scalar() or 0
 
         won_cards_this_month = self.db.query(func.count(Card.id)).join(
@@ -197,7 +268,9 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 1,
-            func.date(Card.closed_at) >= start_of_month
+            func.date(Card.closed_at) >= start_of_period,
+            func.date(Card.closed_at) <= end_of_period,
+            *uf
         ).scalar() or 0
 
         # Cards perdidos
@@ -206,7 +279,8 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == -1,
-            func.date(Card.closed_at) == today
+            func.date(Card.closed_at) == today,
+            *uf
         ).scalar() or 0
 
         lost_cards_this_week = self.db.query(func.count(Card.id)).join(
@@ -214,7 +288,8 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == -1,
-            func.date(Card.closed_at) >= start_of_week
+            func.date(Card.closed_at) >= start_of_week,
+            *uf
         ).scalar() or 0
 
         lost_cards_this_month = self.db.query(func.count(Card.id)).join(
@@ -222,7 +297,9 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == -1,
-            func.date(Card.closed_at) >= start_of_month
+            func.date(Card.closed_at) >= start_of_period,
+            func.date(Card.closed_at) <= end_of_period,
+            *uf
         ).scalar() or 0
 
         # Cards vencidos
@@ -231,7 +308,8 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.due_date < datetime.now(),
-            Card.is_won == 0
+            Card.is_won == 0,
+            *uf
         ).scalar() or 0
 
         due_today = self.db.query(func.count(Card.id)).join(
@@ -239,7 +317,8 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             func.date(Card.due_date) == today,
-            Card.is_won == 0
+            Card.is_won == 0,
+            *uf
         ).scalar() or 0
 
         end_of_week = start_of_week + timedelta(days=6)
@@ -249,27 +328,33 @@ class ReportService:
             BoardList.board_id.in_(board_ids),
             func.date(Card.due_date) >= today,
             func.date(Card.due_date) <= end_of_week,
-            Card.is_won == 0
+            Card.is_won == 0,
+            *uf
         ).scalar() or 0
 
         # Valores monetários
         total_value = self.db.query(func.sum(Card.value)).join(
             BoardList, Card.list_id == BoardList.id
-        ).filter(BoardList.board_id.in_(board_ids)).scalar() or Decimal(0)
+        ).filter(BoardList.board_id.in_(board_ids), *uf).scalar() or Decimal(0)
 
         won_value_this_month = self.db.query(func.sum(Card.value)).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 1,
-            func.date(Card.closed_at) >= start_of_month
+            func.date(Card.closed_at) >= start_of_period,
+            func.date(Card.closed_at) <= end_of_period,
+            *uf
         ).scalar() or Decimal(0)
 
         pipeline_value = self.db.query(func.sum(Card.value)).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_won == 0
+            Card.is_won == 0,
+            func.date(Card.created_at) >= start_of_period,
+            func.date(Card.created_at) <= end_of_period,
+            *uf
         ).scalar() or Decimal(0)
 
         # Taxa de conversão do mês
@@ -289,12 +374,14 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 1,
-            Card.closed_at.isnot(None)
+            Card.closed_at.isnot(None),
+            *uf
         ).scalar()
 
         avg_time_to_win_days = round(float(avg_time_result), 2) if avg_time_result else None
 
-        # Top 5 vendedores do mês
+        # Top 5 vendedores do mês — sempre global (sem user filter) para que
+        # vendedores/SDRs possam ver onde estão no ranking da equipe
         top_sellers_query = self.db.query(
             User.name,
             func.count(Card.id).label('cards_won'),
@@ -306,11 +393,12 @@ class ReportService:
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 1,
-            func.date(Card.closed_at) >= start_of_month
+            func.date(Card.closed_at) >= start_of_period,
+            func.date(Card.closed_at) <= end_of_period
         ).group_by(
             User.id, User.name
         ).order_by(
-            func.count(Card.id).desc()
+            func.coalesce(func.sum(Card.value), 0).desc()
         ).limit(5).all()
 
         top_sellers_this_month = [
@@ -331,7 +419,8 @@ class ReportService:
             Card, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
-            Card.is_won == 0  # Apenas cards ativos
+            Card.is_won == 0,  # Apenas cards ativos
+            *uf
         ).group_by(
             BoardList.id, BoardList.name, BoardList.position
         ).order_by(
@@ -368,7 +457,8 @@ class ReportService:
                 BoardList.board_id.in_(board_ids),
                 Card.is_won == 1,
                 func.date(Card.closed_at) >= month_start,
-                func.date(Card.closed_at) <= month_end
+                func.date(Card.closed_at) <= month_end,
+                *uf
             ).scalar() or 0
 
             won_value = self.db.query(func.sum(Card.value)).join(
@@ -377,7 +467,8 @@ class ReportService:
                 BoardList.board_id.in_(board_ids),
                 Card.is_won == 1,
                 func.date(Card.closed_at) >= month_start,
-                func.date(Card.closed_at) <= month_end
+                func.date(Card.closed_at) <= month_end,
+                *uf
             ).scalar() or Decimal(0)
 
             # Cards perdidos no mês
@@ -387,7 +478,8 @@ class ReportService:
                 BoardList.board_id.in_(board_ids),
                 Card.is_won == -1,
                 func.date(Card.closed_at) >= month_start,
-                func.date(Card.closed_at) <= month_end
+                func.date(Card.closed_at) <= month_end,
+                *uf
             ).scalar() or 0
 
             sales_evolution.append({

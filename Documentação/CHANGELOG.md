@@ -7,6 +7,64 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.14] - 2026-03-23
+
+### Adicionado
+
+#### Dashboard — Dashboard personalizado por usuário
+
+O Dashboard agora exibe dados filtrados de acordo com o papel do usuário logado:
+
+- **Vendedores** veem automaticamente apenas seus próprios negócios (`assigned_to_id`)
+- **SDRs** veem automaticamente apenas os negócios onde são o SDR (`sdr_id`)
+- **Administradores e Gerentes** continuam vendo todos os dados, com novo dropdown no header para filtrar por um usuário específico — ao selecionar, o sub-título "Visualizando: [nome]" aparece
+
+Para vendedores e SDRs, o sub-título "Meu Dashboard — [nome]" é exibido no lugar do seletor.
+
+**Arquivos alterados:**
+- `backend/app/api/v1/endpoints/reports.py` — parâmetro `user_id` no endpoint GET `/dashboard`
+- `backend/app/services/report_service.py` — método `_build_dashboard_user_filter`; filtro `uf` aplicado em todas as queries
+- `frontend/src/services/reportService.ts` — `getDashboardKPIs` aceita `user_id`
+- `frontend/src/context/DashboardContext.tsx` — estado `selectedUserId`; auto-set por role
+- `frontend/src/pages/Dashboard.tsx` — seletor de usuário (admin/gerente) e título personalizado (vendedor/SDR)
+
+---
+
+#### Dashboard — Filtro de período funcional
+
+O seletor de período (Hoje / Esta Semana / Este Mês / Este Trimestre / Este Ano) agora realmente filtra os dados retornados pelo backend. Anteriormente o valor era enviado mas ignorado pelo servidor.
+
+Os KPIs principais (`Abertos no Período`, `Ganho no Período`, `Novos no Período`, taxa de conversão, Top Performers) refletem o intervalo selecionado. Os labels dos cards também se atualizam conforme o período escolhido.
+
+**Arquivos alterados:**
+- `backend/app/api/v1/endpoints/reports.py` — parâmetro `period` no endpoint
+- `backend/app/services/report_service.py` — mapeamento de período; `start_of_period`/`end_of_period` nas queries
+- `frontend/src/pages/Dashboard.tsx` — `periodLabel` dinâmico nos cards
+
+---
+
+### Corrigido
+
+#### Dashboard — "Abertos no Período" e "Valor em Pipeline" refletindo o período correto
+
+Antes, o primeiro KPI card mostrava o total histórico de cards (ex: 1.281 com filtro "Hoje") e o Pipeline mostrava a soma de todos os cards abertos de todos os tempos. Ambos foram corrigidos:
+
+- **Abertos no Período**: conta apenas cards com `is_won = 0` criados dentro do período selecionado
+- **Valor em Pipeline**: soma apenas o valor dos cards abertos criados no período selecionado
+
+#### Dashboard — Top Performers ordenado por valor total faturado
+
+O ranking de Top Performers era ordenado por quantidade de deals fechados, permitindo que vendedores com muitas vendas de baixo valor ficassem à frente de quem faturou mais. Agora a ordenação é pelo **valor total** (`SUM(value) DESC`), com `COALESCE` para tratar vendedores sem valor registrado (evitando que NULLs apareçam no topo).
+
+#### Dashboard — Top Performers sempre exibe o ranking global da equipe
+
+Mesmo quando um vendedor ou SDR acessa o Dashboard (onde os demais KPIs são filtrados para seus próprios dados), o Top Performers continua mostrando o ranking completo da equipe — permitindo que cada vendedor veja sua posição em relação aos colegas.
+
+**Arquivo alterado:**
+- `backend/app/services/report_service.py` — query `top_sellers_query` sem `user_filter`; ordenação por `coalesce(sum(value), 0).desc()`
+
+---
+
 ## [1.6.13] - 2026-03-20
 
 ### Corrigido

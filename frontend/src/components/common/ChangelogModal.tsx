@@ -25,6 +25,28 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.14",
+    date: "23/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Dashboard personalizado por usuário: vendedores e SDRs veem automaticamente apenas seus próprios dados; administradores e gerentes podem usar o novo filtro de usuário no header para visualizar o dashboard de qualquer pessoa da equipe.",
+      },
+      {
+        type: "fix",
+        text: "Dashboard: o filtro de período (Hoje, Esta Semana, Este Mês…) agora realmente filtra os dados — antes o valor era enviado mas ignorado pelo servidor.",
+      },
+      {
+        type: "fix",
+        text: "Dashboard: 'Abertos no Período' e 'Valor em Pipeline' agora mostram apenas cards criados dentro do período selecionado, não mais o total histórico.",
+      },
+      {
+        type: "improvement",
+        text: "Dashboard: Top Performers agora é ordenado pelo valor total faturado (em vez de quantidade de deals), e sempre exibe o ranking completo da equipe mesmo para vendedores e SDRs.",
+      },
+    ],
+  },
+  {
     version: "1.6.13",
     date: "20/03/2026",
     entries: [
