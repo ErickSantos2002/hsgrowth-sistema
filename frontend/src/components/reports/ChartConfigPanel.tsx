@@ -802,7 +802,10 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
             <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-300">
               {xAxisField.label}
             </span>
-            <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+            <span
+              title={DATA_SOURCE_LABELS[xAxisField.source]}
+              className="max-w-[80px] truncate shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+            >
               {DATA_SOURCE_LABELS[xAxisField.source]}
             </span>
             <button
@@ -920,15 +923,18 @@ const ChartConfigPanel: React.FC<ChartConfigPanelProps> = ({
                       {(yf as { field: AxisField }).field.label}
                     </span>
                     {/* Badge da fonte de dados */}
-                    <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                    <span
+                      title={DATA_SOURCE_LABELS[(yf as { field: AxisField }).field.source]}
+                      className="max-w-[80px] truncate shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                    >
                       {DATA_SOURCE_LABELS[(yf as { field: AxisField }).field.source]}
                     </span>
                     {/* Badge de agregação — clicável, cicla pelas opções disponíveis */}
                     <button
                       type="button"
                       onClick={() => handleCycleAggregation(index)}
-                      title="Clique para mudar a agregação"
-                      className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+                      title={`${AGGREGATION_LABELS[(yf as { aggregation: AggregationType }).aggregation]} — clique para mudar`}
+                      className="max-w-[72px] truncate shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
                     >
                       {AGGREGATION_LABELS[(yf as { aggregation: AggregationType }).aggregation]}
                     </button>
