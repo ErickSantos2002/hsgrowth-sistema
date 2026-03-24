@@ -77,7 +77,9 @@ router = APIRouter()
     }
 )
 async def get_dashboard_kpis(
-    period: Optional[str] = Query("month", description="Período principal: today, week, month, quarter, year"),
+    period: Optional[str] = Query("month", description="Período principal: today, week, month, quarter, year, custom"),
+    start_date: Optional[str] = Query(None, description="Data inicial (YYYY-MM-DD) — obrigatório quando period=custom"),
+    end_date: Optional[str] = Query(None, description="Data final (YYYY-MM-DD) — obrigatório quando period=custom"),
     user_id: Optional[int] = Query(None, description="[Admin/Gerente] Filtrar por usuário específico"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -99,7 +101,13 @@ async def get_dashboard_kpis(
     - Admin e Gerentes veem todos os dados; podem passar `user_id` para filtrar por usuário específico.
     """
     service = ReportService(db)
-    return service.get_dashboard_kpis(current_user=current_user, user_id=user_id, period_key=period or "month")
+    return service.get_dashboard_kpis(
+        current_user=current_user,
+        user_id=user_id,
+        period_key=period or "month",
+        custom_start=start_date,
+        custom_end=end_date,
+    )
 
 
 @router.post(

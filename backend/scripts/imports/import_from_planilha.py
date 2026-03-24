@@ -438,6 +438,7 @@ def create_card(
     person_id: int | None,
     sdr_id: int | None,
     position: int,
+    vendor_id: int | None = None,
 ) -> int | None:
     """Cria o card na lista Prospecção com todos os campos mapeados."""
     razao_social = clean_str(reader.get(row, "Razão Social *"))
@@ -470,7 +471,7 @@ def create_card(
         client_id=client_id,
         person_id=person_id,
         sdr_id=sdr_id,
-        assigned_to_id=None,  # Vendedor fica vazio — só o SDR é atribuído
+        assigned_to_id=vendor_id,  # Vendedor — lido de Vendedor_Responsavel (opcional)
         value=value,
         is_won=0,  # Card aberto
         acquisition_channel=normalize_channel(reader.get(row, "Canal_Aquisicao")),
@@ -601,11 +602,21 @@ def import_from_sheet(filename: str | None = None):
             try:
                 # --- SDR ---
                 sdr_name = clean_str(reader.get(row_num, "SDR_Responsavel *"))
-                sdr_id = find_sdr_user(db, sdr_name)
-                if sdr_id:
+                sdr_id = find_sdr_user(db, sdr_name) if sdr_name else None
+                if sdr_name and sdr_id:
                     print(f"    SDR     : {sdr_name} -> id={sdr_id}")
-                else:
+                elif sdr_name:
                     msg = f"Linha {row_num}: SDR '{sdr_name}' nao encontrado"
+                    print(f"    AVISO   : {msg}")
+                    stats["warnings"].append(msg)
+
+                # --- Vendedor ---
+                vendor_name = clean_str(reader.get(row_num, "Vendedor_Responsavel"))
+                vendor_id = find_sdr_user(db, vendor_name) if vendor_name else None
+                if vendor_name and vendor_id:
+                    print(f"    Vendedor: {vendor_name} -> id={vendor_id}")
+                elif vendor_name:
+                    msg = f"Linha {row_num}: Vendedor '{vendor_name}' nao encontrado"
                     print(f"    AVISO   : {msg}")
                     stats["warnings"].append(msg)
 
@@ -633,7 +644,7 @@ def import_from_sheet(filename: str | None = None):
 
                 # --- Card ---
                 card_id = create_card(
-                    db, reader, row_num, client_id, person_id, sdr_id, next_position
+                    db, reader, row_num, client_id, person_id, sdr_id, next_position, vendor_id
                 )
                 if not card_id:
                     print(f"    ERRO    : Nao foi possivel criar o card (titulo ausente)")

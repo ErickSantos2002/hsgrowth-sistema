@@ -31,7 +31,7 @@ import { User } from "../types";
 
 const Dashboard: React.FC = () => {
   // Usa o contexto do Dashboard
-  const { kpis, loading, error, period, lastUpdate, selectedUserId, setSelectedUserId, fetchDashboardData, handleRefresh, setPeriod } = useDashboard();
+  const { kpis, loading, error, period, customStart, customEnd, setCustomRange, lastUpdate, selectedUserId, setSelectedUserId, fetchDashboardData, handleRefresh, setPeriod } = useDashboard();
   // Cores dos graficos adaptadas ao tema atual (Recharts nao suporta dark: do Tailwind)
   const { darkMode } = useTheme();
   const chartColors = getChartColors(darkMode);
@@ -46,6 +46,7 @@ const Dashboard: React.FC = () => {
     month: "Este Mês",
     quarter: "Este Trimestre",
     year: "Este Ano",
+    custom: customStart && customEnd ? `${customStart} – ${customEnd}` : "Personalizado",
   };
 
   // Lista de usuários ativos para o seletor (apenas admin/manager)
@@ -344,11 +345,33 @@ const Dashboard: React.FC = () => {
                 { value: "month", label: "Este Mês" },
                 { value: "quarter", label: "Este Trimestre" },
                 { value: "year", label: "Este Ano" },
+                { value: "custom", label: "Personalizado" },
               ]}
               onChange={(value) => setPeriod(value as PeriodType)}
               icon={<Calendar className="h-4 w-4 text-slate-400" />}
             />
           </div>
+
+          {/* Inputs de data personalizada */}
+          {period === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStart}
+                max={customEnd || undefined}
+                onChange={(e) => setCustomRange(e.target.value, customEnd)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700/50 dark:bg-slate-800/80 dark:text-white"
+              />
+              <span className="text-sm text-slate-400">até</span>
+              <input
+                type="date"
+                value={customEnd}
+                min={customStart || undefined}
+                onChange={(e) => setCustomRange(customStart, e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700/50 dark:bg-slate-800/80 dark:text-white"
+              />
+            </div>
+          )}
 
           {/* Botão Refresh */}
           <button

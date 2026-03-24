@@ -180,7 +180,9 @@ class ReportService:
         self,
         current_user: Optional[User] = None,
         user_id: Optional[int] = None,
-        period_key: str = "month"
+        period_key: str = "month",
+        custom_start: Optional[str] = None,
+        custom_end: Optional[str] = None,
     ) -> DashboardKPIsResponse:
         """
         Retorna os KPIs principais para o dashboard.
@@ -197,8 +199,15 @@ class ReportService:
         start_of_week, _ = self._get_date_range(PeriodEnum.THIS_WEEK)
         start_of_month, _ = self._get_date_range(PeriodEnum.THIS_MONTH)
 
-        period_enum = self._DASHBOARD_PERIOD_MAP.get(period_key, PeriodEnum.THIS_MONTH)
-        start_of_period, end_of_period = self._get_date_range(period_enum)
+        if period_key == "custom" and custom_start and custom_end:
+            try:
+                start_of_period = date.fromisoformat(custom_start)
+                end_of_period = date.fromisoformat(custom_end)
+            except ValueError:
+                start_of_period, end_of_period = self._get_date_range(PeriodEnum.THIS_MONTH)
+        else:
+            period_enum = self._DASHBOARD_PERIOD_MAP.get(period_key, PeriodEnum.THIS_MONTH)
+            start_of_period, end_of_period = self._get_date_range(period_enum)
 
         # Filtro de usuário: salesperson/sdr veem só os próprios dados; admin/manager podem filtrar por user_id
         uf = self._build_dashboard_user_filter(current_user, user_id)

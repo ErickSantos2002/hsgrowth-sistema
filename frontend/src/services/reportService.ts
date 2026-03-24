@@ -148,14 +148,18 @@ class ReportService {
    * (Mantido para compatibilidade com Dashboard.tsx existente)
    */
   async getDashboardKPIs(
-    period?: "today" | "week" | "month" | "quarter" | "year",
+    period?: "today" | "week" | "month" | "quarter" | "year" | "custom",
     board_id?: number,
-    user_id?: number
+    user_id?: number,
+    start_date?: string,
+    end_date?: string,
   ): Promise<any> {
     const params: Record<string, any> = {};
     if (period) params.period = period;
     if (board_id) params.board_id = board_id;
     if (user_id) params.user_id = user_id;
+    if (start_date) params.start_date = start_date;
+    if (end_date) params.end_date = end_date;
 
     const response = await api.get("/api/v1/reports/dashboard", { params });
     return response.data;
