@@ -365,6 +365,9 @@ class CustomReportService:
                 # Úteis como split_by para ver o ritmo de entrada por pessoa
                 field('assigned_to', 'Vendedor', 'user', True, False),
                 field('sdr', 'SDR', 'user', True, False),
+                # Canal de aquisição — vem do Card via JOIN; permite separar o funil por canal
+                field('acquisition_channel', 'Canal de Aquisição', 'category', True, False),
+                field('acquisition_channel_detail', 'Detalhe do Canal', 'category', True, False),
             ],
         )
 
@@ -610,6 +613,28 @@ class CustomReportService:
                 results.append((str(row.group_val or 'Sem usuário'), row.raw_key))
             return results
 
+        # --- Canal de Aquisição em Histórico de Etapas (card_history) ---
+        # JOIN CardListHistory → Card para acessar acquisition_channel.
+        # Filtra por CardListHistory.entered_at para respeitar o período selecionado.
+        if source == 'card_history' and key in ('acquisition_channel', 'acquisition_channel_detail'):
+            col = Card.acquisition_channel if key == 'acquisition_channel' else Card.acquisition_channel_detail
+            rows = (
+                self.db.query(col.label('group_val'))
+                .join(CardListHistory, CardListHistory.card_id == Card.id)
+                .filter(
+                    Card.is_deleted == False,
+                    func.date(CardListHistory.entered_at) >= start,
+                    func.date(CardListHistory.entered_at) <= end,
+                )
+                .group_by(col)
+                .order_by(col)
+                .all()
+            )
+            for row in rows:
+                raw = row[0]
+                results.append((str(raw) if raw is not None else 'Não informado', raw))
+            return results
+
         # --- Campos de user (assigned_to, sdr, activities.user) ---
         if key in ('assigned_to', 'sdr'):
             # JOIN com User para obter o nome; filtra pelo período via created_at do card
@@ -780,6 +805,20 @@ class CustomReportService:
             )
             return [(str(row.label or 'Sem usuário'), row.raw) for row in rows]
 
+        # Canal de Aquisição em Histórico de Etapas — requer JOIN CardListHistory → Card
+        if source == 'card_history' and key in ('acquisition_channel', 'acquisition_channel_detail'):
+            col = Card.acquisition_channel if key == 'acquisition_channel' else Card.acquisition_channel_detail
+            rows = (
+                self.db.query(col.label('label'))
+                .join(CardListHistory, CardListHistory.card_id == Card.id)
+                .filter(Card.is_deleted == False)
+                .group_by(col)
+                .order_by(col)
+                .limit(20)
+                .all()
+            )
+            return [(str(row.label) if row.label is not None else 'Não informado', row.label) for row in rows]
+
         # Etapa (list_name) em Negócios — requer JOIN com BoardList
         if source == 'cards' and key == 'list_name':
             rows = (
@@ -893,6 +932,15 @@ class CustomReportService:
             )
             return CardListHistory.card_id.in_(subq)
 
+        if source == 'card_history' and key in ('acquisition_channel', 'acquisition_channel_detail'):
+            col = Card.acquisition_channel if key == 'acquisition_channel' else Card.acquisition_channel_detail
+            subq = (
+                self.db.query(Card.id)
+                .filter(col.in_(values), Card.is_deleted == False)
+                .subquery()
+            )
+            return CardListHistory.card_id.in_(subq)
+
         if source == 'cards':
             if key == 'assigned_to':
                 return Card.assigned_to_id.in_(values)
@@ -928,6 +976,16 @@ class CustomReportService:
             subq = (
                 self.db.query(Card.id)
                 .filter(fk_col == raw_value, Card.is_deleted == False)
+                .subquery()
+            )
+            return CardListHistory.card_id.in_(subq)
+
+        # Filtro de canal de aquisição no Histórico de Etapas: subquery Card.id por canal
+        if source == 'card_history' and key in ('acquisition_channel', 'acquisition_channel_detail'):
+            col = Card.acquisition_channel if key == 'acquisition_channel' else Card.acquisition_channel_detail
+            subq = (
+                self.db.query(Card.id)
+                .filter(col == raw_value, Card.is_deleted == False)
                 .subquery()
             )
             return CardListHistory.card_id.in_(subq)
@@ -1087,6 +1145,8 @@ class CustomReportService:
                     return self._run_entered_at_query(x_group_by, start, end, extra_filters)
                 if x_key in ('prospection_entry_date', 'acquisition_entry_date', 'expansion_entry_date'):
                     return self._run_board_entry_query(x_key, x_group_by, start, end, extra_filters)
+                if x_key in ('acquisition_channel', 'acquisition_channel_detail'):
+                    return self._run_channel_entry_query(x_key, start, end, extra_filters)
 
             # Determina a expressão da chave X (para GROUP BY)
             x_raw_expr = self._build_x_raw_expr(x_source, x_key, x_group_by)
@@ -1603,6 +1663,51 @@ class CustomReportService:
                 )
                 .filter(*base_filter)
                 .group_by(CardListHistory.list_id)
+                .all()
+            )
+
+            for row in rows:
+                result[row.x_key] = float(row.y_val or 0)
+
+        except Exception:
+            pass
+
+        return result
+
+    def _run_channel_entry_query(
+        self,
+        x_key: str,
+        start: date,
+        end: date,
+        extra_filters: Optional[List] = None,
+    ) -> Dict[Any, float]:
+        """
+        Conta negócios distintos que ENTRARAM em qualquer etapa no período,
+        agrupados por Canal de Aquisição (ou Detalhe do Canal).
+
+        JOIN CardListHistory → Card para acessar acquisition_channel / acquisition_channel_detail.
+        O raw_key retornado é o valor do canal, que bate com os labels gerados em
+        _get_x_labels_and_order para card_history/acquisition_channel.
+        """
+        result: Dict[Any, float] = {}
+
+        try:
+            col = Card.acquisition_channel if x_key == 'acquisition_channel' else Card.acquisition_channel_detail
+            extra = list(extra_filters or [])
+            base_filter = [
+                Card.is_deleted == False,
+                func.date(CardListHistory.entered_at) >= start,
+                func.date(CardListHistory.entered_at) <= end,
+            ] + extra
+
+            rows = (
+                self.db.query(
+                    col.label('x_key'),
+                    func.count(func.distinct(CardListHistory.card_id)).label('y_val'),
+                )
+                .join(Card, CardListHistory.card_id == Card.id)
+                .filter(*base_filter)
+                .group_by(col)
                 .all()
             )
 
