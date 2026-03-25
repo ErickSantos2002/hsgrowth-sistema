@@ -307,6 +307,10 @@ class CustomReportService:
                 field('loss_reason', 'Motivo de Perda', 'category', True, False),
                 field('has_implementation', 'Tem Implementação', 'category', True, False),
                 field('has_personnel', 'Tem Pessoal', 'category', True, False),
+                field('origin', 'Origem do Lead', 'category', True, False),
+                field('utm_source', 'UTM Source', 'category', True, False),
+                field('utm_campaign', 'UTM Campaign', 'category', True, False),
+                field('utm_term', 'UTM Term', 'category', True, False),
                 # Dimensões de usuário (groupáveis)
                 field('assigned_to', 'Vendedor', 'user', True, False),
                 field('sdr', 'SDR', 'user', True, False),
@@ -443,6 +447,10 @@ class CustomReportService:
                 'loss_reason': Card.loss_reason,
                 'has_implementation': Card.has_implementation,
                 'has_personnel': Card.has_personnel,
+                'origin': Card.origin,
+                'utm_source': Card.utm_source,
+                'utm_campaign': Card.utm_campaign,
+                'utm_term': Card.utm_term,
                 # list_name requer JOIN com BoardList — tratado separadamente
             }
             return cols.get(key)
