@@ -1761,8 +1761,24 @@ class CardService:
         old_assigned_to_id = card.assigned_to_id
         assigned_card = self.card_repository.assign_to_user(card, user_id)
 
-        # Notifica o novo responsável se a atribuição realmente mudou
+        # Notifica e registra histórico se a atribuição realmente mudou
         if old_assigned_to_id != user_id:
+            # Registra no histórico do card
+            try:
+                old_user_obj = self.db.query(User).filter(User.id == old_assigned_to_id).first() if old_assigned_to_id else None
+                old_name = old_user_obj.name if old_user_obj else "Ninguém"
+                new_name = user.name
+                self.activity_repository.create(
+                    card_id=card_id,
+                    user_id=current_user.id,
+                    activity_type="card_assigned_changed",
+                    description=f"Responsável alterado: <strong>{old_name}</strong> → <strong>{new_name}</strong>",
+                    activity_metadata={"old_user": old_name, "new_user": new_name},
+                )
+            except Exception as e:
+                print(f"[ACTIVITY] Erro ao registrar atribuição no histórico: {e}")
+
+            # Notifica o novo responsável
             try:
                 self.notification_repository.create({
                     "user_id": user_id,
