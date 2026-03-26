@@ -396,14 +396,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate, re
 
           <div className="flex gap-2">
             <button
-              onClick={handleCreateNote}
-              disabled={loading || isPastingImage}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-slate-900 dark:text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-            >
-              <Save size={18} />
-              Salvar
-            </button>
-            <button
               onClick={() => {
                 setIsCreating(false);
                 if (newNoteRef.current) newNoteRef.current.innerHTML = "";
@@ -413,6 +405,14 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate, re
             >
               <X size={18} />
               Cancelar
+            </button>
+            <button
+              onClick={handleCreateNote}
+              disabled={loading || isPastingImage}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-slate-900 dark:text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+            >
+              <Save size={18} />
+              Salvar
             </button>
           </div>
         </div>
