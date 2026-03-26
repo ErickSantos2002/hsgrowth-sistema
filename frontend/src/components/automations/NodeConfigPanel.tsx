@@ -30,7 +30,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
 
   // Carrega listas quando board é selecionado
   useEffect(() => {
-    // Para triggers (card_moved): usa board_id
+    // Para triggers (card_moved / card_created): usa board_id
     if (config.board_id) {
       loadLists(Number(config.board_id));
     }
@@ -93,6 +93,42 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
   const renderTriggerConfig = () => {
     switch (nodeType) {
       case "card_created":
+        return (
+          <>
+            <div className="mb-4">
+              <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
+                Board
+              </label>
+              <SelectMenu
+                value={config.board_id || ""}
+                onChange={(value) => updateConfig("board_id", value)}
+                options={[
+                  { value: "", label: "Qualquer board" },
+                  ...boards.map(b => ({ value: String(b.id), label: b.name }))
+                ]}
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
+                Na lista
+              </label>
+              <SelectMenu
+                value={config.to_list_id || ""}
+                onChange={(value) => updateConfig("to_list_id", value)}
+                options={[
+                  { value: "", label: loading ? "Carregando..." : "Qualquer lista" },
+                  ...lists.map(l => ({ value: String(l.id), label: l.name }))
+                ]}
+                disabled={!config.board_id}
+              />
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">
+                Deixe vazio para disparar em qualquer lista
+              </p>
+            </div>
+          </>
+        );
+
       case "card_won":
       case "card_lost":
       case "card_moved":

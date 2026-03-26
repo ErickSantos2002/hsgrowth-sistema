@@ -13,6 +13,16 @@ export function convertApiToReactFlow(automation: any): { nodes: Node[]; edges: 
 
   // Cria o node do trigger
   if (automation.trigger_event) {
+    const triggerConditions = automation.trigger_conditions || {};
+    // Para card_created/card_moved: injeta board_id no config se ainda não estiver presente,
+    // para que o seletor de lista consiga carregar as opções corretamente.
+    const triggerConfig =
+      (automation.trigger_event === "card_created" || automation.trigger_event === "card_moved") &&
+      automation.board_id &&
+      !triggerConditions.board_id
+        ? { board_id: String(automation.board_id), ...triggerConditions }
+        : triggerConditions;
+
     const triggerNode: Node = {
       id: "trigger_1",
       type: "triggerNode",
@@ -20,7 +30,7 @@ export function convertApiToReactFlow(automation: any): { nodes: Node[]; edges: 
       data: {
         label: formatTriggerLabel(automation.trigger_event),
         triggerType: automation.trigger_event,
-        config: automation.trigger_conditions || {},
+        config: triggerConfig,
       },
     };
     nodes.push(triggerNode);
@@ -87,9 +97,13 @@ export function convertReactFlowToApi(
   const triggerConfig = triggerNode.data.config || {};
 
   // Monta trigger_conditions baseado no config
+  // Remove board_id das conditions (é usado só para carregar listas no UI, não é uma condition real)
   let triggerConditions = null;
   if (triggerConfig && Object.keys(triggerConfig).length > 0) {
-    triggerConditions = triggerConfig;
+    const { board_id: _board_id, ...conditionsOnly } = triggerConfig;
+    if (Object.keys(conditionsOnly).length > 0) {
+      triggerConditions = conditionsOnly;
+    }
   }
 
   // Monta array de actions seguindo a ordem das conexões (BFS a partir do trigger)
