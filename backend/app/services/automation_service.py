@@ -748,6 +748,20 @@ class AutomationService:
         card.assigned_to_id = next_user.id
         self.db.commit()
 
+        # Registra no histórico do card
+        try:
+            from app.repositories.activity_repository import ActivityRepository
+            activity_repo = ActivityRepository(self.db)
+            activity_repo.create(
+                card_id=card.id,
+                user_id=None,
+                activity_type="card_assigned_changed",
+                description=f"Responsável atribuído automaticamente: <strong>{next_user.name}</strong>",
+                activity_metadata={"new_user": next_user.name, "source": "automation_round_robin"},
+            )
+        except Exception as e:
+            print(f"[ACTIVITY] Erro ao registrar atribuição via round-robin: {e}")
+
         # Notifica o vendedor atribuído pelo rodízio
         try:
             from app.repositories.notification_repository import NotificationRepository
@@ -858,6 +872,20 @@ class AutomationService:
         # Atribui o card ao SDR
         card.sdr_id = next_sdr.id
         self.db.commit()
+
+        # Registra no histórico do card
+        try:
+            from app.repositories.activity_repository import ActivityRepository
+            activity_repo = ActivityRepository(self.db)
+            activity_repo.create(
+                card_id=card.id,
+                user_id=None,
+                activity_type="card_assigned_changed",
+                description=f"SDR atribuído automaticamente: <strong>{next_sdr.name}</strong>",
+                activity_metadata={"new_user": next_sdr.name, "source": "automation_round_robin"},
+            )
+        except Exception as e:
+            print(f"[ACTIVITY] Erro ao registrar atribuição de SDR via round-robin: {e}")
 
         # Notifica o SDR atribuído pelo rodízio
         try:
