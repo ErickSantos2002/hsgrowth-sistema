@@ -36,6 +36,8 @@ def create_call_evaluation(
     evaluation = CallEvaluation(
         card_id=payload.card_id,
         call_log_id=payload.call_log_id,
+        ramal=payload.ramal,
+        vendedor_name=payload.vendedor_name,
         transcript=payload.transcript,
         summary=payload.summary,
         next_steps=payload.next_steps,

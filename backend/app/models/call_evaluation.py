@@ -31,6 +31,10 @@ class CallEvaluation(Base):
         comment="Registro da chamada VOIP (opcional)"
     )
 
+    # Identificação do vendedor
+    ramal = Column(String(20), nullable=True, comment="Ramal do vendedor que realizou a ligação")
+    vendedor_name = Column(String(255), nullable=True, comment="Nome do vendedor que realizou a ligação")
+
     # Transcrição completa
     transcript = Column(Text, nullable=True, comment="Transcrição completa da ligação")
 

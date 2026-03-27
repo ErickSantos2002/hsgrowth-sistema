@@ -19,6 +19,8 @@ class MatrixBlock(BaseModel):
 class CallEvaluationCreate(BaseModel):
     card_id: int
     call_log_id: Optional[int] = None
+    ramal: Optional[str] = None
+    vendedor_name: Optional[str] = None
     transcript: Optional[str] = None
     summary: str
     next_steps: Optional[str] = None
@@ -33,6 +35,8 @@ class CallEvaluationResponse(BaseModel):
     id: int
     card_id: int
     call_log_id: Optional[int] = None
+    ramal: Optional[str] = None
+    vendedor_name: Optional[str] = None
     transcript: Optional[str] = None
     summary: str
     next_steps: Optional[str] = None
