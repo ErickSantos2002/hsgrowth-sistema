@@ -15,6 +15,7 @@ import {
   UserX,
   Phone,
   Loader2,
+  PhoneCall,
 } from "lucide-react";
 import { Card } from "../types";
 import cardService from "../services/cardService";
@@ -30,11 +31,13 @@ import PipelineStages from "../components/cardDetails/PipelineStages";
 import NotesSection from "../components/cardDetails/NotesSection";
 import SchedulerSection from "../components/cardDetails/SchedulerSection";
 import FilesSection from "../components/cardDetails/FilesSection";
+import CallEvaluationsSection from "../components/cardDetails/CallEvaluationsSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ReopenModal from "../components/cardDetails/ReopenModal";
 import { showSuccess, showError } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
 import attachmentService from "../services/attachmentService";
+import callEvaluationService from "../services/callEvaluationService";
 import UserAvatar from "../components/common/UserAvatar";
 
 /**
@@ -61,7 +64,7 @@ const CardDetails: React.FC = () => {
   const [showAssignConfirm, setShowAssignConfirm] = useState(false);
 
   // Estado das abas
-  const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos">("atividade");
+  const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos" | "ligacoes">("atividade");
 
   // Estado da modal de motivo da perda
   const [showLossReasonModal, setShowLossReasonModal] = useState(false);
@@ -72,6 +75,9 @@ const CardDetails: React.FC = () => {
 
   // Estado da contagem de arquivos
   const [attachmentsCount, setAttachmentsCount] = useState<number>(0);
+
+  // Estado da contagem de avaliações de ligações
+  const [evaluationsCount, setEvaluationsCount] = useState<number>(0);
 
   // Estado do botão de ligação rápida
   const [isQuickCalling, setIsQuickCalling] = useState(false);
@@ -91,6 +97,7 @@ const CardDetails: React.FC = () => {
       loadCardData();
       loadUsers();
       loadAttachmentsCount();
+      loadEvaluationsCount();
     }
   }, [cardId]);
 
@@ -139,6 +146,19 @@ const CardDetails: React.FC = () => {
     } catch (error) {
       console.error("Erro ao carregar contagem de arquivos:", error);
       setAttachmentsCount(0);
+    }
+  };
+
+  /**
+   * Carrega contagem de avaliações de ligações do card
+   */
+  const loadEvaluationsCount = async () => {
+    try {
+      const response = await callEvaluationService.listByCard(Number(cardId));
+      setEvaluationsCount(response.length);
+    } catch (error) {
+      console.error("Erro ao carregar contagem de avaliações:", error);
+      setEvaluationsCount(0);
     }
   };
 
@@ -1010,6 +1030,23 @@ const CardDetails: React.FC = () => {
                       {attachmentsCount}
                     </span>
                   </button>
+
+                  <button
+                    onClick={() => setActiveTab("ligacoes")}
+                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
+                      activeTab === "ligacoes"
+                        ? "border-blue-500 font-medium text-blue-400"
+                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    }`}
+                  >
+                    <PhoneCall size={18} />
+                    <span className="hidden lg:inline">Ligações</span>
+                    {evaluationsCount > 0 && (
+                      <span className="hidden lg:inline ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
+                        {evaluationsCount}
+                      </span>
+                    )}
+                  </button>
                 </div>
 
                 {/* Botão Ligar — sempre visível fora da área de scroll */}
@@ -1088,6 +1125,10 @@ const CardDetails: React.FC = () => {
 
               {activeTab === "arquivos" && cardId && (
                 <FilesSection cardId={Number(cardId)} readOnly={isViewer} />
+              )}
+
+              {activeTab === "ligacoes" && card && (
+                <CallEvaluationsSection cardId={card.id} />
               )}
             </div>
           </div>

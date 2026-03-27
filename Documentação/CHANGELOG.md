@@ -25,6 +25,11 @@ Criada infraestrutura completa para armazenar avaliações de ligações geradas
 - `GET /api/v1/call-evaluations/card/{card_id}` — lista avaliações de um card (mais recente primeiro)
 - `GET /api/v1/call-evaluations/{id}` — busca avaliação específica
 
+- Nova aba **Ligações** no CardDetails (após Arquivos) exibindo todas as avaliações do card
+- Cada avaliação mostra: badge de nota com cor por classificação, situação, resumo, próximos passos, avaliação por blocos da matriz (expansível), sub-blocos não cobertos com sugestões e transcrição completa
+- Contador na aba exibe o número de avaliações registradas (mesmo padrão das demais abas)
+- Campos `ramal` e `vendedor_name` armazenados para identificação histórica do vendedor
+
 **Arquivos criados/alterados:**
 - `backend/app/models/call_evaluation.py` — model SQLAlchemy
 - `backend/app/schemas/call_evaluation.py` — schemas Pydantic (Create e Response)
@@ -32,6 +37,10 @@ Criada infraestrutura completa para armazenar avaliações de ligações geradas
 - `backend/app/api/v1/__init__.py` — router registrado em `/call-evaluations`
 - `backend/app/models/__init__.py` — model registrado para Alembic
 - `backend/alembic/versions/2026_03_27_1000-add_call_evaluations_table.py` — migration aplicada
+- `backend/alembic/versions/2026_03_27_1100-add_ramal_vendedor_to_call_evaluations.py` — migration aplicada
+- `frontend/src/services/callEvaluationService.ts` — service de avaliações
+- `frontend/src/components/cardDetails/CallEvaluationsSection.tsx` — componente da aba
+- `frontend/src/pages/CardDetails.tsx` — aba Ligações adicionada com contador
 - `prompt-resumo.md` — prompt do agente de IA na raiz do projeto
 
 ---
