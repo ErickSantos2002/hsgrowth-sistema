@@ -7,6 +7,42 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.15] - 2026-03-27
+
+### Alterado
+
+#### Pipeline — Todos os cards criados em "Lead Novo"
+
+Padronização do ponto de entrada do funil de vendas: todos os cards agora são criados diretamente na lista **Lead Novo**, independente do papel do usuário.
+
+- SDRs e vendedores só podem criar cards em **Lead Novo** (antes era "Prospecção")
+- Botão de adicionar card no Kanban agora aparece apenas na lista **Lead Novo** para SDRs e vendedores
+- Cards reabertos (negócio perdido reaberto) também vão para **Lead Novo** em vez de Prospecção
+
+**Arquivos alterados:**
+- `backend/app/services/card_service.py` — restrição de lista na criação e destino do `reopen_card` atualizados para `Lead Novo` (list_id=22)
+- `frontend/src/pages/KanbanBoard.tsx` — `canAddCardToList` agora libera o botão em `"Lead Novo"` em vez de `"Prospecção"`
+
+---
+
+#### Automações — Condição "Criado pelo usuário" no gatilho Card Criado
+
+A automação de atribuição de vendedor (rodízio) agora suporta filtrar pelo usuário que criou o card, permitindo que a automação dispare **somente para cards criados por um usuário específico** (ex: usuário "Integração" que recebe leads do site).
+
+Isso resolve o problema onde a automação atribuía vendedor também para cards criados manualmente por SDRs e vendedores, que não devem receber atribuição automática.
+
+- Nova condição `triggered_by_user_id` suportada pelo engine de automações
+- Editor visual de automações agora exibe o seletor **"Criado pelo usuário"** no gatilho `Card Criado`
+- Automação id=14 ("Atribuir Vendedor - Automático") atualizada: dispara apenas para cards criados pelo usuário Integração (id=7) na lista Lead Novo
+
+**Arquivos alterados:**
+- `backend/app/services/card_service.py` — `trigger_data` no evento `card_created` agora inclui `triggered_by_user_id`
+- `backend/app/services/automation_service.py` — `_check_trigger_conditions` suporta a nova condição `triggered_by_user_id`
+- `frontend/src/components/automations/NodeConfigPanel.tsx` — seletor "Criado pelo usuário" adicionado ao gatilho `card_created`
+- `frontend/src/utils/automationConverter.ts` — campos vazios filtrados antes de enviar `trigger_conditions` à API
+
+---
+
 ## [1.6.14] - 2026-03-23
 
 ### Adicionado

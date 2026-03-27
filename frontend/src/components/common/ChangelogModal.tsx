@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.15",
+    date: "27/03/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Pipeline: todos os cards agora são criados diretamente em 'Lead Novo' — SDRs, vendedores e cards reabertos entram no funil pelo ponto correto.",
+      },
+      {
+        type: "feature",
+        text: "Automações: nova condição 'Criado pelo usuário' no gatilho Card Criado — permite que a automação de atribuição de vendedor dispare apenas para leads que chegam via integração (site), sem afetar cards criados manualmente por SDRs e vendedores.",
+      },
+    ],
+  },
+  {
     version: "1.6.14",
     date: "23/03/2026",
     entries: [

@@ -97,12 +97,15 @@ export function convertReactFlowToApi(
   const triggerConfig = triggerNode.data.config || {};
 
   // Monta trigger_conditions baseado no config
-  // Remove board_id das conditions (é usado só para carregar listas no UI, não é uma condition real)
+  // Remove board_id (usado só para carregar listas no UI) e campos com valor vazio
   let triggerConditions = null;
   if (triggerConfig && Object.keys(triggerConfig).length > 0) {
     const { board_id: _board_id, ...conditionsOnly } = triggerConfig;
-    if (Object.keys(conditionsOnly).length > 0) {
-      triggerConditions = conditionsOnly;
+    const filtered = Object.fromEntries(
+      Object.entries(conditionsOnly).filter(([, v]) => v !== "" && v !== null && v !== undefined)
+    );
+    if (Object.keys(filtered).length > 0) {
+      triggerConditions = filtered;
     }
   }
 

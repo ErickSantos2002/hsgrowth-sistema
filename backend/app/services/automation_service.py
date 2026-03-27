@@ -459,7 +459,13 @@ class AutomationService:
             if card_list and card_list.board_id != board_id_condition:
                 return False
 
-        # Adicionar mais condições conforme necessário
+        # Verifica condição de triggered_by_user_id (para card_created)
+        if "triggered_by_user_id" in conditions and trigger_data:
+            triggered_by_condition = conditions["triggered_by_user_id"]
+            if isinstance(triggered_by_condition, str):
+                triggered_by_condition = int(triggered_by_condition)
+            if trigger_data.get("triggered_by_user_id") != triggered_by_condition:
+                return False
 
         return True
 

@@ -126,6 +126,23 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
                 Deixe vazio para disparar em qualquer lista
               </p>
             </div>
+
+            <div className="mb-4">
+              <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
+                Criado pelo usuário
+              </label>
+              <SelectMenu
+                value={config.triggered_by_user_id ? String(config.triggered_by_user_id) : ""}
+                onChange={(value) => updateConfig("triggered_by_user_id", value ? Number(value) : "")}
+                options={[
+                  { value: "", label: "Qualquer usuário" },
+                  ...users.map(u => ({ value: String(u.id), label: u.name }))
+                ]}
+              />
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">
+                Deixe vazio para disparar independente de quem criou
+              </p>
+            </div>
           </>
         );
 

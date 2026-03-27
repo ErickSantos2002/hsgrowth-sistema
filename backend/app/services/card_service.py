@@ -467,21 +467,20 @@ class CardService:
 
         # Verifica se o usuário tem permissão para criar card nessa lista.
         # Apenas Admin e Manager podem criar em qualquer lista.
-        # Demais roles só podem criar na lista "Prospecção" do board de Prospecção (id=6),
-        # pois cards criados manualmente já chegam com algum contexto prévio.
+        # Demais roles só podem criar na lista "Lead Novo" do board de Prospecção (id=6).
         is_privileged = (
             current_user.role and current_user.role.name in ("admin", "manager")
         )
         if not is_privileged:
             allowed = (
                 list_obj.board_id == 6
-                and list_obj.name.strip() == "Prospecção"
+                and list_obj.name.strip() == "Lead Novo"
             )
             if not allowed:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=(
-                        "Você só pode criar negócios na lista 'Prospecção' "
+                        "Você só pode criar negócios na lista 'Lead Novo' "
                         "do quadro Prospecção"
                     ),
                 )
@@ -631,7 +630,7 @@ class CardService:
                 trigger_event="card_created",
                 card=card,
                 user=current_user,
-                trigger_data={}
+                trigger_data={"triggered_by_user_id": current_user.id}
             )
             print(f"[AUTOMATION] Disparadas {len(executions)} automações")
         except Exception as e:
@@ -2125,7 +2124,7 @@ class CardService:
 
     def reopen_card(self, card_id: int, reopen_data, current_user: User) -> Card:
         """
-        Reabre um negócio perdido criando um clone na lista Prospecção (list_id=23, board_id=6).
+        Reabre um negócio perdido criando um clone na lista Lead Novo (list_id=22, board_id=6).
 
         O card original permanece inalterado (continua perdido).
         O clone herda os dados completos do original:
@@ -2156,8 +2155,8 @@ class CardService:
         from app.models.attachment import Attachment
         from app.models.card_product import CardProduct
 
-        # ID fixo da lista de destino (Prospecção - board_id=6, id=23)
-        TARGET_LIST_ID = 23
+        # ID fixo da lista de destino (Lead Novo - board_id=6, id=22)
+        TARGET_LIST_ID = 22
 
         # Busca e valida o card original
         original_card = self.get_card_by_id(card_id)
