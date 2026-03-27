@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.16",
+    date: "27/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Avaliações de ligações: o agente de IA agora salva diretamente no sistema a transcrição, resumo, próximos passos e avaliação por blocos de cada ligação — com nota final e classificação. Os dados ficam vinculados ao card correspondente.",
+      },
+    ],
+  },
+  {
     version: "1.6.15",
     date: "27/03/2026",
     entries: [

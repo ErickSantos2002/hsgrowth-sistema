@@ -59,6 +59,9 @@ from app.models.user_notification_setting import UserNotificationSetting
 # Histórico de movimentação de cards entre listas
 from app.models.card_list_history import CardListHistory
 
+# Avaliações de ligações geradas pelo agente de IA
+from app.models.call_evaluation import CallEvaluation
+
 # Lista de todos os modelos (útil para imports)
 __all__ = [
     "Base",
@@ -96,4 +99,5 @@ __all__ = [
     "CustomReport",
     "CardListHistory",
     "UserNotificationSetting",
+    "CallEvaluation",
 ]

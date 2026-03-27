@@ -7,6 +7,35 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.16] - 2026-03-27
+
+### Adicionado
+
+#### Avaliações de Ligações — Integração com agente de IA via N8N
+
+Criada infraestrutura completa para armazenar avaliações de ligações geradas automaticamente pelo agente de IA no N8N após cada chamada transcrita.
+
+- Nova tabela `call_evaluations` no banco com: transcrição, resumo, próximos passos, avaliação geral, situação, avaliação por matriz de blocos (JSONB), nota final e classificação
+- Vinculação com `card_id` e opcionalmente com `call_log_id` (chamada VOIP)
+- Prompt do agente (`prompt-resumo.md`) atualizado para retornar JSON estruturado diretamente — sem necessidade de parsing de texto
+- Avaliação por matriz de blocos com `not_applicable` para blocos de caminho SIM/NÃO
+
+**Endpoints criados:**
+- `POST /api/v1/call-evaluations` — N8N envia a avaliação após processar a ligação
+- `GET /api/v1/call-evaluations/card/{card_id}` — lista avaliações de um card (mais recente primeiro)
+- `GET /api/v1/call-evaluations/{id}` — busca avaliação específica
+
+**Arquivos criados/alterados:**
+- `backend/app/models/call_evaluation.py` — model SQLAlchemy
+- `backend/app/schemas/call_evaluation.py` — schemas Pydantic (Create e Response)
+- `backend/app/api/v1/endpoints/call_evaluations.py` — endpoints REST
+- `backend/app/api/v1/__init__.py` — router registrado em `/call-evaluations`
+- `backend/app/models/__init__.py` — model registrado para Alembic
+- `backend/alembic/versions/2026_03_27_1000-add_call_evaluations_table.py` — migration aplicada
+- `prompt-resumo.md` — prompt do agente de IA na raiz do projeto
+
+---
+
 ## [1.6.15] - 2026-03-27
 
 ### Alterado
