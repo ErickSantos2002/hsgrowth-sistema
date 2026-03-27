@@ -984,7 +984,7 @@ const CardDetails: React.FC = () => {
                   >
                     <Calendar size={18} />
                     <span className="hidden lg:inline">Atividade</span>
-                    <span className="ml-1 rounded-full border border-blue-500/30 bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
+                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "atividade" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
                       {card.pending_tasks?.length || 0}
                     </span>
                   </button>
@@ -999,7 +999,7 @@ const CardDetails: React.FC = () => {
                   >
                     <FileText size={18} />
                     <span className="hidden lg:inline">Anotações</span>
-                    <span className="hidden lg:inline ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
+                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "anotacoes" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
                       {card.notes?.length || 0}
                     </span>
                   </button>
@@ -1026,7 +1026,7 @@ const CardDetails: React.FC = () => {
                   >
                     <Paperclip size={18} />
                     <span className="hidden lg:inline">Arquivos</span>
-                    <span className="hidden lg:inline ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
+                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "arquivos" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
                       {attachmentsCount}
                     </span>
                   </button>
@@ -1042,7 +1042,7 @@ const CardDetails: React.FC = () => {
                     <PhoneCall size={18} />
                     <span className="hidden lg:inline">Ligações</span>
                     {evaluationsCount > 0 && (
-                      <span className="hidden lg:inline ml-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400">
+                      <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "ligacoes" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
                         {evaluationsCount}
                       </span>
                     )}
