@@ -27,6 +27,7 @@ import personService, { Person } from "../services/personService";
 import { User as UserType } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { SummarySection, ClientSection, ContactSection, CustomFieldsSection, ProductSection, QuickActivityForm, FocusSection, HistorySection } from "../components/cardDetails";
+import AutomacoesSection from "../components/cardDetails/AutomacoesSection";
 import PipelineStages from "../components/cardDetails/PipelineStages";
 import NotesSection from "../components/cardDetails/NotesSection";
 import SchedulerSection from "../components/cardDetails/SchedulerSection";
@@ -934,6 +935,11 @@ const CardDetails: React.FC = () => {
                 onMoveCard={handleMoveCard}
                 isMoving={isMovingCard}
                 hideTerminalStages={currentUser?.role !== "admin" && currentUser?.role !== "manager"}
+                blockedByAutomacao={
+                  !!card.automacao01 &&
+                  currentUser?.role !== "admin" &&
+                  currentUser?.role !== "manager"
+                }
               />
             </div>
           )}
@@ -962,6 +968,9 @@ const CardDetails: React.FC = () => {
 
             {/* Seção: Produto (mockada) */}
             <ProductSection card={card} onUpdate={loadCardData} />
+
+            {/* Seção: Automações */}
+            <AutomacoesSection card={card} onUpdate={handleOptimisticUpdate} />
           </div>
         </div>
 

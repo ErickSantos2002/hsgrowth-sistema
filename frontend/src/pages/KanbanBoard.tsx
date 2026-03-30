@@ -1158,13 +1158,19 @@ const KanbanBoard: React.FC = () => {
           {lists.length > 0 ? (
             lists.map((list, index) => {
               // Filtrar cards da lista, aplicar busca e ordenar por status de atividade
-              // Ordem: vencidas → hoje → futuras → sem atividades
+              // Ordem: vencidas → hoje → futuras → sem atividades → em nutrição (sempre ao final)
               const listCards = cards.filter((card) => card.list_id === list.id);
-              const filteredCards = filterCards(listCards).sort(
-                (a, b) =>
+              const filteredCards = filterCards(listCards).sort((a, b) => {
+                // Cards em nutrição sempre ficam no final
+                const aNutricao = a.automacao01 ? 1 : 0;
+                const bNutricao = b.automacao01 ? 1 : 0;
+                if (aNutricao !== bNutricao) return aNutricao - bNutricao;
+                // Ordem normal: vencidas → hoje → futuras → sem atividades
+                return (
                   getActivitySortPriority((a as any).pending_tasks_status) -
                   getActivitySortPriority((b as any).pending_tasks_status)
-              );
+                );
+              });
 
               // Verificar se é primeira ou última lista
               const isFirstList = index === 0;

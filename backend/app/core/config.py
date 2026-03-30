@@ -84,6 +84,9 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 10485760  # 10 MB
     ALLOWED_EXTENSIONS: List[str] = ["jpg", "jpeg", "png", "pdf", "doc", "docx", "xls", "xlsx"]
 
+    # Integrações externas — Automação de nutrição
+    AUTOMACAO01_WEBHOOK_URL: str = ""  # URL do webhook para sistema de nutrição por e-mail
+
     # OpenAI
     OPENAI_API_KEY: str = ""  # Chave da API da OpenAI (definir no .env)
     OPENAI_MODEL: str = "gpt-4o-mini"  # Modelo padrão (melhor custo-benefício)

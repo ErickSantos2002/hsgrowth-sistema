@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.18",
+    date: "30/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Automação de nutrição por e-mail: ative o switch na seção 'Automações' do card para iniciar o envio de e-mails diários ao cliente via sistema externo. Quando o cliente responder com interesse, a automação é desligada automaticamente e você recebe uma notificação.",
+      },
+      {
+        type: "improvement",
+        text: "Cards em nutrição aparecem ao final de cada lista no Kanban com badge laranja 'Em Nutrição' para identificação rápida.",
+      },
+      {
+        type: "improvement",
+        text: "SDR e Vendedor não conseguem avançar o card no pipeline enquanto a nutrição estiver ativa — o sistema exibe um aviso orientando a desativar antes de mover.",
+      },
+    ],
+  },
+  {
     version: "1.6.17",
     date: "30/03/2026",
     entries: [

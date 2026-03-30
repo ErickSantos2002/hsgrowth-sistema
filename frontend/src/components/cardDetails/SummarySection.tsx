@@ -291,6 +291,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
     });
   };
 
+
   /**
    * Formata valor em moeda brasileira
    */
@@ -633,6 +634,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
             placeholder="Não definido"
             icon={<Users size={14} />}
           />
+
         </div>
 
         {/* ======== SEÇÃO: RASTREAMENTO DE ORIGEM ======== */}

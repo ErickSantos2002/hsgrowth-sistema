@@ -214,6 +214,7 @@ class CardCreate(CardBase):
     loss_reason: Optional[str] = Field(None, max_length=200, description="Motivo da perda (quando card é perdido)")
     has_implementation: Optional[bool] = Field(None, description="Se tem implementação")
     has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
+    automacao01: Optional[bool] = Field(None, description="Automação de nutrição por e-mail ativa")
 
     # Campos de rastreamento de origem
     origin: Optional[str] = Field(None, max_length=500, description="Origem do lead (ex: Site, Indicação, LinkedIn)")
@@ -279,6 +280,7 @@ class CardUpdate(BaseModel):
     loss_reason: Optional[str] = Field(None, max_length=200, description="Motivo da perda (quando card é perdido)")
     has_implementation: Optional[bool] = Field(None, description="Se tem implementação")
     has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
+    automacao01: Optional[bool] = Field(None, description="Automação de nutrição por e-mail ativa")
 
     # Campos de rastreamento de origem
     origin: Optional[str] = Field(None, max_length=500, description="Origem do lead (ex: Site, Indicação, LinkedIn)")
@@ -391,6 +393,7 @@ class CardResponse(CardBase):
     loss_reason: Optional[str] = Field(None, description="Motivo da perda (quando card é perdido)")
     has_implementation: Optional[bool] = Field(None, description="Se tem implementação")
     has_personnel: Optional[bool] = Field(None, description="Se tem pessoas para manusear")
+    automacao01: Optional[bool] = Field(None, description="Automação de nutrição por e-mail ativa")
 
     # Campos de rastreamento de origem
     origin: Optional[str] = Field(None, description="Origem do lead (ex: Site, Indicação, LinkedIn)")
@@ -513,6 +516,7 @@ class CardMinimalResponse(BaseModel):
     acquisition_channel: Optional[str] = Field(None, description="Canal de aquisição")
     acquisition_channel_detail: Optional[str] = Field(None, description="Detalhamento do canal de aquisição")
     reopened_from_card_id: Optional[int] = Field(None, description="ID do card original que gerou esta reabertura (None = criado do zero)")
+    automacao01: Optional[bool] = Field(None, description="Automação de nutrição por e-mail ativa")
 
     @field_validator('value', 'position', mode='before')
     @classmethod

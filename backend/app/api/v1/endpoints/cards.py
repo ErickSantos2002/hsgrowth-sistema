@@ -3,8 +3,9 @@ Endpoints de Cards.
 Rotas para gerenciamento de cartões e campos customizados.
 """
 from typing import Any, Optional, List
-from fastapi import APIRouter, Depends, Query, Path, Request
+from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException
 from sqlalchemy.orm import Session
+from app.repositories.notification_repository import NotificationRepository
 
 from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.card_service import CardService
@@ -90,6 +91,7 @@ def card_to_response(
         loss_reason=card.loss_reason,
         has_implementation=card.has_implementation,
         has_personnel=card.has_personnel,
+        automacao01=card.automacao01,
         # Campos de rastreamento de origem (integração n8n / RD Station)
         origin=card.origin,
         utm_campaign=card.utm_campaign,
@@ -1169,3 +1171,70 @@ async def global_search_cards(
         results.append(result)
 
     return results
+
+
+@router.post(
+    "/{card_id}/automacao01/desativar",
+    response_model=CardResponse,
+    summary="Desativar automação de nutrição do card",
+    description="""
+    Desativa o campo `automacao01` de um card e notifica o SDR/Vendedor responsável.
+
+    **Uso:** Chamado pelo sistema externo de nutrição quando o cliente responde ao e-mail
+    demonstrando interesse em comprar, sinalizando que o SDR/Vendedor deve entrar em contato.
+
+    **Comportamento:**
+    - Define `automacao01 = false` no card
+    - Envia webhook de desativação para o sistema externo
+    - Envia notificação para o Vendedor e/ou SDR vinculado ao card
+    - Se o card já está desativado, retorna o card sem fazer nada
+
+    **Autenticação:** Requer token JWT (usar usuário de integração)
+    """
+)
+async def desativar_automacao01(
+    card_id: int = Path(..., description="ID do card"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    card = db.query(Card).filter(Card.id == card_id, Card.deleted_at.is_(None)).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card não encontrado")
+
+    if not card.automacao01:
+        # Já desligado — retorna sem alterar
+        service = CardService(db)
+        return service.get_card_by_id(card_id, current_user)
+
+    # Desliga o campo
+    card.automacao01 = False
+    db.commit()
+    db.refresh(card)
+
+    # Envia webhook de desativação
+    service = CardService(db)
+    service._send_automacao01_webhook(card, "card.automacao01_desativado", current_user)
+
+    # Notifica o SDR e/ou Vendedor do card
+    notification_repo = NotificationRepository(db)
+    recipients = []
+    if card.assigned_to_id:
+        recipients.append(card.assigned_to_id)
+    if card.sdr_id and card.sdr_id not in recipients:
+        recipients.append(card.sdr_id)
+
+    for user_id in recipients:
+        try:
+            notification_repo.create({
+                "user_id": user_id,
+                "notification_type": "info",
+                "title": "Cliente demonstrou interesse!",
+                "message": f"A automação de nutrição do card '{card.title}' foi desligada — o cliente respondeu ao e-mail e pode estar pronto para contato.",
+                "icon": "bell",
+                "color": "success",
+                "notification_metadata": {"card_id": card.id},
+            })
+        except Exception as e:
+            print(f"[AUTOMACAO01] Erro ao notificar usuário {user_id}: {e}")
+
+    return service.get_card_by_id(card_id, current_user)

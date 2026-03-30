@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Phone, Star, TrendingUp, AlertTriangle } from "lucide-react";
+import { Phone, Star, TrendingUp, AlertTriangle, Calendar } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import callEvaluationService, {
   CallEvaluation,
@@ -10,9 +10,20 @@ import {
   EvaluationCard,
   classificationColor,
 } from "../components/cardDetails/CallEvaluationsSection";
-import { Pagination, EmptyState, LoadingSpinner } from "../components/common";
+import { Pagination, EmptyState, LoadingSpinner, SelectMenu } from "../components/common";
 
 const PAGE_SIZE = 10;
+
+type PeriodType = "today" | "week" | "month" | "quarter" | "year" | "custom";
+
+const PERIOD_OPTIONS = [
+  { value: "today", label: "Hoje" },
+  { value: "week", label: "Esta Semana" },
+  { value: "month", label: "Este Mês" },
+  { value: "quarter", label: "Este Trimestre" },
+  { value: "year", label: "Este Ano" },
+  { value: "custom", label: "Personalizado" },
+];
 
 const CLASSIFICATION_OPTIONS = [
   { value: "", label: "Todas as classificações" },
@@ -27,6 +38,38 @@ const CLASSIFICATIONS = ["Excelente", "Boa", "Regular", "Fraca", "Crítica"];
 
 const selectClass =
   "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:w-auto";
+
+/** Converte um preset de período em date_from / date_to (strings YYYY-MM-DD). */
+function getPeriodDates(period: PeriodType): { dateFrom: string; dateTo: string } {
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
+
+  if (period === "today") {
+    return { dateFrom: today, dateTo: today };
+  }
+  if (period === "week") {
+    const d = new Date(now);
+    // Segunda-feira da semana atual
+    const day = d.getDay(); // 0=dom, 1=seg...
+    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+    return { dateFrom: d.toISOString().split("T")[0], dateTo: today };
+  }
+  if (period === "month") {
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    return { dateFrom: `${y}-${m}-01`, dateTo: today };
+  }
+  if (period === "quarter") {
+    const q = Math.floor(now.getMonth() / 3);
+    const startMonth = String(q * 3 + 1).padStart(2, "0");
+    return { dateFrom: `${now.getFullYear()}-${startMonth}-01`, dateTo: today };
+  }
+  if (period === "year") {
+    return { dateFrom: `${now.getFullYear()}-01-01`, dateTo: today };
+  }
+  // "custom" — retorna vazio; os inputs controlam
+  return { dateFrom: "", dateTo: "" };
+}
 
 const CallEvaluationsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -47,8 +90,16 @@ const CallEvaluationsPage: React.FC = () => {
   const [vendedores, setVendedores] = useState<string[]>([]);
   const [filterVendedor, setFilterVendedor] = useState("");
   const [filterClassification, setFilterClassification] = useState("");
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
+
+  // Filtro de período
+  const [period, setPeriod] = useState<PeriodType>("month");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState(() => new Date().toISOString().split("T")[0]);
+
+  // Datas efetivas enviadas à API
+  const { dateFrom, dateTo } = period === "custom"
+    ? { dateFrom: customStart, dateTo: customEnd }
+    : getPeriodDates(period);
 
   // Carrega lista de vendedores para o dropdown (só manager/admin)
   useEffect(() => {
@@ -80,10 +131,10 @@ const CallEvaluationsPage: React.FC = () => {
     fetchData(currentPage, {
       vendedor_name: filterVendedor || undefined,
       classification: filterClassification || undefined,
-      date_from: filterDateFrom || undefined,
-      date_to: filterDateTo || undefined,
+      date_from: dateFrom || undefined,
+      date_to: dateTo || undefined,
     });
-  }, [currentPage, filterVendedor, filterClassification, filterDateFrom, filterDateTo, fetchData]);
+  }, [currentPage, filterVendedor, filterClassification, dateFrom, dateTo, fetchData]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
@@ -92,7 +143,16 @@ const CallEvaluationsPage: React.FC = () => {
     setCurrentPage(1);
   }
 
-  const hasActiveFilters = !!(filterVendedor || filterClassification || filterDateFrom || filterDateTo);
+  function handlePeriodChange(value: string) {
+    const newPeriod = value as PeriodType;
+    if (newPeriod === "custom") {
+      setCustomEnd(new Date().toISOString().split("T")[0]);
+    }
+    setPeriod(newPeriod);
+    setCurrentPage(1);
+  }
+
+  const hasActiveFilters = !!(filterVendedor || filterClassification || period !== "month");
 
   // ─── Paginação ──────────────────────────────────────────────────────────────
 
@@ -232,21 +292,36 @@ const CallEvaluationsPage: React.FC = () => {
             ))}
           </select>
 
-          {/* Data início */}
-          <input
-            type="date"
-            value={filterDateFrom}
-            onChange={(e) => handleFilterChange(setFilterDateFrom, e.target.value)}
-            className={selectClass}
-          />
+          {/* Filtro de período */}
+          <div className="min-w-[160px]">
+            <SelectMenu
+              size="sm"
+              value={period}
+              options={PERIOD_OPTIONS}
+              onChange={handlePeriodChange}
+            />
+          </div>
 
-          {/* Data fim */}
-          <input
-            type="date"
-            value={filterDateTo}
-            onChange={(e) => handleFilterChange(setFilterDateTo, e.target.value)}
-            className={selectClass}
-          />
+          {/* Inputs de data personalizada */}
+          {period === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStart}
+                max={customEnd || undefined}
+                onChange={(e) => { setCustomStart(e.target.value); setCurrentPage(1); }}
+                className={selectClass}
+              />
+              <span className="text-sm text-slate-400">até</span>
+              <input
+                type="date"
+                value={customEnd}
+                min={customStart || undefined}
+                onChange={(e) => { setCustomEnd(e.target.value); setCurrentPage(1); }}
+                className={selectClass}
+              />
+            </div>
+          )}
 
           {/* Limpar filtros */}
           {hasActiveFilters && (
@@ -254,8 +329,7 @@ const CallEvaluationsPage: React.FC = () => {
               onClick={() => {
                 setFilterVendedor("");
                 setFilterClassification("");
-                setFilterDateFrom("");
-                setFilterDateTo("");
+                setPeriod("month");
                 setCurrentPage(1);
               }}
               className="text-xs text-slate-400 underline hover:text-slate-600 dark:hover:text-slate-300"

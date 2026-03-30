@@ -3,8 +3,10 @@ Card Service - Lógica de negócio para cards.
 Implementa validações e regras de negócio.
 """
 from typing import Optional, List
+from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from app.core.config import settings
 
 from app.repositories.card_repository import CardRepository
 from app.repositories.list_repository import ListRepository
@@ -97,6 +99,54 @@ class CardService:
         # Todos os usuários podem visualizar qualquer card — sem restrição por role
 
         return card
+
+    def _send_automacao01_webhook(self, card: Card, event: str, current_user=None) -> None:
+        """Envia webhook de automação01 para o sistema externo de nutrição por e-mail."""
+        webhook_url = settings.AUTOMACAO01_WEBHOOK_URL
+        if not webhook_url:
+            print(f"[AUTOMACAO01] AUTOMACAO01_WEBHOOK_URL não configurada — webhook não enviado")
+            return
+        try:
+            import httpx
+            payload = {
+                "event": event,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "card": {
+                    "id": card.id,
+                    "title": card.title,
+                    "list_name": card.list.name if card.list else None,
+                    "value": float(card.value) if card.value else None,
+                    "client": {
+                        "id": card.client.id,
+                        "name": card.client.name,
+                        "email": card.client.email,
+                        "phone": card.client.phone,
+                    } if card.client else None,
+                    "contact_info": card.contact_info,
+                    "assigned_to": {
+                        "id": card.assigned_to.id,
+                        "name": card.assigned_to.name,
+                    } if card.assigned_to else None,
+                    "triggered_by": {
+                        "id": current_user.id,
+                        "name": current_user.name,
+                    } if current_user else None,
+                },
+            }
+            with httpx.Client(timeout=10) as client:
+                resp = client.post(
+                    webhook_url,
+                    json=payload,
+                    headers={
+                        "Content-Type": "application/json",
+                        "User-Agent": "HSGrowth-CRM-Webhook/1.0",
+                        "X-HSGrowth-Event": event,
+                    },
+                )
+                resp.raise_for_status()
+                print(f"[AUTOMACAO01] Webhook '{event}' enviado para card {card.id} — status {resp.status_code}")
+        except Exception as e:
+            print(f"[AUTOMACAO01] Erro ao enviar webhook '{event}': {e}")
 
     def _check_write_permission(self, card: Card, current_user: User) -> None:
         """
@@ -311,6 +361,7 @@ class CardService:
                         acquisition_channel=card.acquisition_channel,
                         acquisition_channel_detail=card.acquisition_channel_detail,
                         reopened_from_card_id=card.reopened_from_card_id,
+                        automacao01=card.automacao01,
                     )
                 )
 
@@ -680,6 +731,7 @@ class CardService:
         old_is_lost = card.is_lost
         old_assigned_to_id = card.assigned_to_id
         old_sdr_id = card.sdr_id
+        old_automacao01 = bool(card.automacao01) if card.automacao01 is not None else False
 
         # Captura snapshot dos campos alteráveis para registrar mudanças no histórico
         update_data_fields = card_data.model_dump(exclude_unset=True)
@@ -755,6 +807,12 @@ class CardService:
             print(f"[AUTOMATION] Erro ao disparar automações no update_card: {e}")
             import traceback
             traceback.print_exc()
+
+        # Webhook de nutrição — dispara quando automacao01 muda de estado
+        new_automacao01 = bool(updated_card.automacao01) if updated_card.automacao01 is not None else False
+        if old_automacao01 != new_automacao01:
+            event = "card.automacao01_ativado" if new_automacao01 else "card.automacao01_desativado"
+            self._send_automacao01_webhook(updated_card, event, current_user)
 
         # Envia notificação ao novo responsável se o vendedor foi alterado
         if (
@@ -2051,6 +2109,7 @@ class CardService:
             "loss_reason": card.loss_reason,
             "has_implementation": card.has_implementation,
             "has_personnel": card.has_personnel,
+            "automacao01": card.automacao01,
 
             # Campos de rastreamento de origem (integração n8n / RD Station)
             "origin": card.origin,

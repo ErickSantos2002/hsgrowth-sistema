@@ -122,6 +122,7 @@ export interface Card {
   loss_reason?: string | null;
   has_implementation?: boolean | null;
   has_personnel?: boolean | null;
+  automacao01?: boolean | null;
 
   // Campos de rastreamento de origem
   origin?: string | null;
@@ -846,6 +847,7 @@ export interface UpdateCardRequest {
   loss_reason?: string | null;
   has_implementation?: boolean | null;
   has_personnel?: boolean | null;
+  automacao01?: boolean | null;
 
   // Campos de rastreamento de origem
   origin?: string | null;

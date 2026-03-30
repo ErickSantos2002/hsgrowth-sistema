@@ -2,7 +2,7 @@
 Modelo de Card (Cartão).
 Representa um cartão (lead, oportunidade, tarefa) no sistema.
 """
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime, Numeric, JSON
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime, Numeric, JSON, Boolean
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -79,6 +79,8 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     reopened_from_card_id = Column(Integer, ForeignKey("cards.id", ondelete="SET NULL"), nullable=True, index=True)
     has_implementation = Column(Integer, nullable=True)  # Tem implementação? 0=false, 1=true, null=não informado
     has_personnel = Column(Integer, nullable=True)  # Tem pessoas para manusear? 0=false, 1=true, null=não informado
+    automacao01 = Column(Boolean, nullable=True, default=False,
+                         comment="Automação de nutrição: envia webhook para sistema externo quando ativado/desativado")
 
     # Relacionamentos
     reopened_from = relationship("Card", foreign_keys=[reopened_from_card_id], remote_side="Card.id")

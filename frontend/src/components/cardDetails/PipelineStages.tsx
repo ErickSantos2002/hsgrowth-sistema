@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Check, Loader2, Info } from "lucide-react";
+import { Check, Loader2, Info, Mail } from "lucide-react";
 import { List } from "../../types";
 import listService from "../../services/listService";
 import { showError } from "../../utils/toast";
@@ -12,6 +12,8 @@ interface PipelineStagesProps {
   // Quando true, esconde estágios terminais (Ganho/Perdido) do pipeline visual.
   // Usuários não privilegiados usam os botões dedicados para encerrar negócios.
   hideTerminalStages?: boolean;
+  // Quando true, bloqueia o avanço de etapa (automação de nutrição ativa).
+  blockedByAutomacao?: boolean;
 }
 
 /**
@@ -24,6 +26,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
   onMoveCard,
   isMoving = false,
   hideTerminalStages = false,
+  blockedByAutomacao = false,
 }) => {
   const [lists, setLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,7 +130,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
    * Handler para mover o card
    */
   const handleStageClick = (list: List) => {
-    if (list.id !== currentListId) {
+    if (list.id !== currentListId && !blockedByAutomacao) {
       onMoveCard(list.id);
     }
   };
@@ -178,16 +181,19 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
             {/* Stage */}
             <button
               onClick={() => handleStageClick(list)}
-              onMouseEnter={() => setHoveredListId(list.id)}
+              onMouseEnter={() => !isCurrent && setHoveredListId(list.id)}
               onMouseLeave={() => setHoveredListId(null)}
-              disabled={isCurrent}
+              disabled={isCurrent || blockedByAutomacao}
               className={`
                 relative flex items-center gap-2 rounded-lg border px-3 py-2 transition-all
                 ${classes.container}
-                ${isCurrent ? "cursor-default" : ""}
+                ${isCurrent || blockedByAutomacao ? "cursor-not-allowed" : ""}
+                ${blockedByAutomacao && !isCurrent ? "opacity-50" : ""}
               `}
               title={
-                isCurrent
+                blockedByAutomacao && !isCurrent
+                  ? "Desative a nutrição por e-mail antes de mover o card"
+                  : isCurrent
                   ? `Etapa atual: ${list.name}`
                   : `Mover para: ${list.name}`
               }
@@ -242,6 +248,17 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
         );
       })}
       </div>
+
+      {/* Aviso quando nutrição está ativa e bloqueia o avanço */}
+      {blockedByAutomacao && (
+        <div className="mt-2 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
+          <Mail size={14} className="flex-shrink-0 text-emerald-400" />
+          <p className="text-xs text-emerald-400/90">
+            A <strong className="text-emerald-400">nutrição por e-mail</strong> está ativa. Desative a automação na seção
+            <strong className="text-emerald-400"> Automações</strong> antes de avançar o card no pipeline.
+          </p>
+        </div>
+      )}
 
       {/* Aviso quando o card está na última etapa visível e não há para onde avançar */}
       {hideTerminalStages && isAtLastVisibleStage() && (

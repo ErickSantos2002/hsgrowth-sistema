@@ -7,6 +7,48 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.18] - 2026-03-30
+
+### Adicionado
+
+#### Automação de Nutrição por E-mail (automacao01)
+
+Integração com sistema externo de nutrição via e-mail, controlada por um switch no card.
+
+**Funcionamento:**
+- SDR ou Vendedor ativa/desativa a nutrição pelo switch na seção "Automações" do card
+- Ao ligar, o sistema envia um webhook (`card.automacao01_ativado`) para a URL configurada em `AUTOMACAO01_WEBHOOK_URL`
+- Ao desligar, o webhook `card.automacao01_desativado` é disparado para o mesmo destino
+- O sistema externo pode desligar a automação via API (`POST /api/v1/cards/{id}/automacao01/desativar`) — quando o cliente responde ao e-mail demonstrando interesse, o SDR/Vendedor vinculado recebe notificação: "Cliente demonstrou interesse!"
+
+**Bloqueio de pipeline:**
+- SDR e Vendedor não podem avançar o card para a próxima etapa enquanto a nutrição estiver ativa
+- Um aviso laranja aparece abaixo do pipeline indicando que é necessário desativar a automação antes de mover
+- Admins e gerentes podem mover o card normalmente mesmo com a automação ativa
+
+**Visual no Kanban:**
+- Cards em nutrição aparecem ao final de cada lista
+- Badge laranja "Em Nutrição" exibido no card
+- Borda e fundo do card em tom laranja para identificação rápida
+
+**Endpoints criados:**
+- `POST /api/v1/cards/{id}/automacao01/desativar` — desativa a nutrição via API externa e notifica o responsável
+
+**Arquivos criados/alterados:**
+- `backend/alembic/versions/2026_03_30_1000-add_automacao01_to_cards.py` — migration: coluna `automacao01` na tabela `cards`
+- `backend/app/models/card.py` — campo `automacao01`
+- `backend/app/schemas/card.py` — campo em `CardUpdate`, `CardResponse`, `CardMinimalResponse`
+- `backend/app/core/config.py` — variável `AUTOMACAO01_WEBHOOK_URL`
+- `backend/app/services/card_service.py` — webhook nas duas direções + `get_card_expanded` e `list_cards` incluindo o campo
+- `backend/app/api/v1/endpoints/cards.py` — endpoint de desativação + `card_to_response` incluindo o campo
+- `frontend/src/types/index.ts` — campo `automacao01` na interface `Card`
+- `frontend/src/components/cardDetails/AutomacoesSection.tsx` — nova seção expansível com o switch
+- `frontend/src/components/cardDetails/PipelineStages.tsx` — prop `blockedByAutomacao` bloqueia avanço de etapa
+- `frontend/src/pages/CardDetails.tsx` — renderiza `AutomacoesSection` e passa `blockedByAutomacao`
+- `frontend/src/components/kanban/KanbanCard.tsx` — badge laranja + borda laranja + ordenação ao final
+
+---
+
 ## [1.6.17] - 2026-03-30
 
 ### Adicionado

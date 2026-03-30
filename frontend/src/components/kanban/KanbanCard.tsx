@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Calendar, User, DollarSign, Clock, CheckSquare, RefreshCw } from "lucide-react";
+import { Calendar, User, DollarSign, Clock, CheckSquare, RefreshCw, Mail } from "lucide-react";
 import { Card } from "../../types";
 import { UserAvatar } from "../common";
 import CardActivitiesModal from "./CardActivitiesModal";
@@ -51,7 +51,11 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
     <div
       data-kanban-card
       onClick={onClick}
-      className="group relative cursor-pointer rounded-lg border border-gray-200 bg-white p-3.5 shadow-sm transition-all hover:border-gray-300 hover:bg-gray-50 hover:shadow-md dark:border-slate-700/30 dark:bg-white/5 dark:hover:border-slate-600 dark:hover:bg-white/10"
+      className={`group relative cursor-pointer rounded-lg border p-3.5 shadow-sm transition-all hover:shadow-md ${
+        card.automacao01
+          ? "border-orange-500/40 bg-white hover:border-orange-500/60 hover:bg-orange-50/30 dark:border-orange-500/25 dark:bg-orange-950/20 dark:hover:border-orange-500/40 dark:hover:bg-orange-950/30"
+          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 dark:border-slate-700/30 dark:bg-white/5 dark:hover:border-slate-600 dark:hover:bg-white/10"
+      }`}
     >
       {/* Badge de atividades pendentes (canto superior direito) */}
       {card.pending_tasks_status && (
@@ -98,6 +102,17 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
             className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${getStatusColor()}`}
           >
             {getStatusText()}
+          </span>
+        )}
+
+        {/* Badge de nutrição por e-mail */}
+        {card.automacao01 && (
+          <span
+            className="flex items-center gap-0.5 rounded bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-medium text-orange-600 dark:text-orange-400"
+            title="Automação de nutrição por e-mail ativa"
+          >
+            <Mail size={9} />
+            Em Nutrição
           </span>
         )}
 
