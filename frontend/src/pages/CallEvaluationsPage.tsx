@@ -26,7 +26,7 @@ const CLASSIFICATION_OPTIONS = [
 const CLASSIFICATIONS = ["Excelente", "Boa", "Regular", "Fraca", "Crítica"];
 
 const selectClass =
-  "rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white";
+  "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:w-auto";
 
 const CallEvaluationsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -206,7 +206,7 @@ const CallEvaluationsPage: React.FC = () => {
       {/* Container principal */}
       <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/30">
         {/* Filtros */}
-        <div className="flex flex-wrap items-center gap-3 border-b border-gray-200 p-4 dark:border-slate-700/50">
+        <div className="flex flex-col items-stretch gap-3 border-b border-gray-200 p-4 dark:border-slate-700/50 sm:flex-row sm:flex-wrap sm:items-center">
           {/* Filtro por vendedor — só aparece para manager/admin */}
           {isManagerOrAdmin && (
             <select
