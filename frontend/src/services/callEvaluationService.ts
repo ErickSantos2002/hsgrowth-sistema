@@ -52,7 +52,7 @@ export interface CallEvaluationListResponse {
 
 const callEvaluationService = {
   list: async (params?: CallEvaluationListParams): Promise<CallEvaluationListResponse> => {
-    const response = await api.get('/api/v1/call-evaluations/', { params });
+    const response = await api.get('/api/v1/call-evaluations', { params });
     return response.data;
   },
 
