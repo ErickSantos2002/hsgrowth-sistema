@@ -86,6 +86,7 @@ const CallEvaluationsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [averageScore, setAverageScore] = useState<number | null>(null);
   const [byClassification, setByClassification] = useState<Record<string, number>>({});
+  const [averageByBlock, setAverageByBlock] = useState<Record<string, number>>({});
 
   const [vendedores, setVendedores] = useState<string[]>([]);
   const [filterVendedor, setFilterVendedor] = useState("");
@@ -120,6 +121,7 @@ const CallEvaluationsPage: React.FC = () => {
       setTotalPages(res.total_pages);
       setAverageScore(res.average_score);
       setByClassification(res.by_classification);
+      setAverageByBlock(res.average_by_block ?? {});
     } catch (error) {
       console.error("Erro ao buscar avaliações:", error);
     } finally {
@@ -244,6 +246,39 @@ const CallEvaluationsPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Médias por bloco */}
+      {!loading && Object.keys(averageByBlock).length > 0 && (
+        <div className="mb-6 flex gap-3">
+          {Object.entries(averageByBlock).map(([block, avg]) => {
+            const color =
+              avg >= 7
+                ? "text-emerald-600 dark:text-emerald-400"
+                : avg >= 5
+                ? "text-yellow-600 dark:text-yellow-400"
+                : "text-red-600 dark:text-red-400";
+            const barColor =
+              avg >= 7 ? "bg-emerald-500" : avg >= 5 ? "bg-yellow-500" : "bg-red-500";
+            return (
+              <div
+                key={block}
+                className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white p-3 dark:border-slate-700/50 dark:bg-slate-800/30"
+              >
+                <p className="mb-1.5 truncate text-xs font-medium text-slate-500 dark:text-slate-400" title={block}>
+                  {block}
+                </p>
+                <p className={`text-xl font-bold ${color}`}>{avg.toFixed(1)}</p>
+                <div className="mt-1.5 h-1 w-full rounded-full bg-gray-200 dark:bg-slate-700">
+                  <div
+                    className={`h-full rounded-full ${barColor}`}
+                    style={{ width: `${(avg / 10) * 100}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Badges por classificação */}
       {!loading && total > 0 && (

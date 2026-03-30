@@ -48,6 +48,7 @@ export interface CallEvaluationListResponse {
   total_pages: number;
   average_score: number | null;
   by_classification: Record<string, number>;
+  average_by_block: Record<string, number>;
 }
 
 const callEvaluationService = {

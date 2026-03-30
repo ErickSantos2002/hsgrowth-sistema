@@ -7,6 +7,33 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.19] - 2026-03-30
+
+### Adicionado
+
+#### Página Ligações — Médias por bloco e filtro de período
+
+**Médias por bloco de avaliação:**
+- Nova fila de cards acima dos badges de classificação exibindo a média de cada bloco da matriz de avaliação (Abertura, Diagnóstico, Alcoolemia, Fechamento, etc.) calculada sobre todos os registros do conjunto filtrado
+- Cor por faixa: verde ≥7, amarelo ≥5, vermelho <5 — mesma lógica do `GradeBar` usado nos cards de avaliação
+- Mini barra de progresso em cada card para leitura visual rápida
+- Blocos marcados como `not_applicable` são excluídos do cálculo
+- Calculado no backend sobre todo o conjunto filtrado (não apenas a página atual)
+
+**Filtro de período:**
+- Substituídos os dois inputs de data avulsos pelo mesmo seletor de período do Dashboard: Hoje / Esta Semana / Este Mês / Este Trimestre / Este Ano / Personalizado
+- Padrão inicial: Este Mês
+- Ao escolher "Personalizado", os dois inputs de data aparecem com validação de intervalo (min/max entre si)
+- "Limpar filtros" retorna o período para Este Mês
+
+**Arquivos alterados:**
+- `backend/app/schemas/call_evaluation.py` — campo `average_by_block` em `CallEvaluationListResponse`
+- `backend/app/api/v1/endpoints/call_evaluations.py` — cálculo de `average_by_block` iterando JSONs
+- `frontend/src/services/callEvaluationService.ts` — campo `average_by_block` na interface
+- `frontend/src/pages/CallEvaluationsPage.tsx` — exibição dos blocos + seletor de período
+
+---
+
 ## [1.6.18] - 2026-03-30
 
 ### Adicionado

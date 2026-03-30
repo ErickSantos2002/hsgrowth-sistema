@@ -122,6 +122,30 @@ def list_call_evaluations(
     )
     by_classification = {row[0] or "sem_classificacao": row[1] for row in class_counts}
 
+    # Calcula média por bloco iterando os JSONs de matrix_evaluation
+    # (campo JSON — não agregável via SQL)
+    block_sums: dict[str, list[float]] = {}
+    all_matrices = (
+        db.query(CallEvaluation.matrix_evaluation)
+        .filter(*filters)
+        .filter(CallEvaluation.matrix_evaluation.isnot(None))
+        .all()
+    )
+    for (matrix,) in all_matrices:
+        if not isinstance(matrix, list):
+            continue
+        for block in matrix:
+            name = block.get("block") if isinstance(block, dict) else None
+            grade = block.get("grade") if isinstance(block, dict) else None
+            not_applicable = block.get("not_applicable", False) if isinstance(block, dict) else False
+            if name and grade is not None and not not_applicable:
+                block_sums.setdefault(name, []).append(float(grade))
+    average_by_block = {
+        name: round(sum(grades) / len(grades), 2)
+        for name, grades in block_sums.items()
+        if grades
+    }
+
     total_pages = max(1, math.ceil(total / page_size))
     items = (
         base_query
@@ -139,6 +163,7 @@ def list_call_evaluations(
         total_pages=total_pages,
         average_score=average_score,
         by_classification=by_classification,
+        average_by_block=average_by_block,
     )
 
 

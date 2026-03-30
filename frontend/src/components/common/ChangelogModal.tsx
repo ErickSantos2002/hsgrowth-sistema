@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.19",
+    date: "30/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Página Ligações: médias por bloco de avaliação (Abertura, Diagnóstico, Fechamento...) exibidas em cards individuais com cor e barra de progresso — calculadas sobre todos os registros filtrados, não só a página atual.",
+      },
+      {
+        type: "improvement",
+        text: "Filtro de período na página Ligações substituído pelo seletor padrão do Dashboard: Hoje, Esta Semana, Este Mês, Este Trimestre, Este Ano e Personalizado.",
+      },
+    ],
+  },
+  {
     version: "1.6.18",
     date: "30/03/2026",
     entries: [

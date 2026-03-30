@@ -60,3 +60,4 @@ class CallEvaluationListResponse(BaseModel):
     total_pages: int
     average_score: Optional[float]
     by_classification: dict
+    average_by_block: dict  # { "Abertura": 7.4, "Diagnóstico": 6.1, ... }
