@@ -18,6 +18,7 @@ import {
     Moon,
     BellOff,
     CheckSquare,
+    Phone,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -36,6 +37,7 @@ const menuItems = [
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/ligacoes", icon: Phone, label: "Ligações", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/gamification", icon: Trophy, label: "Gamificação", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/transfers", icon: Repeat, label: "Transferências", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/reports", icon: FileText, label: "Relatórios", adminOnly: false, managerOrAdminOnly: true, viewerAllowed: false },
@@ -241,7 +243,7 @@ export default function MainLayout() {
                                     className="text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                                     title="Ver o que há de novo nessa versão"
                                 >
-                                    HSGrowth CRM v1.6.16
+                                    HSGrowth CRM v1.6.17
                                 </button>
                                 <p className="text-[10px] text-slate-300 dark:text-slate-600">
                                     © 2026 Health & Safety Tech

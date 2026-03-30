@@ -1,12 +1,15 @@
-from typing import List
+import math
+from typing import List, Optional
+from datetime import date, time, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_active_user, require_manager_or_admin
 from app.models.user import User
 from app.models.call_evaluation import CallEvaluation
 from app.models.card import Card
-from app.schemas.call_evaluation import CallEvaluationCreate, CallEvaluationResponse
+from app.schemas.call_evaluation import CallEvaluationCreate, CallEvaluationResponse, CallEvaluationListResponse
 
 router = APIRouter()
 
@@ -53,6 +56,90 @@ def create_call_evaluation(
     db.refresh(evaluation)
 
     return evaluation
+
+
+@router.get("/vendedores", response_model=list[str])
+def list_vendedores(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager_or_admin()),
+):
+    """
+    Retorna lista de nomes distintos de vendedores que possuem avaliações registradas.
+    Usado para popular o filtro de vendedor na página de Ligações.
+    """
+    rows = (
+        db.query(CallEvaluation.vendedor_name)
+        .filter(CallEvaluation.vendedor_name.isnot(None))
+        .distinct()
+        .order_by(CallEvaluation.vendedor_name)
+        .all()
+    )
+    return [row[0] for row in rows]
+
+
+@router.get("", response_model=CallEvaluationListResponse)
+def list_call_evaluations(
+    page: int = 1,
+    page_size: int = 10,
+    classification: Optional[str] = None,
+    vendedor_name: Optional[str] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Lista avaliações de ligação com filtros e paginação.
+    Manager/admin veem todas. Outros roles veem apenas as próprias ligações.
+    """
+    is_manager_or_admin = current_user.role and current_user.role.name in ("manager", "admin")
+
+    filters = []
+    # Usuários não-gestores só veem suas próprias ligações
+    if not is_manager_or_admin:
+        filters.append(CallEvaluation.vendedor_name.ilike(current_user.name))
+    elif vendedor_name:
+        filters.append(CallEvaluation.vendedor_name == vendedor_name)
+
+    if classification:
+        filters.append(CallEvaluation.classification == classification)
+    if date_from:
+        filters.append(CallEvaluation.created_at >= datetime.combine(date_from, time.min))
+    if date_to:
+        filters.append(CallEvaluation.created_at <= datetime.combine(date_to, time.max))
+
+    base_query = db.query(CallEvaluation).filter(*filters)
+    total = base_query.count()
+
+    avg_result = db.query(func.avg(CallEvaluation.final_score)).filter(*filters).scalar()
+    average_score = round(float(avg_result), 2) if avg_result is not None else None
+
+    class_counts = (
+        db.query(CallEvaluation.classification, func.count(CallEvaluation.id))
+        .filter(*filters)
+        .group_by(CallEvaluation.classification)
+        .all()
+    )
+    by_classification = {row[0] or "sem_classificacao": row[1] for row in class_counts}
+
+    total_pages = max(1, math.ceil(total / page_size))
+    items = (
+        base_query
+        .order_by(CallEvaluation.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    return CallEvaluationListResponse(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+        average_score=average_score,
+        by_classification=by_classification,
+    )
 
 
 @router.get("/card/{card_id}", response_model=List[CallEvaluationResponse])

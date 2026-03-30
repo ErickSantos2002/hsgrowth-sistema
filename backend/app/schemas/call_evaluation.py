@@ -50,3 +50,13 @@ class CallEvaluationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CallEvaluationListResponse(BaseModel):
+    items: List[CallEvaluationResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    average_score: Optional[float]
+    by_classification: dict

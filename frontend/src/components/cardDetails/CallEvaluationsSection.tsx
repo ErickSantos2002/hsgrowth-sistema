@@ -6,7 +6,7 @@ interface CallEvaluationsSectionProps {
   cardId: number;
 }
 
-const classificationColor: Record<string, string> = {
+export const classificationColor: Record<string, string> = {
   Excelente: "bg-emerald-500/20 text-emerald-600 border-emerald-500/30 dark:text-emerald-400",
   Boa: "bg-blue-500/20 text-blue-600 border-blue-500/30 dark:text-blue-400",
   Regular: "bg-yellow-500/20 text-yellow-600 border-yellow-500/30 dark:text-yellow-400",
@@ -20,7 +20,7 @@ const situationColor: Record<string, string> = {
   "Sem potencial": "text-slate-500 dark:text-slate-400",
 };
 
-function ScoreBadge({ score, classification }: { score: number | null; classification: string | null }) {
+export function ScoreBadge({ score, classification }: { score: number | null; classification: string | null }) {
   if (score === null) return null;
   const colorClass = classification
     ? classificationColor[classification] || "bg-slate-100 text-slate-500 border-slate-300 dark:bg-slate-500/20 dark:text-slate-400 dark:border-slate-500/30"
@@ -33,7 +33,7 @@ function ScoreBadge({ score, classification }: { score: number | null; classific
   );
 }
 
-function GradeBar({ grade }: { grade: number | null }) {
+export function GradeBar({ grade }: { grade: number | null }) {
   if (grade === null) return <span className="text-xs text-slate-400 dark:text-slate-500">N/A</span>;
   const color = grade >= 7 ? "bg-emerald-500" : grade >= 5 ? "bg-yellow-500" : "bg-red-500";
   return (
@@ -46,7 +46,7 @@ function GradeBar({ grade }: { grade: number | null }) {
   );
 }
 
-function MatrixBlockItem({ block }: { block: MatrixBlock }) {
+export function MatrixBlockItem({ block }: { block: MatrixBlock }) {
   const [expanded, setExpanded] = useState(false);
   const hasUncovered = block.uncovered_blocks && block.uncovered_blocks.length > 0;
 
@@ -101,7 +101,7 @@ function MatrixBlockItem({ block }: { block: MatrixBlock }) {
   );
 }
 
-function EvaluationCard({ evaluation }: { evaluation: CallEvaluation }) {
+export function EvaluationCard({ evaluation, onCardClick }: { evaluation: CallEvaluation; onCardClick?: (cardId: number) => void }) {
   const [expanded, setExpanded] = useState(false);
   const date = new Date(evaluation.created_at).toLocaleDateString("pt-BR", {
     day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
@@ -133,6 +133,14 @@ function EvaluationCard({ evaluation }: { evaluation: CallEvaluation }) {
               </span>
             )}
             <span>{date}</span>
+            {onCardClick && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onCardClick(evaluation.card_id); }}
+                className="flex items-center gap-1 text-blue-500 hover:text-blue-600 underline dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                Ver card #{evaluation.card_id}
+              </button>
+            )}
           </div>
         </div>
         {expanded

@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.17",
+    date: "30/03/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Nova página 'Ligações': visualize e filtre todas as avaliações de ligações geradas pelo agente de IA. Gerentes e admins veem toda a equipe; vendedores veem apenas as próprias ligações.",
+      },
+      {
+        type: "improvement",
+        text: "Filtro de vendedor na página de Ligações como dropdown — populado automaticamente com quem já tem avaliações registradas, sem precisar digitar.",
+      },
+    ],
+  },
+  {
     version: "1.6.16",
     date: "27/03/2026",
     entries: [

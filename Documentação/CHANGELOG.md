@@ -7,6 +7,43 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.17] - 2026-03-30
+
+### Adicionado
+
+#### Página de Ligações — Visualização centralizada de avaliações
+
+Nova página dedicada (`/ligacoes`) para gestores, admins e vendedores acompanharem as avaliações de ligações geradas pelo agente de IA.
+
+**Controle de acesso por role:**
+- Administradores e gerentes veem todas as avaliações de todos os vendedores
+- Vendedores, SDRs e demais roles veem apenas as próprias ligações (filtrado automaticamente pelo backend)
+
+**Funcionalidades da página:**
+- Cards de estatísticas: total de avaliações, nota média (com cor por faixa), contagem de Excelente+Boa e Fraca+Crítica
+- Badges de classificação com contagem por tipo (calculados no conjunto filtrado)
+- Filtro por vendedor — exibido apenas para manager/admin, populado com os vendedores que já possuem avaliações registradas
+- Filtro por classificação e por período (data início / data fim)
+- Botão "Limpar filtros" exibido quando algum filtro está ativo
+- Lista paginada de avaliações (10 por página) reutilizando o componente `EvaluationCard`
+- Botão "Ver card #X" em cada avaliação para navegar diretamente ao card correspondente
+- Item "Ligações" adicionado ao sidebar acima de Gamificação, visível para todos exceto viewers
+
+**Endpoints criados:**
+- `GET /api/v1/call-evaluations/` — lista com filtros (classification, vendedor_name, date_from, date_to), paginação e stats embutidas
+- `GET /api/v1/call-evaluations/vendedores` — lista de nomes distintos de vendedores com avaliações (restrito a manager/admin)
+
+**Arquivos criados/alterados:**
+- `frontend/src/pages/CallEvaluationsPage.tsx` — nova página
+- `frontend/src/components/cardDetails/CallEvaluationsSection.tsx` — componentes exportados (`EvaluationCard`, `classificationColor`, etc.) e prop `onCardClick` adicionada
+- `frontend/src/services/callEvaluationService.ts` — métodos `list()` e `listVendedores()` adicionados
+- `frontend/src/router.tsx` — rota `/ligacoes`
+- `frontend/src/layouts/MainLayout.tsx` — item "Ligações" no sidebar
+- `backend/app/api/v1/endpoints/call_evaluations.py` — endpoints adicionados
+- `backend/app/schemas/call_evaluation.py` — schema `CallEvaluationListResponse` adicionado
+
+---
+
 ## [1.6.16] - 2026-03-27
 
 ### Adicionado

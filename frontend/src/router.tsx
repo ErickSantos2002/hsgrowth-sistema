@@ -24,6 +24,7 @@ import Users from './pages/Users';
 import BadgesAdmin from './pages/BadgesAdmin';
 import Calendar from './pages/Calendar';
 import Activities from './pages/Activities';
+import CallEvaluationsPage from './pages/CallEvaluationsPage';
 import NotFound from './pages/NotFound';
 
 /**
@@ -92,6 +93,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/users" element={<ViewerGuard><Users /></ViewerGuard>} />
       <Route path="/admin/badges" element={<ViewerGuard><BadgesAdmin /></ViewerGuard>} />
       <Route path="/calendar" element={<ViewerGuard><Calendar /></ViewerGuard>} />
+      <Route path="/ligacoes" element={<ViewerGuard><CallEvaluationsPage /></ViewerGuard>} />
     </Route>
 
     <Route path="*" element={<NotFound />} />

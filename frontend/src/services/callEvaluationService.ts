@@ -31,9 +31,38 @@ export interface CallEvaluation {
   updated_at: string;
 }
 
+export interface CallEvaluationListParams {
+  page?: number;
+  page_size?: number;
+  classification?: string;
+  vendedor_name?: string;
+  date_from?: string;
+  date_to?: string;
+}
+
+export interface CallEvaluationListResponse {
+  items: CallEvaluation[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  average_score: number | null;
+  by_classification: Record<string, number>;
+}
+
 const callEvaluationService = {
+  list: async (params?: CallEvaluationListParams): Promise<CallEvaluationListResponse> => {
+    const response = await api.get('/api/v1/call-evaluations/', { params });
+    return response.data;
+  },
+
   listByCard: async (cardId: number): Promise<CallEvaluation[]> => {
     const response = await api.get(`/api/v1/call-evaluations/card/${cardId}`);
+    return response.data;
+  },
+
+  listVendedores: async (): Promise<string[]> => {
+    const response = await api.get('/api/v1/call-evaluations/vendedores');
     return response.data;
   },
 
