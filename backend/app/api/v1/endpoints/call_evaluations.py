@@ -95,9 +95,16 @@ def list_call_evaluations(
     is_manager_or_admin = current_user.role and current_user.role.name in ("manager", "admin")
 
     filters = []
-    # Usuários não-gestores só veem suas próprias ligações
+    # Usuários não-gestores só veem suas próprias ligações.
+    # O vendedor_name nas avaliações pode ser apenas o primeiro nome (ex: "Karolaine")
+    # enquanto current_user.name é o nome completo ("Karolaine Martins").
+    # Usamos ILIKE com % nos dois sentidos para cobrir ambos os casos.
     if not is_manager_or_admin:
-        filters.append(CallEvaluation.vendedor_name.ilike(current_user.name))
+        user_name = current_user.name
+        filters.append(
+            CallEvaluation.vendedor_name.ilike(f"%{user_name}%") |
+            CallEvaluation.vendedor_name.ilike(user_name.split()[0] + "%")
+        )
     elif vendedor_name:
         filters.append(CallEvaluation.vendedor_name == vendedor_name)
 
