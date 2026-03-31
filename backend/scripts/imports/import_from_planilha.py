@@ -36,8 +36,8 @@ from app.models.card_list_history import CardListHistory
 # CONSTANTES
 # ============================================================
 
-# Lista alvo: "Prospecção" no Board 6
-TARGET_LIST_ID = 23
+# Lista alvo: "Lead Novo" no Board 6 (Prospecção)
+TARGET_LIST_ID = 22
 TARGET_BOARD_ID = 6
 
 # Valores válidos para employee_count (campo CRM)
@@ -477,6 +477,7 @@ def create_card(
         acquisition_channel=normalize_channel(reader.get(row, "Canal_Aquisicao")),
         acquisition_channel_detail=clean_str(reader.get(row, "Canal_Aquisicao_Detalhe")),
         deal_type=normalize_deal_type(reader.get(row, "Tipo_Negocio")),
+        origin="Importação via planilha",
         description=build_description(reader, row),
         position=position,
         created_at=created_at,
@@ -548,7 +549,7 @@ def import_from_sheet(filename: str | None = None):
     print("IMPORTACAO DA PLANILHA SDR PARA CARDS")
     print("=" * 70)
     print(f"Arquivo : {sheet_path}")
-    print(f"Lista   : Prospecção (id={TARGET_LIST_ID}, board={TARGET_BOARD_ID})")
+    print(f"Lista   : Lead Novo / Prospecção (id={TARGET_LIST_ID}, board={TARGET_BOARD_ID})")
 
     if not os.path.exists(sheet_path):
         print(f"\nERRO: Arquivo não encontrado.")
