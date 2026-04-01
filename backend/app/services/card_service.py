@@ -123,6 +123,9 @@ class CardService:
                         "phone": card.client.phone,
                     } if card.client else None,
                     "contact_info": card.contact_info,
+                    "acquisition_channel": card.acquisition_channel,
+                    "acquisition_channel_detail": card.acquisition_channel_detail,
+                    "origin": card.origin,
                     "assigned_to": {
                         "id": card.assigned_to.id,
                         "name": card.assigned_to.name,
