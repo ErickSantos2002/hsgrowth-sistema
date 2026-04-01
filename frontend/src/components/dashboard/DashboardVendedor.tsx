@@ -49,7 +49,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           Visão Geral · {periodLabel}
         </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5">
           <KpiCard
             icon={<DollarSign size={18} className="text-emerald-400" />}
             iconBg="bg-emerald-500/20"
@@ -97,7 +97,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
         </div>
 
         {/* Segunda linha */}
-        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-4">
           <KpiCard
             icon={<Users size={18} className="text-blue-400" />}
             iconBg="bg-blue-500/20"
@@ -206,7 +206,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           Funil de Conversão
         </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           {[
             { label: "Reunião → Qualificação", value: null },
             { label: "Qualificação → Proposta", value: null },

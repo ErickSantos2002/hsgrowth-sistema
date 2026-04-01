@@ -103,14 +103,14 @@ export default function MainLayout() {
             {/* Overlay para mobile quando sidebar está aberta */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+                    className="fixed inset-0 z-[2900] bg-black/60 backdrop-blur-sm lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
             {/* Sidebar */}
             <aside
-                className={`fixed left-0 top-0 z-40 h-screen border-r border-gray-200 bg-white backdrop-blur-xl transition-all duration-300 dark:border-slate-700/50 dark:bg-gradient-to-b dark:from-slate-900/95 dark:to-slate-950/95 ${
+                className={`fixed left-0 top-0 z-[3000] h-screen border-r border-gray-200 bg-white backdrop-blur-xl transition-all duration-300 dark:border-slate-700/50 dark:bg-gradient-to-b dark:from-slate-900/95 dark:to-slate-950/95 ${
                     sidebarOpen
                         ? "w-64 translate-x-0"
                         : "w-20 -translate-x-full lg:translate-x-0"

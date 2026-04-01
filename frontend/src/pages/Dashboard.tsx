@@ -204,14 +204,14 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Controles */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
 
           {/* Toggle SDR | Vendedor — apenas admin/manager */}
           {isAdminOrManager && (
-            <div className="flex rounded-lg border border-gray-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex w-full rounded-lg border border-gray-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-800 sm:w-auto">
               <button
                 onClick={() => handleViewChange("sdr")}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all sm:flex-none ${
                   view === "sdr"
                     ? "bg-blue-500 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
@@ -221,7 +221,7 @@ const Dashboard: React.FC = () => {
               </button>
               <button
                 onClick={() => handleViewChange("vendedor")}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all sm:flex-none ${
                   view === "vendedor"
                     ? "bg-emerald-500 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
@@ -242,6 +242,7 @@ const Dashboard: React.FC = () => {
               ]}
               onChange={(val) => setSelectedUserId(val ? Number(val) : null)}
               icon={<Users size={14} className="text-slate-400" />}
+              className="w-full sm:w-auto"
             />
           )}
 
@@ -258,43 +259,47 @@ const Dashboard: React.FC = () => {
             ]}
             onChange={(v) => setPeriod(v as PeriodType)}
             icon={<Calendar size={14} className="text-slate-400" />}
+            className="w-full sm:w-auto"
           />
 
           {/* Datas personalizadas */}
           {period === "custom" && (
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <input
                 type="date" value={customStart} max={customEnd || undefined}
                 onChange={(e) => setCustomRange(e.target.value, customEnd)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:flex-none"
               />
               <span className="text-xs text-slate-400">até</span>
               <input
                 type="date" value={customEnd} min={customStart || undefined}
                 onChange={(e) => setCustomRange(customStart, e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:flex-none"
               />
             </div>
           )}
 
-          {/* Refresh */}
-          <button
-            onClick={handleRefresh}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-          >
-            <RefreshCw size={14} />
-            <span className="hidden sm:inline">Atualizar</span>
-          </button>
+          {/* Atualizar | Exportar */}
+          <div className="flex w-full gap-2 sm:w-auto">
+            <div className="flex-1 sm:flex-none">
+              <button
+                onClick={handleRefresh}
+                className="flex h-[38px] w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              >
+                <RefreshCw size={14} />
+                <span>Atualizar</span>
+              </button>
+            </div>
 
-          {/* Exportar */}
-          <div className="group relative">
-            <button className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400">
-              <Download size={14} />
-              <span className="hidden sm:inline">Exportar</span>
-            </button>
-            <div className="invisible absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-800">
-              <button onClick={handleExportPDF}   className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700">Exportar PDF</button>
-              <button onClick={handleExportExcel} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700">Exportar Excel</button>
+            <div className="group relative flex-1 sm:flex-none">
+              <button className="flex h-[38px] w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400">
+                <Download size={14} />
+                <span>Exportar</span>
+              </button>
+              <div className="invisible absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-800">
+                <button onClick={handleExportPDF}   className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700">Exportar PDF</button>
+                <button onClick={handleExportExcel} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700">Exportar Excel</button>
+              </div>
             </div>
           </div>
         </div>
@@ -324,9 +329,10 @@ interface SelectMenuProps {
   onChange: (v: string) => void;
   icon?: React.ReactNode;
   placeholder?: string;
+  className?: string;
 }
 
-const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, onChange, icon, placeholder }) => {
+const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, onChange, icon, placeholder, className = "" }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -339,17 +345,19 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, onChange, icon,
   const selected = options.find((o) => o.value === value);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className={`relative ${className}`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+        className="flex w-full items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       >
-        {icon}
-        <span className={`max-w-[140px] truncate ${selected ? "" : "text-slate-400"}`}>
-          {selected?.label ?? placeholder ?? "Selecione"}
+        <span className="flex items-center gap-2">
+          {icon}
+          <span className={`truncate ${selected ? "" : "text-slate-400"}`}>
+            {selected?.label ?? placeholder ?? "Selecione"}
+          </span>
         </span>
-        <ChevronDown size={14} className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
         <div className="absolute right-0 z-20 mt-1 w-full min-w-[160px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">

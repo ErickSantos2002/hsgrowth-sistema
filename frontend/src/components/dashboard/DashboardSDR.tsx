@@ -53,7 +53,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           Visão Geral · {periodLabel}
         </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-4">
           <KpiCard
             icon={<UserPlus size={18} className="text-blue-400" />}
             iconBg="bg-blue-500/20"
@@ -204,7 +204,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           Conversão
         </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           {[
             { label: "Lead → Conectado", value: null },
             { label: "Conectado → Agendado", value: null },
