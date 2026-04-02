@@ -658,9 +658,9 @@ const Settings: React.FC = () => {
       const data = await api4comService.listExtensions();
       setApi4comExtensions(data);
 
-      // Carrega vendedores para o formulário de vincular ramais
+      // Carrega vendedores e SDRs para o formulário de vincular ramais
       const users = await userService.listActive();
-      setSalespeople(users.filter(u => u.role === "salesperson"));
+      setSalespeople(users.filter(u => u.role === "salesperson" || u.role === "sdr"));
     } catch (error) {
       showError('Erro ao carregar ramais');
     } finally {
@@ -714,7 +714,7 @@ const Settings: React.FC = () => {
     e.preventDefault();
 
     if (!api4comExtensionForm.user_id || !api4comExtensionForm.extension) {
-      showError('Selecione um vendedor e informe o ramal');
+      showError('Selecione um usuário e informe o ramal');
       return;
     }
 
@@ -2280,21 +2280,25 @@ const Settings: React.FC = () => {
 
                 {/* ========== Seção de Ramais ========== */}
                 <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
-                  <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Ramais dos Vendedores</h3>
+                  <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Ramais dos Usuários</h3>
 
                   {/* Formulário para Adicionar/Editar Ramal */}
                   <form onSubmit={handleSaveApi4comExtension} className="mb-6 rounded-lg bg-gray-100 p-4 dark:bg-slate-800">
                     <h4 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {editingApi4comExtension ? 'Editar Ramal do Vendedor' : 'Vincular Vendedor ao Ramal'}
+                      {editingApi4comExtension ? 'Editar Ramal' : 'Vincular Usuário ao Ramal'}
                     </h4>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                       <div className="col-span-1">
                         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                          Vendedor
+                          Usuário
                         </label>
                         <SelectMenu
                           value={api4comExtensionForm.user_id ? String(api4comExtensionForm.user_id) : ""}
-                          options={salespeople.map((sp) => ({ value: String(sp.id), label: sp.name }))}
+                          options={salespeople
+                            .filter((sp) =>
+                              !api4comExtensions.some((ext) => ext.user_id === sp.id)
+                            )
+                            .map((sp) => ({ value: String(sp.id), label: sp.name }))}
                           placeholder="Selecione..."
                           onChange={(value) =>
                             setApi4comExtensionForm({ ...api4comExtensionForm, user_id: Number(value) })
@@ -2430,9 +2434,9 @@ const Settings: React.FC = () => {
                   </h4>
                   <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
                     <li>• Configure as credenciais da sua conta API4COM para obter o token de autenticação</li>
-                    <li>• Vincule cada vendedor ao seu ramal físico existente no sistema VOIP</li>
+                    <li>• Vincule cada vendedor ou SDR ao seu ramal físico existente no sistema VOIP</li>
                     <li>• O token é renovado automaticamente quando próximo da expiração</li>
-                    <li>• Vendedores poderão fazer ligações diretamente do sistema (Fase 2)</li>
+                    <li>• Vendedores e SDRs poderão fazer ligações diretamente do sistema (Fase 2)</li>
                   </ul>
                 </div>
               </div>
