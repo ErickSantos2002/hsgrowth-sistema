@@ -632,6 +632,11 @@ export interface DashboardKPIs {
     won_value: number;
     lost_count: number;
   }>;
+
+  activity_counts_by_type: Array<{
+    type: string;
+    count: number;
+  }>;
 }
 
 export interface SalesReport {

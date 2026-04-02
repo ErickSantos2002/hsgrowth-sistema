@@ -104,6 +104,11 @@ class DashboardKPIsResponse(BaseModel):
         description="Evolução de vendas (period, won_count, won_value, lost_count)"
     )
 
+    activity_counts_by_type: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Contagem de atividades por tipo no período (type, count)"
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [

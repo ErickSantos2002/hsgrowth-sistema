@@ -16,6 +16,8 @@ from app.models.user import User
 from app.models.card_transfer import CardTransfer
 from app.models.activity import Activity
 from app.models.card_list_history import CardListHistory
+from app.models.card_task import CardTask
+from app.schemas.card_task import TaskType
 from app.repositories.board_repository import BoardRepository
 from app.repositories.card_repository import CardRepository
 from app.schemas.report import (
@@ -664,6 +666,39 @@ class ReportService:
                 "lost_count": lost_count
             })
 
+        # Atividades por tipo no período (para gráfico SDR)
+        # Usa created_by_id OU assigned_to_id para capturar tarefas criadas/atribuídas ao usuário
+        task_user_filter = []
+        if current_user and current_user.role:
+            _role = current_user.role.name
+            if _role in ("sdr", "salesperson"):
+                task_user_filter = [
+                    (CardTask.created_by_id == current_user.id) |
+                    (CardTask.assigned_to_id == current_user.id)
+                ]
+            elif _role in ("admin", "manager") and user_id:
+                task_user_filter = [
+                    (CardTask.created_by_id == user_id) |
+                    (CardTask.assigned_to_id == user_id)
+                ]
+
+        task_counts_query = self.db.query(
+            CardTask.task_type,
+            func.count(CardTask.id).label("count")
+        ).filter(
+            func.date(CardTask.created_at) >= start_of_period,
+            func.date(CardTask.created_at) <= end_of_period,
+            *task_user_filter
+        ).group_by(CardTask.task_type).all()
+
+        activity_counts_by_type = [
+            {
+                "type": row.task_type.value if hasattr(row.task_type, "value") else str(row.task_type),
+                "count": row.count
+            }
+            for row in task_counts_query
+        ]
+
         return DashboardKPIsResponse(
             total_cards=total_cards,
             new_cards_today=new_cards_today,
@@ -692,7 +727,8 @@ class ReportService:
             top_sellers_this_month=top_sellers_this_month,
             top_sdrs_by_meetings=top_sdrs_by_meetings,
             cards_by_stage=cards_by_stage,
-            sales_evolution=sales_evolution
+            sales_evolution=sales_evolution,
+            activity_counts_by_type=activity_counts_by_type
         )
 
     def get_sales_report(

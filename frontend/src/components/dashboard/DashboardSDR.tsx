@@ -186,37 +186,44 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
           )}
         </div>
 
-        {/* Funil por etapa */}
+        {/* Atividades por tipo */}
         <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50">
           <div className="mb-4 flex items-center gap-2">
             <div className="rounded-lg bg-purple-500/20 p-2">
               <Activity size={16} className="text-purple-400" />
             </div>
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Cards por Etapa
+              Atividades no Período
             </h3>
           </div>
-          {funnelData.length > 0 ? (
+          {(kpis.activity_counts_by_type?.length ?? 0) > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={funnelData} margin={{ top: 10, right: 10, left: 0, bottom: 40 }}>
+              <BarChart
+                data={kpis.activity_counts_by_type.map((a) => ({
+                  name: a.type === "call" ? "Ligação" : a.type === "meeting" ? "Reunião" : a.type === "follow_up" ? "Follow-up" : a.type === "task" ? "Tarefa" : a.type,
+                  count: a.count,
+                  color: a.type === "call" ? "#3b82f6" : a.type === "meeting" ? "#10b981" : a.type === "follow_up" ? "#f59e0b" : "#8b5cf6",
+                }))}
+                margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: chartColors.content.secondary, fontSize: 10 }} angle={-35} textAnchor="end" height={60} tickLine={false} />
+                <XAxis dataKey="name" tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} />
                 <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" }}
                   labelStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
                   itemStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
-                  formatter={(v: number) => [v, "Cards"]}
+                  formatter={(v: number) => [v, "Atividades"]}
                 />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {funnelData.map((entry, index) => (
-                    <Cell key={index} fill={entry.color} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {kpis.activity_counts_by_type.map((_, index) => (
+                    <Cell key={index} fill={["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"][index % 4]} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-48 items-center justify-center text-sm text-slate-400">Sem dados no período</div>
+            <div className="flex h-48 items-center justify-center text-sm text-slate-400">Sem atividades no período</div>
           )}
         </div>
       </section>
