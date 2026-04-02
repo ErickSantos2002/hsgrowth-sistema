@@ -380,6 +380,32 @@ class ReportService:
             *uf
         ).scalar() or 0
 
+        # Negócios parados há mais de 7 dias (vendedor)
+        seven_days_ago = datetime.now() - timedelta(days=7)
+        negocios_parados_7d = self.db.query(func.count(func.distinct(Card.id))).join(
+            BoardList, Card.list_id == BoardList.id
+        ).join(
+            CardListHistory, and_(
+                CardListHistory.card_id == Card.id,
+                CardListHistory.exited_at.is_(None),
+                CardListHistory.entered_at < seven_days_ago,
+            )
+        ).filter(
+            BoardList.board_id.in_(board_ids),
+            Card.is_won == 0,
+            *uf
+        ).scalar() or 0
+
+        # Propostas em aberto — cards ativos atualmente na lista Diagnóstico e Proposta (id=30)
+        LIST_DIAGNOSTICO_PROPOSTA_ID = 30
+        propostas_em_aberto = self.db.query(func.count(Card.id)).join(
+            BoardList, Card.list_id == BoardList.id
+        ).filter(
+            Card.list_id == LIST_DIAGNOSTICO_PROPOSTA_ID,
+            Card.is_won == 0,
+            *uf
+        ).scalar() or 0
+
         # Valores monetários
         total_value = self.db.query(func.sum(Card.value)).join(
             BoardList, Card.list_id == BoardList.id
@@ -412,7 +438,7 @@ class ReportService:
                 (won_cards_this_month / new_cards_this_month) * 100, 2
             )
 
-        # Tempo médio para ganhar (em dias)
+        # Tempo médio para ganhar (em dias) — filtrado pelo período selecionado
         avg_time_result = self.db.query(
             func.avg(
                 func.extract('epoch', Card.closed_at - Card.created_at) / 86400
@@ -423,10 +449,40 @@ class ReportService:
             BoardList.board_id.in_(board_ids),
             Card.is_won == 1,
             Card.closed_at.isnot(None),
+            func.date(Card.closed_at) >= start_of_period,
+            func.date(Card.closed_at) <= end_of_period,
             *uf
         ).scalar()
 
         avg_time_to_win_days = round(float(avg_time_result), 2) if avg_time_result else None
+
+        # Propostas geradas — cards que entraram em "Diagnóstico e Proposta" (id=30, board Aquisição)
+        LIST_DIAGNOSTICO_PROPOSTA_ID = 30
+        propostas_geradas = self.db.query(
+            func.count(func.distinct(CardListHistory.card_id))
+        ).join(
+            Card, Card.id == CardListHistory.card_id
+        ).filter(
+            CardListHistory.list_id == LIST_DIAGNOSTICO_PROPOSTA_ID,
+            func.date(CardListHistory.entered_at) >= start_of_period,
+            func.date(CardListHistory.entered_at) <= end_of_period,
+            *uf
+        ).scalar() or 0
+
+        # Reuniões recebidas do SDR — cards que entraram em "Agendado" (id=26, board Prospecção)
+        # com SDR vinculado; mesma base do ranking SDR para consistência entre dashboards
+        LIST_AGENDADO_ID = 26
+        meetings_received_from_sdr = self.db.query(
+            func.count(func.distinct(CardListHistory.card_id))
+        ).join(
+            Card, Card.id == CardListHistory.card_id
+        ).filter(
+            CardListHistory.list_id == LIST_AGENDADO_ID,
+            func.date(CardListHistory.entered_at) >= start_of_period,
+            func.date(CardListHistory.entered_at) <= end_of_period,
+            Card.sdr_id.isnot(None),
+            *uf
+        ).scalar() or 0
 
         # Top 5 vendedores do mês — sempre global (sem user filter) para que
         # vendedores/SDRs possam ver onde estão no ranking da equipe
@@ -460,7 +516,6 @@ class ReportService:
 
         # Ranking de SDRs por reuniões agendadas no período
         # Conta cards distintos que entraram na lista "Agendado" (id=26) por SDR
-        LIST_AGENDADO_ID = 26
         top_sdrs_query = self.db.query(
             User.name,
             func.count(func.distinct(CardListHistory.card_id)).label('meetings_scheduled')
@@ -620,11 +675,15 @@ class ReportService:
             lost_cards_today=lost_cards_today,
             lost_cards_this_week=lost_cards_this_week,
             lost_cards_this_month=lost_cards_this_month,
+            propostas_geradas=propostas_geradas,
+            meetings_received_from_sdr=meetings_received_from_sdr,
             overdue_cards=overdue_cards,
             due_today=due_today,
             due_this_week=due_this_week,
             leads_sem_contato=leads_sem_contato,
             cards_parados=cards_parados,
+            negocios_parados_7d=negocios_parados_7d,
+            propostas_em_aberto=propostas_em_aberto,
             total_value=total_value,
             won_value_this_month=won_value_this_month,
             pipeline_value=pipeline_value,

@@ -32,6 +32,22 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
       ? kpis.won_value_this_month / kpis.won_cards_this_month
       : 0;
 
+  const getStageCount = (listId: number) =>
+    kpis.cards_by_stage?.find((s) => s.list_id === listId)?.card_count ?? 0;
+
+  const reuniaoCount    = getStageCount(28);
+  const qualificacao    = getStageCount(29);
+  const proposta        = getStageCount(30);
+  const negocioGanho    = getStageCount(32);
+
+  const calcRate = (num: number, den: number) =>
+    den > 0 ? Math.round((num / den) * 1000) / 10 : null;
+
+  const taxaReuniaoQualif  = calcRate(qualificacao, reuniaoCount);
+  const taxaQualifProposta = calcRate(proposta, qualificacao);
+  const taxaPropostaGanho  = calcRate(negocioGanho, proposta);
+  const taxaGeralFunil     = calcRate(negocioGanho, reuniaoCount);
+
   const funnelData = (kpis.cards_by_stage ?? []).map((s, i) => ({
     name: s.stage_name,
     value: s.card_count,
@@ -53,11 +69,11 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
           <KpiCard
             icon={<DollarSign size={18} className="text-emerald-400" />}
             iconBg="bg-emerald-500/20"
-            label="Pipeline Total"
+            label="Pipeline Gerado"
             value={kpis.pipeline_value}
             format="currency"
             highlight="green"
-            sub="Valor em aberto"
+            sub="Valor em aberto no período"
           />
           <KpiCard
             icon={<TrendingUp size={18} className="text-blue-400" />}
@@ -110,17 +126,19 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             icon={<CalendarCheck size={18} className="text-emerald-400" />}
             iconBg="bg-emerald-500/20"
             label="Reuniões Recebidas (SDR)"
-            value={null}
-            unavailable
-            sub="Em breve"
+            value={kpis.meetings_received_from_sdr}
+            format="number"
+            highlight="green"
+            sub="Agendadas por SDR no período"
           />
           <KpiCard
             icon={<Target size={18} className="text-yellow-400" />}
             iconBg="bg-yellow-500/20"
             label="Propostas Geradas"
-            value={null}
-            unavailable
-            sub="Em breve"
+            value={kpis.propostas_geradas}
+            format="number"
+            highlight="orange"
+            sub="Cards em Diagnóstico e Proposta"
           />
           <KpiCard
             icon={<TrendingDown size={18} className="text-red-400" />}
@@ -208,10 +226,10 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           {[
-            { label: "Reunião → Qualificação", value: null },
-            { label: "Qualificação → Proposta", value: null },
-            { label: "Proposta → Ganho", value: null },
-            { label: "Taxa Geral", value: kpis.conversion_rate_this_month },
+            { label: "Reunião → Qualificação", value: taxaReuniaoQualif },
+            { label: "Qualificação → Proposta", value: taxaQualifProposta },
+            { label: "Proposta → Ganho",        value: taxaPropostaGanho },
+            { label: "Taxa Geral do Funil",     value: taxaGeralFunil },
           ].map((item, i) => (
             <div key={i} className="rounded-xl border border-gray-200 bg-white p-4 text-center dark:border-slate-700/50 dark:bg-slate-800/50">
               <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">{item.label}</p>
@@ -232,13 +250,12 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50">
-            <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">Pipeline Total</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">{fmt(pipelineTotal || kpis.pipeline_value)}</p>
+            <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">Pipeline Total (R$)</p>
+            <p className="text-2xl font-bold text-slate-400 dark:text-slate-500">??</p>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50">
-            <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">Pipeline vs Meta</p>
-            <p className="text-2xl font-bold text-slate-400 dark:text-slate-500">—</p>
-            <p className="text-xs text-slate-400">Em breve</p>
+            <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">Pipeline vs Meta (%)</p>
+            <p className="text-2xl font-bold text-slate-400 dark:text-slate-500">??</p>
           </div>
         </div>
       </section>
@@ -311,8 +328,8 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
               <Clock size={16} className="text-orange-400" />
               <h3 className="text-sm font-semibold text-orange-400">Negócios Parados (7d)</h3>
             </div>
-            <p className="text-3xl font-bold text-orange-400">—</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Em breve</p>
+            <p className="text-3xl font-bold text-orange-400">{kpis.negocios_parados_7d}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Sem movimentação de etapa</p>
           </div>
 
           <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5">
@@ -320,8 +337,8 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
               <Target size={16} className="text-yellow-500" />
               <h3 className="text-sm font-semibold text-yellow-500">Propostas em Aberto</h3>
             </div>
-            <p className="text-3xl font-bold text-yellow-500">—</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Em breve</p>
+            <p className="text-3xl font-bold text-yellow-500">{kpis.propostas_em_aberto}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Cards ativos em Diagnóstico e Proposta</p>
           </div>
         </div>
       </section>

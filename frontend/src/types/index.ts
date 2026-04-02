@@ -580,9 +580,17 @@ export interface DashboardKPIs {
   due_today: number;
   due_this_week: number;
 
+  // Reuniões recebidas do SDR
+  meetings_received_from_sdr: number;
+
+  // Propostas geradas
+  propostas_geradas: number;
+
   // Riscos operacionais
   leads_sem_contato: number;
   cards_parados: number;
+  negocios_parados_7d: number;
+  propostas_em_aberto: number;
 
   // Valores monetários
   total_value: number;

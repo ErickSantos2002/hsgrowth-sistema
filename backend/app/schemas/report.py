@@ -60,9 +60,17 @@ class DashboardKPIsResponse(BaseModel):
     due_today: int = Field(..., description="Cards vencendo hoje")
     due_this_week: int = Field(..., description="Cards vencendo esta semana")
 
+    # Reuniões recebidas do SDR (vendedor)
+    meetings_received_from_sdr: int = Field(0, description="Cards que entraram em Reunião Agendada no período com SDR e vendedor vinculados")
+
+    # Propostas geradas (vendedor)
+    propostas_geradas: int = Field(0, description="Cards que entraram em Diagnóstico e Proposta no período")
+
     # Riscos operacionais
     leads_sem_contato: int = Field(0, description="Cards ativos sem nenhuma atividade registrada")
     cards_parados: int = Field(0, description="Cards ativos parados na mesma etapa há mais de 3 dias")
+    negocios_parados_7d: int = Field(0, description="Cards ativos parados na mesma etapa há mais de 7 dias")
+    propostas_em_aberto: int = Field(0, description="Cards ativos atualmente na etapa Diagnóstico e Proposta")
 
     # Valores monetários
     total_value: Decimal = Field(..., description="Valor total de todos os cards")
