@@ -7,6 +7,45 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.21] - 2026-04-02
+
+### Adicionado / Corrigido
+
+#### Dashboard Vendedor — dados reais em todos os KPIs e métricas
+
+Revisão completa do dashboard de Vendedor, implementando métricas reais e corrigindo inconsistências.
+
+**KPIs principais:**
+- "Pipeline Total" renomeado para **"Pipeline Gerado"** — deixa claro que o valor é filtrado pelo período selecionado (cards criados no período ainda em aberto)
+- **Tempo Médio p/ Fechar** agora filtrado pelo período selecionado (`closed_at` no período), antes calculava média histórica geral
+- **Reuniões Recebidas (SDR)** implementado: conta cards que entraram na lista "Agendado" (id=26) no período com `sdr_id IS NOT NULL` — mesma base do ranking SDR para consistência
+- **Propostas Geradas** implementado: cards que entraram em "Diagnóstico e Proposta" (id=30) no período
+
+**Funil de Conversão (4 cards):**
+- Todos calculados no frontend a partir de `cards_by_stage`:
+  - Reunião → Qualificação
+  - Qualificação → Proposta
+  - Proposta → Ganho
+  - Taxa Geral do Funil (Reunião → Ganho)
+
+**Riscos Operacionais:**
+- **Negócios Parados (7d)**: cards sem movimentação de etapa há mais de 7 dias (threshold maior que SDR pois negócios demoram mais)
+- **Propostas em Aberto**: snapshot atual de cards ativos na etapa "Diagnóstico e Proposta"
+- Saúde do Pipeline: mantida com indicadores "??" até definição dos KPIs com a equipe
+
+**Outros ajustes:**
+- `cards_by_stage` com `view=vendedor` filtra exclusivamente para o board Aquisição (id=7), garantindo ordem correta do pipeline
+- Settings API4COM: lista de ramais agora inclui SDRs além de vendedores; select do formulário oculta usuários que já têm ramal vinculado
+
+**Arquivos alterados:**
+- `backend/app/services/report_service.py` — reuniões_recebidas, propostas_geradas, negocios_parados_7d, propostas_em_aberto, avg_time filtrado por período, board filter por view
+- `backend/app/schemas/report.py` — novos campos
+- `frontend/src/types/index.ts` — novos campos em `DashboardKPIs`
+- `frontend/src/components/dashboard/DashboardVendedor.tsx` — todos os KPIs e funil atualizados
+- `frontend/src/pages/Settings.tsx` — ramais incluem SDRs, oculta já vinculados
+
+---
+
 ## [1.6.20] - 2026-04-02
 
 ### Adicionado / Corrigido

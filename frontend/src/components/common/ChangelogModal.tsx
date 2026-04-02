@@ -25,6 +25,40 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.21",
+    date: "02/04/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Dashboard Vendedor totalmente revisado: todos os KPIs agora mostram dados reais filtrados pelo período e pelo vendedor vinculado.",
+      },
+      {
+        type: "improvement",
+        text: "Tempo Médio p/ Fechar agora reflete o período selecionado — veja quanto tempo os deals demoram em um mês específico.",
+      },
+      {
+        type: "feature",
+        text: "Reuniões Recebidas (SDR): quantas reuniões o time de SDR agendou e enviou para o vendedor no período.",
+      },
+      {
+        type: "feature",
+        text: "Propostas Geradas: cards que chegaram à etapa Diagnóstico e Proposta no período.",
+      },
+      {
+        type: "feature",
+        text: "Funil de Conversão com 4 taxas reais: Reunião→Qualificação, Qualificação→Proposta, Proposta→Ganho e Taxa Geral do Funil.",
+      },
+      {
+        type: "feature",
+        text: "Riscos: Negócios Parados há mais de 7 dias e Propostas em Aberto agora com dados reais.",
+      },
+      {
+        type: "improvement",
+        text: "Configurações API4COM: SDRs agora aparecem na lista de ramais, e usuários já vinculados não aparecem mais no formulário.",
+      },
+    ],
+  },
+  {
     version: "1.6.20",
     date: "02/04/2026",
     entries: [
