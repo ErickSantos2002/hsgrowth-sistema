@@ -580,6 +580,10 @@ export interface DashboardKPIs {
   due_today: number;
   due_this_week: number;
 
+  // Riscos operacionais
+  leads_sem_contato: number;
+  cards_parados: number;
+
   // Valores monetários
   total_value: number;
   won_value_this_month: number;
@@ -598,8 +602,15 @@ export interface DashboardKPIs {
     total_value: number;
   }>;
 
+  // Ranking SDRs por reuniões agendadas
+  top_sdrs_by_meetings: Array<{
+    name: string;
+    meetings_scheduled: number;
+  }>;
+
   // Dados para gráficos
   cards_by_stage: Array<{
+    list_id: number;
     stage_name: string;
     card_count: number;
     total_value: number;
@@ -607,6 +618,8 @@ export interface DashboardKPIs {
 
   sales_evolution: Array<{
     period: string;
+    new_leads_count: number;
+    meetings_count: number;
     won_count: number;
     won_value: number;
     lost_count: number;

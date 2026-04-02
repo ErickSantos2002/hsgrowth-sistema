@@ -26,17 +26,37 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
   const fmt = (n: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
 
-  // Extrai contagens por etapa do funil (nomes flexíveis)
-  const getStageCount = (name: string) => {
-    const stage = kpis.cards_by_stage?.find(
-      (s) => s.stage_name.toLowerCase().includes(name.toLowerCase())
-    );
+  // IDs fixos das listas do board Prospecção
+  const LIST_PROSPECCAO = 23;
+  const LIST_AGENDADO   = 26;
+  const LIST_CONECTADO  = 24;
+
+  const getStageCount = (listId: number) => {
+    const stage = kpis.cards_by_stage?.find((s) => s.list_id === listId);
     return stage?.card_count ?? null;
   };
 
-  const emProspeccao = getStageCount("prospeç");
-  const agendados    = getStageCount("agendad");
-  const conectados   = getStageCount("conectad");
+  const emProspeccao = getStageCount(LIST_PROSPECCAO);
+  const agendados    = getStageCount(LIST_AGENDADO);
+  const conectados   = getStageCount(LIST_CONECTADO);
+
+  const newLeads = kpis.new_cards_this_month;
+  const taxaConexao =
+    newLeads > 0 && conectados !== null
+      ? Math.round((conectados / newLeads) * 1000) / 10
+      : null;
+  const taxaAgendamento =
+    newLeads > 0 && agendados !== null
+      ? Math.round((agendados / newLeads) * 1000) / 10
+      : null;
+  const taxaConectadoAgendado =
+    conectados !== null && conectados > 0 && agendados !== null
+      ? Math.round((agendados / conectados) * 1000) / 10
+      : null;
+  const taxaAgendadoGanho =
+    agendados !== null && agendados > 0
+      ? Math.round((kpis.won_cards_this_month / agendados) * 1000) / 10
+      : null;
 
   // Funil SDR simplificado para gráfico de barras
   const funnelData = (kpis.cards_by_stage ?? []).map((s, i) => ({
@@ -98,17 +118,19 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             icon={<TrendingUp size={18} className="text-yellow-400" />}
             iconBg="bg-yellow-500/20"
             label="Taxa de Conexão"
-            value={null}
-            unavailable
-            sub="Em breve"
+            value={taxaConexao}
+            format="percent"
+            highlight="blue"
+            sub="Leads → Conectado"
           />
           <KpiCard
             icon={<CalendarCheck size={18} className="text-orange-400" />}
             iconBg="bg-orange-500/20"
             label="Taxa de Agendamento"
-            value={null}
-            unavailable
-            sub="Em breve"
+            value={taxaAgendamento}
+            format="percent"
+            highlight="orange"
+            sub="Leads → Agendado"
           />
           <KpiCard
             icon={<TrendingUp size={18} className="text-emerald-400" />}
@@ -153,10 +175,10 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
                   contentStyle={{ backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" }}
                   labelStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
                   itemStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
-                  formatter={(v: number, name: string) => [v, name === "won_count" ? "Ganhos" : name === "lost_count" ? "Perdidos" : name]}
+                  formatter={(v: number, name: string) => [v, name === "new_leads_count" ? "Novos Leads" : name === "meetings_count" ? "Reuniões Agendadas" : name]}
                 />
-                <Line type="monotone" dataKey="won_count" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: "#10b981" }} name="Ganhos" />
-                <Line type="monotone" dataKey="lost_count" stroke="#ef4444" strokeWidth={2} dot={{ r: 3, fill: "#ef4444" }} name="Perdidos" />
+                <Line type="monotone" dataKey="new_leads_count" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: "#3b82f6" }} name="Novos Leads" />
+                <Line type="monotone" dataKey="meetings_count" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: "#10b981" }} name="Reuniões Agendadas" />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -206,10 +228,10 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           {[
-            { label: "Lead → Conectado", value: null },
-            { label: "Conectado → Agendado", value: null },
-            { label: "Lead → Agendado", value: null },
-            { label: "Agendado → Ganho", value: kpis.conversion_rate_this_month },
+            { label: "Lead → Conectado", value: taxaConexao },
+            { label: "Conectado → Agendado", value: taxaConectadoAgendado },
+            { label: "Lead → Agendado", value: taxaAgendamento },
+            { label: "Agendado → Ganho", value: taxaAgendadoGanho },
           ].map((item, i) => (
             <div key={i} className="rounded-xl border border-gray-200 bg-white p-4 text-center dark:border-slate-700/50 dark:bg-slate-800/50">
               <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">{item.label}</p>
@@ -224,7 +246,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
       </section>
 
       {/* ── 4. RANKING SDR ────────────────────────────────────────── */}
-      {kpis.top_sellers_this_month?.length > 0 && (
+      {kpis.top_sdrs_by_meetings?.length > 0 && (
         <section>
           <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50">
             <div className="mb-4 flex items-center gap-2">
@@ -232,11 +254,11 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
                 <Trophy size={16} className="text-yellow-400" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-                Ranking · {periodLabel}
+                Ranking SDR · Reuniões Agendadas · {periodLabel}
               </h3>
             </div>
             <div className="space-y-2">
-              {kpis.top_sellers_this_month.slice(0, 5).map((seller, i) => {
+              {kpis.top_sdrs_by_meetings.map((sdr, i) => {
                 const icons = [
                   <Trophy key={0} size={16} className="text-yellow-400" />,
                   <Medal  key={1} size={16} className="text-slate-400" />,
@@ -255,11 +277,11 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
                       <div className="flex h-8 w-8 items-center justify-center">
                         {icons[i] ?? <span className="text-sm font-bold text-slate-400">#{i + 1}</span>}
                       </div>
-                      <span className="text-sm font-medium text-slate-900 dark:text-white">{seller.name}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">{sdr.name}</span>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-emerald-500">{fmt(seller.total_value)}</p>
-                      <p className="text-xs text-slate-400">{seller.cards_won} fechados</p>
+                      <p className="text-sm font-semibold text-blue-500">{sdr.meetings_scheduled}</p>
+                      <p className="text-xs text-slate-400">reuniões agendadas</p>
                     </div>
                   </div>
                 );
@@ -291,8 +313,8 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
               <Clock size={16} className="text-orange-400" />
               <h3 className="text-sm font-semibold text-orange-400">Leads sem Contato</h3>
             </div>
-            <p className="text-3xl font-bold text-orange-400">—</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Em breve</p>
+            <p className="text-3xl font-bold text-orange-400">{kpis.leads_sem_contato}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Nenhuma atividade registrada</p>
           </div>
 
           <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5">
@@ -300,8 +322,8 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
               <Users size={16} className="text-yellow-500" />
               <h3 className="text-sm font-semibold text-yellow-500">Parados +3 dias</h3>
             </div>
-            <p className="text-3xl font-bold text-yellow-500">—</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Em breve</p>
+            <p className="text-3xl font-bold text-yellow-500">{kpis.cards_parados}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Sem movimentação de etapa</p>
           </div>
         </div>
       </section>

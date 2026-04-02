@@ -4,10 +4,9 @@ import { DashboardKPIs } from "../types";
 import { useAuth } from "../hooks/useAuth";
 import toast from "react-hot-toast";
 
-// Tipo para o período selecionado (exportado)
 export type PeriodType = "today" | "week" | "month" | "quarter" | "year" | "custom";
+export type ViewType = "sdr" | "vendedor";
 
-// Interface do contexto
 interface DashboardContextData {
   kpis: DashboardKPIs | null;
   loading: boolean;
@@ -19,15 +18,15 @@ interface DashboardContextData {
   lastUpdate: Date | null;
   selectedUserId: number | null;
   setSelectedUserId: (userId: number | null) => void;
-  fetchDashboardData: () => Promise<void>;
+  view: ViewType;
+  setView: (view: ViewType) => void;
+  fetchDashboardData: (overridePeriod?: PeriodType, overrideView?: ViewType, overrideStart?: string, overrideEnd?: string) => Promise<void>;
   handleRefresh: () => void;
   setPeriod: (period: PeriodType) => void;
 }
 
-// Criação do contexto
 const DashboardContext = createContext<DashboardContextData>({} as DashboardContextData);
 
-// Hook customizado para usar o contexto
 export const useDashboard = () => {
   const context = useContext(DashboardContext);
   if (!context) {
@@ -36,7 +35,6 @@ export const useDashboard = () => {
   return context;
 };
 
-// Provider do contexto
 interface DashboardProviderProps {
   children: ReactNode;
 }
@@ -51,11 +49,18 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
   const [customEnd, setCustomEnd] = useState<string>("");
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [selectedUserId, setSelectedUserIdState] = useState<number | null>(null);
+  const [view, setViewState] = useState<ViewType>(
+    user?.role === "salesperson" ? "vendedor" : "sdr"
+  );
 
-  // Para salesperson/sdr, força o filtro no próprio usuário
+  // Para salesperson/sdr, força o filtro no próprio usuário e define a view correta
   useEffect(() => {
-    if (user?.role === "salesperson" || user?.role === "sdr") {
+    if (user?.role === "salesperson") {
       setSelectedUserIdState(user.id);
+      setViewState("vendedor");
+    } else if (user?.role === "sdr") {
+      setSelectedUserIdState(user.id);
+      setViewState("sdr");
     } else {
       setSelectedUserIdState(null);
     }
@@ -65,23 +70,35 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
     setSelectedUserIdState(userId);
   };
 
+  const setView = (newView: ViewType) => {
+    setViewState(newView);
+    setSelectedUserIdState(null);
+  };
+
   const getEffectiveUserId = () => {
     return user?.role === "salesperson" || user?.role === "sdr"
       ? user.id
       : selectedUserId ?? undefined;
   };
 
-  // Busca os dados do dashboard
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (
+    overridePeriod?: PeriodType,
+    overrideView?: ViewType,
+    overrideStart?: string,
+    overrideEnd?: string,
+  ) => {
+    const p = overridePeriod ?? period;
+    const v = overrideView ?? view;
     try {
       setLoading(true);
       setError(null);
       const data = await reportService.getDashboardKPIs(
-        period,
+        p,
         undefined,
         getEffectiveUserId(),
-        period === "custom" ? customStart : undefined,
-        period === "custom" ? customEnd : undefined,
+        p === "custom" ? (overrideStart ?? customStart) : undefined,
+        p === "custom" ? (overrideEnd ?? customEnd) : undefined,
+        v,
       );
       setKpis(data);
       setLastUpdate(new Date());
@@ -94,50 +111,26 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
     }
   };
 
-  // Handler para refresh manual
   const handleRefresh = () => {
     toast.success("Atualizando dados...");
     fetchDashboardData();
   };
 
-  // Handler para alterar período
   const setPeriod = (newPeriod: PeriodType) => {
-    // Para custom, pré-preenche end com hoje e aguarda o usuário definir o start
     if (newPeriod === "custom") {
       setPeriodState(newPeriod);
       setCustomEnd(new Date().toISOString().split("T")[0]);
       return;
     }
     setPeriodState(newPeriod);
-    setLoading(true);
-    reportService.getDashboardKPIs(newPeriod, undefined, getEffectiveUserId()).then((data) => {
-      setKpis(data);
-      setLastUpdate(new Date());
-      setLoading(false);
-    }).catch((err) => {
-      console.error("❌ Erro ao buscar dados:", err);
-      setError(err?.response?.data?.detail || "Erro ao carregar dashboard");
-      toast.error("Erro ao carregar dados");
-      setLoading(false);
-    });
+    fetchDashboardData(newPeriod);
   };
 
-  // Aplica intervalo personalizado e busca os dados
   const setCustomRange = (start: string, end: string) => {
     setCustomStart(start);
     setCustomEnd(end);
     if (!start || !end) return;
-    setLoading(true);
-    reportService.getDashboardKPIs("custom", undefined, getEffectiveUserId(), start, end).then((data) => {
-      setKpis(data);
-      setLastUpdate(new Date());
-      setLoading(false);
-    }).catch((err) => {
-      console.error("❌ Erro ao buscar dados:", err);
-      setError(err?.response?.data?.detail || "Erro ao carregar dashboard");
-      toast.error("Erro ao carregar dados");
-      setLoading(false);
-    });
+    fetchDashboardData("custom", undefined, start, end);
   };
 
   return (
@@ -153,6 +146,8 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
         lastUpdate,
         selectedUserId,
         setSelectedUserId,
+        view,
+        setView,
         fetchDashboardData,
         handleRefresh,
         setPeriod,

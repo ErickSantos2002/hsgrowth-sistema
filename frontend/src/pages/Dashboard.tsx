@@ -10,7 +10,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 
-import { useDashboard, PeriodType } from "../context/DashboardContext";
+import { useDashboard, PeriodType, ViewType } from "../context/DashboardContext";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../hooks/useAuth";
 import userService from "../services/userService";
@@ -20,8 +20,6 @@ import DashboardSDR      from "../components/dashboard/DashboardSDR";
 import DashboardVendedor from "../components/dashboard/DashboardVendedor";
 
 // ─── Tipos de visão ──────────────────────────────────────────────────────────
-type ViewType = "sdr" | "vendedor";
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -31,7 +29,7 @@ const Dashboard: React.FC = () => {
   const {
     kpis, loading, error, period, customStart, customEnd,
     setCustomRange, lastUpdate, selectedUserId, setSelectedUserId,
-    fetchDashboardData, handleRefresh, setPeriod,
+    view, setView, fetchDashboardData, handleRefresh, setPeriod,
   } = useDashboard();
 
   const { darkMode } = useTheme();
@@ -40,10 +38,6 @@ const Dashboard: React.FC = () => {
   const isAdminOrManager = user?.role === "admin" || user?.role === "manager";
   const isSdr         = user?.role === "sdr";
   const isSalesperson = user?.role === "salesperson";
-
-  // Visão ativa: SDR vs Vendedor
-  // Para roles fixas, a visão é determinada pelo papel
-  const [view, setView] = useState<ViewType>(isSdr ? "sdr" : "vendedor");
 
   // Lista de usuários para o seletor (admin/manager)
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -68,10 +62,10 @@ const Dashboard: React.FC = () => {
     custom:  customStart && customEnd ? `${customStart} – ${customEnd}` : "Personalizado",
   };
 
-  // Quando admin muda de visão, limpa o usuário selecionado
+  // Quando admin muda de visão, o setView do contexto já limpa o selectedUserId
   const handleViewChange = (v: ViewType) => {
     setView(v);
-    setSelectedUserId(null);
+    fetchDashboardData(undefined, v);
   };
 
   // Recarrega ao trocar usuário (ignora mount)

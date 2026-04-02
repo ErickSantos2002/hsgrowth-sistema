@@ -81,25 +81,10 @@ async def get_dashboard_kpis(
     start_date: Optional[str] = Query(None, description="Data inicial (YYYY-MM-DD) — obrigatório quando period=custom"),
     end_date: Optional[str] = Query(None, description="Data final (YYYY-MM-DD) — obrigatório quando period=custom"),
     user_id: Optional[int] = Query(None, description="[Admin/Gerente] Filtrar por usuário específico"),
+    view: Optional[str] = Query(None, description="Visão ativa: 'sdr' filtra apenas cards com SDR vinculado; 'vendedor' sem filtro adicional"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
-    """
-    Retorna os KPIs principais para o dashboard.
-
-    **Métricas incluídas:**
-    - Total de cards (total, hoje, semana, mês)
-    - Cards ganhos/perdidos (hoje, semana, mês)
-    - Cards vencidos (atrasados, vencendo hoje, vencendo esta semana)
-    - Valores monetários (total, ganho este mês, pipeline)
-    - Taxa de conversão do mês
-    - Tempo médio para ganhar (dias)
-    - Top 5 vendedores do mês
-
-    **Filtro por usuário:**
-    - Vendedores e SDRs veem apenas seus próprios dados automaticamente.
-    - Admin e Gerentes veem todos os dados; podem passar `user_id` para filtrar por usuário específico.
-    """
     service = ReportService(db)
     return service.get_dashboard_kpis(
         current_user=current_user,
@@ -107,6 +92,7 @@ async def get_dashboard_kpis(
         period_key=period or "month",
         custom_start=start_date,
         custom_end=end_date,
+        view=view,
     )
 
 

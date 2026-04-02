@@ -15,6 +15,7 @@ from app.models.list import List as BoardList
 from app.models.user import User
 from app.models.card_transfer import CardTransfer
 from app.models.activity import Activity
+from app.models.card_list_history import CardListHistory
 from app.repositories.board_repository import BoardRepository
 from app.repositories.card_repository import CardRepository
 from app.schemas.report import (
@@ -183,6 +184,7 @@ class ReportService:
         period_key: str = "month",
         custom_start: Optional[str] = None,
         custom_end: Optional[str] = None,
+        view: Optional[str] = None,
     ) -> DashboardKPIsResponse:
         """
         Retorna os KPIs principais para o dashboard.
@@ -211,6 +213,15 @@ class ReportService:
 
         # Filtro de usuário: salesperson/sdr veem só os próprios dados; admin/manager podem filtrar por user_id
         uf = self._build_dashboard_user_filter(current_user, user_id)
+
+        # Filtro de visão: garante que a dashboard SDR só conta cards com SDR vinculado
+        # e a dashboard Vendedor só conta cards com vendedor vinculado
+        role_name = current_user.role.name if current_user and current_user.role else ""
+        if not user_id and role_name in ("admin", "manager"):
+            if view == "sdr":
+                uf = uf + [Card.sdr_id.isnot(None)]
+            elif view == "vendedor":
+                uf = uf + [Card.assigned_to_id.isnot(None)]
 
         # Busca todos os boards do sistema
         boards = self.db.query(Board).all()
@@ -341,6 +352,34 @@ class ReportService:
             *uf
         ).scalar() or 0
 
+        # Leads sem nenhuma atividade registrada (sem contato)
+        leads_sem_contato = self.db.query(func.count(Card.id)).join(
+            BoardList, Card.list_id == BoardList.id
+        ).outerjoin(
+            Activity, Activity.card_id == Card.id
+        ).filter(
+            BoardList.board_id.in_(board_ids),
+            Card.is_won == 0,
+            Activity.id.is_(None),
+            *uf
+        ).scalar() or 0
+
+        # Cards parados na mesma etapa há mais de 3 dias
+        three_days_ago = datetime.now() - timedelta(days=3)
+        cards_parados = self.db.query(func.count(func.distinct(Card.id))).join(
+            BoardList, Card.list_id == BoardList.id
+        ).join(
+            CardListHistory, and_(
+                CardListHistory.card_id == Card.id,
+                CardListHistory.exited_at.is_(None),
+                CardListHistory.entered_at < three_days_ago,
+            )
+        ).filter(
+            BoardList.board_id.in_(board_ids),
+            Card.is_won == 0,
+            *uf
+        ).scalar() or 0
+
         # Valores monetários
         total_value = self.db.query(func.sum(Card.value)).join(
             BoardList, Card.list_id == BoardList.id
@@ -419,16 +458,63 @@ class ReportService:
             for name, cards_won, total_value in top_sellers_query
         ]
 
-        # Cards por estágio/lista (para gráfico de barras)
+        # Ranking de SDRs por reuniões agendadas no período
+        # Conta cards distintos que entraram na lista "Agendado" (id=26) por SDR
+        LIST_AGENDADO_ID = 26
+        top_sdrs_query = self.db.query(
+            User.name,
+            func.count(func.distinct(CardListHistory.card_id)).label('meetings_scheduled')
+        ).join(
+            Card, Card.sdr_id == User.id
+        ).join(
+            CardListHistory, and_(
+                CardListHistory.card_id == Card.id,
+                CardListHistory.list_id == LIST_AGENDADO_ID,
+            )
+        ).filter(
+            Card.sdr_id.isnot(None),
+            func.date(CardListHistory.entered_at) >= start_of_period,
+            func.date(CardListHistory.entered_at) <= end_of_period,
+            *uf
+        ).group_by(
+            User.id, User.name
+        ).order_by(
+            func.count(func.distinct(CardListHistory.card_id)).desc()
+        ).limit(5).all()
+
+        top_sdrs_by_meetings = [
+            {
+                "name": name,
+                "meetings_scheduled": meetings_scheduled,
+            }
+            for name, meetings_scheduled in top_sdrs_query
+        ]
+
+        # Cards por estágio/lista — conta cards distintos que ENTRARAM em cada
+        # lista dentro do período selecionado (via card_list_history).
+        # Filtra pelo board relevante para cada view, garantindo a ordem correta do pipeline.
+        BOARD_PROSPECCAO_ID = 6   # Board SDR
+        BOARD_AQUISICAO_ID  = 7   # Board Vendedor
+        if view == "sdr":
+            stage_board_ids = [BOARD_PROSPECCAO_ID]
+        elif view == "vendedor":
+            stage_board_ids = [BOARD_AQUISICAO_ID]
+        else:
+            stage_board_ids = board_ids
+
         cards_by_stage_query = self.db.query(
+            BoardList.id.label('list_id'),
             BoardList.name.label('stage_name'),
-            func.count(Card.id).label('card_count'),
+            func.count(func.distinct(CardListHistory.card_id)).label('card_count'),
             func.sum(Card.value).label('total_value')
         ).join(
-            Card, Card.list_id == BoardList.id
+            CardListHistory, CardListHistory.list_id == BoardList.id
+        ).join(
+            Card, Card.id == CardListHistory.card_id
         ).filter(
-            BoardList.board_id.in_(board_ids),
-            Card.is_won == 0,  # Apenas cards ativos
+            BoardList.board_id.in_(stage_board_ids),
+            func.date(CardListHistory.entered_at) >= start_of_period,
+            func.date(CardListHistory.entered_at) <= end_of_period,
             *uf
         ).group_by(
             BoardList.id, BoardList.name, BoardList.position
@@ -438,11 +524,12 @@ class ReportService:
 
         cards_by_stage = [
             {
+                "list_id": list_id,
                 "stage_name": stage_name,
                 "card_count": card_count,
                 "total_value": float(total_value or 0)
             }
-            for stage_name, card_count, total_value in cards_by_stage_query
+            for list_id, stage_name, card_count, total_value in cards_by_stage_query
         ]
 
         # Evolução de vendas (últimos 6 meses para gráfico de linha)
@@ -458,6 +545,28 @@ class ReportService:
             else:
                 next_month = month_start.replace(month=month_start.month + 1, day=1)
             month_end = next_month - timedelta(days=1)
+
+            # Novos leads no mês (cards criados)
+            new_leads_count = self.db.query(func.count(Card.id)).join(
+                BoardList, Card.list_id == BoardList.id
+            ).filter(
+                BoardList.board_id.in_(board_ids),
+                func.date(Card.created_at) >= month_start,
+                func.date(Card.created_at) <= month_end,
+                *uf
+            ).scalar() or 0
+
+            # Reuniões agendadas no mês (cards que entraram na lista Agendado)
+            meetings_count = self.db.query(
+                func.count(func.distinct(CardListHistory.card_id))
+            ).join(
+                Card, Card.id == CardListHistory.card_id
+            ).filter(
+                CardListHistory.list_id == LIST_AGENDADO_ID,
+                func.date(CardListHistory.entered_at) >= month_start,
+                func.date(CardListHistory.entered_at) <= month_end,
+                *uf
+            ).scalar() or 0
 
             # Cards ganhos no mês
             won_count = self.db.query(func.count(Card.id)).join(
@@ -493,6 +602,8 @@ class ReportService:
 
             sales_evolution.append({
                 "period": month_start.strftime("%b/%y"),  # Ex: "Jan/26"
+                "new_leads_count": new_leads_count,
+                "meetings_count": meetings_count,
                 "won_count": won_count,
                 "won_value": float(won_value),
                 "lost_count": lost_count
@@ -512,12 +623,15 @@ class ReportService:
             overdue_cards=overdue_cards,
             due_today=due_today,
             due_this_week=due_this_week,
+            leads_sem_contato=leads_sem_contato,
+            cards_parados=cards_parados,
             total_value=total_value,
             won_value_this_month=won_value_this_month,
             pipeline_value=pipeline_value,
             conversion_rate_this_month=conversion_rate_this_month,
             avg_time_to_win_days=avg_time_to_win_days,
             top_sellers_this_month=top_sellers_this_month,
+            top_sdrs_by_meetings=top_sdrs_by_meetings,
             cards_by_stage=cards_by_stage,
             sales_evolution=sales_evolution
         )

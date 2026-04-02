@@ -60,6 +60,10 @@ class DashboardKPIsResponse(BaseModel):
     due_today: int = Field(..., description="Cards vencendo hoje")
     due_this_week: int = Field(..., description="Cards vencendo esta semana")
 
+    # Riscos operacionais
+    leads_sem_contato: int = Field(0, description="Cards ativos sem nenhuma atividade registrada")
+    cards_parados: int = Field(0, description="Cards ativos parados na mesma etapa há mais de 3 dias")
+
     # Valores monetários
     total_value: Decimal = Field(..., description="Valor total de todos os cards")
     won_value_this_month: Decimal = Field(..., description="Valor ganho este mês")
@@ -75,6 +79,10 @@ class DashboardKPIsResponse(BaseModel):
     top_sellers_this_month: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="Top 5 vendedores do mês (nome, cards_won, total_value)"
+    )
+    top_sdrs_by_meetings: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Ranking de SDRs por reuniões agendadas no período (name, meetings_scheduled)"
     )
 
     # Dados para gráficos

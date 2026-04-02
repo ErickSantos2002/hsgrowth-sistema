@@ -153,6 +153,7 @@ class ReportService {
     user_id?: number,
     start_date?: string,
     end_date?: string,
+    view?: "sdr" | "vendedor",
   ): Promise<any> {
     const params: Record<string, any> = {};
     if (period) params.period = period;
@@ -160,6 +161,7 @@ class ReportService {
     if (user_id) params.user_id = user_id;
     if (start_date) params.start_date = start_date;
     if (end_date) params.end_date = end_date;
+    if (view) params.view = view;
 
     const response = await api.get("/api/v1/reports/dashboard", { params });
     return response.data;
