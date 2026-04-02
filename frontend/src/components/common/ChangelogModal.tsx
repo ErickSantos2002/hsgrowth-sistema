@@ -25,6 +25,36 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.20",
+    date: "02/04/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Dashboard SDR totalmente revisado: todos os KPIs agora mostram dados reais filtrados por SDR vinculado ao card.",
+      },
+      {
+        type: "improvement",
+        text: "Cards por Etapa: contagem baseada em quando o card entrou na etapa no período selecionado (não o total acumulado), na ordem correta do pipeline.",
+      },
+      {
+        type: "improvement",
+        text: "Evolução de Leads: gráfico agora exibe Novos Leads e Reuniões Agendadas por mês — métricas relevantes para o SDR.",
+      },
+      {
+        type: "feature",
+        text: "Ranking SDR por reuniões agendadas: mostra quem mais agendou reuniões no período selecionado.",
+      },
+      {
+        type: "feature",
+        text: "4 taxas de conversão do funil SDR: Lead→Conectado, Conectado→Agendado, Lead→Agendado e Agendado→Ganho.",
+      },
+      {
+        type: "feature",
+        text: "Riscos operacionais: novos indicadores de Leads sem Contato (nenhuma atividade registrada) e Cards Parados há mais de 3 dias sem movimentação.",
+      },
+    ],
+  },
+  {
     version: "1.6.19",
     date: "30/03/2026",
     entries: [

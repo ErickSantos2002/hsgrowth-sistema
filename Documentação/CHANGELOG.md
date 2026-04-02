@@ -7,6 +7,58 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.20] - 2026-04-02
+
+### Adicionado / Corrigido
+
+#### Dashboard SDR — dados reais em todos os KPIs e métricas
+
+Revisão completa do dashboard de SDR, substituindo placeholders e dados incorretos por métricas reais calculadas no backend.
+
+**Filtro de visão (view param):**
+- Novo parâmetro `view` (`sdr` / `vendedor`) nos endpoints e serviço de dashboard
+- Quando `view=sdr`, todos os KPIs e contagens filtram apenas cards com `sdr_id IS NOT NULL`
+- `DashboardContext` inicializa a view automaticamente conforme o papel do usuário logado; `setView` reseta o usuário selecionado
+
+**Cards por Etapa:**
+- Substituída contagem estática (cards na lista atual) por contagem de cards que **entraram** na etapa no período selecionado, via `card_list_history.entered_at`
+- Identificação de etapas por `list_id` (em vez de string), eliminando falsos positivos por nomes similares (ex: "Agendado" vs "Reunião Agendada")
+- Filtro de board por view: `view=sdr` exibe apenas o board Prospecção (id=6); `view=vendedor` exibe apenas Aquisição (id=7)
+- Removido filtro `is_won == 0` — cards que entraram na etapa no período são contados independente do status atual
+
+**Evolução de Leads (gráfico):**
+- Substituídas as linhas de Ganhos/Perdidos (métricas de vendedor) por:
+  - **Novos Leads** (cards criados por mês) — linha azul
+  - **Reuniões Agendadas** (cards que entraram na lista Agendado por mês) — linha verde
+- Novos campos `new_leads_count` e `meetings_count` adicionados a cada item de `sales_evolution`
+
+**Ranking SDR:**
+- Removido o ranking de vendedores do dashboard SDR
+- Novo ranking de SDRs por reuniões agendadas no período: conta cards distintos que entraram na lista "Agendado" (id=26) por SDR
+
+**Taxas de Conversão (4 cards):**
+- Todos os 4 cards agora com dados reais calculados no frontend a partir de KPIs existentes:
+  - Lead → Conectado: `conectados / newLeads`
+  - Conectado → Agendado: `agendados / conectados`
+  - Lead → Agendado: `agendados / newLeads`
+  - Agendado → Ganho: `won_cards_this_month / agendados`
+
+**Riscos Operacionais (2 novos KPIs no backend):**
+- `leads_sem_contato`: cards ativos sem nenhuma atividade registrada (LEFT JOIN com tabela `activities`, Activity.id IS NULL)
+- `cards_parados`: cards ativos cuja entrada mais recente em `card_list_history` tem `exited_at IS NULL` e `entered_at` há mais de 3 dias
+
+**Arquivos alterados:**
+- `backend/app/services/report_service.py` — view filter, cards_by_stage por board, evolução com new_leads/meetings, ranking SDR, leads_sem_contato, cards_parados
+- `backend/app/schemas/report.py` — campos `leads_sem_contato`, `cards_parados`, `top_sdrs_by_meetings`; `sales_evolution` com `new_leads_count` e `meetings_count`
+- `backend/app/api/v1/endpoints/reports.py` — parâmetro `view` repassado ao serviço
+- `frontend/src/types/index.ts` — novos campos em `DashboardKPIs`
+- `frontend/src/services/reportService.ts` — parâmetro `view` na chamada de API
+- `frontend/src/context/DashboardContext.tsx` — estado `view`, inicialização por role, `fetchDashboardData` com override params
+- `frontend/src/pages/Dashboard.tsx` — `view`/`setView` lidos do contexto
+- `frontend/src/components/dashboard/DashboardSDR.tsx` — todos os KPIs e gráficos atualizados
+
+---
+
 ## [1.6.19] - 2026-03-30
 
 ### Adicionado
