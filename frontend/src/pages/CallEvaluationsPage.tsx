@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Phone, Star, TrendingUp, AlertTriangle, Calendar } from "lucide-react";
+import { Phone, Star, TrendingUp, AlertTriangle, Filter } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import callEvaluationService, {
   CallEvaluation,
@@ -185,24 +185,126 @@ const CallEvaluationsPage: React.FC = () => {
   const goodCount = (byClassification["Excelente"] ?? 0) + (byClassification["Boa"] ?? 0);
   const badCount = (byClassification["Fraca"] ?? 0) + (byClassification["Crítica"] ?? 0);
 
+  const [showFilters, setShowFilters] = useState(false);
+
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-          <Phone size={20} />
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+            <Phone size={20} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Ligações</h1>
+            {!loading && (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {total} {total === 1 ? "avaliação registrada" : "avaliações registradas"}
+              </p>
+            )}
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Ligações</h1>
-          {!loading && (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {total} {total === 1 ? "avaliação registrada" : "avaliações registradas"}
-            </p>
+
+        {/* Botão Filtros */}
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors ${
+            showFilters || hasActiveFilters
+              ? "border-emerald-600 bg-emerald-600 text-white"
+              : "border-gray-300 bg-white text-slate-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          }`}
+        >
+          <Filter size={15} />
+          Filtros
+          {hasActiveFilters && (
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-emerald-600">
+              {[filterVendedor, filterClassification, period !== "month" ? period : ""].filter(Boolean).length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Painel de filtros colapsável */}
+      {showFilters && (
+        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+          <div className="flex flex-wrap gap-4">
+            {isManagerOrAdmin && (
+              <div className="min-w-[170px] flex-1">
+                <label className="mb-2 block text-xs font-medium text-slate-500 dark:text-slate-400">Vendedor</label>
+                <select
+                  value={filterVendedor}
+                  onChange={(e) => handleFilterChange(setFilterVendedor, e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                >
+                  <option value="">Todos os vendedores</option>
+                  {vendedores.map((v) => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="min-w-[170px] flex-1">
+              <label className="mb-2 block text-xs font-medium text-slate-500 dark:text-slate-400">Classificação</label>
+              <select
+                value={filterClassification}
+                onChange={(e) => handleFilterChange(setFilterClassification, e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              >
+                {CLASSIFICATION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="min-w-[170px] flex-1">
+              <label className="mb-2 block text-xs font-medium text-slate-500 dark:text-slate-400">Período</label>
+              <SelectMenu
+                size="sm"
+                value={period}
+                options={PERIOD_OPTIONS}
+                onChange={handlePeriodChange}
+              />
+            </div>
+
+            {period === "custom" && (
+              <div className="min-w-[260px] flex-1">
+                <label className="mb-2 block text-xs font-medium text-slate-500 dark:text-slate-400">Datas</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={customStart}
+                    max={customEnd || undefined}
+                    onChange={(e) => { setCustomStart(e.target.value); setCurrentPage(1); }}
+                    className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                  />
+                  <span className="text-sm text-slate-400">até</span>
+                  <input
+                    type="date"
+                    value={customEnd}
+                    min={customStart || undefined}
+                    onChange={(e) => { setCustomEnd(e.target.value); setCurrentPage(1); }}
+                    className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {hasActiveFilters && (
+            <div className="mt-3 border-t border-gray-200 pt-3 dark:border-slate-700">
+              <button
+                onClick={() => { setFilterVendedor(""); setFilterClassification(""); setPeriod("month"); setCurrentPage(1); }}
+                className="text-xs text-slate-400 underline hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                Limpar filtros
+              </button>
+            </div>
           )}
         </div>
-      </div>
+      )}
 
       {/* Stats */}
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -300,80 +402,6 @@ const CallEvaluationsPage: React.FC = () => {
 
       {/* Container principal */}
       <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/30">
-        {/* Filtros */}
-        <div className="flex flex-col items-stretch gap-3 border-b border-gray-200 p-4 dark:border-slate-700/50 sm:flex-row sm:flex-wrap sm:items-center">
-          {/* Filtro por vendedor — só aparece para manager/admin */}
-          {isManagerOrAdmin && (
-            <select
-              value={filterVendedor}
-              onChange={(e) => handleFilterChange(setFilterVendedor, e.target.value)}
-              className={selectClass}
-            >
-              <option value="">Todos os vendedores</option>
-              {vendedores.map((v) => (
-                <option key={v} value={v}>{v}</option>
-              ))}
-            </select>
-          )}
-
-          {/* Filtro por classificação */}
-          <select
-            value={filterClassification}
-            onChange={(e) => handleFilterChange(setFilterClassification, e.target.value)}
-            className={selectClass}
-          >
-            {CLASSIFICATION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-
-          {/* Filtro de período */}
-          <div className="min-w-[160px]">
-            <SelectMenu
-              size="sm"
-              value={period}
-              options={PERIOD_OPTIONS}
-              onChange={handlePeriodChange}
-            />
-          </div>
-
-          {/* Inputs de data personalizada */}
-          {period === "custom" && (
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={customStart}
-                max={customEnd || undefined}
-                onChange={(e) => { setCustomStart(e.target.value); setCurrentPage(1); }}
-                className={selectClass}
-              />
-              <span className="text-sm text-slate-400">até</span>
-              <input
-                type="date"
-                value={customEnd}
-                min={customStart || undefined}
-                onChange={(e) => { setCustomEnd(e.target.value); setCurrentPage(1); }}
-                className={selectClass}
-              />
-            </div>
-          )}
-
-          {/* Limpar filtros */}
-          {hasActiveFilters && (
-            <button
-              onClick={() => {
-                setFilterVendedor("");
-                setFilterClassification("");
-                setPeriod("month");
-                setCurrentPage(1);
-              }}
-              className="text-xs text-slate-400 underline hover:text-slate-600 dark:hover:text-slate-300"
-            >
-              Limpar filtros
-            </button>
-          )}
-        </div>
-
         {/* Lista */}
         <div className="p-4">
           {loading ? (

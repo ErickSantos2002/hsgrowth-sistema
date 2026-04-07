@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Filter } from "lucide-react";
 import { User } from "../../types";
 import { TYPE_CONFIG, PRIORITY_CONFIG } from "../../constants/cardTaskConfig";
 
@@ -97,6 +97,8 @@ const ActivityFilters: React.FC<ActivityFiltersProps> = ({
   users,
   isAdminOrManager,
 }) => {
+  const [showPanel, setShowPanel] = useState(false);
+
   const update = (field: keyof ActivityFilterState, value: ActivityFilterState[typeof field]) => {
     onChange({ ...filters, [field]: value });
   };
@@ -133,55 +135,81 @@ const ActivityFilters: React.FC<ActivityFiltersProps> = ({
     })),
   ];
 
+  const hasActiveFilters = !!(filters.taskType || filters.priority || filters.assignedToId);
+
   return (
-    <div className="flex flex-col items-center gap-4 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-      {/* Botões pill de período */}
-      <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
-        {periodOptions.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => update("period", option.value)}
-            className={`rounded-full border px-3 py-1 text-sm font-medium transition-all ${
-              filters.period === option.value
-                ? "border-emerald-500 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                : "border-gray-200 bg-transparent text-slate-600 hover:border-emerald-400/50 hover:bg-emerald-500/10 dark:border-slate-700 dark:text-slate-400 dark:hover:border-emerald-500/40"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
+    <div>
+      {/* Linha principal: pills de período + botão Filtros */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+        <div className="flex flex-wrap gap-2">
+          {periodOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => update("period", option.value)}
+              className={`rounded-full border px-3 py-1 text-sm font-medium transition-all ${
+                filters.period === option.value
+                  ? "border-emerald-500 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                  : "border-gray-200 bg-transparent text-slate-600 hover:border-emerald-400/50 hover:bg-emerald-500/10 dark:border-slate-700 dark:text-slate-400 dark:hover:border-emerald-500/40"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => setShowPanel((v) => !v)}
+          className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors ${
+            showPanel || hasActiveFilters
+              ? "border-emerald-600 bg-emerald-600 text-white"
+              : "border-gray-300 bg-white text-slate-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          }`}
+        >
+          <Filter size={15} />
+          Filtros
+          {hasActiveFilters && (
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-emerald-600">
+              {[filters.taskType, filters.priority, filters.assignedToId].filter(Boolean).length}
+            </span>
+          )}
+        </button>
       </div>
 
-      <div className="hidden h-6 w-px bg-gray-200 dark:bg-slate-700 sm:block" />
+      {/* Painel colapsável */}
+      {showPanel && (
+        <div className="border-t border-gray-200 bg-gray-50 p-4 dark:border-slate-700/50 dark:bg-slate-800/50">
+          <div className="flex flex-wrap gap-4">
+            <div className="min-w-[170px] flex-1">
+              <label className="mb-2 block text-xs font-medium text-slate-500 dark:text-slate-400">Tipo</label>
+              <SelectMenu
+                value={filters.taskType}
+                options={typeOptions}
+                onChange={(v) => update("taskType", v)}
+              />
+            </div>
 
-      {/* Wrappers flex-col nos selects para ficarem w-full no mobile */}
-      <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-        <div className="w-full sm:w-auto">
-          <SelectMenu
-            value={filters.taskType}
-            options={typeOptions}
-            onChange={(v) => update("taskType", v)}
-          />
-        </div>
+            <div className="min-w-[170px] flex-1">
+              <label className="mb-2 block text-xs font-medium text-slate-500 dark:text-slate-400">Prioridade</label>
+              <SelectMenu
+                value={filters.priority}
+                options={priorityOptions}
+                onChange={(v) => update("priority", v)}
+              />
+            </div>
 
-        <div className="w-full sm:w-auto">
-          <SelectMenu
-            value={filters.priority}
-            options={priorityOptions}
-            onChange={(v) => update("priority", v)}
-          />
-        </div>
-
-        {isAdminOrManager && (
-          <div className="w-full sm:w-auto">
-            <SelectMenu
-              value={filters.assignedToId != null ? String(filters.assignedToId) : ""}
-              options={userOptions}
-              onChange={(v) => update("assignedToId", v ? Number(v) : null)}
-            />
+            {isAdminOrManager && (
+              <div className="min-w-[170px] flex-1">
+                <label className="mb-2 block text-xs font-medium text-slate-500 dark:text-slate-400">Responsável</label>
+                <SelectMenu
+                  value={filters.assignedToId != null ? String(filters.assignedToId) : ""}
+                  options={userOptions}
+                  onChange={(v) => update("assignedToId", v ? Number(v) : null)}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
