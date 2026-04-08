@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.22",
+    date: "06/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Filtro de período no Dashboard: nova opção 'Ontem' para visualizar os KPIs do dia anterior.",
+      },
+    ],
+  },
+  {
     version: "1.6.21",
     date: "02/04/2026",
     entries: [

@@ -7,6 +7,23 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.22] - 2026-04-06
+
+### Adicionado
+
+#### Dashboard — filtro de período "Ontem"
+
+- Nova opção **"Ontem"** no seletor de período do Dashboard, posicionada entre "Hoje" e "Esta Semana"
+- Todos os KPIs e métricas respondem ao filtro normalmente
+- Backend já possuía `PeriodEnum.YESTERDAY` implementado — apenas exposto no mapeamento do dashboard
+
+**Arquivos alterados:**
+- `backend/app/services/report_service.py` — `"yesterday"` adicionado ao `_DASHBOARD_PERIOD_MAP`
+- `frontend/src/context/DashboardContext.tsx` — `PeriodType` inclui `"yesterday"`
+- `frontend/src/pages/Dashboard.tsx` — opção e label "Ontem" no seletor de período
+
+---
+
 ## [1.6.21] - 2026-04-02
 
 ### Adicionado / Corrigido

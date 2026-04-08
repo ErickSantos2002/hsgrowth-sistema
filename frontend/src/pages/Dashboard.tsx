@@ -54,12 +54,13 @@ const Dashboard: React.FC = () => {
 
   // Rótulo do período
   const periodLabel: Record<PeriodType, string> = {
-    today:   "Hoje",
-    week:    "Esta Semana",
-    month:   "Este Mês",
-    quarter: "Este Trimestre",
-    year:    "Este Ano",
-    custom:  customStart && customEnd ? `${customStart} – ${customEnd}` : "Personalizado",
+    today:     "Hoje",
+    yesterday: "Ontem",
+    week:      "Esta Semana",
+    month:     "Este Mês",
+    quarter:   "Este Trimestre",
+    year:      "Este Ano",
+    custom:    customStart && customEnd ? `${customStart} – ${customEnd}` : "Personalizado",
   };
 
   // Quando admin muda de visão, o setView do contexto já limpa o selectedUserId
@@ -244,12 +245,13 @@ const Dashboard: React.FC = () => {
           <SelectMenu
             value={period}
             options={[
-              { value: "today",   label: "Hoje" },
-              { value: "week",    label: "Esta Semana" },
-              { value: "month",   label: "Este Mês" },
-              { value: "quarter", label: "Este Trimestre" },
-              { value: "year",    label: "Este Ano" },
-              { value: "custom",  label: "Personalizado" },
+              { value: "today",     label: "Hoje" },
+              { value: "yesterday", label: "Ontem" },
+              { value: "week",      label: "Esta Semana" },
+              { value: "month",     label: "Este Mês" },
+              { value: "quarter",   label: "Este Trimestre" },
+              { value: "year",      label: "Este Ano" },
+              { value: "custom",    label: "Personalizado" },
             ]}
             onChange={(v) => setPeriod(v as PeriodType)}
             icon={<Calendar size={14} className="text-slate-400" />}

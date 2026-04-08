@@ -172,8 +172,9 @@ class ReportService:
 
     # Mapeamento dos valores de período do frontend para PeriodEnum
     _DASHBOARD_PERIOD_MAP = {
-        "today":   PeriodEnum.TODAY,
-        "week":    PeriodEnum.THIS_WEEK,
+        "today":     PeriodEnum.TODAY,
+        "yesterday": PeriodEnum.YESTERDAY,
+        "week":      PeriodEnum.THIS_WEEK,
         "month":   PeriodEnum.THIS_MONTH,
         "quarter": PeriodEnum.THIS_QUARTER,
         "year":    PeriodEnum.THIS_YEAR,
