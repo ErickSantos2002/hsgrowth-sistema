@@ -520,6 +520,15 @@ const CardDetails: React.FC = () => {
   // Visualizadores têm acesso somente leitura — nenhuma ação de escrita permitida
   const isViewer = currentUser?.role === "viewer";
 
+  // SDRs só podem editar cards no board de Prospecção (board_id 6)
+  // Nos demais boards (Aquisição, Expansão) têm acesso somente leitura
+  const BOARD_PROSPECCAO_ID = 6;
+  const isSdrReadOnly =
+    currentUser?.role === "sdr" && card?.board_id !== BOARD_PROSPECCAO_ID;
+
+  // Combina as duas condições de somente leitura
+  const isReadOnly = isViewer || isSdrReadOnly;
+
   // Encontra o responsável atual
   const assignedUser = users.find((u) => u.id === card?.assigned_to_id);
 
@@ -564,7 +573,7 @@ const CardDetails: React.FC = () => {
               </button>
 
               {/* Título - editável apenas para não-visualizadores */}
-              {isTitleEditing && !isViewer ? (
+              {isTitleEditing && !isReadOnly ? (
                 <input
                   type="text"
                   value={titleValue}
@@ -582,11 +591,11 @@ const CardDetails: React.FC = () => {
                 />
                 ) : (
                   <h1
-                    onClick={() => !isViewer && setIsTitleEditing(true)}
+                    onClick={() => !isReadOnly && setIsTitleEditing(true)}
                     className={`text-center text-2xl font-semibold text-slate-900 dark:text-white sm:text-left ${
-                      !isViewer ? "cursor-pointer transition-colors hover:text-blue-600 dark:hover:text-blue-400" : ""
+                      !isReadOnly ? "cursor-pointer transition-colors hover:text-blue-600 dark:hover:text-blue-400" : ""
                     }`}
-                    title={!isViewer ? "Clique para editar" : undefined}
+                    title={!isReadOnly ? "Clique para editar" : undefined}
                   >
                     {card.title}
                   </h1>
@@ -796,7 +805,7 @@ const CardDetails: React.FC = () => {
               {/* Botões de ação - ocultos para visualizadores */}
 
               {/* Botão Ganho — oculto em boards sem lista de ganho (ex: Prospecção) */}
-              {!isViewer && !card.is_won && !card.is_lost && card.board_has_done_stage && (
+              {!isReadOnly && !card.is_won && !card.is_lost && card.board_has_done_stage && (
                 <button
                   onClick={handleMarkAsWon}
                   className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 font-medium text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-700 hover:to-emerald-600"
@@ -807,7 +816,7 @@ const CardDetails: React.FC = () => {
               )}
 
               {/* Botão Perdido */}
-              {!isViewer && !card.is_won && !card.is_lost && (
+              {!isReadOnly && !card.is_won && !card.is_lost && (
                 <button
                   onClick={handleMarkAsLost}
                   className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-500 px-4 font-medium text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-700 hover:to-red-600"
@@ -818,7 +827,7 @@ const CardDetails: React.FC = () => {
               )}
 
               {/* Botão Atribuir Vendedor Automaticamente (Rodízio) */}
-              {!isViewer && !card.is_won && !card.is_lost && !card.assigned_to_id && (
+              {!isReadOnly && !card.is_won && !card.is_lost && !card.assigned_to_id && (
                 <div className="relative">
                   <button
                     onClick={() => setShowAssignConfirm(v => !v)}
@@ -911,7 +920,7 @@ const CardDetails: React.FC = () => {
                     Negócio Perdido
                   </div>
                   {/* Botão de reabertura - oculto para visualizadores */}
-                  {!isViewer && (
+                  {!isReadOnly && (
                     <button
                       onClick={() => setShowReopenModal(true)}
                       className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-blue-600"
@@ -927,7 +936,7 @@ const CardDetails: React.FC = () => {
           </div>
 
           {/* Pipeline de Stages - oculto para visualizadores */}
-          {card.board_id && !isViewer && (
+          {card.board_id && !isReadOnly && (
             <div className="mt-3">
               <PipelineStages
                 boardId={card.board_id}
@@ -950,27 +959,34 @@ const CardDetails: React.FC = () => {
       <div className="relative z-0 flex flex-1 flex-col overflow-y-auto sm:min-h-0 sm:flex-row sm:overflow-hidden">
         {/* ========== COLUNA ESQUERDA: 30% - INFORMAÇÕES (SCROLL INDEPENDENTE) ========== */}
         <div className="relative z-0 w-full flex-none overflow-visible border-b-0 sm:z-auto sm:min-h-0 sm:w-[30%] sm:overflow-y-auto sm:overflow-x-hidden sm:border-b-0 sm:border-r sm:border-gray-200 dark:sm:border-slate-700/50">
+          {/* Banner de somente leitura para SDR fora do board de Prospecção */}
+          {isSdrReadOnly && (
+            <div className="flex items-center gap-2 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-600 dark:text-amber-400">
+              <span>👁️ Somente visualização — edição disponível apenas no board de Prospecção</span>
+            </div>
+          )}
           <div className="space-y-4 p-6 sm:min-h-full">
             {/* Seção: Resumo */}
             <SummarySection
               card={card}
               onUpdate={handleOptimisticUpdate}
+              readOnly={isReadOnly}
             />
 
             {/* Seção: Cliente (Organização) */}
-            <ClientSection card={card} onUpdate={loadCardData} />
+            <ClientSection card={card} onUpdate={loadCardData} readOnly={isReadOnly} />
 
             {/* Seção: Informação de Contato (Pessoa) */}
-            <ContactSection card={card} onUpdate={loadCardData} />
+            <ContactSection card={card} onUpdate={loadCardData} readOnly={isReadOnly} />
 
             {/* Seção: Campos Personalizados */}
-            <CustomFieldsSection card={card} onUpdate={loadCardData} />
+            <CustomFieldsSection card={card} onUpdate={loadCardData} readOnly={isReadOnly} />
 
             {/* Seção: Produto (mockada) */}
-            <ProductSection card={card} onUpdate={loadCardData} />
+            <ProductSection card={card} onUpdate={loadCardData} readOnly={isReadOnly} />
 
             {/* Seção: Automações */}
-            <AutomacoesSection card={card} onUpdate={handleOptimisticUpdate} />
+            <AutomacoesSection card={card} onUpdate={handleOptimisticUpdate} readOnly={isReadOnly} />
           </div>
         </div>
 
@@ -1059,7 +1075,7 @@ const CardDetails: React.FC = () => {
                 </div>
 
                 {/* Botão Ligar — sempre visível fora da área de scroll */}
-                {!isViewer && !card.is_won && !card.is_lost && (
+                {!isReadOnly && !card.is_won && !card.is_lost && (
                   <button
                     onClick={handleQuickCall}
                     disabled={isQuickCalling || hasOpenCallActivity || !card.person_id}
@@ -1095,7 +1111,7 @@ const CardDetails: React.FC = () => {
               {activeTab === "atividade" && (
                 <>
                   {/* Área de Criação Rápida - oculta para visualizadores */}
-                  {!isViewer && (
+                  {!isReadOnly && (
                     <QuickActivityForm
                       cardId={card.id}
                       onSave={loadCardData}
@@ -1119,7 +1135,7 @@ const CardDetails: React.FC = () => {
                   cardId={card.id}
                   notes={card.notes || []}
                   onUpdate={loadCardData}
-                  readOnly={isViewer}
+                  readOnly={isReadOnly}
                 />
               )}
 
@@ -1128,12 +1144,12 @@ const CardDetails: React.FC = () => {
                   cardId={card.id}
                   card={card}
                   onUpdate={loadCardData}
-                  readOnly={isViewer}
+                  readOnly={isReadOnly}
                 />
               )}
 
               {activeTab === "arquivos" && cardId && (
-                <FilesSection cardId={Number(cardId)} readOnly={isViewer} />
+                <FilesSection cardId={Number(cardId)} readOnly={isReadOnly} />
               )}
 
               {activeTab === "ligacoes" && card && (

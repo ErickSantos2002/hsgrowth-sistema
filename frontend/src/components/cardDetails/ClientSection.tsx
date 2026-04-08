@@ -14,6 +14,7 @@ import { useConfirm } from "../../contexts/ConfirmContext";
 interface ClientSectionProps {
   card: Card;
   onUpdate: () => void;
+  readOnly?: boolean;
 }
 
 /**
@@ -21,7 +22,7 @@ interface ClientSectionProps {
  * Permite vincular tanto pessoas físicas (CPF) quanto jurídicas (CNPJ)
  * Segunda seção da coluna esquerda, expandida por padrão
  */
-const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
+const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly = false }) => {
   const { confirm } = useConfirm();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(false);
@@ -236,6 +237,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
           title="Cliente (Organização)"
           defaultExpanded={false}
           icon={<Building2 size={18} />}
+          readOnly={readOnly}
         >
           <div className="space-y-3">
             <p className="py-2 text-center text-sm text-slate-400 dark:text-slate-400">
@@ -457,13 +459,15 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate }) => {
               className="w-full"
             />
 
-            <ActionButton
-              icon={<Trash2 size={16} />}
-              label="Desvincular cliente"
-              onClick={handleUnlinkClient}
-              variant="danger"
-              className="w-full"
-            />
+            {!readOnly && (
+              <ActionButton
+                icon={<Trash2 size={16} />}
+                label="Desvincular cliente"
+                onClick={handleUnlinkClient}
+                variant="danger"
+                className="w-full"
+              />
+            )}
           </div>
         </div>
       )}

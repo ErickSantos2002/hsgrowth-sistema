@@ -174,11 +174,19 @@ class CardService:
                 detail="Você não tem permissão para editar este card",
             )
 
-        if role_name == "sdr" and card.sdr_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não tem permissão para editar este card",
-            )
+        if role_name == "sdr":
+            # SDR só pode editar cards no board de Prospecção (board_id == 6)
+            board = self.db.query(BoardList).filter(BoardList.id == card.list_id).first()
+            if board and board.board_id != 6:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="SDRs só podem editar cards no board de Prospecção",
+                )
+            if card.sdr_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Você não tem permissão para editar este card",
+                )
 
     def list_cards(
         self,

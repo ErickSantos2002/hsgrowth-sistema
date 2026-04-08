@@ -41,6 +41,7 @@ import {
 interface SummarySectionProps {
   card: Card;
   onUpdate: (updates: Partial<Card>) => Promise<void>;
+  readOnly?: boolean;
 }
 
 /**
@@ -48,7 +49,7 @@ interface SummarySectionProps {
  * Primeira seção da coluna esquerda, expandida por padrão
  * ATUALIZADO: Incluindo campos do blueprint da consultora
  */
-const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
+const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, readOnly = false }) => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [sdrUsers, setSDRUsers] = useState<UserType[]>([]);
   const [boards, setBoards] = useState<Board[]>([]);
@@ -369,7 +370,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate }) => {
   const channelOptions = ACQUISITION_CHANNELS.map((ch) => ({ value: ch, label: ch }));
 
   return (
-    <ExpandableSection title="Resumo" defaultExpanded={false} icon={<Info size={18} />}>
+    <ExpandableSection title="Resumo" defaultExpanded={false} icon={<Info size={18} />} readOnly={readOnly}>
       <div className="space-y-6">
         {/* ======== SEÇÃO: VALORES E PREVISÕES ======== */}
         <div className="space-y-4">

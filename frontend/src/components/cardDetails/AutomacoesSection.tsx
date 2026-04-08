@@ -5,9 +5,10 @@ import { Card } from "../../types";
 interface AutomacoesSectionProps {
   card: Card;
   onUpdate: (updates: Partial<Card>) => Promise<void>;
+  readOnly?: boolean;
 }
 
-export default function AutomacoesSection({ card, onUpdate }: AutomacoesSectionProps) {
+export default function AutomacoesSection({ card, onUpdate, readOnly = false }: AutomacoesSectionProps) {
   const handleToggleAutomacao01 = async () => {
     await onUpdate({ automacao01: !card.automacao01 });
   };
@@ -20,6 +21,7 @@ export default function AutomacoesSection({ card, onUpdate }: AutomacoesSectionP
       defaultExpanded={false}
       icon={<Zap size={18} />}
       badge={activeCount > 0 ? activeCount : undefined}
+      readOnly={readOnly}
     >
       <div className="space-y-3">
         {/* Automação 01 — Nutrição por E-mail */}

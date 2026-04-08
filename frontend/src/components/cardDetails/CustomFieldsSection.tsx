@@ -8,13 +8,14 @@ import { showError } from "../../utils/toast";
 interface CustomFieldsSectionProps {
   card: Card;
   onUpdate: () => void;
+  readOnly?: boolean;
 }
 
 /**
  * Seção "Campos Personalizados" - Campos customizados do board
  * Seção expansível na coluna esquerda, entre Contato e Produto
  */
-const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdate }) => {
+const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdate, readOnly = false }) => {
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [fieldValues, setFieldValues] = useState<Record<number, any>>({});
   const [editingField, setEditingField] = useState<number | null>(null);
@@ -319,6 +320,7 @@ const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({ card, onUpdat
       defaultExpanded={false}
       icon={<Settings size={18} />}
       badge={fieldDefinitions.filter((f) => f.is_required).length > 0 ? "!" : undefined}
+      readOnly={readOnly}
     >
       <div className="space-y-4">
         {fieldDefinitions.map((field) => (

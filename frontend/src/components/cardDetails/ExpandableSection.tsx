@@ -8,6 +8,7 @@ interface ExpandableSectionProps {
   icon?: React.ReactNode;
   badge?: string | number;
   headerClassName?: string;
+  readOnly?: boolean;
 }
 
 /**
@@ -21,6 +22,7 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
   icon,
   badge,
   headerClassName,
+  readOnly = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
@@ -56,8 +58,12 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
 
       {/* Conteúdo da seção - visível apenas quando expandido */}
       {isExpanded && (
-        <div className="border-t border-gray-200/50 dark:border-slate-700/50 bg-gray-50/30 dark:bg-slate-900/30 px-4 py-3">
+        <div className="relative border-t border-gray-200/50 dark:border-slate-700/50 bg-gray-50/30 dark:bg-slate-900/30 px-4 py-3">
           {children}
+          {/* Overlay de somente leitura — bloqueia edição mas permite visualização */}
+          {readOnly && (
+            <div className="absolute inset-0 cursor-not-allowed" />
+          )}
         </div>
       )}
     </div>

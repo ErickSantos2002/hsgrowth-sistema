@@ -11,6 +11,7 @@ import { useConfirm } from "../../contexts/ConfirmContext";
 interface ProductSectionProps {
   card: Card;
   onUpdate: () => void;
+  readOnly?: boolean;
 }
 
 /**
@@ -33,7 +34,7 @@ interface ProductItem {
  * Seção "Produto" - Gerenciamento de produtos vinculados ao card
  * Quarta seção da coluna esquerda, expandida por padrão quando há produtos
  */
-const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
+const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnly = false }) => {
   const { confirm } = useConfirm();
   // Produtos vindos do backend (card.products)
   const products = (card as any).products || [];
@@ -315,6 +316,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate }) => {
       defaultExpanded={false}
       icon={<Package size={18} />}
       badge={products.length > 0 ? products.length : undefined}
+      readOnly={readOnly}
     >
       <div className="space-y-4">
         {/* Lista de produtos */}

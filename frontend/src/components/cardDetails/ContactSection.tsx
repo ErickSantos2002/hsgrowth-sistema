@@ -13,13 +13,14 @@ import { useConfirm } from "../../contexts/ConfirmContext";
 interface ContactSectionProps {
   card: Card;
   onUpdate: () => void;
+  readOnly?: boolean;
 }
 
 /**
  * Seção "Informação de Contato (Pessoa)" - Dados da pessoa de contato
  * Terceira seção da coluna esquerda, expandida por padrão
  */
-const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
+const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate, readOnly = false }) => {
   const { confirm } = useConfirm();
   const [person, setPerson] = useState<Person | null>(null);
   const [loading, setLoading] = useState(false);
@@ -206,6 +207,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
           title="Informação de Contato (Pessoa)"
           defaultExpanded={false}
           icon={<User size={18} />}
+          readOnly={readOnly}
         >
           <div className="space-y-3">
             <p className="py-2 text-center text-sm text-slate-400 dark:text-slate-400">
@@ -478,13 +480,15 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate }) => {
               className="w-full"
             />
 
-            <ActionButton
-              icon={<Trash2 size={16} />}
-              label="Desvincular pessoa"
-              onClick={handleUnlinkPerson}
-              variant="danger"
-              className="w-full"
-            />
+            {!readOnly && (
+              <ActionButton
+                icon={<Trash2 size={16} />}
+                label="Desvincular pessoa"
+                onClick={handleUnlinkPerson}
+                variant="danger"
+                className="w-full"
+              />
+            )}
           </div>
         </div>
       )}
