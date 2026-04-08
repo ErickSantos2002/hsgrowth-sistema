@@ -103,6 +103,8 @@ class CardService:
 
     def _send_automacao01_webhook(self, card: Card, event: str, current_user=None) -> None:
         """Envia webhook de automação01 para o sistema externo de nutrição por e-mail."""
+        from app.models.audit_log import AuditLog
+
         webhook_url = settings.AUTOMACAO01_WEBHOOK_URL
         if not webhook_url:
             print(f"[AUTOMACAO01] AUTOMACAO01_WEBHOOK_URL não configurada — webhook não enviado")
@@ -149,8 +151,36 @@ class CardService:
                 )
                 resp.raise_for_status()
                 print(f"[AUTOMACAO01] Webhook '{event}' enviado para card {card.id} — status {resp.status_code}")
+
+            # Salva no audit_log para rastreabilidade
+            audit = AuditLog(
+                user_id=current_user.id if current_user else None,
+                action="WEBHOOK",
+                entity_type="Card",
+                entity_id=card.id,
+                description=f"Webhook automacao01 '{event}' enviado para card '{card.title}'",
+                data_after=payload,
+            )
+            self.db.add(audit)
+            self.db.commit()
+
         except Exception as e:
             print(f"[AUTOMACAO01] Erro ao enviar webhook '{event}': {e}")
+
+            # Salva falha no audit_log também
+            try:
+                audit = AuditLog(
+                    user_id=current_user.id if current_user else None,
+                    action="WEBHOOK_ERROR",
+                    entity_type="Card",
+                    entity_id=card.id,
+                    description=f"Erro ao enviar webhook automacao01 '{event}' para card '{card.title}': {str(e)}",
+                    data_after={"event": event, "error": str(e)},
+                )
+                self.db.add(audit)
+                self.db.commit()
+            except Exception:
+                pass
 
     def _check_write_permission(self, card: Card, current_user: User) -> None:
         """
