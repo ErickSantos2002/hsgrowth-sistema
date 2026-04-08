@@ -20,6 +20,7 @@ from app.schemas.card import CardCreate, CardUpdate, CardResponse, CardListRespo
 from app.schemas.field import CardFieldValueCreate, CardFieldValueResponse
 from app.models.card import Card
 from app.models.user import User
+from app.models.list import List as BoardList
 
 
 # Import local para evitar circular dependency
