@@ -72,6 +72,9 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     # Notificações
     notifications = relationship("Notification", back_populates="user", lazy="dynamic")
 
+    # Cadências do usuário
+    cadencias = relationship("Cadencia", back_populates="user", lazy="dynamic")
+
     # Configurações de notificação (one-to-one)
     notification_setting = relationship(
         "UserNotificationSetting",

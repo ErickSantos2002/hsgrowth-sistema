@@ -7,6 +7,44 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.23] - 2026-04-06
+
+### Adicionado
+
+#### Sistema de Cadências de Atividades
+
+Novo sistema que permite ao SDR/Vendedor criar **cadências** — conjuntos de metas de atividades por tipo — e disparar a criação automática dessas atividades nos cards mais antigos do usuário que ainda não têm atividade pendente daquele tipo.
+
+**Funcionalidades:**
+- Criar cadências com múltiplos tipos de atividade e quantidades (ex: 20 Ligações + 10 E-mails)
+- Editar e remover cadências próprias
+- **Disparar** a cadência: cria automaticamente atividades pendentes nos N cards mais antigos sem atividade daquele tipo
+- Resultado detalhado por tipo: quantas foram criadas vs. solicitadas e quantos cards foram afetados
+- Botão "Cadências" na página de Atividades, visível para Vendedores e SDRs
+
+**Regras de disparo:**
+- Considera apenas cards ativos (não ganhos, não perdidos, não excluídos) onde o usuário é SDR ou Vendedor vinculado
+- Ordena por card mais antigo (criado primeiro)
+- Pula cards que já têm atividade pendente do mesmo tipo
+- Respeita a quantidade solicitada por tipo
+
+**Arquivos criados:**
+- `backend/alembic/versions/2026_04_06_1000-add_cadencias_tables.py` — migration: tabelas `cadencias` e `cadencia_itens`
+- `backend/app/models/cadencia.py` — models `Cadencia` e `CadenciaItem`
+- `backend/app/schemas/cadencia.py` — schemas Pydantic (create, update, response, trigger result)
+- `backend/app/services/cadencia_service.py` — CRUD + lógica de disparo
+- `backend/app/api/v1/endpoints/cadencias.py` — endpoints REST
+- `frontend/src/services/cadenciaService.ts` — cliente API + tipos TypeScript
+- `frontend/src/components/activities/CadenciaModal.tsx` — modal com listagem, formulário e resultado
+
+**Arquivos alterados:**
+- `backend/app/models/__init__.py` — registra `Cadencia`, `CadenciaItem`
+- `backend/app/models/user.py` — relacionamento `user.cadencias`
+- `backend/app/api/v1/__init__.py` — registra router `/cadencias`
+- `frontend/src/pages/Activities.tsx` — botão "Cadências" + modal
+
+---
+
 ## [1.6.22] - 2026-04-06
 
 ### Adicionado

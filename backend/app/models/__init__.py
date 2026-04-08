@@ -62,6 +62,9 @@ from app.models.card_list_history import CardListHistory
 # Avaliações de ligações geradas pelo agente de IA
 from app.models.call_evaluation import CallEvaluation
 
+# Cadências de atividades
+from app.models.cadencia import Cadencia, CadenciaItem
+
 # Lista de todos os modelos (útil para imports)
 __all__ = [
     "Base",
@@ -100,4 +103,6 @@ __all__ = [
     "CardListHistory",
     "UserNotificationSetting",
     "CallEvaluation",
+    "Cadencia",
+    "CadenciaItem",
 ]

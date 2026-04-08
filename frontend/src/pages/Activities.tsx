@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckSquare, Play } from "lucide-react";
+import { CheckSquare, Play, Zap } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import cardTaskService, { CardTask } from "../services/cardTaskService";
 import userService from "../services/userService";
@@ -13,6 +13,7 @@ import ActivityFilters, {
 } from "../components/activities/ActivityFilters";
 import ActivityCard from "../components/activities/ActivityCard";
 import FocusMode from "../components/activities/FocusMode";
+import CadenciaModal from "../components/activities/CadenciaModal";
 
 /**
  * Traduz o período selecionado no filtro para parâmetros de data da API.
@@ -101,6 +102,7 @@ const Activities: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [focusModeOpen, setFocusModeOpen] = useState(false);
   const [focusTasks, setFocusTasks] = useState<CardTask[]>([]);
+  const [cadenciaModalOpen, setCadenciaModalOpen] = useState(false);
 
   // Carrega lista de usuários ativos para o filtro de responsável (admin/manager)
   useEffect(() => {
@@ -220,19 +222,30 @@ const Activities: React.FC = () => {
           </div>
         </div>
 
-        {/* Botão Iniciar Atividades — apenas para vendedor e SDR */}
+        {/* Botões — apenas para vendedor e SDR */}
         {canStartFocus && (
-          <Button
-            variant="primary"
-            size="md"
-            disabled={sortedTasks.length === 0 || loading}
-            onClick={handleStartFocus}
-            icon={<Play size={16} />}
-            title={sortedTasks.length === 0 ? "Nenhuma atividade para iniciar" : "Iniciar sessão de foco"}
-            className="w-full sm:w-auto"
-          >
-            Iniciar Atividades
-          </Button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <Button
+              variant="ghost"
+              size="md"
+              onClick={() => setCadenciaModalOpen(true)}
+              icon={<Zap size={16} />}
+              className="flex-1 sm:flex-none"
+            >
+              Cadências
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              disabled={sortedTasks.length === 0 || loading}
+              onClick={handleStartFocus}
+              icon={<Play size={16} />}
+              title={sortedTasks.length === 0 ? "Nenhuma atividade para iniciar" : "Iniciar sessão de foco"}
+              className="flex-1 sm:flex-none"
+            >
+              Iniciar Atividades
+            </Button>
+          </div>
         )}
       </div>
 
@@ -278,6 +291,12 @@ const Activities: React.FC = () => {
           <Pagination {...paginationProps} itemLabel="atividades" />
         )}
       </div>
+
+      {/* Modal de cadências */}
+      <CadenciaModal
+        isOpen={cadenciaModalOpen}
+        onClose={() => setCadenciaModalOpen(false)}
+      />
 
       {/* Modal de foco fullscreen */}
       <FocusMode

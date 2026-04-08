@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.23",
+    date: "06/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Sistema de Cadências: crie conjuntos de metas de atividades (ex: 20 Ligações + 10 E-mails) e dispare a criação automática nas oportunidades mais antigas que ainda não têm aquela atividade pendente.",
+      },
+      {
+        type: "improvement",
+        text: "Botão 'Cadências' na página de Atividades para SDRs e Vendedores gerenciarem e dispararem suas cadências.",
+      },
+    ],
+  },
+  {
     version: "1.6.22",
     date: "06/04/2026",
     entries: [
