@@ -4,6 +4,7 @@ Service para Cadência — CRUD e lógica de disparo de atividades.
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from typing import List
+from datetime import datetime, timezone
 from fastapi import HTTPException, status
 
 from app.models.cadencia import Cadencia, CadenciaItem
@@ -202,13 +203,15 @@ class CadenciaService:
                 if has_pending:
                     continue
 
-                # Cria a atividade
+                # Cria a atividade com due_date = hoje (fim do dia UTC)
+                today = datetime.now(timezone.utc).replace(hour=23, minute=59, second=0, microsecond=0)
                 new_task = CardTask(
                     card_id=card.id,
                     assigned_to_id=current_user.id,
                     created_by_id=current_user.id,
                     title=f"{label} — Cadência '{cadencia.name}'",
                     task_type=task_type,
+                    due_date=today,
                 )
                 self.db.add(new_task)
                 created_count += 1
