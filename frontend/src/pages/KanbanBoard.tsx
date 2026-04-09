@@ -902,13 +902,15 @@ const KanbanBoard: React.FC = () => {
 
             {/* Menu do board - oculto para visualizadores */}
             {!isViewer && <div className="relative">
-              <button
-                onClick={() => setShowBoardMenu(!showBoardMenu)}
-                className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50"
-                title="Opções do board"
-              >
-                <MoreVertical size={20} className="text-slate-500 dark:text-slate-400" />
-              </button>
+              {user?.role === "admin" && (
+                <button
+                  onClick={() => setShowBoardMenu(!showBoardMenu)}
+                  className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50"
+                  title="Opções do board"
+                >
+                  <MoreVertical size={20} className="text-slate-500 dark:text-slate-400" />
+                </button>
+              )}
 
               {/* Dropdown menu */}
               {showBoardMenu && (
@@ -945,15 +947,6 @@ const KanbanBoard: React.FC = () => {
                       Arquivar Board
                     </button>
 
-                    <div className="border-t border-gray-200 dark:border-slate-700/50"></div>
-
-                    <button
-                      onClick={handleExportCards}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                    >
-                      <Download size={16} />
-                      Exportar Cards
-                    </button>
                   </div>
                 </>
               )}
