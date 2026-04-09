@@ -1,12 +1,12 @@
 # Guia de Importação — Planilha Novos SDR
 
-Arquivo de referência para importar os lotes de 200 cards da planilha `Planilha_Importacao_CRM_Novos_SDR.xlsx`.
+Arquivo de referência para importar os lotes de cards da planilha `Planilha_Importacao_CRM_Novos_SDR.xlsx`.
 
 ---
 
 ## Visão Geral
 
-A planilha tem **2189 linhas** de empresas. Importamos **200 por vez** (50 para cada SDR).
+A planilha tem **2189 linhas** de empresas. O tamanho e a distribuição de cada lote é flexível — pode ser 200 de uma vez (50 por SDR) ou lotes menores para um SDR específico.
 O controle de quais já foram importadas fica na coluna **`Status_Importacao`** (col 51) do arquivo `_fixed.xlsx` — linhas marcadas como `Importado` são puladas automaticamente na próxima execução.
 
 **SDRs e seus IDs no sistema:**
@@ -16,6 +16,7 @@ O controle de quais já foram importadas fica na coluna **`Status_Importacao`** 
 | Miguel | Miguel Luiz Pereira de Melo | 16 |
 | Lucas | Lucas | 17 |
 | Sérgio | Sérgio Viana | 15 |
+| Claudia | Claudia | 8 |
 
 ---
 
@@ -46,27 +47,39 @@ Resultado esperado:
 
 ---
 
-### 3. Rodar o Script 2 — Distribuição do próximo lote de 200
+### 3. Rodar o Script do lote desejado
 
-O Script 2 pega os próximos 200 registros **sem** `Status_Importacao = Importado`, distribui 50 por SDR, preenche o canal e gera o arquivo do lote.
+Cada lote tem seu próprio script. Escolha o script conforme o lote:
 
+**Lote 1 — 200 cards (50 por SDR: Ãhwaryoné, Miguel, Lucas, Sérgio):**
 ```bash
 python scripts/imports/fix_novos_sdr_import.py
 ```
+Gera: `Planilha_Importacao_CRM_Novos_SDR_lote1.xlsx`
 
-Resultado esperado:
-- Atualiza `_fixed.xlsx` marcando as 200 novas linhas como `Importado`
-- Gera `Planilha_Importacao_CRM_Novos_SDR_lote1.xlsx`
+**Lote 2 — 50 cards (Claudia):**
+```bash
+python scripts/imports/fix_novos_sdr_lote2.py
+```
+Gera: `Planilha_Importacao_CRM_Novos_SDR_lote2.xlsx`
 
-> 💡 O nome do arquivo de saída é sempre `lote1.xlsx` — sobrescreve o anterior. Isso é intencional.
+**Para lotes futuros:** crie um novo script baseado no `fix_novos_sdr_lote2.py`, ajustando `SDR_NAME`, `CARDS_TO_IMPORT` e `OUTPUT_LOTE`.
+
+Resultado esperado de qualquer script:
+- Atualiza `_fixed.xlsx` marcando as linhas processadas como `Importado`
+- Gera o arquivo do lote para importação
 
 ---
 
 ### 4. Rodar a importação no CRM
 
+Use o caminho absoluto para evitar erro de arquivo não encontrado:
+
 ```bash
-python scripts/imports/import_from_planilha.py Planilha_Importacao_CRM_Novos_SDR_lote1.xlsx
+python scripts/imports/import_from_planilha.py d:/GitHub/hsgrowth-sistema/backend/scripts/imports/Planilha_Importacao_CRM_Novos_SDR_loteN.xlsx
 ```
+
+Substitua `loteN` pelo número do lote (lote1, lote2, etc.).
 
 > ⚠️ **ATENÇÃO:** rode este comando **uma única vez**. Rodar duas vezes cria cards duplicados.
 
@@ -126,12 +139,14 @@ print('Verificar linha 4 do lote1.xlsx e importar manualmente se necessário')
 
 ## Controle de Lotes
 
-| Lote | Data | Cards | SDRs | Status |
-|---|---|---|---|---|
-| Lote 1 | 06/04/2026 | 200 | Ãhwaryoné, Miguel, Lucas, Sérgio | ✅ Importado |
-| Lote 2 | — | 200 | Ãhwaryoné, Miguel, Lucas, Sérgio | ⏳ Pendente |
-| Lote 3 | — | 200 | Ãhwaryoné, Miguel, Lucas, Sérgio | ⏳ Pendente |
-| ... | — | ... | ... | ... |
+| Lote | Data | Cards | SDRs | IDs no banco | Status |
+|---|---|---|---|---|---|
+| Lote 1 | 06/04/2026 | 200 | Ãhwaryoné, Miguel, Lucas, Sérgio | 5058–5257 + 5370 | ✅ Importado |
+| Lote 2 | 09/04/2026 | 50 | Claudia | 5376–5425 | ✅ Importado |
+| Lote 3 | — | — | — | — | ⏳ Pendente |
+| ... | — | ... | ... | ... | ... |
+
+**Total importado:** 250 leads | **Disponíveis na planilha:** 1939
 
 ---
 
