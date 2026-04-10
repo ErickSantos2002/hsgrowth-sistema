@@ -25,6 +25,52 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.24",
+    date: "10/04/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Dashboard: badge de total no gráfico 'Atividades no Período' (SDR) padronizado — exibe 'X atividades' no canto do cabeçalho.",
+      },
+      {
+        type: "improvement",
+        text: "Dashboard Vendedor: gráfico 'Pipeline por Etapa' agora exibe badge com o total de cards no cabeçalho.",
+      },
+      {
+        type: "improvement",
+        text: "Exportar PDF do Dashboard agora gera e baixa um arquivo PDF real com todos os KPIs da visão atual (SDR ou Vendedor), em vez de abrir o diálogo de impressão do navegador.",
+      },
+      {
+        type: "improvement",
+        text: "Exportar Excel do Dashboard corrigido: exporta os indicadores corretos conforme a visão selecionada (SDR ou Vendedor).",
+      },
+      {
+        type: "improvement",
+        text: "Dashboard mobile: filtros empilhados verticalmente, selects ocupando toda a largura, botões Atualizar e Exportar lado a lado com tamanhos iguais.",
+      },
+      {
+        type: "fix",
+        text: "Barra de busca de cards não sobrepõe mais a sidebar no mobile.",
+      },
+      {
+        type: "improvement",
+        text: "Dashboard SDR: seção 'Cards por Etapa' substituída por 'Atividades no Período' com gráfico de barras por tipo de atividade.",
+      },
+      {
+        type: "improvement",
+        text: "Páginas de Atividades e Ligações: filtros reorganizados em painel retrátil, seguindo o padrão das páginas de Clientes e Pessoas.",
+      },
+      {
+        type: "improvement",
+        text: "SDR em boards diferentes de Prospecção (board 6): visualização somente leitura — campos bloqueados, botões de edição ocultos e banner de aviso exibido.",
+      },
+      {
+        type: "improvement",
+        text: "Board Kanban: botão de três pontos (opções do board) restrito a administradores. Opção 'Exportar Cards' removida.",
+      },
+    ],
+  },
+  {
     version: "1.6.23",
     date: "06/04/2026",
     entries: [
