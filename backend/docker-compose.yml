@@ -112,6 +112,12 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
 
+      # Microsoft 365 / Entra ID — SSO e Graph API
+      MS_CLIENT_ID: ${MS_CLIENT_ID:-}
+      MS_TENANT_ID: ${MS_TENANT_ID:-}
+      MS_CLIENT_SECRET: ${MS_CLIENT_SECRET:-}
+      MS_REDIRECT_URI: ${MS_REDIRECT_URI:-http://localhost:8000/api/v1/auth/microsoft/callback}
+
     volumes:
       - ./app:/app/app
       - ./alembic:/app/alembic

@@ -119,6 +119,28 @@ export default function Login() {
                                 "Entrar"
                             )}
                         </button>
+
+                        {/* Divisor */}
+                        <div className="flex items-center gap-3">
+                            <div className="h-px flex-1 bg-gray-200 dark:bg-slate-700" />
+                            <span className="text-xs text-slate-400">ou</span>
+                            <div className="h-px flex-1 bg-gray-200 dark:bg-slate-700" />
+                        </div>
+
+                        {/* Login com Microsoft */}
+                        <a
+                            href={`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/v1/auth/microsoft`}
+                            className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium text-slate-700 transition-all hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                        >
+                            {/* Logo Microsoft */}
+                            <svg width="20" height="20" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+                                <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+                                <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+                                <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+                            </svg>
+                            Entrar com Microsoft
+                        </a>
                     </form>
                 </div>
             </div>

@@ -87,6 +87,12 @@ class Settings(BaseSettings):
     # Integrações externas — Automação de nutrição
     AUTOMACAO01_WEBHOOK_URL: str = ""  # URL do webhook para sistema de nutrição por e-mail
 
+    # Microsoft 365 / Entra ID — SSO e Graph API
+    MS_CLIENT_ID: str = ""
+    MS_TENANT_ID: str = ""
+    MS_CLIENT_SECRET: str = ""
+    MS_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/microsoft/callback"
+
     # OpenAI
     OPENAI_API_KEY: str = ""  # Chave da API da OpenAI (definir no .env)
     OPENAI_MODEL: str = "gpt-4o-mini"  # Modelo padrão (melhor custo-benefício)

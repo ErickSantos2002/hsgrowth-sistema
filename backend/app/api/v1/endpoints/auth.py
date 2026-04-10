@@ -5,6 +5,7 @@ Rotas para login, refresh token, logout, reset de senha, etc.
 from datetime import datetime, timedelta
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user
@@ -820,6 +821,114 @@ async def get_login_history(
             for log, user in logins
         ]
     }
+
+
+@router.get("/microsoft", summary="Iniciar login com Microsoft 365")
+async def microsoft_login():
+    """
+    Redireciona o usuário para a página de login da Microsoft (Entra ID).
+    Após autenticação, o Microsoft redireciona para /auth/microsoft/callback.
+    """
+    from app.services.microsoft_auth_service import microsoft_auth_service
+    auth_url = microsoft_auth_service.get_authorization_url()
+    return RedirectResponse(url=auth_url, status_code=302)
+
+
+@router.get("/microsoft/callback", summary="Callback do SSO Microsoft 365")
+async def microsoft_callback(
+    request: Request,
+    code: str = None,
+    error: str = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Recebe o código de autorização da Microsoft, troca por token,
+    localiza o usuário pelo email e gera o JWT interno do sistema.
+    """
+    from app.services.microsoft_auth_service import microsoft_auth_service
+
+    frontend_url = settings.FRONTEND_URL
+
+    # Erro retornado pela Microsoft (ex: usuário cancelou)
+    if error:
+        return RedirectResponse(url=f"{frontend_url}/login?error=microsoft_auth_failed", status_code=302)
+
+    if not code:
+        return RedirectResponse(url=f"{frontend_url}/login?error=microsoft_auth_failed", status_code=302)
+
+    # Troca o code por token Microsoft
+    try:
+        token_result = microsoft_auth_service.exchange_code_for_token(code)
+        ms_access_token = token_result.get("access_token")
+        profile = microsoft_auth_service.get_user_profile(ms_access_token)
+    except Exception as e:
+        print(f"[SSO Microsoft] Erro ao trocar código: {e}")
+        return RedirectResponse(url=f"{frontend_url}/login?error=microsoft_auth_failed", status_code=302)
+
+    email = profile.get("email", "")
+    if not email:
+        return RedirectResponse(url=f"{frontend_url}/login?error=microsoft_auth_failed", status_code=302)
+
+    # Busca o usuário pelo email
+    user = db.query(User).filter(
+        User.email == email,
+        User.is_deleted == False,
+    ).first()
+
+    if not user:
+        return RedirectResponse(url=f"{frontend_url}/login?error=user_not_found", status_code=302)
+
+    if not user.is_active:
+        return RedirectResponse(url=f"{frontend_url}/login?error=user_inactive", status_code=302)
+
+    # Atualiza last_login_at
+    user.last_login_at = datetime.utcnow()
+    db.commit()
+
+    # Registra no audit log
+    client_ip = (
+        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or request.headers.get("X-Real-IP", "")
+        or (request.client.host if request.client else "unknown")
+    )
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    audit_log = AuditLog(
+        user_id=user.id,
+        action="LOGIN_SSO_MICROSOFT",
+        entity_type="User",
+        entity_id=user.id,
+        description=f"Login via SSO Microsoft: {user.email}",
+        ip_address=client_ip,
+        user_agent=user_agent,
+    )
+    db.add(audit_log)
+    db.commit()
+
+    # Gera tokens internos
+    access_token = create_access_token(data={"sub": str(user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+    # Cria sessão no Redis
+    session_id = await session_manager.create_session(
+        user_id=user.id,
+        token=access_token,
+        ip=client_ip,
+        user_agent=user_agent,
+    )
+    if session_id:
+        access_token = create_access_token(
+            data={"sub": str(user.id), "session_id": session_id}
+        )
+
+    # Redireciona para o frontend com os tokens na query string
+    redirect_url = (
+        f"{frontend_url}/auth/callback"
+        f"?access_token={access_token}"
+        f"&refresh_token={refresh_token}"
+        f"&expires_in={settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60}"
+    )
+    return RedirectResponse(url=redirect_url, status_code=302)
 
 
 @router.get("/debug-token")

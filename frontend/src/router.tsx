@@ -26,6 +26,7 @@ import Calendar from './pages/Calendar';
 import Activities from './pages/Activities';
 import CallEvaluationsPage from './pages/CallEvaluationsPage';
 import NotFound from './pages/NotFound';
+import AuthCallback from './pages/AuthCallback';
 
 /**
  * Componente que protege rotas não permitidas para o role 'viewer'.
@@ -43,6 +44,7 @@ const ViewerGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppRoutes: React.FC = () => (
   <Routes>
     <Route path="/login" element={<Login />} />
+    <Route path="/auth/callback" element={<AuthCallback />} />
 
     {/* Editor de automações (fullscreen, sem MainLayout) - bloqueado para viewer */}
     <Route
