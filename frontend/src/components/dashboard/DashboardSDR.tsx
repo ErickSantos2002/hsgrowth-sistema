@@ -198,8 +198,8 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
               </h3>
             </div>
             {(kpis.activity_counts_by_type?.length ?? 0) > 0 && (
-              <span className="rounded-full bg-purple-500/20 px-3 py-1 text-sm font-bold text-purple-400">
-                Total: {kpis.activity_counts_by_type.reduce((sum, a) => sum + a.count, 0)}
+              <span className="ml-auto rounded-full bg-purple-500/20 px-2.5 py-0.5 text-xs font-semibold text-purple-400">
+                {kpis.activity_counts_by_type.reduce((sum, a) => sum + a.count, 0)} atividades
               </span>
             )}
           </div>

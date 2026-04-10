@@ -193,6 +193,11 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
               <Target size={16} className="text-blue-400" />
             </div>
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Pipeline por Etapa</h3>
+            {funnelData.length > 0 && (
+              <span className="ml-auto rounded-full bg-blue-500/20 px-2.5 py-0.5 text-xs font-semibold text-blue-400">
+                {funnelData.reduce((sum, s) => sum + s.value, 0)} cards
+              </span>
+            )}
           </div>
           {funnelData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
