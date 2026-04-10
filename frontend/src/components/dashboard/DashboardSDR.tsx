@@ -188,13 +188,20 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
 
         {/* Atividades por tipo */}
         <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50">
-          <div className="mb-4 flex items-center gap-2">
-            <div className="rounded-lg bg-purple-500/20 p-2">
-              <Activity size={16} className="text-purple-400" />
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-purple-500/20 p-2">
+                <Activity size={16} className="text-purple-400" />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                Atividades no Período
+              </h3>
             </div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Atividades no Período
-            </h3>
+            {(kpis.activity_counts_by_type?.length ?? 0) > 0 && (
+              <span className="rounded-full bg-purple-500/20 px-3 py-1 text-sm font-bold text-purple-400">
+                Total: {kpis.activity_counts_by_type.reduce((sum, a) => sum + a.count, 0)}
+              </span>
+            )}
           </div>
           {(kpis.activity_counts_by_type?.length ?? 0) > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
