@@ -5,10 +5,10 @@ import {
 } from "lucide-react";
 import CountUp from "react-countup";
 import toast from "react-hot-toast";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import { useDashboard, PeriodType, ViewType } from "../context/DashboardContext";
 import { useTheme } from "../context/ThemeContext";
@@ -84,28 +84,59 @@ const Dashboard: React.FC = () => {
   const handleExportPDF = () => {
     if (!kpis) { toast.error("Nenhum dado disponível"); return; }
     try {
+      const isSdrView = view === "sdr" || isSdr;
       const doc = new jsPDF();
-      const w = doc.internal.pageSize.getWidth();
-      doc.setFontSize(18);
-      doc.setTextColor(59, 130, 246);
-      doc.text("Dashboard HSGrowth CRM", w / 2, 20, { align: "center" });
-      doc.setFontSize(9);
-      doc.setTextColor(120, 120, 120);
-      doc.text(`Período: ${periodLabel[period]} | ${new Date().toLocaleString("pt-BR")}`, w / 2, 28, { align: "center" });
+
+      // Título
+      doc.setFontSize(16);
+      doc.text(isSdrView ? "Dashboard SDR" : "Dashboard Vendedor", 14, 18);
+
+      // Período
+      doc.setFontSize(10);
+      doc.setTextColor(120);
+      doc.text(`Período: ${periodLabel[period]}`, 14, 26);
+      doc.setTextColor(0);
+
+      const rows: (string | number)[][] = isSdrView
+        ? [
+            ["Novos Leads", kpis.new_cards_this_month],
+            ["Em Prospecção", kpis.cards_by_stage?.find((s) => s.stage_name?.toLowerCase().includes("prospec"))?.card_count ?? "—"],
+            ["Reuniões Agendadas", kpis.cards_by_stage?.find((s) => s.stage_name?.toLowerCase().includes("agend"))?.card_count ?? "—"],
+            ["Conectados", kpis.cards_by_stage?.find((s) => s.stage_name?.toLowerCase().includes("conect"))?.card_count ?? "—"],
+            ["Total de Ganhos", kpis.won_cards_this_month],
+            ["Receita Ganha", fmt(Number(kpis.won_value_this_month))],
+            ["Leads Perdidos", kpis.lost_cards_this_month],
+            ["Cards Vencidos", kpis.overdue_cards],
+            ["Leads sem Contato", kpis.leads_sem_contato],
+            ["Parados +3 dias", kpis.cards_parados],
+            ["Atividades no Período", kpis.activity_counts_by_type?.reduce((s, a) => s + a.count, 0) ?? 0],
+          ]
+        : [
+            ["Pipeline Total", fmt(Number(kpis.pipeline_value))],
+            ["Receita no Período", fmt(Number(kpis.won_value_this_month))],
+            ["Deals Fechados", kpis.won_cards_this_month],
+            ["Taxa de Fechamento (%)", `${kpis.conversion_rate_this_month}%`],
+            ["Ticket Médio", fmt(kpis.won_cards_this_month > 0 ? Number(kpis.won_value_this_month) / kpis.won_cards_this_month : 0)],
+            ["Tempo Médio p/ Fechar (dias)", kpis.avg_time_to_win_days ?? "—"],
+            ["Novos Leads", kpis.new_cards_this_month],
+            ["Reuniões Recebidas do SDR", kpis.meetings_received_from_sdr],
+            ["Propostas Geradas", kpis.propostas_geradas],
+            ["Perdidos", kpis.lost_cards_this_month],
+            ["Cards Vencidos", kpis.overdue_cards],
+            ["Negócios Parados 7d", kpis.negocios_parados_7d],
+            ["Propostas em Aberto", kpis.propostas_em_aberto],
+          ];
+
       autoTable(doc, {
-        startY: 35,
+        startY: 32,
         head: [["Indicador", "Valor"]],
-        body: [
-          ["Novos Leads", String(kpis.new_cards_this_month)],
-          ["Ganhos", String(kpis.won_cards_this_month)],
-          ["Perdidos", String(kpis.lost_cards_this_month)],
-          ["Receita", fmt(kpis.won_value_this_month)],
-          ["Pipeline", fmt(kpis.pipeline_value)],
-          ["Taxa Conversão", `${kpis.conversion_rate_this_month.toFixed(1)}%`],
-        ],
+        body: rows as string[][],
+        styles: { fontSize: 10 },
         headStyles: { fillColor: [59, 130, 246] },
+        columnStyles: { 0: { cellWidth: 120 }, 1: { cellWidth: 60 } },
       });
-      doc.save(`dashboard-${new Date().toISOString().split("T")[0]}.pdf`);
+
+      doc.save(`dashboard-${isSdrView ? "sdr" : "vendedor"}-${new Date().toISOString().split("T")[0]}.pdf`);
       toast.success("PDF exportado!");
     } catch { toast.error("Erro ao exportar PDF"); }
   };
@@ -115,18 +146,45 @@ const Dashboard: React.FC = () => {
     if (!kpis) { toast.error("Nenhum dado disponível"); return; }
     try {
       const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet([
-        ["Indicador", "Valor"],
-        ["Novos Leads", kpis.new_cards_this_month],
-        ["Ganhos", kpis.won_cards_this_month],
-        ["Perdidos", kpis.lost_cards_this_month],
-        ["Receita", kpis.won_value_this_month],
-        ["Pipeline", kpis.pipeline_value],
-        ["Taxa Conversão (%)", kpis.conversion_rate_this_month],
-      ]);
-      XLSX.utils.book_append_sheet(wb, ws, "KPIs");
+      const isSdrView = view === "sdr" || isSdr;
+
+      const rows: (string | number)[][] = isSdrView
+        ? [
+            ["Indicador", "Valor"],
+            ["Novos Leads", kpis.new_cards_this_month],
+            ["Em Prospecção", kpis.cards_by_stage?.find((s) => s.stage_name?.toLowerCase().includes("prospec"))?.card_count ?? "—"],
+            ["Reuniões Agendadas", kpis.cards_by_stage?.find((s) => s.stage_name?.toLowerCase().includes("agend"))?.card_count ?? "—"],
+            ["Conectados", kpis.cards_by_stage?.find((s) => s.stage_name?.toLowerCase().includes("conect"))?.card_count ?? "—"],
+            ["Total de Ganhos", kpis.won_cards_this_month],
+            ["Receita Ganha", Number(kpis.won_value_this_month)],
+            ["Leads Perdidos", kpis.lost_cards_this_month],
+            ["Cards Vencidos", kpis.overdue_cards],
+            ["Leads sem Contato", kpis.leads_sem_contato],
+            ["Parados +3 dias", kpis.cards_parados],
+            ["Atividades no Período", kpis.activity_counts_by_type?.reduce((s, a) => s + a.count, 0) ?? 0],
+          ]
+        : [
+            ["Indicador", "Valor"],
+            ["Pipeline Total", Number(kpis.pipeline_value)],
+            ["Receita no Período", Number(kpis.won_value_this_month)],
+            ["Deals Fechados", kpis.won_cards_this_month],
+            ["Taxa de Fechamento (%)", kpis.conversion_rate_this_month],
+            ["Ticket Médio", kpis.won_cards_this_month > 0 ? Number(kpis.won_value_this_month) / kpis.won_cards_this_month : 0],
+            ["Tempo Médio p/ Fechar (dias)", kpis.avg_time_to_win_days ?? "—"],
+            ["Novos Leads", kpis.new_cards_this_month],
+            ["Reuniões Recebidas do SDR", kpis.meetings_received_from_sdr],
+            ["Propostas Geradas", kpis.propostas_geradas],
+            ["Perdidos", kpis.lost_cards_this_month],
+            ["Cards Vencidos", kpis.overdue_cards],
+            ["Negócios Parados 7d", kpis.negocios_parados_7d],
+            ["Propostas em Aberto", kpis.propostas_em_aberto],
+          ];
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws["!cols"] = [{ wch: 35 }, { wch: 20 }];
+      XLSX.utils.book_append_sheet(wb, ws, isSdrView ? "Dashboard SDR" : "Dashboard Vendedor");
       const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      saveAs(new Blob([buf], { type: "application/octet-stream" }), `dashboard-${new Date().toISOString().split("T")[0]}.xlsx`);
+      saveAs(new Blob([buf], { type: "application/octet-stream" }), `dashboard-${isSdrView ? "sdr" : "vendedor"}-${new Date().toISOString().split("T")[0]}.xlsx`);
       toast.success("Excel exportado!");
     } catch { toast.error("Erro ao exportar Excel"); }
   };
