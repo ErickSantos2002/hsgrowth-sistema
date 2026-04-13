@@ -25,6 +25,36 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.25",
+    date: "13/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Envio de e-mail diretamente pelo CRM via Microsoft 365: compose com destinatários, assunto, corpo e anexos (PDFs, documentos — até 24 MB por arquivo).",
+      },
+      {
+        type: "feature",
+        text: "Templates de e-mail: administradores e gerentes podem criar modelos reutilizáveis com variáveis dinâmicas ({{nome_contato}}, {{empresa}}, {{nome_vendedor}}, {{titulo_card}}, {{valor_card}}). Disponíveis para todos os usuários ao compor um e-mail.",
+      },
+      {
+        type: "feature",
+        text: "Assinatura de e-mail: cada usuário pode configurar sua assinatura no perfil com texto e imagem (upload), anexada automaticamente a todos os e-mails enviados pelo CRM.",
+      },
+      {
+        type: "improvement",
+        text: "Histórico de e-mails no card: exibe destinatários (Para:), corpo completo com 'Ver mais / Ver menos' e chips com os nomes dos arquivos anexados.",
+      },
+      {
+        type: "improvement",
+        text: "Aba E-mail no card exibe contador com o total de e-mails enviados, igual às outras seções.",
+      },
+      {
+        type: "fix",
+        text: "E-mails enviados não apareciam na aba E-mail do card — enum de tipo de atividade estava incompleto no backend.",
+      },
+    ],
+  },
+  {
     version: "1.6.24",
     date: "10/04/2026",
     entries: [

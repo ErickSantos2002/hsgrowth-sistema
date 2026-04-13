@@ -7,6 +7,59 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.6.25] - 2026-04-13
+
+### Adicionado
+
+#### Microsoft 365 — Fase 2: Envio de E-mail pelo CRM
+
+Integração completa de envio de e-mail via Microsoft Graph API diretamente das oportunidades (cards), com histórico, templates, assinatura pessoal e suporte a anexos.
+
+**Funcionalidades:**
+
+- **Envio de e-mail**: compor e enviar e-mails a partir do card com destinatários múltiplos, assunto, corpo HTML e anexos (PDFs, documentos — até 24 MB por arquivo)
+- **Templates de e-mail**: administradores e gerentes criam modelos reutilizáveis com variáveis dinâmicas (`{{nome_contato}}`, `{{empresa}}`, `{{nome_vendedor}}`, `{{titulo_card}}`, `{{valor_card}}`); disponíveis para todos os usuários ao compor um e-mail
+- **Assinatura de e-mail**: cada usuário configura sua assinatura no perfil (texto + imagem em base64 inline), anexada automaticamente a todos os e-mails enviados pelo CRM — compatível com Outlook
+- **Histórico de e-mails**: exibe destinatários (Para:), corpo completo com "Ver mais / Ver menos" e chips com os nomes dos arquivos anexados
+- **Contador de e-mails** na aba E-mail do card (igual às demais seções)
+
+### Corrigido
+
+- E-mails enviados não apareciam na aba E-mail do card — enum `TaskType` no schema do backend estava sem os valores `EMAIL`, `DEADLINE` e `LUNCH`
+- Double-submit ao salvar templates — corrigido com `useRef` como guard síncrono
+- Modal de envio de e-mail ultrapassava os limites da tela — refatorada para usar o componente padrão `BaseModal`
+
+### Arquivos criados
+
+- `backend/alembic/versions/2026_04_10_1000-add_ms_tokens_to_users.py` — migration: tokens Microsoft em `users`
+- `backend/alembic/versions/2026_04_13_1000-create_email_templates_table.py` — migration: tabela `email_templates`
+- `backend/alembic/versions/2026_04_13_1100-add_email_signature_to_users.py` — migration: coluna `email_signature` em `users`
+- `backend/app/models/email_template.py` — model `EmailTemplate` com soft delete
+- `backend/app/schemas/email_template.py` — schemas Pydantic (create, update, response)
+- `backend/app/api/v1/endpoints/email_templates.py` — endpoints REST (GET, POST, PUT, DELETE)
+- `backend/app/services/microsoft_graph_service.py` — cliente Microsoft Graph API (envio com anexos, timeout 30s)
+- `frontend/src/components/cardDetails/EmailSection.tsx` — seção de e-mail com histórico, modal de envio, templates e anexos
+- `frontend/src/services/emailTemplateService.ts` — cliente API para templates
+
+### Arquivos alterados
+
+- `backend/app/models/user.py` — campo `email_signature` (Text)
+- `backend/app/schemas/user.py` — `email_signature` em `UserUpdate` e `UserResponse`
+- `backend/app/schemas/card_task.py` — `TaskType` enum: adicionados `EMAIL`, `DEADLINE`, `LUNCH`
+- `backend/app/api/v1/__init__.py` — router `/email-templates` registrado
+- `backend/app/api/v1/endpoints/auth.py` — fluxo OAuth Microsoft 365
+- `backend/app/api/v1/endpoints/cards.py` — endpoint `POST /cards/{id}/send-email` com assinatura e anexos
+- `backend/app/api/v1/endpoints/users.py` — `email_signature` nos 5 pontos de `UserResponse`
+- `backend/app/api/v1/endpoints/user_avatar.py` — endpoints de upload/leitura de imagem de assinatura
+- `frontend/src/types/index.ts` — `email_signature` na interface `User`
+- `frontend/src/services/cardService.ts` — `sendEmail()` com suporte a anexos
+- `frontend/src/services/cardTaskService.ts` — tipo `"email"` adicionado ao union
+- `frontend/src/pages/CardDetails.tsx` — estado `emailCount` + badge na aba E-mail
+- `frontend/src/pages/Settings.tsx` — construtor visual de assinatura + gerenciamento de templates
+- `frontend/src/components/cardDetails/ContactSection.tsx` — ajustes de integração
+
+---
+
 ## [1.6.23] - 2026-04-06
 
 ### Adicionado
