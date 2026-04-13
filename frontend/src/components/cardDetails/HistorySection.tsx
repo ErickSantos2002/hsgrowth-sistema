@@ -285,13 +285,15 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
+    const timeStr = date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
     if (diffMins < 1) return "Agora mesmo";
     if (diffMins < 60) return `${diffMins} min atrás`;
     if (diffHours < 24) return `${diffHours}h atrás`;
-    if (diffDays === 1) return "Ontem";
-    if (diffDays < 7) return `${diffDays} dias atrás`;
+    if (diffDays === 1) return `Ontem, ${timeStr}`;
+    if (diffDays < 7) return `${diffDays} dias atrás, ${timeStr}`;
 
-    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+    return `${date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}, ${timeStr}`;
   };
 
   /**

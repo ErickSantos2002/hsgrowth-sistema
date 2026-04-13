@@ -1008,7 +1008,7 @@ const CardDetails: React.FC = () => {
               {/* Wrapper: abas scrolláveis à esquerda, botão Ligar fixo à direita */}
               <div className="flex items-end gap-2">
                 {/* Abas com scroll horizontal */}
-                <div className="scrollbar-hidden flex flex-1 min-w-0 flex-nowrap gap-2 overflow-x-auto lg:gap-6">
+                <div className="scrollbar-tabs flex flex-1 min-w-0 flex-nowrap gap-2 overflow-x-auto lg:gap-6">
                   <button
                     onClick={() => setActiveTab("atividade")}
                     className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${

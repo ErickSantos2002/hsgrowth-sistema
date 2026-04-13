@@ -1216,7 +1216,7 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
           <label className="mb-2 block text-xs font-medium text-slate-400">
             Tipo de atividade
           </label>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {taskTypes.map(({ type, label, Icon }) => (
               <button
                 key={type}

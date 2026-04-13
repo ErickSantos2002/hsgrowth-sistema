@@ -17,6 +17,7 @@ from app.models.card_transfer import CardTransfer
 from app.models.activity import Activity
 from app.models.card_list_history import CardListHistory
 from app.models.card_task import CardTask
+from app.models.card_note import CardNote
 from app.schemas.card_task import TaskType
 from app.repositories.board_repository import BoardRepository
 from app.repositories.card_repository import CardRepository
@@ -367,35 +368,45 @@ class ReportService:
             *uf
         ).scalar() or 0
 
-        # Cards parados na mesma etapa há mais de 3 dias
+        # Cards parados há mais de 3 dias (sem atividade nem anotação no período)
         three_days_ago = datetime.now() - timedelta(days=3)
+        _active_task_3d = self.db.query(CardTask.card_id).filter(
+            or_(
+                CardTask.created_at > three_days_ago,
+                CardTask.completed_at > three_days_ago,
+            )
+        ).subquery()
+        _active_note_3d = self.db.query(CardNote.card_id).filter(
+            CardNote.created_at > three_days_ago,
+        ).subquery()
         cards_parados = self.db.query(func.count(func.distinct(Card.id))).join(
             BoardList, Card.list_id == BoardList.id
-        ).join(
-            CardListHistory, and_(
-                CardListHistory.card_id == Card.id,
-                CardListHistory.exited_at.is_(None),
-                CardListHistory.entered_at < three_days_ago,
-            )
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 0,
+            ~Card.id.in_(self.db.query(_active_task_3d.c.card_id)),
+            ~Card.id.in_(self.db.query(_active_note_3d.c.card_id)),
             *uf
         ).scalar() or 0
 
-        # Negócios parados há mais de 7 dias (vendedor)
+        # Negócios parados há mais de 7 dias (sem atividade nem anotação no período)
         seven_days_ago = datetime.now() - timedelta(days=7)
+        _active_task_7d = self.db.query(CardTask.card_id).filter(
+            or_(
+                CardTask.created_at > seven_days_ago,
+                CardTask.completed_at > seven_days_ago,
+            )
+        ).subquery()
+        _active_note_7d = self.db.query(CardNote.card_id).filter(
+            CardNote.created_at > seven_days_ago,
+        ).subquery()
         negocios_parados_7d = self.db.query(func.count(func.distinct(Card.id))).join(
             BoardList, Card.list_id == BoardList.id
-        ).join(
-            CardListHistory, and_(
-                CardListHistory.card_id == Card.id,
-                CardListHistory.exited_at.is_(None),
-                CardListHistory.entered_at < seven_days_ago,
-            )
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 0,
+            ~Card.id.in_(self.db.query(_active_task_7d.c.card_id)),
+            ~Card.id.in_(self.db.query(_active_note_7d.c.card_id)),
             *uf
         ).scalar() or 0
 

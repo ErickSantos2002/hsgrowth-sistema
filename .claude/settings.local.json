@@ -7,7 +7,9 @@
       "Bash(python -m alembic upgrade head)",
       "Bash(sed 's/.*@router\\\\.//')",
       "Bash(sed 's/\\(.*\\)//')",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(python -c ':*)",
+      "Bash(python -m py_compile app/services/card_service.py app/services/report_service.py)"
     ]
   }
 }

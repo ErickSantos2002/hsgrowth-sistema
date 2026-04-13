@@ -230,7 +230,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       {/* Tipos de atividade */}
       <div>
         <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-400">Tipo de atividade</label>
-        <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {activityTypes.map((activityType) => (
             <button
               key={activityType.type}

@@ -315,24 +315,39 @@ class CardService:
             cards_response = []
             # Busca contagem e status de tasks pendentes para todos os cards de uma vez (otimizado)
             from app.models.card_task import CardTask
-            from app.models.card_list_history import CardListHistory
-            from sqlalchemy import func
+            from app.models.card_note import CardNote
+            from sqlalchemy import func, or_ as sa_or_
             from datetime import datetime, timezone
 
             card_ids = [card.id for card in cards]
             pending_tasks_counts = {}
             pending_tasks_statuses = {}
 
-            # Cards parados na mesma etapa há mais de 3 dias
+            # Cards parados há mais de 3 dias (sem atividade nem anotação registrada no período)
             three_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=3)
             stuck_card_ids: set = set()
             if card_ids:
-                stuck_rows = self.db.query(CardListHistory.card_id).filter(
-                    CardListHistory.card_id.in_(card_ids),
-                    CardListHistory.exited_at.is_(None),
-                    CardListHistory.entered_at < three_days_ago,
-                ).all()
-                stuck_card_ids = {row.card_id for row in stuck_rows}
+                # IDs de cards que tiveram alguma tarefa criada ou concluída nos últimos 3 dias
+                active_by_task = {
+                    row.card_id
+                    for row in self.db.query(CardTask.card_id).filter(
+                        CardTask.card_id.in_(card_ids),
+                        sa_or_(
+                            CardTask.created_at > three_days_ago,
+                            CardTask.completed_at > three_days_ago,
+                        ),
+                    ).distinct().all()
+                }
+                # IDs de cards que tiveram anotação criada nos últimos 3 dias
+                active_by_note = {
+                    row.card_id
+                    for row in self.db.query(CardNote.card_id).filter(
+                        CardNote.card_id.in_(card_ids),
+                        CardNote.created_at > three_days_ago,
+                    ).distinct().all()
+                }
+                active_ids = active_by_task | active_by_note
+                stuck_card_ids = {cid for cid in card_ids if cid not in active_ids}
 
             if card_ids:
                 # Busca todas as tasks pendentes com suas datas
