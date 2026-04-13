@@ -65,7 +65,7 @@ const GROUP_BY_OPTIONS: { value: GroupByType; label: string }[] = [
  * "Pré-visualizar", garantindo que ele viu o resultado antes de confirmar.
  */
 // Catálogo vazio padrão enquanto carrega (evita erros antes do prop chegar)
-const EMPTY_FIELD_CATALOG: FieldCatalog = { cards: [], clients: [], persons: [], activities: [], tasks: [] };
+const EMPTY_FIELD_CATALOG: FieldCatalog = { cards: [], clients: [], persons: [], activities: [], tasks: [], card_history: [] };
 
 const ChartConfigModal: React.FC<ChartConfigModalProps> = ({
   isOpen,

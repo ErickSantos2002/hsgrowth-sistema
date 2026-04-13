@@ -138,7 +138,6 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
         const { default: personService } = await import("../../services/personService");
         const p = await personService.getById(personId);
         vars.nome_contato = p.name || "";
-        if (!vars.empresa) vars.empresa = p.company || "";
       } catch {
         // ignora
       }

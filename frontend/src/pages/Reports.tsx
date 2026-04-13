@@ -52,6 +52,7 @@ const EMPTY_CATALOG: FieldCatalog = {
   persons: [],
   activities: [],
   tasks: [],
+  card_history: [],
 };
 
 const Reports: React.FC = () => {

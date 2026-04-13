@@ -6,7 +6,8 @@
       "Bash(grep -E \"\\(api\\\\.py|deps\\\\.py\\)$\")",
       "Bash(python -m alembic upgrade head)",
       "Bash(sed 's/.*@router\\\\.//')",
-      "Bash(sed 's/\\(.*\\)//')"
+      "Bash(sed 's/\\(.*\\)//')",
+      "Bash(npx tsc:*)"
     ]
   }
 }

@@ -748,6 +748,7 @@ export interface UpdateUserRequest {
   phone?: string;
   role_id?: number; // 1=admin, 2=manager, 3=salesperson
   is_active?: boolean;
+  email_signature?: string | null;
 }
 
 export interface ChangePasswordRequest {

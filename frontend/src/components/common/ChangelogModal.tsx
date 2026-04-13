@@ -25,6 +25,36 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.6.26",
+    date: "13/04/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Modal de envio de e-mail padronizado com os componentes do sistema (BaseModal, Button, FormField, Input, Textarea, Alert) — visual consistente com o restante do CRM.",
+      },
+      {
+        type: "fix",
+        text: "Assinatura de e-mail não estourava mais o container ao exibir imagens ou tabelas grandes no HTML da assinatura.",
+      },
+      {
+        type: "feature",
+        text: "Kanban: rodapé em cada coluna exibe Valor Total dos cards e Valor Ponderado (cards com fechamento previsto no mês atual), com percentual ponderado.",
+      },
+      {
+        type: "feature",
+        text: "Kanban: novo filtro 'Etiqueta' para filtrar cards por status de atividade (Atrasada, Para Hoje, Futura, Sem Atividade), parados há mais de 3 dias ou em nutrição por e-mail.",
+      },
+      {
+        type: "feature",
+        text: "Kanban: etiquetas visuais nos cards indicando status da próxima atividade (Atrasada, Para Hoje, Futura, Sem Atividade), além das etiquetas já existentes de Parado 3d+ e Em Nutrição.",
+      },
+      {
+        type: "improvement",
+        text: "Kanban: cards parados há mais de 3 dias ficam com borda e fundo vermelhos — cálculo usa o histórico de etapas (igual ao dashboard), não a data de última edição.",
+      },
+    ],
+  },
+  {
     version: "1.6.25",
     date: "13/04/2026",
     entries: [

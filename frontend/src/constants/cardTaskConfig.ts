@@ -6,14 +6,17 @@ import React from "react";
 import {
   CheckSquare,
   Clock,
+  Coffee,
+  Mail,
   MoreHorizontal,
   Phone,
+  Timer,
   Users,
 } from "lucide-react";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-export type TaskType = "call" | "meeting" | "task" | "follow_up" | "other";
+export type TaskType = "call" | "meeting" | "task" | "follow_up" | "other" | "email" | "deadline" | "lunch";
 export type Priority = "normal" | "high" | "urgent";
 
 export interface TypeConfig {
@@ -61,6 +64,27 @@ export const TYPE_CONFIG: Record<TaskType, TypeConfig> = {
     pillBg: "bg-slate-500/20",
     pillText: "text-slate-900 dark:text-slate-300",
     pillBorder: "border-slate-500/40",
+  },
+  email: {
+    label: "E-mail",
+    Icon: Mail,
+    pillBg: "bg-orange-500/20",
+    pillText: "text-slate-900 dark:text-orange-300",
+    pillBorder: "border-orange-500/40",
+  },
+  deadline: {
+    label: "Prazo",
+    Icon: Timer,
+    pillBg: "bg-red-500/20",
+    pillText: "text-slate-900 dark:text-red-300",
+    pillBorder: "border-red-500/40",
+  },
+  lunch: {
+    label: "Almoço",
+    Icon: Coffee,
+    pillBg: "bg-amber-500/20",
+    pillText: "text-slate-900 dark:text-amber-300",
+    pillBorder: "border-amber-500/40",
   },
 };
 

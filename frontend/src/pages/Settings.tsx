@@ -306,7 +306,7 @@ const Settings: React.FC = () => {
   };
 
   const deleteTemplate = async (tpl: EmailTemplate) => {
-    const confirmed = await confirm(`Excluir o template "${tpl.name}"?`);
+    const confirmed = await confirm({ title: "Excluir template", message: `Excluir o template "${tpl.name}"?` });
     if (!confirmed) return;
     try {
       await emailTemplateService.delete(tpl.id);

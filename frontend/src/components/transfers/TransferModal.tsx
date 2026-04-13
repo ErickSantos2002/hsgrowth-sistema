@@ -147,7 +147,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
       const cardsResponse = await cardService.list({
         board_id: boardId,
         assigned_to_id: user.id, // Apenas cards atribuídos ao usuário logado
-        is_won: false,            // is_won=0 no banco = abertos; exclui ganhos (1) e perdidos (-1)
+        is_won: 0,                // is_won=0 no banco = abertos; exclui ganhos (1) e perdidos (-1)
         all: true,                // Sem paginação (lista já é pequena com os filtros acima)
         minimal: true,            // Retorna apenas campos essenciais para não sobrecarregar
       });

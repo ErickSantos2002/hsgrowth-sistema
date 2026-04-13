@@ -175,7 +175,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
               <Loader2
                 size={18}
                 className="animate-spin text-slate-400"
-                title="Salvando..."
+                aria-label="Salvando..."
               />
             ) : (
               <button
