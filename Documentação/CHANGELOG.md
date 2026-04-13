@@ -7,6 +7,65 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.0] - 2026-04-13
+
+### Adicionado
+
+#### Microsoft 365 — Integração Completa (Fases 3, 4 e 5)
+
+Finalização da integração com Microsoft 365: reuniões Teams criadas e sincronizadas pelo CRM, calendário Outlook visível dentro das oportunidades, e disponibilidade do Vendedor acessível ao SDR para agendar sem conflitos.
+
+**Reuniões com Microsoft Teams:**
+
+- **Seção "Reuniões"** dedicada nas oportunidades (CardDetails), separada das demais atividades — com lista de pendentes, histórico colapsável de concluídas/no-shows e modal de criação
+- **Criação automática de evento no calendário**: ao criar uma reunião, o evento é agendado automaticamente no Outlook do usuário e o link Teams é gerado — sem etapa manual separada
+- **Convites automáticos**: o Vendedor responsável pelo card e o contato do cliente (até 3 emails cadastrados) recebem convite direto no Teams/Outlook ao criar a reunião
+- **Botão "Copiar link"** da reunião Teams diretamente pelo CRM
+- **Análise de transcrição com IA** (OpenAI GPT-4o): após a reunião, busca a transcrição do Teams e gera resumo executivo, sentimento, nível de interesse do cliente, objeções, próximos passos e pontos de atenção
+- **Transcrição completa** disponível colapsável no card, com parsing de formato VTT para leitura "Participante: fala"
+- **No-Show**: marcar reunião como não comparecimento, com confirmação
+- **Ações de concluir e excluir** com diálogo de confirmação
+
+**Calendário Outlook integrado:**
+
+- **Nova aba "Outlook"** no calendário do card com sub-visões **Semana** (padrão) e **Mês**
+- **Visão Semanal (8h–17h)**: grid visual com 7 colunas (Seg–Dom), eventos posicionados pelo horário real de início/fim com altura proporcional à duração
+- **Visão Mensal**: eventos do Outlook sobrepostos ao grid do CRM, com distinção visual entre reuniões Teams (roxo) e eventos comuns (índigo)
+- **Disponibilidade do Vendedor**: blocos cinza rajados mostram os horários ocupados do Vendedor responsável pelo card, permitindo ao SDR agendar sem conflitos de agenda
+- **Navegação por semana/mês** com setas ←/→ e botão "Hoje"
+
+**Infraestrutura Microsoft Graph:**
+
+- `GET /me/calendar-events` — busca eventos do Outlook do usuário logado por período
+- `GET /me/seller-schedule` — retorna disponibilidade (livre/ocupado) do Vendedor via Microsoft `getSchedule`
+- `POST /me/events` com `isOnlineMeeting: true` — cria evento no Outlook com link Teams automático
+- Renovação automática de access token via refresh token
+- `assigned_to_email` exposto no CardResponse para uso no frontend
+
+### Arquivos criados
+
+- `frontend/src/components/cardDetails/MeetingSection.tsx` — seção completa de reuniões com Teams, transcrição e análise IA
+- `backend/app/services/transcript_analysis_service.py` — análise de transcrições VTT com OpenAI
+
+### Arquivos alterados
+
+- `backend/app/services/microsoft_graph_service.py` — `create_calendar_event()`, `get_calendar_events()`, `get_schedule()`, `_resolve_meeting_id_by_join_url()`
+- `backend/app/services/microsoft_auth_service.py` — escopo `Calendars.ReadWrite` adicionado
+- `backend/app/services/card_task_service.py` — `_build_response()` inclui campos Teams e `is_noshow`
+- `backend/app/api/v1/endpoints/auth.py` — endpoints `/me/calendar-events` e `/me/seller-schedule`
+- `backend/app/api/v1/endpoints/card_tasks.py` — `create_teams_meeting` usa `create_calendar_event`, adiciona Vendedor como convidado
+- `backend/app/schemas/card.py` — `assigned_to_email` no `CardResponse`
+- `backend/app/services/card_service.py` — `assigned_to_email` populado no `get_card_expanded()`
+- `frontend/src/components/cardDetails/SchedulerSection.tsx` — aba Outlook com visão semanal e disponibilidade do Vendedor
+- `frontend/src/components/cardDetails/FocusSection.tsx` — reuniões filtradas (movidas para MeetingSection)
+- `frontend/src/components/cardDetails/QuickActivityForm.tsx` — tipo "Reunião" removido
+- `frontend/src/pages/CardDetails.tsx` — aba "Reuniões" com contador
+- `frontend/src/types/index.ts` — `assigned_to_email` na interface `Card`
+- `frontend/src/services/cardTaskService.ts` — `createTeamsMeeting()`, `fetchTranscript()`, campos Teams na interface
+- `frontend/src/constants/cardTaskConfig.ts` — tipos `email`, `deadline`, `lunch` adicionados
+
+---
+
 ## [1.6.25] - 2026-04-13
 
 ### Adicionado

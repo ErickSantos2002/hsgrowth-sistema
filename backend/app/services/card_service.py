@@ -2185,6 +2185,7 @@ class CardService:
 
             # Informações relacionadas
             "assigned_to_name": card.assigned_to.name if card.assigned_to else None,
+            "assigned_to_email": card.assigned_to.email if card.assigned_to else None,
             "sdr_name": card.sdr.name if card.sdr else None,  # ✅ Nome do SDR
             "list_name": list_obj.name if list_obj else None,
             "board_id": board.id if board else None,

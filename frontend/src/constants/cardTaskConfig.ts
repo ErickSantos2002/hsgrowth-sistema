@@ -58,27 +58,6 @@ export const TYPE_CONFIG: Record<TaskType, TypeConfig> = {
     pillText: "text-slate-900 dark:text-yellow-300",
     pillBorder: "border-yellow-500/40",
   },
-  deadline: {
-    label: "Prazo",
-    Icon: Clock,
-    pillBg: "bg-orange-500/20",
-    pillText: "text-slate-900 dark:text-orange-300",
-    pillBorder: "border-orange-500/40",
-  },
-  email: {
-    label: "E-mail",
-    Icon: Mail,
-    pillBg: "bg-blue-500/20",
-    pillText: "text-slate-900 dark:text-blue-300",
-    pillBorder: "border-blue-500/40",
-  },
-  lunch: {
-    label: "Almoço",
-    Icon: Coffee,
-    pillBg: "bg-purple-500/20",
-    pillText: "text-slate-900 dark:text-purple-300",
-    pillBorder: "border-purple-500/40",
-  },
   other: {
     label: "Outro",
     Icon: MoreHorizontal,

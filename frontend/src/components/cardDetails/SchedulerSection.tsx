@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  addDays,
   addMonths,
   eachDayOfInterval,
   endOfMonth,
@@ -24,6 +25,7 @@ import {
   ExternalLink,
   List,
   Loader2,
+  Mail,
   MapPin,
   MoreHorizontal,
   Phone,
@@ -40,6 +42,7 @@ import {
 } from "../../constants/cardTaskConfig";
 import type { TaskType, Priority } from "../../constants/cardTaskConfig";
 import cardTaskService, { CardTask } from "../../services/cardTaskService";
+import api from "../../services/api";
 import {
   convertBrazilToUTC,
   convertUTCToBrazil,
@@ -57,7 +60,18 @@ import { useConfirm } from "../../contexts/ConfirmContext";
 
 // TaskType, Priority e TypeConfig são importados de ../../constants/cardTaskConfig
 
-type ViewMode = "month" | "list";
+type ViewMode = "month" | "list" | "outlook";
+
+interface OutlookEvent {
+  id: string;
+  subject: string;
+  start: string;
+  end: string;
+  is_online_meeting: boolean;
+  join_url: string;
+  organizer: string;
+  location: string;
+}
 
 interface EditFormData {
   title: string;
@@ -99,6 +113,7 @@ function getTaskBrazilDate(task: CardTask): string | null {
  */
 const SchedulerSection: React.FC<SchedulerSectionProps> = ({
   cardId,
+  card,
   onUpdate,
   readOnly = false,
 }) => {
@@ -108,6 +123,24 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [tasks, setTasks] = useState<CardTask[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Outlook calendar
+  const [outlookEvents, setOutlookEvents] = useState<OutlookEvent[]>([]);
+  const [outlookLoading, setOutlookLoading] = useState(false);
+  const [outlookError, setOutlookError] = useState<string | null>(null);
+  const [outlookSubView, setOutlookSubView] = useState<"month" | "week">("week");
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() =>
+    startOfWeek(new Date(), { weekStartsOn: 1 }) // começa na segunda
+  );
+
+  // ── Schedule do Vendedor (busy slots)
+  const [sellerBusy, setSellerBusy] = useState<Array<{
+    status: string;
+    subject: string;
+    start: string;
+    end: string;
+    is_private: boolean;
+  }>>([]);
 
   // ── Controle dos modais
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -174,11 +207,63 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
     loadTasks();
   }, [loadTasks]);
 
+  // ── Outlook: busca eventos + schedule do vendedor quando entra na aba ────
+
+  useEffect(() => {
+    if (viewMode !== "outlook") return;
+
+    const fetchOutlookData = async () => {
+      setOutlookLoading(true);
+      setOutlookError(null);
+      try {
+        const start = outlookSubView === "week"
+          ? format(currentWeekStart, "yyyy-MM-dd")
+          : format(startOfMonth(currentMonth), "yyyy-MM-dd");
+        const end = outlookSubView === "week"
+          ? format(addDays(currentWeekStart, 6), "yyyy-MM-dd")
+          : format(endOfMonth(currentMonth), "yyyy-MM-dd");
+
+        // Busca eventos próprios do usuário logado
+        const eventsResp = await api.get<{ events: OutlookEvent[] }>(
+          `/api/v1/auth/me/calendar-events?start=${start}&end=${end}`
+        );
+        setOutlookEvents(eventsResp.data.events);
+
+        // Busca schedule do Vendedor (se houver vendedor atribuído e email disponível)
+        const sellerEmail = card.assigned_to_email;
+        if (sellerEmail) {
+          try {
+            const schedResp = await api.get<{ slots: typeof sellerBusy }>(
+              `/api/v1/auth/me/seller-schedule?email=${encodeURIComponent(sellerEmail)}&start=${start}&end=${end}`
+            );
+            setSellerBusy(schedResp.data.slots);
+          } catch {
+            setSellerBusy([]);
+          }
+        } else {
+          setSellerBusy([]);
+        }
+      } catch (err: any) {
+        const msg = err.response?.data?.detail || "Erro ao carregar calendário do Outlook.";
+        setOutlookError(msg);
+      } finally {
+        setOutlookLoading(false);
+      }
+    };
+
+    fetchOutlookData();
+  }, [viewMode, currentMonth, currentWeekStart, outlookSubView, card.assigned_to_email]);
+
   // ── Navegação do mês ──────────────────────────────────────────────────────
 
   const handlePrevMonth = () => setCurrentMonth((m) => subMonths(m, 1));
   const handleNextMonth = () => setCurrentMonth((m) => addMonths(m, 1));
   const handleToday = () => setCurrentMonth(new Date());
+
+  const handlePrevWeek = () => setCurrentWeekStart((d) => addDays(d, -7));
+  const handleNextWeek = () => setCurrentWeekStart((d) => addDays(d, 7));
+  const handleThisWeek = () =>
+    setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   /** Abre o seletor de mês sincronizando o ano exibido com o mês atual */
   const handleOpenMonthPicker = () => {
@@ -361,7 +446,294 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
     );
   };
 
-  const renderMonthView = () => {
+  // ── Renderização do Outlook ───────────────────────────────────────────────
+
+  const renderOutlookWeekView = () => {
+    const HOUR_HEIGHT = 60; // px por hora
+    const START_HOUR = 8;
+    const END_HOUR = 17;
+    const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
+
+    // Agrupa eventos por dia (YYYY-MM-DD no fuso de São Paulo)
+    const eventsByDay: Record<string, OutlookEvent[]> = {};
+    for (const ev of outlookEvents) {
+      // O campo start pode ser "2026-04-14T10:00:00" (sem Z) — Graph retorna sem Z mas em UTC
+      const startUtc = new Date(ev.start.endsWith("Z") ? ev.start : ev.start + "Z");
+      const dayBR = startUtc.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }); // YYYY-MM-DD
+      if (!eventsByDay[dayBR]) eventsByDay[dayBR] = [];
+      eventsByDay[dayBR].push(ev);
+    }
+
+    // Agrupa busy slots do Vendedor por dia
+    const sellerByDay: Record<string, typeof sellerBusy> = {};
+    for (const slot of sellerBusy) {
+      if (slot.status === "free" || slot.status === "workingElsewhere") continue;
+      const startUtc = new Date(slot.start.endsWith("Z") ? slot.start : slot.start + "Z");
+      const dayBR = startUtc.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+      if (!sellerByDay[dayBR]) sellerByDay[dayBR] = [];
+      sellerByDay[dayBR].push(slot);
+    }
+
+    const getSlotStyle = (start: string, end: string) => {
+      const startUtc = new Date(start.endsWith("Z") ? start : start + "Z");
+      const endUtc = new Date(end.endsWith("Z") ? end : end + "Z");
+      const localStart = new Date(startUtc.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      const localEnd = new Date(endUtc.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      const startMinutes = localStart.getHours() * 60 + localStart.getMinutes();
+      const endMinutes = localEnd.getHours() * 60 + localEnd.getMinutes();
+      const topMinutes = Math.max(startMinutes - START_HOUR * 60, 0);
+      const durationMinutes = Math.max(endMinutes - startMinutes, 15);
+      return {
+        top: (topMinutes / 60) * HOUR_HEIGHT,
+        height: Math.max((durationMinutes / 60) * HOUR_HEIGHT, 8),
+      };
+    };
+
+    const getEventStyle = (ev: OutlookEvent) => {
+      const startUtc = new Date(ev.start.endsWith("Z") ? ev.start : ev.start + "Z");
+      const endUtc = new Date(ev.end.endsWith("Z") ? ev.end : ev.end + "Z");
+
+      // Hora local de São Paulo
+      const localStart = new Date(startUtc.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      const localEnd = new Date(endUtc.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+
+      const startMinutes = localStart.getHours() * 60 + localStart.getMinutes();
+      const endMinutes = localEnd.getHours() * 60 + localEnd.getMinutes();
+
+      const topMinutes = Math.max(startMinutes - START_HOUR * 60, 0);
+      const durationMinutes = Math.max(endMinutes - startMinutes, 30);
+
+      const top = (topMinutes / 60) * HOUR_HEIGHT;
+      const height = Math.max((durationMinutes / 60) * HOUR_HEIGHT, 22);
+      const timeLabel = `${String(localStart.getHours()).padStart(2, "0")}:${String(localStart.getMinutes()).padStart(2, "0")}`;
+
+      return { top, height, timeLabel };
+    };
+
+    return (
+      <div className="overflow-auto rounded-lg border border-gray-200 dark:border-slate-700" style={{ maxHeight: "520px" }}>
+        {/* Cabeçalho fixo com dias da semana */}
+        <div className="sticky top-0 z-10 flex border-b border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+          <div className="w-12 flex-shrink-0" />
+          {weekDays.map((day) => {
+            const isTodayDay = isToday(day);
+            return (
+              <div
+                key={format(day, "yyyy-MM-dd")}
+                className="flex flex-1 flex-col items-center border-l border-gray-200 py-2 dark:border-slate-700"
+              >
+                <span className="text-xs capitalize text-slate-500">
+                  {format(day, "EEE", { locale: ptBR })}
+                </span>
+                <span
+                  className={[
+                    "mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium",
+                    isTodayDay
+                      ? "bg-emerald-500 text-white"
+                      : "text-slate-900 dark:text-white",
+                  ].join(" ")}
+                >
+                  {format(day, "d")}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Corpo: coluna de horários + colunas de dias */}
+        <div className="flex">
+          {/* Coluna de horários */}
+          <div className="w-12 flex-shrink-0">
+            {HOURS.map((h) => (
+              <div
+                key={h}
+                style={{ height: HOUR_HEIGHT }}
+                className="flex items-start justify-end border-t border-gray-100 pr-2 pt-1 dark:border-slate-800"
+              >
+                {h < END_HOUR && (
+                  <span className="text-xs text-slate-400">
+                    {String(h).padStart(2, "0")}h
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Colunas dos dias */}
+          {weekDays.map((day) => {
+            const dayStr = format(day, "yyyy-MM-dd");
+            const events = eventsByDay[dayStr] || [];
+            const isTodayDay = isToday(day);
+
+            return (
+              <div
+                key={dayStr}
+                className={[
+                  "relative flex-1 border-l border-gray-200 dark:border-slate-700",
+                  isTodayDay ? "bg-emerald-500/5" : "",
+                ].join(" ")}
+                style={{ height: HOUR_HEIGHT * HOURS.length }}
+              >
+                {/* Linhas das horas */}
+                {HOURS.map((h) => (
+                  <div
+                    key={h}
+                    style={{ top: (h - START_HOUR) * HOUR_HEIGHT, height: HOUR_HEIGHT }}
+                    className="absolute left-0 right-0 border-t border-gray-100 dark:border-slate-800"
+                  />
+                ))}
+
+                {/* Linha de meia-hora (tracejada) */}
+                {HOURS.slice(0, -1).map((h) => (
+                  <div
+                    key={`${h}-half`}
+                    style={{ top: (h - START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2 }}
+                    className="absolute left-0 right-0 border-t border-dashed border-gray-100/60 dark:border-slate-800/60"
+                  />
+                ))}
+
+                {/* Blocos ocupados do Vendedor (fundo cinza rajado) */}
+                {(sellerByDay[dayStr] || []).map((slot, idx) => {
+                  const { top, height } = getSlotStyle(slot.start, slot.end);
+                  return (
+                    <div
+                      key={`seller-${idx}`}
+                      style={{ top, height, left: 0, right: 0, position: "absolute" }}
+                      title={`Vendedor ocupado${slot.is_private ? "" : slot.subject ? `: ${slot.subject}` : ""}`}
+                      className="pointer-events-none"
+                    >
+                      {/* Fundo rajado cinza */}
+                      <div
+                        className="absolute inset-0 opacity-30"
+                        style={{
+                          background: "repeating-linear-gradient(45deg, #94a3b8 0px, #94a3b8 2px, transparent 2px, transparent 8px)",
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+
+                {/* Eventos posicionados absolutamente */}
+                {events.map((ev) => {
+                  const { top, height, timeLabel } = getEventStyle(ev);
+                  return (
+                    <div
+                      key={ev.id}
+                      style={{ top, height, left: 2, right: 2, position: "absolute" }}
+                      className={[
+                        "overflow-hidden rounded px-1.5 py-0.5 text-xs",
+                        ev.is_online_meeting
+                          ? "border border-purple-500/40 bg-purple-500/20 text-purple-300"
+                          : "border border-indigo-500/30 bg-indigo-500/15 text-indigo-300",
+                      ].join(" ")}
+                      title={`${ev.subject}\n${timeLabel}${ev.organizer ? `\n${ev.organizer}` : ""}${ev.location ? `\n${ev.location}` : ""}`}
+                    >
+                      <div className="flex items-center gap-1">
+                        {ev.is_online_meeting
+                          ? <Users size={9} className="flex-shrink-0" />
+                          : <Mail size={9} className="flex-shrink-0" />
+                        }
+                        <span className="truncate font-medium leading-tight">
+                          {ev.subject || "(Sem título)"}
+                        </span>
+                      </div>
+                      {height > 32 && (
+                        <div className="mt-0.5 text-xs opacity-70">{timeLabel}</div>
+                      )}
+                      {ev.join_url && height > 46 && (
+                        <a
+                          href={ev.join_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-0.5 flex items-center gap-0.5 text-xs opacity-80 hover:opacity-100"
+                        >
+                          <ExternalLink size={9} />
+                          Entrar
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderOutlookView = () => {
+    return (
+      <div className="space-y-3">
+        {/* Sub-toggle Semana / Mês */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border border-gray-200 p-0.5 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setOutlookSubView("week")}
+              className={[
+                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                outlookSubView === "week"
+                  ? "border border-purple-500/40 bg-purple-500/20 text-purple-400"
+                  : "text-slate-400 hover:text-slate-900 dark:hover:text-white",
+              ].join(" ")}
+            >
+              Semana
+            </button>
+            <button
+              type="button"
+              onClick={() => setOutlookSubView("month")}
+              className={[
+                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                outlookSubView === "month"
+                  ? "border border-purple-500/40 bg-purple-500/20 text-purple-400"
+                  : "text-slate-400 hover:text-slate-900 dark:hover:text-white",
+              ].join(" ")}
+            >
+              Mês
+            </button>
+          </div>
+          <span className="text-xs text-slate-500">Calendário Outlook</span>
+          {card.assigned_to_name && card.assigned_to_email && (
+            <span className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
+              <span
+                className="inline-block h-3 w-3 rounded-sm opacity-40"
+                style={{
+                  background: "repeating-linear-gradient(45deg, #94a3b8 0px, #94a3b8 2px, transparent 2px, transparent 8px)",
+                }}
+              />
+              Ocupado: {card.assigned_to_name}
+            </span>
+          )}
+        </div>
+
+        {/* Conteúdo */}
+        {outlookLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 size={24} className="animate-spin text-slate-400" />
+          </div>
+        ) : outlookError ? (
+          <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-4 text-center">
+            <Mail size={20} className="mx-auto mb-2 text-orange-400" />
+            <p className="text-sm text-orange-300">{outlookError}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Faça logout e entre novamente pelo botão "Entrar com Microsoft" para liberar o acesso ao calendário.
+            </p>
+          </div>
+        ) : outlookSubView === "week" ? (
+          renderOutlookWeekView()
+        ) : (
+          renderMonthView(outlookEvents)
+        )}
+      </div>
+    );
+  };
+
+  const renderMonthView = (extraEvents?: OutlookEvent[]) => {
+    const outlookOnly = extraEvents !== undefined;
+
     // Calcula os dias a exibir (inclui dias de meses adjacentes para preencher a grade)
     const monthStart = startOfMonth(currentMonth);
     const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
@@ -370,6 +742,21 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
       start: calendarStart,
       end: calendarEnd,
     });
+
+    // Agrupa eventos do Outlook por dia (YYYY-MM-DD em UTC)
+    const outlookByDay: Record<string, OutlookEvent[]> = {};
+    if (extraEvents) {
+      for (const ev of extraEvents) {
+        const day = ev.start.substring(0, 10);
+        if (!outlookByDay[day]) outlookByDay[day] = [];
+        outlookByDay[day].push(ev);
+      }
+    }
+
+    const formatTime = (iso: string) => {
+      const d = new Date(iso.endsWith("Z") ? iso : iso + "Z");
+      return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+    };
 
     return (
       <div className="select-none">
@@ -389,13 +776,17 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
         <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 dark:border-slate-700 dark:bg-slate-700">
           {calendarDays.map((day) => {
             const dayStr = format(day, "yyyy-MM-dd");
-            const dayTasks = tasks.filter(
+            const dayTasks = outlookOnly ? [] : tasks.filter(
               (t) => getTaskBrazilDate(t) === dayStr
             );
+            const dayOutlook = outlookByDay[dayStr] || [];
             const isCurrentMonth = isSameMonth(day, currentMonth);
             const isTodayDay = isToday(day);
+            const totalItems = dayTasks.length + dayOutlook.length;
             const visibleTasks = dayTasks.slice(0, 3);
-            const overflow = dayTasks.length - 3;
+            const remainingSlots = Math.max(0, 3 - visibleTasks.length);
+            const visibleOutlook = dayOutlook.slice(0, remainingSlots);
+            const overflow = totalItems - visibleTasks.length - visibleOutlook.length;
 
             return (
               <div
@@ -434,14 +825,43 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
                     </div>
                   ))}
 
+                  {/* Pills dos eventos Outlook */}
+                  {visibleOutlook.map((ev) => (
+                    <div
+                      key={ev.id}
+                      title={`${ev.subject}\n${formatTime(ev.start)} – ${formatTime(ev.end)}${ev.organizer ? `\n${ev.organizer}` : ""}${ev.location ? `\n${ev.location}` : ""}`}
+                      className={`group flex items-center gap-1 truncate rounded px-1 py-0.5 text-xs leading-tight ${
+                        ev.is_online_meeting
+                          ? "bg-purple-500/20 text-purple-300"
+                          : "bg-indigo-500/15 text-indigo-300"
+                      }`}
+                    >
+                      {ev.is_online_meeting
+                        ? <Users size={9} className="flex-shrink-0" />
+                        : <Mail size={9} className="flex-shrink-0" />
+                      }
+                      <span className="truncate">{ev.subject || "(Sem título)"}</span>
+                      {ev.join_url && (
+                        <a
+                          href={ev.join_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100"
+                        >
+                          <ExternalLink size={9} />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+
                   {/* Indicador de overflow quando há mais de 3 tarefas */}
                   {overflow > 0 && (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Abre o modal do primeiro task fora do limite de exibição
-                        handleTaskPillClick(e, dayTasks[3]);
+                        if (dayTasks[3]) handleTaskPillClick(e, dayTasks[3]);
                       }}
                       className="w-full rounded px-1 py-0.5 text-center text-xs text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
                     >
@@ -453,6 +873,20 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
             );
           })}
         </div>
+
+        {/* Legenda — só aparece na view Outlook */}
+        {extraEvents && (
+          <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-purple-500/40" />
+              Reunião Teams
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-indigo-500/30" />
+              Evento Outlook
+            </span>
+          </div>
+        )}
       </div>
     );
   };
@@ -1014,90 +1448,99 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
       {/* Header responsivo: linha 1 → nav do mês | linha 2 → Mês/Lista/Agendar (no mobile) */}
       <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
         {/* Navegação entre meses — oculta na view lista */}
-        {viewMode === "month" ? (
+        {viewMode === "month" || viewMode === "outlook" ? (
           <div className="flex flex-1 items-center gap-1">
             <button
               type="button"
-              onClick={handlePrevMonth}
-              aria-label="Mês anterior"
+              onClick={viewMode === "outlook" && outlookSubView === "week" ? handlePrevWeek : handlePrevMonth}
+              aria-label={viewMode === "outlook" && outlookSubView === "week" ? "Semana anterior" : "Mês anterior"}
               className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
             >
               <ChevronLeft size={18} />
             </button>
 
-            {/* Título clicável que abre o seletor rápido de mês */}
-            <div className="relative" ref={monthPickerRef}>
-              <button
-                type="button"
-                onClick={handleOpenMonthPicker}
-                className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-semibold capitalize text-slate-900 transition-colors hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800"
-              >
-                {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-150 ${showMonthPicker ? "rotate-180" : ""}`}
-                />
-              </button>
+            {/* Título: semana ou mês */}
+            {viewMode === "outlook" && outlookSubView === "week" ? (
+              <span className="px-2 py-1 text-sm font-semibold text-slate-900 dark:text-white">
+                {format(currentWeekStart, "d", { locale: ptBR })}
+                {" – "}
+                {format(addDays(currentWeekStart, 6), "d MMM yyyy", { locale: ptBR })}
+              </span>
+            ) : (
+              /* Título clicável que abre o seletor rápido de mês */
+              <div className="relative" ref={monthPickerRef}>
+                <button
+                  type="button"
+                  onClick={handleOpenMonthPicker}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-semibold capitalize text-slate-900 transition-colors hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800"
+                >
+                  {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-150 ${showMonthPicker ? "rotate-180" : ""}`}
+                  />
+                </button>
 
-              {/* Popover de seleção rápida */}
-              {showMonthPicker && (
-                <div className="absolute left-0 top-full z-50 mt-1 w-52 rounded-xl border border-gray-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                  {/* Navegação de ano */}
-                  <div className="mb-3 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => setPickerYear((y) => y - 1)}
-                      className="rounded p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
-                      aria-label="Ano anterior"
-                    >
-                      <ChevronLeft size={15} />
-                    </button>
-                    <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                      {pickerYear}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setPickerYear((y) => y + 1)}
-                      className="rounded p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
-                      aria-label="Próximo ano"
-                    >
-                      <ChevronRight size={15} />
-                    </button>
-                  </div>
+                {/* Popover de seleção rápida */}
+                {showMonthPicker && (
+                  <div className="absolute left-0 top-full z-50 mt-1 w-52 rounded-xl border border-gray-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                    {/* Navegação de ano */}
+                    <div className="mb-3 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setPickerYear((y) => y - 1)}
+                        className="rounded p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+                        aria-label="Ano anterior"
+                      >
+                        <ChevronLeft size={15} />
+                      </button>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {pickerYear}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPickerYear((y) => y + 1)}
+                        className="rounded p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+                        aria-label="Próximo ano"
+                      >
+                        <ChevronRight size={15} />
+                      </button>
+                    </div>
 
-                  {/* Grid 4 colunas × 3 linhas com abreviações dos meses */}
-                  <div className="grid grid-cols-4 gap-1">
-                    {Array.from({ length: 12 }, (_, i) => {
-                      const isSelected =
-                        currentMonth.getMonth() === i &&
-                        currentMonth.getFullYear() === pickerYear;
-                      return (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => handleSelectMonth(i)}
-                          className={[
-                            "rounded-lg py-1.5 text-xs font-medium capitalize transition-colors",
-                            isSelected
-                              ? "bg-blue-500 text-white"
-                              : "text-slate-600 hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white",
-                          ].join(" ")}
-                        >
-                          {format(new Date(pickerYear, i, 1), "MMM", {
-                            locale: ptBR,
-                          })}
-                        </button>
-                      );
-                    })}
+                    {/* Grid 4 colunas × 3 linhas com abreviações dos meses */}
+                    <div className="grid grid-cols-4 gap-1">
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const isSelected =
+                          currentMonth.getMonth() === i &&
+                          currentMonth.getFullYear() === pickerYear;
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => handleSelectMonth(i)}
+                            className={[
+                              "rounded-lg py-1.5 text-xs font-medium capitalize transition-colors",
+                              isSelected
+                                ? "bg-blue-500 text-white"
+                                : "text-slate-600 hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white",
+                            ].join(" ")}
+                          >
+                            {format(new Date(pickerYear, i, 1), "MMM", {
+                              locale: ptBR,
+                            })}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             <button
               type="button"
-              onClick={handleNextMonth}
-              aria-label="Próximo mês"
+              onClick={viewMode === "outlook" && outlookSubView === "week" ? handleNextWeek : handleNextMonth}
+              aria-label={viewMode === "outlook" && outlookSubView === "week" ? "Próxima semana" : "Próximo mês"}
               className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
             >
               <ChevronRight size={18} />
@@ -1105,7 +1548,7 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
 
             <button
               type="button"
-              onClick={handleToday}
+              onClick={viewMode === "outlook" && outlookSubView === "week" ? handleThisWeek : handleToday}
               className="rounded-lg border border-gray-200 px-3 py-1 text-xs font-medium text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-900 dark:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
             >
               Hoje
@@ -1147,6 +1590,19 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
               <List size={13} />
               Lista
             </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("outlook")}
+              className={[
+                "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                viewMode === "outlook"
+                  ? "border border-blue-500/40 bg-blue-500/20 text-blue-400"
+                  : "text-slate-400 hover:text-slate-900 dark:hover:text-white",
+              ].join(" ")}
+            >
+              <Mail size={13} />
+              Outlook
+            </button>
           </div>
 
           {/* Botão de agendar - oculto para visualizadores */}
@@ -1171,6 +1627,8 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
         <div className="flex items-center justify-center py-16">
           <Loader2 size={24} className="animate-spin text-slate-400" />
         </div>
+      ) : viewMode === "outlook" ? (
+        renderOutlookView()
       ) : viewMode === "month" ? (
         renderMonthView()
       ) : (

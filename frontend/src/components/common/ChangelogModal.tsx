@@ -25,6 +25,40 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.0",
+    date: "13/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Integração completa com Microsoft Teams: ao criar uma reunião no CRM, o evento é agendado automaticamente no calendário do Outlook e o link Teams é gerado — sem passos extras.",
+      },
+      {
+        type: "feature",
+        text: "Seção dedicada 'Reuniões' nas oportunidades: separada das demais atividades, com lista de pendentes, histórico de concluídas e No-Shows.",
+      },
+      {
+        type: "feature",
+        text: "Convites automáticos: ao criar uma reunião, o Vendedor responsável e o contato do cliente recebem convite direto no Microsoft Teams/Outlook.",
+      },
+      {
+        type: "feature",
+        text: "Análise de reunião com IA: após a reunião, analisa a transcrição do Teams e exibe resumo, sentimento, nível de interesse do cliente, objeções, próximos passos e pontos de atenção.",
+      },
+      {
+        type: "feature",
+        text: "Calendário Outlook integrado: nova aba 'Outlook' no calendário do card exibe os eventos reais do usuário no Outlook, com visão mensal e semanal (8h–17h).",
+      },
+      {
+        type: "feature",
+        text: "Disponibilidade do Vendedor no calendário: o SDR vê os horários ocupados do Vendedor responsável pelo card diretamente na visão semanal, facilitando o agendamento sem conflitos.",
+      },
+      {
+        type: "improvement",
+        text: "Botão para copiar o link Teams da reunião diretamente pelo CRM, sem precisar abrir o Teams.",
+      },
+    ],
+  },
+  {
     version: "1.6.26",
     date: "13/04/2026",
     entries: [

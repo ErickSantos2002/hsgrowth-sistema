@@ -11,7 +11,13 @@ from app.core.config import settings
 
 
 class MicrosoftAuthService:
-    SCOPES = ["User.Read"]
+    SCOPES = [
+        "User.Read",
+        "Mail.Send",
+        "OnlineMeetings.ReadWrite",
+        "OnlineMeetingTranscript.Read.All",
+        "Calendars.ReadWrite",
+    ]
     GRAPH_ME_URL = "https://graph.microsoft.com/v1.0/me"
 
     def _get_msal_app(self) -> msal.ConfidentialClientApplication:

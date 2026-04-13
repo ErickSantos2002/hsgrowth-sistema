@@ -134,6 +134,7 @@ export interface Card {
 
   // Campos relacionados (retornados pelo backend)
   assigned_to_name: string | null;
+  assigned_to_email: string | null;
   assigned_to_avatar_url: string | null;
   sdr_name: string | null;
   sdr_avatar_url: string | null;

@@ -119,7 +119,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
     try {
       setSaving(true);
       const dueDateUTC = convertBrazilToUTC(form.date, form.time);
-      await cardTaskService.create({
+      const created = await cardTaskService.create({
         card_id: cardId,
         title: form.title.trim(),
         task_type: "meeting",
@@ -128,10 +128,19 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
         contact_name: form.contact_name.trim() || undefined,
         description: form.description.trim() || undefined,
       });
-      showSuccess("Reunião criada com sucesso!");
       setShowModal(false);
       setForm(EMPTY_FORM);
-      loadMeetings();
+
+      // Cria automaticamente o evento no calendário Teams
+      try {
+        await cardTaskService.createTeamsMeeting(created.id);
+        showSuccess("Reunião criada e agendada no calendário!");
+      } catch {
+        // Se falhar (ex: usuário sem MS token), avisa mas não bloqueia
+        showSuccess("Reunião criada! Ative o link Teams manualmente se necessário.");
+      }
+
+      await loadMeetings();
     } catch (error: any) {
       showError(error.response?.data?.detail || "Erro ao criar reunião");
     } finally {

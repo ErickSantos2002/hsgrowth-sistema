@@ -852,14 +852,37 @@ async def create_teams_meeting(
     try:
         duration = task.duration_minutes or 60
         from datetime import timedelta
+        from app.models.card import Card
+        from app.models.person import Person
+
         end_dt = task.due_date + timedelta(minutes=duration)
 
-        result = microsoft_graph_service.create_teams_meeting(
+        # Coleta e-mails dos convidados: vendedor responsável + contato do card
+        attendee_emails = []
+        card = db.query(Card).filter(Card.id == task.card_id).first()
+
+        # Vendedor (assigned_to) — convidado principal, a reunião deve aparecer no calendário dele
+        if card and card.assigned_to and card.assigned_to.email:
+            seller_email = card.assigned_to.email.strip()
+            # Não convida o próprio organizador (quem está criando a reunião)
+            if seller_email and seller_email != current_user.email:
+                attendee_emails.append(seller_email)
+
+        # Contato do card (cliente/pessoa vinculada)
+        if card and card.person_id:
+            person = db.query(Person).filter(Person.id == card.person_id).first()
+            if person:
+                for email in [person.email, person.email_commercial, person.email_personal]:
+                    if email and email.strip() and email not in attendee_emails:
+                        attendee_emails.append(email.strip())
+
+        result = microsoft_graph_service.create_calendar_event(
             user=current_user,
             db=db,
             title=task.title,
             start_dt=task.due_date,
             end_dt=end_dt,
+            attendee_emails=attendee_emails or None,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -914,12 +937,25 @@ async def fetch_transcript(
             detail="Esta atividade não possui reunião Teams criada pelo CRM"
         )
 
+    # Se o meeting_id é um marcador join_url: (resolução adiada), tenta resolver agora
+    meeting_id = task.teams_meeting_id
+    if meeting_id.startswith("join_url:") and task.teams_join_url:
+        try:
+            token = microsoft_graph_service._require_token(current_user, db)
+            resolved = microsoft_graph_service._resolve_meeting_id_by_join_url(token, task.teams_join_url)
+            if not resolved.startswith("join_url:"):
+                task.teams_meeting_id = resolved
+                db.commit()
+                meeting_id = resolved
+        except Exception:
+            pass
+
     # Busca lista de transcrições disponíveis
     try:
         transcripts = microsoft_graph_service.get_meeting_transcripts(
             user=current_user,
             db=db,
-            meeting_id=task.teams_meeting_id,
+            meeting_id=meeting_id,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -942,7 +978,7 @@ async def fetch_transcript(
         vtt_content = microsoft_graph_service.get_transcript_content(
             user=current_user,
             db=db,
-            meeting_id=task.teams_meeting_id,
+            meeting_id=meeting_id,
             transcript_id=transcript_id,
         )
     except ValueError as e:

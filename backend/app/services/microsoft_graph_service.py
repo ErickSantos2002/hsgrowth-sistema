@@ -20,6 +20,7 @@ from app.services.microsoft_auth_service import microsoft_auth_service
 GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 GRAPH_SEND_MAIL_URL = f"{GRAPH_BASE}/users/{{email}}/sendMail"
 GRAPH_MEETINGS_URL = f"{GRAPH_BASE}/me/onlineMeetings"
+GRAPH_EVENTS_URL = f"{GRAPH_BASE}/me/events"
 
 # Todos os escopos necessários para o serviço completo
 ALL_SCOPES = [
@@ -27,6 +28,7 @@ ALL_SCOPES = [
     "Mail.Send",
     "OnlineMeetings.ReadWrite",
     "OnlineMeetingTranscript.Read.All",
+    "Calendars.ReadWrite",
 ]
 
 
@@ -145,7 +147,163 @@ class MicrosoftGraphService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    # ==================== TEAMS MEETINGS ====================
+    # ==================== CALENDÁRIO + TEAMS ====================
+
+    def create_calendar_event(
+        self,
+        user: User,
+        db: Session,
+        title: str,
+        start_dt: datetime,
+        end_dt: Optional[datetime] = None,
+        attendee_emails: Optional[list[str]] = None,
+    ) -> dict:
+        """
+        Cria um evento no calendário do Outlook/Teams com link de reunião Teams.
+        O evento aparece no calendário do organizador e envia convites aos participantes.
+
+        Returns:
+            dict com: meeting_id (online meeting ID para transcrições), join_url (str)
+
+        Raises:
+            ValueError: Se o usuário não tiver token MS válido ou a chamada falhar
+        """
+        access_token = self._require_token(user, db)
+
+        if end_dt is None:
+            end_dt = start_dt + timedelta(hours=1)
+
+        def to_iso(dt: datetime) -> str:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+        payload: dict = {
+            "subject": title,
+            "start": {"dateTime": to_iso(start_dt), "timeZone": "UTC"},
+            "end": {"dateTime": to_iso(end_dt), "timeZone": "UTC"},
+            "isOnlineMeeting": True,
+            "onlineMeetingProvider": "teamsForBusiness",
+        }
+
+        if attendee_emails:
+            payload["attendees"] = [
+                {"emailAddress": {"address": email}, "type": "required"}
+                for email in attendee_emails
+                if email and email.strip()
+            ]
+
+        try:
+            with httpx.Client(timeout=15) as client:
+                resp = client.post(
+                    GRAPH_EVENTS_URL,
+                    json=payload,
+                    headers=self._auth_headers(access_token),
+                )
+
+            if resp.status_code not in (200, 201):
+                error_msg = resp.json().get("error", {}).get("message", f"HTTP {resp.status_code}")
+                raise ValueError(f"Erro ao criar evento no calendário: {error_msg}")
+
+            data = resp.json()
+            join_url = data.get("onlineMeeting", {}).get("joinUrl", "")
+
+            if not join_url:
+                raise ValueError("Evento criado mas link Teams não gerado. Verifique as permissões.")
+
+            # Resolve o online meeting ID a partir do join URL (necessário para transcrições)
+            meeting_id = self._resolve_meeting_id_by_join_url(access_token, join_url)
+
+            return {
+                "meeting_id": meeting_id,
+                "join_url": join_url,
+            }
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Erro ao criar evento no calendário: {e}")
+
+    def _resolve_meeting_id_by_join_url(self, access_token: str, join_url: str) -> str:
+        """
+        Resolve o ID do online meeting a partir do join URL.
+        Necessário para buscar transcrições via Graph API.
+        Retorna o join_url como fallback se não conseguir resolver.
+        """
+        try:
+            import urllib.parse
+            encoded_url = urllib.parse.quote(join_url)
+            url = f"{GRAPH_MEETINGS_URL}?$filter=JoinWebUrl eq '{join_url}'"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            with httpx.Client(timeout=10) as client:
+                resp = client.get(url, headers=headers)
+            if resp.status_code == 200:
+                meetings = resp.json().get("value", [])
+                if meetings:
+                    return meetings[0]["id"]
+        except Exception as e:
+            print(f"[GraphService] Aviso: não foi possível resolver meeting ID: {e}")
+        # Fallback: retorna o join_url como marcador — fetch-transcript vai tentar resolver novamente
+        return f"join_url:{join_url}"
+
+    def get_calendar_events(
+        self,
+        user: User,
+        db: Session,
+        start_dt: datetime,
+        end_dt: datetime,
+    ) -> list[dict]:
+        """
+        Busca eventos do calendário do usuário no período informado.
+
+        Returns:
+            Lista de dicts com: id, subject, start, end, isOnlineMeeting, joinUrl, organizer
+        """
+        access_token = self._require_token(user, db)
+
+        def to_iso(dt: datetime) -> str:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        params = {
+            "$filter": f"start/dateTime ge '{to_iso(start_dt)}' and end/dateTime le '{to_iso(end_dt)}'",
+            "$select": "id,subject,start,end,isOnlineMeeting,onlineMeeting,organizer,location",
+            "$orderby": "start/dateTime",
+            "$top": "100",
+        }
+
+        try:
+            with httpx.Client(timeout=15) as client:
+                resp = client.get(
+                    GRAPH_EVENTS_URL,
+                    params=params,
+                    headers=self._auth_headers(access_token),
+                )
+
+            if resp.status_code != 200:
+                error_msg = resp.json().get("error", {}).get("message", f"HTTP {resp.status_code}")
+                raise ValueError(f"Erro ao buscar eventos do calendário: {error_msg}")
+
+            events = resp.json().get("value", [])
+            return [
+                {
+                    "id": e["id"],
+                    "subject": e.get("subject", ""),
+                    "start": e.get("start", {}).get("dateTime", ""),
+                    "end": e.get("end", {}).get("dateTime", ""),
+                    "is_online_meeting": e.get("isOnlineMeeting", False),
+                    "join_url": e.get("onlineMeeting", {}).get("joinUrl", "") if e.get("onlineMeeting") else "",
+                    "organizer": e.get("organizer", {}).get("emailAddress", {}).get("name", ""),
+                    "location": e.get("location", {}).get("displayName", ""),
+                }
+                for e in events
+            ]
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Erro ao buscar eventos do calendário: {e}")
+
+    # ==================== TEAMS MEETINGS (legado) ====================
 
     def create_teams_meeting(
         self,
@@ -268,6 +426,69 @@ class MicrosoftGraphService:
             raise
         except Exception as e:
             raise ValueError(f"Erro ao baixar transcrição: {e}")
+
+
+    # ==================== DISPONIBILIDADE (getSchedule) ====================
+
+    def get_schedule(
+        self,
+        user: User,
+        db: Session,
+        emails: list[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        interval_minutes: int = 30,
+    ) -> list[dict]:
+        """
+        Busca blocos de livre/ocupado de outros usuários do mesmo tenant via getSchedule.
+        Usado para o SDR visualizar a disponibilidade do Vendedor ao agendar reuniões.
+
+        Returns:
+            Lista de dicts com: email, status, subject, start, end, is_private
+        """
+        access_token = self._require_token(user, db)
+
+        def to_graph_dt(dt: datetime) -> dict:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return {"dateTime": dt.strftime("%Y-%m-%dT%H:%M:%S"), "timeZone": "UTC"}
+
+        payload = {
+            "schedules": emails,
+            "startTime": to_graph_dt(start_dt),
+            "endTime": to_graph_dt(end_dt),
+            "availabilityViewInterval": interval_minutes,
+        }
+
+        url = f"{GRAPH_BASE}/me/calendar/getSchedule"
+
+        try:
+            with httpx.Client(timeout=15) as client:
+                resp = client.post(url, json=payload, headers=self._auth_headers(access_token))
+
+            if resp.status_code != 200:
+                error_data = resp.json() if resp.content else {}
+                error_msg = error_data.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                raise ValueError(f"Erro ao buscar disponibilidade: {error_msg}")
+
+            results = []
+            for schedule in resp.json().get("value", []):
+                schedule_email = schedule.get("scheduleId", "")
+                for item in schedule.get("scheduleItems", []):
+                    is_private = item.get("isPrivate", False)
+                    results.append({
+                        "email": schedule_email,
+                        "status": item.get("status", "busy"),
+                        "subject": "(Compromisso particular)" if is_private else item.get("subject", ""),
+                        "start": item.get("start", {}).get("dateTime", ""),
+                        "end": item.get("end", {}).get("dateTime", ""),
+                        "is_private": is_private,
+                    })
+            return results
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Erro ao buscar disponibilidade: {e}")
 
 
 microsoft_graph_service = MicrosoftGraphService()

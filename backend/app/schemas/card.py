@@ -403,6 +403,7 @@ class CardResponse(CardBase):
 
     # Campos relacionados (opcional)
     assigned_to_name: Optional[str] = Field(None, description="Nome do responsável")
+    assigned_to_email: Optional[str] = Field(None, description="Email do responsável (Vendedor)")
     assigned_to_avatar_url: Optional[str] = Field(None, description="URL do avatar do responsável")
     sdr_name: Optional[str] = Field(None, description="Nome do SDR responsável")
     sdr_avatar_url: Optional[str] = Field(None, description="URL do avatar do SDR")

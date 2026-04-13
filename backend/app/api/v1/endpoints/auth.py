@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_user
+from app.api.deps import get_db, get_current_user, get_current_active_user
 from app.core.security import (
     verify_password,
     create_access_token,
@@ -934,6 +934,79 @@ async def microsoft_callback(
         f"&expires_in={settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60}"
     )
     return RedirectResponse(url=redirect_url, status_code=302)
+
+
+@router.get("/me/calendar-events", summary="Buscar eventos do calendário Outlook")
+async def get_calendar_events(
+    start: str,
+    end: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Retorna eventos do calendário do usuário no período informado.
+    start e end devem ser datas no formato YYYY-MM-DD.
+    Requer autenticação Microsoft (SSO).
+    """
+    from app.services.microsoft_graph_service import microsoft_graph_service
+
+    try:
+        start_dt = datetime.strptime(start, "%Y-%m-%d").replace(tzinfo=None)
+        end_dt = datetime.strptime(end, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=None)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de data inválido. Use YYYY-MM-DD.")
+
+    try:
+        events = microsoft_graph_service.get_calendar_events(
+            user=current_user,
+            db=db,
+            start_dt=start_dt,
+            end_dt=end_dt,
+        )
+        return {"events": events}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/me/seller-schedule", summary="Buscar disponibilidade do Vendedor")
+async def get_seller_schedule(
+    email: str,
+    start: str,
+    end: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Retorna os blocos de livre/ocupado do Vendedor (assigned_to) via Microsoft getSchedule.
+    Permite que o SDR veja a disponibilidade do Vendedor ao agendar reuniões.
+
+    Parâmetros:
+        email: Email corporativo do Vendedor (@healthsafetytech.com)
+        start: Data inicial no formato YYYY-MM-DD
+        end: Data final no formato YYYY-MM-DD
+    """
+    from app.services.microsoft_graph_service import microsoft_graph_service
+
+    try:
+        start_dt = datetime.strptime(start, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
+        end_dt = datetime.strptime(end, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de data inválido. Use YYYY-MM-DD.")
+
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Email inválido.")
+
+    try:
+        slots = microsoft_graph_service.get_schedule(
+            user=current_user,
+            db=db,
+            emails=[email],
+            start_dt=start_dt,
+            end_dt=end_dt,
+        )
+        return {"slots": slots, "seller_email": email}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/debug-token")
