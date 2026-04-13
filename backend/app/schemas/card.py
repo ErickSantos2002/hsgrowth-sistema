@@ -517,6 +517,7 @@ class CardMinimalResponse(BaseModel):
     acquisition_channel_detail: Optional[str] = Field(None, description="Detalhamento do canal de aquisição")
     reopened_from_card_id: Optional[int] = Field(None, description="ID do card original que gerou esta reabertura (None = criado do zero)")
     automacao01: Optional[bool] = Field(None, description="Automação de nutrição por e-mail ativa")
+    contact_info: Optional[dict] = Field(None, description="Dados de contato (inclui probabilidade de fechamento)")
 
     @field_validator('value', 'position', mode='before')
     @classmethod

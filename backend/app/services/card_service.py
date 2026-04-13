@@ -413,6 +413,7 @@ class CardService:
                         acquisition_channel_detail=card.acquisition_channel_detail,
                         reopened_from_card_id=card.reopened_from_card_id,
                         automacao01=card.automacao01,
+                        contact_info=card.contact_info,
                     )
                 )
 

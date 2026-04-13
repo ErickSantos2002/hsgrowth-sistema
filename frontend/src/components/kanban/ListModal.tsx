@@ -54,9 +54,6 @@ const ListModal: React.FC<ListModalProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /**
-   * Valida o formulário antes de salvar
-   */
   const validateForm = (): boolean => {
     const newErrors: { name?: string } = {};
 
@@ -68,9 +65,6 @@ const ListModal: React.FC<ListModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  /**
-   * Handler do submit do formulário
-   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 

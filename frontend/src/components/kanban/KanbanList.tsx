@@ -192,6 +192,48 @@ const KanbanList: React.FC<KanbanListProps> = ({
         )}
       </div>
 
+      {/* Rodapé — Valor total e Valor ponderado */}
+      {cards.length > 0 && (() => {
+        const fmt = (n: number) =>
+          new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", notation: n >= 1_000_000 ? "compact" : "standard", maximumFractionDigits: n >= 1_000_000 ? 1 : 0 }).format(n);
+
+        const now = new Date();
+        const curYear = now.getFullYear();
+        const curMonth = now.getMonth(); // 0-indexed
+
+        const totalValue = cards.reduce((sum, c) => sum + (Number(c.value) || 0), 0);
+
+        // Valor ponderado = soma dos cards com Data esperada de fechamento no mês atual
+        const weightedValue = cards.reduce((sum, c) => {
+          if (!c.due_date) return sum;
+          const d = new Date(c.due_date);
+          if (d.getFullYear() === curYear && d.getMonth() === curMonth) {
+            return sum + (Number(c.value) || 0);
+          }
+          return sum;
+        }, 0);
+
+        const pct = totalValue > 0 ? Math.round((weightedValue / totalValue) * 100) : 0;
+
+        return (
+          <div className="mt-3 flex-shrink-0 rounded-lg border border-gray-200 bg-white/60 px-3 py-2 dark:border-slate-700/40 dark:bg-slate-900/30">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500 dark:text-slate-400">Valor total</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-200">{fmt(totalValue)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                Valor ponderado
+                {pct > 0 && (
+                  <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-500">{pct}%</span>
+                )}
+              </span>
+              <span className="font-semibold text-blue-500">{fmt(weightedValue)}</span>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Botão adicionar card + Setas de movimentação */}
       <div className="mt-3 flex flex-shrink-0 items-center gap-2">
         {/* Seta esquerda - apenas Admin/Manager */}
