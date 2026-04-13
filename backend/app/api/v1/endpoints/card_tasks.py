@@ -3,8 +3,9 @@ Endpoints da API para CardTask (Tarefas/Atividades dos Cards).
 """
 from datetime import datetime
 from typing import List, Optional
-from fastapi import APIRouter, Depends, status, Request
+from fastapi import APIRouter, Depends, status, Request, HTTPException
 from sqlalchemy.orm import Session
+import json
 
 from app.db.session import get_db
 from app.services.card_task_service import CardTaskService
@@ -802,3 +803,168 @@ def delete_task(
     db.commit()
 
     return result
+
+
+# ==================== MICROSOFT TEAMS ====================
+
+@router.post(
+    "/{task_id}/teams-meeting",
+    response_model=CardTaskResponse,
+    summary="Criar reunião no Microsoft Teams",
+    description="""
+    Cria uma reunião no Microsoft Teams para esta atividade e salva o link de acesso.
+
+    **Requisitos:**
+    - Atividade deve ser do tipo `meeting`
+    - Usuário precisa ter autenticado via SSO Microsoft (ter tokens MS salvos)
+    - Permissão `OnlineMeetings.ReadWrite` concedida no Azure
+
+    **Comportamento:**
+    - Usa `due_date` da atividade como horário de início
+    - Duração baseada em `duration_minutes` (padrão: 60 min)
+    - O link gerado fica salvo em `teams_join_url` e pode ser aberto diretamente no Teams
+    """,
+)
+async def create_teams_meeting(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Cria reunião no Teams para a atividade e salva o link de acesso."""
+    from app.services.microsoft_graph_service import microsoft_graph_service
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Atividade não encontrada")
+
+    if task.task_type.value != "meeting":
+        raise HTTPException(
+            status_code=400,
+            detail="Apenas atividades do tipo 'Reunião' podem ter reunião no Teams"
+        )
+
+    if not task.due_date:
+        raise HTTPException(
+            status_code=400,
+            detail="Defina uma data/hora para a atividade antes de criar a reunião no Teams"
+        )
+
+    try:
+        duration = task.duration_minutes or 60
+        from datetime import timedelta
+        end_dt = task.due_date + timedelta(minutes=duration)
+
+        result = microsoft_graph_service.create_teams_meeting(
+            user=current_user,
+            db=db,
+            title=task.title,
+            start_dt=task.due_date,
+            end_dt=end_dt,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    task.teams_meeting_id = result["meeting_id"]
+    task.teams_join_url = result["join_url"]
+    db.commit()
+    db.refresh(task)
+
+    service = CardTaskService(db)
+    return service.get_task(task_id, current_user)
+
+
+@router.post(
+    "/{task_id}/fetch-transcript",
+    response_model=CardTaskResponse,
+    summary="Buscar transcrição da reunião e analisar com IA",
+    description="""
+    Busca a transcrição da reunião Teams associada a esta atividade,
+    salva o conteúdo bruto e executa análise com IA (OpenAI GPT-4o).
+
+    **Requisitos:**
+    - Atividade deve ter `teams_meeting_id` (reunião criada pelo CRM)
+    - A reunião precisa ter ocorrido e a transcrição estar disponível no Teams
+    - Transcrição automática habilitada no Teams Admin Center
+
+    **Comportamento:**
+    - Busca a transcrição mais recente da reunião
+    - Salva o VTT bruto em `transcript_raw`
+    - Analisa com GPT-4o e salva JSON em `transcript_analysis`
+    - O JSON contém: resumo, sentimento, interesse_cliente, objecoes, proximos_passos, pontos_de_atencao
+
+    **Observação:** A transcrição fica disponível alguns minutos após o término da reunião.
+    """,
+)
+async def fetch_transcript(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Busca transcrição do Teams e analisa com IA."""
+    from app.services.microsoft_graph_service import microsoft_graph_service
+    from app.services.transcript_analysis_service import transcript_analysis_service
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Atividade não encontrada")
+
+    if not task.teams_meeting_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Esta atividade não possui reunião Teams criada pelo CRM"
+        )
+
+    # Busca lista de transcrições disponíveis
+    try:
+        transcripts = microsoft_graph_service.get_meeting_transcripts(
+            user=current_user,
+            db=db,
+            meeting_id=task.teams_meeting_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not transcripts:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Nenhuma transcrição disponível ainda para esta reunião. "
+                "Aguarde alguns minutos após o término da reunião e tente novamente."
+            )
+        )
+
+    # Usa a transcrição mais recente
+    latest = transcripts[-1]
+    transcript_id = latest["id"]
+
+    # Baixa o conteúdo VTT
+    try:
+        vtt_content = microsoft_graph_service.get_transcript_content(
+            user=current_user,
+            db=db,
+            meeting_id=task.teams_meeting_id,
+            transcript_id=transcript_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    task.transcript_raw = vtt_content
+
+    # Analisa com IA
+    try:
+        analysis = transcript_analysis_service.analyze(vtt_content)
+        task.transcript_analysis = json.dumps(analysis, ensure_ascii=False)
+    except ValueError as e:
+        # Salva a transcrição bruta mesmo se a análise falhar
+        db.commit()
+        raise HTTPException(
+            status_code=422,
+            detail=f"Transcrição salva, mas análise IA falhou: {e}"
+        )
+
+    db.commit()
+    db.refresh(task)
+
+    service = CardTaskService(db)
+    return service.get_task(task_id, current_user)
+

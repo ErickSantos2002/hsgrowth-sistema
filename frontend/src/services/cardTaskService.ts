@@ -26,6 +26,11 @@ export interface CardTask {
   is_overdue?: boolean;
   card_title?: string;
   card_client_name?: string;
+  // Microsoft Teams
+  teams_meeting_id?: string | null;
+  teams_join_url?: string | null;
+  transcript_raw?: string | null;
+  transcript_analysis?: string | null;
 }
 
 export interface CreateCardTaskRequest {
@@ -229,6 +234,24 @@ class CardTaskService {
    */
   async delete(id: number): Promise<void> {
     await api.delete(`/api/v1/card-tasks/${id}`);
+  }
+
+  /**
+   * Cria uma reunião no Microsoft Teams para a atividade e salva o link.
+   * A atividade deve ser do tipo "meeting" e ter due_date definida.
+   */
+  async createTeamsMeeting(taskId: number): Promise<CardTask> {
+    const response = await api.post<CardTask>(`/api/v1/card-tasks/${taskId}/teams-meeting`);
+    return response.data;
+  }
+
+  /**
+   * Busca a transcrição da reunião Teams e executa análise com IA (GPT-4o).
+   * Salva transcript_raw e transcript_analysis na atividade.
+   */
+  async fetchTranscript(taskId: number): Promise<CardTask> {
+    const response = await api.post<CardTask>(`/api/v1/card-tasks/${taskId}/fetch-transcript`);
+    return response.data;
   }
 }
 

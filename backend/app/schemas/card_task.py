@@ -142,6 +142,12 @@ class CardTaskResponse(BaseModel):
     card_title: Optional[str] = Field(None, description="Título do card ao qual a tarefa pertence")
     card_client_name: Optional[str] = Field(None, description="Nome do cliente do card")
 
+    # Microsoft Teams
+    teams_meeting_id: Optional[str] = Field(None, description="ID da reunião no Microsoft Teams")
+    teams_join_url: Optional[str] = Field(None, description="Link de entrada na reunião Teams")
+    transcript_raw: Optional[str] = Field(None, description="Transcrição bruta em formato VTT")
+    transcript_analysis: Optional[str] = Field(None, description="Análise IA da transcrição (JSON)")
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={

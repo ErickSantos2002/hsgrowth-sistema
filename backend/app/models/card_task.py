@@ -82,6 +82,12 @@ class CardTask(Base, TimestampMixin):
     # Status de disponibilidade (para integração com calendário)
     status = Column(SQLEnum(TaskStatus), nullable=False, default=TaskStatus.FREE)
 
+    # Microsoft Teams — Reunião + Transcrição
+    teams_meeting_id = Column(String(255), nullable=True, comment="ID da reunião no Microsoft Teams")
+    teams_join_url = Column(String(1000), nullable=True, comment="Link de entrada na reunião Teams (joinWebUrl)")
+    transcript_raw = Column(Text, nullable=True, comment="Transcrição bruta da reunião em formato VTT")
+    transcript_analysis = Column(Text, nullable=True, comment="Análise IA da transcrição (JSON)")
+
     # Relacionamentos
     card = relationship("Card", back_populates="tasks")
     assigned_to = relationship("User", foreign_keys=[assigned_to_id], back_populates="tasks")

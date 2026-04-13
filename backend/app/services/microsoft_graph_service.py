@@ -1,8 +1,12 @@
 """
-Serviço Microsoft Graph API — envio de e-mail em nome do usuário.
+Serviço Microsoft Graph API.
+
+Funcionalidades:
+- Envio de e-mail em nome do usuário (Mail.Send)
+- Criação de reuniões no Microsoft Teams (OnlineMeetings.ReadWrite)
+- Leitura de transcrições de reuniões (OnlineMeetingTranscript.Read.All)
 
 Requer que o usuário tenha autenticado via SSO e tenha ms_access_token salvo.
-Permissão necessária no Azure: Mail.Send (Delegated).
 """
 import httpx
 import base64
@@ -13,7 +17,17 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.services.microsoft_auth_service import microsoft_auth_service
 
-GRAPH_SEND_MAIL_URL = "https://graph.microsoft.com/v1.0/users/{email}/sendMail"
+GRAPH_BASE = "https://graph.microsoft.com/v1.0"
+GRAPH_SEND_MAIL_URL = f"{GRAPH_BASE}/users/{{email}}/sendMail"
+GRAPH_MEETINGS_URL = f"{GRAPH_BASE}/me/onlineMeetings"
+
+# Todos os escopos necessários para o serviço completo
+ALL_SCOPES = [
+    "User.Read",
+    "Mail.Send",
+    "OnlineMeetings.ReadWrite",
+    "OnlineMeetingTranscript.Read.All",
+]
 
 
 class MicrosoftGraphService:
@@ -30,11 +44,9 @@ class MicrosoftGraphService:
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         expires_at = user.ms_token_expires_at
 
-        # Token ainda válido
         if expires_at and expires_at > now:
             return user.ms_access_token
 
-        # Token expirado — tenta renovar com refresh token
         if not user.ms_refresh_token:
             return None
 
@@ -42,7 +54,7 @@ class MicrosoftGraphService:
             msal_app = microsoft_auth_service._get_msal_app()
             result = msal_app.acquire_token_by_refresh_token(
                 refresh_token=user.ms_refresh_token,
-                scopes=["Mail.Send", "User.Read"],
+                scopes=ALL_SCOPES,
             )
             if "error" in result:
                 return None
@@ -50,13 +62,29 @@ class MicrosoftGraphService:
             expires_in = result.get("expires_in", 3600)
             user.ms_access_token = result["access_token"]
             user.ms_refresh_token = result.get("refresh_token", user.ms_refresh_token)
-            user.ms_token_expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=expires_in - 60)
+            user.ms_token_expires_at = (
+                datetime.now(timezone.utc).replace(tzinfo=None)
+                + timedelta(seconds=expires_in - 60)
+            )
             db.commit()
-
             return user.ms_access_token
         except Exception as e:
             print(f"[GraphService] Erro ao renovar token MS: {e}")
             return None
+
+    def _auth_headers(self, token: str) -> dict:
+        return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+    def _require_token(self, user: User, db: Session) -> str:
+        token = self._get_valid_token(user, db)
+        if not token:
+            raise ValueError(
+                "Este usuário não possui conexão com Microsoft 365. "
+                "Faça logout e entre novamente pelo botão 'Entrar com Microsoft'."
+            )
+        return token
+
+    # ==================== E-MAIL ====================
 
     def send_email(
         self,
@@ -71,27 +99,10 @@ class MicrosoftGraphService:
         Envia e-mail em nome do usuário via Microsoft Graph.
 
         Args:
-            user: Usuário remetente (precisa ter ms_access_token)
-            db: Sessão do banco para renovação de token
-            to_addresses: Lista de endereços de destino
-            subject: Assunto do e-mail
-            body: Corpo do e-mail (HTML) — já deve incluir a assinatura se houver
-            attachments: Lista de dicts com keys: name (str), content_type (str), data_base64 (str)
-
-        Returns:
-            dict com success=True ou success=False + error message
-
-        Raises:
-            ValueError: Se o usuário não tiver tokens MS (não logou via SSO)
+            attachments: Lista de dicts com keys: name, content_type, data_base64
         """
-        access_token = self._get_valid_token(user, db)
-        if not access_token:
-            raise ValueError(
-                "Este usuário não possui conexão com Microsoft 365. "
-                "Faça login pelo botão 'Entrar com Microsoft' para habilitar o envio de e-mails."
-            )
+        access_token = self._require_token(user, db)
 
-        # Monta destinatários
         recipients = [
             {"emailAddress": {"address": addr.strip()}}
             for addr in to_addresses
@@ -102,17 +113,11 @@ class MicrosoftGraphService:
 
         message: dict = {
             "subject": subject,
-            "body": {
-                "contentType": "HTML",
-                "content": body,
-            },
+            "body": {"contentType": "HTML", "content": body},
             "toRecipients": recipients,
-            "from": {
-                "emailAddress": {"address": user.email}
-            },
+            "from": {"emailAddress": {"address": user.email}},
         }
 
-        # Anexos
         if attachments:
             message["attachments"] = [
                 {
@@ -124,20 +129,12 @@ class MicrosoftGraphService:
                 for att in attachments
             ]
 
-        payload = {
-            "message": message,
-            "saveToSentItems": True,
-        }
-
+        payload = {"message": message, "saveToSentItems": True}
         url = GRAPH_SEND_MAIL_URL.format(email=user.email)
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        }
 
         try:
             with httpx.Client(timeout=30) as client:
-                resp = client.post(url, json=payload, headers=headers)
+                resp = client.post(url, json=payload, headers=self._auth_headers(access_token))
 
             if resp.status_code == 202:
                 return {"success": True}
@@ -145,9 +142,132 @@ class MicrosoftGraphService:
             error_data = resp.json() if resp.content else {}
             error_msg = error_data.get("error", {}).get("message", f"HTTP {resp.status_code}")
             return {"success": False, "error": error_msg}
-
         except Exception as e:
             return {"success": False, "error": str(e)}
+
+    # ==================== TEAMS MEETINGS ====================
+
+    def create_teams_meeting(
+        self,
+        user: User,
+        db: Session,
+        title: str,
+        start_dt: datetime,
+        end_dt: Optional[datetime] = None,
+    ) -> dict:
+        """
+        Cria uma reunião no Microsoft Teams em nome do usuário.
+
+        Returns:
+            dict com: meeting_id (str), join_url (str)
+
+        Raises:
+            ValueError: Se o usuário não tiver token MS válido ou a chamada falhar
+        """
+        access_token = self._require_token(user, db)
+
+        if end_dt is None:
+            end_dt = start_dt + timedelta(hours=1)
+
+        # Graph API espera ISO 8601 com timezone
+        def to_iso(dt: datetime) -> str:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
+
+        payload = {
+            "subject": title,
+            "startDateTime": to_iso(start_dt),
+            "endDateTime": to_iso(end_dt),
+        }
+
+        try:
+            with httpx.Client(timeout=15) as client:
+                resp = client.post(
+                    GRAPH_MEETINGS_URL,
+                    json=payload,
+                    headers=self._auth_headers(access_token),
+                )
+
+            if resp.status_code not in (200, 201):
+                error_msg = resp.json().get("error", {}).get("message", f"HTTP {resp.status_code}")
+                raise ValueError(f"Erro ao criar reunião no Teams: {error_msg}")
+
+            data = resp.json()
+            return {
+                "meeting_id": data["id"],
+                "join_url": data["joinWebUrl"],
+            }
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Erro ao criar reunião no Teams: {e}")
+
+    def get_meeting_transcripts(
+        self,
+        user: User,
+        db: Session,
+        meeting_id: str,
+    ) -> list[dict]:
+        """
+        Lista as transcrições disponíveis para uma reunião.
+
+        Returns:
+            Lista de dicts com: id, createdDateTime
+        """
+        access_token = self._require_token(user, db)
+        url = f"{GRAPH_BASE}/me/onlineMeetings/{meeting_id}/transcripts"
+
+        try:
+            with httpx.Client(timeout=15) as client:
+                resp = client.get(url, headers=self._auth_headers(access_token))
+
+            if resp.status_code == 404:
+                return []
+
+            if resp.status_code != 200:
+                error_msg = resp.json().get("error", {}).get("message", f"HTTP {resp.status_code}")
+                raise ValueError(f"Erro ao buscar transcrições: {error_msg}")
+
+            return resp.json().get("value", [])
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Erro ao buscar transcrições: {e}")
+
+    def get_transcript_content(
+        self,
+        user: User,
+        db: Session,
+        meeting_id: str,
+        transcript_id: str,
+    ) -> str:
+        """
+        Baixa o conteúdo de uma transcrição em formato VTT (texto com timestamps).
+
+        Returns:
+            String com conteúdo VTT da transcrição
+        """
+        access_token = self._require_token(user, db)
+        url = (
+            f"{GRAPH_BASE}/me/onlineMeetings/{meeting_id}"
+            f"/transcripts/{transcript_id}/content?$format=text/vtt"
+        )
+
+        try:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            with httpx.Client(timeout=30) as client:
+                resp = client.get(url, headers=headers)
+
+            if resp.status_code != 200:
+                error_msg = f"HTTP {resp.status_code}"
+                raise ValueError(f"Erro ao baixar transcrição: {error_msg}")
+
+            return resp.text
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Erro ao baixar transcrição: {e}")
 
 
 microsoft_graph_service = MicrosoftGraphService()
