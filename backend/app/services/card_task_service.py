@@ -461,9 +461,15 @@ class CardTaskService:
             "status": task.status.value if hasattr(task.status, 'value') else task.status,
             "is_completed": task.is_completed,
             "completed_at": task.completed_at,
+            "is_noshow": task.is_noshow if hasattr(task, 'is_noshow') and task.is_noshow else False,
             "created_at": task.created_at,
             "updated_at": task.updated_at,
-            "is_overdue": task.is_overdue
+            "is_overdue": task.is_overdue,
+            # Microsoft Teams
+            "teams_meeting_id": task.teams_meeting_id if hasattr(task, 'teams_meeting_id') else None,
+            "teams_join_url": task.teams_join_url if hasattr(task, 'teams_join_url') else None,
+            "transcript_raw": task.transcript_raw if hasattr(task, 'transcript_raw') else None,
+            "transcript_analysis": task.transcript_analysis if hasattr(task, 'transcript_analysis') else None,
         }
 
         # Adiciona nome do responsável se disponível

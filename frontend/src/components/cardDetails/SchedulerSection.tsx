@@ -739,7 +739,6 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
       Icon: React.ElementType;
     }> = [
       { type: "call", label: "Ligação", Icon: Phone },
-      { type: "meeting", label: "Reunião", Icon: Users },
       { type: "task", label: "Tarefa", Icon: CheckSquare },
       { type: "follow_up", label: "Follow Up", Icon: Clock },
       { type: "other", label: "Outro", Icon: MoreHorizontal },

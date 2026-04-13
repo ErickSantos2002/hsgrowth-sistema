@@ -2219,7 +2219,11 @@ class CardService:
                     "contact_name": task.contact_name,
                     "status": task.status.value if hasattr(task.status, 'value') else task.status,
                     "assigned_to_name": task.assigned_to.name if task.assigned_to else None,
-                    "is_overdue": task.is_overdue
+                    "is_overdue": task.is_overdue,
+                    "teams_meeting_id": task.teams_meeting_id,
+                    "teams_join_url": task.teams_join_url,
+                    "transcript_raw": task.transcript_raw,
+                    "transcript_analysis": task.transcript_analysis,
                 }
                 for task in pending_tasks
             ],

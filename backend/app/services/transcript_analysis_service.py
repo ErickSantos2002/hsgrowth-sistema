@@ -21,14 +21,14 @@ from app.core.config import settings
 ANALYSIS_PROMPT = """Você é um assistente especializado em análise de reuniões de vendas B2B.
 Analise a transcrição abaixo e retorne APENAS um JSON válido com a estrutura exata a seguir:
 
-{
+{{
   "resumo": "Resumo objetivo em 3 a 5 frases do que foi discutido na reunião",
   "sentimento": "positivo",
   "interesse_cliente": "alto",
   "objecoes": ["objeção 1", "objeção 2"],
   "proximos_passos": ["próximo passo 1", "próximo passo 2"],
   "pontos_de_atencao": ["ponto de atenção 1"]
-}
+}}
 
 Regras:
 - "sentimento" deve ser exatamente: "positivo", "neutro" ou "negativo"
@@ -46,7 +46,8 @@ class TranscriptAnalysisService:
 
     def _parse_vtt(self, vtt_content: str) -> str:
         """
-        Converte VTT (WebVTT) para texto legível.
+        Converte VTT (WebVTT) para texto legível, processando linha por linha.
+        Compatível com \r\n (Windows) e \n (Unix).
         Remove timestamps e tags HTML, preserva nome do falante quando disponível.
 
         Exemplo de entrada VTT:
@@ -57,40 +58,35 @@ class TranscriptAnalysisService:
         Saída:
             João Silva: Olá, como vai?
         """
-        lines = []
-        blocks = vtt_content.strip().split("\n\n")
+        # Normaliza line endings para \n
+        normalized = vtt_content.replace("\r\n", "\n").replace("\r", "\n")
+        lines = normalized.split("\n")
+        result_lines = []
 
-        for block in blocks:
-            block = block.strip()
-            if not block or block.startswith("WEBVTT") or block.startswith("NOTE"):
+        for line in lines:
+            trimmed = line.strip()
+            # Pula linhas vazias, cabeçalho e timestamps
+            if not trimmed:
+                continue
+            if trimmed == "WEBVTT" or trimmed.startswith("NOTE"):
+                continue
+            if re.match(r"^\d{2}:\d{2}:\d{2}", trimmed) or re.match(r"^\d+$", trimmed):
                 continue
 
-            block_lines = block.split("\n")
-            text_lines = []
+            # Extrai nome do falante da tag <v NomeFalante>texto
+            speaker_match = re.match(r"<v ([^>]+)>(.*)", trimmed)
+            if speaker_match:
+                speaker = speaker_match.group(1).strip()
+                text = re.sub(r"<[^>]+>", "", speaker_match.group(2)).strip()
+                if text:
+                    result_lines.append(f"{speaker}: {text}")
+            else:
+                # Linha sem speaker tag — remove HTML e adiciona
+                clean = re.sub(r"<[^>]+>", "", trimmed).strip()
+                if clean:
+                    result_lines.append(clean)
 
-            for line in block_lines:
-                # Pular linhas de timestamp e numeração
-                if re.match(r"^\d{2}:\d{2}:\d{2}", line) or re.match(r"^\d+$", line):
-                    continue
-
-                # Extrair nome do falante da tag <v NomeFalante>
-                speaker_match = re.match(r"<v ([^>]+)>(.*)", line)
-                if speaker_match:
-                    speaker = speaker_match.group(1).strip()
-                    text = speaker_match.group(2).strip()
-                    # Remove outras tags HTML do texto
-                    text = re.sub(r"<[^>]+>", "", text).strip()
-                    if text:
-                        text_lines.append(f"{speaker}: {text}")
-                else:
-                    # Remove tags HTML genéricas
-                    clean = re.sub(r"<[^>]+>", "", line).strip()
-                    if clean:
-                        text_lines.append(clean)
-
-            lines.extend(text_lines)
-
-        result = "\n".join(lines)
+        result = "\n".join(result_lines)
         # Limita a 12.000 caracteres para não estourar o contexto do GPT
         if len(result) > 12000:
             result = result[:12000] + "\n[... transcrição truncada ...]"

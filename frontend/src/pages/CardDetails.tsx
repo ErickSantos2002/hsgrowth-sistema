@@ -17,6 +17,7 @@ import {
   Loader2,
   PhoneCall,
   Mail,
+  Users,
 } from "lucide-react";
 import { Card } from "../types";
 import cardService from "../services/cardService";
@@ -35,6 +36,7 @@ import SchedulerSection from "../components/cardDetails/SchedulerSection";
 import FilesSection from "../components/cardDetails/FilesSection";
 import CallEvaluationsSection from "../components/cardDetails/CallEvaluationsSection";
 import EmailSection from "../components/cardDetails/EmailSection";
+import MeetingSection from "../components/cardDetails/MeetingSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ReopenModal from "../components/cardDetails/ReopenModal";
 import { showSuccess, showError } from "../utils/toast";
@@ -67,7 +69,7 @@ const CardDetails: React.FC = () => {
   const [showAssignConfirm, setShowAssignConfirm] = useState(false);
 
   // Estado das abas
-  const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos" | "ligacoes" | "email">("atividade");
+  const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos" | "ligacoes" | "email" | "reunioes">("atividade");
 
   // Estado da modal de motivo da perda
   const [showLossReasonModal, setShowLossReasonModal] = useState(false);
@@ -84,6 +86,9 @@ const CardDetails: React.FC = () => {
 
   // Estado da contagem de e-mails enviados
   const [emailCount, setEmailCount] = useState<number>(0);
+
+  // Estado da contagem de reuniões pendentes
+  const [meetingCount, setMeetingCount] = useState<number>(0);
 
   // Estado do botão de ligação rápida
   const [isQuickCalling, setIsQuickCalling] = useState(false);
@@ -1015,7 +1020,7 @@ const CardDetails: React.FC = () => {
                     <Calendar size={18} />
                     <span className="hidden lg:inline">Atividade</span>
                     <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "atividade" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
-                      {card.pending_tasks?.length || 0}
+                      {card.pending_tasks?.filter((t) => t.task_type !== "meeting").length || 0}
                     </span>
                   </button>
 
@@ -1074,6 +1079,23 @@ const CardDetails: React.FC = () => {
                     {evaluationsCount > 0 && (
                       <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "ligacoes" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
                         {evaluationsCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab("reunioes")}
+                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
+                      activeTab === "reunioes"
+                        ? "border-purple-500 font-medium text-purple-400"
+                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    }`}
+                  >
+                    <Users size={18} />
+                    <span className="hidden lg:inline">Reuniões</span>
+                    {meetingCount > 0 && (
+                      <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "reunioes" ? "border-purple-500/30 bg-purple-500/20 text-purple-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
+                        {meetingCount}
                       </span>
                     )}
                   </button>
@@ -1176,6 +1198,14 @@ const CardDetails: React.FC = () => {
 
               {activeTab === "ligacoes" && card && (
                 <CallEvaluationsSection cardId={card.id} />
+              )}
+
+              {activeTab === "reunioes" && card && (
+                <MeetingSection
+                  cardId={card.id}
+                  onCountChange={setMeetingCount}
+                  readOnly={isReadOnly}
+                />
               )}
 
               {activeTab === "email" && card && (

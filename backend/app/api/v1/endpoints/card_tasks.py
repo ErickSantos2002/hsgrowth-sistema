@@ -870,7 +870,7 @@ async def create_teams_meeting(
     db.refresh(task)
 
     service = CardTaskService(db)
-    return service.get_task(task_id, current_user)
+    return service.get_task(task_id)
 
 
 @router.post(
@@ -966,5 +966,5 @@ async def fetch_transcript(
     db.refresh(task)
 
     service = CardTaskService(db)
-    return service.get_task(task_id, current_user)
+    return service.get_task(task_id)
 

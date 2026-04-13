@@ -17,13 +17,6 @@ import {
   Video,
   FileText,
   Loader2,
-  MonitorPlay,
-  BrainCircuit,
-  ExternalLink,
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  Minus,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import cardTaskService from "../../services/cardTaskService";
@@ -61,14 +54,6 @@ interface PendingTask {
   transcript_analysis?: string | null;
 }
 
-interface TranscriptAnalysis {
-  resumo: string;
-  sentimento: "positivo" | "neutro" | "negativo";
-  interesse_cliente: "alto" | "médio" | "baixo";
-  objecoes: string[];
-  proximos_passos: string[];
-  pontos_de_atencao: string[];
-}
 
 interface FocusSectionProps {
   tasks: PendingTask[];
@@ -94,11 +79,8 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
   const [callingTaskId, setCallingTaskId] = useState<number | null>(null);
   const [noShowTaskId, setNoShowTaskId] = useState<number | null>(null);
   const [phoneSelectTaskId, setPhoneSelectTaskId] = useState<number | null>(null);
-  const [teamsLoadingTaskId, setTeamsLoadingTaskId] = useState<number | null>(null);
-  const [transcriptLoadingTaskId, setTranscriptLoadingTaskId] = useState<number | null>(null);
-
-  // Usa os dados que vem do backend
-  const activities = tasks || [];
+  // Usa os dados que vem do backend, filtrando reuniões (têm seção própria)
+  const activities = (tasks || []).filter((t) => t.task_type !== "meeting");
 
   // Carrega dados da pessoa quando o card é carregado
   useEffect(() => {
@@ -469,37 +451,6 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
     }
   };
 
-  /**
-   * Cria reunião no Microsoft Teams para a atividade
-   */
-  const handleCreateTeamsMeeting = async (activityId: number) => {
-    try {
-      setTeamsLoadingTaskId(activityId);
-      await cardTaskService.createTeamsMeeting(activityId);
-      showSuccess("Reunião criada no Teams! Link salvo na atividade.");
-      onUpdate();
-    } catch (error: any) {
-      showError(error.response?.data?.detail || "Erro ao criar reunião no Teams");
-    } finally {
-      setTeamsLoadingTaskId(null);
-    }
-  };
-
-  /**
-   * Busca transcrição da reunião Teams e analisa com IA
-   */
-  const handleFetchTranscript = async (activityId: number) => {
-    try {
-      setTranscriptLoadingTaskId(activityId);
-      await cardTaskService.fetchTranscript(activityId);
-      showSuccess("Transcrição salva e analisada com sucesso!");
-      onUpdate();
-    } catch (error: any) {
-      showError(error.response?.data?.detail || "Erro ao buscar transcrição");
-    } finally {
-      setTranscriptLoadingTaskId(null);
-    }
-  };
 
   /**
    * Expande/recolhe todas as atividades
@@ -759,175 +710,6 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           </div>
                         )}
 
-                        {/* Microsoft Teams — link de reunião e transcrição */}
-                        {activity.task_type === "meeting" && (
-                          <div className="space-y-2">
-                            {/* Link de entrada */}
-                            {activity.teams_join_url ? (
-                              <div className="flex items-center gap-2">
-                                <a
-                                  href={activity.teams_join_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex flex-1 items-center justify-center gap-2 rounded border border-purple-500/50 bg-purple-500/10 px-3 py-2 text-sm font-medium text-purple-400 transition-colors hover:bg-purple-500/20"
-                                >
-                                  <MonitorPlay size={14} />
-                                  Entrar na Reunião Teams
-                                  <ExternalLink size={12} />
-                                </a>
-                                {/* Botão buscar transcrição */}
-                                {!activity.transcript_analysis && (
-                                  <button
-                                    onClick={() => handleFetchTranscript(activity.id)}
-                                    disabled={transcriptLoadingTaskId === activity.id}
-                                    className="flex items-center gap-1.5 rounded border border-violet-500/50 bg-violet-500/10 px-3 py-2 text-sm font-medium text-violet-400 transition-colors hover:bg-violet-500/20 disabled:opacity-50"
-                                    title="Buscar transcrição e analisar com IA"
-                                  >
-                                    {transcriptLoadingTaskId === activity.id ? (
-                                      <Loader2 size={14} className="animate-spin" />
-                                    ) : (
-                                      <BrainCircuit size={14} />
-                                    )}
-                                    {transcriptLoadingTaskId === activity.id ? "Analisando..." : "Analisar Reunião"}
-                                  </button>
-                                )}
-                                {/* Botão re-analisar */}
-                                {activity.transcript_analysis && (
-                                  <button
-                                    onClick={() => handleFetchTranscript(activity.id)}
-                                    disabled={transcriptLoadingTaskId === activity.id}
-                                    className="flex items-center gap-1.5 rounded border border-slate-500/50 bg-slate-500/10 px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-500/20 disabled:opacity-50"
-                                    title="Re-analisar reunião"
-                                  >
-                                    {transcriptLoadingTaskId === activity.id ? (
-                                      <Loader2 size={14} className="animate-spin" />
-                                    ) : (
-                                      <BrainCircuit size={14} />
-                                    )}
-                                  </button>
-                                )}
-                              </div>
-                            ) : (
-                              /* Botão criar reunião Teams */
-                              <button
-                                onClick={() => handleCreateTeamsMeeting(activity.id)}
-                                disabled={teamsLoadingTaskId === activity.id || !activity.due_date}
-                                className="flex w-full items-center justify-center gap-2 rounded border border-purple-500/50 bg-purple-500/10 px-3 py-2 text-sm font-medium text-purple-400 transition-colors hover:bg-purple-500/20 disabled:opacity-50"
-                                title={!activity.due_date ? "Defina uma data/hora para criar a reunião" : "Criar reunião no Microsoft Teams"}
-                              >
-                                {teamsLoadingTaskId === activity.id ? (
-                                  <Loader2 size={14} className="animate-spin" />
-                                ) : (
-                                  <MonitorPlay size={14} />
-                                )}
-                                {teamsLoadingTaskId === activity.id ? "Criando reunião..." : "Criar link Teams"}
-                              </button>
-                            )}
-
-                            {/* Card de análise IA */}
-                            {activity.transcript_analysis && (() => {
-                              try {
-                                const analysis: TranscriptAnalysis = JSON.parse(activity.transcript_analysis);
-                                const sentimentColor =
-                                  analysis.sentimento === "positivo"
-                                    ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/5"
-                                    : analysis.sentimento === "negativo"
-                                    ? "text-red-400 border-red-500/30 bg-red-500/5"
-                                    : "text-slate-400 border-slate-500/30 bg-slate-500/5";
-                                const sentimentIcon =
-                                  analysis.sentimento === "positivo" ? (
-                                    <TrendingUp size={13} />
-                                  ) : analysis.sentimento === "negativo" ? (
-                                    <TrendingDown size={13} />
-                                  ) : (
-                                    <Minus size={13} />
-                                  );
-                                const interestColor =
-                                  analysis.interesse_cliente === "alto"
-                                    ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
-                                    : analysis.interesse_cliente === "baixo"
-                                    ? "text-red-400 bg-red-500/10 border-red-500/30"
-                                    : "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
-
-                                return (
-                                  <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 p-3 space-y-2.5">
-                                    {/* Header */}
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-400">
-                                        <BrainCircuit size={13} />
-                                        Análise da Reunião
-                                      </div>
-                                      <div className="flex items-center gap-1.5">
-                                        <span className={`flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-medium ${sentimentColor}`}>
-                                          {sentimentIcon}
-                                          {analysis.sentimento}
-                                        </span>
-                                        <span className={`rounded border px-1.5 py-0.5 text-xs font-medium ${interestColor}`}>
-                                          Interesse {analysis.interesse_cliente}
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    {/* Resumo */}
-                                    {analysis.resumo && (
-                                      <p className="text-xs text-slate-300 leading-relaxed">{analysis.resumo}</p>
-                                    )}
-
-                                    {/* Objeções */}
-                                    {analysis.objecoes?.length > 0 && (
-                                      <div>
-                                        <p className="mb-1 text-xs font-medium text-orange-400">Objeções levantadas</p>
-                                        <ul className="space-y-0.5">
-                                          {analysis.objecoes.map((o, i) => (
-                                            <li key={i} className="flex items-start gap-1.5 text-xs text-slate-400">
-                                              <span className="mt-0.5 text-orange-400">•</span>
-                                              {o}
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-
-                                    {/* Próximos passos */}
-                                    {analysis.proximos_passos?.length > 0 && (
-                                      <div>
-                                        <p className="mb-1 text-xs font-medium text-emerald-400">Próximos passos</p>
-                                        <ul className="space-y-0.5">
-                                          {analysis.proximos_passos.map((p, i) => (
-                                            <li key={i} className="flex items-start gap-1.5 text-xs text-slate-400">
-                                              <span className="mt-0.5 text-emerald-400">•</span>
-                                              {p}
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-
-                                    {/* Pontos de atenção */}
-                                    {analysis.pontos_de_atencao?.length > 0 && (
-                                      <div>
-                                        <p className="mb-1 flex items-center gap-1 text-xs font-medium text-yellow-400">
-                                          <AlertTriangle size={11} />
-                                          Pontos de atenção
-                                        </p>
-                                        <ul className="space-y-0.5">
-                                          {analysis.pontos_de_atencao.map((p, i) => (
-                                            <li key={i} className="flex items-start gap-1.5 text-xs text-slate-400">
-                                              <span className="mt-0.5 text-yellow-400">•</span>
-                                              {p}
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              } catch {
-                                return null;
-                              }
-                            })()}
-                          </div>
-                        )}
 
                         {/* Botões de ação */}
                         <div className="flex gap-2 pt-2">

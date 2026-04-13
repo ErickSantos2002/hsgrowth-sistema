@@ -32,7 +32,7 @@ interface QuickActivityFormProps {
 /**
  * Tipos de atividade disponíveis
  */
-type ActivityType = "call" | "meeting" | "task" | "follow_up" | "other";
+type ActivityType = "call" | "task" | "follow_up" | "other";
 
 interface ActivityTypeConfig {
   type: ActivityType;
@@ -79,7 +79,6 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
    */
   const activityTypes: ActivityTypeConfig[] = [
     { type: "call", label: "Ligação", icon: <Phone size={16} />, color: "blue" },
-    { type: "meeting", label: "Reunião", icon: <Users size={16} />, color: "purple" },
     { type: "task", label: "Tarefa", icon: <CheckSquare size={16} />, color: "green" },
     { type: "follow_up", label: "Follow Up", icon: <Clock size={16} />, color: "yellow" },
     { type: "other", label: "Outro", icon: <MoreHorizontal size={16} />, color: "slate" },
@@ -93,9 +92,6 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     const configs = {
       call: isSelected
         ? "bg-blue-500/30 text-slate-900 dark:text-blue-400 border-blue-500"
-        : unselected,
-      meeting: isSelected
-        ? "bg-purple-500/30 text-slate-900 dark:text-purple-400 border-purple-500"
         : unselected,
       task: isSelected
         ? "bg-green-500/30 text-slate-900 dark:text-green-400 border-green-500"
