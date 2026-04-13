@@ -9,9 +9,10 @@ Documento de referência para a implementação completa da integração com Mic
 | Fase | Feature | Status |
 |---|---|---|
 | 1 | SSO — Login com Microsoft | ✅ Concluído |
-| 2 | E-mail pelo Card (Graph API) | ⏳ Pendente |
+| 2 | E-mail pelo Card (Graph API) | ✅ Concluído |
 | 3 | Sincronização com Outlook Calendar | ⏳ Pendente |
 | 4 | Notificações no Microsoft Teams | ⏳ Pendente |
+| 5 | Reuniões Teams + Transcrição + Análise IA | ⏳ Pendente |
 
 ---
 
@@ -250,6 +251,192 @@ Eventos importantes do CRM (card ganho, meta batida, nova lead de alto valor) ap
 
 ---
 
+## Fase 5 — Reuniões Teams + Transcrição + Análise IA
+
+### Dependência
+Requer SSO (Fase 1) + tokens Microsoft por usuário (Fase 2).
+
+### O que faz
+SDR/Vendedor cria uma atividade do tipo "Reunião" no card e gera automaticamente um link de reunião no Microsoft Teams. Após a reunião terminar, o CRM busca a transcrição gerada pelo Teams e usa IA (OpenAI) para analisar o conteúdo — gerando resumo, objeções levantadas, próximos passos combinados e sentimento geral. Tudo fica salvo no card sem o vendedor precisar escrever nada.
+
+---
+
+### PASSO 1 — Configuração no Azure (você faz)
+
+#### Adicionar permissões no App Registration
+
+1. Acesse: **portal.azure.com → Azure Active Directory → App registrations → HSGrowth CRM**
+2. No menu lateral clique em **API permissions**
+3. Clique em **Add a permission → Microsoft Graph → Delegated permissions**
+4. Adicione as seguintes permissões:
+
+| Permissão | Tipo | Para que serve |
+|---|---|---|
+| `OnlineMeetings.ReadWrite` | Delegated | Criar reuniões no Teams em nome do usuário |
+| `OnlineMeetingTranscript.Read.All` | Delegated | Ler transcrições das reuniões |
+
+5. Após adicionar, clique em **Grant admin consent for [seu tenant]** → confirmar
+
+> ⚠️ O `Grant admin consent` precisa ser feito por um administrador do Azure. Sem ele as permissões ficam pendentes e o fluxo não funciona.
+
+---
+
+### PASSO 2 — Habilitar transcrição automática no Teams (você faz)
+
+A transcrição precisa ser habilitada pelo administrador do tenant no Teams Admin Center.
+
+1. Acesse: **admin.teams.microsoft.com**
+2. No menu lateral: **Meetings → Meeting policies**
+3. Clique na política aplicada aos seus usuários (geralmente **Global (Org-wide default)**)
+4. Role até a seção **Recording & transcription**
+5. Ative os seguintes toggles:
+   - **Transcription** → **On**
+   - **Cloud recording** → **On** *(opcional, mas recomendado para ter o vídeo também)*
+6. Clique em **Save**
+
+> ⚠️ A alteração pode levar até 24h para propagar a todos os usuários.
+>
+> ℹ️ Com a transcrição habilitada, quando o organizador iniciar a reunião no Teams, aparecerá automaticamente o botão "Start transcription" na barra de ferramentas. A transcrição fica disponível via Graph API alguns minutos após o término da reunião.
+
+---
+
+### PASSO 3 — Implementação (código)
+
+#### Fluxo completo
+```
+Vendedor cria atividade "Reunião" no card
+  → clica "Criar link Teams"
+  → POST /api/v1/cards/{id}/tasks/{task_id}/teams-meeting
+  → backend: Graph API POST /me/onlineMeetings
+  → retorna joinWebUrl (link da reunião)
+  → link salvo na atividade + exibido no card
+
+Reunião acontece no Teams (transcrição automática ligada)
+
+Após a reunião:
+  → Vendedor clica "Buscar transcrição" na atividade
+  → POST /api/v1/cards/{id}/tasks/{task_id}/fetch-transcript
+  → backend: GET /me/onlineMeetings/{meetingId}/transcripts
+  → backend: GET /me/onlineMeetings/{meetingId}/transcripts/{id}/content
+  → transcrição salva no banco
+
+  → IA analisa a transcrição (OpenAI GPT-4o)
+  → resultado salvo: resumo, objeções, próximos passos, sentimento
+  → exibido como card expandível na atividade
+```
+
+#### Arquivos a criar/modificar
+
+| Arquivo | Ação |
+|---|---|
+| `backend/alembic/versions/..._add_teams_fields_to_card_tasks.py` | **Criar** — migration: 4 colunas em `card_tasks` |
+| `backend/app/models/card_task.py` | Adicionar `teams_meeting_id`, `teams_join_url`, `transcript_raw`, `transcript_analysis` |
+| `backend/app/services/microsoft_graph_service.py` | Adicionar `create_teams_meeting()`, `get_meeting_transcripts()`, `get_transcript_content()` |
+| `backend/app/services/transcript_analysis_service.py` | **Criar** — analisa transcrição com OpenAI e retorna JSON estruturado |
+| `backend/app/api/v1/endpoints/card_tasks.py` | Adicionar endpoints `POST /teams-meeting` e `POST /fetch-transcript` |
+| `frontend/src/components/cardDetails/ActivitiesSection.tsx` | Botão "Criar link Teams" + botão "Buscar transcrição" + card de análise |
+| `frontend/src/services/cardTaskService.ts` | Adicionar `createTeamsMeeting()` e `fetchTranscript()` |
+
+---
+
+#### Novas colunas em `card_tasks`
+
+```python
+teams_meeting_id  = Column(String, nullable=True)   # ID da reunião no Teams
+teams_join_url    = Column(String, nullable=True)   # Link de entrada na reunião
+transcript_raw    = Column(Text, nullable=True)     # Transcrição bruta (formato VTT)
+transcript_analysis = Column(Text, nullable=True)  # JSON com análise da IA
+```
+
+---
+
+#### Graph API — Criar reunião
+
+```python
+# POST /me/onlineMeetings
+payload = {
+    "subject": task.title,
+    "startDateTime": task.due_date.isoformat() + "Z",
+    "endDateTime": (task.due_date + timedelta(hours=1)).isoformat() + "Z",
+}
+# Retorna: { "id": "...", "joinWebUrl": "https://teams.microsoft.com/l/meetup-join/..." }
+```
+
+---
+
+#### Graph API — Buscar transcrição
+
+```python
+# 1. Listar transcrições disponíveis
+GET /me/onlineMeetings/{meeting_id}/transcripts
+# Retorna lista de transcrições (pode demorar alguns minutos após a reunião)
+
+# 2. Baixar conteúdo em texto simples
+GET /me/onlineMeetings/{meeting_id}/transcripts/{transcript_id}/content?$format=text/vtt
+# Retorna arquivo VTT (WebVTT) com timestamps e falas de cada participante
+```
+
+---
+
+#### Análise de IA (OpenAI)
+
+```python
+# transcript_analysis_service.py
+PROMPT = """
+Você é um assistente especializado em análise de reuniões de vendas.
+Analise a transcrição abaixo e retorne um JSON com:
+{
+  "resumo": "Resumo em 3-5 frases do que foi discutido",
+  "sentimento": "positivo | neutro | negativo",
+  "interesse_cliente": "alto | médio | baixo",
+  "objecoes": ["lista de objeções levantadas pelo cliente"],
+  "proximos_passos": ["lista de próximos passos combinados"],
+  "pontos_de_atencao": ["alertas importantes para o vendedor"]
+}
+Transcrição:
+{transcript}
+"""
+```
+
+---
+
+#### Exibição no frontend (atividade do card)
+
+Quando a atividade tem `teams_join_url`:
+- Exibe botão **"Entrar na Reunião"** com o link do Teams
+
+Quando tem `transcript_analysis`:
+- Exibe card expandível com:
+  - Badge de sentimento (verde/amarelo/vermelho)
+  - Badge de interesse do cliente
+  - Resumo
+  - Seções colapsáveis: Objeções, Próximos Passos, Pontos de Atenção
+
+---
+
+### Checklist — Fase 5
+
+#### Configuração (você faz antes do desenvolvimento)
+- [ ] Permissão `OnlineMeetings.ReadWrite` adicionada no Azure + admin consent
+- [ ] Permissão `OnlineMeetingTranscript.Read.All` adicionada no Azure + admin consent
+- [ ] Transcrição automática habilitada no Teams Admin Center
+
+#### Backend
+- [ ] Migration: 4 colunas em `card_tasks`
+- [ ] Model `CardTask` atualizado
+- [ ] `microsoft_graph_service.py`: `create_teams_meeting()`, `get_meeting_transcripts()`, `get_transcript_content()`
+- [ ] `transcript_analysis_service.py` criado (OpenAI)
+- [ ] Endpoint `POST /card-tasks/{id}/teams-meeting`
+- [ ] Endpoint `POST /card-tasks/{id}/fetch-transcript`
+
+#### Frontend
+- [ ] Botão "Criar link Teams" na atividade do tipo Reunião
+- [ ] Botão "Buscar transcrição" após reunião criada
+- [ ] Card de análise IA com resumo, sentimento, objeções, próximos passos
+- [ ] Testado end-to-end
+
+---
+
 ## Ordem de Implementação Recomendada
 
 ```
@@ -298,4 +485,19 @@ Fase 4 (Teams) — qualquer momento, independente
 - [ ] `TEAMS_WEBHOOK_URL` no `.env`
 - [ ] `teams_notification_service.py` criado
 - [ ] Integrado ao card_service (evento card ganho)
+- [ ] Testado end-to-end
+
+### Fase 5 — Reuniões Teams + Transcrição + Análise IA
+- [ ] Permissão `OnlineMeetings.ReadWrite` adicionada no Azure + admin consent
+- [ ] Permissão `OnlineMeetingTranscript.Read.All` adicionada no Azure + admin consent
+- [ ] Transcrição automática habilitada no Teams Admin Center (admin.teams.microsoft.com)
+- [ ] Migration: `teams_meeting_id`, `teams_join_url`, `transcript_raw`, `transcript_analysis` em `card_tasks`
+- [ ] Model `CardTask` atualizado
+- [ ] `microsoft_graph_service.py`: métodos de reunião e transcrição
+- [ ] `transcript_analysis_service.py` criado (OpenAI)
+- [ ] Endpoint `POST /card-tasks/{id}/teams-meeting`
+- [ ] Endpoint `POST /card-tasks/{id}/fetch-transcript`
+- [ ] Frontend: botão "Criar link Teams" na atividade
+- [ ] Frontend: botão "Buscar transcrição"
+- [ ] Frontend: card de análise IA
 - [ ] Testado end-to-end
