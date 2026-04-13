@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Mail, Plus, Send, Loader2, X, ChevronDown, FileText, Paperclip, File } from "lucide-react";
-import BaseModal from "../common/BaseModal";
+import { BaseModal, Button, FormField, Input, Textarea, Alert } from "../common";
 import cardService from "../../services/cardService";
 import cardTaskService, { CardTask } from "../../services/cardTaskService";
 import emailTemplateService, { EmailTemplate } from "../../services/emailTemplateService";
@@ -335,179 +335,166 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
         isOpen={showModal}
         onClose={() => !sending && setShowModal(false)}
         title="Enviar E-mail"
-        size="md"
+        subtitle="Enviado via Microsoft 365"
+        size="lg"
         closeOnOverlayClick={!sending}
         footer={
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowModal(false)}
-              disabled={sending}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
-            >
-              <X size={18} />
+          <div className="flex items-center justify-end gap-3">
+            <Button variant="secondary" onClick={() => setShowModal(false)} disabled={sending}>
               Cancelar
-            </button>
-            <button
-              onClick={handleSend}
-              disabled={sending}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-            >
-              {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            </Button>
+            <Button variant="primary" onClick={handleSend} disabled={sending}>
+              {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               {sending ? "Enviando..." : "Enviar"}
-            </button>
+            </Button>
           </div>
         }
       >
-        <div className="space-y-4">
-              {/* Aviso SSO */}
-              <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-xs text-blue-400">
-                Enviado da sua caixa Microsoft 365. Requer login via <strong>Entrar com Microsoft</strong>.
-              </div>
+        <div className="space-y-5">
+          {/* Aviso SSO */}
+          <Alert type="info">
+            Enviado da sua caixa Microsoft 365. Requer login via <strong>Entrar com Microsoft</strong>.
+          </Alert>
 
-              {/* Seletor de template */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowTemplateDropdown(v => !v)}
-                  className="flex w-full items-center justify-between rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-500 dark:text-slate-400 hover:border-blue-500 focus:outline-none"
-                >
-                  <span className="flex items-center gap-2">
-                    <FileText size={14} />
-                    Usar template
-                  </span>
-                  <ChevronDown size={14} className={`transition-transform ${showTemplateDropdown ? "rotate-180" : ""}`} />
-                </button>
+          {/* Seletor de template */}
+          <FormField label="Template" hint="Opcional — preenche assunto e mensagem automaticamente">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowTemplateDropdown(v => !v)}
+                className="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-700"
+              >
+                <span className="flex items-center gap-2">
+                  <FileText size={14} />
+                  Usar template
+                </span>
+                <ChevronDown size={14} className={`transition-transform ${showTemplateDropdown ? "rotate-180" : ""}`} />
+              </button>
 
-                {showTemplateDropdown && (
-                  <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-52 overflow-y-auto rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl">
-                    {loadingTemplates ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 size={16} className="animate-spin text-slate-400" />
-                      </div>
-                    ) : templates.length === 0 ? (
-                      <p className="px-4 py-3 text-sm text-slate-400">Nenhum template cadastrado.</p>
-                    ) : (
-                      templates.map(tpl => (
-                        <button
-                          key={tpl.id}
-                          type="button"
-                          onClick={() => applyTemplate(tpl)}
-                          className="w-full px-4 py-2.5 text-left hover:bg-gray-100 dark:hover:bg-slate-700"
-                        >
-                          <p className="text-sm font-medium text-slate-900 dark:text-white">{tpl.name}</p>
-                          <p className="truncate text-xs text-slate-400">{tpl.subject}</p>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Destinatários */}
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Para</label>
-                <div className="space-y-2">
-                  {to.map((addr, idx) => (
-                    <div key={idx} className="flex gap-2">
-                      <input
-                        type="email"
-                        value={addr}
-                        onChange={(e) => {
-                          const updated = [...to];
-                          updated[idx] = e.target.value;
-                          setTo(updated);
-                        }}
-                        placeholder="email@exemplo.com"
-                        className="flex-1 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
-                      />
-                      {to.length > 1 && (
-                        <button onClick={() => setTo(to.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-400">
-                          <X size={16} />
-                        </button>
-                      )}
+              {showTemplateDropdown && (
+                <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-52 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                  {loadingTemplates ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 size={16} className="animate-spin text-slate-400" />
                     </div>
-                  ))}
-                  <button
-                    onClick={() => setTo([...to, ""])}
-                    className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
-                  >
-                    <Plus size={14} /> Adicionar destinatário
-                  </button>
-                </div>
-              </div>
-
-              {/* Assunto */}
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Assunto</label>
-                <input
-                  type="text"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Assunto do e-mail"
-                  className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Mensagem */}
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Mensagem</label>
-                <textarea
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder="Escreva sua mensagem..."
-                  rows={6}
-                  className="w-full resize-none rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Anexos */}
-              <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-blue-400"
-                >
-                  <Paperclip size={15} />
-                  Anexar arquivo
-                </button>
-                {attachments.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {attachments.map((att, idx) => (
-                      <div key={idx} className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-1.5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <File size={14} className="shrink-0 text-slate-400" />
-                          <span className="truncate text-xs text-slate-700 dark:text-slate-300">{att.name}</span>
-                          <span className="shrink-0 text-xs text-slate-400">({formatBytes(att.size)})</span>
-                        </div>
-                        <button
-                          onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
-                          className="ml-2 shrink-0 text-slate-400 hover:text-red-400"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Preview da assinatura */}
-              {user?.email_signature && (
-                <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 px-3 py-2">
-                  <p className="mb-1 text-xs text-slate-400">Assinatura (adicionada automaticamente)</p>
-                  <div
-                    className="text-sm text-slate-900 dark:text-slate-100"
-                    dangerouslySetInnerHTML={{ __html: user.email_signature }}
-                  />
+                  ) : templates.length === 0 ? (
+                    <p className="px-4 py-3 text-sm text-slate-400">Nenhum template cadastrado.</p>
+                  ) : (
+                    templates.map(tpl => (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={() => applyTemplate(tpl)}
+                        className="w-full px-4 py-2.5 text-left transition-colors hover:bg-gray-100 dark:hover:bg-slate-800"
+                      >
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{tpl.name}</p>
+                        <p className="truncate text-xs text-slate-400">{tpl.subject}</p>
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
+            </div>
+          </FormField>
+
+          {/* Destinatários */}
+          <FormField label="Para" required>
+            <div className="space-y-2">
+              {to.map((addr, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <Input
+                    type="email"
+                    value={addr}
+                    onChange={(e) => {
+                      const updated = [...to];
+                      updated[idx] = e.target.value;
+                      setTo(updated);
+                    }}
+                    placeholder="email@exemplo.com"
+                    className="flex-1"
+                  />
+                  {to.length > 1 && (
+                    <button
+                      onClick={() => setTo(to.filter((_, i) => i !== idx))}
+                      className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={() => setTo([...to, ""])}
+                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+              >
+                <Plus size={14} /> Adicionar destinatário
+              </button>
+            </div>
+          </FormField>
+
+          {/* Assunto */}
+          <FormField label="Assunto" required>
+            <Input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Assunto do e-mail"
+            />
+          </FormField>
+
+          {/* Mensagem */}
+          <FormField label="Mensagem" required>
+            <Textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Escreva sua mensagem..."
+              rows={6}
+            />
+          </FormField>
+
+          {/* Anexos */}
+          <FormField label="Anexos" hint="Máximo 24 MB por arquivo">
+            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              <Paperclip size={15} />
+              Selecionar arquivo
+            </button>
+            {attachments.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {attachments.map((att, idx) => (
+                  <div key={idx} className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 dark:border-slate-700 dark:bg-slate-800">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <File size={14} className="shrink-0 text-slate-400" />
+                      <span className="truncate text-xs text-slate-700 dark:text-slate-300">{att.name}</span>
+                      <span className="shrink-0 text-xs text-slate-400">({formatBytes(att.size)})</span>
+                    </div>
+                    <button
+                      onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
+                      className="ml-2 shrink-0 rounded p-1 text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </FormField>
+
+          {/* Preview da assinatura */}
+          {user?.email_signature && (
+            <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+              <p className="mb-2 text-xs text-slate-400">Assinatura (adicionada automaticamente)</p>
+              <div
+                className="max-w-full text-sm text-slate-900 [&_img]:max-w-full [&_table]:max-w-full [&_td]:max-w-full"
+                style={{ overflowX: "hidden" }}
+                dangerouslySetInnerHTML={{ __html: user.email_signature }}
+              />
+            </div>
+          )}
         </div>
       </BaseModal>
     </div>
