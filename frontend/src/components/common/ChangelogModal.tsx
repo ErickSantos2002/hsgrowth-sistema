@@ -25,6 +25,28 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.1",
+    date: "13/04/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Parado 3d+ e Parado 7d+ recalculados: agora considera atividades registradas e anotações criadas no período, não mais o tempo que o card ficou na mesma etapa — reflete movimentação real no negócio.",
+      },
+      {
+        type: "improvement",
+        text: "Histórico do card: horário exibido ao lado da data em todos os eventos — 'Ontem, 14:30', '3 dias atrás, 10:00', '27 jan. 2026, 09:15'.",
+      },
+      {
+        type: "improvement",
+        text: "Abas do card (Atividade, Anotações, Calendário…): scroll horizontal habilitado no desktop quando a janela não tem largura suficiente para exibir todas as abas.",
+      },
+      {
+        type: "fix",
+        text: "Seletor de tipo de atividade exibia coluna vazia após remoção de um tipo — grid ajustado para 4 colunas.",
+      },
+    ],
+  },
+  {
     version: "1.7.0",
     date: "13/04/2026",
     entries: [
