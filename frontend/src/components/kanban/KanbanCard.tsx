@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Calendar, User, DollarSign, Clock, CheckSquare, RefreshCw, Mail } from "lucide-react";
+import { Calendar, CheckSquare, RefreshCw, Mail, AlarmClock } from "lucide-react";
 import { Card } from "../../types";
 import { UserAvatar } from "../common";
 import CardActivitiesModal from "./CardActivitiesModal";
@@ -47,12 +47,17 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
     return "Aberto";
   };
 
+  // "Parado 3d+" — calculado no backend com a mesma lógica do dashboard
+  const isStuck = !!card.is_stuck_3d;
+
   return (
     <div
       data-kanban-card
       onClick={onClick}
       className={`group relative cursor-pointer rounded-lg border p-3.5 shadow-sm transition-all hover:shadow-md ${
-        card.automacao01
+        isStuck
+          ? "border-red-500/40 bg-white hover:border-red-500/60 hover:bg-red-50/20 dark:border-red-500/30 dark:bg-red-950/20 dark:hover:border-red-500/45 dark:hover:bg-red-950/30"
+          : card.automacao01
           ? "border-orange-500/40 bg-white hover:border-orange-500/60 hover:bg-orange-50/30 dark:border-orange-500/25 dark:bg-orange-950/20 dark:hover:border-orange-500/40 dark:hover:bg-orange-950/30"
           : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 dark:border-slate-700/30 dark:bg-white/5 dark:hover:border-slate-600 dark:hover:bg-white/10"
       }`}
@@ -113,6 +118,61 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
           >
             <Mail size={9} />
             Em Nutrição
+          </span>
+        )}
+
+        {/* Badge parado 3d+ */}
+        {isStuck && (
+          <span
+            className="flex items-center gap-0.5 rounded bg-red-500/15 px-1.5 py-0.5 text-[10px] font-medium text-red-500 dark:text-red-400"
+            title="Card sem movimentação há mais de 3 dias"
+          >
+            <AlarmClock size={9} />
+            Parado 3d+
+          </span>
+        )}
+
+        {/* Badge de atividade atrasada */}
+        {card.pending_tasks_status === "overdue" && (
+          <span
+            className="flex items-center gap-0.5 rounded bg-red-500/15 px-1.5 py-0.5 text-[10px] font-medium text-red-500 dark:text-red-400"
+            title={`${card.pending_tasks_count} atividade(s) atrasada(s)`}
+          >
+            <CheckSquare size={9} />
+            Atrasada
+          </span>
+        )}
+
+        {/* Badge de atividade para hoje */}
+        {card.pending_tasks_status === "today" && (
+          <span
+            className="flex items-center gap-0.5 rounded bg-green-500/15 px-1.5 py-0.5 text-[10px] font-medium text-green-600 dark:text-green-400"
+            title={`${card.pending_tasks_count} atividade(s) para hoje`}
+          >
+            <CheckSquare size={9} />
+            Para Hoje
+          </span>
+        )}
+
+        {/* Badge de atividade futura */}
+        {card.pending_tasks_status === "future" && (
+          <span
+            className="flex items-center gap-0.5 rounded bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400"
+            title={`${card.pending_tasks_count} atividade(s) futura(s)`}
+          >
+            <CheckSquare size={9} />
+            Futura
+          </span>
+        )}
+
+        {/* Badge sem atividade */}
+        {(card.pending_tasks_count === 0 || card.pending_tasks_count === null) && !card.is_won && !card.is_lost && (
+          <span
+            className="flex items-center gap-0.5 rounded bg-slate-500/10 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 dark:text-slate-500"
+            title="Nenhuma atividade pendente"
+          >
+            <CheckSquare size={9} />
+            Sem Atividade
           </span>
         )}
 

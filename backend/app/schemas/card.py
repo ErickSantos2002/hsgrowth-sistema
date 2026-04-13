@@ -510,6 +510,8 @@ class CardMinimalResponse(BaseModel):
     value: Optional[float] = Field(None, description="Valor monetário")
     due_date: Optional[datetime] = Field(None, description="Data de vencimento")
     created_at: Optional[datetime] = Field(None, description="Data de criação")
+    updated_at: Optional[datetime] = Field(None, description="Data da última atualização")
+    is_stuck_3d: bool = Field(False, description="True se o card está na mesma etapa há mais de 3 dias")
     is_won: bool = Field(..., description="Card ganho")
     is_lost: bool = Field(..., description="Card perdido")
     closed_at: Optional[datetime] = Field(None, description="Data de fechamento (ganho ou perdido)")

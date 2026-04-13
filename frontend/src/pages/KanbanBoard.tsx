@@ -86,6 +86,7 @@ const KanbanBoard: React.FC = () => {
   const [acquisitionChannelFilter, setAcquisitionChannelFilter] = useState(""); // Filtro de canal de aquisição
   const [acquisitionChannelDetailFilter, setAcquisitionChannelDetailFilter] = useState(""); // Filtro de detalhe do canal
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
+  const [cardTagFilter, setCardTagFilter] = useState(""); // Filtro por etiqueta: "" | "nutricao" | "parado"
 
   // ─── Persistência de filtros no localStorage ───────────────────────────────
 
@@ -124,6 +125,7 @@ const KanbanBoard: React.FC = () => {
         setSdrFilter(saved.sdrFilter ?? "");
         setAcquisitionChannelFilter(saved.acquisitionChannelFilter ?? "");
         setAcquisitionChannelDetailFilter(saved.acquisitionChannelDetailFilter ?? "");
+        setCardTagFilter(saved.cardTagFilter ?? "");
       } catch {
         // JSON corrompido — ignora e mantém defaults
       }
@@ -154,6 +156,7 @@ const KanbanBoard: React.FC = () => {
         sdrFilter,
         acquisitionChannelFilter,
         acquisitionChannelDetailFilter,
+        cardTagFilter,
       })
     );
   }, [
@@ -169,6 +172,7 @@ const KanbanBoard: React.FC = () => {
     sdrFilter,
     acquisitionChannelFilter,
     acquisitionChannelDetailFilter,
+    cardTagFilter,
   ]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]); // Lista de usuários
   const boardScrollRef = useRef<HTMLDivElement | null>(null);
@@ -681,6 +685,21 @@ const KanbanBoard: React.FC = () => {
         if (!matches) return false;
       }
 
+      // Filtro por etiqueta especial
+      if (cardTagFilter) {
+        // is_stuck_3d calculado no backend com a mesma lógica do dashboard
+        const isStuck = !!card.is_stuck_3d;
+
+        switch (cardTagFilter) {
+          case "overdue":  if (card.pending_tasks_status !== "overdue")  return false; break;
+          case "today":    if (card.pending_tasks_status !== "today")    return false; break;
+          case "future":   if (card.pending_tasks_status !== "future")   return false; break;
+          case "no_task":  if ((card.pending_tasks_count ?? 0) > 0)      return false; break;
+          case "parado":   if (!isStuck)                                 return false; break;
+          case "nutricao": if (!card.automacao01)                        return false; break;
+        }
+      }
+
       return true;
     });
   };
@@ -1077,6 +1096,24 @@ const KanbanBoard: React.FC = () => {
                   { value: "10000+", label: "R$ 10.000+" },
                 ]}
                 onChange={setValueFilter}
+              />
+            </div>
+
+            {/* Filtro por etiqueta */}
+            <div className="min-w-[165px]">
+              <SelectMenu
+                size="sm"
+                value={cardTagFilter}
+                options={[
+                  { value: "", label: "Qualquer etiqueta" },
+                  { value: "overdue", label: "🔴 Atividade Atrasada" },
+                  { value: "today", label: "🟢 Atividade para Hoje" },
+                  { value: "future", label: "🟣 Atividade Futura" },
+                  { value: "no_task", label: "⚪ Sem Atividade" },
+                  { value: "parado", label: "🔴 Parado 3d+" },
+                  { value: "nutricao", label: "🟠 Em Nutrição" },
+                ]}
+                onChange={setCardTagFilter}
               />
             </div>
 

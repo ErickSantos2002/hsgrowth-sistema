@@ -3,7 +3,7 @@ Card Service - Lógica de negócio para cards.
 Implementa validações e regras de negócio.
 """
 from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -315,12 +315,24 @@ class CardService:
             cards_response = []
             # Busca contagem e status de tasks pendentes para todos os cards de uma vez (otimizado)
             from app.models.card_task import CardTask
+            from app.models.card_list_history import CardListHistory
             from sqlalchemy import func
             from datetime import datetime, timezone
 
             card_ids = [card.id for card in cards]
             pending_tasks_counts = {}
             pending_tasks_statuses = {}
+
+            # Cards parados na mesma etapa há mais de 3 dias
+            three_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=3)
+            stuck_card_ids: set = set()
+            if card_ids:
+                stuck_rows = self.db.query(CardListHistory.card_id).filter(
+                    CardListHistory.card_id.in_(card_ids),
+                    CardListHistory.exited_at.is_(None),
+                    CardListHistory.entered_at < three_days_ago,
+                ).all()
+                stuck_card_ids = {row.card_id for row in stuck_rows}
 
             if card_ids:
                 # Busca todas as tasks pendentes com suas datas
@@ -414,6 +426,8 @@ class CardService:
                         reopened_from_card_id=card.reopened_from_card_id,
                         automacao01=card.automacao01,
                         contact_info=card.contact_info,
+                        updated_at=card.updated_at,
+                        is_stuck_3d=card.id in stuck_card_ids,
                     )
                 )
 
