@@ -13,6 +13,9 @@ class TaskType(str, Enum):
     MEETING = "meeting"
     TASK = "task"
     FOLLOW_UP = "follow_up"
+    DEADLINE = "deadline"
+    EMAIL = "email"
+    LUNCH = "lunch"
     OTHER = "other"
 
 

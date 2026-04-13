@@ -124,6 +124,26 @@ class CardService {
     });
     return response.data;
   }
+
+  /**
+   * Envia e-mail via Microsoft 365 em nome do usuário logado.
+   * O e-mail é registrado como atividade concluída no card.
+   */
+  async sendEmail(
+    cardId: number,
+    to: string[],
+    subject: string,
+    body: string,
+    attachments?: { name: string; content_type: string; data_base64: string }[],
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await api.post(`/api/v1/cards/${cardId}/send-email`, {
+      to,
+      subject,
+      body,
+      attachments: attachments ?? [],
+    });
+    return response.data;
+  }
 }
 
 export default new CardService();

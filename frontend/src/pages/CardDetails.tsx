@@ -16,6 +16,7 @@ import {
   Phone,
   Loader2,
   PhoneCall,
+  Mail,
 } from "lucide-react";
 import { Card } from "../types";
 import cardService from "../services/cardService";
@@ -33,6 +34,7 @@ import NotesSection from "../components/cardDetails/NotesSection";
 import SchedulerSection from "../components/cardDetails/SchedulerSection";
 import FilesSection from "../components/cardDetails/FilesSection";
 import CallEvaluationsSection from "../components/cardDetails/CallEvaluationsSection";
+import EmailSection from "../components/cardDetails/EmailSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ReopenModal from "../components/cardDetails/ReopenModal";
 import { showSuccess, showError } from "../utils/toast";
@@ -65,7 +67,7 @@ const CardDetails: React.FC = () => {
   const [showAssignConfirm, setShowAssignConfirm] = useState(false);
 
   // Estado das abas
-  const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos" | "ligacoes">("atividade");
+  const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos" | "ligacoes" | "email">("atividade");
 
   // Estado da modal de motivo da perda
   const [showLossReasonModal, setShowLossReasonModal] = useState(false);
@@ -79,6 +81,9 @@ const CardDetails: React.FC = () => {
 
   // Estado da contagem de avaliações de ligações
   const [evaluationsCount, setEvaluationsCount] = useState<number>(0);
+
+  // Estado da contagem de e-mails enviados
+  const [emailCount, setEmailCount] = useState<number>(0);
 
   // Estado do botão de ligação rápida
   const [isQuickCalling, setIsQuickCalling] = useState(false);
@@ -1072,6 +1077,23 @@ const CardDetails: React.FC = () => {
                       </span>
                     )}
                   </button>
+
+                  <button
+                    onClick={() => setActiveTab("email")}
+                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
+                      activeTab === "email"
+                        ? "border-blue-500 font-medium text-blue-400"
+                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    }`}
+                  >
+                    <Mail size={18} />
+                    <span className="hidden lg:inline">E-mail</span>
+                    {emailCount > 0 && (
+                      <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "email" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
+                        {emailCount}
+                      </span>
+                    )}
+                  </button>
                 </div>
 
                 {/* Botão Ligar — sempre visível fora da área de scroll */}
@@ -1154,6 +1176,15 @@ const CardDetails: React.FC = () => {
 
               {activeTab === "ligacoes" && card && (
                 <CallEvaluationsSection cardId={card.id} />
+              )}
+
+              {activeTab === "email" && card && (
+                <EmailSection
+                  cardId={card.id}
+                  personId={card.person_id ?? null}
+                  onUpdate={loadCardData}
+                  onCountChange={setEmailCount}
+                />
               )}
             </div>
           </div>

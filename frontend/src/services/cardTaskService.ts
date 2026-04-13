@@ -9,7 +9,7 @@ export interface CardTask {
   assigned_to_id?: number;
   title: string;
   description?: string;
-  task_type: "call" | "meeting" | "task" | "follow_up" | "other";
+  task_type: "call" | "meeting" | "task" | "follow_up" | "deadline" | "email" | "lunch" | "other";
   priority: "normal" | "high" | "urgent";
   due_date?: string;
   duration_minutes?: number;

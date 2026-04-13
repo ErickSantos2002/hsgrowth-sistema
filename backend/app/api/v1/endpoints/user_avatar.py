@@ -17,6 +17,7 @@ router = APIRouter()
 
 # Configurações
 UPLOAD_DIR = Path("/app/uploads/avatars")
+SIGNATURE_UPLOAD_DIR = Path("/app/uploads/signatures")
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 ALLOWED_MIME_TYPES = [
     'image/jpeg',
@@ -289,3 +290,70 @@ async def delete_avatar(
     db.commit()
 
     return None
+
+
+# ==================== IMAGEM DE ASSINATURA ====================
+
+@router.post(
+    "/users/me/signature-image",
+    summary="Upload de imagem de assinatura do usuário",
+)
+async def upload_signature_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    if file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Tipo não permitido: {file.content_type}. Use JPG, PNG ou WEBP.",
+        )
+
+    file_content = await file.read()
+    if len(file_content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Arquivo muito grande. Máximo 5 MB.",
+        )
+
+    user_dir = SIGNATURE_UPLOAD_DIR / str(current_user.id)
+    user_dir.mkdir(parents=True, exist_ok=True)
+
+    # Remove imagem anterior
+    for old_file in user_dir.glob("*"):
+        try:
+            old_file.unlink()
+        except Exception:
+            pass
+
+    file_extension = Path(file.filename).suffix
+    unique_filename = f"{uuid.uuid4().hex}{file_extension}"
+    file_path = user_dir / unique_filename
+
+    with open(file_path, "wb") as f:
+        f.write(file_content)
+
+    image_url = f"/api/v1/users/{current_user.id}/signature-image"
+    return {"image_url": image_url}
+
+
+@router.get(
+    "/users/{user_id}/signature-image",
+    response_class=FileResponse,
+    summary="Retorna imagem de assinatura do usuário",
+)
+def get_signature_image(user_id: int):
+    user_dir = SIGNATURE_UPLOAD_DIR / str(user_id)
+    if not user_dir.exists():
+        raise HTTPException(status_code=404, detail="Imagem de assinatura não encontrada")
+
+    files = list(user_dir.glob("*"))
+    if not files:
+        raise HTTPException(status_code=404, detail="Imagem de assinatura não encontrada")
+
+    img_path = files[0]
+    extension = img_path.suffix.lower()
+    mime_types = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp'}
+    media_type = mime_types.get(extension, 'image/png')
+
+    return FileResponse(path=str(img_path), media_type=media_type)

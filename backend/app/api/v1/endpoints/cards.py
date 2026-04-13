@@ -1238,3 +1238,94 @@ async def desativar_automacao01(
             print(f"[AUTOMACAO01] Erro ao notificar usuário {user_id}: {e}")
 
     return service.get_card_by_id(card_id, current_user)
+
+
+# ==================== E-mail via Microsoft Graph ====================
+
+from pydantic import BaseModel
+
+class EmailAttachment(BaseModel):
+    name: str
+    content_type: str
+    data_base64: str  # arquivo em base64
+
+
+class SendEmailRequest(BaseModel):
+    to: list[str]
+    subject: str
+    body: str
+    attachments: list[EmailAttachment] = []
+
+
+@router.post("/{card_id}/send-email", summary="Enviar e-mail pelo card via Microsoft 365")
+async def send_email_from_card(
+    card_id: int,
+    payload: SendEmailRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Envia um e-mail em nome do usuário logado via Microsoft Graph API.
+    O e-mail aparece na caixa 'Enviados' do Outlook do usuário e é registrado
+    como atividade concluída no card.
+    Suporta anexos (base64) e appenda automaticamente a assinatura do usuário.
+
+    Requer que o usuário tenha autenticado via SSO Microsoft (tem ms_access_token).
+    """
+    from app.models.card_task import CardTask, TaskType
+    from app.services.microsoft_graph_service import microsoft_graph_service
+    from datetime import datetime, timezone
+
+    card = db.query(Card).filter(Card.id == card_id, Card.deleted_at.is_(None)).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card não encontrado")
+
+    # Monta corpo completo com assinatura (HTML)
+    signature = getattr(current_user, "email_signature", None)
+    full_html_body = payload.body
+    if signature and signature.strip():
+        full_html_body = f"{payload.body}<br><br>{signature}"
+
+    # Converte anexos para formato do Graph Service
+    graph_attachments = [
+        {"name": att.name, "content_type": att.content_type, "data_base64": att.data_base64}
+        for att in payload.attachments
+    ] if payload.attachments else None
+
+    # Envia via Graph API
+    try:
+        result = microsoft_graph_service.send_email(
+            user=current_user,
+            db=db,
+            to_addresses=payload.to,
+            subject=payload.subject,
+            body=full_html_body,
+            attachments=graph_attachments,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not result["success"]:
+        raise HTTPException(status_code=502, detail=f"Erro ao enviar e-mail: {result.get('error')}")
+
+    # Registra atividade concluída no card (corpo sem assinatura para leitura mais limpa)
+    full_body = payload.body.replace("<br>", "\n").strip() if payload.body else ""
+    attachment_names = ", ".join(att.name for att in payload.attachments) if payload.attachments else None
+    recipients = ", ".join(addr.strip() for addr in payload.to if addr.strip())
+    task = CardTask(
+        card_id=card_id,
+        assigned_to_id=current_user.id,
+        created_by_id=current_user.id,
+        title=payload.subject,
+        description=full_body,
+        notes=attachment_names,       # nomes dos arquivos anexados
+        contact_name=recipients[:255] if recipients else None,  # destinatários (Para:)
+        task_type=TaskType.EMAIL,
+        is_completed=True,
+        completed_at=datetime.now(timezone.utc),
+        due_date=datetime.now(timezone.utc),
+    )
+    db.add(task)
+    db.commit()
+
+    return {"success": True, "message": "E-mail enviado e atividade registrada no card."}

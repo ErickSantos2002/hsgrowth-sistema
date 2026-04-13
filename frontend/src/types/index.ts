@@ -8,6 +8,7 @@ export interface User {
   full_name: string; // Alias para name (compatibilidade)
   avatar_url: string | null;
   phone: string | null;
+  email_signature: string | null;
   role_id: number;
   role: "admin" | "manager" | "salesperson" | "sdr" | "viewer"; // Role do usuário
   role_name: string; // Nome formatado da role (Administrador, Gerente, Vendedor, SDR)

@@ -2,7 +2,7 @@
 Modelo de User (Usuário).
 Representa um usuário do sistema (vendedor, gerente, admin, etc).
 """
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -43,6 +43,12 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
 
     # Telefone de contato
     phone = Column(String(20), nullable=True)
+
+    # Microsoft 365 — tokens OAuth (SSO + Graph API)
+    ms_access_token = Column(Text, nullable=True, comment="Access token Microsoft Graph — expira em ~1h")
+    ms_refresh_token = Column(Text, nullable=True, comment="Refresh token Microsoft — usado para renovar o access token")
+    ms_token_expires_at = Column(DateTime, nullable=True, comment="Timestamp de expiração do ms_access_token")
+    email_signature = Column(Text, nullable=True, comment="Assinatura HTML do e-mail — anexada automaticamente ao enviar pelo CRM")
 
     # Relacionamentos
     role = relationship("Role", back_populates="users")

@@ -31,6 +31,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate, readOnl
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
+
   // Carrega dados da pessoa quando o card é carregado
   useEffect(() => {
     loadPersonData();
@@ -503,6 +504,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate, readOnl
           person={person}
         />
       )}
+
     </>
   );
 };

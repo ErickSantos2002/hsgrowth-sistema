@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { User as UserIcon, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe, FileText, Filter, Calendar, RefreshCw, Wifi } from "lucide-react";
+import ReactDOM from "react-dom";
+import { User as UserIcon, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe, FileText, Filter, Calendar, RefreshCw, Wifi, Mail, X, ChevronRight, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 import authService from "../services/authService";
@@ -13,8 +14,9 @@ import { useConfirm } from "../contexts/ConfirmContext";
 import type { User, OnlineUser } from "../types";
 import { LoadingSpinner } from "../components/common";
 import avatarService from "../services/avatarService";
+import emailTemplateService, { EmailTemplate } from "../services/emailTemplateService";
 
-type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs";
+type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs" | "email_templates";
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -28,7 +30,22 @@ const Settings: React.FC = () => {
     username: user?.username || "",
     email: user?.email || "",
     phone: user?.phone || "",
+    email_signature: user?.email_signature || "",
   });
+  const [showSignaturePreview, setShowSignaturePreview] = useState(false);
+  const [signatureText, setSignatureText] = useState(
+    user?.email_signature
+      ? (user.email_signature.match(/<p[^>]*>([\s\S]*?)<\/p>/) || [])[1]?.replace(/<br\s*\/?>/g, "\n") || ""
+      : ""
+  );
+  const [signatureImageUrl, setSignatureImageUrl] = useState<string | null>(
+    // Extrai o src da imagem do HTML salvo (pode ser data URL ou URL de servidor)
+    user?.email_signature
+      ? (user.email_signature.match(/src="([^"]+)"/) || [])[1] || null
+      : null
+  );
+  const [uploadingSignatureImage, setUploadingSignatureImage] = useState(false);
+  const signatureImageInputRef = useRef<HTMLInputElement>(null);
 
   // Estados do Avatar
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -123,6 +140,15 @@ const Settings: React.FC = () => {
   const [availableEntityTypes, setAvailableEntityTypes] = useState<string[]>([]);
   const [availableLogUsers, setAvailableLogUsers] = useState<{ id: number; name: string }[]>([]);
 
+  // Estados de templates de e-mail
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [templateForm, setTemplateForm] = useState({ name: "", subject: "", body: "", is_active: true });
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const savingTemplateRef = useRef(false);
+
   useEffect(() => {
     if (user) {
       setProfileData({
@@ -130,6 +156,7 @@ const Settings: React.FC = () => {
         username: user.username || "",
         email: user.email || "",
         phone: user.phone || "",
+        email_signature: user.email_signature || "",
       });
     }
   }, [user]);
@@ -174,6 +201,121 @@ const Settings: React.FC = () => {
       setAuditLogs([]);
     }
   }, [activeTab, user]);
+
+  // Carrega templates quando a tab email_templates é ativada
+  useEffect(() => {
+    const isManagerOrAdmin = user?.role === "admin" || user?.role === "manager";
+    if (activeTab === "email_templates" && isManagerOrAdmin) {
+      loadEmailTemplates();
+    }
+  }, [activeTab, user]);
+
+  // Gera o HTML da assinatura a partir do texto + URL da imagem
+  const buildSignatureHtml = (text: string, imageUrl: string | null): string => {
+    const textHtml = text.trim()
+      ? `<p style="margin:0 0 8px 0;font-family:Arial,sans-serif;font-size:13px;color:#333;">${text.trim().replace(/\n/g, "<br>")}</p>`
+      : "";
+    const imgHtml = imageUrl
+      ? `<img src="${imageUrl}" style="max-width:600px;height:auto;display:block;" />`
+      : "";
+    return textHtml + imgHtml;
+  };
+
+  const handleSignatureImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      showError("Imagem muito grande. Máximo 5 MB.");
+      e.target.value = "";
+      return;
+    }
+
+    setUploadingSignatureImage(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setSignatureImageUrl(dataUrl);
+      const newHtml = buildSignatureHtml(signatureText, dataUrl);
+      setProfileData(p => ({ ...p, email_signature: newHtml }));
+      setUploadingSignatureImage(false);
+    };
+    reader.onerror = () => {
+      showError("Erro ao ler a imagem.");
+      setUploadingSignatureImage(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  // Sincroniza HTML sempre que texto ou imagem mudam
+  const handleSignatureTextChange = (text: string) => {
+    setSignatureText(text);
+    setProfileData(p => ({ ...p, email_signature: buildSignatureHtml(text, signatureImageUrl) }));
+  };
+
+  const loadEmailTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const data = await emailTemplateService.list(true);
+      setEmailTemplates(data);
+    } catch {
+      showError("Erro ao carregar templates");
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  const openCreateTemplate = () => {
+    setEditingTemplate(null);
+    setTemplateForm({ name: "", subject: "", body: "", is_active: true });
+    setTemplateModalOpen(true);
+  };
+
+  const openEditTemplate = (tpl: EmailTemplate) => {
+    setEditingTemplate(tpl);
+    setTemplateForm({ name: tpl.name, subject: tpl.subject, body: tpl.body, is_active: tpl.is_active });
+    setTemplateModalOpen(true);
+  };
+
+  const saveTemplate = async () => {
+    if (savingTemplateRef.current) return;
+    if (!templateForm.name.trim() || !templateForm.subject.trim() || !templateForm.body.trim()) {
+      showError("Preencha todos os campos obrigatórios");
+      return;
+    }
+    savingTemplateRef.current = true;
+    setSavingTemplate(true);
+    try {
+      if (editingTemplate) {
+        await emailTemplateService.update(editingTemplate.id, templateForm);
+        showSuccess("Template atualizado");
+      } else {
+        await emailTemplateService.create(templateForm);
+        showSuccess("Template criado");
+      }
+      setTemplateModalOpen(false);
+      loadEmailTemplates();
+    } catch {
+      showError("Erro ao salvar template");
+    } finally {
+      savingTemplateRef.current = false;
+      setSavingTemplate(false);
+    }
+  };
+
+  const deleteTemplate = async (tpl: EmailTemplate) => {
+    const confirmed = await confirm(`Excluir o template "${tpl.name}"?`);
+    if (!confirmed) return;
+    try {
+      await emailTemplateService.delete(tpl.id);
+      showSuccess("Template excluído");
+      loadEmailTemplates();
+    } catch {
+      showError("Erro ao excluir template");
+    }
+  };
 
   // Carrega histórico de logins e sessões ativas quando a tab security é ativada
   useEffect(() => {
@@ -227,6 +369,7 @@ const Settings: React.FC = () => {
         username: profileData.username,
         email: profileData.email,
         phone: profileData.phone,
+        email_signature: profileData.email_signature || null,
       });
 
       // Atualiza o contexto de autenticação
@@ -807,6 +950,11 @@ const Settings: React.FC = () => {
     tabs.push({ id: "logs" as Tab, label: "Logs de Auditoria", icon: FileText });
   }
 
+  // Adiciona tab Templates de E-mail para admin e gerente
+  if (isManagerOrAdmin) {
+    tabs.push({ id: "email_templates" as Tab, label: "Templates de E-mail", icon: Mail });
+  }
+
   const loginItemsPerPage = 5;
   const loginMaxItems = 25;
   const limitedLoginHistory = loginHistory.slice(0, loginMaxItems);
@@ -1085,6 +1233,97 @@ const Settings: React.FC = () => {
                       className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       placeholder="(00) 00000-0000"
                     />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Assinatura de E-mail
+                      </label>
+                      {profileData.email_signature && (
+                        <button
+                          type="button"
+                          onClick={() => setShowSignaturePreview(v => !v)}
+                          className="text-xs text-blue-400 hover:text-blue-300"
+                        >
+                          {showSignaturePreview ? "Ocultar preview" : "Ver preview"}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 p-4">
+                      {/* Texto antes da imagem */}
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                          Texto (opcional) — ex: Atenciosamente,
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={signatureText}
+                          onChange={(e) => handleSignatureTextChange(e.target.value)}
+                          placeholder={"Atenciosamente,\nErick Santos — T.I"}
+                          className="w-full resize-none rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Upload de imagem */}
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                          Imagem da assinatura (JPG, PNG, WEBP — máx. 5 MB)
+                        </label>
+                        <input
+                          ref={signatureImageInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={handleSignatureImageUpload}
+                        />
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => signatureImageInputRef.current?.click()}
+                            disabled={uploadingSignatureImage}
+                            className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-400 disabled:opacity-60"
+                          >
+                            {uploadingSignatureImage ? (
+                              <><Loader2 size={15} className="animate-spin" /> Enviando...</>
+                            ) : (
+                              <><Upload size={15} /> {signatureImageUrl ? "Trocar imagem" : "Enviar imagem"}</>
+                            )}
+                          </button>
+                          {signatureImageUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSignatureImageUrl(null);
+                                setProfileData(p => ({ ...p, email_signature: buildSignatureHtml(signatureText, null) }));
+                              }}
+                              className="text-xs text-red-400 hover:text-red-300"
+                            >
+                              Remover imagem
+                            </button>
+                          )}
+                        </div>
+                        {signatureImageUrl && (
+                          <img
+                            src={signatureImageUrl}
+                            alt="Imagem da assinatura"
+                            className="mt-2 max-h-24 rounded border border-slate-200 dark:border-slate-700"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      Adicionada automaticamente ao final de todo e-mail enviado pelo CRM.
+                    </p>
+
+                    {showSignaturePreview && profileData.email_signature && (
+                      <div className="mt-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 p-4">
+                        <p className="mb-2 text-xs font-medium text-slate-400">Preview:</p>
+                        <div className="text-slate-900 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: profileData.email_signature }} />
+                      </div>
+                    )}
                   </div>
 
                   <div className="md:col-span-2">
@@ -2984,6 +3223,88 @@ const Settings: React.FC = () => {
               </div>
             )}
 
+            {/* Tab: Templates de E-mail */}
+            {activeTab === "email_templates" && isManagerOrAdmin && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="mb-1 text-xl font-semibold text-slate-900 dark:text-white">Templates de E-mail</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Crie templates reutilizáveis com variáveis dinâmicas para agilizar o envio de e-mails pelo CRM.
+                    </p>
+                  </div>
+                  <button
+                    onClick={openCreateTemplate}
+                    className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    <Plus size={16} />
+                    Novo Template
+                  </button>
+                </div>
+
+                {/* Variáveis disponíveis */}
+                <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+                  <p className="mb-2 text-sm font-medium text-blue-400">Variáveis disponíveis</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["{{nome_contato}}", "{{empresa}}", "{{nome_vendedor}}", "{{titulo_card}}", "{{valor_card}}"].map(v => (
+                      <span key={v} className="rounded bg-blue-500/20 px-2 py-0.5 font-mono text-xs text-blue-300">{v}</span>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Insira essas variáveis no assunto ou corpo do template. Elas serão substituídas automaticamente ao usar o template no envio.
+                  </p>
+                </div>
+
+                {loadingTemplates ? (
+                  <div className="flex justify-center py-10"><LoadingSpinner /></div>
+                ) : emailTemplates.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 py-14 dark:border-slate-700">
+                    <Mail size={32} className="mb-3 text-slate-400" />
+                    <p className="text-sm text-slate-500">Nenhum template cadastrado ainda.</p>
+                    <button onClick={openCreateTemplate} className="mt-3 text-sm text-blue-400 hover:text-blue-300">
+                      Criar primeiro template
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {emailTemplates.map(tpl => (
+                      <div
+                        key={tpl.id}
+                        className="flex items-start justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className="font-medium text-slate-900 dark:text-white">{tpl.name}</span>
+                            {!tpl.is_active && (
+                              <span className="rounded-full border border-slate-500/30 bg-slate-500/10 px-2 py-0.5 text-xs text-slate-400">Inativo</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            <span className="font-medium text-slate-700 dark:text-slate-300">Assunto:</span> {tpl.subject}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-sm text-slate-400">{tpl.body}</p>
+                        </div>
+                        <div className="ml-4 flex shrink-0 gap-2">
+                          <button
+                            onClick={() => openEditTemplate(tpl)}
+                            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-blue-400 dark:hover:bg-slate-700"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => deleteTemplate(tpl)}
+                            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-400 dark:hover:bg-slate-700"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         </div>
 
@@ -3020,6 +3341,123 @@ const Settings: React.FC = () => {
           badges={badges.filter(b => b.criteria_type === "manual" && b.is_active)}
           users={salespeople}
         />
+
+      {/* Modal: Criar / Editar Template de E-mail */}
+      {templateModalOpen && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-700 px-6 py-4">
+              <h3 className="text-base font-semibold text-white">
+                {editingTemplate ? "Editar Template" : "Novo Template"}
+              </h3>
+              <button onClick={() => setTemplateModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="space-y-4 px-6 py-5">
+              {/* Chips de variáveis */}
+              <div>
+                <p className="mb-2 text-xs font-medium text-slate-400">Clique para inserir variável no cursor</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: "{{nome_contato}}", title: "Nome do contato" },
+                    { label: "{{empresa}}", title: "Empresa/cliente" },
+                    { label: "{{nome_vendedor}}", title: "Nome do vendedor/SDR logado" },
+                    { label: "{{titulo_card}}", title: "Título do card" },
+                    { label: "{{valor_card}}", title: "Valor do card" },
+                  ].map(v => (
+                    <button
+                      key={v.label}
+                      type="button"
+                      title={v.title}
+                      onClick={() => {
+                        const ta = document.getElementById("tpl-body") as HTMLTextAreaElement | null;
+                        if (ta) {
+                          const start = ta.selectionStart;
+                          const end = ta.selectionEnd;
+                          const newBody = templateForm.body.slice(0, start) + v.label + templateForm.body.slice(end);
+                          setTemplateForm(f => ({ ...f, body: newBody }));
+                          setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + v.label.length; ta.focus(); }, 0);
+                        } else {
+                          setTemplateForm(f => ({ ...f, body: f.body + v.label }));
+                        }
+                      }}
+                      className="rounded bg-blue-500/20 px-2 py-0.5 font-mono text-xs text-blue-300 hover:bg-blue-500/40"
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Nome do template *</label>
+                <input
+                  type="text"
+                  value={templateForm.name}
+                  onChange={e => setTemplateForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Ex: Apresentação Inicial"
+                  className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Assunto *</label>
+                <input
+                  type="text"
+                  value={templateForm.subject}
+                  onChange={e => setTemplateForm(f => ({ ...f, subject: e.target.value }))}
+                  placeholder="Ex: Olá {{nome_contato}}, temos uma proposta para você"
+                  className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Mensagem *</label>
+                <textarea
+                  id="tpl-body"
+                  rows={7}
+                  value={templateForm.body}
+                  onChange={e => setTemplateForm(f => ({ ...f, body: e.target.value }))}
+                  placeholder="Olá {{nome_contato}},&#10;&#10;Meu nome é {{nome_vendedor}} da {{empresa}}..."
+                  className="w-full resize-none rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 text-sm text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={templateForm.is_active}
+                  onChange={e => setTemplateForm(f => ({ ...f, is_active: e.target.checked }))}
+                  className="rounded"
+                />
+                Template ativo (visível para uso nos e-mails)
+              </label>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 border-t border-slate-700 px-6 py-4">
+              <button
+                onClick={() => setTemplateModalOpen(false)}
+                className="flex-1 rounded-lg border border-red-500/50 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveTemplate}
+                disabled={savingTemplate}
+                className="flex-1 rounded-lg bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              >
+                {savingTemplate ? "Salvando..." : editingTemplate ? "Salvar alterações" : "Criar template"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

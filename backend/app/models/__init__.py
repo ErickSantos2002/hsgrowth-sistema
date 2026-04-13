@@ -65,6 +65,9 @@ from app.models.call_evaluation import CallEvaluation
 # Cadências de atividades
 from app.models.cadencia import Cadencia, CadenciaItem
 
+# Templates de e-mail
+from app.models.email_template import EmailTemplate
+
 # Lista de todos os modelos (útil para imports)
 __all__ = [
     "Base",
@@ -105,4 +108,5 @@ __all__ = [
     "CallEvaluation",
     "Cadencia",
     "CadenciaItem",
+    "EmailTemplate",
 ]

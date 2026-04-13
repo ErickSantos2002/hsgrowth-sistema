@@ -881,8 +881,13 @@ async def microsoft_callback(
     if not user.is_active:
         return RedirectResponse(url=f"{frontend_url}/login?error=user_inactive", status_code=302)
 
-    # Atualiza last_login_at
+    # Atualiza last_login_at e salva tokens Microsoft para uso posterior (Graph API)
+    from datetime import timezone
+    ms_expires_in = token_result.get("expires_in", 3600)
     user.last_login_at = datetime.utcnow()
+    user.ms_access_token = token_result.get("access_token")
+    user.ms_refresh_token = token_result.get("refresh_token")
+    user.ms_token_expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=ms_expires_in - 60)
     db.commit()
 
     # Registra no audit log

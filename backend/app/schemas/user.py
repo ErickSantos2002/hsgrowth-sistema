@@ -51,6 +51,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=255, description="Nome completo")
     avatar_url: Optional[str] = Field(None, max_length=500, description="URL do avatar")
     phone: Optional[str] = Field(None, max_length=20, description="Telefone")
+    email_signature: Optional[str] = Field(None, description="Assinatura HTML do e-mail")
     password: Optional[str] = Field(None, min_length=6, description="Nova senha")
     role_id: Optional[int] = Field(None, description="ID do role/função")
     is_active: Optional[bool] = Field(None, description="Status ativo/inativo")
@@ -87,6 +88,7 @@ class UserResponse(UserBase):
     # Campos relacionados (opcional, podem ser expandidos depois)
     role: Optional[str] = Field(None, description="Role do usuário (admin/manager/salesperson)")
     role_name: Optional[str] = Field(None, description="Nome do role")
+    email_signature: Optional[str] = Field(None, description="Assinatura HTML do e-mail")
 
     model_config = {
         "from_attributes": True,  # Permite criar a partir de modelos SQLAlchemy
