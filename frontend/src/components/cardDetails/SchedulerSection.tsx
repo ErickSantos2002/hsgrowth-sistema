@@ -987,7 +987,7 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
         {/* Tarefas agrupadas por mês */}
         {Object.entries(grouped).map(([month, monthTasks]) => (
           <div key={month}>
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 capitalize">
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               {month}
             </h4>
             <div className="space-y-2">{monthTasks.map(renderTaskRow)}</div>
