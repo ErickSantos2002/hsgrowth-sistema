@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.6] — 14/04/2026
+
+### Adicionado
+- **Novo tipo de atividade LinkedIn**: disponível ao criar atividades no card, com ícone e cor azul-céu em todo o sistema.
+- **Conclusão Válida / Não Válida**: o botão "Concluir" foi substituído por dois botões — **Válido** (atividade realizada com sucesso) e **Não Válido** (tentativa sem resultado, ex: ligação não atendida). Ambos concluem a atividade e avançam a cadência normalmente. Gamificação pontua apenas para conclusões válidas. Badge diferenciado exibe "Concluída — Válida" ou "Concluída — Não Válida".
+
+---
+
 ## [1.7.5] — 14/04/2026
 
 ### Corrigido

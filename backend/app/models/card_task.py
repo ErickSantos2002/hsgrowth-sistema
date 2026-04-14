@@ -22,6 +22,7 @@ class TaskType(str, enum.Enum):
     EMAIL = "email"  # E-mail
     LUNCH = "lunch"  # Almoço
     WHATSAPP = "whatsapp"  # WhatsApp
+    LINKEDIN = "linkedin"  # LinkedIn
     OTHER = "other"  # Outro
 
 
@@ -71,6 +72,8 @@ class CardTask(Base, TimestampMixin):
     # Status
     is_completed = Column(Boolean, default=False, nullable=False, index=True)
     completed_at = Column(DateTime, nullable=True)
+    # NULL=não concluída, TRUE=válida (realizada com sucesso), FALSE=não válida (tentativa sem resultado)
+    is_valid = Column(Boolean, nullable=True)
     # Indica que a reunião ocorreu mas o contato não compareceu (NoShow)
     is_noshow = Column(Boolean, default=False, nullable=False)
 
@@ -101,9 +104,10 @@ class CardTask(Base, TimestampMixin):
     def __repr__(self):
         return f"<CardTask(id={self.id}, card_id={self.card_id}, type='{self.task_type}', title='{self.title}')>"
 
-    def mark_as_completed(self):
-        """Marca a tarefa como concluída"""
+    def mark_as_completed(self, is_valid: bool = True):
+        """Marca a tarefa como concluída. is_valid=True para válida, False para não válida."""
         self.is_completed = True
+        self.is_valid = is_valid
         self.completed_at = datetime.utcnow()
 
     def mark_as_noshow(self):
@@ -115,6 +119,7 @@ class CardTask(Base, TimestampMixin):
     def mark_as_pending(self):
         """Marca a tarefa como pendente"""
         self.is_completed = False
+        self.is_valid = None
         self.completed_at = None
 
     @property

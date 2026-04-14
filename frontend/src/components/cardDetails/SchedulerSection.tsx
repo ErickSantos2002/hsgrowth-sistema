@@ -35,6 +35,7 @@ import {
   User,
   Users,
   Video,
+  XCircle,
 } from "lucide-react";
 import {
   TYPE_CONFIG,
@@ -311,18 +312,15 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
 
   // ── Ações sobre a tarefa selecionada ─────────────────────────────────────
 
-  /** Alterna o status de concluída/aberta da tarefa */
-  const handleToggleComplete = async () => {
+  /** Conclui a tarefa como válida ou não válida */
+  const handleComplete = async (isValid: boolean) => {
     if (!selectedTask) return;
     setActionLoading(true);
     try {
-      const updated = await cardTaskService.toggleComplete(
-        selectedTask.id,
-        !selectedTask.is_completed
-      );
-      // Atualiza localmente para evitar reload completo
+      const updated = await cardTaskService.toggleComplete(selectedTask.id, true, isValid);
       setSelectedTask(updated);
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      showSuccess(isValid ? "Atividade concluída como válida!" : "Atividade marcada como não válida.");
       onUpdate();
     } catch (error) {
       console.error("Erro ao atualizar status da tarefa:", error);
@@ -1027,17 +1025,30 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
         size="md"
         footer={
           <div className="flex gap-2">
-            {/* Botão de concluir — oculto para visualizadores e quando já está concluída */}
+            {/* Botões de conclusão — ocultos para visualizadores e quando já está concluída */}
             {!readOnly && !selectedTask.is_completed && (
-              <button
-                type="button"
-                onClick={handleToggleComplete}
-                disabled={actionLoading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-60"
-              >
-                <CheckCircle2 size={16} />
-                Concluir
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleComplete(true)}
+                  disabled={actionLoading}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-60"
+                  title="Atividade realizada com sucesso"
+                >
+                  <CheckCircle2 size={16} />
+                  Válido
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleComplete(false)}
+                  disabled={actionLoading}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-700 disabled:opacity-60"
+                  title="Tentativa sem resultado (ex: ligação não atendida)"
+                >
+                  <XCircle size={16} />
+                  Não Válido
+                </button>
+              </>
             )}
 
             {/* Botões de editar e excluir - ocultos para visualizadores */}
@@ -1085,10 +1096,16 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
             >
               {priorityConfig.label}
             </span>
-            {selectedTask.is_completed && (
+            {selectedTask.is_completed && selectedTask.is_valid !== false && (
               <span className="inline-flex items-center gap-1 rounded-full border border-green-500/40 bg-green-500/20 px-3 py-1 text-xs font-medium text-green-300">
                 <CheckCircle2 size={12} />
-                Concluída
+                Concluída — Válida
+              </span>
+            )}
+            {selectedTask.is_completed && selectedTask.is_valid === false && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/20 px-3 py-1 text-xs font-medium text-orange-300">
+                <XCircle size={12} />
+                Concluída — Não Válida
               </span>
             )}
           </div>

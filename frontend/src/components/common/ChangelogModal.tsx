@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.6",
+    date: "14/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Novo tipo de atividade 'LinkedIn' disponível ao criar atividades — com ícone e cor azul-céu.",
+      },
+      {
+        type: "feature",
+        text: "Conclusão de atividades agora tem dois modos: 'Válido' (atividade realizada com sucesso) e 'Não Válido' (tentativa sem resultado, ex: ligação não atendida). Ambos concluem e avançam a cadência. Badge diferenciado exibe o resultado.",
+      },
+    ],
+  },
+  {
     version: "1.7.5",
     date: "14/04/2026",
     entries: [

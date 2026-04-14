@@ -86,13 +86,13 @@ export function useActivityActions({ onSuccess, isViewer = false }: UseActivityA
   /**
    * Marca atividade como concluída.
    */
-  const handleToggleComplete = async (taskId: number): Promise<void> => {
+  const handleToggleComplete = async (taskId: number, isValid: boolean = true): Promise<void> => {
     if (isViewer) return;
 
     try {
       setLoading(taskId, "complete");
-      await cardTaskService.toggleComplete(taskId, true);
-      showSuccess("Atividade concluída!");
+      await cardTaskService.toggleComplete(taskId, true, isValid);
+      showSuccess(isValid ? "Atividade concluída como válida!" : "Atividade marcada como não válida.");
       onSuccess();
     } catch (error) {
       console.error("Erro ao concluir atividade:", error);

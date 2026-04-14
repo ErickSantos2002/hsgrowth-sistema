@@ -265,8 +265,8 @@ class CardTaskService:
 
         return self._build_response(updated_task)
 
-    def toggle_complete(self, task_id: int, is_completed: bool, current_user: User) -> CardTaskResponse:
-        """Marca/desmarca tarefa como concluída"""
+    def toggle_complete(self, task_id: int, is_completed: bool, current_user: User, is_valid: bool = True) -> CardTaskResponse:
+        """Marca/desmarca tarefa como concluída. is_valid indica se foi válida ou apenas uma tentativa."""
         task = self.repository.get_by_id(task_id)
 
         if not task:
@@ -276,7 +276,7 @@ class CardTaskService:
             )
 
         if is_completed:
-            updated_task = self.repository.mark_as_completed(task_id)
+            updated_task = self.repository.mark_as_completed(task_id, is_valid=is_valid)
 
             # Registra no histórico
             task_type_names = {
@@ -305,8 +305,10 @@ class CardTaskService:
                 }
             )
 
-            # Gamificação: pontua por conclusão de tarefa com base no board e tipo
+            # Gamificação: pontua apenas quando a conclusão é válida
             try:
+                if not is_valid:
+                    raise StopIteration  # pula gamificação silenciosamente
                 board_type = self._get_board_type_for_task(task)
                 if board_type:
                     from app.services.gamification_service import GamificationService
@@ -385,6 +387,8 @@ class CardTaskService:
                             related_entity_type="CardTask",
                             related_entity_id=task.id,
                         )
+            except StopIteration:
+                pass  # conclusão não válida — sem pontuação
             except Exception as e:
                 print(f"[GAMIFICATION] Erro ao pontuar conclusão de tarefa: {e}")
 

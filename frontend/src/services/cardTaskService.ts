@@ -19,6 +19,7 @@ export interface CardTask {
   contact_name?: string;
   status: "free" | "busy";
   is_completed: boolean;
+  is_valid?: boolean | null;
   completed_at?: string;
   created_at: string;
   updated_at: string;
@@ -151,9 +152,10 @@ class CardTaskService {
   /**
    * Marca/desmarca uma tarefa como concluída
    */
-  async toggleComplete(id: number, isCompleted: boolean): Promise<CardTask> {
+  async toggleComplete(id: number, isCompleted: boolean, isValid?: boolean): Promise<CardTask> {
     const response = await api.patch<CardTask>(`/api/v1/card-tasks/${id}/complete`, {
       is_completed: isCompleted,
+      ...(isCompleted && isValid !== undefined ? { is_valid: isValid } : {}),
     });
     return response.data;
   }

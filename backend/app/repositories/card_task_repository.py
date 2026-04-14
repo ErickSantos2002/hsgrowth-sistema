@@ -163,13 +163,13 @@ class CardTaskRepository:
         self.db.refresh(task)
         return task
 
-    def mark_as_completed(self, task_id: int) -> Optional[CardTask]:
-        """Marca uma tarefa como concluída"""
+    def mark_as_completed(self, task_id: int, is_valid: bool = True) -> Optional[CardTask]:
+        """Marca uma tarefa como concluída. is_valid=True para válida, False para não válida."""
         task = self.get_by_id(task_id)
         if not task:
             return None
 
-        task.mark_as_completed()
+        task.mark_as_completed(is_valid=is_valid)
         self.db.commit()
         self.db.refresh(task)
         return task

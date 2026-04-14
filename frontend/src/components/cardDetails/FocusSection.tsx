@@ -18,6 +18,7 @@ import {
   Video,
   FileText,
   Loader2,
+  X,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import cardTaskService from "../../services/cardTaskService";
@@ -49,6 +50,7 @@ interface PendingTask {
   video_link?: string;
   notes?: string;
   is_completed?: boolean;
+  is_valid?: boolean | null;
   // Microsoft Teams
   teams_meeting_id?: string | null;
   teams_join_url?: string | null;
@@ -203,10 +205,11 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
   /**
    * Marca atividade como concluída
    */
-  const handleToggleComplete = async (activityId: number) => {
+  const handleComplete = async (activityId: number, isValid: boolean) => {
     try {
       setLoadingTaskId(activityId);
-      await cardTaskService.toggleComplete(activityId, true);
+      await cardTaskService.toggleComplete(activityId, true, isValid);
+      showSuccess(isValid ? "Atividade concluída como válida!" : "Atividade marcada como não válida.");
       onUpdate();
     } catch (error) {
       console.error("Erro ao completar atividade:", error);
@@ -761,16 +764,30 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                           )}
 
                           <button
-                            onClick={() => handleToggleComplete(activity.id)}
+                            onClick={() => handleComplete(activity.id, true)}
                             disabled={loadingTaskId === activity.id}
                             className="flex flex-1 items-center justify-center gap-1 rounded border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+                            title="Atividade realizada com sucesso"
                           >
                             {loadingTaskId === activity.id ? (
                               <Loader2 size={14} className="animate-spin" />
                             ) : (
                               <Check size={14} />
                             )}
-                            Marcar como concluído
+                            Válido
+                          </button>
+                          <button
+                            onClick={() => handleComplete(activity.id, false)}
+                            disabled={loadingTaskId === activity.id}
+                            className="flex flex-1 items-center justify-center gap-1 rounded border border-orange-500/50 bg-orange-500/20 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-orange-400 transition-colors hover:bg-orange-500/30 disabled:opacity-50"
+                            title="Tentativa sem resultado (ex: ligação não atendida)"
+                          >
+                            {loadingTaskId === activity.id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <X size={14} />
+                            )}
+                            Não Válido
                           </button>
                           <button
                             onClick={() => handleStartEdit(activity)}

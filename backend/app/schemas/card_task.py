@@ -17,6 +17,7 @@ class TaskType(str, Enum):
     EMAIL = "email"
     LUNCH = "lunch"
     WHATSAPP = "whatsapp"
+    LINKEDIN = "linkedin"
     OTHER = "other"
 
 
@@ -101,11 +102,13 @@ class CardTaskUpdate(BaseModel):
 class CardTaskMarkComplete(BaseModel):
     """Marca ou desmarca uma tarefa como concluída."""
     is_completed: bool = Field(..., description="True para concluída, False para reabrir como pendente")
+    is_valid: Optional[bool] = Field(None, description="True=válida (realizada), False=não válida (tentativa sem resultado). Obrigatório quando is_completed=True")
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "is_completed": True
+                "is_completed": True,
+                "is_valid": True
             }
         }
     )
@@ -131,6 +134,7 @@ class CardTaskResponse(BaseModel):
     status: str = Field(..., description="Status de disponibilidade")
     is_completed: bool = Field(..., description="Se a tarefa está concluída")
     completed_at: Optional[datetime] = Field(None, description="Data/hora de conclusão")
+    is_valid: Optional[bool] = Field(None, description="NULL=não concluída, TRUE=válida, FALSE=não válida")
     is_noshow: bool = Field(False, description="Se a reunião teve NoShow (contato não compareceu)")
     created_at: datetime = Field(..., description="Data de criação")
     updated_at: datetime = Field(..., description="Data da última atualização")

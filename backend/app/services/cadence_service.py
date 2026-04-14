@@ -59,6 +59,7 @@ def _map_task_type(activity_type: str) -> TaskType:
         "meeting": TaskType.MEETING,
         "reuniao": TaskType.MEETING,
         "whatsapp": TaskType.WHATSAPP,
+        "linkedin": TaskType.LINKEDIN,
         "task": TaskType.TASK,
         "tarefa": TaskType.TASK,
         "follow_up": TaskType.FOLLOW_UP,

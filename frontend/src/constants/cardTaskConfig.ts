@@ -7,6 +7,7 @@ import {
   CheckSquare,
   Clock,
   Coffee,
+  Linkedin,
   Mail,
   MessageCircle,
   MoreHorizontal,
@@ -17,7 +18,7 @@ import {
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-export type TaskType = "call" | "meeting" | "task" | "follow_up" | "other" | "email" | "deadline" | "lunch" | "whatsapp";
+export type TaskType = "call" | "meeting" | "task" | "follow_up" | "other" | "email" | "deadline" | "lunch" | "whatsapp" | "linkedin";
 export type Priority = "normal" | "high" | "urgent";
 
 export interface TypeConfig {
@@ -93,6 +94,13 @@ export const TYPE_CONFIG: Record<TaskType, TypeConfig> = {
     pillBg: "bg-emerald-500/20",
     pillText: "text-slate-900 dark:text-emerald-300",
     pillBorder: "border-emerald-500/40",
+  },
+  linkedin: {
+    label: "LinkedIn",
+    Icon: Linkedin,
+    pillBg: "bg-sky-500/20",
+    pillText: "text-slate-900 dark:text-sky-300",
+    pillBorder: "border-sky-500/40",
   },
 };
 
