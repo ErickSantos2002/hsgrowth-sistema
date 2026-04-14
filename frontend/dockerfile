@@ -20,6 +20,9 @@ COPY postcss.config.js ./
 # (lock gerado no Windows tem pacotes como lightningcss-win32-x64-msvc que não existem no Alpine Linux)
 RUN rm -f package-lock.json && npm install --legacy-peer-deps
 
+# CACHEBUST: incremente este número para forçar rebuild completo no EasyPanel
+ARG CACHEBUST=1
+
 # Copia o restante do projeto (src/, index.html, public/, etc)
 COPY . .
 
