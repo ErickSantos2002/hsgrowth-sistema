@@ -55,7 +55,7 @@ import {
 import type { Card } from "../../types";
 import BaseModal from "../common/BaseModal";
 import QuickActivityForm from "./QuickActivityForm";
-import { showError } from "../../utils/toast";
+import { showError, showSuccess } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
 
 // ─── Tipos internos ──────────────────────────────────────────────────────────

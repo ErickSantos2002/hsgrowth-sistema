@@ -207,8 +207,8 @@ const CadenceTemplateManager: React.FC = () => {
     const ok = await confirm({
       title: "Excluir template",
       message: `Tem certeza que deseja excluir "${t.name}"? Esta ação não pode ser desfeita.`,
-      confirmLabel: "Excluir",
-      variant: "danger",
+      confirmText: "Excluir",
+      isDanger: true,
     });
     if (!ok) return;
     try {

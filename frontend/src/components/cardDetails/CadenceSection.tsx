@@ -134,8 +134,8 @@ const CadenceSection: React.FC<CadenceSectionProps> = ({ cardId, readOnly = fals
     const ok = await confirm({
       title: "Cancelar cadência",
       message: "Tem certeza que deseja cancelar a cadência? As atividades já criadas permanecem, mas nenhuma nova será gerada.",
-      confirmLabel: "Cancelar cadência",
-      variant: "danger",
+      confirmText: "Cancelar cadência",
+      isDanger: true,
     });
     if (!ok) return;
     setActionLoading(true);
