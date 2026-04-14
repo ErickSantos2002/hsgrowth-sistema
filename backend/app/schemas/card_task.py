@@ -16,6 +16,7 @@ class TaskType(str, Enum):
     DEADLINE = "deadline"
     EMAIL = "email"
     LUNCH = "lunch"
+    WHATSAPP = "whatsapp"
     OTHER = "other"
 
 

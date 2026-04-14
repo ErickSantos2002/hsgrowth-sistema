@@ -1189,6 +1189,7 @@ const CardDetails: React.FC = () => {
                   card={card}
                   onUpdate={loadCardData}
                   readOnly={isReadOnly}
+                  onGoToMeetings={() => setActiveTab("reunioes")}
                 />
               )}
 

@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.3",
+    date: "14/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Novo tipo de atividade 'WhatsApp' disponível ao criar atividades — com ícone e cor verde esmeralda em todo o sistema.",
+      },
+      {
+        type: "improvement",
+        text: "Calendário (aba Outlook): botão '+ Agendar' agora mostra '+ Agendar Reunião' em roxo e redireciona direto para a aba Reuniões, criando o evento no Teams automaticamente.",
+      },
+    ],
+  },
+  {
     version: "1.7.2",
     date: "14/04/2026",
     entries: [

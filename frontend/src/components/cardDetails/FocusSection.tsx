@@ -9,6 +9,7 @@ import {
   Clock,
   Mail,
   Coffee,
+  MessageCircle,
   MoreHorizontal,
   Edit,
   Trash2,
@@ -111,6 +112,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       deadline: <Clock size={16} />,
       email: <Mail size={16} />,
       lunch: <Coffee size={16} />,
+      whatsapp: <MessageCircle size={16} />,
       other: <MoreHorizontal size={16} />,
     };
     return icons[type as keyof typeof icons] || icons.other;
@@ -128,6 +130,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       deadline: "Prazo",
       email: "E-mail",
       lunch: "Almoço",
+      whatsapp: "WhatsApp",
       other: "Outro",
     };
     return names[type as keyof typeof names] || "Outro";
@@ -145,6 +148,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       deadline: "border-yellow-500/40 bg-yellow-500/15 text-slate-900 dark:text-yellow-300",
       email: "border-blue-500/40 bg-blue-500/15 text-slate-900 dark:text-blue-300",
       lunch: "border-purple-500/40 bg-purple-500/15 text-slate-900 dark:text-purple-300",
+      whatsapp: "border-emerald-500/40 bg-emerald-500/15 text-slate-900 dark:text-emerald-300",
       other: "border-gray-300 dark:border-slate-600 bg-slate-700/40 text-slate-900 dark:text-slate-300",
     };
 
@@ -163,6 +167,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
       deadline: "bg-yellow-500/10 hover:bg-yellow-500/20",
       email: "bg-blue-500/10 hover:bg-blue-500/20",
       lunch: "bg-purple-500/10 hover:bg-purple-500/20",
+      whatsapp: "bg-emerald-500/10 hover:bg-emerald-500/20",
       other: "bg-gray-100/50 dark:bg-slate-800/50 hover:bg-slate-700/30",
     };
 

@@ -8,6 +8,7 @@ import {
   Clock,
   Coffee,
   Mail,
+  MessageCircle,
   MoreHorizontal,
   Phone,
   Timer,
@@ -16,7 +17,7 @@ import {
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-export type TaskType = "call" | "meeting" | "task" | "follow_up" | "other" | "email" | "deadline" | "lunch";
+export type TaskType = "call" | "meeting" | "task" | "follow_up" | "other" | "email" | "deadline" | "lunch" | "whatsapp";
 export type Priority = "normal" | "high" | "urgent";
 
 export interface TypeConfig {
@@ -85,6 +86,13 @@ export const TYPE_CONFIG: Record<TaskType, TypeConfig> = {
     pillBg: "bg-amber-500/20",
     pillText: "text-slate-900 dark:text-amber-300",
     pillBorder: "border-amber-500/40",
+  },
+  whatsapp: {
+    label: "WhatsApp",
+    Icon: MessageCircle,
+    pillBg: "bg-emerald-500/20",
+    pillText: "text-slate-900 dark:text-emerald-300",
+    pillBorder: "border-emerald-500/40",
   },
 };
 

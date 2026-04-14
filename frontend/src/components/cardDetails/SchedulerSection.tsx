@@ -27,6 +27,7 @@ import {
   Loader2,
   Mail,
   MapPin,
+  MessageCircle,
   MoreHorizontal,
   Phone,
   Plus,
@@ -91,6 +92,7 @@ interface SchedulerSectionProps {
   card: Card;
   onUpdate: () => void;
   readOnly?: boolean;
+  onGoToMeetings?: () => void;
 }
 
 // ─── Utilitários ─────────────────────────────────────────────────────────────
@@ -116,6 +118,7 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
   card,
   onUpdate,
   readOnly = false,
+  onGoToMeetings,
 }) => {
   const { confirm } = useConfirm();
   // ── Estado do calendário
@@ -1175,6 +1178,7 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
       { type: "call", label: "Ligação", Icon: Phone },
       { type: "task", label: "Tarefa", Icon: CheckSquare },
       { type: "follow_up", label: "Follow Up", Icon: Clock },
+      { type: "whatsapp", label: "WhatsApp", Icon: MessageCircle },
       { type: "other", label: "Outro", Icon: MoreHorizontal },
     ];
 
@@ -1610,13 +1614,21 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
             <button
               type="button"
               onClick={() => {
-                setPreselectedDate("");
-                setShowCreateModal(true);
+                if (viewMode === "outlook" && onGoToMeetings) {
+                  onGoToMeetings();
+                } else {
+                  setPreselectedDate("");
+                  setShowCreateModal(true);
+                }
               }}
-              className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-500/25"
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                viewMode === "outlook"
+                  ? "border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"
+                  : "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+              }`}
             >
               <Plus size={14} />
-              Agendar
+              {viewMode === "outlook" ? "Agendar Reunião" : "Agendar"}
             </button>
           )}
         </div>

@@ -7,6 +7,26 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.3] - 2026-04-14
+
+### Adicionado
+
+- **Atividades — Tipo "WhatsApp"**: novo tipo de atividade disponível no formulário de criação, junto com Ligação, Tarefa, Follow Up e Outro. Exibido com ícone de balão de mensagem e cor verde esmeralda em todo o sistema (badge, card de atividade, calendário).
+- **Calendário — Botão "+ Agendar Reunião" na aba Outlook**: ao clicar em "+ Agendar" enquanto a aba Outlook está ativa, o sistema redireciona diretamente para a aba Reuniões (que cria o evento no Teams automaticamente). O botão muda de cor para roxo, consistente com a identidade visual da seção Reuniões.
+
+### Arquivos alterados
+
+- `backend/alembic/versions/2026_04_14_1000-add_whatsapp_to_task_type_enum.py` — migration: valor `whatsapp` adicionado ao enum `tasktype` no PostgreSQL
+- `backend/app/models/card_task.py` — `WHATSAPP = "whatsapp"` no enum `TaskType`
+- `backend/app/schemas/card_task.py` — `WHATSAPP = "whatsapp"` no schema Pydantic
+- `frontend/src/constants/cardTaskConfig.ts` — tipo `whatsapp` com ícone `MessageCircle` e cor esmeralda
+- `frontend/src/components/cardDetails/QuickActivityForm.tsx` — botão WhatsApp adicionado no formulário de criação (grid 5 colunas)
+- `frontend/src/components/cardDetails/FocusSection.tsx` — ícone, label e badge do tipo WhatsApp
+- `frontend/src/components/cardDetails/SchedulerSection.tsx` — prop `onGoToMeetings`; botão "+ Agendar Reunião" roxo na aba Outlook
+- `frontend/src/pages/CardDetails.tsx` — passa `onGoToMeetings` ao `SchedulerSection`
+
+---
+
 ## [1.7.2] - 2026-04-14
 
 ### Corrigido

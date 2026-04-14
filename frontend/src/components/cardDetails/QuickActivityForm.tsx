@@ -7,6 +7,7 @@ import {
   Clock,
   Mail,
   Coffee,
+  MessageCircle,
   MoreHorizontal,
   MapPin,
   Video,
@@ -32,7 +33,7 @@ interface QuickActivityFormProps {
 /**
  * Tipos de atividade disponíveis
  */
-type ActivityType = "call" | "task" | "follow_up" | "other";
+type ActivityType = "call" | "task" | "follow_up" | "whatsapp" | "other";
 
 interface ActivityTypeConfig {
   type: ActivityType;
@@ -81,6 +82,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
     { type: "call", label: "Ligação", icon: <Phone size={16} />, color: "blue" },
     { type: "task", label: "Tarefa", icon: <CheckSquare size={16} />, color: "green" },
     { type: "follow_up", label: "Follow Up", icon: <Clock size={16} />, color: "yellow" },
+    { type: "whatsapp", label: "WhatsApp", icon: <MessageCircle size={16} />, color: "emerald" },
     { type: "other", label: "Outro", icon: <MoreHorizontal size={16} />, color: "slate" },
   ];
 
@@ -98,6 +100,9 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         : unselected,
       follow_up: isSelected
         ? "bg-yellow-500/30 text-slate-900 dark:text-yellow-400 border-yellow-500"
+        : unselected,
+      whatsapp: isSelected
+        ? "bg-emerald-500/30 text-slate-900 dark:text-emerald-400 border-emerald-500"
         : unselected,
       other: isSelected
         ? "bg-slate-500/30 text-slate-900 dark:text-slate-400 border-gray-400 dark:border-slate-500"
@@ -230,7 +235,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       {/* Tipos de atividade */}
       <div>
         <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-400">Tipo de atividade</label>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
           {activityTypes.map((activityType) => (
             <button
               key={activityType.type}
