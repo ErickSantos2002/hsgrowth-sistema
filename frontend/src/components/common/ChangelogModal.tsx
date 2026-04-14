@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.4",
+    date: "14/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Sistema de Cadência Individual por Lead: admin/gerente configura templates de cadência em Configurações → Cadências; SDR/Vendedor inicia a cadência no card e as atividades são criadas automaticamente conforme cada etapa é concluída.",
+      },
+      {
+        type: "feature",
+        text: "Cadência suporta pausar, retomar e cancelar — pausar suspende a criação automática das próximas tarefas; retomar cria a próxima atividade imediatamente; cancelar mantém as tarefas já criadas sem gerar novas.",
+      },
+      {
+        type: "improvement",
+        text: "Módulo 'Cadências' (disparo em lote) renomeado para 'Disparo em Lote' para diferenciar do novo sistema de cadência individual por lead.",
+      },
+    ],
+  },
+  {
     version: "1.7.3",
     date: "14/04/2026",
     entries: [
