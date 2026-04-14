@@ -62,8 +62,11 @@ from app.models.card_list_history import CardListHistory
 # Avaliações de ligações geradas pelo agente de IA
 from app.models.call_evaluation import CallEvaluation
 
-# Cadências de atividades
+# Cadências de atividades (disparo em lote)
 from app.models.cadencia import Cadencia, CadenciaItem
+
+# Sistema de cadência por lead individual
+from app.models.cadence import CadenceTemplate, CadenceStep, CardCadence
 
 # Templates de e-mail
 from app.models.email_template import EmailTemplate

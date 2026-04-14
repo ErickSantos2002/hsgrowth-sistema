@@ -21,6 +21,7 @@ from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.models.card_task import CardTask
 from app.api.deps import get_current_active_user, require_not_viewer
+from app.services.cadence_service import CadenceService
 
 router = APIRouter()
 
@@ -644,6 +645,15 @@ def toggle_complete(
     )
     db.add(audit_log)
     db.commit()
+
+    # Hook de cadência: re-carrega a task do banco para garantir que card_cadence_id está disponível
+    if data.is_completed:
+        try:
+            fresh_task = db.query(CardTask).filter(CardTask.id == task_id).first()
+            if fresh_task:
+                CadenceService(db).on_task_completed(fresh_task, current_user)
+        except Exception as e:
+            print(f"[CADENCE] Erro ao avançar cadência após conclusão da task {task_id}: {e}")
 
     return task
 

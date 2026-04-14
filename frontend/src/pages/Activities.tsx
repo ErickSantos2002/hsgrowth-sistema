@@ -232,7 +232,7 @@ const Activities: React.FC = () => {
               icon={<Zap size={16} />}
               className="flex-1 sm:flex-none"
             >
-              Cadências
+              Disparo em Lote
             </Button>
             <Button
               variant="primary"

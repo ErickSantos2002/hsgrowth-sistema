@@ -326,8 +326,8 @@ const CadenciaModal: React.FC<CadenciaModalProps> = ({ isOpen, onClose }) => {
   // ─── Título e footer por view ──────────────────────────────────────────────
 
   const titles: Record<View, string> = {
-    list: "Cadências",
-    form: editingId ? "Editar Cadência" : "Nova Cadência",
+    list: "Disparo em Lote",
+    form: editingId ? "Editar Disparo" : "Novo Disparo",
     result: "Resultado do Disparo",
   };
 
@@ -350,7 +350,7 @@ const CadenciaModal: React.FC<CadenciaModalProps> = ({ isOpen, onClose }) => {
           <>
             <Button variant="ghost" size="sm" onClick={onClose}>Fechar</Button>
             <Button variant="primary" size="sm" onClick={openCreate} icon={<Plus size={14} />}>
-              Nova Cadência
+              Novo Disparo
             </Button>
           </>
         )}

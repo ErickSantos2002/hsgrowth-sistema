@@ -30,6 +30,7 @@ import { User as UserType } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { SummarySection, ClientSection, ContactSection, CustomFieldsSection, ProductSection, QuickActivityForm, FocusSection, HistorySection } from "../components/cardDetails";
 import AutomacoesSection from "../components/cardDetails/AutomacoesSection";
+import CadenceSection from "../components/cardDetails/CadenceSection";
 import PipelineStages from "../components/cardDetails/PipelineStages";
 import NotesSection from "../components/cardDetails/NotesSection";
 import SchedulerSection from "../components/cardDetails/SchedulerSection";
@@ -997,6 +998,9 @@ const CardDetails: React.FC = () => {
 
             {/* Seção: Automações */}
             <AutomacoesSection card={card} onUpdate={handleOptimisticUpdate} readOnly={isReadOnly} />
+
+            {/* Seção: Cadência por Lead */}
+            <CadenceSection cardId={card.id} readOnly={isReadOnly} onUpdate={loadCardData} />
           </div>
         </div>
 

@@ -89,10 +89,14 @@ class CardTask(Base, TimestampMixin):
     transcript_raw = Column(Text, nullable=True, comment="Transcrição bruta da reunião em formato VTT")
     transcript_analysis = Column(Text, nullable=True, comment="Análise IA da transcrição (JSON)")
 
+    # Cadência por lead — FK para a instância da cadência que gerou esta task (nullable)
+    card_cadence_id = Column(Integer, ForeignKey("card_cadences.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # Relacionamentos
     card = relationship("Card", back_populates="tasks")
     assigned_to = relationship("User", foreign_keys=[assigned_to_id], back_populates="tasks")
     created_by = relationship("User", foreign_keys=[created_by_id])
+    card_cadence = relationship("CardCadence", back_populates="tasks", foreign_keys=[card_cadence_id])
 
     def __repr__(self):
         return f"<CardTask(id={self.id}, card_id={self.card_id}, type='{self.task_type}', title='{self.title}')>"

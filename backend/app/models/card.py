@@ -111,6 +111,9 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     # Arquivos anexados
     attachments = relationship("Attachment", back_populates="card", lazy="dynamic", cascade="all, delete-orphan")
 
+    # Cadências por lead
+    cadences = relationship("CardCadence", back_populates="card", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Card(id={self.id}, title='{self.title}')>"
 

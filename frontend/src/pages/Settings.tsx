@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { User as UserIcon, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe, FileText, Filter, Calendar, RefreshCw, Wifi, Mail, X, ChevronRight, Loader2 } from "lucide-react";
+import { ListOrdered } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 import authService from "../services/authService";
@@ -15,8 +16,9 @@ import type { User, OnlineUser } from "../types";
 import { LoadingSpinner } from "../components/common";
 import avatarService from "../services/avatarService";
 import emailTemplateService, { EmailTemplate } from "../services/emailTemplateService";
+import CadenceTemplateManager from "../components/settings/CadenceTemplateManager";
 
-type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs" | "email_templates";
+type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs" | "email_templates" | "cadence_templates";
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -953,6 +955,11 @@ const Settings: React.FC = () => {
   // Adiciona tab Templates de E-mail para admin e gerente
   if (isManagerOrAdmin) {
     tabs.push({ id: "email_templates" as Tab, label: "Templates de E-mail", icon: Mail });
+  }
+
+  // Adiciona tab Templates de Cadência para admin e gerente
+  if (isManagerOrAdmin) {
+    tabs.push({ id: "cadence_templates" as Tab, label: "Cadências", icon: ListOrdered });
   }
 
   const loginItemsPerPage = 5;
@@ -3303,6 +3310,11 @@ const Settings: React.FC = () => {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Tab: Templates de Cadência */}
+            {activeTab === "cadence_templates" && isManagerOrAdmin && (
+              <CadenceTemplateManager />
             )}
 
           </div>

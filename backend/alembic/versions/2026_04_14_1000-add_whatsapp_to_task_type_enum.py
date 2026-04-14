@@ -17,7 +17,7 @@ depends_on = None
 
 
 def upgrade():
-    op.execute("ALTER TYPE tasktype ADD VALUE IF NOT EXISTS 'whatsapp'")
+    op.execute("ALTER TYPE tasktype ADD VALUE IF NOT EXISTS 'WHATSAPP'")
 
 
 def downgrade():
