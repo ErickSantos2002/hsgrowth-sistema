@@ -347,7 +347,24 @@ class CardService:
                     ).distinct().all()
                 }
                 active_ids = active_by_task | active_by_note
-                stuck_card_ids = {cid for cid in card_ids if cid not in active_ids}
+
+                # Cards que já tiveram pelo menos uma tarefa ou anotação (têm histórico)
+                has_task = {
+                    row.card_id
+                    for row in self.db.query(CardTask.card_id).filter(
+                        CardTask.card_id.in_(card_ids),
+                    ).distinct().all()
+                }
+                has_note = {
+                    row.card_id
+                    for row in self.db.query(CardNote.card_id).filter(
+                        CardNote.card_id.in_(card_ids),
+                    ).distinct().all()
+                }
+                has_history = has_task | has_note
+
+                # Parado 3d+: tem histórico MAS não teve atividade nos últimos 3 dias
+                stuck_card_ids = {cid for cid in card_ids if cid in has_history and cid not in active_ids}
 
             if card_ids:
                 # Busca todas as tasks pendentes com suas datas

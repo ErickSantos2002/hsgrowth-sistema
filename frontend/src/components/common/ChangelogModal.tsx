@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.2",
+    date: "14/04/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Etiqueta 'Parado 3d+' não aparece mais em cards sem histórico (recém criados ou importados). Agora só marca como parado cards que já tiveram pelo menos uma atividade ou anotação registrada.",
+      },
+    ],
+  },
+  {
     version: "1.7.1",
     date: "13/04/2026",
     entries: [

@@ -7,6 +7,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.2] - 2026-04-14
+
+### Corrigido
+
+- **Kanban — Etiqueta "Parado 3d+" em cards sem histórico**: cards recém-criados ou importados que nunca tiveram nenhuma atividade ou anotação registrada eram incorretamente marcados com a etiqueta vermelha "Parado 3d+". A lógica foi ajustada para considerar apenas cards que já possuem histórico (pelo menos uma tarefa ou anotação criada em algum momento) mas ficaram sem movimentação nos últimos 3 dias.
+
+### Arquivos alterados
+
+- `backend/app/services/card_service.py` — cálculo de `stuck_card_ids`: adicionada verificação de existência de histórico (`has_history`) antes de marcar o card como parado
+
+---
+
 ## [1.7.0] - 2026-04-13
 
 ### Adicionado
