@@ -15,7 +15,7 @@ O controle de quais já foram importadas fica na coluna **`Status_Importacao`** 
 | Ãhwaryoné | Ãhwaryoné Barbosa Bandeira De Melo | 14 |
 | Miguel | Miguel Luiz Pereira de Melo | 16 |
 | Lucas | Lucas | 17 |
-| Sérgio | Sérgio Viana | 15 |
+| Sérgio | Sérgio Viana | 15 | ⚠️ Existe outro usuário chamado "Sérgio" (id=12) que não é SDR — o script pode pegar o errado. No fix de sdr_id sempre usar id=15. |
 | Claudia | Claudia | 8 |
 
 ---
@@ -123,17 +123,69 @@ db.close()
 
 ### 6. Importar o 1 card faltante (linha 4 do lote)
 
-O script de importação sempre pula a primeira linha de dados (limitação conhecida). Para importar esse card manualmente, use o script abaixo substituindo os dados da empresa:
+O script de importação sempre pula a primeira linha de dados (limitação conhecida do `import_from_planilha.py` — começa a processar a partir da linha 5).
 
-```bash
-PYTHONPATH=. python -c "
-# Verifique o conteúdo da linha 4 do lote1.xlsx e preencha abaixo
-# Rodou na importação como: [1] Linha 5 (a linha 4 foi pulada)
-print('Verificar linha 4 do lote1.xlsx e importar manualmente se necessário')
-"
+**Para evitar esse problema nos próximos lotes:** antes de rodar o `import_from_planilha.py`, abra o arquivo `loteN.xlsx` no Excel e **copie manualmente a linha 4 para a linha 3** (sobrescrevendo o cabeçalho auxiliar), ou simplesmente insira uma linha em branco acima da linha 4 para empurrá-la para a linha 5.
+
+**Para importar o card faltante manualmente**, verifique os dados da empresa na linha 4 do `loteN.xlsx` e rode o script abaixo adaptado:
+
+```python
+# PYTHONPATH=. python -c "..."
+from app.db.session import SessionLocal
+from app.models.card import Card
+from app.models.client import Client
+from app.models.person import Person
+from sqlalchemy import func
+import datetime
+
+db = SessionLocal()
+
+client = Client(
+    name='RAZAO SOCIAL LTDA',
+    company_name='RAZAO SOCIAL LTDA',
+    document='XX.XXX.XXX/0001-XX',  # CNPJ
+    state='UF',
+    city='CIDADE',
+    address='ENDEREÇO COMPLETO',
+    cnae='CODIGO_CNAE',
+    employee_count='FAIXA COLABORADORES',
+    annual_revenue='FAIXA FATURAMENTO',
+    phone='TELEFONE',
+    email='EMAIL@EMPRESA.COM',
+    source='importacao',
+)
+db.add(client)
+db.flush()
+
+person = Person(
+    name='NOME CONTATO',
+    organization_id=client.id,
+    phone='TELEFONE CONTATO',
+    phone_whatsapp='WHATSAPP',
+    email='email@contato.com',
+)
+db.add(person)
+db.flush()
+
+max_pos = db.query(func.max(Card.position)).filter(Card.list_id == 22).scalar() or 0
+card = Card(
+    title='RAZAO SOCIAL LTDA',
+    list_id=22,
+    client_id=client.id,
+    person_id=person.id,
+    sdr_id=ID_SDR,  # ID do SDR responsável
+    acquisition_channel='Outbound',
+    acquisition_channel_detail='Outbound - Lista fria',
+    position=max_pos + 1,
+    created_at=datetime.datetime.now(datetime.UTC),
+    updated_at=datetime.datetime.now(datetime.UTC),
+)
+db.add(card)
+db.flush()
+print(f'Card criado (id={card.id})')
+db.commit()
+db.close()
 ```
-
-> 💡 **Dica:** abra o `lote1.xlsx` no Excel e veja qual empresa está na linha 4 (primeira linha de dados). Adicione ela manualmente no CRM se necessário, ou solicite ao time técnico.
 
 ---
 
@@ -143,10 +195,13 @@ print('Verificar linha 4 do lote1.xlsx e importar manualmente se necessário')
 |---|---|---|---|---|---|
 | Lote 1 | 06/04/2026 | 200 | Ãhwaryoné, Miguel, Lucas, Sérgio | 5058–5257 + 5370 | ✅ Importado |
 | Lote 2 | 09/04/2026 | 50 | Claudia | 5376–5425 | ✅ Importado |
-| Lote 3 | — | — | — | — | ⏳ Pendente |
+| Lote 3 | 13/04/2026 | 300 | Ãhwaryoné, Miguel, Lucas, Sérgio, Claudia, Karolaine | 5451–5749 + 5750 | ✅ Importado |
+| Lote 4 | — | — | — | — | ⏳ Pendente |
 | ... | — | ... | ... | ... | ... |
 
-**Total importado:** 250 leads | **Disponíveis na planilha:** 1939
+**Obs. Lote 3:** 299 importados pelo script + 1 manual (EFITRANS TRANSPORTES LTDA, id=5750, Ãhwaryoné). Karolaine Martins (id=9) incluída pela primeira vez.
+
+**Total importado:** 550 leads | **Disponíveis na planilha:** 1639
 
 ---
 
