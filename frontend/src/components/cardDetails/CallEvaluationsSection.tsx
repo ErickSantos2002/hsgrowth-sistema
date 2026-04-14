@@ -4,6 +4,7 @@ import callEvaluationService, { CallEvaluation, MatrixBlock } from "../../servic
 
 interface CallEvaluationsSectionProps {
   cardId: number;
+  onCountChange?: (count: number) => void;
 }
 
 export const classificationColor: Record<string, string> = {
@@ -194,13 +195,16 @@ export function EvaluationCard({ evaluation, onCardClick }: { evaluation: CallEv
   );
 }
 
-const CallEvaluationsSection: React.FC<CallEvaluationsSectionProps> = ({ cardId }) => {
+const CallEvaluationsSection: React.FC<CallEvaluationsSectionProps> = ({ cardId, onCountChange }) => {
   const [evaluations, setEvaluations] = useState<CallEvaluation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     callEvaluationService.listByCard(cardId)
-      .then(setEvaluations)
+      .then((data) => {
+        setEvaluations(data);
+        onCountChange?.(data.length);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [cardId]);

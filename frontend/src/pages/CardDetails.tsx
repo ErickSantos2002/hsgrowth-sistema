@@ -1080,11 +1080,9 @@ const CardDetails: React.FC = () => {
                   >
                     <PhoneCall size={18} />
                     <span className="hidden lg:inline">Ligações</span>
-                    {evaluationsCount > 0 && (
-                      <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "ligacoes" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
-                        {evaluationsCount}
-                      </span>
-                    )}
+                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "ligacoes" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
+                      {evaluationsCount}
+                    </span>
                   </button>
 
                   <button
@@ -1097,11 +1095,9 @@ const CardDetails: React.FC = () => {
                   >
                     <Users size={18} />
                     <span className="hidden lg:inline">Reuniões</span>
-                    {meetingCount > 0 && (
-                      <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "reunioes" ? "border-purple-500/30 bg-purple-500/20 text-purple-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
-                        {meetingCount}
-                      </span>
-                    )}
+                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "reunioes" ? "border-purple-500/30 bg-purple-500/20 text-purple-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
+                      {meetingCount}
+                    </span>
                   </button>
 
                   <button
@@ -1114,11 +1110,9 @@ const CardDetails: React.FC = () => {
                   >
                     <Mail size={18} />
                     <span className="hidden lg:inline">E-mail</span>
-                    {emailCount > 0 && (
-                      <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "email" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
-                        {emailCount}
-                      </span>
-                    )}
+                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "email" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
+                      {emailCount}
+                    </span>
                   </button>
                 </div>
 
@@ -1201,26 +1195,36 @@ const CardDetails: React.FC = () => {
                 <FilesSection cardId={Number(cardId)} readOnly={isReadOnly} />
               )}
 
-              {activeTab === "ligacoes" && card && (
-                <CallEvaluationsSection cardId={card.id} />
-              )}
+              <div className={activeTab === "ligacoes" ? "" : "hidden"}>
+                {card && (
+                  <CallEvaluationsSection
+                    cardId={card.id}
+                    onCountChange={setEvaluationsCount}
+                  />
+                )}
+              </div>
 
-              {activeTab === "reunioes" && card && (
-                <MeetingSection
-                  cardId={card.id}
-                  onCountChange={setMeetingCount}
-                  readOnly={isReadOnly}
-                />
-              )}
+              {/* MeetingSection e EmailSection sempre montadas para carregar contagem imediata */}
+              <div className={activeTab === "reunioes" ? "" : "hidden"}>
+                {card && (
+                  <MeetingSection
+                    cardId={card.id}
+                    onCountChange={setMeetingCount}
+                    readOnly={isReadOnly}
+                  />
+                )}
+              </div>
 
-              {activeTab === "email" && card && (
-                <EmailSection
-                  cardId={card.id}
-                  personId={card.person_id ?? null}
-                  onUpdate={loadCardData}
-                  onCountChange={setEmailCount}
-                />
-              )}
+              <div className={activeTab === "email" ? "" : "hidden"}>
+                {card && (
+                  <EmailSection
+                    cardId={card.id}
+                    personId={card.person_id ?? null}
+                    onUpdate={loadCardData}
+                    onCountChange={setEmailCount}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
