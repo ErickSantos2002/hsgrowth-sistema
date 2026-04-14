@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.5",
+    date: "14/04/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Seção Foco: horário da atividade agora aparece junto à data — ex: '14/04/2026 09:00' em vez de apenas '14 abr.'",
+      },
+      {
+        type: "fix",
+        text: "Dashboard — Atividades no Período: contagem corrigida para mostrar apenas atividades concluídas, usando a data de conclusão real. Antes contava todas as atividades criadas no período, incluindo pendentes.",
+      },
+    ],
+  },
+  {
     version: "1.7.4",
     date: "14/04/2026",
     entries: [

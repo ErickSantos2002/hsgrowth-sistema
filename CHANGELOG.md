@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.5] — 14/04/2026
+
+### Corrigido
+- **Seção Foco (card):** horário da atividade agora é exibido junto à data — ex: `14/04/2026 09:00` em vez de apenas `14 abr.`
+- **Dashboard — Atividades no Período:** contagem corrigida para considerar apenas atividades **concluídas**, usando a data de conclusão (`completed_at`) em vez da data de criação. Anteriormente atividades pendentes e não concluídas entravam na contagem.
+
+---
+
 ## [1.7.4] — 14/04/2026
 
 ### Adicionado

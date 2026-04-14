@@ -29,6 +29,7 @@ import { showSuccess, showError, showWarning } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
 import {
   formatBrazilDate,
+  formatBrazilDateTime,
   extractBrazilDateForInput,
   extractBrazilTimeForInput,
   convertBrazilToUTC,
@@ -546,7 +547,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate }) =>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-slate-400">
                           <StatusBadge status={status} />
-                          {activity.due_date && <span>{formatBrazilDate(activity.due_date)}</span>}
+                          {activity.due_date && <span>{formatBrazilDateTime(activity.due_date)}</span>}
                           {activity.assigned_to_name && (
                             <>
                               <span>•</span>

@@ -678,8 +678,8 @@ class ReportService:
                 "lost_count": lost_count
             })
 
-        # Atividades por tipo no período (para gráfico SDR)
-        # Usa created_by_id OU assigned_to_id para capturar tarefas criadas/atribuídas ao usuário
+        # Atividades concluídas por tipo no período (para gráfico SDR/Vendedor)
+        # Filtra apenas tasks concluídas (is_completed=True) pela data de conclusão (completed_at)
         task_user_filter = []
         if current_user and current_user.role:
             _role = current_user.role.name
@@ -698,8 +698,10 @@ class ReportService:
             CardTask.task_type,
             func.count(CardTask.id).label("count")
         ).filter(
-            func.date(CardTask.created_at) >= start_of_period,
-            func.date(CardTask.created_at) <= end_of_period,
+            CardTask.is_completed == True,
+            CardTask.completed_at.isnot(None),
+            func.date(CardTask.completed_at) >= start_of_period,
+            func.date(CardTask.completed_at) <= end_of_period,
             *task_user_filter
         ).group_by(CardTask.task_type).all()
 
