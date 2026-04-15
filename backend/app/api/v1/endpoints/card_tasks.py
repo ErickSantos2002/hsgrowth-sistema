@@ -728,6 +728,25 @@ def mark_noshow(
     task.mark_as_noshow()
     db.flush()
 
+    # Move o card para a lista "Reagendar" (busca global por nome, pode ser outro board)
+    try:
+        from app.models.card import Card
+        from app.models.list import List as BoardList
+        card = db.query(Card).filter(Card.id == task.card_id).first()
+        if card:
+            reagendar_list = (
+                db.query(BoardList)
+                .filter(BoardList.name.ilike("%reagendar%"))
+                .first()
+            )
+            if reagendar_list and reagendar_list.id != card.list_id:
+                from app.services.card_service import CardService
+                card_service = CardService(db)
+                card_service.move_card(card.id, reagendar_list.id, None, current_user)
+    except Exception:
+        # Falha silenciosa — o NoShow já foi registrado, não cancela por erro de movimentação
+        pass
+
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")

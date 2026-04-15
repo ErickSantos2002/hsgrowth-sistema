@@ -22,6 +22,7 @@ import {
 import cardTaskService, { CardTask } from "../../services/cardTaskService";
 import { showSuccess, showError } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
+import { useAuth } from "../../context/AuthContext";
 import {
   formatBrazilDate,
   convertBrazilToUTC,
@@ -63,6 +64,8 @@ const EMPTY_FORM: NewMeetingForm = {
 
 const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, readOnly }) => {
   const { confirm } = useConfirm();
+  const { user } = useAuth();
+  const isAdmin = user?.role?.toLowerCase() === "admin" || user?.role?.toLowerCase() === "manager";
   const [meetings, setMeetings] = useState<CardTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -543,14 +546,16 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
                     </button>
                   </>
                 )}
-                <button
-                  onClick={() => handleDelete(meeting.id)}
-                  disabled={isActioning}
-                  className="ml-auto flex items-center gap-1.5 rounded border border-red-500/30 bg-red-500/5 px-2.5 py-1 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-50"
-                >
-                  <Trash2 size={12} />
-                  Excluir
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDelete(meeting.id)}
+                    disabled={isActioning}
+                    className="ml-auto flex items-center gap-1.5 rounded border border-red-500/30 bg-red-500/5 px-2.5 py-1 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-50"
+                  >
+                    <Trash2 size={12} />
+                    Excluir
+                  </button>
+                )}
               </div>
             )}
           </div>

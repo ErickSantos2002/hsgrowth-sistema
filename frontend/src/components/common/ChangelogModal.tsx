@@ -40,6 +40,14 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "improvement",
         text: "Compositor de e-mail abre instantaneamente: o modal aparece de imediato enquanto os e-mails do contato são buscados em background, com indicador de carregamento e bloqueio do envio até completar.",
       },
+      {
+        type: "improvement",
+        text: "No-Show em reuniões agora move o card automaticamente para a etapa 'Reagendamento' no board de Prospecção.",
+      },
+      {
+        type: "fix",
+        text: "Botão 'Excluir' na aba de Reuniões agora é visível apenas para Admin e Gerente. Vendedores e SDRs não podem mais excluir reuniões.",
+      },
     ],
   },
   {
