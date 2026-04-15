@@ -25,11 +25,7 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
-<<<<<<< HEAD
     version: "1.7.10",
-=======
-    version: "1.8.0",
->>>>>>> 79df4dc6b46cf2f6f3461c9d6a96b317abc01590
     date: "15/04/2026",
     entries: [
       {

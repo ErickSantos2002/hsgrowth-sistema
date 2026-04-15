@@ -243,11 +243,7 @@ export default function MainLayout() {
                                     className="text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                                     title="Ver o que há de novo nessa versão"
                                 >
-<<<<<<< HEAD
                                     HSGrowth CRM v1.7.10
-=======
-                                    HSGrowth CRM v1.8.0
->>>>>>> 79df4dc6b46cf2f6f3461c9d6a96b317abc01590
                                 </button>
                                 <p className="text-[10px] text-slate-300 dark:text-slate-600">
                                     © 2026 Health & Safety Tech
