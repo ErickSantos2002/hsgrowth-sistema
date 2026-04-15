@@ -354,6 +354,12 @@ class CadenceService:
     def _create_task_for_step(self, cadence: CardCadence, step: CadenceStep, current_user: User):
         """Cria a CardTask correspondente à etapa da cadência."""
         due_date = _add_business_days(datetime.now(timezone.utc), step.day_offset)
+        if step.scheduled_time:
+            try:
+                hour, minute = map(int, step.scheduled_time.split(":"))
+                due_date = due_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            except (ValueError, AttributeError):
+                pass  # Horário inválido — mantém hora atual
 
         task = CardTask(
             card_id=cadence.card_id,

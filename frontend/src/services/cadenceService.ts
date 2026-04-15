@@ -15,6 +15,7 @@ export interface CadenceStep {
   title: string;
   description: string | null;
   priority: "normal" | "high" | "urgent";
+  scheduled_time: string | null;
 }
 
 export interface CadenceTemplate {
@@ -35,6 +36,7 @@ export interface CadenceStepInput {
   title: string;
   description?: string;
   priority: "normal" | "high" | "urgent";
+  scheduled_time?: string | null;
 }
 
 export interface CreateTemplateRequest {

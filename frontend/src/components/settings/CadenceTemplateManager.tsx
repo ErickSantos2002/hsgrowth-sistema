@@ -39,6 +39,7 @@ const emptyStep = (order: number): StepForm => ({
   title: "",
   description: "",
   priority: "normal",
+  scheduled_time: "",
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -125,6 +126,7 @@ const CadenceTemplateManager: React.FC = () => {
         title: s.title,
         description: s.description || "",
         priority: s.priority,
+        scheduled_time: s.scheduled_time || "",
       }))
     );
     setView("form");
@@ -147,7 +149,7 @@ const CadenceTemplateManager: React.FC = () => {
     );
   };
 
-  const updateStep = (key: string, field: keyof StepForm, value: string | number) => {
+  const updateStep = (key: string, field: keyof StepForm, value: string | number | null) => {
     setFormSteps((prev) =>
       prev.map((s) => (s._key === key ? { ...s, [field]: value } : s))
     );
@@ -359,6 +361,17 @@ const CadenceTemplateManager: React.FC = () => {
                     />
                   </div>
 
+                  {/* Horário */}
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">Horário</label>
+                    <input
+                      type="time"
+                      value={step.scheduled_time || ""}
+                      onChange={(e) => updateStep(step._key, "scheduled_time", e.target.value || null)}
+                      className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
                   {/* Tipo */}
                   <div>
                     <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">Tipo *</label>
@@ -550,8 +563,8 @@ const CadenceTemplateManager: React.FC = () => {
                         key={step.id}
                         className="flex items-center gap-3 rounded-lg bg-gray-50 dark:bg-slate-900/50 px-3 py-2"
                       >
-                        <span className="w-16 flex-shrink-0 text-xs font-medium text-slate-400">
-                          Dia {step.day_offset}
+                        <span className="w-24 flex-shrink-0 text-xs font-medium text-slate-400">
+                          Dia {step.day_offset}{step.scheduled_time ? ` · ${step.scheduled_time}` : ""}
                         </span>
                         <span className={`text-xs font-medium ${ACTIVITY_COLORS[step.activity_type] || "text-slate-400"}`}>
                           {ACTIVITY_TYPE_OPTIONS.find((o) => o.value === step.activity_type)?.label ?? step.activity_type}

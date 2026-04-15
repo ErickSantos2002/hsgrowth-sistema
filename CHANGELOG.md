@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.9] — 15/04/2026
+
+### Adicionado
+- **Horário por etapa na cadência:** ao configurar um template, cada etapa agora tem campo de horário (HH:MM). A task gerada automaticamente é agendada para o horário definido — permitindo separar atividades de manhã das de tarde.
+
+---
+
 ## [1.7.8] — 15/04/2026
 
 ### Adicionado

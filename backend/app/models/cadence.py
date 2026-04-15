@@ -51,6 +51,7 @@ class CadenceStep(Base):
     title = Column(String(255), nullable=False)       # Ex: "Warm Call Manhã"
     description = Column(Text, nullable=True)         # Instrução para o SDR
     priority = Column(String(20), nullable=False, default="normal")  # normal, high, urgent
+    scheduled_time = Column(String(5), nullable=True)  # HH:MM — horário da task gerada (ex: "09:00")
 
     # Relacionamentos
     template = relationship("CadenceTemplate", back_populates="steps")

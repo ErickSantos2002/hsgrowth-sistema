@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.9",
+    date: "15/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Horário por etapa na cadência: ao configurar um template, cada etapa agora tem um campo de horário. A task criada automaticamente será agendada para o horário definido (ex: 09:00 para manhã, 14:00 para tarde).",
+      },
+    ],
+  },
+  {
     version: "1.7.8",
     date: "15/04/2026",
     entries: [

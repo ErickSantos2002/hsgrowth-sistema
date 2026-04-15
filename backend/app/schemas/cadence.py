@@ -23,6 +23,7 @@ class CadenceStepBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255, description="Título da atividade gerada")
     description: Optional[str] = Field(None, description="Instrução para o SDR")
     priority: str = Field("normal", description="Prioridade: normal, high, urgent")
+    scheduled_time: Optional[str] = Field(None, description="Horário no formato HH:MM (ex: '09:00'). Se nulo, usa hora atual.")
 
 
 class CadenceStepCreate(CadenceStepBase):
