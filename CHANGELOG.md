@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.0] — 15/04/2026
+
+### Corrigido
+- **NoShow:** o card agora é movido corretamente para a lista "Reagendamento" do board atual. Antes a movimentação falhava silenciosamente por depender de uma automação hardcoded (ID 12) que não existia, e a busca da lista não filtrava pelo board correto.
+
+### Melhorado
+- **NoShow:** após confirmar, a página recarrega automaticamente para refletir a nova posição do card no pipeline.
+
+---
+
 ## [1.7.9] — 15/04/2026
 
 ### Adicionado

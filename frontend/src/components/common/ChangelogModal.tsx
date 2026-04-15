@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.0",
+    date: "15/04/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "NoShow corrigido: o card agora é movido corretamente para a lista 'Reagendamento' do board atual. Antes a movimentação falhava silenciosamente por depender de uma automação hardcoded (ID 12) que não existia.",
+      },
+      {
+        type: "improvement",
+        text: "Após marcar NoShow, a página recarrega automaticamente para refletir a nova posição do card no pipeline.",
+      },
+    ],
+  },
+  {
     version: "1.7.9",
     date: "15/04/2026",
     entries: [

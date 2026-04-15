@@ -24,7 +24,6 @@ import StatusBadge from "./StatusBadge";
 import cardTaskService from "../../services/cardTaskService";
 import api4comService from "../../services/api4comService";
 import personService, { Person } from "../../services/personService";
-import automationService from "../../services/automationService";
 import { Card } from "../../types";
 import { showSuccess, showError, showWarning } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
@@ -421,7 +420,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
   };
 
   /**
-   * Marca reunião como NoShow e dispara automação para mover card para Reagendamento
+   * Marca reunião como NoShow e move card para Reagendamento
    */
   const handleNoShow = async (activityId: number) => {
     const confirmed = await confirm({
@@ -434,15 +433,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
 
     try {
       setNoShowTaskId(activityId);
-      // Dispara a automação manual de NoShow (ID 12)
-      await automationService.trigger(12, card.id, {
-        manual_trigger: true,
-        activity_id: activityId
-      });
-      // Marca a reunião como NoShow (is_completed + is_noshow = true) via endpoint dedicado
       await cardTaskService.markNoShow(activityId);
-      onUpdate();
       showSuccess("Reunião marcada como NoShow e card movido para Reagendamento");
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error: any) {
       console.error("Erro ao marcar NoShow:", error);
       showError(error.response?.data?.detail || "Erro ao marcar NoShow");
