@@ -14,7 +14,6 @@ import {
   ChevronDown,
   ChevronRight,
   Check,
-  X,
   Trash2,
   Calendar,
   Copy,
@@ -26,6 +25,7 @@ import {
   formatBrazilDate,
   convertBrazilToUTC,
 } from "../../utils/timezone";
+import BaseModal from "../common/BaseModal";
 
 interface MeetingSectionProps {
   cardId: number;
@@ -621,132 +621,121 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
         </div>
       )}
 
-      {/* Modal nova reunião */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                <Users size={16} className="text-purple-400" />
-                Nova Reunião
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-white transition-colors"
-              >
-                <X size={18} />
-              </button>
+      {/* Modal nova reunião — usa BaseModal (portal) para não ficar preso no stacking context */}
+      <BaseModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="Nova Reunião"
+        size="md"
+      >
+        <div className="space-y-4">
+          {/* Título */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              Título <span className="text-red-400">*</span>
+            </label>
+            <input
+              autoFocus
+              type="text"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="Ex: Apresentação de proposta"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Data e Hora */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Data <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+              />
             </div>
-
-            <div className="space-y-4 p-5">
-              {/* Título */}
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                  Título <span className="text-red-400">*</span>
-                </label>
-                <input
-                  autoFocus
-                  type="text"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="Ex: Apresentação de proposta"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Data e Hora */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                    Data <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={form.date}
-                    onChange={(e) => setForm({ ...form, date: e.target.value })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                    Hora <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="time"
-                    value={form.time}
-                    onChange={(e) => setForm({ ...form, time: e.target.value })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Duração e Contato */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                    Duração (min)
-                  </label>
-                  <select
-                    value={form.duration}
-                    onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-                  >
-                    <option value="15">15 min</option>
-                    <option value="30">30 min</option>
-                    <option value="45">45 min</option>
-                    <option value="60">1 hora</option>
-                    <option value="90">1h30</option>
-                    <option value="120">2 horas</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                    Contato
-                  </label>
-                  <input
-                    type="text"
-                    value={form.contact_name}
-                    onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
-                    placeholder="Nome do participante"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Descrição */}
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                  Descrição / Pauta
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Tópicos da reunião, agenda, observações..."
-                  rows={3}
-                  className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 border-t border-slate-700 px-5 py-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={saving}
-                className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50"
-              >
-                {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                {saving ? "Criando..." : "Criar Reunião"}
-              </button>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Hora <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="time"
+                value={form.time}
+                onChange={(e) => setForm({ ...form, time: e.target.value })}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+              />
             </div>
           </div>
+
+          {/* Duração e Contato */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Duração (min)
+              </label>
+              <select
+                value={form.duration}
+                onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+              >
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">1 hora</option>
+                <option value="90">1h30</option>
+                <option value="120">2 horas</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Contato
+              </label>
+              <input
+                type="text"
+                value={form.contact_name}
+                onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
+                placeholder="Nome do participante"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Descrição */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              Descrição / Pauta
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Tópicos da reunião, agenda, observações..."
+              rows={3}
+              className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Botões */}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={() => setShowModal(false)}
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={saving}
+              className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              {saving ? "Criando..." : "Criar Reunião"}
+            </button>
+          </div>
         </div>
-      )}
+      </BaseModal>
     </div>
   );
 };
