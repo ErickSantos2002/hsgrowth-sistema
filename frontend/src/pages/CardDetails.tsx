@@ -71,6 +71,8 @@ const CardDetails: React.FC = () => {
 
   // Estado das abas
   const [activeTab, setActiveTab] = useState<"atividade" | "anotacoes" | "agendador" | "arquivos" | "ligacoes" | "email" | "reunioes">("atividade");
+  // Task de e-mail pendente vinda do Foco — abre o compositor na aba E-mail
+  const [pendingEmailTaskId, setPendingEmailTaskId] = useState<number | undefined>(undefined);
 
   // Estado da modal de motivo da perda
   const [showLossReasonModal, setShowLossReasonModal] = useState(false);
@@ -1162,7 +1164,14 @@ const CardDetails: React.FC = () => {
                   )}
 
                   {/* Seção Foco - Tarefas Pendentes */}
-                  <FocusSection tasks={card.pending_tasks || []} card={card} onUpdate={loadCardData} />
+                  <FocusSection
+                    tasks={card.pending_tasks || []}
+                    card={card}
+                    onUpdate={loadCardData}
+                    onOpenEmailComposer={(taskId) => {
+                      setPendingEmailTaskId(taskId);
+                    }}
+                  />
 
                   {/* Seção Histórico */}
                   <HistorySection
@@ -1215,16 +1224,18 @@ const CardDetails: React.FC = () => {
                 )}
               </div>
 
-              <div className={activeTab === "email" ? "" : "hidden"}>
-                {card && (
+              {card && (
+                <div className={activeTab !== "email" ? "hidden" : ""}>
                   <EmailSection
                     cardId={card.id}
                     personId={card.person_id ?? null}
                     onUpdate={loadCardData}
                     onCountChange={setEmailCount}
+                    pendingTaskId={pendingEmailTaskId}
+                    onModalClose={() => setPendingEmailTaskId(undefined)}
                   />
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

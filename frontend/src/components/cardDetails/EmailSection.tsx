@@ -12,6 +12,9 @@ interface EmailSectionProps {
   personId: number | null;
   onUpdate: () => void;
   onCountChange?: (count: number) => void;
+  /** Quando informado, abre o modal automaticamente e vincula o envio a essa task (cadência) */
+  pendingTaskId?: number;
+  onModalClose?: () => void;
 }
 
 interface AttachmentItem {
@@ -61,7 +64,7 @@ const formatBytes = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate, onCountChange }) => {
+const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate, onCountChange, pendingTaskId, onModalClose }) => {
   const { user } = useAuth();
   const [emails, setEmails] = useState<CardTask[]>([]);
   const [loadingEmails, setLoadingEmails] = useState(true);
@@ -70,6 +73,7 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
   // Modal de envio
   const [showModal, setShowModal] = useState(false);
   const [to, setTo] = useState<string[]>([""]);
+  const [loadingTo, setLoadingTo] = useState(false);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
@@ -105,6 +109,13 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
   useEffect(() => {
     loadEmails();
   }, [cardId]);
+
+  // Abre o modal automaticamente quando vem do Foco com uma task pendente
+  useEffect(() => {
+    if (pendingTaskId) {
+      handleOpenModal();
+    }
+  }, [pendingTaskId]);
 
   const loadTemplates = async () => {
     if (templates.length > 0) return;
@@ -146,24 +157,28 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
   };
 
   // Pré-preenche destinatários ao abrir o modal
-  const handleOpenModal = async () => {
-    if (personId) {
-      try {
-        const { default: personService } = await import("../../services/personService");
-        const p = await personService.getById(personId);
-        const emailList = [p.email, p.email_commercial, p.email_personal].filter(Boolean) as string[];
-        setTo(emailList.length > 0 ? emailList : [""]);
-      } catch {
-        setTo([""]);
-      }
-    } else {
-      setTo([""]);
-    }
+  const handleOpenModal = () => {
     setSubject("");
     setBody("");
     setAttachments([]);
+    setTo([""]);
     setShowModal(true);
     loadTemplates();
+
+    // Busca os e-mails da pessoa em background após abrir o modal
+    if (personId) {
+      setLoadingTo(true);
+      import("../../services/personService").then(({ default: personService }) =>
+        personService.getById(personId)
+      ).then((p) => {
+        const emailList = [p.email, p.email_commercial, p.email_personal].filter(Boolean) as string[];
+        setTo(emailList.length > 0 ? emailList : [""]);
+      }).catch(() => {
+        setTo([""]);
+      }).finally(() => {
+        setLoadingTo(false);
+      });
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,9 +228,11 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
         subject,
         body.replace(/\n/g, "<br>"),
         attachments.length > 0 ? attachments.map(({ name, content_type, data_base64 }) => ({ name, content_type, data_base64 })) : undefined,
+        pendingTaskId,
       );
       showSuccess("E-mail enviado e registrado!");
       setShowModal(false);
+      onModalClose?.();
       await loadEmails();
       onUpdate();
     } catch (err: any) {
@@ -332,17 +349,17 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
 
       <BaseModal
         isOpen={showModal}
-        onClose={() => !sending && setShowModal(false)}
+        onClose={() => { if (!sending) { setShowModal(false); onModalClose?.(); } }}
         title="Enviar E-mail"
         subtitle="Enviado via Microsoft 365"
         size="lg"
         closeOnOverlayClick={!sending}
         footer={
           <div className="flex items-center justify-end gap-3">
-            <Button variant="secondary" onClick={() => setShowModal(false)} disabled={sending}>
+            <Button variant="secondary" onClick={() => { setShowModal(false); onModalClose?.(); }} disabled={sending}>
               Cancelar
             </Button>
-            <Button variant="primary" onClick={handleSend} disabled={sending}>
+            <Button variant="primary" onClick={handleSend} disabled={sending || loadingTo}>
               {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               {sending ? "Enviando..." : "Enviar"}
             </Button>
@@ -399,35 +416,44 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
           {/* Destinatários */}
           <FormField label="Para" required>
             <div className="space-y-2">
-              {to.map((addr, idx) => (
-                <div key={idx} className="flex gap-2">
-                  <Input
-                    type="email"
-                    value={addr}
-                    onChange={(e) => {
-                      const updated = [...to];
-                      updated[idx] = e.target.value;
-                      setTo(updated);
-                    }}
-                    placeholder="email@exemplo.com"
-                    className="flex-1"
-                  />
-                  {to.length > 1 && (
-                    <button
-                      onClick={() => setTo(to.filter((_, i) => i !== idx))}
-                      className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
-                    >
-                      <X size={16} />
-                    </button>
-                  )}
+              {loadingTo ? (
+                <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 px-3 py-2 text-sm text-slate-400 dark:text-slate-500">
+                  <Loader2 size={14} className="animate-spin" />
+                  Buscando e-mails do contato...
                 </div>
-              ))}
-              <button
-                onClick={() => setTo([...to, ""])}
-                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
-              >
-                <Plus size={14} /> Adicionar destinatário
-              </button>
+              ) : (
+                <>
+                  {to.map((addr, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <Input
+                        type="email"
+                        value={addr}
+                        onChange={(e) => {
+                          const updated = [...to];
+                          updated[idx] = e.target.value;
+                          setTo(updated);
+                        }}
+                        placeholder="email@exemplo.com"
+                        className="flex-1"
+                      />
+                      {to.length > 1 && (
+                        <button
+                          onClick={() => setTo(to.filter((_, i) => i !== idx))}
+                          className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setTo([...to, ""])}
+                    className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                  >
+                    <Plus size={14} /> Adicionar destinatário
+                  </button>
+                </>
+              )}
             </div>
           </FormField>
 

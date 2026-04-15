@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.8",
+    date: "15/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Integração e-mail + cadência: atividades do tipo E-mail criadas pela cadência aparecem no Foco com botão 'Enviar E-mail'. Ao clicar, o compositor abre diretamente (sem trocar de aba) e o envio conclui a tarefa automaticamente avançando a cadência.",
+      },
+      {
+        type: "feature",
+        text: "Novo tipo de atividade E-mail disponível no formulário de criação rápida de atividades.",
+      },
+      {
+        type: "improvement",
+        text: "Compositor de e-mail abre instantaneamente: o modal aparece de imediato enquanto os e-mails do contato são buscados em background, com indicador de carregamento e bloqueio do envio até completar.",
+      },
+    ],
+  },
+  {
     version: "1.7.7",
     date: "15/04/2026",
     entries: [

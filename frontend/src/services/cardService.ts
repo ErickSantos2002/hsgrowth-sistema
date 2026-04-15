@@ -135,12 +135,14 @@ class CardService {
     subject: string,
     body: string,
     attachments?: { name: string; content_type: string; data_base64: string }[],
+    taskId?: number,
   ): Promise<{ success: boolean; message: string }> {
     const response = await api.post(`/api/v1/cards/${cardId}/send-email`, {
       to,
       subject,
       body,
       attachments: attachments ?? [],
+      ...(taskId ? { task_id: taskId } : {}),
     });
     return response.data;
   }

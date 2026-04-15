@@ -1255,6 +1255,7 @@ class SendEmailRequest(BaseModel):
     subject: str
     body: str
     attachments: list[EmailAttachment] = []
+    task_id: Optional[int] = None  # Se informado, conclui essa task em vez de criar nova
 
 
 @router.post("/{card_id}/send-email", summary="Enviar e-mail pelo card via Microsoft 365")
@@ -1308,24 +1309,48 @@ async def send_email_from_card(
     if not result["success"]:
         raise HTTPException(status_code=502, detail=f"Erro ao enviar e-mail: {result.get('error')}")
 
-    # Registra atividade concluída no card (corpo sem assinatura para leitura mais limpa)
+    # Registra atividade de e-mail no card
     full_body = payload.body.replace("<br>", "\n").strip() if payload.body else ""
     attachment_names = ", ".join(att.name for att in payload.attachments) if payload.attachments else None
     recipients = ", ".join(addr.strip() for addr in payload.to if addr.strip())
-    task = CardTask(
-        card_id=card_id,
-        assigned_to_id=current_user.id,
-        created_by_id=current_user.id,
-        title=payload.subject,
-        description=full_body,
-        notes=attachment_names,       # nomes dos arquivos anexados
-        contact_name=recipients[:255] if recipients else None,  # destinatários (Para:)
-        task_type=TaskType.EMAIL,
-        is_completed=True,
-        completed_at=datetime.now(timezone.utc),
-        due_date=datetime.now(timezone.utc),
-    )
-    db.add(task)
-    db.commit()
+
+    if payload.task_id:
+        # Conclui a task existente (criada pela cadência) em vez de criar uma nova
+        existing_task = db.query(CardTask).filter(
+            CardTask.id == payload.task_id,
+            CardTask.card_id == card_id,
+        ).first()
+        if existing_task:
+            existing_task.is_completed = True
+            existing_task.is_valid = True
+            existing_task.completed_at = datetime.now(timezone.utc)
+            existing_task.notes = attachment_names
+            existing_task.contact_name = recipients[:255] if recipients else existing_task.contact_name
+            db.commit()
+            # Avança a cadência
+            try:
+                from app.services.cadence_service import CadenceService
+                db.refresh(existing_task)
+                CadenceService(db).on_task_completed(existing_task, current_user)
+            except Exception as e:
+                print(f"[CADENCE] Erro ao avançar cadência após envio de e-mail: {e}")
+    else:
+        # Comportamento padrão: cria nova task já concluída
+        task = CardTask(
+            card_id=card_id,
+            assigned_to_id=current_user.id,
+            created_by_id=current_user.id,
+            title=payload.subject,
+            description=full_body,
+            notes=attachment_names,
+            contact_name=recipients[:255] if recipients else None,
+            task_type=TaskType.EMAIL,
+            is_completed=True,
+            is_valid=True,
+            completed_at=datetime.now(timezone.utc),
+            due_date=datetime.now(timezone.utc),
+        )
+        db.add(task)
+        db.commit()
 
     return {"success": True, "message": "E-mail enviado e atividade registrada no card."}

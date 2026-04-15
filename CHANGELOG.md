@@ -5,6 +5,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.8] — 15/04/2026
+
+### Adicionado
+- **Integração e-mail + cadência:** atividades do tipo E-mail criadas pela cadência aparecem no Foco com botão "Enviar E-mail". Ao clicar, o compositor abre diretamente (sem trocar de aba) e o envio conclui a tarefa automaticamente avançando a cadência.
+- **Tipo E-mail no formulário de criação rápida:** agora é possível criar atividades de e-mail manualmente pelo formulário rápido no card.
+
+### Melhorado
+- **Compositor de e-mail:** modal abre instantaneamente — e-mails do contato são buscados em background com indicador de carregamento, sem travar a interface.
+
+---
+
+## [1.7.7] — 15/04/2026
+
+### Corrigido
+- **Indicador "Parado 3d+":** agora qualquer movimentação no histórico conta — mudança de etapa, tarefa criada/concluída ou anotação. Antes, apenas tarefas e notas eram consideradas, ignorando mudanças de etapa recentes.
+- **Cards recém-adicionados ao board** nunca entram na contagem de parados, pois a entrada na etapa já conta como movimentação.
+
+---
+
 ## [1.7.6] — 14/04/2026
 
 ### Adicionado
