@@ -519,6 +519,35 @@ const KanbanBoard: React.FC = () => {
    * - Filtro por faixa de valor
    * - Filtro por data de vencimento
    */
+  /** Reseta todos os filtros para os valores padrão */
+  const clearFilters = () => {
+    setListFilter("");
+    setStatusFilter("open");
+    setValueFilter("");
+    setClosingDateFilter("");
+    setCustomDateStart("");
+    setCustomDateEnd("");
+    setAssignedToFilter("");
+    setSdrFilter("");
+    setAcquisitionChannelFilter("");
+    setAcquisitionChannelDetailFilter("");
+    setCardTagFilter("");
+  };
+
+  /** Indica se algum filtro está ativo (diferente do padrão) */
+  const hasActiveFilters =
+    listFilter !== "" ||
+    statusFilter !== "open" ||
+    valueFilter !== "" ||
+    closingDateFilter !== "" ||
+    customDateStart !== "" ||
+    customDateEnd !== "" ||
+    assignedToFilter !== "" ||
+    sdrFilter !== "" ||
+    acquisitionChannelFilter !== "" ||
+    acquisitionChannelDetailFilter !== "" ||
+    cardTagFilter !== "";
+
   const filterCards = (cardsToFilter: Card[]): Card[] => {
     return cardsToFilter.filter((card) => {
       // Filtro de busca por termo
@@ -1159,6 +1188,16 @@ const KanbanBoard: React.FC = () => {
                   className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
                 />
               </div>
+            )}
+
+            {/* Limpar filtros */}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
+              >
+                Limpar filtros
+              </button>
             )}
 
             {/* Fechar painel */}

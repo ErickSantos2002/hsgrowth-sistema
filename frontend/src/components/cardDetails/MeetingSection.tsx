@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronRight,
   Check,
+  X,
   Trash2,
   Calendar,
   Copy,

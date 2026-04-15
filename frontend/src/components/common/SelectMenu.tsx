@@ -147,6 +147,7 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
               <button
                 key={option.value || option.label}
                 type="button"
+                title={option.label}
                 onClick={() => {
                   onChange(option.value);
                   setIsOpen(false);
