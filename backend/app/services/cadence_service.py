@@ -136,6 +136,7 @@ class CadenceService:
                 title=step_data.title,
                 description=step_data.description,
                 priority=step_data.priority,
+                scheduled_time=step_data.scheduled_time or None,
             )
             self.db.add(step)
 
@@ -167,6 +168,7 @@ class CadenceService:
                     title=step_data.title,
                     description=step_data.description,
                     priority=step_data.priority,
+                    scheduled_time=step_data.scheduled_time or None,
                 )
                 self.db.add(step)
 
