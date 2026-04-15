@@ -728,24 +728,44 @@ def mark_noshow(
     task.mark_as_noshow()
     db.flush()
 
-    # Move o card para a lista "Reagendar" (busca global por nome, pode ser outro board)
+    # Move o card para a lista "Reagendamento" do mesmo board do card
     try:
         from app.models.card import Card
         from app.models.list import List as BoardList
         card = db.query(Card).filter(Card.id == task.card_id).first()
         if card:
-            reagendar_list = (
-                db.query(BoardList)
-                .filter(BoardList.name.ilike("%reagendar%"))
-                .first()
-            )
+            # Obtém o board_id via lista atual do card
+            current_list = db.query(BoardList).filter(BoardList.id == card.list_id).first()
+            board_id = current_list.board_id if current_list else None
+
+            # Busca primeiro no board atual do card
+            reagendar_list = None
+            if board_id:
+                reagendar_list = (
+                    db.query(BoardList)
+                    .filter(
+                        BoardList.board_id == board_id,
+                        BoardList.name.ilike("%reagend%"),
+                    )
+                    .first()
+                )
+            # Fallback: busca em qualquer board
+            if not reagendar_list:
+                reagendar_list = (
+                    db.query(BoardList)
+                    .filter(BoardList.name.ilike("%reagend%"))
+                    .first()
+                )
             if reagendar_list and reagendar_list.id != card.list_id:
                 from app.services.card_service import CardService
                 card_service = CardService(db)
                 card_service.move_card(card.id, reagendar_list.id, None, current_user)
-    except Exception:
+                print(f"[NOSHOW] Card {card.id} movido para lista '{reagendar_list.name}' (board {reagendar_list.board_id})")
+            elif not reagendar_list:
+                print(f"[NOSHOW] Lista 'Reagendamento' não encontrada no board {board_id}")
+    except Exception as e:
         # Falha silenciosa — o NoShow já foi registrado, não cancela por erro de movimentação
-        pass
+        print(f"[NOSHOW] Erro ao mover card: {e}")
 
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"
