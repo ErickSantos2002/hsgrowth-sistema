@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.7",
+    date: "15/04/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Indicador 'Parado 3d+' corrigido: agora qualquer movimentação no histórico conta — mudança de etapa, tarefa criada/concluída ou anotação. Antes, apenas tarefas e notas eram consideradas, ignorando mudanças de etapa recentes.",
+      },
+      {
+        type: "improvement",
+        text: "Cards recém-adicionados ao board nunca entram na contagem de parados, pois a entrada na etapa já conta como movimentação.",
+      },
+    ],
+  },
+  {
     version: "1.7.6",
     date: "14/04/2026",
     entries: [

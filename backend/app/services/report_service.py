@@ -368,8 +368,11 @@ class ReportService:
             *uf
         ).scalar() or 0
 
-        # Cards parados há mais de 3 dias (sem atividade nem anotação no período)
+        # Cards parados há mais de 3 dias (sem atividade, anotação ou mudança de etapa no período)
+        # Apenas cards que já tiveram ao menos 1 task ou nota entram na contagem
         three_days_ago = datetime.now() - timedelta(days=3)
+        _has_task = self.db.query(CardTask.card_id).distinct().subquery()
+        _has_note = self.db.query(CardNote.card_id).distinct().subquery()
         _active_task_3d = self.db.query(CardTask.card_id).filter(
             or_(
                 CardTask.created_at > three_days_ago,
@@ -379,17 +382,27 @@ class ReportService:
         _active_note_3d = self.db.query(CardNote.card_id).filter(
             CardNote.created_at > three_days_ago,
         ).subquery()
+        _active_stage_3d = self.db.query(CardListHistory.card_id).filter(
+            CardListHistory.entered_at > three_days_ago,
+        ).subquery()
         cards_parados = self.db.query(func.count(func.distinct(Card.id))).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 0,
+            # Exige que o card tenha ao menos 1 task ou nota (atividade deliberada)
+            or_(
+                Card.id.in_(self.db.query(_has_task.c.card_id)),
+                Card.id.in_(self.db.query(_has_note.c.card_id)),
+            ),
             ~Card.id.in_(self.db.query(_active_task_3d.c.card_id)),
             ~Card.id.in_(self.db.query(_active_note_3d.c.card_id)),
+            ~Card.id.in_(self.db.query(_active_stage_3d.c.card_id)),
             *uf
         ).scalar() or 0
 
-        # Negócios parados há mais de 7 dias (sem atividade nem anotação no período)
+        # Negócios parados há mais de 7 dias (sem atividade, anotação ou mudança de etapa no período)
+        # Apenas cards que já tiveram ao menos 1 task ou nota entram na contagem
         seven_days_ago = datetime.now() - timedelta(days=7)
         _active_task_7d = self.db.query(CardTask.card_id).filter(
             or_(
@@ -400,13 +413,22 @@ class ReportService:
         _active_note_7d = self.db.query(CardNote.card_id).filter(
             CardNote.created_at > seven_days_ago,
         ).subquery()
+        _active_stage_7d = self.db.query(CardListHistory.card_id).filter(
+            CardListHistory.entered_at > seven_days_ago,
+        ).subquery()
         negocios_parados_7d = self.db.query(func.count(func.distinct(Card.id))).join(
             BoardList, Card.list_id == BoardList.id
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 0,
+            # Exige que o card tenha ao menos 1 task ou nota (atividade deliberada)
+            or_(
+                Card.id.in_(self.db.query(_has_task.c.card_id)),
+                Card.id.in_(self.db.query(_has_note.c.card_id)),
+            ),
             ~Card.id.in_(self.db.query(_active_task_7d.c.card_id)),
             ~Card.id.in_(self.db.query(_active_note_7d.c.card_id)),
+            ~Card.id.in_(self.db.query(_active_stage_7d.c.card_id)),
             *uf
         ).scalar() or 0
 

@@ -316,6 +316,7 @@ class CardService:
             # Busca contagem e status de tasks pendentes para todos os cards de uma vez (otimizado)
             from app.models.card_task import CardTask
             from app.models.card_note import CardNote
+            from app.models.card_list_history import CardListHistory
             from sqlalchemy import func, or_ as sa_or_
             from datetime import datetime, timezone
 
@@ -323,7 +324,7 @@ class CardService:
             pending_tasks_counts = {}
             pending_tasks_statuses = {}
 
-            # Cards parados há mais de 3 dias (sem atividade nem anotação registrada no período)
+            # Cards parados há mais de 3 dias (sem atividade, anotação ou mudança de etapa no período)
             three_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=3)
             stuck_card_ids: set = set()
             if card_ids:
@@ -346,9 +347,17 @@ class CardService:
                         CardNote.created_at > three_days_ago,
                     ).distinct().all()
                 }
-                active_ids = active_by_task | active_by_note
+                # IDs de cards que mudaram de etapa nos últimos 3 dias
+                active_by_stage = {
+                    row.card_id
+                    for row in self.db.query(CardListHistory.card_id).filter(
+                        CardListHistory.card_id.in_(card_ids),
+                        CardListHistory.entered_at > three_days_ago,
+                    ).distinct().all()
+                }
+                active_ids = active_by_task | active_by_note | active_by_stage
 
-                # Cards que já tiveram pelo menos uma tarefa ou anotação (têm histórico)
+                # Cards que já tiveram pelo menos uma tarefa ou anotação (tiveram atividade deliberada)
                 has_task = {
                     row.card_id
                     for row in self.db.query(CardTask.card_id).filter(
@@ -363,7 +372,8 @@ class CardService:
                 }
                 has_history = has_task | has_note
 
-                # Parado 3d+: tem histórico MAS não teve atividade nos últimos 3 dias
+                # Parado 3d+: teve atividade deliberada (task/nota) mas não se movimentou nos últimos 3 dias
+                # Cards sem nenhuma task ou nota (leads novos sem contato) ficam fora da contagem
                 stuck_card_ids = {cid for cid in card_ids if cid in has_history and cid not in active_ids}
 
             if card_ids:
