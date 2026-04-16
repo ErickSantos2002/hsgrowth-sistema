@@ -512,11 +512,26 @@ class ReportService:
         # com SDR vinculado; mesma base do ranking SDR para consistência entre dashboards
         LIST_AGENDADO_ID = 26
 
-        # Cards com reunião marcada como NoShow — excluídos de TODAS as contagens de
-        # "Reuniões Agendadas" (comissão não é paga por reunião que não aconteceu;
-        # a reunião reschdulada, se for um card diferente, conta normalmente)
-        _noshow_card_ids = self.db.query(CardTask.card_id).filter(
-            CardTask.is_noshow == True
+        # Exclui entradas ESPECÍFICAS na lista Agendado que terminaram em NoShow.
+        # Lógica: uma entrada da lista é descartada se houve uma CardTask com is_noshow=True
+        # concluída durante aquela passagem do card pela lista (entre entered_at e exited_at).
+        # Se o card reagendou e voltou à mesma lista, essa nova entrada NÃO é excluída —
+        # apenas a passagem que gerou o NoShow é descartada. Isso garante que a SDR é
+        # comissionada pela reunião reagendada, mas não pela que não aconteceu.
+        _noshow_clh_ids = (
+            self.db.query(CardListHistory.id)
+            .join(
+                CardTask,
+                and_(
+                    CardTask.card_id == CardListHistory.card_id,
+                    CardTask.is_noshow == True,
+                    CardTask.completed_at >= CardListHistory.entered_at,
+                    CardTask.completed_at <= func.coalesce(
+                        CardListHistory.exited_at, func.now()
+                    ),
+                ),
+            )
+            .filter(CardListHistory.list_id == LIST_AGENDADO_ID)
         )
 
         meetings_received_from_sdr = self.db.query(
@@ -528,7 +543,7 @@ class ReportService:
             func.date(CardListHistory.entered_at) >= start_of_period,
             func.date(CardListHistory.entered_at) <= end_of_period,
             Card.sdr_id.isnot(None),
-            ~CardListHistory.card_id.in_(_noshow_card_ids),
+            ~CardListHistory.id.in_(_noshow_clh_ids),
             *uf
         ).scalar() or 0
 
@@ -564,7 +579,7 @@ class ReportService:
 
         # Ranking de SDRs por reuniões agendadas no período
         # Conta cards distintos que entraram na lista "Agendado" (id=26) por SDR
-        # Exclui cards cujas reuniões foram marcadas como NoShow
+        # Exclui entradas específicas do CardListHistory que terminaram em NoShow
         top_sdrs_query = self.db.query(
             User.name,
             func.count(func.distinct(CardListHistory.card_id)).label('meetings_scheduled')
@@ -579,7 +594,7 @@ class ReportService:
             Card.sdr_id.isnot(None),
             func.date(CardListHistory.entered_at) >= start_of_period,
             func.date(CardListHistory.entered_at) <= end_of_period,
-            ~CardListHistory.card_id.in_(_noshow_card_ids),
+            ~CardListHistory.id.in_(_noshow_clh_ids),
             *uf
         ).group_by(
             User.id, User.name
@@ -662,7 +677,7 @@ class ReportService:
             ).scalar() or 0
 
             # Reuniões agendadas no mês (cards que entraram na lista Agendado)
-            # Exclui cards com NoShow — mesma regra das demais contagens de reuniões
+            # Exclui entradas específicas do CLH que terminaram em NoShow
             meetings_count = self.db.query(
                 func.count(func.distinct(CardListHistory.card_id))
             ).join(
@@ -671,7 +686,7 @@ class ReportService:
                 CardListHistory.list_id == LIST_AGENDADO_ID,
                 func.date(CardListHistory.entered_at) >= month_start,
                 func.date(CardListHistory.entered_at) <= month_end,
-                ~CardListHistory.card_id.in_(_noshow_card_ids),
+                ~CardListHistory.id.in_(_noshow_clh_ids),
                 *uf
             ).scalar() or 0
 
