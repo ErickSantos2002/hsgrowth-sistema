@@ -190,6 +190,19 @@ const KanbanBoard: React.FC = () => {
   }, [boardId]);
 
   /**
+   * Recarrega apenas os cards quando o filtro de status muda.
+   * Usa uma ref para não disparar no primeiro render (loadBoardData já cobre isso).
+   */
+  const statusFilterInitialized = React.useRef(false);
+  useEffect(() => {
+    if (!statusFilterInitialized.current) {
+      statusFilterInitialized.current = true;
+      return;
+    }
+    if (boardId) loadCardsOnly(statusFilter);
+  }, [statusFilter, boardId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
    * Recarrega os cards quando um card é movido de fora do contexto do board
    * (ex: NoShow em CardDetails move o card para Reagendamento).
    * O evento 'crm:card-moved' é disparado pelos handlers de NoShow.
@@ -279,6 +292,37 @@ const KanbanBoard: React.FC = () => {
   };
 
   /**
+   * Monta os parâmetros de filtro de status para o cardService.list().
+   * "open"  → exclui ganhos e perdidos (padrão, mais rápido)
+   * "won"   → apenas ganhos
+   * "lost"  → apenas perdidos
+   * "all"   → sem filtro de status (retorna tudo)
+   */
+  const buildCardParams = (status: string) => {
+    const base = { board_id: Number(boardId), all: true, minimal: true } as const;
+    switch (status) {
+      case "won":  return { ...base, is_won: true };
+      case "lost": return { ...base, is_lost: true };
+      case "all":  return base;
+      default:     return { ...base, is_won: false, is_lost: false }; // "open"
+    }
+  };
+
+  /**
+   * Recarrega apenas os cards respeitando o statusFilter atual.
+   * Chamado quando o filtro de status muda, sem recarregar board e listas.
+   */
+  const loadCardsOnly = async (status = statusFilter) => {
+    try {
+      const cardsResponse = await cardService.list(buildCardParams(status));
+      const sortedCards = (cardsResponse.cards || []).sort((a, b) => (a.position || 0) - (b.position || 0));
+      setCards(sortedCards);
+    } catch (error) {
+      console.error("Erro ao recarregar cards:", error);
+    }
+  };
+
+  /**
    * Carrega os dados do board, listas e cards
    */
   const loadBoardData = async () => {
@@ -294,16 +338,8 @@ const KanbanBoard: React.FC = () => {
       const sortedLists = listsData.sort((a, b) => a.position - b.position);
       setLists(sortedLists);
 
-      // Carregar cards do board e ordenar por position
-      // IMPORTANTE: all=true retorna TODOS os cards sem limite
-      // minimal=true retorna apenas campos essenciais (otimizado ~60% menor)
-      const cardsResponse = await cardService.list({
-        board_id: Number(boardId),
-        all: true,      // ✅ Sem limite de paginação
-        minimal: true,  // ✅ Apenas campos essenciais para Kanban
-        is_won: false,  // ✅ Exclui ganhos — não aparecem no Kanban ativo
-        is_lost: false, // ✅ Exclui perdidos — não aparecem no Kanban ativo
-      });
+      // Carregar cards respeitando o statusFilter atual
+      const cardsResponse = await cardService.list(buildCardParams(statusFilter));
       const sortedCards = (cardsResponse.cards || []).sort((a, b) => (a.position || 0) - (b.position || 0));
       setCards(sortedCards);
     } catch (error) {

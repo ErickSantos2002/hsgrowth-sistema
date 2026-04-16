@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.13] — 16/04/2026
+
+### Corrigido
+- **Kanban — filtro de status:** ao selecionar "Ganhos", "Perdidos" ou "Todos" no Kanban, os cards correspondentes agora são carregados corretamente. Antes os cards ganhos/perdidos nunca apareciam pois eram sempre excluídos na busca inicial, independente do filtro selecionado.
+
+---
+
 ## [1.7.12] — 16/04/2026
 
 ### Corrigido

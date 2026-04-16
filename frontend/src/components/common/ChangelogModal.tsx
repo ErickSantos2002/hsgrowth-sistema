@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.13",
+    date: "16/04/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Kanban: filtro de status 'Ganhos', 'Perdidos' e 'Todos' agora funcionam corretamente — os cards correspondentes são buscados ao selecionar cada opção.",
+      },
+    ],
+  },
+  {
     version: "1.7.12",
     date: "16/04/2026",
     entries: [
