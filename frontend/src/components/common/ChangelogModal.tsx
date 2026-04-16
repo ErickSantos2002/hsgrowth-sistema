@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.14",
+    date: "16/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Atividade E-mail: novo botão 'Já enviado' permite concluir a atividade quando o e-mail foi enviado por fora do sistema, sem precisar usar o compositor.",
+      },
+    ],
+  },
+  {
     version: "1.7.13",
     date: "16/04/2026",
     entries: [

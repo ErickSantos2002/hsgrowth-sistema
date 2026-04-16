@@ -814,15 +814,30 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
                           )}
 
                           {activity.task_type === "email" ? (
-                            <button
-                              onClick={() => onOpenEmailComposer?.(activity.id)}
-                              disabled={loadingTaskId === activity.id}
-                              className="flex flex-1 items-center justify-center gap-1 rounded border border-orange-500/50 bg-orange-500/20 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-orange-400 transition-colors hover:bg-orange-500/30 disabled:opacity-50"
-                              title="Abrir compositor de e-mail"
-                            >
-                              <Mail size={14} />
-                              Enviar E-mail
-                            </button>
+                            <>
+                              <button
+                                onClick={() => onOpenEmailComposer?.(activity.id)}
+                                disabled={loadingTaskId === activity.id}
+                                className="flex flex-1 items-center justify-center gap-1 rounded border border-orange-500/50 bg-orange-500/20 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-orange-400 transition-colors hover:bg-orange-500/30 disabled:opacity-50"
+                                title="Abrir compositor de e-mail"
+                              >
+                                <Mail size={14} />
+                                Enviar E-mail
+                              </button>
+                              <button
+                                onClick={() => handleComplete(activity.id, true)}
+                                disabled={loadingTaskId === activity.id}
+                                className="flex flex-1 items-center justify-center gap-1 rounded border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+                                title="E-mail já foi enviado por fora do sistema"
+                              >
+                                {loadingTaskId === activity.id ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <Check size={14} />
+                                )}
+                                Já enviado
+                              </button>
+                            </>
                           ) : (
                             <>
                               <button
