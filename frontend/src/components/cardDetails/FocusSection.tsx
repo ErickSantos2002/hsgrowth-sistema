@@ -19,6 +19,7 @@ import {
   FileText,
   Loader2,
   X,
+  Linkedin,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import cardTaskService from "../../services/cardTaskService";
@@ -179,6 +180,37 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
   };
 
   /**
+   * Config dos tipos de atividade para o seletor de edição
+   */
+  const editActivityTypes = [
+    { type: "call",      label: "Ligação",   icon: <Phone size={14} />,         color: "blue" },
+    { type: "whatsapp",  label: "WhatsApp",  icon: <MessageCircle size={14} />, color: "emerald" },
+    { type: "email",     label: "E-mail",    icon: <Mail size={14} />,          color: "orange" },
+    { type: "task",      label: "Tarefa",    icon: <CheckSquare size={14} />,   color: "green" },
+    { type: "follow_up", label: "Follow Up", icon: <Clock size={14} />,         color: "yellow" },
+    { type: "deadline",  label: "Prazo",     icon: <Calendar size={14} />,      color: "red" },
+    { type: "lunch",     label: "Almoço",    icon: <Coffee size={14} />,        color: "purple" },
+    { type: "linkedin",  label: "LinkedIn",  icon: <Linkedin size={14} />,      color: "sky" },
+    { type: "other",     label: "Outro",     icon: <MoreHorizontal size={14} />, color: "slate" },
+  ] as const;
+
+  const getEditTypeColorClasses = (type: string, isSelected: boolean) => {
+    const unselected = "bg-gray-100 dark:bg-slate-800 text-slate-900 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700";
+    const selected: Record<string, string> = {
+      call:      "bg-blue-500/30 text-slate-900 dark:text-blue-400 border-blue-500",
+      whatsapp:  "bg-emerald-500/30 text-slate-900 dark:text-emerald-400 border-emerald-500",
+      email:     "bg-orange-500/30 text-slate-900 dark:text-orange-400 border-orange-500",
+      task:      "bg-green-500/30 text-slate-900 dark:text-green-400 border-green-500",
+      follow_up: "bg-yellow-500/30 text-slate-900 dark:text-yellow-400 border-yellow-500",
+      deadline:  "bg-red-500/30 text-slate-900 dark:text-red-400 border-red-500",
+      lunch:     "bg-purple-500/30 text-slate-900 dark:text-purple-400 border-purple-500",
+      linkedin:  "bg-sky-500/30 text-slate-900 dark:text-sky-400 border-sky-500",
+      other:     "bg-slate-500/30 text-slate-900 dark:text-slate-400 border-slate-400 dark:border-slate-500",
+    };
+    return isSelected ? (selected[type] ?? unselected) : unselected;
+  };
+
+  /**
    * Retorna classes CSS para o badge de prioridade
    */
   const getPriorityBadgeClasses = (priority: string) => {
@@ -251,6 +283,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
     setEditingTaskId(task.id);
     setEditFormData({
       title: task.title,
+      task_type: task.task_type,
       description: task.description || "",
       location: task.location || "",
       notes: task.notes || "",
@@ -272,6 +305,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
       setLoadingTaskId(editingTaskId);
       await cardTaskService.update(editingTaskId, {
         title: editFormData.title,
+        task_type: editFormData.task_type,
         description: editFormData.description || null,
         location: editFormData.location || null,
         notes: editFormData.notes || null,
@@ -595,6 +629,25 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
                             className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Digite o título"
                           />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-slate-400">
+                            Tipo de Atividade
+                          </label>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {editActivityTypes.map((at) => (
+                              <button
+                                key={at.type}
+                                type="button"
+                                onClick={() => setEditFormData({ ...editFormData, task_type: at.type })}
+                                className={`flex items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors ${getEditTypeColorClasses(at.type, editFormData.task_type === at.type)}`}
+                              >
+                                {at.icon}
+                                <span>{at.label}</span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
                         <div>

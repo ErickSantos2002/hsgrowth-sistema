@@ -289,7 +289,9 @@ const KanbanBoard: React.FC = () => {
       const cardsResponse = await cardService.list({
         board_id: Number(boardId),
         all: true,      // ✅ Sem limite de paginação
-        minimal: true   // ✅ Apenas campos essenciais para Kanban
+        minimal: true,  // ✅ Apenas campos essenciais para Kanban
+        is_won: false,  // ✅ Exclui ganhos — não aparecem no Kanban ativo
+        is_lost: false, // ✅ Exclui perdidos — não aparecem no Kanban ativo
       });
       const sortedCards = (cardsResponse.cards || []).sort((a, b) => (a.position || 0) - (b.position || 0));
       setCards(sortedCards);
