@@ -357,14 +357,17 @@ class ReportService:
         ).scalar() or 0
 
         # Leads sem nenhuma atividade registrada (sem contato)
+        # Um lead "sem contato" é aquele que nunca teve task nem nota criada
+        # (independente de estar concluída ou não)
+        _cards_com_task = self.db.query(CardTask.card_id).distinct().subquery()
+        _cards_com_nota = self.db.query(CardNote.card_id).distinct().subquery()
         leads_sem_contato = self.db.query(func.count(Card.id)).join(
             BoardList, Card.list_id == BoardList.id
-        ).outerjoin(
-            Activity, Activity.card_id == Card.id
         ).filter(
             BoardList.board_id.in_(board_ids),
             Card.is_won == 0,
-            Activity.id.is_(None),
+            ~Card.id.in_(self.db.query(_cards_com_task.c.card_id)),
+            ~Card.id.in_(self.db.query(_cards_com_nota.c.card_id)),
             *uf
         ).scalar() or 0
 
