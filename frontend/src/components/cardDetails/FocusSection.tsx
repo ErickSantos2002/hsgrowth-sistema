@@ -469,7 +469,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
       setNoShowTaskId(activityId);
       await cardTaskService.markNoShow(activityId);
       showSuccess("Reunião marcada como NoShow e card movido para Reagendamento");
-      setTimeout(() => window.location.reload(), 1000);
+      // Notifica o KanbanBoard para mover o card visualmente (sem F5)
+      window.dispatchEvent(new CustomEvent('crm:card-moved'));
+      onUpdate();
     } catch (error: any) {
       console.error("Erro ao marcar NoShow:", error);
       showError(error.response?.data?.detail || "Erro ao marcar NoShow");

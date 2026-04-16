@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.12] — 16/04/2026
+
+### Corrigido
+- **NoShow — pipeline atualiza sem F5 (Kanban):** após marcar uma reunião como No-Show, o card é movido visualmente para a lista "Reagendamento" no Kanban em tempo real, sem necessidade de recarregar a página.
+- **NoShow — pipeline atualiza sem F5 (CardDetails):** a barra de etapas dentro do próprio card também reflete a nova posição imediatamente após o No-Show, sem necessidade de F5.
+- **NoShow — trigger de automação removido:** eliminada chamada `automationService.trigger(ID 12)` que era redundante (o endpoint `/noshow` já move o card) e estava hardcoded sem vínculo com automações cadastradas no sistema.
+- **Dashboard — Reuniões Agendadas não conta No-Show:** cards cujas reuniões foram marcadas como No-Show são excluídos da métrica de reuniões agendadas (ranking de SDRs, total de reuniões recebidas e evolução mensal). A reunião reschdulada, se criar um card diferente, continua contando normalmente.
+
+---
+
 ## [1.7.11] — 16/04/2026
 
 ### Adicionado

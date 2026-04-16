@@ -511,6 +511,14 @@ class ReportService:
         # Reuniões recebidas do SDR — cards que entraram em "Agendado" (id=26, board Prospecção)
         # com SDR vinculado; mesma base do ranking SDR para consistência entre dashboards
         LIST_AGENDADO_ID = 26
+
+        # Cards com reunião marcada como NoShow — excluídos de TODAS as contagens de
+        # "Reuniões Agendadas" (comissão não é paga por reunião que não aconteceu;
+        # a reunião reschdulada, se for um card diferente, conta normalmente)
+        _noshow_card_ids = self.db.query(CardTask.card_id).filter(
+            CardTask.is_noshow == True
+        )
+
         meetings_received_from_sdr = self.db.query(
             func.count(func.distinct(CardListHistory.card_id))
         ).join(
@@ -520,6 +528,7 @@ class ReportService:
             func.date(CardListHistory.entered_at) >= start_of_period,
             func.date(CardListHistory.entered_at) <= end_of_period,
             Card.sdr_id.isnot(None),
+            ~CardListHistory.card_id.in_(_noshow_card_ids),
             *uf
         ).scalar() or 0
 
@@ -555,6 +564,7 @@ class ReportService:
 
         # Ranking de SDRs por reuniões agendadas no período
         # Conta cards distintos que entraram na lista "Agendado" (id=26) por SDR
+        # Exclui cards cujas reuniões foram marcadas como NoShow
         top_sdrs_query = self.db.query(
             User.name,
             func.count(func.distinct(CardListHistory.card_id)).label('meetings_scheduled')
@@ -569,6 +579,7 @@ class ReportService:
             Card.sdr_id.isnot(None),
             func.date(CardListHistory.entered_at) >= start_of_period,
             func.date(CardListHistory.entered_at) <= end_of_period,
+            ~CardListHistory.card_id.in_(_noshow_card_ids),
             *uf
         ).group_by(
             User.id, User.name
@@ -651,6 +662,7 @@ class ReportService:
             ).scalar() or 0
 
             # Reuniões agendadas no mês (cards que entraram na lista Agendado)
+            # Exclui cards com NoShow — mesma regra das demais contagens de reuniões
             meetings_count = self.db.query(
                 func.count(func.distinct(CardListHistory.card_id))
             ).join(
@@ -659,6 +671,7 @@ class ReportService:
                 CardListHistory.list_id == LIST_AGENDADO_ID,
                 func.date(CardListHistory.entered_at) >= month_start,
                 func.date(CardListHistory.entered_at) <= month_end,
+                ~CardListHistory.card_id.in_(_noshow_card_ids),
                 *uf
             ).scalar() or 0
 

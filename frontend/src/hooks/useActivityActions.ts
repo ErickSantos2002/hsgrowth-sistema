@@ -2,7 +2,6 @@ import { useState } from "react";
 import cardTaskService, { CardTask } from "../services/cardTaskService";
 import api4comService from "../services/api4comService";
 import personService, { Person } from "../services/personService";
-import automationService from "../services/automationService";
 import { Card } from "../types";
 import { showSuccess, showError, showWarning } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
@@ -68,7 +67,7 @@ interface UseActivityActionsProps {
  * - handleToggleComplete: Marca atividade como concluída
  * - handleReschedule: Reagenda para nova data/hora
  * - handleMakeCall: Inicia chamada via API4COM (busca pessoa do card automaticamente)
- * - handleNoShow: Marca reunião como NoShow e dispara automação ID 12
+ * - handleNoShow: Marca reunião como NoShow — backend move o card para Reagendamento
  * - handleDelete: Exclui a atividade com confirmação
  */
 export function useActivityActions({ onSuccess, isViewer = false }: UseActivityActionsProps): ActivityActionsResult {
@@ -214,8 +213,9 @@ export function useActivityActions({ onSuccess, isViewer = false }: UseActivityA
   };
 
   /**
-   * Marca reunião como NoShow e dispara automação para mover card para Reagendamento.
-   * ID da automação NoShow: 12 (hardcoded, igual ao FocusSection existente).
+   * Marca reunião como NoShow.
+   * O endpoint /noshow já move o card para a lista Reagendamento do mesmo board.
+   * Após o sucesso, dispara o evento 'crm:card-moved' para o KanbanBoard atualizar o pipeline.
    */
   const handleNoShow = async (taskId: number, cardId: number): Promise<void> => {
     if (isViewer) return;
@@ -231,16 +231,12 @@ export function useActivityActions({ onSuccess, isViewer = false }: UseActivityA
     try {
       setLoading(taskId, "noshow");
 
-      // Dispara automação manual de NoShow (ID 12)
-      await automationService.trigger(12, cardId, {
-        manual_trigger: true,
-        activity_id: taskId,
-      });
-
-      // Marca a reunião como NoShow (is_completed + is_noshow = true) via endpoint dedicado
+      // Marca a reunião como NoShow — o endpoint já move o card para Reagendamento
       await cardTaskService.markNoShow(taskId);
 
       showSuccess("Reunião marcada como NoShow e card movido para Reagendamento");
+      // Notifica o KanbanBoard para atualizar o pipeline visualmente (sem F5)
+      window.dispatchEvent(new CustomEvent('crm:card-moved'));
       onSuccess();
     } catch (error: any) {
       console.error("Erro ao marcar NoShow:", error);

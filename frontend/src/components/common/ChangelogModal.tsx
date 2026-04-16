@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.12",
+    date: "16/04/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "NoShow: após confirmar, o card se move para 'Reagendamento' no Kanban em tempo real — sem precisar pressionar F5. A barra de etapas dentro do próprio card também atualiza na hora.",
+      },
+      {
+        type: "fix",
+        text: "NoShow: removida chamada de automação hardcoded (ID 12) que era redundante e sem efeito real no sistema.",
+      },
+      {
+        type: "fix",
+        text: "Dashboard: reuniões marcadas como No-Show não entram mais na contagem de 'Reuniões Agendadas' do SDR — a métrica reflete apenas reuniões que de fato aconteceram ou estão previstas.",
+      },
+    ],
+  },
+  {
     version: "1.7.11",
     date: "16/04/2026",
     entries: [

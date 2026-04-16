@@ -33,6 +33,8 @@ interface MeetingSectionProps {
   cardId: number;
   onCountChange?: (count: number) => void;
   readOnly?: boolean;
+  /** Chamado após ações que movem o card (ex: NoShow) para atualizar o pipeline */
+  onCardUpdate?: () => void;
 }
 
 interface TranscriptAnalysis {
@@ -62,7 +64,7 @@ const EMPTY_FORM: NewMeetingForm = {
   description: "",
 };
 
-const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, readOnly }) => {
+const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, readOnly, onCardUpdate }) => {
   const { confirm } = useConfirm();
   const { user } = useAuth();
   const isAdmin = user?.role?.toLowerCase() === "admin" || user?.role?.toLowerCase() === "manager";
@@ -177,6 +179,10 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
       await cardTaskService.markNoShow(id);
       showSuccess("Reunião marcada como No-Show.");
       await loadMeetings();
+      // Notifica o KanbanBoard para mover o card visualmente (sem F5)
+      window.dispatchEvent(new CustomEvent('crm:card-moved'));
+      // Atualiza o card completo (list_id) para o PipelineStages refletir a nova etapa
+      onCardUpdate?.();
     } catch {
       showError("Erro ao marcar No-Show");
     } finally {

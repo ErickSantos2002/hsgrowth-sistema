@@ -190,6 +190,17 @@ const KanbanBoard: React.FC = () => {
   }, [boardId]);
 
   /**
+   * Recarrega os cards quando um card é movido de fora do contexto do board
+   * (ex: NoShow em CardDetails move o card para Reagendamento).
+   * O evento 'crm:card-moved' é disparado pelos handlers de NoShow.
+   */
+  useEffect(() => {
+    const handler = () => { if (boardId) loadBoardData(); };
+    window.addEventListener('crm:card-moved', handler);
+    return () => window.removeEventListener('crm:card-moved', handler);
+  }, [boardId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
    * Carrega lista de usuários ativos e aplica lógica de permissão por role
    */
   useEffect(() => {

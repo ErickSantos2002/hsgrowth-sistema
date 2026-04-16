@@ -1220,6 +1220,7 @@ const CardDetails: React.FC = () => {
                     cardId={card.id}
                     onCountChange={setMeetingCount}
                     readOnly={isReadOnly}
+                    onCardUpdate={loadCardData}
                   />
                 )}
               </div>
