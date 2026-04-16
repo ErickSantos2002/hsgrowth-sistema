@@ -120,6 +120,11 @@ class ClientResponse(ClientBase):
     updated_at: datetime = Field(..., description="Data de atualização")
     is_deleted: bool = Field(..., description="Flag de soft delete")
 
+    # Sobrescreve o EmailStr do ClientBase para aceitar e-mails mal formatados
+    # que já existam no banco (ex: importações antigas com vírgula no lugar do ponto).
+    # A validação estrita continua em ClientBase (create) e ClientUpdate.
+    email: Optional[str] = Field(None, description="Email do cliente")
+
     model_config = {
         "from_attributes": True,  # Permite criar a partir de modelos SQLAlchemy
         "json_schema_extra": {
