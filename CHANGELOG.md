@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.11] — 16/04/2026
+
+### Adicionado
+- **Edição de tipo de atividade:** no modo de edição de uma atividade no Foco, agora é possível alterar o tipo (Ligação, WhatsApp, E-mail, Tarefa, Follow Up, Prazo, Almoço, LinkedIn, Outro) sem precisar deletar e recriar a atividade.
+
+### Melhorado
+- **Kanban:** board agora carrega apenas cards ativos, excluindo ganhos e perdidos. Redução de ~96% no volume de dados (ex: board de Aquisição passou de 4.344 para ~191 cards), tornando o carregamento muito mais rápido.
+
+---
+
 ## [1.7.10] — 15/04/2026
 
 ### Corrigido

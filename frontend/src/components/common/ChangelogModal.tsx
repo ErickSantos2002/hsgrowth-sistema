@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.11",
+    date: "16/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Edição de tipo de atividade: no Foco, agora é possível alterar o tipo da atividade (Ligação, WhatsApp, E-mail, Tarefa, Follow Up, etc.) diretamente no modo de edição, sem precisar deletar e recriar.",
+      },
+      {
+        type: "improvement",
+        text: "Kanban: board carrega apenas cards ativos, excluindo ganhos e perdidos — redução de ~96% nos dados carregados, tornando a navegação muito mais rápida.",
+      },
+    ],
+  },
+  {
     version: "1.7.10",
     date: "15/04/2026",
     entries: [
