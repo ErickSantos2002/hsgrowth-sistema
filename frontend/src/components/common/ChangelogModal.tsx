@@ -26,11 +26,23 @@ interface ChangelogVersion {
 const CHANGELOG: ChangelogVersion[] = [
   {
     version: "1.7.14",
-    date: "16/04/2026",
+    date: "17/04/2026",
     entries: [
       {
         type: "feature",
         text: "Atividade E-mail: novo botão 'Já enviado' permite concluir a atividade quando o e-mail foi enviado por fora do sistema, sem precisar usar o compositor.",
+      },
+      {
+        type: "improvement",
+        text: "Regras de avanço no board de Prospecção ajustadas: Lead Novo → Prospecção não exige mais nome, e-mail, cargo e área do contato — apenas o contato vinculado. Esses dados passam a ser obrigatórios em Conectado → Agendado.",
+      },
+      {
+        type: "improvement",
+        text: "Prospecção → Conectado agora aceita qualquer atividade de contato concluída (ligação, WhatsApp ou e-mail), não apenas ligação.",
+      },
+      {
+        type: "improvement",
+        text: "Conectado → Agendado: validação de reunião obrigatória agora considera produto 'bafômetro' (antes era 'Phoebus').",
       },
     ],
   },

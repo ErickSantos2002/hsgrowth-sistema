@@ -7,6 +7,20 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.14] - 2026-04-17
+
+### Melhorado
+
+- **Regras de avanço — Lead Novo → Prospecção:** removida a obrigatoriedade de nome, e-mail, cargo e área do contato nesta etapa. Agora exige apenas o contato vinculado. Os dados detalhados passam a ser validados em Conectado → Agendado.
+- **Regras de avanço — Prospecção → Conectado:** evidência de contato agora aceita qualquer atividade concluída (ligação, WhatsApp ou e-mail), não apenas ligação VOIP ou tarefa de ligação.
+- **Regras de avanço — Conectado → Agendado:** adicionada validação de nome, e-mail, cargo e área do contato (movido de Lead Novo). Validação de reunião obrigatória agora considera produto "bafômetro" (antes era "Phoebus").
+
+### Arquivos alterados
+
+- `backend/app/services/card_service.py` — bloco `_validate_pipeline_rules`: etapa 0 sem validação de dados do contato, etapa 1 aceita ligação/WhatsApp/e-mail, etapa 2 valida dados do contato e bafômetro
+
+---
+
 ## [1.7.3] - 2026-04-14
 
 ### Adicionado

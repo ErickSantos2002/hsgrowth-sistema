@@ -1197,7 +1197,7 @@ class CardService:
 
             # ── Etapa 0: Lead Novo → Prospecção ───────────────────────────────
             # Empresa: nome, tipo de relacionamento, segmento
-            # Contato: nome, e-mail, cargo, área
+            # Contato: apenas vinculado (dados detalhados exigidos em Conectado → Agendado)
             # Negócio: canal de aquisição, detalhamento, tipo de negócio
             if not card.client_id:
                 missing.append("empresa vinculada ao negócio")
@@ -1213,24 +1213,6 @@ class CardService:
 
             if not card.person_id:
                 missing.append("contato vinculado ao negócio")
-            else:
-                person = self.db.query(Person).filter(Person.id == card.person_id).first()
-                if person:
-                    if not (person.name or "").strip():
-                        missing.append("nome do contato")
-                    # Aceita qualquer campo de e-mail preenchido
-                    has_email = any([
-                        (person.email or "").strip(),
-                        (person.email_commercial or "").strip(),
-                        (person.email_personal or "").strip(),
-                        (person.email_alternative or "").strip(),
-                    ])
-                    if not has_email:
-                        missing.append("e-mail do contato")
-                    if not (person.position or "").strip():
-                        missing.append("cargo do contato")
-                    if not (person.area or "").strip():
-                        missing.append("área/departamento do contato")
 
             if not (card.acquisition_channel or "").strip():
                 missing.append("canal de aquisição")
@@ -1240,8 +1222,8 @@ class CardService:
                 missing.append("tipo de negócio")
 
             # ── Etapa 1: Prospecção → Conectado (e etapas seguintes) ──────────
-            # Evidência de contato efetivo: ligação VOIP, task de ligação concluída,
-            # ou nota com ao menos 20 caracteres
+            # Evidência de contato efetivo: qualquer atividade concluída (ligação, whats, e-mail)
+            # ou ligação VOIP concluída
             if source_index >= 1:
                 has_completed_call = (
                     self.db.query(CallLog)
@@ -1249,11 +1231,15 @@ class CardService:
                     .first()
                 ) is not None
 
-                has_completed_call_task = (
+                has_completed_activity = (
                     self.db.query(CardTask)
                     .filter(
                         CardTask.card_id == card.id,
-                        CardTask.task_type == TaskType.CALL,
+                        CardTask.task_type.in_([
+                            TaskType.CALL,
+                            TaskType.WHATSAPP,
+                            TaskType.EMAIL,
+                        ]),
                         CardTask.is_completed == True,  # noqa: E712
                     )
                     .first()
@@ -1264,17 +1250,36 @@ class CardService:
                     len((n.content or "").strip()) >= MIN_NOTE_LENGTH for n in notes
                 )
 
-                if not (has_completed_call or has_completed_call_task or has_valid_note):
+                if not (has_completed_call or has_completed_activity or has_valid_note):
                     missing.append(
-                        f"evidência de contato efetivo (ligação VOIP concluída, tarefa de "
-                        f"ligação marcada como feita, ou nota com ao menos {MIN_NOTE_LENGTH} caracteres)"
+                        "evidência de contato efetivo (ligação VOIP, tarefa de ligação, "
+                        "WhatsApp ou e-mail marcada como feita, ou nota com ao menos "
+                        f"{MIN_NOTE_LENGTH} caracteres)"
                     )
 
             # ── Etapa 2: Conectado → Agendado (e etapas seguintes) ────────────
-            # Produto obrigatório, vendedor responsável, reunião se Phoebus,
-            # nota do problema, implementação, pessoas para manusear,
-            # colaboradores e status do cliente
+            # Produto, vendedor, dados do contato, implementação, pessoas para manusear,
+            # colaboradores, status do cliente e reunião se bafômetro
             if source_index >= 2:
+                # Dados detalhados do contato (exigidos aqui, não em Lead Novo)
+                if card.person_id:
+                    person = self.db.query(Person).filter(Person.id == card.person_id).first()
+                    if person:
+                        if not (person.name or "").strip():
+                            missing.append("nome do contato")
+                        has_email = any([
+                            (person.email or "").strip(),
+                            (person.email_commercial or "").strip(),
+                            (person.email_personal or "").strip(),
+                            (person.email_alternative or "").strip(),
+                        ])
+                        if not has_email:
+                            missing.append("e-mail do contato")
+                        if not (person.position or "").strip():
+                            missing.append("cargo do contato")
+                        if not (person.area or "").strip():
+                            missing.append("área/departamento do contato")
+
                 # Busca produtos vinculados ao card com join no catálogo
                 card_products = (
                     self.db.query(CardProduct)
@@ -1288,9 +1293,9 @@ class CardService:
                 if not card_products:
                     missing.append("ao menos 1 produto vinculado ao negócio")
 
-                # Task de reunião: obrigatória APENAS quando há produto Phoebus vinculado
-                has_phoebus = any("phoebus" in name.lower() for name in product_names)
-                if has_phoebus:
+                # Task de reunião: obrigatória APENAS quando há produto bafômetro vinculado
+                has_bafometro = any("baf" in name.lower() for name in product_names)
+                if has_bafometro:
                     has_meeting_task = (
                         self.db.query(CardTask)
                         .filter(
@@ -1302,7 +1307,7 @@ class CardService:
                     if not has_meeting_task:
                         missing.append(
                             "tarefa de reunião no card "
-                            "(obrigatório pois há produto Phoebus vinculado)"
+                            "(obrigatório pois há produto bafômetro vinculado)"
                         )
 
                 # Nota documentando o problema identificado
@@ -1325,7 +1330,6 @@ class CardService:
                     missing.append("se tem pessoas para manusear (negócio)")
 
                 # Campos adicionais da empresa para esta etapa
-                # (relationship_type já validado na etapa 0)
                 if card.client_id:
                     client_e2 = self.db.query(Client).filter(Client.id == card.client_id).first()
                     if client_e2:

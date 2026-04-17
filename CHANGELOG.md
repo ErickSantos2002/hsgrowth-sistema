@@ -5,10 +5,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
-## [1.7.14] — 16/04/2026
+## [1.7.14] — 17/04/2026
 
 ### Adicionado
 - **Atividade E-mail — botão "Já enviado":** atividades do tipo E-mail no Foco agora exibem dois botões: "Enviar E-mail" (abre o compositor) e "Já enviado" (conclui a atividade diretamente, para quando o e-mail foi enviado por fora do sistema).
+
+### Melhorado
+- **Regras de avanço — Lead Novo → Prospecção:** removida a obrigatoriedade de nome, e-mail, cargo e área do contato nesta etapa. Agora exige apenas o contato vinculado. Os dados detalhados do contato passam a ser validados em Conectado → Agendado.
+- **Regras de avanço — Prospecção → Conectado:** evidência de contato agora aceita qualquer atividade concluída (ligação, WhatsApp ou e-mail), não apenas ligação VOIP ou tarefa de ligação.
+- **Regras de avanço — Conectado → Agendado:** adicionada validação de nome, e-mail, cargo e área do contato. Validação de reunião obrigatória agora considera produto "bafômetro" (antes era "Phoebus").
 
 ---
 
