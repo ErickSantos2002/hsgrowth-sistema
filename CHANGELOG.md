@@ -17,6 +17,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Corrigido
 - **Criação de atividade — tipo obrigatório:** nenhum tipo vem pré-selecionado ao abrir o formulário. O usuário deve escolher explicitamente (Ligação, Tarefa, WhatsApp, etc.) antes de salvar, evitando registros incorretos por esquecimento.
+- **Filtro de SDR no Kanban — limpar filtros:** ao clicar em "Limpar filtros", o SDR volta automaticamente para o próprio filtro em vez de ficar em "Todos os SDRs" sem conseguir se reselecionar. Filtro permanece travado no próprio ID para SDRs, impedindo visualizar leads de outros SDRs.
 
 ---
 

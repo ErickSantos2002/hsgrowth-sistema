@@ -577,13 +577,16 @@ const KanbanBoard: React.FC = () => {
     setCustomDateStart("");
     setCustomDateEnd("");
     setAssignedToFilter("");
-    setSdrFilter("");
+    // SDR volta a ver apenas os próprios leads ao limpar filtros
+    setSdrFilter(user?.role === "sdr" ? String(user.id) : "");
     setAcquisitionChannelFilter("");
     setAcquisitionChannelDetailFilter("");
     setCardTagFilter("");
   };
 
   /** Indica se algum filtro está ativo (diferente do padrão) */
+  // O sdrFilter fixo do próprio SDR não conta como filtro ativo
+  const sdrFilterIsDefault = user?.role === "sdr" ? sdrFilter === String(user.id) : sdrFilter === "";
   const hasActiveFilters =
     listFilter !== "" ||
     statusFilter !== "open" ||
@@ -592,7 +595,7 @@ const KanbanBoard: React.FC = () => {
     customDateStart !== "" ||
     customDateEnd !== "" ||
     assignedToFilter !== "" ||
-    sdrFilter !== "" ||
+    !sdrFilterIsDefault ||
     acquisitionChannelFilter !== "" ||
     acquisitionChannelDetailFilter !== "" ||
     cardTagFilter !== "";
@@ -1123,7 +1126,7 @@ const KanbanBoard: React.FC = () => {
                     })),
                 ]}
                 onChange={setSdrFilter}
-                disabled={user?.role === "sdr"} // Trava se for SDR
+                disabled={user?.role === "sdr"} // SDR só vê os próprios leads
               />
             </div>
 

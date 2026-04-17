@@ -48,6 +48,10 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "fix",
         text: "Criação de atividade: nenhum tipo vem pré-selecionado — o usuário é obrigado a escolher (Ligação, Tarefa, WhatsApp, etc.) antes de salvar, evitando registros incorretos.",
       },
+      {
+        type: "fix",
+        text: "Filtro de SDR no Kanban: ao clicar em 'Limpar filtros', o SDR volta automaticamente para o próprio filtro (não perde a seleção). O filtro permanece travado no próprio ID para SDRs, impedindo visualizar leads de outros SDRs.",
+      },
     ],
   },
   {
