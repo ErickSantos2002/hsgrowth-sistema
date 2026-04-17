@@ -44,6 +44,10 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "improvement",
         text: "Conectado → Agendado: validação de reunião obrigatória agora considera produto 'bafômetro' (antes era 'Phoebus').",
       },
+      {
+        type: "fix",
+        text: "Criação de atividade: nenhum tipo vem pré-selecionado — o usuário é obrigado a escolher (Ligação, Tarefa, WhatsApp, etc.) antes de salvar, evitando registros incorretos.",
+      },
     ],
   },
   {

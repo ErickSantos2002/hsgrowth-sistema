@@ -34,7 +34,7 @@ interface QuickActivityFormProps {
 /**
  * Tipos de atividade disponíveis
  */
-type ActivityType = "call" | "task" | "follow_up" | "email" | "whatsapp" | "linkedin" | "other";
+type ActivityType = "" | "call" | "task" | "follow_up" | "email" | "whatsapp" | "linkedin" | "other";
 
 interface ActivityTypeConfig {
   type: ActivityType;
@@ -64,7 +64,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
 
   const [formData, setFormData] = useState({
     title: "",
-    type: "call" as ActivityType,
+    type: "" as ActivityType,
     date: defaultDate ?? getTodayDate(),
     time: getNowTime(),
     duration: "30", // minutos
@@ -142,6 +142,11 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
    * Salva a atividade
    */
   const handleSave = async () => {
+    if (!formData.type) {
+      showWarning("Por favor, selecione o tipo de atividade");
+      return;
+    }
+
     if (!formData.title.trim()) {
       showWarning("Por favor, preencha o título da atividade");
       return;
@@ -178,7 +183,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
       // Reset form
       setFormData({
         title: "",
-        type: "call",
+        type: "",
         date: defaultDate ?? getTodayDate(),
         time: getNowTime(),
         duration: "30",

@@ -15,6 +15,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Regras de avanço — Prospecção → Conectado:** evidência de contato agora aceita qualquer atividade concluída (ligação, WhatsApp ou e-mail), não apenas ligação VOIP ou tarefa de ligação.
 - **Regras de avanço — Conectado → Agendado:** adicionada validação de nome, e-mail, cargo e área do contato. Validação de reunião obrigatória agora considera produto "bafômetro" (antes era "Phoebus").
 
+### Corrigido
+- **Criação de atividade — tipo obrigatório:** nenhum tipo vem pré-selecionado ao abrir o formulário. O usuário deve escolher explicitamente (Ligação, Tarefa, WhatsApp, etc.) antes de salvar, evitando registros incorretos por esquecimento.
+
 ---
 
 ## [1.7.13] — 16/04/2026
