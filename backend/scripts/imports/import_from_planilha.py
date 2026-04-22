@@ -237,6 +237,7 @@ SDR_NAME_MAP: dict[str, int] = {
     "ahwaryone": 14,  # Ãhwaryoné Barbosa Bandeira De Melo
     "miguel":    16,  # Miguel Luiz Pereira de Melo
     "karolaine": 9,   # Karolaine Martins
+    "sergio":    15,  # Sérgio Viana — há outro Sérgio (id=12) no sistema que não é SDR
 }
 
 

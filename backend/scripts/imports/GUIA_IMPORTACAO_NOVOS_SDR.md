@@ -15,7 +15,7 @@ O controle de quais já foram importadas fica na coluna **`Status_Importacao`** 
 | Ãhwaryoné | Ãhwaryoné Barbosa Bandeira De Melo | 14 |
 | Miguel | Miguel Luiz Pereira de Melo | 16 |
 | Lucas | Lucas | 17 |
-| Sérgio | Sérgio Viana | 15 | ⚠️ Existe outro usuário chamado "Sérgio" (id=12) que não é SDR — o script pode pegar o errado. No fix de sdr_id sempre usar id=15. |
+| Sérgio | Sérgio Viana | 15 | ⚠️ Existe outro usuário chamado "Sérgio" (id=12) que não é SDR. ✅ Resolvido via `SDR_NAME_MAP` a partir do Lote 5. |
 | Claudia | Claudia | 8 |
 
 ---
