@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.17",
+    date: "22/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Kanban: novo filtro de período para identificar quando os cards entraram na lista atual (hoje, ontem, esta semana, este mês, trimestre, ano ou datas personalizadas). Útil para ver quais oportunidades chegaram em uma etapa do funil em um intervalo específico.",
+      },
+    ],
+  },
+  {
     version: "1.7.16",
     date: "22/04/2026",
     entries: [

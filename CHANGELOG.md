@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.17] — 22/04/2026
+
+### Adicionado
+- **Kanban — filtro de data de entrada na lista:** novo seletor de período no painel de filtros (hoje, ontem, esta semana, este mês, este trimestre, este ano, personalizado) que filtra cards pelo momento em que entraram na lista atual, com base no histórico `CardListHistory.entered_at`.
+
+---
+
 ## [1.7.16] — 22/04/2026
 
 ### Melhorado

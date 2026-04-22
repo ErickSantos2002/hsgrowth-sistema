@@ -7,6 +7,13 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.17] - 2026-04-22
+
+### Adicionado
+- **Kanban — filtro de data de entrada na lista:** novo seletor de período no painel de filtros (hoje, ontem, esta semana, este mês, este trimestre, este ano, personalizado) que filtra cards pelo momento em que entraram na lista atual, com base no histórico `CardListHistory.entered_at`.
+
+---
+
 ## [1.7.16] - 2026-04-22
 
 ### Melhorado
