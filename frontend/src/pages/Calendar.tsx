@@ -85,6 +85,7 @@ const CalendarPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [tasks, setTasks] = useState<CardTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState<{ loaded: number; total: number } | null>(null);
 
   // ── Seletor de usuário (somente admin/manager)
   const [filterUserId, setFilterUserId] = useState<number | null>(null);
@@ -154,25 +155,72 @@ const CalendarPage: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showMonthPicker]);
 
-  // ── Carregamento das tarefas
+  // ── Carregamento das tarefas (progressivo)
+  // Cancela o loop de páginas anterior quando um novo mês/filtro é selecionado.
+  const loadTasksAbortRef = useRef<AbortController | null>(null);
+
   const loadTasks = useCallback(async () => {
     if (!user) return;
 
-    setLoading(true);
-    try {
-      // Admin/manager: passa filterUserId (null = todos); outros roles: sempre o próprio ID
-      const assignedToId = isAdminOrManager
-        ? (filterUserId ?? undefined)
-        : user.id;
+    loadTasksAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadTasksAbortRef.current = controller;
 
-      const result = await cardTaskService.getForCalendar(assignedToId);
-      setTasks(result);
-    } catch {
-      showError("Erro ao carregar atividades do calendário");
-    } finally {
+    setLoading(true);
+    setLoadingProgress(null);
+    setTasks([]);
+
+    try {
+      const adminOrManager = user.role === "admin" || user.role === "manager";
+      const assignedToId = adminOrManager ? (filterUserId ?? undefined) : user.id;
+      const gridStart = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 });
+      const gridEnd   = endOfWeek(endOfMonth(currentMonth),     { weekStartsOn: 0 });
+
+      // Página 1 — exibe imediatamente
+      const first = await cardTaskService.list({
+        assigned_to_id: assignedToId,
+        due_date_start: gridStart.toISOString(),
+        due_date_end:   gridEnd.toISOString(),
+        page_size: 100,
+        page: 1,
+      });
+      if (controller.signal.aborted) return;
+
+      setTasks(first.tasks);
       setLoading(false);
+
+      // Páginas seguintes — uma por vez com 1s de intervalo
+      if (first.total_pages > 1) {
+        setLoadingProgress({ loaded: first.tasks.length, total: first.total });
+        let accumulated = [...first.tasks];
+
+        for (let page = 2; page <= first.total_pages; page++) {
+          await new Promise<void>(resolve => setTimeout(resolve, 1000));
+          if (controller.signal.aborted) return;
+
+          const result = await cardTaskService.list({
+            assigned_to_id: assignedToId,
+            due_date_start: gridStart.toISOString(),
+            due_date_end:   gridEnd.toISOString(),
+            page_size: 100,
+            page,
+          });
+          if (controller.signal.aborted) return;
+
+          accumulated = [...accumulated, ...result.tasks];
+          setTasks([...accumulated]);
+          setLoadingProgress({ loaded: accumulated.length, total: first.total });
+        }
+
+        setLoadingProgress(null);
+      }
+    } catch {
+      if (!controller.signal.aborted) {
+        showError("Erro ao carregar atividades do calendário");
+        setLoading(false);
+      }
     }
-  }, [user, isAdminOrManager, filterUserId]);
+  }, [user, filterUserId, currentMonth]);
 
   useEffect(() => {
     loadTasks();
@@ -214,16 +262,27 @@ const CalendarPage: React.FC = () => {
     setSelectedTask(null);
   };
 
-  /** Abre o modal com todas as tarefas de um dia (botão "+X mais") */
-  const handleShowMoreClick = (
+  /** Abre o modal com todas as tarefas de um dia (botão "+X mais").
+   *  Busca do backend para garantir todas as tarefas do dia, independente do limit do mês. */
+  const handleShowMoreClick = async (
     e: React.MouseEvent,
     dayStr: string,
-    allDayTasks: CardTask[]
   ) => {
     e.stopPropagation();
     setDayModalDate(dayStr);
-    setDayModalTasks(allDayTasks);
+    setDayModalTasks([]);
     setShowDayModal(true);
+
+    try {
+      const [year, month, day] = dayStr.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+      const adminOrManager = user?.role === "admin" || user?.role === "manager";
+      const assignedToId = adminOrManager ? (filterUserId ?? undefined) : user?.id;
+      const tasks = await cardTaskService.getForDay(date, assignedToId);
+      setDayModalTasks(tasks);
+    } catch {
+      showError("Erro ao carregar atividades do dia");
+    }
   };
 
   /** Clica em uma tarefa dentro do modal de dia: fecha o modal de dia e abre o detalhe */
@@ -341,7 +400,7 @@ const CalendarPage: React.FC = () => {
                   {overflow > 0 && (
                     <button
                       type="button"
-                      onClick={(e) => handleShowMoreClick(e, dayStr, dayTasks)}
+                      onClick={(e) => handleShowMoreClick(e, dayStr)}
                       className="w-full rounded px-1 py-0.5 text-center text-xs text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
                     >
                       +{overflow} mais
@@ -537,6 +596,12 @@ const CalendarPage: React.FC = () => {
         size="md"
       >
         <div className="space-y-2">
+          {dayModalTasks.length === 0 && (
+            <div className="flex items-center justify-center py-8 text-slate-400">
+              <Loader2 size={20} className="animate-spin mr-2" />
+              Carregando atividades...
+            </div>
+          )}
           {dayModalTasks.map((task) => {
             const config = TYPE_CONFIG[task.task_type as TaskType] ?? TYPE_CONFIG.other;
             const priorityConfig =
@@ -949,6 +1014,16 @@ const CalendarPage: React.FC = () => {
         ) : (
           /* Placeholder para manter o layout quando na view lista */
           <div />
+        )}
+
+        {/* Indicador de carregamento progressivo */}
+        {loadingProgress && (
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <Loader2 size={13} className="animate-spin text-blue-500" />
+            <span>
+              Carregando atividades… {loadingProgress.loaded}/{loadingProgress.total}
+            </span>
+          </div>
         )}
 
         {/* Toggle de view (Mês / Lista) */}

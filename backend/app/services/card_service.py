@@ -264,7 +264,12 @@ class CardService:
         """
         from app.schemas.card import CardMinimalResponse, CardMinimalListResponse
 
-        # Todos os usuários podem listar cards de qualquer vendedor — sem restrição por role
+        # SDRs e Vendedores só enxergam os próprios cards
+        if current_user and current_user.role:
+            if current_user.role.name == "sdr":
+                sdr_id = current_user.id
+            elif current_user.role.name == "salesperson":
+                assigned_to_id = current_user.id
 
         # Verifica se o board existe
         board = self.board_repository.find_by_id(board_id)
@@ -540,6 +545,15 @@ class CardService:
                 else:
                     pending_tasks_statuses[card_id] = "none"
 
+        # Pré-carrega todas as listas dos cards em uma única query para evitar N+1
+        list_ids = {card.list_id for card in cards}
+        lists_map: dict[int, str] = {}
+        if list_ids:
+            list_rows = self.db.query(BoardList.id, BoardList.name).filter(
+                BoardList.id.in_(list_ids)
+            ).all()
+            lists_map = {row.id: row.name for row in list_rows}
+
         cards_response = []
         for card in cards:
             # Usa o usuário já carregado via eager loading (sem query adicional)
@@ -555,8 +569,7 @@ class CardService:
                 sdr_name = card.sdr.name
                 sdr_avatar_url = card.sdr.avatar_url
 
-            list_obj = self.list_repository.find_by_id(card.list_id)
-            list_name = list_obj.name if list_obj else None
+            list_name = lists_map.get(card.list_id)
 
             # Pega a contagem e status de tasks pendentes
             pending_count = pending_tasks_counts.get(card.id, 0)
@@ -2144,8 +2157,8 @@ class CardService:
         card_products = product_repo.list_card_products(card_id)
         products_totals = product_repo.get_card_products_total(card_id)
 
-        # Atividades recentes do histórico (últimas 50)
-        activities_list = self.activity_repository.get_by_card(card_id, limit=50)
+        # Atividades recentes do histórico (últimas 30)
+        activities_list = self.activity_repository.get_by_card(card_id, limit=30)
         recent_activities = [
             {
                 "id": act.id,
@@ -2158,10 +2171,12 @@ class CardService:
             for act in activities_list
         ]
 
-        # Anotações (notes)
+        # Anotações (notes) — limitadas a 30 mais recentes para não sobrecarregar
         from app.repositories.card_note_repository import CardNoteRepository
         note_repo = CardNoteRepository(self.db)
-        card_notes = note_repo.get_by_card(card_id)
+        NOTES_LIMIT = 30
+        card_notes = note_repo.get_by_card(card_id, limit=NOTES_LIMIT)
+        notes_total = note_repo.count_by_card(card_id)
         notes = [
             {
                 "id": note.id,
@@ -2293,7 +2308,8 @@ class CardService:
             "products_total": products_totals["total"] + (float(card.shipping_cost) if card.shipping_cost else 0),
             "shipping_cost": float(card.shipping_cost) if card.shipping_cost else None,
             "recent_activities": recent_activities,
-            "notes": notes
+            "notes": notes,
+            "notes_total": notes_total,
         }
 
         return response_data

@@ -5,6 +5,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.16] — 22/04/2026
+
+### Melhorado
+- **Kanban — carregamento progressivo:** cards buscados de 100 em 100 com indicador de progresso no header ("Carregando cards… X/Y"). O board renderiza imediatamente após carregar listas; os demais cards chegam em background sem travar a UI. Boards grandes (~960 cards) ficam navegáveis em segundos.
+- **Backend — filtro automático por role:** SDRs recebem apenas os cards onde são o SDR vinculado (`sdr_id`); Vendedores recebem apenas os cards onde são o responsável (`assigned_to_id`). Elimina tráfego desnecessário de dados que não seriam exibidos.
+
+### Adicionado
+- **Anotações — "Ver mais":** ao abrir um card com mais de 30 anotações, um botão "Ver mais X anotações" aparece ao fim da lista e carrega o histórico completo sob demanda, sem impactar a velocidade de carregamento inicial.
+
+---
+
+## [1.7.15] — 22/04/2026
+
+### Melhorado
+- **Calendário — filtro por mês visível:** atividades buscadas apenas para o intervalo do grid exibido (início da 1ª semana → fim da última semana do mês). Antes carregava todo o histórico sem filtro de data. Navegar entre meses refaz a busca com o novo intervalo automaticamente.
+- **Kanban — recarregamento seletivo:** criar ou editar um card agora recarrega apenas os cards, sem recarregar board e listas. O evento de NoShow (`crm:card-moved`) também usa a rota mais leve. Reduz até 3× o volume de requisições por ação.
+- **CardDetails — limites em atividades e notas:** histórico limitado a 30 atividades recentes (antes 50); notas limitadas a 30 mais recentes com contagem total. Cards com centenas de anotações carregam significativamente mais rápido.
+- **Backend — N+1 eliminado no Kanban:** listas dos cards pré-carregadas em uma única query antes do loop de resposta, eliminando 1 query por card no modo completo.
+
+---
+
 ## [1.7.14] — 17/04/2026
 
 ### Adicionado

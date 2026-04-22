@@ -22,12 +22,13 @@ import {
   Star,
   Heart,
   LucideIcon,
+  Loader2,
 } from "lucide-react";
 import boardService from "../services/boardService";
 import listService from "../services/listService";
 import cardService from "../services/cardService";
 import userService from "../services/userService";
-import { Board, List, Card, User } from "../types";
+import { Board, List, Card, User, CardFilters } from "../types";
 import { COLORS } from "../constants/colors";
 import { ACQUISITION_CHANNELS, ACQUISITION_CHANNEL_DETAILS } from "../constants/blueprintOptions";
 import KanbanList from "../components/kanban/KanbanList";
@@ -87,6 +88,8 @@ const KanbanBoard: React.FC = () => {
   const [acquisitionChannelDetailFilter, setAcquisitionChannelDetailFilter] = useState(""); // Filtro de detalhe do canal
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
   const [cardTagFilter, setCardTagFilter] = useState(""); // Filtro por etiqueta: "" | "nutricao" | "parado"
+  const [loadingProgress, setLoadingProgress] = useState<{ loaded: number; total: number } | null>(null);
+  const loadCardsAbortRef = useRef<AbortController | null>(null);
 
   // ─── Persistência de filtros no localStorage ───────────────────────────────
 
@@ -205,13 +208,13 @@ const KanbanBoard: React.FC = () => {
   /**
    * Recarrega os cards quando um card é movido de fora do contexto do board
    * (ex: NoShow em CardDetails move o card para Reagendamento).
-   * O evento 'crm:card-moved' é disparado pelos handlers de NoShow.
+   * Usa loadCardsOnly para não recarregar board e listas desnecessariamente.
    */
   useEffect(() => {
-    const handler = () => { if (boardId) loadBoardData(); };
+    const handler = () => { if (boardId) loadCardsOnly(statusFilter); };
     window.addEventListener('crm:card-moved', handler);
     return () => window.removeEventListener('crm:card-moved', handler);
-  }, [boardId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [boardId, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * Carrega lista de usuários ativos e aplica lógica de permissão por role
@@ -298,8 +301,8 @@ const KanbanBoard: React.FC = () => {
    * "lost"  → apenas perdidos
    * "all"   → sem filtro de status (retorna tudo)
    */
-  const buildCardParams = (status: string) => {
-    const base = { board_id: Number(boardId), all: true, minimal: true } as const;
+  const buildCardParams = (status: string, page = 1): CardFilters => {
+    const base: CardFilters = { board_id: Number(boardId), minimal: true, page_size: 100, page };
     switch (status) {
       case "won":  return { ...base, is_won: true };
       case "lost": return { ...base, is_lost: true };
@@ -309,16 +312,62 @@ const KanbanBoard: React.FC = () => {
   };
 
   /**
+   * Busca todos os cards de forma progressiva: página 1 imediata, demais com 1s de delay.
+   * Aborta se o AbortController sinalizar cancelamento.
+   * Retorna false se abortado, true se completo.
+   */
+  const fetchAllCardsProgressive = async (
+    status: string,
+    signal: AbortSignal,
+    onFirstPage: (cards: Card[]) => void,
+  ): Promise<boolean> => {
+    const first = await cardService.list(buildCardParams(status, 1));
+    if (signal.aborted) return false;
+
+    const sorted = (first.cards || []).sort((a, b) => (a.position || 0) - (b.position || 0));
+    onFirstPage(sorted);
+
+    if (first.total_pages <= 1) {
+      setLoadingProgress(null);
+      return true;
+    }
+
+    setLoadingProgress({ loaded: sorted.length, total: first.total });
+    let accumulated = [...sorted];
+
+    for (let page = 2; page <= first.total_pages; page++) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+      if (signal.aborted) return false;
+
+      const result = await cardService.list(buildCardParams(status, page));
+      if (signal.aborted) return false;
+
+      const newCards = (result.cards || []).sort((a, b) => (a.position || 0) - (b.position || 0));
+      accumulated = [...accumulated, ...newCards].sort((a, b) => (a.position || 0) - (b.position || 0));
+      setCards([...accumulated]);
+      setLoadingProgress({ loaded: accumulated.length, total: first.total });
+    }
+
+    setLoadingProgress(null);
+    return true;
+  };
+
+  /**
    * Recarrega apenas os cards respeitando o statusFilter atual.
    * Chamado quando o filtro de status muda, sem recarregar board e listas.
    */
   const loadCardsOnly = async (status = statusFilter) => {
+    loadCardsAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadCardsAbortRef.current = controller;
     try {
-      const cardsResponse = await cardService.list(buildCardParams(status));
-      const sortedCards = (cardsResponse.cards || []).sort((a, b) => (a.position || 0) - (b.position || 0));
-      setCards(sortedCards);
+      await fetchAllCardsProgressive(status, controller.signal, (firstPageCards) => {
+        setCards(firstPageCards);
+      });
     } catch (error) {
-      console.error("Erro ao recarregar cards:", error);
+      if (!controller.signal.aborted) {
+        console.error("Erro ao recarregar cards:", error);
+      }
     }
   };
 
@@ -326,6 +375,9 @@ const KanbanBoard: React.FC = () => {
    * Carrega os dados do board, listas e cards
    */
   const loadBoardData = async () => {
+    loadCardsAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadCardsAbortRef.current = controller;
     try {
       setLoading(true);
 
@@ -338,16 +390,20 @@ const KanbanBoard: React.FC = () => {
       const sortedLists = listsData.sort((a, b) => a.position - b.position);
       setLists(sortedLists);
 
-      // Carregar cards respeitando o statusFilter atual
-      const cardsResponse = await cardService.list(buildCardParams(statusFilter));
-      const sortedCards = (cardsResponse.cards || []).sort((a, b) => (a.position || 0) - (b.position || 0));
-      setCards(sortedCards);
-    } catch (error) {
-      console.error("Erro ao carregar board:", error);
-      showError("Erro ao carregar board");
-      navigate("/boards");
-    } finally {
+      // Board e listas prontos — mostra o board imediatamente, cards carregam em background
       setLoading(false);
+
+      // Carregar cards progressivamente em background
+      await fetchAllCardsProgressive(statusFilter, controller.signal, (firstPageCards) => {
+        setCards(firstPageCards);
+      });
+    } catch (error) {
+      setLoading(false);
+      if (!controller.signal.aborted) {
+        console.error("Erro ao carregar board:", error);
+        showError("Erro ao carregar board");
+        navigate("/boards");
+      }
     }
   };
 
@@ -839,7 +895,8 @@ const KanbanBoard: React.FC = () => {
         // Criar novo card
         await cardService.create(cardData);
       }
-      await loadBoardData();
+      // Recarrega apenas os cards — board e listas não mudam ao criar/editar um card
+      await loadCardsOnly(statusFilter);
     } catch (error) {
       console.error("Erro ao salvar card:", error);
       showError("Erro ao salvar card");
@@ -927,9 +984,14 @@ const KanbanBoard: React.FC = () => {
 
               <div>
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{board.name}</h1>
-                {board.description && (
+                {loadingProgress ? (
+                  <p className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+                    <Loader2 size={13} className="animate-spin" />
+                    Carregando cards… {loadingProgress.loaded}/{loadingProgress.total}
+                  </p>
+                ) : board.description ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400">{board.description}</p>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

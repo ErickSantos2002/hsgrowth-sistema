@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FileText, Plus, Trash2, Edit, Save, X, Image, Phone, Filter } from "lucide-react";
-import cardNoteService from "../../services/cardNoteService";
+import { FileText, Plus, Trash2, Edit, Save, X, Image, Phone, Filter, ChevronDown, Loader2 } from "lucide-react";
+import cardNoteService, { CardNote } from "../../services/cardNoteService";
 import NoteRenderer from "./NoteRenderer";
 import { showError, showWarning } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
@@ -17,6 +17,7 @@ interface Note {
 interface NotesSectionProps {
   cardId: number;
   notes: Note[];
+  notesTotal: number;
   onUpdate: () => void;
   readOnly?: boolean;
 }
@@ -26,14 +27,23 @@ interface NotesSectionProps {
  * Suporta texto livre e imagens coladas (Ctrl+V)
  * Imagens são comprimidas e armazenadas como base64 na nota
  */
-const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate, readOnly = false }) => {
+const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes: initialNotes, notesTotal, onUpdate, readOnly = false }) => {
   const { confirm } = useConfirm();
   const [isCreating, setIsCreating] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [isPastingImage, setIsPastingImage] = useState(false);
+  const [notes, setNotes] = useState<Note[]>(initialNotes as Note[]);
+  const [allLoaded, setAllLoaded] = useState(notesTotal <= initialNotes.length);
   // Filtro: null = todas, 'ligacao' = apenas ligações
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  // Sincroniza quando o card recarrega (ex: após criar/editar nota)
+  useEffect(() => {
+    setNotes(initialNotes as Note[]);
+    setAllLoaded(notesTotal <= initialNotes.length);
+  }, [initialNotes, notesTotal]);
 
   // Conta quantas notas de ligação existem para exibir no botão de filtro
   const callNotesCount = notes.filter((n) => n.note_type === "ligacao").length;
@@ -327,6 +337,22 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate, re
   };
 
   /**
+   * Carrega todas as notas do card (sem limite)
+   */
+  const handleLoadMore = async () => {
+    try {
+      setLoadingMore(true);
+      const all = await cardNoteService.getByCard(cardId);
+      setNotes(all as Note[]);
+      setAllLoaded(true);
+    } catch (error) {
+      console.error("Erro ao carregar mais notas:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  /**
    * Formata data relativa
    */
   const formatRelativeTime = (dateStr: string) => {
@@ -567,6 +593,21 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes, onUpdate, re
               )}
             </div>
           ))}
+
+          {/* Botão "Ver mais" — só aparece se houver notas além das 30 carregadas */}
+          {!allLoaded && !activeFilter && (
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-600 py-2.5 text-sm text-slate-400 transition-colors hover:border-blue-500 hover:text-blue-400 disabled:opacity-50"
+            >
+              {loadingMore ? (
+                <><Loader2 size={14} className="animate-spin" /> Carregando...</>
+              ) : (
+                <><ChevronDown size={14} /> Ver mais {notesTotal - notes.length} anotações</>
+              )}
+            </button>
+          )}
         </div>
       )}
     </div>

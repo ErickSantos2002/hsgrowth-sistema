@@ -70,10 +70,13 @@ class CardTaskRepository:
             query = query.filter(CardTask.is_completed == filters.is_completed)
 
         if filters.due_date_start is not None:
-            query = query.filter(CardTask.due_date >= filters.due_date_start)
+            # Remove timezone info para comparar com datetimes naive do banco
+            dt_start = filters.due_date_start.replace(tzinfo=None) if filters.due_date_start.tzinfo else filters.due_date_start
+            query = query.filter(CardTask.due_date >= dt_start)
 
         if filters.due_date_end is not None:
-            query = query.filter(CardTask.due_date <= filters.due_date_end)
+            dt_end = filters.due_date_end.replace(tzinfo=None) if filters.due_date_end.tzinfo else filters.due_date_end
+            query = query.filter(CardTask.due_date <= dt_end)
 
         # Conta total
         total = query.count()

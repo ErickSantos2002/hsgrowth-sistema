@@ -1185,6 +1185,7 @@ const CardDetails: React.FC = () => {
                 <NotesSection
                   cardId={card.id}
                   notes={card.notes || []}
+                  notesTotal={card.notes_total ?? (card.notes?.length ?? 0)}
                   onUpdate={loadCardData}
                   readOnly={isReadOnly}
                 />

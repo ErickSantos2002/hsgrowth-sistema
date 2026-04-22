@@ -25,6 +25,46 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.16",
+    date: "22/04/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Kanban: cards carregados de 100 em 100 com progresso visível no header (antes carregava tudo de uma vez). Boards grandes como Prospecção (~960 cards) aparecem imediatamente com os primeiros 100 e o restante chega em segundo plano.",
+      },
+      {
+        type: "improvement",
+        text: "Backend: SDRs e Vendedores recebem automaticamente apenas os próprios cards — SDR filtra por sdr_id, Vendedor por assigned_to_id. Elimina o tráfego desnecessário de dados que não seriam exibidos.",
+      },
+      {
+        type: "feature",
+        text: "Anotações: botão 'Ver mais' aparece quando o card tem mais de 30 anotações, carregando o histórico completo sob demanda sem afetar a performance inicial.",
+      },
+    ],
+  },
+  {
+    version: "1.7.15",
+    date: "22/04/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Calendário: atividades carregadas apenas para o mês visível (antes buscava todo o histórico). Navegar entre meses recarrega somente o período exibido — muito mais rápido, especialmente para admins que visualizam todos os usuários.",
+      },
+      {
+        type: "improvement",
+        text: "Kanban: criar ou editar um card agora recarrega apenas os cards, não o board inteiro. Mover cards via NoShow também usa a rota mais leve. Reduz o número de requisições por ação em até 3×.",
+      },
+      {
+        type: "improvement",
+        text: "CardDetails: atividades do histórico limitadas a 30 mais recentes (antes eram 50); notas limitadas a 30 mais recentes com contagem total disponível. Cards com centenas de anotações carregam significativamente mais rápido.",
+      },
+      {
+        type: "improvement",
+        text: "Backend — Kanban: listas dos cards pré-carregadas em uma única query antes do loop de montagem da resposta (elimina N+1 de até 1 query por card).",
+      },
+    ],
+  },
+  {
     version: "1.7.14",
     date: "17/04/2026",
     entries: [

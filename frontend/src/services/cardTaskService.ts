@@ -199,36 +199,43 @@ class CardTaskService {
   }
 
   /**
-   * Busca todas as tarefas para o calendário global (sem filtro de card_id).
-   * Aceita filtro opcional por responsável. Usa paginação automática com
-   * page_size máximo (100) para trazer todos os registros em menos requisições.
+   * Busca todas as tarefas de um dia específico (para o modal "+N mais" do calendário).
+   * Usa page_size=500 para cobrir dias com muitas atividades em uma única requisição.
    */
-  async getForCalendar(assignedToId?: number): Promise<CardTask[]> {
-    const PAGE_SIZE = 100;
-    const firstPage = await this.list({
+  async getForDay(date: Date, assignedToId?: number): Promise<CardTask[]> {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+
+    const result = await this.list({
       assigned_to_id: assignedToId,
-      page_size: PAGE_SIZE,
+      due_date_start: start.toISOString(),
+      due_date_end: end.toISOString(),
+      page_size: 500,
       page: 1,
     });
-    const allTasks = [...firstPage.tasks];
+    return result.tasks;
+  }
 
-    // Se houver mais páginas, busca as demais em paralelo
-    if (firstPage.total_pages > 1) {
-      const remainingPages = await Promise.all(
-        Array.from({ length: firstPage.total_pages - 1 }, (_, i) =>
-          this.list({
-            assigned_to_id: assignedToId,
-            page_size: PAGE_SIZE,
-            page: i + 2,
-          })
-        )
-      );
-      for (const page of remainingPages) {
-        allTasks.push(...page.tasks);
-      }
-    }
-
-    return allTasks;
+  /**
+   * Busca tarefas para o calendário global filtradas pelo intervalo visível.
+   * Busca apenas a primeira página (100 tarefas) — suficiente para exibir
+   * um mês no grid sem sobrecarregar o sistema com dezenas de requests paralelos.
+   */
+  async getForCalendar(
+    assignedToId?: number,
+    dateFrom?: Date,
+    dateTo?: Date,
+  ): Promise<CardTask[]> {
+    const result = await this.list({
+      assigned_to_id: assignedToId,
+      due_date_start: dateFrom?.toISOString(),
+      due_date_end: dateTo?.toISOString(),
+      page_size: 100,
+      page: 1,
+    });
+    return result.tasks;
   }
 
   /**

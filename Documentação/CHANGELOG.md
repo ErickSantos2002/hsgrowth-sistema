@@ -7,6 +7,47 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.16] - 2026-04-22
+
+### Melhorado
+
+- **Kanban — carregamento progressivo:** cards buscados de 100 em 100 com indicador de progresso no header ("Carregando cards… X/Y"). O board renderiza imediatamente após carregar listas; os demais cards chegam em background com 1 segundo de intervalo entre páginas. Boards grandes (~960 cards) ficam navegáveis em segundos. AbortController cancela carregamentos anteriores ao trocar filtro de status.
+- **Backend — filtro automático por role:** SDRs recebem apenas os cards onde são o SDR vinculado (`sdr_id = current_user.id`); Vendedores recebem apenas os cards onde são o responsável (`assigned_to_id = current_user.id`). Admin e Manager continuam vendo todos. Elimina tráfego desnecessário de dados que não seriam exibidos para esses perfis.
+
+### Adicionado
+
+- **Anotações — botão "Ver mais":** ao abrir a aba de anotações de um card com mais de 30 anotações, um botão "Ver mais X anotações" aparece ao fim da lista e busca o histórico completo sob demanda (`GET /card-notes/card/{id}`). O botão não aparece quando o filtro de ligações está ativo.
+
+### Arquivos alterados
+
+- `backend/app/services/card_service.py` — `list_cards`: filtro automático `sdr_id`/`assigned_to_id` por role
+- `frontend/src/pages/KanbanBoard.tsx` — `buildCardParams` sem `all=true`; `fetchAllCardsProgressive`; estado `loadingProgress`; indicador no header
+- `frontend/src/components/cardDetails/NotesSection.tsx` — prop `notesTotal`; estado `allLoaded`; `handleLoadMore`; botão "Ver mais"
+- `frontend/src/pages/CardDetails.tsx` — passa `notesTotal` ao `NotesSection`
+- `frontend/src/types/index.ts` — `notes_total` na interface `Card`; `is_lost` e `is_won` como `boolean` em `CardFilters`
+
+---
+
+## [1.7.15] - 2026-04-22
+
+### Melhorado
+
+- **Calendário — filtro por mês visível:** atividades buscadas apenas para o intervalo do grid exibido. Antes carregava todo o histórico sem filtro de data. Navegar entre meses refaz a busca automaticamente com AbortController para cancelar requisições antigas.
+- **Kanban — recarregamento seletivo:** criar ou editar um card agora recarrega apenas os cards, sem recarregar board e listas. O evento de NoShow também usa a rota mais leve.
+- **CardDetails — limites em atividades e notas:** histórico limitado a 30 atividades recentes; notas limitadas a 30 com contagem total disponível.
+- **Backend — N+1 eliminado no Kanban:** listas dos cards pré-carregadas em uma única query antes do loop de resposta.
+
+### Arquivos alterados
+
+- `frontend/src/pages/Calendar.tsx` — `loadTasks` com AbortController e carregamento progressivo; `getForDay` para modal "+N mais"
+- `frontend/src/services/cardTaskService.ts` — `getForCalendar` com filtro de datas; `getForDay` novo método; `page_size` máximo 500
+- `frontend/src/pages/KanbanBoard.tsx` — `loadCardsOnly` em vez de `loadBoardData` após criar/editar card
+- `backend/app/services/card_service.py` — `get_card_expanded`: limite 30 em atividades e notas; `notes_total`; pre-fetch de listas
+- `backend/app/repositories/card_note_repository.py` — parâmetro `limit` em `get_by_card`; método `count_by_card`
+- `backend/app/repositories/card_task_repository.py` — fix timezone-aware em `due_date_start`/`due_date_end`
+
+---
+
 ## [1.7.14] - 2026-04-17
 
 ### Melhorado

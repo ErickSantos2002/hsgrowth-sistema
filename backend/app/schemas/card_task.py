@@ -226,6 +226,6 @@ class CardTaskFilters(BaseModel):
     due_date_start: Optional[datetime] = Field(None, description="Data de vencimento inicial")
     due_date_end: Optional[datetime] = Field(None, description="Data de vencimento final")
     page: int = Field(1, ge=1, description="Número da página")
-    page_size: int = Field(50, ge=1, le=100, description="Itens por página (máx: 100)")
+    page_size: int = Field(50, ge=1, le=500, description="Itens por página (máx: 500)")
 
     model_config = ConfigDict(use_enum_values=True)

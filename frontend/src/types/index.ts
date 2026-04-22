@@ -155,6 +155,7 @@ export interface Card {
   field_values?: CardFieldValue[];
   pending_tasks?: any[];
   notes?: any[];
+  notes_total?: number;
   recent_activities?: any[];
   products?: any[];
   products_total?: number | null;
@@ -713,7 +714,8 @@ export interface CardFilters extends PaginationParams {
   list_id?: number;
   assigned_to_id?: number;
   client_id?: number;
-  is_won?: number;
+  is_won?: boolean;
+  is_lost?: boolean;
   due_date_start?: string;
   due_date_end?: string;
   search?: string;

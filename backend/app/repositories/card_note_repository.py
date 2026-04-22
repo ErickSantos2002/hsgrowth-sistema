@@ -51,22 +51,23 @@ class CardNoteRepository:
         """
         return self.db.query(CardNote).filter(CardNote.id == note_id).first()
 
-    def get_by_card(self, card_id: int) -> List[CardNote]:
+    def get_by_card(self, card_id: int, limit: Optional[int] = None) -> List[CardNote]:
         """
-        Busca todas as anotações de um card
-
-        Args:
-            card_id: ID do card
-
-        Returns:
-            Lista de CardNotes ordenadas por data (mais recente primeiro)
+        Busca anotações de um card ordenadas por data (mais recente primeiro).
+        Passa limit para evitar carregar centenas de notas em cards antigos.
         """
-        return (
+        q = (
             self.db.query(CardNote)
             .filter(CardNote.card_id == card_id)
             .order_by(CardNote.created_at.desc())
-            .all()
         )
+        if limit:
+            q = q.limit(limit)
+        return q.all()
+
+    def count_by_card(self, card_id: int) -> int:
+        """Contagem total de notas do card (para indicar se há mais além do limite)."""
+        return self.db.query(CardNote).filter(CardNote.card_id == card_id).count()
 
     def update(self, note_id: int, content: str, note_type: Optional[str] = None) -> Optional[CardNote]:
         """
