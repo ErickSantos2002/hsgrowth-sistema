@@ -3294,13 +3294,15 @@ const Settings: React.FC = () => {
                         <div className="ml-4 flex shrink-0 gap-2">
                           <button
                             onClick={() => openEditTemplate(tpl)}
-                            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-blue-400 dark:hover:bg-slate-700"
+                            className="rounded-lg bg-yellow-600/20 p-2 text-yellow-400 transition-colors hover:bg-yellow-600/30"
+                            title="Editar template"
                           >
                             <Edit2 size={15} />
                           </button>
                           <button
                             onClick={() => deleteTemplate(tpl)}
-                            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-400 dark:hover:bg-slate-700"
+                            className="rounded-lg bg-red-600/20 p-2 text-red-400 transition-colors hover:bg-red-600/30"
+                            title="Excluir template"
                           >
                             <Trash2 size={15} />
                           </button>

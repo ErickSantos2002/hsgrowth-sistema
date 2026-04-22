@@ -535,19 +535,21 @@ const CadenceTemplateManager: React.FC = () => {
                   <button
                     onClick={() => handleToggleActive(t)}
                     title={t.is_active ? "Desativar" : "Ativar"}
-                    className="rounded-lg p-2 text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    className="rounded-lg bg-slate-500/20 p-2 text-slate-400 transition-colors hover:bg-slate-500/30"
                   >
                     {t.is_active ? <PowerOff size={15} /> : <Power size={15} />}
                   </button>
                   <button
                     onClick={() => openEdit(t)}
-                    className="rounded-lg p-2 text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    title="Editar cadência"
+                    className="rounded-lg bg-yellow-600/20 p-2 text-yellow-400 transition-colors hover:bg-yellow-600/30"
                   >
                     <Edit2 size={15} />
                   </button>
                   <button
                     onClick={() => handleDelete(t)}
-                    className="rounded-lg p-2 text-slate-400 hover:bg-red-500/10 hover:text-red-400"
+                    title="Excluir cadência"
+                    className="rounded-lg bg-red-600/20 p-2 text-red-400 transition-colors hover:bg-red-600/30"
                   >
                     <Trash2 size={15} />
                   </button>
