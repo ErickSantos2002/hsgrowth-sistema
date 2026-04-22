@@ -123,9 +123,9 @@ db.close()
 
 ### 6. Importar o 1 card faltante (linha 4 do lote)
 
-O script de importação sempre pula a primeira linha de dados (limitação conhecida do `import_from_planilha.py` — começa a processar a partir da linha 5).
+> ✅ **A partir do Lote 4 este problema está resolvido.** Os scripts de geração de lote agora inserem os dados a partir da **row 5** (row 4 fica vazia), então o importer não perde nenhum card. O passo abaixo é histórico e só se aplica aos lotes 1, 2 e 3.
 
-**Para evitar esse problema nos próximos lotes:** antes de rodar o `import_from_planilha.py`, abra o arquivo `loteN.xlsx` no Excel e **copie manualmente a linha 4 para a linha 3** (sobrescrevendo o cabeçalho auxiliar), ou simplesmente insira uma linha em branco acima da linha 4 para empurrá-la para a linha 5.
+O script de importação sempre pula a primeira linha de dados (limitação conhecida do `import_from_planilha.py` — começa a processar a partir da linha 5). Nos lotes 1–3 os dados começavam na row 4, causando perda de 1 card.
 
 **Para importar o card faltante manualmente**, verifique os dados da empresa na linha 4 do `loteN.xlsx` e rode o script abaixo adaptado:
 
@@ -196,12 +196,12 @@ db.close()
 | Lote 1 | 06/04/2026 | 200 | Ãhwaryoné, Miguel, Lucas, Sérgio | 5058–5257 + 5370 | ✅ Importado |
 | Lote 2 | 09/04/2026 | 50 | Claudia | 5376–5425 | ✅ Importado |
 | Lote 3 | 13/04/2026 | 300 | Ãhwaryoné, Miguel, Lucas, Sérgio, Claudia, Karolaine | 5451–5749 + 5750 | ✅ Importado |
-| Lote 4 | — | — | — | — | ⏳ Pendente |
+| Lote 4 | 22/04/2026 | 300 | Ãhwaryoné, Miguel, Lucas, Sérgio, Claudia, Karolaine | 5792–6091 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
 **Obs. Lote 3:** 299 importados pelo script + 1 manual (EFITRANS TRANSPORTES LTDA, id=5750, Ãhwaryoné). Karolaine Martins (id=9) incluída pela primeira vez.
 
-**Total importado:** 550 leads | **Disponíveis na planilha:** 1639
+**Total importado:** 850 leads | **Disponíveis na planilha:** 1339
 
 ---
 
@@ -209,7 +209,9 @@ db.close()
 
 | Problema | Causa | Solução |
 |---|---|---|
-| "SDR Ãhwaryoné não encontrado" | Nome na planilha é abreviado | Normal — corrigir com script de fix de sdr_id (passo 5) |
-| "SDR Miguel não encontrado" | Nome na planilha é abreviado | Normal — corrigir com script de fix de sdr_id (passo 5) |
-| 199 cards em vez de 200 | Script pula linha 4 do arquivo | Importar o 1 card manualmente (passo 6) |
+| ~~"SDR Ãhwaryoné não encontrado"~~ | ~~Nome abreviado não batia com nome completo no banco~~ | ✅ **Resolvido a partir do Lote 5** — `SDR_NAME_MAP` em `import_from_planilha.py` mapeia diretamente nomes abreviados para IDs. |
+| ~~"SDR Miguel não encontrado"~~ | Idem | ✅ Idem |
+| ~~"SDR Karolaine não encontrado"~~ | Idem | ✅ Idem |
+| ~~199 cards em vez de 200~~ | ~~Script pulava linha 4~~ | ✅ **Resolvido a partir do Lote 4** — scripts de geração iniciam dados na row 5. |
 | Cards duplicados | Rodar o import duas vezes | Contatar time técnico para remover duplicatas |
+| Novo SDR não encontrado | Nome completo no banco tem múltiplas palavras não presentes na planilha | Adicionar entrada em `SDR_NAME_MAP` no topo de `import_from_planilha.py` |

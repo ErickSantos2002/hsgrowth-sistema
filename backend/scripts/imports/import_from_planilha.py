@@ -229,26 +229,42 @@ def extract_cnae_code(val) -> str | None:
     return code[:20]
 
 
+# Mapa fixo de nomes abreviados (como aparecem na planilha) → ID do usuário no banco.
+# Necessário para SDRs cujo nome completo no banco tem múltiplas palavras significativas
+# que não aparecem na versão abreviada da planilha (ex: "Ãhwaryoné" não encontra
+# "Ãhwaryoné Barbosa Bandeira De Melo" pelo algoritmo de palavras significativas).
+SDR_NAME_MAP: dict[str, int] = {
+    "ahwaryone": 14,  # Ãhwaryoné Barbosa Bandeira De Melo
+    "miguel":    16,  # Miguel Luiz Pereira de Melo
+    "karolaine": 9,   # Karolaine Martins
+}
+
+
 def find_sdr_user(db, sdr_name: str) -> int | None:
     """
     Busca usuário no banco pelo nome informado na planilha.
-    Exige que TODAS as palavras significativas (>3 chars) do nome do usuário
-    estejam presentes no nome buscado — evita falsos positivos por sobrenome comum
-    (ex: 'Sandra Silva' não bate em 'Cláudia Silva' porque 'sandra' não está lá).
+    1. Verifica SDR_NAME_MAP para nomes abreviados conhecidos.
+    2. Fallback: exige que TODAS as palavras significativas (>3 chars) do nome do
+       usuário estejam presentes no nome buscado — evita falsos positivos por
+       sobrenome comum (ex: 'Sandra Silva' não bate em 'Cláudia Silva').
     """
     if not sdr_name:
         return None
     name_norm = strip_accents(sdr_name.lower())
+
+    # 1. Mapa direto para nomes abreviados que o algoritmo não resolve
+    if name_norm in SDR_NAME_MAP:
+        return SDR_NAME_MAP[name_norm]
+
+    # 2. Busca fuzzy por palavras significativas
     users = db.query(User).filter(User.is_active == True).all()
     for user in users:
         if not user.name:
             continue
         user_norm = strip_accents(user.name.lower())
-        # Palavras significativas do nome do usuário cadastrado (mais de 3 letras)
         significant_words = [word for word in user_norm.split() if len(word) > 3]
         if not significant_words:
             continue
-        # Todas as palavras significativas do usuário devem estar no nome da planilha
         all_match = all(word in name_norm for word in significant_words)
         if all_match:
             return user.id

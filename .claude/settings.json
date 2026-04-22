@@ -4,7 +4,10 @@
       "Bash(python -W ignore -m dotenv run -- python scripts/imports/import_from_planilha.py scripts/imports/Planilha_Importacao_CRM_Sandra_fixed.xlsx)",
       "Bash(python -W ignore -m dotenv run -- python scripts/imports/import_from_planilha.py Planilha_Importacao_CRM_Sandra_fixed.xlsx)",
       "Bash(python -W ignore -c \":*)",
-      "Bash(set PYTHONPATH=.)"
+      "Bash(set PYTHONPATH=.)",
+      "Bash(python scripts/imports/fix_novos_sdr_lote4.py)",
+      "Bash(python scripts/imports/import_from_planilha.py d:/GitHub/hsgrowth-sistema/backend/scripts/imports/Planilha_Importacao_CRM_Novos_SDR_lote4.xlsx)",
+      "Bash(tasklist)"
     ]
   }
 }
