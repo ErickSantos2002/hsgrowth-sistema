@@ -56,7 +56,9 @@ class CardRepository:
         sdr_id: Optional[int] = None,
         person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
-        is_lost: Optional[bool] = None
+        is_lost: Optional[bool] = None,
+        entered_at_from=None,
+        entered_at_to=None,
     ) -> List[Card]:
         """
         Lista cards de um board com filtros opcionais.
@@ -105,6 +107,19 @@ class CardRepository:
             else:
                 query = query.filter(Card.is_won != -1)
 
+        if entered_at_from is not None or entered_at_to is not None:
+            from app.models.card_list_history import CardListHistory
+            dt_from = entered_at_from.replace(tzinfo=None) if entered_at_from and entered_at_from.tzinfo else entered_at_from
+            dt_to = entered_at_to.replace(tzinfo=None) if entered_at_to and entered_at_to.tzinfo else entered_at_to
+            query = query.join(
+                CardListHistory,
+                (CardListHistory.card_id == Card.id) & (CardListHistory.list_id == Card.list_id)
+            )
+            if dt_from is not None:
+                query = query.filter(CardListHistory.entered_at >= dt_from)
+            if dt_to is not None:
+                query = query.filter(CardListHistory.entered_at <= dt_to)
+
         return query.order_by(Card.list_id, Card.position).offset(skip).limit(limit).all()
 
     def count_by_board(
@@ -114,7 +129,9 @@ class CardRepository:
         sdr_id: Optional[int] = None,
         person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
-        is_lost: Optional[bool] = None
+        is_lost: Optional[bool] = None,
+        entered_at_from=None,
+        entered_at_to=None,
     ) -> int:
         """
         Conta cards de um board com filtros opcionais.
@@ -153,6 +170,19 @@ class CardRepository:
                 query = query.filter(Card.is_won == -1)
             else:
                 query = query.filter(Card.is_won != -1)
+
+        if entered_at_from is not None or entered_at_to is not None:
+            from app.models.card_list_history import CardListHistory
+            dt_from = entered_at_from.replace(tzinfo=None) if entered_at_from and entered_at_from.tzinfo else entered_at_from
+            dt_to = entered_at_to.replace(tzinfo=None) if entered_at_to and entered_at_to.tzinfo else entered_at_to
+            query = query.join(
+                CardListHistory,
+                (CardListHistory.card_id == Card.id) & (CardListHistory.list_id == Card.list_id)
+            )
+            if dt_from is not None:
+                query = query.filter(CardListHistory.entered_at >= dt_from)
+            if dt_to is not None:
+                query = query.filter(CardListHistory.entered_at <= dt_to)
 
         return query.count()
 

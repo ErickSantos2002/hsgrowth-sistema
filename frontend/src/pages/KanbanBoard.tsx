@@ -88,6 +88,9 @@ const KanbanBoard: React.FC = () => {
   const [acquisitionChannelDetailFilter, setAcquisitionChannelDetailFilter] = useState(""); // Filtro de detalhe do canal
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
   const [cardTagFilter, setCardTagFilter] = useState(""); // Filtro por etiqueta: "" | "nutricao" | "parado"
+  const [enteredPeriod, setEnteredPeriod] = useState(""); // Período de entrada na lista: "" | "today" | "yesterday" | "week" | "month" | "quarter" | "year" | "custom"
+  const [enteredCustomStart, setEnteredCustomStart] = useState("");
+  const [enteredCustomEnd, setEnteredCustomEnd] = useState("");
   const [loadingProgress, setLoadingProgress] = useState<{ loaded: number; total: number } | null>(null);
   const loadCardsAbortRef = useRef<AbortController | null>(null);
 
@@ -129,6 +132,9 @@ const KanbanBoard: React.FC = () => {
         setAcquisitionChannelFilter(saved.acquisitionChannelFilter ?? "");
         setAcquisitionChannelDetailFilter(saved.acquisitionChannelDetailFilter ?? "");
         setCardTagFilter(saved.cardTagFilter ?? "");
+        setEnteredPeriod(saved.enteredPeriod ?? "");
+        setEnteredCustomStart(saved.enteredCustomStart ?? "");
+        setEnteredCustomEnd(saved.enteredCustomEnd ?? "");
       } catch {
         // JSON corrompido — ignora e mantém defaults
       }
@@ -160,6 +166,9 @@ const KanbanBoard: React.FC = () => {
         acquisitionChannelFilter,
         acquisitionChannelDetailFilter,
         cardTagFilter,
+        enteredPeriod,
+        enteredCustomStart,
+        enteredCustomEnd,
       })
     );
   }, [
@@ -176,6 +185,9 @@ const KanbanBoard: React.FC = () => {
     acquisitionChannelFilter,
     acquisitionChannelDetailFilter,
     cardTagFilter,
+    enteredPeriod,
+    enteredCustomStart,
+    enteredCustomEnd,
   ]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]); // Lista de usuários
   const boardScrollRef = useRef<HTMLDivElement | null>(null);
@@ -204,6 +216,21 @@ const KanbanBoard: React.FC = () => {
     }
     if (boardId) loadCardsOnly(statusFilter);
   }, [statusFilter, boardId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Recarrega os cards quando o filtro de data de entrada na lista muda.
+   * Para "custom", aguarda ambas as datas antes de disparar.
+   */
+  const enteredFilterInitialized = React.useRef(false);
+  useEffect(() => {
+    if (!enteredFilterInitialized.current) {
+      enteredFilterInitialized.current = true;
+      return;
+    }
+    if (!boardId) return;
+    if (enteredPeriod === "custom" && (!enteredCustomStart || !enteredCustomEnd)) return;
+    loadCardsOnly(statusFilter);
+  }, [enteredPeriod, enteredCustomStart, enteredCustomEnd, boardId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * Recarrega os cards quando um card é movido de fora do contexto do board
@@ -301,8 +328,48 @@ const KanbanBoard: React.FC = () => {
    * "lost"  → apenas perdidos
    * "all"   → sem filtro de status (retorna tudo)
    */
+  /** Converte um período pré-definido em datas ISO (YYYY-MM-DD). */
+  const getPeriodDates = (period: string): { from: string; to: string } => {
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    if (period === "today") return { from: today, to: today };
+    if (period === "yesterday") {
+      const d = new Date(now); d.setDate(d.getDate() - 1);
+      const y = d.toISOString().split("T")[0];
+      return { from: y, to: y };
+    }
+    if (period === "week") {
+      const d = new Date(now);
+      const day = d.getDay();
+      d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+      return { from: d.toISOString().split("T")[0], to: today };
+    }
+    if (period === "month") {
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      return { from: `${now.getFullYear()}-${m}-01`, to: today };
+    }
+    if (period === "quarter") {
+      const q = Math.floor(now.getMonth() / 3);
+      const sm = String(q * 3 + 1).padStart(2, "0");
+      return { from: `${now.getFullYear()}-${sm}-01`, to: today };
+    }
+    if (period === "year") return { from: `${now.getFullYear()}-01-01`, to: today };
+    return { from: "", to: "" };
+  };
+
   const buildCardParams = (status: string, page = 1): CardFilters => {
     const base: CardFilters = { board_id: Number(boardId), minimal: true, page_size: 100, page };
+
+    // Filtro de data de entrada na lista
+    if (enteredPeriod && enteredPeriod !== "custom") {
+      const { from, to } = getPeriodDates(enteredPeriod);
+      if (from) base.entered_at_from = `${from}T00:00:00`;
+      if (to)   base.entered_at_to   = `${to}T23:59:59`;
+    } else if (enteredPeriod === "custom" && enteredCustomStart && enteredCustomEnd) {
+      base.entered_at_from = `${enteredCustomStart}T00:00:00`;
+      base.entered_at_to   = `${enteredCustomEnd}T23:59:59`;
+    }
+
     switch (status) {
       case "won":  return { ...base, is_won: true };
       case "lost": return { ...base, is_lost: true };
@@ -638,6 +705,9 @@ const KanbanBoard: React.FC = () => {
     setAcquisitionChannelFilter("");
     setAcquisitionChannelDetailFilter("");
     setCardTagFilter("");
+    setEnteredPeriod("");
+    setEnteredCustomStart("");
+    setEnteredCustomEnd("");
   };
 
   /** Indica se algum filtro está ativo (diferente do padrão) */
@@ -654,7 +724,8 @@ const KanbanBoard: React.FC = () => {
     !sdrFilterIsDefault ||
     acquisitionChannelFilter !== "" ||
     acquisitionChannelDetailFilter !== "" ||
-    cardTagFilter !== "";
+    cardTagFilter !== "" ||
+    enteredPeriod !== "";
 
   const filterCards = (cardsToFilter: Card[]): Card[] => {
     return cardsToFilter.filter((card) => {
@@ -1300,6 +1371,48 @@ const KanbanBoard: React.FC = () => {
                   onChange={(e) => setCustomDateEnd(e.target.value)}
                   min={customDateStart}
                   className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                />
+              </div>
+            )}
+
+            {/* Filtro: Data de entrada na lista */}
+            <SelectMenu
+              size="sm"
+              value={enteredPeriod}
+              options={[
+                { value: "", label: "Qualquer entrada" },
+                { value: "today", label: "Entrou hoje" },
+                { value: "yesterday", label: "Entrou ontem" },
+                { value: "week", label: "Entrou esta semana" },
+                { value: "month", label: "Entrou este mês" },
+                { value: "quarter", label: "Entrou este trimestre" },
+                { value: "year", label: "Entrou este ano" },
+                { value: "custom", label: "Período personalizado" },
+              ]}
+              onChange={(v) => {
+                setEnteredPeriod(v);
+                if (v !== "custom") {
+                  setEnteredCustomStart("");
+                  setEnteredCustomEnd("");
+                }
+              }}
+            />
+            {enteredPeriod === "custom" && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={enteredCustomStart}
+                  max={enteredCustomEnd || undefined}
+                  onChange={(e) => setEnteredCustomStart(e.target.value)}
+                  className="flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                />
+                <span className="text-xs text-slate-400">até</span>
+                <input
+                  type="date"
+                  value={enteredCustomEnd}
+                  min={enteredCustomStart || undefined}
+                  onChange={(e) => setEnteredCustomEnd(e.target.value)}
+                  className="flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
                 />
               </div>
             )}

@@ -240,6 +240,8 @@ class CardService:
         person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
         is_lost: Optional[bool] = None,
+        entered_at_from: Optional[datetime] = None,
+        entered_at_to: Optional[datetime] = None,
         current_user: Optional[User] = None,
     ):
         """
@@ -296,7 +298,9 @@ class CardService:
             sdr_id=sdr_id,
             person_id=person_id,
             is_won=is_won,
-            is_lost=is_lost
+            is_lost=is_lost,
+            entered_at_from=entered_at_from,
+            entered_at_to=entered_at_to,
         )
 
         # Conta total
@@ -306,7 +310,9 @@ class CardService:
             sdr_id=sdr_id,
             person_id=person_id,
             is_won=is_won,
-            is_lost=is_lost
+            is_lost=is_lost,
+            entered_at_from=entered_at_from,
+            entered_at_to=entered_at_to,
         )
 
         # Calcula total de páginas

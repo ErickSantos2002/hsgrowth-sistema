@@ -719,6 +719,8 @@ export interface CardFilters extends PaginationParams {
   due_date_start?: string;
   due_date_end?: string;
   search?: string;
+  entered_at_from?: string;
+  entered_at_to?: string;
 }
 
 export interface UserFilters extends PaginationParams {

@@ -3,6 +3,7 @@ Endpoints de Cards.
 Rotas para gerenciamento de cartões e campos customizados.
 """
 from typing import Any, Optional, List
+from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException
 from sqlalchemy.orm import Session
 from app.repositories.notification_repository import NotificationRepository
@@ -169,6 +170,8 @@ async def list_cards(
     person_id: Optional[int] = Query(None, description="Filtrar por pessoa (contato)"),
     is_won: Optional[bool] = Query(None, description="Filtrar por cards ganhos"),
     is_lost: Optional[bool] = Query(None, description="Filtrar por cards perdidos"),
+    entered_at_from: Optional[datetime] = Query(None, description="Filtrar cards que entraram na lista atual a partir desta data"),
+    entered_at_to: Optional[datetime] = Query(None, description="Filtrar cards que entraram na lista atual até esta data"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
@@ -178,6 +181,7 @@ async def list_cards(
     Parâmetros especiais para performance:
     - all=true: Retorna TODOS os cards sem limite (para Kanban)
     - minimal=true: Retorna apenas campos essenciais (reduz payload ~60%)
+    - entered_at_from/to: Filtra por data de entrada na lista atual (via CardListHistory)
     """
     service = CardService(db)
     return service.list_cards(
@@ -190,6 +194,8 @@ async def list_cards(
         person_id=person_id,
         is_won=is_won,
         is_lost=is_lost,
+        entered_at_from=entered_at_from,
+        entered_at_to=entered_at_to,
         current_user=current_user,
     )
 
