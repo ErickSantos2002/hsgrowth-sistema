@@ -1392,22 +1392,23 @@ class CardService:
 
         # ── Board 7 — Aquisição ────────────────────────────────────────────────
         # Fluxo sequencial: Reunião Agendada → Qualificação → Diagnóstico e Proposta
-        #                   → Negociação → (Negócio Ganho/Perdido via botões)
+        #                   → Negociação → Aguardando Pedido → (Negócio Ganho/Perdido via botões)
         #
         # Transições permitidas (por índice na lista ordenada do board):
-        #   0 → 1  Reunião Agendada  → Qualificação
-        #   1 → 2  Qualificação      → Diagnóstico e Proposta
+        #   0 → 1  Reunião Agendada       → Qualificação
+        #   1 → 2  Qualificação           → Diagnóstico e Proposta
         #   2 → 3  Diagnóstico e Proposta → Negociação
-        #   3 → 4  Negociação        → Negócio Ganho  (terminal, não passa por aqui)
-        # Negócio Ganho e Negócio Perdido são excluídos antes de chegar neste método.
+        #   3 → 4  Negociação             → Aguardando Pedido
+        # Aguardando Pedido, Negócio Ganho e Negócio Perdido são encerrados via botões.
         elif source_list.board_id == 7:
             allowed_transitions_b7 = {
-                0: [1],  # Reunião Agendada    → Qualificação
-                1: [2],  # Qualificação        → Diagnóstico e Proposta
+                0: [1],  # Reunião Agendada       → Qualificação
+                1: [2],  # Qualificação           → Diagnóstico e Proposta
                 2: [3],  # Diagnóstico e Proposta → Negociação
+                3: [4],  # Negociação             → Aguardando Pedido
             }
 
-            # Negociação (index 3) não possui próxima etapa pelo pipeline —
+            # Aguardando Pedido (index 4) não possui próxima etapa pelo pipeline —
             # o encerramento do negócio é feito pelos botões dedicados Ganho/Perdido
             if source_index not in allowed_transitions_b7:
                 raise HTTPException(
@@ -1494,6 +1495,10 @@ class CardService:
                 if not has_pending_followup:
                     missing.append(
                         "criar uma tarefa de follow-up pendente no card"
+                    )
+                if not card.due_date:
+                    missing.append(
+                        "preencher a Data esperada de fechamento (seção 'Resumo' do card)"
                     )
 
                 if missing:

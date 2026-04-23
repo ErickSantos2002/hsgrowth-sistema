@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.19",
+    date: "23/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Aquisição: nova etapa 'Aguardando Pedido' entre Negociação e Negócio Ganho — para leads que já decidiram comprar e aguardam a formalização do pedido.",
+      },
+      {
+        type: "improvement",
+        text: "Aquisição: para avançar de Diagnóstico e Proposta para Negociação, agora é obrigatório preencher a Data esperada de fechamento, além da proposta em PDF e follow-up pendente.",
+      },
+    ],
+  },
+  {
     version: "1.7.18",
     date: "23/04/2026",
     entries: [
