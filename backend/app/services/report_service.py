@@ -13,6 +13,7 @@ from app.models.card import Card
 from app.models.board import Board
 from app.models.list import List as BoardList
 from app.models.user import User
+from app.models.role import Role
 from app.models.card_transfer import CardTransfer
 from app.models.activity import Activity
 from app.models.card_list_history import CardListHistory
@@ -730,16 +731,27 @@ class ReportService:
 
         # Atividades concluídas por tipo no período (para gráfico SDR/Vendedor)
         # Filtra apenas tasks concluídas (is_completed=True) pela data de conclusão (completed_at)
-        # Usa apenas assigned_to_id (quem executou a atividade), não created_by_id,
-        # para evitar que atividades criadas por outro role para o usuário sejam contadas duas vezes
-        # ou que atividades atribuídas a um usuário de outro role apareçam no gráfico errado.
+        # Usa apenas assigned_to_id (quem executou a atividade).
+        # Quando admin/manager visualiza "Todos os Vendedores" ou "Todos os SDRs" (sem user_id),
+        # filtra pela role correspondente via subquery para não misturar atividades de roles diferentes.
         task_user_filter = []
         if current_user and current_user.role:
             _role = current_user.role.name
             if _role in ("sdr", "salesperson"):
                 task_user_filter = [CardTask.assigned_to_id == current_user.id]
-            elif _role in ("admin", "manager") and user_id:
-                task_user_filter = [CardTask.assigned_to_id == user_id]
+            elif _role in ("admin", "manager"):
+                if user_id:
+                    task_user_filter = [CardTask.assigned_to_id == user_id]
+                elif view == "vendedor":
+                    salesperson_subq = self.db.query(User.id).join(
+                        Role, User.role_id == Role.id
+                    ).filter(Role.name == "salesperson").subquery()
+                    task_user_filter = [CardTask.assigned_to_id.in_(salesperson_subq)]
+                elif view == "sdr":
+                    sdr_subq = self.db.query(User.id).join(
+                        Role, User.role_id == Role.id
+                    ).filter(Role.name == "sdr").subquery()
+                    task_user_filter = [CardTask.assigned_to_id.in_(sdr_subq)]
 
         task_counts_query = self.db.query(
             CardTask.task_type,
