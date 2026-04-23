@@ -9,9 +9,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Adicionado
 - **Aquisição — etapa "Aguardando Pedido":** nova etapa entre Negociação e Negócio Ganho para leads que já decidiram comprar e aguardam a formalização do pedido. Saída apenas pelos botões Ganho ou Perdido.
+- **Dashboard Vendedor — gráficos de Atividades e Canais:** dois novos gráficos na dashboard do vendedor — "Atividades no Período" (por tipo: ligação, WhatsApp, e-mail, tarefa, etc.) e "Cards por Canal" (Inbound, Outbound, Indicação, Parcerias, Eventos, Base) — ambos filtrados pelo período selecionado.
+- **Dashboard Vendedor — Reuniões Realizadas:** novo card KPI "Reuniões Agendadas" exibindo reuniões concluídas pelo vendedor no período (mesmo critério das atividades: apenas concluídas).
+- **Card — botão Clonar:** novo botão no header do card que cria uma cópia na mesma lista, copiando resumo, cliente, contato, produto e datas de tracking de boards. Não copia atividades, anotações nem arquivos. Registra nota automática em ambos os cards.
 
 ### Melhorado
 - **Aquisição — regra Diagnóstico e Proposta → Negociação:** além de proposta em PDF e follow-up pendente, agora é obrigatório preencher a **Data esperada de fechamento** antes de avançar.
+
+### Corrigido
+- **Dashboard SDR — Reuniões Recebidas:** No-Show marcado pelo vendedor (após o card sair do board de Prospecção) agora é corretamente excluído da contagem de reuniões do SDR. Antes, apenas No-Shows marcados enquanto o card ainda estava na lista "Agendado" eram descartados.
 
 ---
 

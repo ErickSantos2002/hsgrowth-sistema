@@ -36,6 +36,22 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "improvement",
         text: "Aquisição: para avançar de Diagnóstico e Proposta para Negociação, agora é obrigatório preencher a Data esperada de fechamento, além da proposta em PDF e follow-up pendente.",
       },
+      {
+        type: "feature",
+        text: "Dashboard Vendedor: dois novos gráficos — 'Atividades no Período' (ligação, WhatsApp, e-mail, tarefa, etc.) e 'Cards por Canal' (Inbound, Outbound, Indicação, Parcerias, Eventos, Base) — filtrados pelo período selecionado.",
+      },
+      {
+        type: "feature",
+        text: "Dashboard Vendedor: novo card KPI 'Reuniões Agendadas' mostrando reuniões concluídas pelo vendedor no período.",
+      },
+      {
+        type: "feature",
+        text: "Card: novo botão 'Clonar' no header do card. Cria uma cópia na mesma lista com resumo, cliente, contato, produto e datas de tracking de boards. Não copia atividades, anotações nem arquivos. Registra nota automática em ambos os cards.",
+      },
+      {
+        type: "fix",
+        text: "Dashboard SDR — Reuniões Recebidas: No-Show marcado pelo vendedor (após o card sair do board de Prospecção) agora é corretamente excluído da contagem. Antes, apenas No-Shows marcados ainda na lista 'Agendado' eram descartados.",
+      },
     ],
   },
   {
