@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.19] — 23/04/2026
+
+### Adicionado
+- **Aquisição — etapa "Aguardando Pedido":** nova etapa entre Negociação e Negócio Ganho para leads que já decidiram comprar e aguardam a formalização do pedido. Saída apenas pelos botões Ganho ou Perdido.
+
+### Melhorado
+- **Aquisição — regra Diagnóstico e Proposta → Negociação:** além de proposta em PDF e follow-up pendente, agora é obrigatório preencher a **Data esperada de fechamento** antes de avançar.
+
+---
+
 ## [1.7.18] — 23/04/2026
 
 ### Melhorado

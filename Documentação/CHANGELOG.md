@@ -7,6 +7,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.19] - 2026-04-23
+
+### Adicionado
+- **Aquisição — etapa "Aguardando Pedido" (list_id=42):** nova etapa entre Negociação e Negócio Ganho para leads que já decidiram comprar e aguardam a formalização. Saída apenas via botões Ganho/Perdido.
+
+### Melhorado
+- **Aquisição — regra Diagnóstico e Proposta → Negociação:** adicionada validação de `due_date` (Data esperada de fechamento) como requisito obrigatório, junto com proposta em PDF e follow-up pendente.
+
+---
+
 ## [1.7.18] - 2026-04-23
 
 ### Melhorado
