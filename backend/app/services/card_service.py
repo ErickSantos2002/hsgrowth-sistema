@@ -2592,21 +2592,42 @@ class CardService:
         - Status ganho/perdido (novo card sempre ativo)
 
         Cria uma nota em ambos os cards registrando o clone.
+
+        Nota: cria o card diretamente no ORM sem passar por create_card,
+        pois a operação de clone deve ser permitida para todos os roles
+        (SDR e Vendedor precisam clonar cards em qualquer lista/board).
         """
-        from app.schemas.card import CardCreate
+        from datetime import datetime
         from app.models.card_field_value import CardFieldValue
         from app.models.card_note import CardNote
         from app.models.card_product import CardProduct
+        from app.models.card_list_history import CardListHistory
 
         original_card = self.get_card_by_id(card_id)
 
-        clone_data = CardCreate(
+        list_obj = self.list_repository.find_by_id(original_card.list_id)
+        if not list_obj:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lista não encontrada")
+
+        board = self.board_repository.find_by_id(list_obj.board_id)
+        if not board:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Board não encontrado")
+
+        now = datetime.utcnow()
+
+        # Cria o card diretamente no ORM — sem verificação de permissão de lista,
+        # sem override de role e sem sobrescrever as datas de tracking do original.
+        new_card = Card(
             title=original_card.title,
             list_id=original_card.list_id,
             description=original_card.description,
             assigned_to_id=original_card.assigned_to_id,
             sdr_id=original_card.sdr_id,
-            value=float(original_card.value) if original_card.value is not None else None,
+            client_id=original_card.client_id,
+            person_id=original_card.person_id,
+            contact_info=original_card.contact_info,
+            payment_info=original_card.payment_info,
+            value=original_card.value,
             deal_type=original_card.deal_type,
             acquisition_channel=original_card.acquisition_channel,
             acquisition_channel_detail=original_card.acquisition_channel_detail,
@@ -2615,31 +2636,59 @@ class CardService:
             utm_campaign=original_card.utm_campaign,
             utm_source=original_card.utm_source,
             utm_term=original_card.utm_term,
-            has_implementation=bool(original_card.has_implementation) if original_card.has_implementation is not None else None,
-            has_personnel=bool(original_card.has_personnel) if original_card.has_personnel is not None else None,
+            has_implementation=original_card.has_implementation,
+            has_personnel=original_card.has_personnel,
             automacao01=original_card.automacao01,
             prospection_entry_date=original_card.prospection_entry_date,
             acquisition_entry_date=original_card.acquisition_entry_date,
             expansion_entry_date=original_card.expansion_entry_date,
         )
+        self.db.add(new_card)
+        self.db.commit()
+        self.db.refresh(new_card)
 
-        new_card = self.create_card(clone_data, current_user)
-
-        # Vincula client_id, person_id e campos JSON diretamente no ORM
+        # Registra entrada inicial na lista de histórico
         try:
-            if original_card.client_id:
-                new_card.client_id = original_card.client_id
-            if original_card.person_id:
-                new_card.person_id = original_card.person_id
-            if original_card.contact_info:
-                new_card.contact_info = original_card.contact_info
-            if original_card.payment_info:
-                new_card.payment_info = original_card.payment_info
+            self.db.add(CardListHistory(
+                card_id=new_card.id,
+                list_id=new_card.list_id,
+                board_id=board.id,
+                entered_at=now,
+            ))
             self.db.commit()
-            self.db.refresh(new_card)
         except Exception as e:
             self.db.rollback()
-            print(f"[CLONE] Aviso: erro ao vincular client/person/contact_info: {e}")
+            print(f"[CLONE] Aviso: erro ao registrar CardListHistory: {e}")
+
+        # Dispara automações do tipo "card_created"
+        try:
+            AutomationService = get_automation_service()
+            automation_service = AutomationService(self.db)
+            automation_service.process_trigger(
+                board_id=board.id,
+                trigger_event="card_created",
+                card=new_card,
+                user=current_user,
+                trigger_data={"triggered_by_user_id": current_user.id}
+            )
+        except Exception as e:
+            print(f"[CLONE] Aviso: erro ao disparar automações: {e}")
+
+        # Gamificação: pontua o responsável pelo card criado
+        if new_card.assigned_to_id and board.board_type:
+            try:
+                from app.services.gamification_service import GamificationService
+                gamification_service = GamificationService(self.db)
+                gamification_service.award_points(
+                    user_id=new_card.assigned_to_id,
+                    action_type="card_created",
+                    board_type=board.board_type,
+                    description=f"Card '{new_card.title}' criado (clone de #{card_id})",
+                    related_entity_type="Card",
+                    related_entity_id=new_card.id,
+                )
+            except Exception as e:
+                print(f"[CLONE] Aviso: erro ao pontuar gamificação: {e}")
 
         # Copia campos customizados
         try:
