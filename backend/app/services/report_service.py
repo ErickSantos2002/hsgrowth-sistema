@@ -513,11 +513,11 @@ class ReportService:
         LIST_AGENDADO_ID = 26
 
         # Exclui entradas ESPECÍFICAS na lista Agendado que terminaram em NoShow.
-        # Lógica: uma entrada da lista é descartada se houve uma CardTask com is_noshow=True
-        # concluída durante aquela passagem do card pela lista (entre entered_at e exited_at).
-        # Se o card reagendou e voltou à mesma lista, essa nova entrada NÃO é excluída —
-        # apenas a passagem que gerou o NoShow é descartada. Isso garante que a SDR é
-        # comissionada pela reunião reagendada, mas não pela que não aconteceu.
+        # Lógica: uma entrada é descartada se houve uma CardTask com is_noshow=True
+        # concluída APÓS entered_at — sem limite superior em exited_at, pois o vendedor
+        # pode marcar NoShow depois que o card já saiu da lista 26 (board do vendedor).
+        # O reagendamento é protegido: se o card voltou à lista 26 em T4 e o NoShow
+        # foi em T3 < T4, então T3 >= entered_at(T4) é falso → nova entrada NÃO é excluída.
         _noshow_clh_ids = (
             self.db.query(CardListHistory.id)
             .join(
@@ -526,9 +526,6 @@ class ReportService:
                     CardTask.card_id == CardListHistory.card_id,
                     CardTask.is_noshow == True,
                     CardTask.completed_at >= CardListHistory.entered_at,
-                    CardTask.completed_at <= func.coalesce(
-                        CardListHistory.exited_at, func.now()
-                    ),
                 ),
             )
             .filter(CardListHistory.list_id == LIST_AGENDADO_ID)
