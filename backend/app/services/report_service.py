@@ -730,19 +730,16 @@ class ReportService:
 
         # Atividades concluídas por tipo no período (para gráfico SDR/Vendedor)
         # Filtra apenas tasks concluídas (is_completed=True) pela data de conclusão (completed_at)
+        # Usa apenas assigned_to_id (quem executou a atividade), não created_by_id,
+        # para evitar que atividades criadas por outro role para o usuário sejam contadas duas vezes
+        # ou que atividades atribuídas a um usuário de outro role apareçam no gráfico errado.
         task_user_filter = []
         if current_user and current_user.role:
             _role = current_user.role.name
             if _role in ("sdr", "salesperson"):
-                task_user_filter = [
-                    (CardTask.created_by_id == current_user.id) |
-                    (CardTask.assigned_to_id == current_user.id)
-                ]
+                task_user_filter = [CardTask.assigned_to_id == current_user.id]
             elif _role in ("admin", "manager") and user_id:
-                task_user_filter = [
-                    (CardTask.created_by_id == user_id) |
-                    (CardTask.assigned_to_id == user_id)
-                ]
+                task_user_filter = [CardTask.assigned_to_id == user_id]
 
         task_counts_query = self.db.query(
             CardTask.task_type,
