@@ -641,6 +641,11 @@ export interface DashboardKPIs {
     type: string;
     count: number;
   }>;
+
+  cards_by_channel: Array<{
+    channel: string;
+    count: number;
+  }>;
 }
 
 export interface SalesReport {

@@ -766,6 +766,26 @@ class ReportService:
             for row in task_counts_query
         ]
 
+        # Cards por canal de aquisição criados no período
+        channel_rows = self.db.query(
+            Card.acquisition_channel,
+            func.count(Card.id).label("count")
+        ).join(
+            BoardList, Card.list_id == BoardList.id
+        ).filter(
+            BoardList.board_id.in_(board_ids),
+            Card.acquisition_channel.isnot(None),
+            Card.acquisition_channel != "",
+            func.date(Card.created_at) >= start_of_period,
+            func.date(Card.created_at) <= end_of_period,
+            *uf
+        ).group_by(Card.acquisition_channel).all()
+
+        cards_by_channel = [
+            {"channel": row.acquisition_channel, "count": row.count}
+            for row in channel_rows
+        ]
+
         return DashboardKPIsResponse(
             total_cards=total_cards,
             new_cards_today=new_cards_today,
@@ -795,7 +815,8 @@ class ReportService:
             top_sdrs_by_meetings=top_sdrs_by_meetings,
             cards_by_stage=cards_by_stage,
             sales_evolution=sales_evolution,
-            activity_counts_by_type=activity_counts_by_type
+            activity_counts_by_type=activity_counts_by_type,
+            cards_by_channel=cards_by_channel,
         )
 
     def get_sales_report(

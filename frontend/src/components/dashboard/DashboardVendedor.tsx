@@ -2,7 +2,7 @@ import React from "react";
 import {
   DollarSign, TrendingUp, TrendingDown, Target, Clock,
   AlertTriangle, Trophy, Medal, Award, Percent, Ticket,
-  CalendarCheck, Users,
+  CalendarCheck, Users, Activity, Network,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -19,6 +19,8 @@ interface DashboardVendedorProps {
 }
 
 const STAGE_COLORS = ["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4"];
+const CHANNEL_COLORS = ["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#06b6d4", "#f43f5e"];
+const ACTIVITY_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
 
 const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel }) => {
   const { darkMode } = useTheme();
@@ -224,7 +226,109 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
         </div>
       </section>
 
-      {/* ── 3. CONVERSÃO ──────────────────────────────────────────── */}
+      {/* ── 3. ATIVIDADES E CANAIS ────────────────────────────────── */}
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Atividades no Período */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-purple-500/20 p-2">
+                <Activity size={16} className="text-purple-400" />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                Atividades no Período
+              </h3>
+            </div>
+            {(kpis.activity_counts_by_type?.length ?? 0) > 0 && (
+              <span className="ml-auto rounded-full bg-purple-500/20 px-2.5 py-0.5 text-xs font-semibold text-purple-400">
+                {kpis.activity_counts_by_type.reduce((sum, a) => sum + a.count, 0)} atividades
+              </span>
+            )}
+          </div>
+          {(kpis.activity_counts_by_type?.length ?? 0) > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={kpis.activity_counts_by_type.map((a) => ({
+                  name:
+                    a.type === "call" ? "Ligação" :
+                    a.type === "meeting" ? "Reunião" :
+                    a.type === "follow_up" ? "Follow-up" :
+                    a.type === "task" ? "Tarefa" :
+                    a.type === "whatsapp" ? "WhatsApp" :
+                    a.type === "email" ? "E-mail" :
+                    a.type === "linkedin" ? "LinkedIn" :
+                    a.type,
+                  count: a.count,
+                }))}
+                margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} />
+                <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" }}
+                  labelStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
+                  itemStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
+                  formatter={(v: number) => [v, "Atividades"]}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {kpis.activity_counts_by_type.map((_, index) => (
+                    <Cell key={index} fill={ACTIVITY_COLORS[index % ACTIVITY_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-48 items-center justify-center text-sm text-slate-400">Sem atividades no período</div>
+          )}
+        </div>
+
+        {/* Cards por Canal */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-cyan-500/20 p-2">
+                <Network size={16} className="text-cyan-400" />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                Cards por Canal
+              </h3>
+            </div>
+            {(kpis.cards_by_channel?.length ?? 0) > 0 && (
+              <span className="ml-auto rounded-full bg-cyan-500/20 px-2.5 py-0.5 text-xs font-semibold text-cyan-400">
+                {kpis.cards_by_channel.reduce((sum, c) => sum + c.count, 0)} cards
+              </span>
+            )}
+          </div>
+          {(kpis.cards_by_channel?.length ?? 0) > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={kpis.cards_by_channel.map((c) => ({ name: c.channel, count: c.count }))}
+                margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} />
+                <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" }}
+                  labelStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
+                  itemStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
+                  formatter={(v: number) => [v, "Cards"]}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {kpis.cards_by_channel.map((_, index) => (
+                    <Cell key={index} fill={CHANNEL_COLORS[index % CHANNEL_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-48 items-center justify-center text-sm text-slate-400">Sem dados de canal no período</div>
+          )}
+        </div>
+      </section>
+
+      {/* ── 4. CONVERSÃO ──────────────────────────────────────────── */}
       <section>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           Funil de Conversão

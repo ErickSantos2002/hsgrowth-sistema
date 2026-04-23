@@ -109,6 +109,11 @@ class DashboardKPIsResponse(BaseModel):
         description="Contagem de atividades por tipo no período (type, count)"
     )
 
+    cards_by_channel: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Cards agrupados por canal de aquisição no período (channel, count)"
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [
