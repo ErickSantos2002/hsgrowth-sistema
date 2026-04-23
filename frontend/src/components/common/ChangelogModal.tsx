@@ -32,6 +32,10 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "feature",
         text: "Kanban: novo filtro de período para identificar quando os cards entraram na lista atual (hoje, ontem, esta semana, este mês, trimestre, ano ou datas personalizadas). Útil para ver quais oportunidades chegaram em uma etapa do funil em um intervalo específico.",
       },
+      {
+        type: "improvement",
+        text: "Kanban — barra de filtros: filtro 'Todas as listas' removido; 'Qualquer entrada' aparece antes de 'Qualquer fechamento'; botão 'Fechar' removido — a barra permanece aberta enquanto há filtros ativos.",
+      },
     ],
   },
   {

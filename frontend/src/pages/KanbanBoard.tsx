@@ -1194,22 +1194,6 @@ const KanbanBoard: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Filtros:</span>
 
-            {/* Filtro por lista */}
-            <div className="min-w-[155px]">
-              <SelectMenu
-                size="sm"
-                value={listFilter}
-                options={[
-                  { value: "", label: "Todas as listas" },
-                  ...lists.map((list) => ({
-                    value: String(list.id),
-                    label: list.name,
-                  })),
-                ]}
-                onChange={setListFilter}
-              />
-            </div>
-
             {/* Filtro por status (ganho/perdido/aberto) */}
             <div className="min-w-[135px]">
               <SelectMenu
@@ -1331,50 +1315,6 @@ const KanbanBoard: React.FC = () => {
               />
             </div>
 
-            {/* Filtro por data de fechamento */}
-            <div className="min-w-[160px]">
-              <SelectMenu
-                size="sm"
-                value={closingDateFilter}
-                options={[
-                  { value: "", label: "Qualquer fechamento" },
-                  { value: "today", label: "Fechado hoje" },
-                  { value: "week", label: "Fechado esta semana" },
-                  { value: "month", label: "Fechado este mês" },
-                  { value: "last_month", label: "Fechado mês passado" },
-                  { value: "custom", label: "Período personalizado" },
-                ]}
-                onChange={(val) => {
-                  setClosingDateFilter(val);
-                  // Limpa as datas personalizadas ao trocar para outra opção
-                  if (val !== "custom") {
-                    setCustomDateStart("");
-                    setCustomDateEnd("");
-                  }
-                }}
-              />
-            </div>
-
-            {/* Inputs de data personalizada - aparece apenas quando "Período personalizado" está selecionado */}
-            {closingDateFilter === "custom" && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={customDateStart}
-                  onChange={(e) => setCustomDateStart(e.target.value)}
-                  className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-                />
-                <span className="text-sm text-slate-500 dark:text-slate-400">até</span>
-                <input
-                  type="date"
-                  value={customDateEnd}
-                  onChange={(e) => setCustomDateEnd(e.target.value)}
-                  min={customDateStart}
-                  className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-                />
-              </div>
-            )}
-
             {/* Filtro: Data de entrada na lista */}
             <SelectMenu
               size="sm"
@@ -1417,6 +1357,48 @@ const KanbanBoard: React.FC = () => {
               </div>
             )}
 
+            {/* Filtro por data de fechamento */}
+            <div className="min-w-[160px]">
+              <SelectMenu
+                size="sm"
+                value={closingDateFilter}
+                options={[
+                  { value: "", label: "Qualquer fechamento" },
+                  { value: "today", label: "Fechado hoje" },
+                  { value: "week", label: "Fechado esta semana" },
+                  { value: "month", label: "Fechado este mês" },
+                  { value: "last_month", label: "Fechado mês passado" },
+                  { value: "custom", label: "Período personalizado" },
+                ]}
+                onChange={(val) => {
+                  setClosingDateFilter(val);
+                  if (val !== "custom") {
+                    setCustomDateStart("");
+                    setCustomDateEnd("");
+                  }
+                }}
+              />
+            </div>
+
+            {closingDateFilter === "custom" && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={customDateStart}
+                  onChange={(e) => setCustomDateStart(e.target.value)}
+                  className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                />
+                <span className="text-sm text-slate-500 dark:text-slate-400">até</span>
+                <input
+                  type="date"
+                  value={customDateEnd}
+                  onChange={(e) => setCustomDateEnd(e.target.value)}
+                  min={customDateStart}
+                  className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                />
+              </div>
+            )}
+
             {/* Limpar filtros */}
             {hasActiveFilters && (
               <button
@@ -1426,14 +1408,6 @@ const KanbanBoard: React.FC = () => {
                 Limpar filtros
               </button>
             )}
-
-            {/* Fechar painel */}
-            <button
-              onClick={() => setShowFilters(false)}
-              className="ml-auto px-3 py-1.5 text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-            >
-              Fechar
-            </button>
           </div>
         </div>
       )}
