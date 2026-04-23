@@ -11,6 +11,7 @@ from app.repositories.notification_repository import NotificationRepository
 from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.card_service import CardService
 from app.schemas.card import (
+    CardCloneResponse,
     CardCreate,
     CardUpdate,
     CardResponse,
@@ -695,6 +696,48 @@ async def assign_card(
 
 
 # ========== ENDPOINT DE REABERTURA ==========
+
+@router.post(
+    "/{card_id}/clone",
+    response_model=CardCloneResponse,
+    summary="Clonar card",
+)
+async def clone_card(
+    request: Request,
+    card_id: int = Path(..., description="ID do card a ser clonado"),
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Clona um card na mesma lista. Copia dados do lado esquerdo (resumo, cliente,
+    contato, produto, automações, datas de tracking de boards).
+    Não copia atividades, anotações nem arquivos.
+    Cria uma nota em ambos os cards registrando o clone.
+    """
+    service = CardService(db)
+    new_card = service.clone_card(card_id, current_user)
+
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="CLONE",
+        entity_type="Card",
+        entity_id=card_id,
+        description=f"Card #{card_id} clonado como card #{new_card.id} ({new_card.title})",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return CardCloneResponse(
+        new_card_id=new_card.id,
+        new_card_title=new_card.title,
+        original_card_id=card_id,
+        message="Card clonado com sucesso"
+    )
+
 
 @router.post(
     "/{card_id}/reopen",

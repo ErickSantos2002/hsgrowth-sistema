@@ -2574,6 +2574,128 @@ class CardService:
 
         return new_card
 
+    def clone_card(self, card_id: int, current_user: User) -> Card:
+        """
+        Clona um card existente na mesma lista.
+
+        Copia:
+        - Dados básicos: título, descrição, valor, responsável, SDR, canais, UTMs
+        - Vínculos: cliente, pessoa, contact_info, payment_info
+        - Datas de tracking de boards: prospection/acquisition/expansion_entry_date
+        - Campos customizados (CardFieldValue)
+        - Produtos (CardProduct)
+
+        Não copia:
+        - Atividades (CardTask)
+        - Anotações (CardNote) — exceto a nota automática "Card clonado"
+        - Arquivos (Attachment)
+        - Status ganho/perdido (novo card sempre ativo)
+
+        Cria uma nota em ambos os cards registrando o clone.
+        """
+        from app.schemas.card import CardCreate
+        from app.models.card_field_value import CardFieldValue
+        from app.models.card_note import CardNote
+        from app.models.card_product import CardProduct
+
+        original_card = self.get_card_by_id(card_id)
+
+        clone_data = CardCreate(
+            title=original_card.title,
+            list_id=original_card.list_id,
+            description=original_card.description,
+            assigned_to_id=original_card.assigned_to_id,
+            sdr_id=original_card.sdr_id,
+            value=float(original_card.value) if original_card.value is not None else None,
+            deal_type=original_card.deal_type,
+            acquisition_channel=original_card.acquisition_channel,
+            acquisition_channel_detail=original_card.acquisition_channel_detail,
+            origin=original_card.origin,
+            utm_params=original_card.utm_params,
+            utm_campaign=original_card.utm_campaign,
+            utm_source=original_card.utm_source,
+            utm_term=original_card.utm_term,
+            has_implementation=bool(original_card.has_implementation) if original_card.has_implementation is not None else None,
+            has_personnel=bool(original_card.has_personnel) if original_card.has_personnel is not None else None,
+            automacao01=original_card.automacao01,
+            prospection_entry_date=original_card.prospection_entry_date,
+            acquisition_entry_date=original_card.acquisition_entry_date,
+            expansion_entry_date=original_card.expansion_entry_date,
+        )
+
+        new_card = self.create_card(clone_data, current_user)
+
+        # Vincula client_id, person_id e campos JSON diretamente no ORM
+        try:
+            if original_card.client_id:
+                new_card.client_id = original_card.client_id
+            if original_card.person_id:
+                new_card.person_id = original_card.person_id
+            if original_card.contact_info:
+                new_card.contact_info = original_card.contact_info
+            if original_card.payment_info:
+                new_card.payment_info = original_card.payment_info
+            self.db.commit()
+            self.db.refresh(new_card)
+        except Exception as e:
+            self.db.rollback()
+            print(f"[CLONE] Aviso: erro ao vincular client/person/contact_info: {e}")
+
+        # Copia campos customizados
+        try:
+            for fv in self.db.query(CardFieldValue).filter(CardFieldValue.card_id == card_id).all():
+                self.db.add(CardFieldValue(
+                    card_id=new_card.id,
+                    field_definition_id=fv.field_definition_id,
+                    value=fv.value,
+                ))
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"[CLONE] Aviso: erro ao copiar campos customizados: {e}")
+
+        # Copia produtos
+        try:
+            for cp in self.db.query(CardProduct).filter(CardProduct.card_id == card_id).all():
+                self.db.add(CardProduct(
+                    card_id=new_card.id,
+                    product_id=cp.product_id,
+                    quantity=cp.quantity,
+                    unit_price=cp.unit_price,
+                    discount=cp.discount,
+                    notes=cp.notes,
+                ))
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"[CLONE] Aviso: erro ao copiar produtos: {e}")
+
+        # Nota no card NOVO
+        try:
+            self.db.add(CardNote(
+                card_id=new_card.id,
+                user_id=current_user.id,
+                content=f"Card clonado do card #{card_id}.",
+            ))
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"[CLONE] Aviso: erro ao criar nota no card novo: {e}")
+
+        # Nota no card ORIGINAL
+        try:
+            self.db.add(CardNote(
+                card_id=card_id,
+                user_id=current_user.id,
+                content=f"Este card foi clonado. Novo card gerado: #{new_card.id}.",
+            ))
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"[CLONE] Aviso: erro ao criar nota no card original: {e}")
+
+        return new_card
+
     def link_person_to_card(self, card_id: int, person_id: int, current_user: User) -> Card:
         """
         Vincula uma pessoa a um card.

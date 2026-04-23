@@ -626,6 +626,14 @@ class CardReopenResponse(BaseModel):
     }
 
 
+class CardCloneResponse(BaseModel):
+    """Schema de resposta da clonagem de card."""
+    new_card_id: int = Field(..., description="ID do novo card clonado")
+    new_card_title: str = Field(..., description="Título do novo card")
+    original_card_id: int = Field(..., description="ID do card original")
+    message: str = Field(..., description="Mensagem de confirmação")
+
+
 class CardExpandedResponse(CardResponse):
     """
     Schema expandido de card com todos os relacionamentos carregados.

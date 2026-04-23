@@ -18,6 +18,7 @@ import {
   PhoneCall,
   Mail,
   Users,
+  Copy,
 } from "lucide-react";
 import { Card } from "../types";
 import cardService from "../services/cardService";
@@ -67,6 +68,7 @@ const CardDetails: React.FC = () => {
   const [isMovingCard, setIsMovingCard] = useState(false);
   const [isAutoAssigning, setIsAutoAssigning] = useState(false);
   const [isAutoAssigningSdr, setIsAutoAssigningSdr] = useState(false);
+  const [isCloning, setIsCloning] = useState(false);
   const [showAssignConfirm, setShowAssignConfirm] = useState(false);
 
   // Estado das abas
@@ -261,6 +263,30 @@ const CardDetails: React.FC = () => {
   const handleMarkAsLost = () => {
     if (!card) return;
     setShowLossReasonModal(true);
+  };
+
+  /**
+   * Clona o card atual na mesma lista e navega para o novo card
+   */
+  const handleClone = async () => {
+    if (!card) return;
+    const confirmed = await confirm({
+      title: "Clonar card",
+      message: `Deseja clonar o card "${card.title}"? Um card idêntico será criado na mesma lista.`,
+      confirmLabel: "Clonar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+    setIsCloning(true);
+    try {
+      const result = await cardService.clone(card.id);
+      showSuccess(`Card clonado com sucesso! Abrindo card #${result.new_card_id}…`);
+      navigate(`/cards/${result.new_card_id}`);
+    } catch {
+      showError("Erro ao clonar o card. Tente novamente.");
+    } finally {
+      setIsCloning(false);
+    }
   };
 
   /**
@@ -816,6 +842,19 @@ const CardDetails: React.FC = () => {
               )}
 
               {/* Botões de ação - ocultos para visualizadores */}
+
+              {/* Botão Clonar */}
+              {!isReadOnly && (
+                <button
+                  onClick={handleClone}
+                  disabled={isCloning}
+                  className="flex h-12 items-center gap-2 rounded-lg border border-slate-600/50 bg-slate-700/50 px-4 font-medium text-slate-200 transition-all hover:border-slate-500 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Clonar este card na mesma lista"
+                >
+                  {isCloning ? <Loader2 size={18} className="animate-spin" /> : <Copy size={18} />}
+                  Clonar
+                </button>
+              )}
 
               {/* Botão Ganho — oculto em boards sem lista de ganho (ex: Prospecção) */}
               {!isReadOnly && !card.is_won && !card.is_lost && card.board_has_done_stage && (
