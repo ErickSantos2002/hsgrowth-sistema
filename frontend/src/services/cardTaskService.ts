@@ -152,10 +152,11 @@ class CardTaskService {
   /**
    * Marca/desmarca uma tarefa como concluída
    */
-  async toggleComplete(id: number, isCompleted: boolean, isValid?: boolean): Promise<CardTask> {
+  async toggleComplete(id: number, isCompleted: boolean, isValid?: boolean, notes?: string): Promise<CardTask> {
     const response = await api.patch<CardTask>(`/api/v1/card-tasks/${id}/complete`, {
       is_completed: isCompleted,
       ...(isCompleted && isValid !== undefined ? { is_valid: isValid } : {}),
+      ...(notes !== undefined ? { notes } : {}),
     });
     return response.data;
   }

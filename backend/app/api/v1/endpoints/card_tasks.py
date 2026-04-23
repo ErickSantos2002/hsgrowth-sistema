@@ -626,7 +626,7 @@ def toggle_complete(
     Ao marcar como concluída, registra a data de conclusão.
     """
     service = CardTaskService(db)
-    task = service.toggle_complete(task_id, data.is_completed, current_user, is_valid=data.is_valid if data.is_valid is not None else True)
+    task = service.toggle_complete(task_id, data.is_completed, current_user, is_valid=data.is_valid if data.is_valid is not None else True, notes=data.notes)
 
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"

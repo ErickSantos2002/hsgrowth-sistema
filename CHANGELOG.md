@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.18] — 23/04/2026
+
+### Melhorado
+- **E-mail — envio individual (mala direta):** ao enviar um e-mail para múltiplos destinatários, cada pessoa recebe seu próprio e-mail separado, sem ver os demais. Antes era enviado um único e-mail com todos os endereços visíveis no campo "Para:".
+
+### Adicionado
+- **Foco — botão "Sem e-mail":** em atividades de e-mail pendentes, novo botão cinza permite concluir a task registrando que o e-mail do contato não foi encontrado. A task fica marcada como `is_valid: false` com nota `"E-mail não encontrado"` para análise futura.
+
+---
+
 ## [1.7.17] — 22/04/2026
 
 ### Adicionado

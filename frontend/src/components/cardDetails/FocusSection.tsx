@@ -8,6 +8,7 @@ import {
   CheckSquare,
   Clock,
   Mail,
+  MailX,
   Coffee,
   MessageCircle,
   MoreHorizontal,
@@ -238,10 +239,10 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
   /**
    * Marca atividade como concluída
    */
-  const handleComplete = async (activityId: number, isValid: boolean) => {
+  const handleComplete = async (activityId: number, isValid: boolean, notes?: string) => {
     try {
       setLoadingTaskId(activityId);
-      await cardTaskService.toggleComplete(activityId, true, isValid);
+      await cardTaskService.toggleComplete(activityId, true, isValid, notes);
       showSuccess(isValid ? "Atividade concluída como válida!" : "Atividade marcada como não válida.");
       onUpdate();
     } catch (error) {
@@ -836,6 +837,15 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
                                   <Check size={14} />
                                 )}
                                 Já enviado
+                              </button>
+                              <button
+                                onClick={() => handleComplete(activity.id, false, "E-mail não encontrado")}
+                                disabled={loadingTaskId === activity.id}
+                                className="flex flex-1 items-center justify-center gap-1 rounded border border-slate-400/50 bg-slate-400/10 px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-400/20 disabled:opacity-50"
+                                title="Não foi possível encontrar o e-mail do contato"
+                              >
+                                <MailX size={14} />
+                                Sem e-mail
                               </button>
                             </>
                           ) : (

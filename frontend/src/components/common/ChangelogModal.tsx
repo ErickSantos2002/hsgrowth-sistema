@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.18",
+    date: "23/04/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "E-mail: ao enviar para várias pessoas, cada destinatário recebe seu próprio e-mail individual — ninguém vê os outros endereços no campo 'Para:'. Funciona como mala direta.",
+      },
+      {
+        type: "feature",
+        text: "Foco: novo botão 'Sem e-mail' em atividades de e-mail pendentes. Permite concluir a task registrando que o contato não possui e-mail, sem perder o histórico do trabalho realizado.",
+      },
+    ],
+  },
+  {
     version: "1.7.17",
     date: "22/04/2026",
     entries: [

@@ -265,7 +265,7 @@ class CardTaskService:
 
         return self._build_response(updated_task)
 
-    def toggle_complete(self, task_id: int, is_completed: bool, current_user: User, is_valid: bool = True) -> CardTaskResponse:
+    def toggle_complete(self, task_id: int, is_completed: bool, current_user: User, is_valid: bool = True, notes: str = None) -> CardTaskResponse:
         """Marca/desmarca tarefa como concluída. is_valid indica se foi válida ou apenas uma tentativa."""
         task = self.repository.get_by_id(task_id)
 
@@ -276,7 +276,7 @@ class CardTaskService:
             )
 
         if is_completed:
-            updated_task = self.repository.mark_as_completed(task_id, is_valid=is_valid)
+            updated_task = self.repository.mark_as_completed(task_id, is_valid=is_valid, notes=notes)
 
             # Registra no histórico
             task_type_names = {

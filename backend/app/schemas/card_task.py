@@ -103,6 +103,7 @@ class CardTaskMarkComplete(BaseModel):
     """Marca ou desmarca uma tarefa como concluída."""
     is_completed: bool = Field(..., description="True para concluída, False para reabrir como pendente")
     is_valid: Optional[bool] = Field(None, description="True=válida (realizada), False=não válida (tentativa sem resultado). Obrigatório quando is_completed=True")
+    notes: Optional[str] = Field(None, description="Motivo ou observação ao concluir (ex: 'E-mail não encontrado')")
 
     model_config = ConfigDict(
         json_schema_extra={

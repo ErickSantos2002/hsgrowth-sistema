@@ -98,54 +98,64 @@ class MicrosoftGraphService:
         attachments: Optional[list[dict]] = None,
     ) -> dict:
         """
-        Envia e-mail em nome do usuário via Microsoft Graph.
+        Envia um e-mail individual para cada destinatário via Microsoft Graph (mala direta).
+        Cada pessoa recebe seu próprio e-mail sem ver os demais destinatários.
 
         Args:
             attachments: Lista de dicts com keys: name, content_type, data_base64
         """
         access_token = self._require_token(user, db)
 
-        recipients = [
-            {"emailAddress": {"address": addr.strip()}}
-            for addr in to_addresses
-            if addr and addr.strip()
-        ]
-        if not recipients:
+        valid_addresses = [addr.strip() for addr in to_addresses if addr and addr.strip()]
+        if not valid_addresses:
             raise ValueError("Nenhum endereço de e-mail de destino válido informado.")
 
-        message: dict = {
-            "subject": subject,
-            "body": {"contentType": "HTML", "content": body},
-            "toRecipients": recipients,
-            "from": {"emailAddress": {"address": user.email}},
-        }
+        graph_attachments = [
+            {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "name": att["name"],
+                "contentType": att["content_type"],
+                "contentBytes": att["data_base64"],
+            }
+            for att in attachments
+        ] if attachments else None
 
-        if attachments:
-            message["attachments"] = [
-                {
-                    "@odata.type": "#microsoft.graph.fileAttachment",
-                    "name": att["name"],
-                    "contentType": att["content_type"],
-                    "contentBytes": att["data_base64"],
-                }
-                for att in attachments
-            ]
-
-        payload = {"message": message, "saveToSentItems": True}
         url = GRAPH_SEND_MAIL_URL.format(email=user.email)
+        errors = []
 
-        try:
-            with httpx.Client(timeout=30) as client:
-                resp = client.post(url, json=payload, headers=self._auth_headers(access_token))
+        with httpx.Client(timeout=30) as client:
+            for addr in valid_addresses:
+                message: dict = {
+                    "subject": subject,
+                    "body": {"contentType": "HTML", "content": body},
+                    "toRecipients": [{"emailAddress": {"address": addr}}],
+                    "from": {"emailAddress": {"address": user.email}},
+                }
+                if graph_attachments:
+                    message["attachments"] = graph_attachments
 
-            if resp.status_code == 202:
-                return {"success": True}
+                try:
+                    resp = client.post(
+                        url,
+                        json={"message": message, "saveToSentItems": True},
+                        headers=self._auth_headers(access_token),
+                    )
+                    if resp.status_code != 202:
+                        error_data = resp.json() if resp.content else {}
+                        error_msg = error_data.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                        errors.append(f"{addr}: {error_msg}")
+                except Exception as e:
+                    errors.append(f"{addr}: {str(e)}")
 
-            error_data = resp.json() if resp.content else {}
-            error_msg = error_data.get("error", {}).get("message", f"HTTP {resp.status_code}")
-            return {"success": False, "error": error_msg}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        if errors:
+            # Se houve falhas parciais, informa quais falharam
+            failed = "; ".join(errors)
+            sent = len(valid_addresses) - len(errors)
+            if sent == 0:
+                return {"success": False, "error": failed}
+            return {"success": True, "partial_errors": failed, "sent": sent, "failed": len(errors)}
+
+        return {"success": True}
 
     # ==================== CALENDÁRIO + TEAMS ====================
 

@@ -7,6 +7,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.18] - 2026-04-23
+
+### Melhorado
+- **E-mail — envio individual (mala direta):** ao enviar para múltiplos destinatários, cada pessoa recebe seu próprio e-mail separado, sem ver os demais. Antes era enviado um único e-mail com todos os endereços no campo "Para:".
+
+### Adicionado
+- **Foco — botão "Sem e-mail":** em atividades de e-mail, novo botão permite concluir a task registrando que o e-mail do contato não foi encontrado (`is_valid: false`, `notes: "E-mail não encontrado"`).
+
+---
+
 ## [1.7.17] - 2026-04-22
 
 ### Adicionado
