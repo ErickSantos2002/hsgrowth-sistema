@@ -136,7 +136,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
           <KpiCard
             icon={<CalendarCheck size={18} className="text-blue-400" />}
             iconBg="bg-blue-500/20"
-            label="Reuniões Agendadas"
+            label="Reuniões Realizadas"
             value={kpis.meetings_scheduled_by_seller}
             format="number"
             highlight="blue"
