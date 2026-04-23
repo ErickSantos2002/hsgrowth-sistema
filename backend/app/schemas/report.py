@@ -114,6 +114,11 @@ class DashboardKPIsResponse(BaseModel):
         description="Cards agrupados por canal de aquisição no período (channel, count)"
     )
 
+    meetings_scheduled_by_seller: int = Field(
+        default=0,
+        description="Reuniões agendadas pelo vendedor no período (CardTask tipo MEETING com due_date no período)"
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [

@@ -115,7 +115,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
         </div>
 
         {/* Segunda linha */}
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5">
           <KpiCard
             icon={<Users size={18} className="text-blue-400" />}
             iconBg="bg-blue-500/20"
@@ -132,6 +132,15 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             format="number"
             highlight="green"
             sub="Agendadas por SDR no período"
+          />
+          <KpiCard
+            icon={<CalendarCheck size={18} className="text-blue-400" />}
+            iconBg="bg-blue-500/20"
+            label="Reuniões Agendadas"
+            value={kpis.meetings_scheduled_by_seller}
+            format="number"
+            highlight="blue"
+            sub="Reuniões realizadas no período"
           />
           <KpiCard
             icon={<Target size={18} className="text-yellow-400" />}

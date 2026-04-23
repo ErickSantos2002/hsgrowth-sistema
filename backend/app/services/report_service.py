@@ -766,6 +766,18 @@ class ReportService:
             for row in task_counts_query
         ]
 
+        # Reuniões realizadas pelo vendedor no período (concluídas com completed_at no período)
+        meetings_scheduled_by_seller = self.db.query(
+            func.count(CardTask.id)
+        ).filter(
+            CardTask.task_type == TaskType.MEETING,
+            CardTask.is_completed == True,
+            CardTask.completed_at.isnot(None),
+            func.date(CardTask.completed_at) >= start_of_period,
+            func.date(CardTask.completed_at) <= end_of_period,
+            *task_user_filter
+        ).scalar() or 0
+
         # Cards por canal de aquisição criados no período
         channel_rows = self.db.query(
             Card.acquisition_channel,
@@ -817,6 +829,7 @@ class ReportService:
             sales_evolution=sales_evolution,
             activity_counts_by_type=activity_counts_by_type,
             cards_by_channel=cards_by_channel,
+            meetings_scheduled_by_seller=meetings_scheduled_by_seller,
         )
 
     def get_sales_report(

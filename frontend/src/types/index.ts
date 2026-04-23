@@ -646,6 +646,8 @@ export interface DashboardKPIs {
     channel: string;
     count: number;
   }>;
+
+  meetings_scheduled_by_seller: number;
 }
 
 export interface SalesReport {
