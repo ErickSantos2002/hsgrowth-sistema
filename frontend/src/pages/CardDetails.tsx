@@ -844,7 +844,7 @@ const CardDetails: React.FC = () => {
               {/* Botões de ação - ocultos para visualizadores */}
 
               {/* Botão Clonar */}
-              {!isReadOnly && (
+              {!isReadOnly && !card.is_lost && (
                 <button
                   onClick={handleClone}
                   disabled={isCloning}

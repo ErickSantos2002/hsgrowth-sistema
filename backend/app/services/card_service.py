@@ -2603,13 +2603,16 @@ class CardService:
         from app.models.card_product import CardProduct
         from app.models.card_list_history import CardListHistory
 
+        # Lista de destino: sempre Lead Novo do board de Prospecção (board_id=6)
+        TARGET_LIST_ID = 22
+
         original_card = self.get_card_by_id(card_id)
 
-        list_obj = self.list_repository.find_by_id(original_card.list_id)
-        if not list_obj:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lista não encontrada")
+        target_list = self.list_repository.find_by_id(TARGET_LIST_ID)
+        if not target_list:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Lista de destino (ID {TARGET_LIST_ID}) não encontrada")
 
-        board = self.board_repository.find_by_id(list_obj.board_id)
+        board = self.board_repository.find_by_id(target_list.board_id)
         if not board:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Board não encontrado")
 
@@ -2617,9 +2620,10 @@ class CardService:
 
         # Cria o card diretamente no ORM — sem verificação de permissão de lista,
         # sem override de role e sem sobrescrever as datas de tracking do original.
+        # O clone sempre vai para Lead Novo (Prospecção) independente de onde estava o original.
         new_card = Card(
-            title=original_card.title,
-            list_id=original_card.list_id,
+            title=f"[CLONE] {original_card.title}",
+            list_id=TARGET_LIST_ID,
             description=original_card.description,
             assigned_to_id=original_card.assigned_to_id,
             sdr_id=original_card.sdr_id,
