@@ -21,6 +21,8 @@ export interface Person {
   phone_commercial?: string;
   phone_whatsapp?: string;
   phone_alternative?: string;
+  phone_extra1?: string;
+  phone_extra2?: string;
 
   // Profissional
   position?: string;
@@ -67,6 +69,8 @@ export interface CreatePersonRequest {
   phone_commercial?: string | null;
   phone_whatsapp?: string | null;
   phone_alternative?: string | null;
+  phone_extra1?: string | null;
+  phone_extra2?: string | null;
 
   // Profissional
   position?: string | null;
@@ -100,6 +104,8 @@ export interface UpdatePersonRequest {
   phone_commercial?: string | null;
   phone_whatsapp?: string | null;
   phone_alternative?: string | null;
+  phone_extra1?: string | null;
+  phone_extra2?: string | null;
 
   // Profissional
   position?: string | null;
