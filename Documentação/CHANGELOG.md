@@ -7,6 +7,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.20] - 2026-04-24
+
+### Adicionado
+- **Pessoa — telefones extras:** 3 novos campos de telefone (Alternativo, Extra 1, Extra 2), totalizando 6 números por contato. Disponíveis no cadastro/edição da pessoa.
+
+### Melhorado
+- **Ligação — seletor de número:** todos os 6 telefones da pessoa aparecem como opção ao ligar, tanto no botão rápido do card quanto nas atividades da seção Foco.
+
+---
+
 ## [1.7.19] - 2026-04-23
 
 ### Adicionado
