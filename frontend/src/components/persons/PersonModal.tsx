@@ -38,6 +38,9 @@ interface PersonFormData {
   phone: string;
   phone_commercial: string;
   phone_whatsapp: string;
+  phone_alternative: string;
+  phone_extra1: string;
+  phone_extra2: string;
 
   // Profissional
   position: string;
@@ -78,6 +81,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
     phone: "",
     phone_commercial: "",
     phone_whatsapp: "",
+    phone_alternative: "",
+    phone_extra1: "",
+    phone_extra2: "",
     position: "",
     area: "",
     owner_id: user?.id ?? null,
@@ -127,6 +133,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         phone: person.phone || "",
         phone_commercial: person.phone_commercial || "",
         phone_whatsapp: person.phone_whatsapp || "",
+        phone_alternative: person.phone_alternative || "",
+        phone_extra1: person.phone_extra1 || "",
+        phone_extra2: person.phone_extra2 || "",
         position: person.position || "",
         area: person.area || "",
         owner_id: person.owner_id || null,
@@ -147,6 +156,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         phone: "",
         phone_commercial: "",
         phone_whatsapp: "",
+        phone_alternative: "",
+        phone_extra1: "",
+        phone_extra2: "",
         position: "",
         area: "",
         owner_id: user?.id ?? null,
@@ -212,6 +224,9 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
         phone: formData.phone.replace(/\D/g, "") || null, // Remove máscara
         phone_commercial: formData.phone_commercial.replace(/\D/g, "") || null,
         phone_whatsapp: formData.phone_whatsapp.replace(/\D/g, "") || null,
+        phone_alternative: formData.phone_alternative.replace(/\D/g, "") || null,
+        phone_extra1: formData.phone_extra1.replace(/\D/g, "") || null,
+        phone_extra2: formData.phone_extra2.replace(/\D/g, "") || null,
         position: formData.position.trim() || null,
         area: formData.area.trim() || null,
         owner_id: formData.owner_id || null,
@@ -503,12 +518,50 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
             <FormField
               label="Telefone Comercial"
               hint="Telefone corporativo"
-              className="md:col-span-2"
             >
               <Input
                 value={formData.phone_commercial}
                 onChange={(e) => handleChange("phone_commercial", maskPhone(e.target.value))}
                 placeholder="(00) 0000-0000"
+                maxLength={15}
+              />
+            </FormField>
+
+            {/* Telefone Alternativo */}
+            <FormField
+              label="Telefone Alternativo"
+              hint="Outro número de contato"
+            >
+              <Input
+                value={formData.phone_alternative}
+                onChange={(e) => handleChange("phone_alternative", maskPhone(e.target.value))}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+              />
+            </FormField>
+
+            {/* Telefone Extra 1 */}
+            <FormField
+              label="Telefone Extra 1"
+              hint="Número adicional"
+            >
+              <Input
+                value={formData.phone_extra1}
+                onChange={(e) => handleChange("phone_extra1", maskPhone(e.target.value))}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+              />
+            </FormField>
+
+            {/* Telefone Extra 2 */}
+            <FormField
+              label="Telefone Extra 2"
+              hint="Número adicional"
+            >
+              <Input
+                value={formData.phone_extra2}
+                onChange={(e) => handleChange("phone_extra2", maskPhone(e.target.value))}
+                placeholder="(00) 00000-0000"
                 maxLength={15}
               />
             </FormField>

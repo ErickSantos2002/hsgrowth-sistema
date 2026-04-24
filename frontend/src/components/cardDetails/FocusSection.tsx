@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import {
   Check,
   ChevronDown,
@@ -105,7 +106,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
     };
 
     loadPersonData();
-  }, [card.person_id]);
+  }, [card]);
 
   /**
    * Retorna ícone do tipo de atividade
@@ -419,16 +420,28 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
    * - 2+ números disponíveis: abre modal de seleção de número.
    */
   const handleMakeCall = async (activityId: number) => {
-    if (!person) {
+    if (!card.person_id) {
       showWarning("Não há pessoa vinculada a este card");
+      return;
+    }
+
+    // Busca pessoa fresca da API para garantir dados atualizados
+    let freshPerson: Person;
+    try {
+      freshPerson = await personService.getById(card.person_id);
+    } catch {
+      showError("Erro ao carregar dados da pessoa");
       return;
     }
 
     // Monta a lista de números disponíveis com seus rótulos
     const availableNumbers = [
-      person.phone && { label: "Principal", number: person.phone },
-      person.phone_whatsapp && { label: "WhatsApp", number: person.phone_whatsapp },
-      person.phone_commercial && { label: "Comercial", number: person.phone_commercial },
+      freshPerson.phone && { label: "Principal", number: freshPerson.phone },
+      freshPerson.phone_whatsapp && { label: "WhatsApp", number: freshPerson.phone_whatsapp },
+      freshPerson.phone_commercial && { label: "Comercial", number: freshPerson.phone_commercial },
+      freshPerson.phone_alternative && { label: "Alternativo", number: freshPerson.phone_alternative },
+      freshPerson.phone_extra1 && { label: "Extra 1", number: freshPerson.phone_extra1 },
+      freshPerson.phone_extra2 && { label: "Extra 2", number: freshPerson.phone_extra2 },
     ].filter(Boolean) as { label: string; number: string }[];
 
     if (availableNumbers.length === 0) {
@@ -441,7 +454,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
       const { number, label } = availableNumbers[0];
       const confirmed = await confirm({
         title: "Iniciar chamada",
-        message: `Ligar para ${person.name} no número ${number} (${label})?`,
+        message: `Ligar para ${freshPerson.name} no número ${number} (${label})?`,
         confirmText: "Ligar",
         isDanger: false,
       });
@@ -450,7 +463,8 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
       return;
     }
 
-    // Com 2 ou 3 números, abre o modal de seleção
+    // Com 2+ números, atualiza o state com dados frescos e abre o modal de seleção
+    setPerson(freshPerson);
     setPhoneSelectTaskId(activityId);
   };
 
@@ -777,9 +791,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
                           {activity.task_type === "call" && (
                             <button
                               onClick={() => handleMakeCall(activity.id)}
-                              disabled={callingTaskId === activity.id || (!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial)}
+                              disabled={callingTaskId === activity.id || (!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial && !person?.phone_alternative && !person?.phone_extra1 && !person?.phone_extra2)}
                               className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
-                              title={!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial ? "Pessoa sem nenhum número cadastrado" : "Ligar agora"}
+                              title={!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial && !person?.phone_alternative && !person?.phone_extra1 && !person?.phone_extra2 ? "Pessoa sem nenhum número cadastrado" : "Ligar agora"}
                             >
                               {callingTaskId === activity.id ? (
                                 <Loader2 size={14} className="animate-spin" />
@@ -787,7 +801,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
                                 <Phone size={14} />
                               )}
                               {/* Tracinho diagonal quando sem número */}
-                              {!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial && callingTaskId !== activity.id && (
+                              {!person?.phone && !person?.phone_whatsapp && !person?.phone_commercial && !person?.phone_alternative && !person?.phone_extra1 && !person?.phone_extra2 && callingTaskId !== activity.id && (
                                 <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
                                   <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden="true">
                                     <line x1="4" y1="4" x2="20" y2="20" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
@@ -918,8 +932,8 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
       )}
 
       {/* Modal de seleção de número para ligação */}
-      {phoneSelectTaskId && person && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      {phoneSelectTaskId && person && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-xl">
             <div className="border-b border-gray-200 dark:border-slate-700 p-4">
               <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
@@ -937,6 +951,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
                 person.phone && { label: "Principal", number: person.phone },
                 person.phone_whatsapp && { label: "WhatsApp", number: person.phone_whatsapp },
                 person.phone_commercial && { label: "Comercial", number: person.phone_commercial },
+                person.phone_alternative && { label: "Alternativo", number: person.phone_alternative },
+                person.phone_extra1 && { label: "Extra 1", number: person.phone_extra1 },
+                person.phone_extra2 && { label: "Extra 2", number: person.phone_extra2 },
               ]
                 .filter(Boolean)
                 .map((item) => {
@@ -972,7 +989,8 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal de reagendamento */}

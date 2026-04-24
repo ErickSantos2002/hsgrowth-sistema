@@ -424,6 +424,24 @@ const ContactSection: React.FC<ContactSectionProps> = ({ card, onUpdate, readOnl
                   {formatPhone(person?.phone_commercial)}
                 </p>
               </div>
+              <div>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Alternativo</p>
+                <p className={person?.phone_alternative ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>
+                  {formatPhone(person?.phone_alternative)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Extra 1</p>
+                <p className={person?.phone_extra1 ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>
+                  {formatPhone(person?.phone_extra1)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 dark:text-slate-400">Extra 2</p>
+                <p className={person?.phone_extra2 ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>
+                  {formatPhone(person?.phone_extra2)}
+                </p>
+              </div>
             </div>
           </div>
 

@@ -26,6 +26,8 @@ class PersonBase(BaseModel):
     phone_commercial: Optional[str] = Field(None, max_length=50, description="Telefone comercial")
     phone_whatsapp: Optional[str] = Field(None, max_length=50, description="Celular/WhatsApp")
     phone_alternative: Optional[str] = Field(None, max_length=50, description="Telefone alternativo")
+    phone_extra1: Optional[str] = Field(None, max_length=50, description="Telefone extra 1")
+    phone_extra2: Optional[str] = Field(None, max_length=50, description="Telefone extra 2")
 
     # Profissional
     position: Optional[str] = Field(None, max_length=200, description="Cargo")
@@ -99,6 +101,8 @@ class PersonUpdate(BaseModel):
     phone_commercial: Optional[str] = Field(None, max_length=50, description="Telefone comercial")
     phone_whatsapp: Optional[str] = Field(None, max_length=50, description="Celular/WhatsApp")
     phone_alternative: Optional[str] = Field(None, max_length=50, description="Telefone alternativo")
+    phone_extra1: Optional[str] = Field(None, max_length=50, description="Telefone extra 1")
+    phone_extra2: Optional[str] = Field(None, max_length=50, description="Telefone extra 2")
 
     # Profissional
     position: Optional[str] = Field(None, max_length=200, description="Cargo")

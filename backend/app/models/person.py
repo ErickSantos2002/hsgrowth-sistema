@@ -33,6 +33,8 @@ class Person(Base):
     phone_commercial = Column(String(50), nullable=True)  # Telefone comercial
     phone_whatsapp = Column(String(50), nullable=True)  # Celular/WhatsApp
     phone_alternative = Column(String(50), nullable=True)  # Telefone alternativo
+    phone_extra1 = Column(String(50), nullable=True)  # Telefone extra 1
+    phone_extra2 = Column(String(50), nullable=True)  # Telefone extra 2
 
     # Profissional
     position = Column(String(200), nullable=True)  # Cargo

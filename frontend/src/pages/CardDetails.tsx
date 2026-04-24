@@ -456,6 +456,9 @@ const CardDetails: React.FC = () => {
         person.phone && { label: "Principal", number: person.phone },
         person.phone_whatsapp && { label: "WhatsApp", number: person.phone_whatsapp },
         person.phone_commercial && { label: "Comercial", number: person.phone_commercial },
+        person.phone_alternative && { label: "Alternativo", number: person.phone_alternative },
+        person.phone_extra1 && { label: "Extra 1", number: person.phone_extra1 },
+        person.phone_extra2 && { label: "Extra 2", number: person.phone_extra2 },
       ].filter(Boolean) as { label: string; number: string }[];
 
       if (availableNumbers.length === 0) {

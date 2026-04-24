@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.20",
+    date: "24/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Pessoa: 3 novos campos de telefone — Alternativo, Extra 1 e Extra 2 — totalizando 6 números por contato.",
+      },
+      {
+        type: "improvement",
+        text: "Ligação: todos os 6 telefones da pessoa aparecem no seletor de número ao ligar (botão rápido e atividades da seção Foco).",
+      },
+    ],
+  },
+  {
     version: "1.7.19",
     date: "23/04/2026",
     entries: [
