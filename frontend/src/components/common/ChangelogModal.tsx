@@ -36,6 +36,30 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "improvement",
         text: "Ligação: todos os 6 telefones da pessoa aparecem no seletor de número ao ligar (botão rápido e atividades da seção Foco).",
       },
+      {
+        type: "improvement",
+        text: "Dashboard Vendedor: KPI 'Reuniões Agendadas' renomeado para 'Reuniões Realizadas'.",
+      },
+      {
+        type: "fix",
+        text: "Card — Clonar: o clone agora sempre vai para 'Lead Novo' (Prospecção), evitando que seja criado em Negócio Ganho ou outra etapa indevida.",
+      },
+      {
+        type: "fix",
+        text: "Card — Clonar: título do clone prefixado com [CLONE] para identificação imediata.",
+      },
+      {
+        type: "fix",
+        text: "Card — Clonar: botão ocultado quando o card está em Negócio Perdido.",
+      },
+      {
+        type: "fix",
+        text: "Card — Clonar: SDR e Vendedor podiam receber erro de permissão (403) ao clonar cards fora da lista 'Lead Novo'. Corrigido — qualquer role pode clonar em qualquer etapa.",
+      },
+      {
+        type: "fix",
+        text: "Dashboard Vendedor — Atividades no Período: admin/gerente em 'Todos os Vendedores' exibia atividades de SDRs misturadas. Corrigido para mostrar apenas atividades de vendedores.",
+      },
     ],
   },
   {

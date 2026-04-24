@@ -5,6 +5,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.20] — 24/04/2026
+
+### Melhorado
+- **Dashboard Vendedor — Reuniões Realizadas:** KPI renomeado de "Reuniões Agendadas" para "Reuniões Realizadas".
+
+### Corrigido
+- **Card — botão Clonar:** clone agora sempre vai para a lista "Lead Novo" no board de Prospecção, independente da etapa de origem. Impede que o clone seja criado em Negócio Ganho, Negócio Perdido ou qualquer outra etapa intermediária.
+- **Card — botão Clonar:** título do clone prefixado com `[CLONE]` para identificação imediata.
+- **Card — botão Clonar:** botão ocultado quando o card está em Negócio Perdido.
+- **Card — botão Clonar:** SDR e Vendedor não recebem mais erro 403 ao clonar cards fora da lista "Lead Novo" — a operação de clone ignora a restrição de criação por role.
+- **Dashboard Vendedor — Atividades no Período:** admin/gerente visualizando "Todos os Vendedores" exibia atividades de SDRs misturadas. Corrigido para filtrar apenas atividades de usuários com role `salesperson`.
+
+---
+
 ## [1.7.19] — 23/04/2026
 
 ### Adicionado
