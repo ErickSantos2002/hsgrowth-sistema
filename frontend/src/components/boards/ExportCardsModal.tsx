@@ -3,7 +3,6 @@ import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 import {
   Download,
-  Search,
   Loader2,
   FileSpreadsheet,
   Filter,
@@ -91,7 +90,9 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
   );
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
-  const [clientSearch, setClientSearch] = useState("");
+  const [closeDateStart, setCloseDateStart] = useState("");
+  const [closeDateEnd, setCloseDateEnd] = useState("");
+
 
   // ─── Dados auxiliares ─────────────────────────────────────────────────────
   const [lists, setLists] = useState<any[]>([]);
@@ -137,7 +138,8 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
     setSelectedSdrId(isSdrLocked ? (user?.id ?? "all") : "all");
     setDateStart("");
     setDateEnd("");
-    setClientSearch("");
+    setCloseDateStart("");
+    setCloseDateEnd("");
     onClose();
   };
 
@@ -188,12 +190,15 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
       cards = cards.filter((c) => c.created_at.slice(0, 10) <= dateEnd);
     }
 
-    // Filtro de busca de cliente (client-side, case-insensitive)
-    if (clientSearch.trim()) {
-      const search = clientSearch.trim().toLowerCase();
-      cards = cards.filter((c) =>
-        c.client_name?.toLowerCase().includes(search)
-      );
+    // Filtro de período de fechamento (won_at ou lost_at)
+    if (closeDateStart || closeDateEnd) {
+      cards = cards.filter((c) => {
+        const closeDate = ((c as any).won_at ?? (c as any).lost_at)?.slice(0, 10);
+        if (!closeDate) return false;
+        if (closeDateStart && closeDate < closeDateStart) return false;
+        if (closeDateEnd && closeDate > closeDateEnd) return false;
+        return true;
+      });
     }
 
     return cards;
@@ -595,25 +600,33 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
           </div>
         </div>
 
-        {/* ── Linha 5: Busca de cliente ────────────────────────────────────── */}
+        {/* ── Linha 5: Período de fechamento ──────────────────────────────── */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Cliente (busca por nome)
+            Período de fechamento
           </label>
-          <div className="relative">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              type="text"
-              value={clientSearch}
-              onChange={(e) => setClientSearch(e.target.value)}
-              placeholder="Digite parte do nome do cliente..."
-              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
-            />
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <input
+                type="date"
+                value={closeDateStart}
+                onChange={(e) => setCloseDateStart(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              />
+            </div>
+            <span className="text-sm text-slate-500 dark:text-slate-400">até</span>
+            <div className="flex-1">
+              <input
+                type="date"
+                value={closeDateEnd}
+                onChange={(e) => setCloseDateEnd(e.target.value)}
+                min={closeDateStart || undefined}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              />
+            </div>
           </div>
         </div>
+
       </div>
     </BaseModal>
   );
