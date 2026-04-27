@@ -346,6 +346,8 @@ def get_or_create_client(db, reader: RowReader, row: int) -> int | None:
         email=clean_str(reader.get(row, "Email1_Empresa")),
         source="planilha_sdr",
         is_active=True,
+        relationship_type="Lead",
+        commercial_activity="Ativo",
     )
     db.add(new_client)
     db.flush()
@@ -493,7 +495,7 @@ def create_card(
         is_won=0,  # Card aberto
         acquisition_channel=normalize_channel(reader.get(row, "Canal_Aquisicao")),
         acquisition_channel_detail=clean_str(reader.get(row, "Canal_Aquisicao_Detalhe")),
-        deal_type=normalize_deal_type(reader.get(row, "Tipo_Negocio")),
+        deal_type=normalize_deal_type(reader.get(row, "Tipo_Negocio")) or "Nova Venda",
         origin="Importação via planilha",
         description=build_description(reader, row),
         position=position,

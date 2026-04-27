@@ -197,11 +197,14 @@ db.close()
 | Lote 2 | 09/04/2026 | 50 | Claudia | 5376–5425 | ✅ Importado |
 | Lote 3 | 13/04/2026 | 300 | Ãhwaryoné, Miguel, Lucas, Sérgio, Claudia, Karolaine | 5451–5749 + 5750 | ✅ Importado |
 | Lote 4 | 22/04/2026 | 300 | Ãhwaryoné, Miguel, Lucas, Sérgio, Claudia, Karolaine | 5792–6091 | ✅ Importado |
+| Lote 5 | 27/04/2026 | 180 | Ãhwaryoné, Miguel, Lucas, Sérgio, Claudia, Karolaine | 6344–6523 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
 **Obs. Lote 3:** 299 importados pelo script + 1 manual (EFITRANS TRANSPORTES LTDA, id=5750, Ãhwaryoné). Karolaine Martins (id=9) incluída pela primeira vez.
 
-**Total importado:** 850 leads | **Disponíveis na planilha:** 1339
+**Obs. Lote 5:** A partir deste lote, `import_from_planilha.py` preenche automaticamente: `deal_type="Nova Venda"` (Card), `relationship_type="Lead"` e `commercial_activity="Ativo"` (Client). SDRs não precisam mais preencher esses campos manualmente.
+
+**Total importado:** 1030 leads | **Disponíveis na planilha:** 1159
 
 ---
 

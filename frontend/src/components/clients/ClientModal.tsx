@@ -10,7 +10,7 @@ import {
   EMPLOYEE_COUNTS,
   ANNUAL_REVENUES,
 } from "../../constants/blueprintOptions";
-import { maskCPF, maskCNPJ, maskDocument, maskPhone, maskCNAE } from "../../utils/formatters";
+import { maskCPF, maskCNPJ, maskDocument, maskPhone } from "../../utils/formatters";
 
 /**
  * Props do componente ClientModal
@@ -244,7 +244,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
           website: formData.website.trim() || null,
           notes: formData.notes.trim() || null,
           is_active: formData.is_active,
-          cnae: formData.cnae.replace(/\D/g, "") || null, // Remove máscara
+          cnae: formData.cnae.trim() || null,
           linkedin_url: formData.linkedin_url.trim() || null,
           relationship_type: formData.relationship_type || null,
           commercial_activity: formData.commercial_activity || null,
@@ -268,7 +268,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
           website: formData.website.trim() || undefined,
           notes: formData.notes.trim() || undefined,
           is_active: formData.is_active,
-          cnae: formData.cnae.replace(/\D/g, "") || undefined, // Remove máscara
+          cnae: formData.cnae.trim() || undefined,
           linkedin_url: formData.linkedin_url.trim() || undefined,
           relationship_type: formData.relationship_type || undefined,
           commercial_activity: formData.commercial_activity || undefined,
@@ -456,9 +456,9 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
             >
               <Input
                 value={formData.cnae}
-                onChange={(e) => handleChange("cnae", maskCNAE(e.target.value))}
-                placeholder="Ex: 4712-1/00"
-                maxLength={10}
+                onChange={(e) => handleChange("cnae", e.target.value)}
+                placeholder="Ex: 11.22-4-01"
+                maxLength={50}
               />
             </FormField>
 

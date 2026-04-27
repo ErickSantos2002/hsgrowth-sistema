@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.22",
+    date: "27/04/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Cliente — CNAE: campo agora aceita texto livre (ex: 11.22-4-01), sem máscara ou restrição de caracteres.",
+      },
+      {
+        type: "fix",
+        text: "Vincular cliente: busca por CNPJ formatado (ex: 08.857) agora funciona corretamente — antes só encontrava sem pontos e barras.",
+      },
+    ],
+  },
+  {
     version: "1.7.21",
     date: "27/04/2026",
     entries: [

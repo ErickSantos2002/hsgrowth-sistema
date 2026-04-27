@@ -7,6 +7,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.22] - 2026-04-27
+
+### Melhorado
+- **Cliente — CNAE:** campo agora aceita texto livre (ex: `11.22-4-01`). A máscara que bloqueava letras e limitava a 10 caracteres foi removida.
+- **Vincular cliente — busca por CNPJ:** digitar o CNPJ com pontos e barras (ex: `08.857`) agora encontra o cliente normalmente. Antes só funcionava sem formatação.
+
+---
+
 ## [1.7.20] - 2026-04-24
 
 ### Adicionado
