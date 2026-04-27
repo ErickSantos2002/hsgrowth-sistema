@@ -242,6 +242,8 @@ class CardService:
         is_lost: Optional[bool] = None,
         entered_at_from: Optional[datetime] = None,
         entered_at_to: Optional[datetime] = None,
+        created_at_from: Optional[datetime] = None,
+        created_at_to: Optional[datetime] = None,
         current_user: Optional[User] = None,
     ):
         """
@@ -301,6 +303,8 @@ class CardService:
             is_lost=is_lost,
             entered_at_from=entered_at_from,
             entered_at_to=entered_at_to,
+            created_at_from=created_at_from,
+            created_at_to=created_at_to,
         )
 
         # Conta total
@@ -313,6 +317,8 @@ class CardService:
             is_lost=is_lost,
             entered_at_from=entered_at_from,
             entered_at_to=entered_at_to,
+            created_at_from=created_at_from,
+            created_at_to=created_at_to,
         )
 
         # Calcula total de páginas
@@ -560,6 +566,21 @@ class CardService:
             ).all()
             lists_map = {row.id: row.name for row in list_rows}
 
+        # Busca produtos de todos os cards em uma única query
+        from app.models.card_product import CardProduct
+        from app.models.product import Product
+        from collections import defaultdict
+        products_by_card: dict[int, list] = defaultdict(list)
+        if card_ids:
+            cp_rows = (
+                self.db.query(CardProduct, Product)
+                .join(Product, CardProduct.product_id == Product.id)
+                .filter(CardProduct.card_id.in_(card_ids))
+                .all()
+            )
+            for cp, prod in cp_rows:
+                products_by_card[cp.card_id].append(prod.name or "")
+
         cards_response = []
         for card in cards:
             # Usa o usuário já carregado via eager loading (sem query adicional)
@@ -580,6 +601,14 @@ class CardService:
             # Pega a contagem e status de tasks pendentes
             pending_count = pending_tasks_counts.get(card.id, 0)
             pending_status = pending_tasks_statuses.get(card.id, "none" if pending_count == 0 else None)
+
+            # Campos de empresa e contato (eager-loaded)
+            client_name = card.client.name if card.client else None
+            client_document = card.client.document if card.client else None
+            person_name = card.person.name if card.person else None
+            person_email = card.person.email if card.person else None
+            person_phone = card.person.phone_whatsapp or card.person.phone if card.person else None
+            product_names = ", ".join(products_by_card[card.id]) if products_by_card[card.id] else None
 
             cards_response.append(
                 CardResponse(
@@ -605,7 +634,13 @@ class CardService:
                     pending_tasks_count=pending_count,
                     pending_tasks_status=pending_status,
                     list_name=list_name,
-                    board_id=board_id
+                    board_id=board_id,
+                    client_name=client_name,
+                    client_document=client_document,
+                    person_name=person_name,
+                    person_email=person_email,
+                    person_phone=person_phone,
+                    product_names=product_names,
                 )
             )
 

@@ -146,6 +146,8 @@ export interface Card {
   reopened_from_card_id?: number | null; // ID do card original (preenchido se este card é uma reabertura)
   board_name: string | null; // Nome do board (usado em CardDetails)
   client_name: string | null;
+  client_document?: string | null; // CNPJ ou CPF da empresa
+  product_names?: string | null;   // Nomes dos produtos (separados por vírgula)
 
   // Relacionamentos opcionais (quando expandido)
   list?: List;
@@ -728,6 +730,8 @@ export interface CardFilters extends PaginationParams {
   search?: string;
   entered_at_from?: string;
   entered_at_to?: string;
+  created_at_from?: string;
+  created_at_to?: string;
 }
 
 export interface UserFilters extends PaginationParams {

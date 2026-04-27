@@ -59,6 +59,8 @@ class CardRepository:
         is_lost: Optional[bool] = None,
         entered_at_from=None,
         entered_at_to=None,
+        created_at_from=None,
+        created_at_to=None,
     ) -> List[Card]:
         """
         Lista cards de um board com filtros opcionais.
@@ -79,8 +81,10 @@ class CardRepository:
 
         # Otimização: Eager loading dos usuários responsáveis (evita problema N+1)
         query = self.db.query(Card).join(List).options(
-            joinedload(Card.assigned_to),  # Carrega o vendedor em uma única query
-            joinedload(Card.sdr)  # Carrega o SDR em uma única query
+            joinedload(Card.assigned_to),
+            joinedload(Card.sdr),
+            joinedload(Card.client),
+            joinedload(Card.person),
         ).filter(
             List.board_id == board_id,
             Card.deleted_at.is_(None)  # Filtrar apenas cards não deletados
@@ -120,6 +124,13 @@ class CardRepository:
             if dt_to is not None:
                 query = query.filter(CardListHistory.entered_at <= dt_to)
 
+        if created_at_from is not None:
+            dt = created_at_from.replace(tzinfo=None) if created_at_from.tzinfo else created_at_from
+            query = query.filter(Card.created_at >= dt)
+        if created_at_to is not None:
+            dt = created_at_to.replace(tzinfo=None) if created_at_to.tzinfo else created_at_to
+            query = query.filter(Card.created_at <= dt)
+
         return query.order_by(Card.list_id, Card.position).offset(skip).limit(limit).all()
 
     def count_by_board(
@@ -132,6 +143,8 @@ class CardRepository:
         is_lost: Optional[bool] = None,
         entered_at_from=None,
         entered_at_to=None,
+        created_at_from=None,
+        created_at_to=None,
     ) -> int:
         """
         Conta cards de um board com filtros opcionais.
@@ -183,6 +196,13 @@ class CardRepository:
                 query = query.filter(CardListHistory.entered_at >= dt_from)
             if dt_to is not None:
                 query = query.filter(CardListHistory.entered_at <= dt_to)
+
+        if created_at_from is not None:
+            dt = created_at_from.replace(tzinfo=None) if created_at_from.tzinfo else created_at_from
+            query = query.filter(Card.created_at >= dt)
+        if created_at_to is not None:
+            dt = created_at_to.replace(tzinfo=None) if created_at_to.tzinfo else created_at_to
+            query = query.filter(Card.created_at <= dt)
 
         return query.count()
 

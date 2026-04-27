@@ -173,6 +173,8 @@ async def list_cards(
     is_lost: Optional[bool] = Query(None, description="Filtrar por cards perdidos"),
     entered_at_from: Optional[datetime] = Query(None, description="Filtrar cards que entraram na lista atual a partir desta data"),
     entered_at_to: Optional[datetime] = Query(None, description="Filtrar cards que entraram na lista atual até esta data"),
+    created_at_from: Optional[datetime] = Query(None, description="Filtrar cards criados a partir desta data"),
+    created_at_to: Optional[datetime] = Query(None, description="Filtrar cards criados até esta data"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
@@ -183,6 +185,7 @@ async def list_cards(
     - all=true: Retorna TODOS os cards sem limite (para Kanban)
     - minimal=true: Retorna apenas campos essenciais (reduz payload ~60%)
     - entered_at_from/to: Filtra por data de entrada na lista atual (via CardListHistory)
+    - created_at_from/to: Filtra por data de criação do card
     """
     service = CardService(db)
     return service.list_cards(
@@ -197,6 +200,8 @@ async def list_cards(
         is_lost=is_lost,
         entered_at_from=entered_at_from,
         entered_at_to=entered_at_to,
+        created_at_from=created_at_from,
+        created_at_to=created_at_to,
         current_user=current_user,
     )
 

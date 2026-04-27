@@ -88,9 +88,12 @@ const KanbanBoard: React.FC = () => {
   const [acquisitionChannelDetailFilter, setAcquisitionChannelDetailFilter] = useState(""); // Filtro de detalhe do canal
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
   const [cardTagFilter, setCardTagFilter] = useState(""); // Filtro por etiqueta: "" | "nutricao" | "parado"
-  const [enteredPeriod, setEnteredPeriod] = useState(""); // Período de entrada na lista: "" | "today" | "yesterday" | "week" | "month" | "quarter" | "year" | "custom"
+  const [enteredPeriod, setEnteredPeriod] = useState(""); // Período de criação do card
   const [enteredCustomStart, setEnteredCustomStart] = useState("");
   const [enteredCustomEnd, setEnteredCustomEnd] = useState("");
+  const [enteredAtPeriod, setEnteredAtPeriod] = useState(""); // Período de entrada na etapa atual (entered_at)
+  const [enteredAtCustomStart, setEnteredAtCustomStart] = useState("");
+  const [enteredAtCustomEnd, setEnteredAtCustomEnd] = useState("");
   const [loadingProgress, setLoadingProgress] = useState<{ loaded: number; total: number } | null>(null);
   const loadCardsAbortRef = useRef<AbortController | null>(null);
 
@@ -135,6 +138,9 @@ const KanbanBoard: React.FC = () => {
         setEnteredPeriod(saved.enteredPeriod ?? "");
         setEnteredCustomStart(saved.enteredCustomStart ?? "");
         setEnteredCustomEnd(saved.enteredCustomEnd ?? "");
+        setEnteredAtPeriod(saved.enteredAtPeriod ?? "");
+        setEnteredAtCustomStart(saved.enteredAtCustomStart ?? "");
+        setEnteredAtCustomEnd(saved.enteredAtCustomEnd ?? "");
       } catch {
         // JSON corrompido — ignora e mantém defaults
       }
@@ -169,6 +175,9 @@ const KanbanBoard: React.FC = () => {
         enteredPeriod,
         enteredCustomStart,
         enteredCustomEnd,
+        enteredAtPeriod,
+        enteredAtCustomStart,
+        enteredAtCustomEnd,
       })
     );
   }, [
@@ -188,6 +197,9 @@ const KanbanBoard: React.FC = () => {
     enteredPeriod,
     enteredCustomStart,
     enteredCustomEnd,
+    enteredAtPeriod,
+    enteredAtCustomStart,
+    enteredAtCustomEnd,
   ]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]); // Lista de usuários
   const boardScrollRef = useRef<HTMLDivElement | null>(null);
@@ -218,8 +230,21 @@ const KanbanBoard: React.FC = () => {
   }, [statusFilter, boardId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
-   * Recarrega os cards quando o filtro de data de entrada na lista muda.
-   * Para "custom", aguarda ambas as datas antes de disparar.
+   * Recarrega os cards quando o filtro "Entrou" (entered_at) muda.
+   */
+  const enteredAtFilterInitialized = React.useRef(false);
+  useEffect(() => {
+    if (!enteredAtFilterInitialized.current) {
+      enteredAtFilterInitialized.current = true;
+      return;
+    }
+    if (!boardId) return;
+    if (enteredAtPeriod === "custom" && (!enteredAtCustomStart || !enteredAtCustomEnd)) return;
+    loadCardsOnly(statusFilter);
+  }, [enteredAtPeriod, enteredAtCustomStart, enteredAtCustomEnd, boardId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Recarrega os cards quando o filtro "Criado em" (created_at) muda.
    */
   const enteredFilterInitialized = React.useRef(false);
   useEffect(() => {
@@ -360,14 +385,24 @@ const KanbanBoard: React.FC = () => {
   const buildCardParams = (status: string, page = 1): CardFilters => {
     const base: CardFilters = { board_id: Number(boardId), minimal: true, page_size: 100, page };
 
-    // Filtro de data de entrada na lista
-    if (enteredPeriod && enteredPeriod !== "custom") {
-      const { from, to } = getPeriodDates(enteredPeriod);
+    // Filtro de data de entrada na etapa atual (entered_at)
+    if (enteredAtPeriod && enteredAtPeriod !== "custom") {
+      const { from, to } = getPeriodDates(enteredAtPeriod);
       if (from) base.entered_at_from = `${from}T00:00:00`;
       if (to)   base.entered_at_to   = `${to}T23:59:59`;
+    } else if (enteredAtPeriod === "custom" && enteredAtCustomStart && enteredAtCustomEnd) {
+      base.entered_at_from = `${enteredAtCustomStart}T00:00:00`;
+      base.entered_at_to   = `${enteredAtCustomEnd}T23:59:59`;
+    }
+
+    // Filtro de data de criação do card (created_at)
+    if (enteredPeriod && enteredPeriod !== "custom") {
+      const { from, to } = getPeriodDates(enteredPeriod);
+      if (from) base.created_at_from = `${from}T00:00:00`;
+      if (to)   base.created_at_to   = `${to}T23:59:59`;
     } else if (enteredPeriod === "custom" && enteredCustomStart && enteredCustomEnd) {
-      base.entered_at_from = `${enteredCustomStart}T00:00:00`;
-      base.entered_at_to   = `${enteredCustomEnd}T23:59:59`;
+      base.created_at_from = `${enteredCustomStart}T00:00:00`;
+      base.created_at_to   = `${enteredCustomEnd}T23:59:59`;
     }
 
     switch (status) {
@@ -705,6 +740,9 @@ const KanbanBoard: React.FC = () => {
     setAcquisitionChannelFilter("");
     setAcquisitionChannelDetailFilter("");
     setCardTagFilter("");
+    setEnteredAtPeriod("");
+    setEnteredAtCustomStart("");
+    setEnteredAtCustomEnd("");
     setEnteredPeriod("");
     setEnteredCustomStart("");
     setEnteredCustomEnd("");
@@ -725,6 +763,7 @@ const KanbanBoard: React.FC = () => {
     acquisitionChannelFilter !== "" ||
     acquisitionChannelDetailFilter !== "" ||
     cardTagFilter !== "" ||
+    enteredAtPeriod !== "" ||
     enteredPeriod !== "";
 
   const filterCards = (cardsToFilter: Card[]): Card[] => {
@@ -1315,10 +1354,10 @@ const KanbanBoard: React.FC = () => {
               />
             </div>
 
-            {/* Filtro: Data de entrada na lista */}
+            {/* Filtro: Entrou na etapa (entered_at) */}
             <SelectMenu
               size="sm"
-              value={enteredPeriod}
+              value={enteredAtPeriod}
               options={[
                 { value: "", label: "Qualquer entrada" },
                 { value: "today", label: "Entrou hoje" },
@@ -1327,6 +1366,48 @@ const KanbanBoard: React.FC = () => {
                 { value: "month", label: "Entrou este mês" },
                 { value: "quarter", label: "Entrou este trimestre" },
                 { value: "year", label: "Entrou este ano" },
+                { value: "custom", label: "Período personalizado" },
+              ]}
+              onChange={(v) => {
+                setEnteredAtPeriod(v);
+                if (v !== "custom") {
+                  setEnteredAtCustomStart("");
+                  setEnteredAtCustomEnd("");
+                }
+              }}
+            />
+            {enteredAtPeriod === "custom" && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={enteredAtCustomStart}
+                  max={enteredAtCustomEnd || undefined}
+                  onChange={(e) => setEnteredAtCustomStart(e.target.value)}
+                  className="flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                />
+                <span className="text-xs text-slate-400">até</span>
+                <input
+                  type="date"
+                  value={enteredAtCustomEnd}
+                  min={enteredAtCustomStart || undefined}
+                  onChange={(e) => setEnteredAtCustomEnd(e.target.value)}
+                  className="flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                />
+              </div>
+            )}
+
+            {/* Filtro: Criado em (created_at) */}
+            <SelectMenu
+              size="sm"
+              value={enteredPeriod}
+              options={[
+                { value: "", label: "Qualquer criação" },
+                { value: "today", label: "Criado hoje" },
+                { value: "yesterday", label: "Criado ontem" },
+                { value: "week", label: "Criado esta semana" },
+                { value: "month", label: "Criado este mês" },
+                { value: "quarter", label: "Criado este trimestre" },
+                { value: "year", label: "Criado este ano" },
                 { value: "custom", label: "Período personalizado" },
               ]}
               onChange={(v) => {

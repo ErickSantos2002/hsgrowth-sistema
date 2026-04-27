@@ -219,13 +219,23 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
       "Status",
       "Vendedor",
       "SDR",
+      // Empresa
       "Cliente",
+      "CNPJ",
+      // Contato
+      "Contato",
+      "Tel. Contato",
+      "Email Contato",
+      // Negócio
       "Valor (R$)",
       "Forma de Pgto.",
       "Parcelas",
+      "Produto(s)",
+      // Datas
       "Criado em",
       "Vencimento",
       "Fechado em",
+      // Origem
       "Tipo de negócio",
       "Canal de aquisição",
       "Det. canal",
@@ -242,14 +252,23 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
       getCardStatus(c),
       c.assigned_to_name ?? "",
       c.sdr_name ?? "",
+      // Empresa
       c.client_name ?? "",
+      c.client_document ?? "",
+      // Contato
+      c.person_name ?? "",
+      c.person_phone_whatsapp ?? c.person_phone ?? "",
+      c.person_email ?? "",
+      // Negócio
       c.value ?? "",
       c.payment_info?.payment_method ?? "",
       c.payment_info?.installments ?? "",
+      c.product_names ?? "",
+      // Datas
       formatDateBR(c.created_at),
       formatDateBR(c.due_date),
-      // Fechado em: data de ganho ou perda, o que estiver preenchido
       formatDateBR(c.won_at ?? c.lost_at),
+      // Origem
       c.deal_type ?? "",
       c.acquisition_channel ?? "",
       c.acquisition_channel_detail ?? "",
@@ -318,9 +337,14 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
       { wch: 22 }, // Vendedor
       { wch: 20 }, // SDR
       { wch: 28 }, // Cliente
+      { wch: 18 }, // CNPJ
+      { wch: 26 }, // Contato
+      { wch: 18 }, // Tel. Contato
+      { wch: 28 }, // Email Contato
       { wch: 15 }, // Valor
       { wch: 16 }, // Forma de Pgto
       { wch: 10 }, // Parcelas
+      { wch: 28 }, // Produto(s)
       { wch: 13 }, // Criado em
       { wch: 13 }, // Vencimento
       { wch: 13 }, // Fechado em
