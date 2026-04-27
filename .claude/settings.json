@@ -12,7 +12,9 @@
       "Bash(psql -h 62.72.11.28 -p 3388 -U administrador -d hsgrowth -c ' *)",
       "Bash(python \"scripts/imports vendas/criar_planilha_vendedores.py\")",
       "Bash(python \"scripts/imports vendas/import_vendedores.py\" \"scripts/imports vendas/Planilha_Importacao_Vendedores_Lote1.xlsx\")",
-      "Bash(python \"scripts/imports vendas/import_vendedores.py\" \"scripts/imports vendas/Planilha_Importacao_Vendedores_Lote2.xlsx\")"
+      "Bash(python \"scripts/imports vendas/import_vendedores.py\" \"scripts/imports vendas/Planilha_Importacao_Vendedores_Lote2.xlsx\")",
+      "Bash(python scripts/imports/fix_novos_sdr_lote5.py)",
+      "Bash(python scripts/imports/import_from_planilha.py d:/GitHub/hsgrowth-sistema/backend/scripts/imports/Planilha_Importacao_CRM_Novos_SDR_lote5.xlsx)"
     ]
   }
 }
