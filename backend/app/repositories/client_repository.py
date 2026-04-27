@@ -96,18 +96,21 @@ class ClientRepository:
         if state:
             query = query.filter(Client.state == state)
 
-        # Busca por termo (nome, email, empresa, telefone)
+        # Busca por termo (nome, email, empresa, telefone, documento)
         if search:
             search_term = f"%{search}%"
-            query = query.filter(
-                or_(
-                    Client.name.ilike(search_term),
-                    Client.email.ilike(search_term),
-                    Client.company_name.ilike(search_term),
-                    Client.phone.ilike(search_term),
-                    Client.document.ilike(search_term)
-                )
-            )
+            # Extrai só os dígitos do termo para busca por CPF/CNPJ formatado (ex: "08.857" → "08857")
+            digits_only = "".join(c for c in search if c.isdigit())
+            conditions = [
+                Client.name.ilike(search_term),
+                Client.email.ilike(search_term),
+                Client.company_name.ilike(search_term),
+                Client.phone.ilike(search_term),
+                Client.document.ilike(search_term),
+            ]
+            if digits_only:
+                conditions.append(Client.document.ilike(f"%{digits_only}%"))
+            query = query.filter(or_(*conditions))
 
         # Ordenação: mais recentes primeiro
         query = query.order_by(Client.created_at.desc())
@@ -146,15 +149,17 @@ class ClientRepository:
         # Busca por termo
         if search:
             search_term = f"%{search}%"
-            query = query.filter(
-                or_(
-                    Client.name.ilike(search_term),
-                    Client.email.ilike(search_term),
-                    Client.company_name.ilike(search_term),
-                    Client.phone.ilike(search_term),
-                    Client.document.ilike(search_term)
-                )
-            )
+            digits_only = "".join(c for c in search if c.isdigit())
+            conditions = [
+                Client.name.ilike(search_term),
+                Client.email.ilike(search_term),
+                Client.company_name.ilike(search_term),
+                Client.phone.ilike(search_term),
+                Client.document.ilike(search_term),
+            ]
+            if digits_only:
+                conditions.append(Client.document.ilike(f"%{digits_only}%"))
+            query = query.filter(or_(*conditions))
 
         return query.scalar()
 
