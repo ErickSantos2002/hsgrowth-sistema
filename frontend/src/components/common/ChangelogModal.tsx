@@ -25,6 +25,32 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.23",
+    date: "27/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Exportar Cards — Período de fechamento: novo filtro de data de fechamento (ganho/perdido) no modal de exportação. Cards sem data de fechamento são excluídos quando o filtro está ativo.",
+      },
+      {
+        type: "feature",
+        text: "Exportar Cards — novas colunas: planilha passa a incluir CNPJ da empresa, nome/telefone/e-mail do contato e produto(s) vinculado(s) ao card.",
+      },
+      {
+        type: "feature",
+        text: "Kanban — filtro 'Criado em': novo filtro de período pela data de criação do lead, alinhado ao filtro 'Período de criação' da exportação.",
+      },
+      {
+        type: "improvement",
+        text: "Kanban — filtros de data: 'Entrou na etapa' e 'Criado em' coexistem na barra de filtros e podem ser usados juntos.",
+      },
+      {
+        type: "fix",
+        text: "Exportar Cards: empresa, contato e produtos agora são carregados corretamente no modo lista do backend, preenchendo as novas colunas.",
+      },
+    ],
+  },
+  {
     version: "1.7.22",
     date: "27/04/2026",
     entries: [

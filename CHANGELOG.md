@@ -5,6 +5,32 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.23] — 27/04/2026
+
+### Adicionado
+- **Exportar Cards — Período de fechamento:** novo filtro de data de fechamento no modal de exportação, baseado em `won_at`/`lost_at`. Cards sem data de fechamento são excluídos automaticamente quando o filtro está ativo.
+- **Exportar Cards — novas colunas:** planilha exportada agora inclui CNPJ da empresa, nome do contato, telefone, e-mail e produto(s) vinculado(s) ao card.
+- **Kanban — filtro "Criado em":** novo filtro de período baseado na data de criação do lead (hoje, ontem, esta semana, este mês, este trimestre, este ano, personalizado). Usa o mesmo critério do filtro "Período de criação" da exportação, permitindo comparar os números diretamente.
+
+### Melhorado
+- **Kanban — filtros de data:** filtro "Entrou na etapa" (`entered_at`) e filtro "Criado em" (`created_at`) coexistem na barra de filtros e podem ser combinados.
+
+### Corrigido
+- **Exportar Cards — campo removido:** campo "Cliente (busca por nome)" removido do modal de exportação.
+- **Exportar Cards — dados de empresa e contato:** backend agora carrega empresa, contato e produtos no modo lista, preenchendo corretamente as novas colunas da planilha.
+
+---
+
+## [1.7.22] — 27/04/2026
+
+### Melhorado
+- **Cliente — CNAE:** campo agora aceita texto livre (ex: 11.22-4-01), sem máscara ou restrição de caracteres.
+
+### Corrigido
+- **Vincular cliente:** busca por CNPJ formatado (ex: 08.857) agora funciona corretamente — antes só encontrava sem pontos e barras.
+
+---
+
 ## [1.7.21] — 27/04/2026
 
 ### Melhorado
