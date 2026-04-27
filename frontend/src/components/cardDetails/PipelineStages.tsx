@@ -3,6 +3,7 @@ import { Check, Loader2, Info, Mail } from "lucide-react";
 import { List } from "../../types";
 import listService from "../../services/listService";
 import { showError } from "../../utils/toast";
+import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface PipelineStagesProps {
   boardId: number;
@@ -28,6 +29,7 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
   hideTerminalStages = false,
   blockedByAutomacao = false,
 }) => {
+  const { confirm } = useConfirm();
   const [lists, setLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredListId, setHoveredListId] = useState<number | null>(null);
@@ -129,10 +131,21 @@ const PipelineStages: React.FC<PipelineStagesProps> = ({
   /**
    * Handler para mover o card
    */
-  const handleStageClick = (list: List) => {
-    if (list.id !== currentListId && !blockedByAutomacao) {
-      onMoveCard(list.id);
+  const handleStageClick = async (list: List) => {
+    if (list.id === currentListId || blockedByAutomacao) return;
+
+    if (list.name === "Agendado") {
+      const confirmed = await confirm({
+        title: "Mover para Agendado",
+        message: "Você agendou uma reunião com este contato?",
+        confirmText: "Sim, agendei",
+        cancelText: "Ainda não",
+        isDanger: false,
+      });
+      if (!confirmed) return;
     }
+
+    onMoveCard(list.id);
   };
 
   if (loading) {
