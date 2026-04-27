@@ -568,8 +568,11 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
                   activity.task_type
                 )}`}
               >
-                {/* Header da atividade */}
-                <div className="flex items-start gap-3 p-3">
+                {/* Header da atividade — clicável em toda a área */}
+                <div
+                  className="flex cursor-pointer items-start gap-3 p-3"
+                  onClick={() => toggleActivity(activity.id)}
+                >
                   {/* Conteúdo */}
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-start gap-2">
@@ -619,13 +622,9 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
                         {getActivityTypeName(activity.task_type)}
                       </span>
                     </div>
-                    <button
-                      onClick={() => toggleActivity(activity.id)}
-                      className="rounded p-1 text-slate-400 dark:text-slate-400 transition-colors hover:bg-slate-600"
-                      title={isExpanded ? "Recolher" : "Expandir"}
-                    >
+                    <span className="rounded p-1 text-slate-400 dark:text-slate-400">
                       {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                    </button>
+                    </span>
                   </div>
                 </div>
 
