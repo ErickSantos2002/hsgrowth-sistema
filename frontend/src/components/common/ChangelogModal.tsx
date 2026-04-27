@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.21",
+    date: "27/04/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Foco: clicar em qualquer lugar da linha da atividade expande ou recolhe os detalhes — não é mais necessário clicar exatamente na setinha.",
+      },
+    ],
+  },
+  {
     version: "1.7.20",
     date: "24/04/2026",
     entries: [

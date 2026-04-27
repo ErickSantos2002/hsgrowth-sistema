@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.21] — 27/04/2026
+
+### Melhorado
+- **Foco — atividades pendentes:** clicar em qualquer área da linha da atividade expande ou recolhe os detalhes. Antes era necessário clicar exatamente na setinha à direita.
+
+---
+
 ## [1.7.20] — 24/04/2026
 
 ### Melhorado
