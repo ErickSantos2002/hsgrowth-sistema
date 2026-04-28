@@ -630,6 +630,13 @@ export interface DashboardKPIs {
     total_value: number;
   }>;
 
+  cards_by_stage_prospeccao?: Array<{
+    list_id: number;
+    stage_name: string;
+    card_count: number;
+    total_value: number;
+  }>;
+
   sales_evolution: Array<{
     period: string;
     new_leads_count: number;

@@ -99,6 +99,11 @@ class DashboardKPIsResponse(BaseModel):
         description="Cards agrupados por estágio/lista (stage_name, card_count, total_value)"
     )
 
+    cards_by_stage_prospeccao: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Cards agrupados por estágio do board Prospecção (vendedor view only)"
+    )
+
     sales_evolution: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="Evolução de vendas (period, won_count, won_value, lost_count)"

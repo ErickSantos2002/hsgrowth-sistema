@@ -650,6 +650,39 @@ class ReportService:
             for list_id, stage_name, card_count, total_value in cards_by_stage_query
         ]
 
+        # Para a view de vendedor, também busca os estágios do board de Prospecção
+        cards_by_stage_prospeccao = []
+        if view == "vendedor":
+            prospeccao_query = self.db.query(
+                BoardList.id.label('list_id'),
+                BoardList.name.label('stage_name'),
+                func.count(func.distinct(CardListHistory.card_id)).label('card_count'),
+                func.sum(Card.value).label('total_value')
+            ).join(
+                CardListHistory, CardListHistory.list_id == BoardList.id
+            ).join(
+                Card, Card.id == CardListHistory.card_id
+            ).filter(
+                BoardList.board_id == BOARD_PROSPECCAO_ID,
+                func.date(CardListHistory.entered_at) >= start_of_period,
+                func.date(CardListHistory.entered_at) <= end_of_period,
+                *uf
+            ).group_by(
+                BoardList.id, BoardList.name, BoardList.position
+            ).order_by(
+                BoardList.position
+            ).all()
+
+            cards_by_stage_prospeccao = [
+                {
+                    "list_id": list_id,
+                    "stage_name": stage_name,
+                    "card_count": card_count,
+                    "total_value": float(total_value or 0)
+                }
+                for list_id, stage_name, card_count, total_value in prospeccao_query
+            ]
+
         # Evolução de vendas (últimos 6 meses para gráfico de linha)
         sales_evolution = []
         for i in range(5, -1, -1):  # 6 meses atrás até hoje
@@ -832,6 +865,7 @@ class ReportService:
             top_sellers_this_month=top_sellers_this_month,
             top_sdrs_by_meetings=top_sdrs_by_meetings,
             cards_by_stage=cards_by_stage,
+            cards_by_stage_prospeccao=cards_by_stage_prospeccao,
             sales_evolution=sales_evolution,
             activity_counts_by_type=activity_counts_by_type,
             cards_by_channel=cards_by_channel,

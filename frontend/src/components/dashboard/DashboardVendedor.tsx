@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   DollarSign, TrendingUp, TrendingDown, Target, Clock,
   AlertTriangle, Trophy, Medal, Award, Percent, Ticket,
@@ -25,6 +25,7 @@ const ACTIVITY_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", 
 const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel }) => {
   const { darkMode } = useTheme();
   const chartColors = getChartColors(darkMode);
+  const [pipelineBoard, setPipelineBoard] = useState<"aquisicao" | "prospeccao">("aquisicao");
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -50,7 +51,12 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
   const taxaPropostaGanho  = calcRate(negocioGanho, proposta);
   const taxaGeralFunil     = calcRate(negocioGanho, reuniaoCount);
 
-  const funnelData = (kpis.cards_by_stage ?? []).map((s, i) => ({
+  const activeStageSrc =
+    pipelineBoard === "prospeccao"
+      ? (kpis.cards_by_stage_prospeccao ?? [])
+      : (kpis.cards_by_stage ?? []);
+
+  const funnelData = activeStageSrc.map((s, i) => ({
     name: s.stage_name,
     value: s.card_count,
     color: STAGE_COLORS[i % STAGE_COLORS.length],
@@ -213,6 +219,20 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
               <Target size={16} className="text-blue-400" />
             </div>
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Pipeline por Etapa</h3>
+            <div className="flex rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden text-xs font-medium">
+              <button
+                onClick={() => setPipelineBoard("prospeccao")}
+                className={`px-3 py-1 transition-colors ${pipelineBoard === "prospeccao" ? "bg-blue-500 text-white" : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"}`}
+              >
+                Prospecção
+              </button>
+              <button
+                onClick={() => setPipelineBoard("aquisicao")}
+                className={`px-3 py-1 transition-colors ${pipelineBoard === "aquisicao" ? "bg-blue-500 text-white" : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"}`}
+              >
+                Aquisição
+              </button>
+            </div>
             {funnelData.length > 0 && (
               <span className="ml-auto rounded-full bg-blue-500/20 px-2.5 py-0.5 text-xs font-semibold text-blue-400">
                 {funnelData.reduce((sum, s) => sum + s.value, 0)} cards
