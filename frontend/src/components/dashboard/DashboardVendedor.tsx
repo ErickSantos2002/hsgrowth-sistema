@@ -115,7 +115,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
         </div>
 
         {/* Segunda linha */}
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-6">
           <KpiCard
             icon={<Users size={18} className="text-blue-400" />}
             iconBg="bg-blue-500/20"
@@ -150,6 +150,15 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             format="number"
             highlight="orange"
             sub="Cards em Diagnóstico e Proposta"
+          />
+          <KpiCard
+            icon={<Trophy size={18} className="text-emerald-400" />}
+            iconBg="bg-emerald-500/20"
+            label="Ganhos"
+            value={kpis.won_cards_this_month}
+            format="number"
+            highlight="green"
+            sub={`${kpis.won_cards_today} hoje`}
           />
           <KpiCard
             icon={<TrendingDown size={18} className="text-red-400" />}
