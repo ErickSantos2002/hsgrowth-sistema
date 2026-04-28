@@ -73,7 +73,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           Visão Geral · {periodLabel}
         </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 xl:grid-cols-5">
           <KpiCard
             icon={<DollarSign size={18} className="text-emerald-400" />}
             iconBg="bg-emerald-500/20"
@@ -82,6 +82,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             format="currency"
             highlight="green"
             sub="Valor em aberto no período"
+            className="sm:col-span-2 xl:col-span-1"
           />
           <KpiCard
             icon={<TrendingUp size={18} className="text-blue-400" />}
@@ -91,6 +92,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             format="currency"
             highlight="blue"
             sub={<span className="text-emerald-500">{kpis.won_cards_this_month} deals fechados</span>}
+            className="sm:col-span-2 xl:col-span-1"
           />
           <KpiCard
             icon={<Percent size={18} className="text-purple-400" />}
@@ -100,6 +102,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             format="percent"
             highlight="purple"
             sub="% conversão no período"
+            className="sm:col-span-2 xl:col-span-1"
           />
           <KpiCard
             icon={<Ticket size={18} className="text-orange-400" />}
@@ -109,6 +112,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             format="currency"
             highlight="orange"
             sub="Valor médio por deal"
+            className="sm:col-span-3 xl:col-span-1"
           />
           <KpiCard
             icon={<Clock size={18} className="text-cyan-400" />}
@@ -117,6 +121,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             value={kpis.avg_time_to_win_days}
             format="days"
             sub="Dias até ganhar o deal"
+            className="sm:col-span-3 xl:col-span-1"
           />
         </div>
 

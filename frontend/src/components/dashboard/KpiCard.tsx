@@ -10,6 +10,7 @@ interface KpiCardProps {
   sub?: React.ReactNode;
   highlight?: "green" | "red" | "yellow" | "blue" | "purple" | "orange";
   unavailable?: boolean;
+  className?: string;
 }
 
 const highlightBorder: Record<string, string> = {
@@ -22,7 +23,7 @@ const highlightBorder: Record<string, string> = {
 };
 
 const KpiCard: React.FC<KpiCardProps> = ({
-  icon, iconBg, label, value, format = "number", sub, highlight, unavailable,
+  icon, iconBg, label, value, format = "number", sub, highlight, unavailable, className,
 }) => {
   const borderClass = highlight ? highlightBorder[highlight] : "border-gray-200 dark:border-slate-700/50";
 
@@ -77,7 +78,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
   };
 
   return (
-    <div className={`rounded-xl border ${borderClass} bg-white dark:bg-slate-800/50 p-5 transition-all hover:shadow-sm`}>
+    <div className={`rounded-xl border ${borderClass} bg-white dark:bg-slate-800/50 p-5 transition-all hover:shadow-sm${className ? ` ${className}` : ""}`}>
       <div className="mb-3 flex items-center justify-between">
         <div className={`rounded-lg ${iconBg} p-2.5`}>{icon}</div>
         <div className="text-right">
