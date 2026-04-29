@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.24",
+    date: "29/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Dashboard Vendedor — Pipeline por Etapa: toggle para alternar entre Aquisição e Prospecção no gráfico de pipeline por etapa.",
+      },
+      {
+        type: "feature",
+        text: "Dashboard Vendedor — card Ganhos: novo KPI exibindo total de deals ganhos no período com contagem do dia.",
+      },
+      {
+        type: "improvement",
+        text: "Dashboard Vendedor — layout dos KPIs: na tela de tablet, os 2 cards da segunda fila ocupam a largura total sem deixar espaço em branco.",
+      },
+    ],
+  },
+  {
     version: "1.7.23",
     date: "27/04/2026",
     entries: [

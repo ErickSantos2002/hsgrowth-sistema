@@ -5,6 +5,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.24] — 29/04/2026
+
+### Adicionado
+- **Dashboard Vendedor — Pipeline por Etapa (Prospecção):** gráfico de pipeline por etapa agora permite alternar entre o board de Aquisição e o board de Prospecção via toggle. Ambos os boards são consultados de forma independente.
+- **Dashboard Vendedor — card Ganhos:** novo KPI exibindo quantidade de deals ganhos no período pelo vendedor (com contagem do dia).
+
+### Melhorado
+- **Dashboard Vendedor — layout dos KPI cards:** na tela intermediária (tablet), os 5 cards da primeira linha se reorganizam em 3 + 2, com os 2 inferiores ocupando a largura total sem deixar espaço vazio.
+
+---
+
 ## [1.7.23] — 27/04/2026
 
 ### Adicionado
