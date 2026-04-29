@@ -133,6 +133,7 @@ class CardTaskService:
                 "task_id": task.id,
                 "task_type": task_data.task_type,
                 "task_title": task_data.title,
+                "task_description": task_data.description or "",
                 "due_date": str(task_data.due_date) if task_data.due_date else None
             }
         )
@@ -238,8 +239,12 @@ class CardTaskService:
             card_id=task.card_id,
             user_id=current_user.id,
             activity_type="task_edited",
-            description=f"Tarefa editada: {task.title}",
-            metadata={"task_id": task.id, "task_title": task.title}
+            description=f"Tarefa editada: {updated_task.title}",
+            metadata={
+                "task_id": task.id,
+                "task_title": updated_task.title,
+                "task_description": updated_task.description or "",
+            }
         )
 
         # Notifica o novo responsável se o assigned_to mudou e é diferente de quem editou

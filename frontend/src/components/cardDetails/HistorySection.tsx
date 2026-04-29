@@ -132,17 +132,12 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
   const activityEvents: HistoryEvent[] = (activities || []).map((act: any) => {
     const meta = act.activity_metadata || {};
 
-    // Monta a descrição exibida abaixo do título no histórico.
-    // Para atividades concluídas, prioriza as anotações (task_notes) e depois
-    // a descrição da tarefa (task_description). Para outros eventos, usa task_title.
-    let description = "";
-    if (meta.task_notes) {
-      description = meta.task_notes;
-    } else if (meta.task_description) {
-      description = meta.task_description;
-    } else if (meta.task_title && meta.task_title !== act.description) {
-      // Exibe task_title apenas se for diferente do description principal
-      // (evita duplicidade: "Ligação concluída: X" + "X" abaixo)
+    // Monta o texto exibido abaixo do título: descrição da tarefa + anotações (se houver).
+    const parts: string[] = [];
+    if (meta.task_description) parts.push(meta.task_description);
+    if (meta.task_notes) parts.push(meta.task_notes);
+    let description = parts.join("\n\n");
+    if (!description && meta.task_title && meta.task_title !== act.description) {
       description = meta.task_title;
     }
 
