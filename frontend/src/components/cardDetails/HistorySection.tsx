@@ -134,8 +134,8 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
 
     // Monta o texto exibido abaixo do título: descrição da tarefa + anotações (se houver).
     const parts: string[] = [];
-    if (meta.task_description) parts.push(meta.task_description);
-    if (meta.task_notes) parts.push(meta.task_notes);
+    if (meta.task_description) parts.push(`Descrição: ${meta.task_description}`);
+    if (meta.task_notes) parts.push(`Notas: ${meta.task_notes}`);
     let description = parts.join("\n\n");
     if (!description && meta.task_title && meta.task_title !== act.description) {
       description = meta.task_title;
