@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.25] — 30/04/2026
+
+### Adicionado
+- **Histórico do card — Descrição e Notas:** histórico de atividades agora exibe a descrição e as anotações da tarefa com rótulos "Descrição:" e "Notas:", quando preenchidos.
+
+### Corrigido
+- **Histórico do card — task_created/task_edited:** ao criar ou editar uma tarefa, a descrição agora é salva corretamente no metadata do histórico e passa a ser exibida.
+
+---
+
 ## [1.7.24] — 29/04/2026
 
 ### Adicionado

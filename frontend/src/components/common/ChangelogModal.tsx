@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.25",
+    date: "30/04/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Histórico do card: descrição e anotações da tarefa agora aparecem no histórico com os rótulos 'Descrição:' e 'Notas:'.",
+      },
+      {
+        type: "fix",
+        text: "Histórico do card: ao criar ou editar uma tarefa, a descrição agora é salva no histórico e exibida corretamente.",
+      },
+    ],
+  },
+  {
     version: "1.7.24",
     date: "29/04/2026",
     entries: [
