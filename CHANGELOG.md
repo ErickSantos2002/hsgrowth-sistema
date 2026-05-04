@@ -5,6 +5,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.26] — 04/05/2026
+
+### Adicionado
+- **Dashboard — filtro "Mês Passado":** novo período disponível no seletor de data das dashboards SDR e Vendedor, posicionado entre "Este Mês" e "Este Trimestre".
+- **Dashboard SDR — Reuniões Qualificadas:** novo KPI exibindo reuniões agendadas pelo SDR que o vendedor compareceu e marcou como concluídas no período (sem no-show).
+
+### Melhorado
+- **Dashboard SDR — Reuniões Agendadas:** passa a contar todas as reuniões enviadas ao estágio Agendado no período, incluindo as que resultaram em no-show. A diferença entre Agendadas e Qualificadas reflete os no-shows.
+- **Dashboard SDR — layout dos KPI cards:** reorganizado em 5 cards na primeira linha e 4 na segunda, com preenchimento correto em telas de tablet (igual ao layout do Vendedor).
+
+---
+
 ## [1.7.25] — 30/04/2026
 
 ### Adicionado

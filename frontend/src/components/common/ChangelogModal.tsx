@@ -25,6 +25,28 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.26",
+    date: "04/05/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Dashboard: novo filtro 'Mês Passado' no seletor de período das dashboards SDR e Vendedor.",
+      },
+      {
+        type: "feature",
+        text: "Dashboard SDR — Reuniões Qualificadas: novo KPI mostrando reuniões que o vendedor compareceu e marcou como concluídas (sem no-show).",
+      },
+      {
+        type: "improvement",
+        text: "Dashboard SDR — Reuniões Agendadas: agora conta todas as reuniões agendadas no período, incluindo no-shows. A diferença entre Agendadas e Qualificadas mostra os no-shows.",
+      },
+      {
+        type: "improvement",
+        text: "Dashboard SDR — layout dos KPIs: reorganizado em 5 cards na primeira linha e 4 na segunda, igual ao layout do Vendedor.",
+      },
+    ],
+  },
+  {
     version: "1.7.25",
     date: "30/04/2026",
     entries: [
