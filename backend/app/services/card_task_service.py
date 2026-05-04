@@ -58,17 +58,22 @@ class CardTaskService:
     def _check_task_permission(self, task: CardTask, current_user: User) -> None:
         """
         Verifica se o usuário tem permissão para editar ou deletar a tarefa.
-        Admin e manager sempre podem. Salesperson/SDR apenas se forem o responsável.
+        Admin e manager sempre podem. Salesperson/SDR podem se forem o responsável
+        pela tarefa OU o SDR responsável pelo card dono da tarefa.
         """
         role_name = current_user.role.name if current_user.role else ""
         is_privileged = role_name in ("admin", "manager")
         is_assigned = task.assigned_to_id == current_user.id
 
         if not is_privileged and not is_assigned:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Apenas o responsável pela tarefa, gerentes e administradores podem modificá-la."
-            )
+            from app.models.card import Card
+            card = self.db.query(Card).filter(Card.id == task.card_id).first()
+            is_card_sdr = card is not None and card.sdr_id == current_user.id
+            if not is_card_sdr:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Apenas o responsável pela tarefa, gerentes e administradores podem modificá-la."
+                )
 
     def _get_board_type_for_task(self, task: CardTask) -> Optional[str]:
         """
