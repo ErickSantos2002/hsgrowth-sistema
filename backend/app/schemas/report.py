@@ -63,6 +63,9 @@ class DashboardKPIsResponse(BaseModel):
     # Reuniões recebidas do SDR (vendedor)
     meetings_received_from_sdr: int = Field(0, description="Cards que entraram em Reunião Agendada no período com SDR e vendedor vinculados")
 
+    # Reuniões qualificadas (SDR)
+    qualified_meetings: int = Field(0, description="Reuniões agendadas pelo SDR que o vendedor marcou como concluídas (sem no-show) no período")
+
     # Propostas geradas (vendedor)
     propostas_geradas: int = Field(0, description="Cards que entraram em Diagnóstico e Proposta no período")
 

@@ -589,6 +589,9 @@ export interface DashboardKPIs {
   // Reuniões recebidas do SDR
   meetings_received_from_sdr: number;
 
+  // Reuniões qualificadas (SDR)
+  qualified_meetings: number;
+
   // Propostas geradas
   propostas_geradas: number;
 

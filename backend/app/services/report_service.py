@@ -546,6 +546,24 @@ class ReportService:
             *uf
         ).scalar() or 0
 
+        # Reuniões Qualificadas — tarefas do tipo "meeting" concluídas com sucesso
+        # (is_completed=True, is_noshow=False) em cards que têm SDR vinculado,
+        # dentro do período. Representa reuniões que o SDR agendou e o vendedor
+        # compareceu e marcou como concluída.
+        qualified_meetings = self.db.query(
+            func.count(func.distinct(CardTask.id))
+        ).join(
+            Card, Card.id == CardTask.card_id
+        ).filter(
+            CardTask.task_type == "meeting",
+            CardTask.is_completed == True,
+            CardTask.is_noshow == False,
+            Card.sdr_id.isnot(None),
+            func.date(CardTask.completed_at) >= start_of_period,
+            func.date(CardTask.completed_at) <= end_of_period,
+            *uf
+        ).scalar() or 0
+
         # Top 5 vendedores do mês — sempre global (sem user filter) para que
         # vendedores/SDRs possam ver onde estão no ranking da equipe
         top_sellers_query = self.db.query(
@@ -851,6 +869,7 @@ class ReportService:
             lost_cards_this_month=lost_cards_this_month,
             propostas_geradas=propostas_geradas,
             meetings_received_from_sdr=meetings_received_from_sdr,
+            qualified_meetings=qualified_meetings,
             overdue_cards=overdue_cards,
             due_today=due_today,
             due_this_week=due_this_week,
