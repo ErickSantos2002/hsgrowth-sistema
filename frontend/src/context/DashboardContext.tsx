@@ -4,7 +4,7 @@ import { DashboardKPIs } from "../types";
 import { useAuth } from "../hooks/useAuth";
 import toast from "react-hot-toast";
 
-export type PeriodType = "today" | "yesterday" | "week" | "month" | "quarter" | "year" | "custom";
+export type PeriodType = "today" | "yesterday" | "week" | "month" | "last_month" | "quarter" | "year" | "custom";
 export type ViewType = "sdr" | "vendedor";
 
 interface DashboardContextData {
