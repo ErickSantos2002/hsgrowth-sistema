@@ -542,7 +542,6 @@ class ReportService:
             func.date(CardListHistory.entered_at) >= start_of_period,
             func.date(CardListHistory.entered_at) <= end_of_period,
             Card.sdr_id.isnot(None),
-            ~CardListHistory.id.in_(_noshow_clh_ids),
             *uf
         ).scalar() or 0
 
