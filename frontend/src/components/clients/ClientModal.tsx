@@ -3,6 +3,7 @@ import { Building, User, Mail, Phone, FileText, MapPin, Globe, StickyNote, Chevr
 import BaseModal from "../common/BaseModal";
 import { FormField, Input, Select, Textarea, Button } from "../common";
 import clientService, { Client, CreateClientRequest, UpdateClientRequest } from "../../services/clientService";
+import api from "../../services/api";
 import {
   RELATIONSHIP_TYPES,
   COMMERCIAL_ACTIVITIES,
@@ -320,9 +321,8 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
     setCnpjSuccess(false);
 
     try {
-      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      const res = await api.get(`/api/v1/clients/cnpj/${digits}`);
+      const data = res.data;
 
       const toTitle = (s: string) =>
         s ? s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : "";
@@ -355,8 +355,9 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
 
       setCnpjSuccess(true);
       setTimeout(() => setCnpjSuccess(false), 4000);
-    } catch {
-      setCnpjError("CNPJ não encontrado na Receita Federal.");
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || "CNPJ não encontrado na Receita Federal.";
+      setCnpjError(msg);
     } finally {
       setCnpjLoading(false);
     }

@@ -33,8 +33,16 @@ const CHANGELOG: ChangelogVersion[] = [
         text: "Reunião Teams: ao reagendar uma tarefa do tipo Reunião, o evento no calendário do Outlook é atualizado automaticamente.",
       },
       {
+        type: "feature",
+        text: "Clientes — Busca por CNPJ: ao preencher o CNPJ, os dados da empresa são buscados automaticamente na Receita Federal e preenchidos nos campos: Razão Social, Nome Fantasia, Email, Telefone, CNAE, Logradouro, Cidade, Estado e País.",
+      },
+      {
         type: "improvement",
         text: "Tarefas: o SDR responsável pelo card agora pode editar, reagendar e concluir qualquer tarefa dele, mesmo que outro usuário tenha criado.",
+      },
+      {
+        type: "improvement",
+        text: "Clientes — formulário: CPF/CNPJ reposicionado no topo dos Dados Principais, ocupando largura total. Cidade, Estado e País agora ficam lado a lado.",
       },
     ],
   },
