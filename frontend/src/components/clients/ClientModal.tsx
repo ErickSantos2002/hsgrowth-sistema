@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Building, User, Mail, Phone, FileText, MapPin, Globe, StickyNote, ChevronDown, Briefcase, Linkedin } from "lucide-react";
+import { Building, User, Mail, Phone, FileText, MapPin, Globe, StickyNote, ChevronDown, Briefcase, Linkedin, Search, Loader2, CheckCircle } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import { FormField, Input, Select, Textarea, Button } from "../common";
 import clientService, { Client, CreateClientRequest, UpdateClientRequest } from "../../services/clientService";
@@ -120,8 +120,12 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
   });
 
   const [isSaving, setIsSaving] = useState(false);
-  // Erros por campo — cada chave corresponde a um campo do formulário
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Estados do lookup de CNPJ
+  const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [cnpjError, setCnpjError] = useState("");
+  const [cnpjSuccess, setCnpjSuccess] = useState(false);
 
   /**
    * Preenche o formulário quando estiver editando
@@ -293,17 +297,68 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
    * Handler para mudança nos campos do formulário
    */
   const handleChange = (field: keyof ClientFormData, value: string | boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    // Limpa o erro do campo editado
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === "document") {
+      setCnpjError("");
+      setCnpjSuccess(false);
+    }
     if (errors[field as string]) {
       setErrors((prev) => {
         const next = { ...prev };
         delete next[field as string];
         return next;
       });
+    }
+  };
+
+  const lookupCnpj = async () => {
+    const digits = formData.document.replace(/\D/g, "");
+    if (digits.length !== 14 || cnpjLoading) return;
+
+    setCnpjLoading(true);
+    setCnpjError("");
+    setCnpjSuccess(false);
+
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+
+      const toTitle = (s: string) =>
+        s ? s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : "";
+
+      const rawPhone = (data.ddd_telefone_1 || "").replace(/\D/g, "");
+      const formattedPhone = rawPhone ? maskPhone(rawPhone) : "";
+
+      const cnaeCode = data.cnae_fiscal
+        ? String(data.cnae_fiscal).padStart(7, "0")
+        : "";
+      const formattedCnae = cnaeCode
+        ? `${cnaeCode.slice(0, 2)}.${cnaeCode.slice(2, 4)}-${cnaeCode.slice(4, 5)}-${cnaeCode.slice(5, 7)}`
+        : "";
+
+      const addressParts = [data.logradouro, data.numero, data.complemento].filter(Boolean);
+      const formattedAddress = addressParts.join(", ");
+
+      setFormData((prev) => ({
+        ...prev,
+        name:         data.razao_social  ? toTitle(data.razao_social)  : prev.name,
+        company_name: data.nome_fantasia ? toTitle(data.nome_fantasia) : prev.company_name,
+        email:        data.email         || prev.email,
+        phone:        formattedPhone     || prev.phone,
+        cnae:         formattedCnae      || prev.cnae,
+        address:      formattedAddress   || prev.address,
+        city:         data.municipio     ? toTitle(data.municipio) : prev.city,
+        state:        data.uf            || prev.state,
+        country:      "Brasil",
+      }));
+
+      setCnpjSuccess(true);
+      setTimeout(() => setCnpjSuccess(false), 4000);
+    } catch {
+      setCnpjError("CNPJ não encontrado na Receita Federal.");
+    } finally {
+      setCnpjLoading(false);
     }
   };
 
@@ -340,6 +395,54 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
             Dados Principais
           </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Documento (CPF/CNPJ) — linha inteira */}
+            <FormField
+              label={
+                <span className="flex items-center gap-1">
+                  <FileText size={14} />
+                  CPF/CNPJ *
+                </span>
+              }
+              hint={
+                cnpjSuccess
+                  ? <span className="text-emerald-500 flex items-center gap-1"><CheckCircle size={12} /> Dados preenchidos com sucesso!</span>
+                  : cnpjError
+                  ? <span className="text-red-400">{cnpjError}</span>
+                  : "Documento de identificação (obrigatório)"
+              }
+              error={errors.document}
+              className="md:col-span-2"
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  value={formData.document}
+                  onChange={(e) => handleChange("document", maskDocument(e.target.value))}
+                  onBlur={() => {
+                    if (formData.document.replace(/\D/g, "").length === 14) lookupCnpj();
+                  }}
+                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  maxLength={18}
+                  error={!!errors.document}
+                />
+                {formData.document.replace(/\D/g, "").length === 14 && (
+                  <button
+                    type="button"
+                    onClick={lookupCnpj}
+                    disabled={cnpjLoading}
+                    title="Buscar dados do CNPJ"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-blue-400 hover:text-blue-500 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-blue-400 dark:hover:text-blue-400"
+                  >
+                    {cnpjLoading
+                      ? <Loader2 size={16} className="animate-spin" />
+                      : cnpjSuccess
+                      ? <CheckCircle size={16} className="text-emerald-500" />
+                      : <Search size={16} />
+                    }
+                  </button>
+                )}
+              </div>
+            </FormField>
+
             {/* Nome da Empresa */}
             <FormField
               label={
@@ -360,7 +463,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
               />
             </FormField>
 
-            {/* Nome da Empresa */}
+            {/* Nome Fantasia */}
             <FormField
               label={
                 <span className="flex items-center gap-1">
@@ -412,26 +515,6 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 onChange={(e) => handleChange("phone", maskPhone(e.target.value))}
                 placeholder="(00) 00000-0000"
                 maxLength={15}
-              />
-            </FormField>
-
-            {/* Documento (CPF/CNPJ) */}
-            <FormField
-              label={
-                <span className="flex items-center gap-1">
-                  <FileText size={14} />
-                  CPF/CNPJ *
-                </span>
-              }
-              hint="Documento de identificação (obrigatório)"
-              error={errors.document}
-            >
-              <Input
-                value={formData.document}
-                onChange={(e) => handleChange("document", maskDocument(e.target.value))}
-                placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                maxLength={18}
-                error={!!errors.document}
               />
             </FormField>
           </div>
@@ -581,13 +664,9 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
             <MapPin size={20} className="text-emerald-400" />
             Endereço
           </h3>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4">
             {/* Logradouro */}
-            <FormField
-              label="Logradouro"
-              hint="Rua, avenida, número"
-              className="md:col-span-2"
-            >
+            <FormField label="Logradouro" hint="Rua, avenida, número">
               <Input
                 value={formData.address}
                 onChange={(e) => handleChange("address", e.target.value)}
@@ -595,38 +674,38 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
               />
             </FormField>
 
-            {/* Cidade */}
-            <FormField label="Cidade" hint="Nome da cidade">
-              <Input
-                value={formData.city}
-                onChange={(e) => handleChange("city", e.target.value)}
-                placeholder="Ex: São Paulo"
-              />
-            </FormField>
+            {/* Cidade · Estado · País */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <FormField label="Cidade" hint="Nome da cidade">
+                <Input
+                  value={formData.city}
+                  onChange={(e) => handleChange("city", e.target.value)}
+                  placeholder="Ex: São Paulo"
+                />
+              </FormField>
 
-            {/* Estado */}
-            <FormField label="Estado" hint="UF">
-              <SelectMenu
-                value={formData.state}
-                options={[
-                  { value: "", label: "Selecione..." },
-                  ...BRAZILIAN_STATES.map((state) => ({
-                    value: state.value,
-                    label: `${state.label} (${state.value})`,
-                  })),
-                ]}
-                onChange={(value) => handleChange("state", value)}
-              />
-            </FormField>
+              <FormField label="Estado" hint="UF">
+                <SelectMenu
+                  value={formData.state}
+                  options={[
+                    { value: "", label: "Selecione..." },
+                    ...BRAZILIAN_STATES.map((state) => ({
+                      value: state.value,
+                      label: `${state.label} (${state.value})`,
+                    })),
+                  ]}
+                  onChange={(value) => handleChange("state", value)}
+                />
+              </FormField>
 
-            {/* País */}
-            <FormField label="País" hint="País de origem">
-              <Input
-                value={formData.country}
-                onChange={(e) => handleChange("country", e.target.value)}
-                placeholder="Ex: Brasil"
-              />
-            </FormField>
+              <FormField label="País" hint="País de origem">
+                <Input
+                  value={formData.country}
+                  onChange={(e) => handleChange("country", e.target.value)}
+                  placeholder="Ex: Brasil"
+                />
+              </FormField>
+            </div>
           </div>
         </div>
 
