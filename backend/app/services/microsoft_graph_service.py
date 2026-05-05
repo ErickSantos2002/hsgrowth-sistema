@@ -227,11 +227,56 @@ class MicrosoftGraphService:
             return {
                 "meeting_id": meeting_id,
                 "join_url": join_url,
+                "event_id": data.get("id", ""),
             }
         except ValueError:
             raise
         except Exception as e:
             raise ValueError(f"Erro ao criar evento no calendário: {e}")
+
+    def update_calendar_event(
+        self,
+        user: User,
+        db: Session,
+        event_id: str,
+        start_dt: datetime,
+        end_dt: Optional[datetime] = None,
+    ) -> None:
+        """
+        Atualiza o horário de um evento existente no calendário do Outlook via PATCH.
+
+        Raises:
+            ValueError: Se o usuário não tiver token MS válido ou a chamada falhar
+        """
+        access_token = self._require_token(user, db)
+
+        if end_dt is None:
+            end_dt = start_dt + timedelta(hours=1)
+
+        def to_iso(dt: datetime) -> str:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+        payload = {
+            "start": {"dateTime": to_iso(start_dt), "timeZone": "UTC"},
+            "end": {"dateTime": to_iso(end_dt), "timeZone": "UTC"},
+        }
+
+        try:
+            with httpx.Client(timeout=15) as client:
+                resp = client.patch(
+                    f"{GRAPH_EVENTS_URL}/{event_id}",
+                    json=payload,
+                    headers=self._auth_headers(access_token),
+                )
+            if resp.status_code not in (200, 201):
+                error_msg = resp.json().get("error", {}).get("message", f"HTTP {resp.status_code}")
+                raise ValueError(f"Erro ao atualizar evento no calendário: {error_msg}")
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Erro ao atualizar evento no calendário: {e}")
 
     def _resolve_meeting_id_by_join_url(self, access_token: str, join_url: str) -> str:
         """

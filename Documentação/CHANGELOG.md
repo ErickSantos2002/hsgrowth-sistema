@@ -7,6 +7,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.27] - 2026-05-05
+
+### Adicionado
+- **Reunião Teams — reagendamento automático:** ao alterar a data/hora de uma tarefa do tipo Reunião que já possui evento criado no Outlook, o evento no calendário é atualizado automaticamente via Microsoft Graph API. O campo `teams_event_id` foi adicionado para rastrear o evento do calendário separadamente do ID da reunião Teams.
+
+### Melhorado
+- **Permissão de tarefas:** o SDR responsável pelo card agora pode editar, reagendar e concluir qualquer tarefa desse card, mesmo que não tenha sido ele que a criou.
+
+---
+
 ## [1.7.22] - 2026-04-27
 
 ### Melhorado
