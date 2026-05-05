@@ -151,6 +151,7 @@ class CardTaskResponse(BaseModel):
     # Microsoft Teams
     teams_meeting_id: Optional[str] = Field(None, description="ID da reunião no Microsoft Teams")
     teams_join_url: Optional[str] = Field(None, description="Link de entrada na reunião Teams")
+    teams_event_id: Optional[str] = Field(None, description="ID do evento no calendário do Outlook")
     transcript_raw: Optional[str] = Field(None, description="Transcrição bruta em formato VTT")
     transcript_analysis: Optional[str] = Field(None, description="Análise IA da transcrição (JSON)")
 
