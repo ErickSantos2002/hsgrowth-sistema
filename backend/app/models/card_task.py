@@ -89,6 +89,7 @@ class CardTask(Base, TimestampMixin):
     # Microsoft Teams — Reunião + Transcrição
     teams_meeting_id = Column(String(255), nullable=True, comment="ID da reunião no Microsoft Teams")
     teams_join_url = Column(String(1000), nullable=True, comment="Link de entrada na reunião Teams (joinWebUrl)")
+    teams_event_id = Column(String(255), nullable=True, comment="ID do evento no calendário do Outlook (usado para reagendar)")
     transcript_raw = Column(Text, nullable=True, comment="Transcrição bruta da reunião em formato VTT")
     transcript_analysis = Column(Text, nullable=True, comment="Análise IA da transcrição (JSON)")
 

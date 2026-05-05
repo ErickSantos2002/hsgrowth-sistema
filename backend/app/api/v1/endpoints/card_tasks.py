@@ -531,6 +531,24 @@ def update_task(
     service = CardTaskService(db)
     task = service.update_task(task_id, task_data, current_user)
 
+    # Se due_date foi alterada e a tarefa tem evento no calendário, reagenda automaticamente
+    if task_data.due_date is not None and task.teams_event_id:
+        try:
+            from app.services.microsoft_graph_service import microsoft_graph_service
+            from datetime import timedelta
+            duration = task.duration_minutes or 60
+            end_dt = task.due_date + timedelta(minutes=duration)
+            microsoft_graph_service.update_calendar_event(
+                user=current_user,
+                db=db,
+                event_id=task.teams_event_id,
+                start_dt=task.due_date,
+                end_dt=end_dt,
+            )
+        except Exception as e:
+            # Não bloqueia o update da tarefa se o calendário falhar
+            print(f"[CardTask] Aviso: não foi possível reagendar evento no calendário: {e}")
+
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")
@@ -938,6 +956,7 @@ async def create_teams_meeting(
 
     task.teams_meeting_id = result["meeting_id"]
     task.teams_join_url = result["join_url"]
+    task.teams_event_id = result.get("event_id", "")
     db.commit()
     db.refresh(task)
 

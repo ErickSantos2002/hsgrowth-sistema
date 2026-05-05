@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.27",
+    date: "05/05/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Reunião Teams: ao reagendar uma tarefa do tipo Reunião, o evento no calendário do Outlook é atualizado automaticamente.",
+      },
+      {
+        type: "improvement",
+        text: "Tarefas: o SDR responsável pelo card agora pode editar, reagendar e concluir qualquer tarefa dele, mesmo que outro usuário tenha criado.",
+      },
+    ],
+  },
+  {
     version: "1.7.26",
     date: "04/05/2026",
     entries: [
