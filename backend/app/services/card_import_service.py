@@ -39,7 +39,6 @@ TEMPLATE_COLUMNS = [
     ("Tipo de Negócio",     "Nova Venda",                          False, "card",   None),
     ("Canal de Aquisição",  "Indicacao",                           False, "card",   None),
     ("Detalhe do Canal",    "Indicação do cliente XYZ",            False, "card",   None),
-    ("Origem",              "Inbound",                             False, "card",   None),
     # ── Empresa ───────────────────────────────────────────────────────────────
     ("Nome da Empresa",     "Empresa XYZ LTDA",                    False, "client", None),
     ("CNPJ/CPF",            "12.345.678/0001-90",                  False, "client", None),
@@ -538,7 +537,7 @@ def generate_template(user_name: str = "", user_role: str = "") -> bytes:
 
     # ── Larguras das colunas ─────────────────────────────────────────────────
     col_widths = [
-        30, 38, 20, 22, 32, 16,          # Card (6)
+        30, 38, 20, 22, 32,              # Card (5)
         32, 20, 20, 25, 16, 10, 28, 28, 14,  # Empresa (9)
         28, 22, 28, 20, 22, 22, 20, 20, 30,  # Contato (9)
         24, 24,                              # Responsáveis (2)
