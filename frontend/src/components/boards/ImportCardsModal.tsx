@@ -269,7 +269,7 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
           {
             num: "2",
             title: "Preencha os dados",
-            desc: "Preencha as colunas com as informações dos leads. Apenas "Título do Card" é obrigatório. Clientes e contatos serão criados e vinculados automaticamente.",
+            desc: "Preencha as colunas com as informações dos leads. Apenas 'Título do Card' é obrigatório. Clientes e contatos serão criados e vinculados automaticamente.",
           },
           {
             num: "3",

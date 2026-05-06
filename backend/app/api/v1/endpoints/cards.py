@@ -1425,7 +1425,8 @@ def download_import_template(
     from fastapi.responses import Response
     from app.services.card_import_service import generate_template
 
-    xlsx_bytes = generate_template()
+    user_role = current_user.role.name if current_user.role else ""
+    xlsx_bytes = generate_template(user_name=current_user.name or "", user_role=user_role)
     return Response(
         content=xlsx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

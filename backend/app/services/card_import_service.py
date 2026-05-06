@@ -8,6 +8,7 @@ from unicodedata import normalize as unicode_normalize
 
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+from openpyxl.worksheet.datavalidation import DataValidation
 from sqlalchemy.orm import Session
 
 from app.models.card import Card
@@ -20,14 +21,11 @@ from app.schemas.card import CardImportRowResult, CardImportResponse
 TARGET_LIST_ID = 22
 TARGET_BOARD_ID = 6
 
+# Ordem e definição das colunas do template
+# (header, exemplo_valor, is_required)
 TEMPLATE_COLUMNS = [
-    # (header, example, is_required)
     ("Título do Card", "Proposta Empresa XYZ", True),
     ("Descrição", "Interesse no produto A - cliente indicado por João", False),
-    ("Valor (R$)", "15000.00", False),
-    ("Data de Vencimento", "2026-06-30", False),
-    ("Vendedor (nome exato)", "João Silva", False),
-    ("SDR (nome exato)", "Maria Santos", False),
     ("Tipo de Negócio", "Nova Venda", False),
     ("Canal de Aquisição", "Indicacao", False),
     ("Detalhe do Canal", "Indicação do cliente XYZ", False),
@@ -49,6 +47,9 @@ TEMPLATE_COLUMNS = [
     ("WhatsApp", "(11) 99999-9999", False),
     ("Telefone Comercial", "(11) 3333-4444", False),
     ("LinkedIn", "linkedin.com/in/carlos", False),
+    # Responsáveis — colocados no final para serem pré-preenchidos via API
+    ("Vendedor (nome exato)", "", False),
+    ("SDR (nome exato)", "", False),
 ]
 
 VALID_CHANNELS = {
@@ -67,6 +68,24 @@ VALID_DEAL_TYPES = {
     "up sell": "Up Sell",
 }
 
+VALID_EMPLOYEE_COUNTS = [
+    "Ate 50 colaboradores",
+    "51-100 colaboradores",
+    "101-300 colaboradores",
+    "301-600 colaboradores",
+    "601-1.000 colaboradores",
+    "Acima de 1.000 colaboradores",
+]
+
+VALID_ANNUAL_REVENUES = [
+    "Ate R$ 10 milhoes",
+    "R$ 10-30 milhoes",
+    "R$ 30-100 milhoes",
+    "R$ 100-300 milhoes",
+    "R$ 300 milhoes - R$ 1 bilhao",
+    "Acima de R$ 1 bilhao",
+]
+
 STATE_TO_UF = {
     "acre": "AC", "alagoas": "AL", "amapa": "AP", "amazonas": "AM",
     "bahia": "BA", "ceara": "CE", "distrito federal": "DF",
@@ -78,8 +97,10 @@ STATE_TO_UF = {
     "santa catarina": "SC", "sao paulo": "SP", "sergipe": "SE",
     "tocantins": "TO",
 }
-VALID_UF = set(STATE_TO_UF.values())
+VALID_UF = sorted(STATE_TO_UF.values())
 
+
+# ─── Helpers ────────────────────────────────────────────────────────────────
 
 def _strip_accents(text: str) -> str:
     return unicode_normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
@@ -97,7 +118,7 @@ def _normalize_uf(val) -> str | None:
     if not s:
         return None
     upper = s.upper().strip()
-    if upper in VALID_UF:
+    if upper in set(VALID_UF):
         return upper
     return STATE_TO_UF.get(_strip_accents(s.lower()).strip())
 
@@ -156,7 +177,7 @@ def _find_user(db: Session, name: str) -> int | None:
     return None
 
 
-def _get_or_create_client(db: Session, row: dict, current_user_id: int) -> int | None:
+def _get_or_create_client(db: Session, row: dict) -> int | None:
     company_name = _clean(row.get("Nome da Empresa"))
     if not company_name:
         return None
@@ -164,22 +185,20 @@ def _get_or_create_client(db: Session, row: dict, current_user_id: int) -> int |
     cnpj_digits = _clean_cnpj(row.get("CNPJ/CPF"))
 
     if cnpj_digits:
-        existing = db.query(Client).filter(Client.is_deleted == False).all()
-        for c in existing:
+        for c in db.query(Client).filter(Client.is_deleted == False).all():
             if c.document:
                 doc_digits = "".join(ch for ch in c.document if ch.isdigit()).zfill(14)
                 if doc_digits == cnpj_digits:
                     return c.id
 
-    # Busca por nome exato se sem CNPJ
     if not cnpj_digits:
-        existing_by_name = (
+        existing = (
             db.query(Client)
             .filter(Client.name.ilike(company_name), Client.is_deleted == False)
             .first()
         )
-        if existing_by_name:
-            return existing_by_name.id
+        if existing:
+            return existing.id
 
     new_client = Client(
         name=company_name,
@@ -207,13 +226,11 @@ def _get_or_create_person(db: Session, row: dict, client_id: int | None) -> int 
 
     email = _clean(row.get("E-mail Comercial"))
 
-    # Busca por email comercial
     if email:
         existing = db.query(Person).filter(Person.email_commercial == email).first()
         if existing:
             return existing.id
 
-    # Busca por nome + organização
     if client_id:
         existing = (
             db.query(Person)
@@ -257,6 +274,7 @@ def _create_card(
     if not title:
         raise ValueError("Título do Card é obrigatório")
 
+    # Mantém compatibilidade com templates antigos que possam ter esses campos
     value = 0.0
     valor_raw = row.get("Valor (R$)")
     if valor_raw is not None:
@@ -299,15 +317,16 @@ def _create_card(
     return new_card.id
 
 
+# ─── Importação ─────────────────────────────────────────────────────────────
+
+EXEMPLO_PREFIX = "[EXEMPLO]"
+
+
 def process_import(db: Session, file_bytes: bytes, current_user_id: int) -> CardImportResponse:
-    """
-    Processa o arquivo xlsx recebido e cria cards linha a linha.
-    Retorna um resumo com o resultado de cada linha.
-    """
     wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
     ws = wb.active
 
-    # Lê cabeçalhos da primeira linha
+    # Cabeçalhos na linha 1
     headers = []
     for col in range(1, ws.max_column + 1):
         val = ws.cell(row=1, column=col).value
@@ -332,13 +351,16 @@ def process_import(db: Session, file_bytes: bytes, current_user_id: int) -> Card
     )
 
     for row_num in range(2, ws.max_row + 1):
-        # Ignora linhas completamente vazias
         row_values = [ws.cell(row=row_num, column=c).value for c in range(1, ws.max_column + 1)]
         if all(v is None or str(v).strip() == "" for v in row_values):
             continue
 
         row_data = {col_name: get_cell(row_num, col_name) for col_name in headers}
         title = _clean(row_data.get("Título do Card"))
+
+        # Ignora linha de exemplo independente de onde estiver
+        if title and title.startswith(EXEMPLO_PREFIX):
+            continue
 
         if not title:
             results.append(CardImportRowResult(
@@ -358,7 +380,7 @@ def process_import(db: Session, file_bytes: bytes, current_user_id: int) -> Card
             vendor_name = _clean(row_data.get("Vendedor (nome exato)"))
             vendor_id = _find_user(db, vendor_name) if vendor_name else None
 
-            client_id = _get_or_create_client(db, row_data, current_user_id)
+            client_id = _get_or_create_client(db, row_data)
             person_id = _get_or_create_person(db, row_data, client_id)
             card_id = _create_card(db, row_data, client_id, person_id, sdr_id, vendor_id, next_position)
 
@@ -393,19 +415,22 @@ def process_import(db: Session, file_bytes: bytes, current_user_id: int) -> Card
     )
 
 
-def generate_template() -> bytes:
-    """Gera o arquivo xlsx de modelo para importação em lote."""
+# ─── Geração do template ─────────────────────────────────────────────────────
+
+def generate_template(user_name: str = "", user_role: str = "") -> bytes:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Importação"
 
+    # ── Estilos ──────────────────────────────────────────────────────────────
     header_fill = PatternFill(start_color="1E3A5F", end_color="1E3A5F", fill_type="solid")
+    required_fill = PatternFill(start_color="1A5C32", end_color="1A5C32", fill_type="solid")
     header_font = Font(color="FFFFFF", bold=True, size=11)
     header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
-    required_fill = PatternFill(start_color="2D5A27", end_color="2D5A27", fill_type="solid")
-    example_fill = PatternFill(start_color="F0F4F8", end_color="F0F4F8", fill_type="solid")
-    example_font = Font(color="6B7280", italic=True, size=10)
+    example_fill = PatternFill(start_color="FFF3CD", end_color="FFF3CD", fill_type="solid")
+    example_font = Font(color="856404", italic=True, size=10)
+    example_title_font = Font(color="856404", italic=True, bold=True, size=10)
 
     thin_border = Border(
         left=Side(style="thin", color="CBD5E0"),
@@ -413,37 +438,117 @@ def generate_template() -> bytes:
         bottom=Side(style="thin", color="CBD5E0"),
     )
 
-    col_widths = [
-        28, 35, 14, 18, 22, 22, 18, 20, 30, 16,
-        32, 20, 20, 25, 18, 12, 25, 22, 16,
-        28, 22, 28, 20, 22, 30,
-    ]
+    # ── Pré-preenchimento de SDR/Vendedor baseado no usuário logado ──────────
+    # "sdr" → preenche coluna SDR; demais → preenche coluna Vendedor
+    pre_sdr = user_name if user_role == "sdr" else ""
+    pre_vendor = user_name if user_role != "sdr" and user_name else ""
 
-    # Linha 1: cabeçalhos
+    # Monta os valores de exemplo com os campos de responsável já preenchidos
+    example_values = {}
+    for header, example, _ in TEMPLATE_COLUMNS:
+        if header == "SDR (nome exato)":
+            example_values[header] = pre_sdr or "Maria Santos"
+        elif header == "Vendedor (nome exato)":
+            example_values[header] = pre_vendor or "João Silva"
+        else:
+            example_values[header] = example
+
+    # Prefixo [EXEMPLO] no título para que o backend ignore esta linha
+    example_values["Título do Card"] = f"{EXEMPLO_PREFIX} Proposta Empresa XYZ"
+
+    # ── Linha 1: cabeçalhos ──────────────────────────────────────────────────
     for col_idx, (header, _, is_required) in enumerate(TEMPLATE_COLUMNS, 1):
-        cell = ws.cell(row=1, column=col_idx, value=header + (" *" if is_required else ""))
+        label = header + (" *" if is_required else "")
+        cell = ws.cell(row=1, column=col_idx, value=label)
         cell.fill = required_fill if is_required else header_fill
         cell.font = header_font
         cell.alignment = header_align
         cell.border = thin_border
 
-    # Linha 2: valores de exemplo
-    for col_idx, (_, example, _) in enumerate(TEMPLATE_COLUMNS, 1):
-        cell = ws.cell(row=2, column=col_idx, value=example)
+    # ── Linha 2: exemplo (amarelo) ───────────────────────────────────────────
+    for col_idx, (header, _, _) in enumerate(TEMPLATE_COLUMNS, 1):
+        val = example_values[header]
+        cell = ws.cell(row=2, column=col_idx, value=val)
         cell.fill = example_fill
-        cell.font = example_font
+        cell.font = example_title_font if col_idx == 1 else example_font
         cell.alignment = Alignment(vertical="center")
         cell.border = thin_border
 
-    # Altura das linhas e largura das colunas
-    ws.row_dimensions[1].height = 40
-    ws.row_dimensions[2].height = 20
+    # ── Coluna A1 — instrução de início ─────────────────────────────────────
+    # Adiciona comentário explicativo à célula A1
+    try:
+        from openpyxl.comments import Comment
+        comment = Comment(
+            "Preencha a partir da LINHA 3.\nA linha amarela (linha 2) é apenas um exemplo — pode apagar ou deixar como está.",
+            "HSGrowth",
+        )
+        comment.width = 260
+        comment.height = 60
+        ws["A1"].comment = comment
+    except Exception:
+        pass  # Comentários são opcional
 
-    for col_idx, width in enumerate(col_widths, 1):
+    # ── Larguras das colunas ─────────────────────────────────────────────────
+    col_widths = [
+        30, 38,          # Título, Descrição
+        20, 22, 32, 16,  # Tipo, Canal, Detalhe, Origem
+        32, 20, 20, 25, 16, 10, 28, 28, 14,  # Empresa (9 cols)
+        28, 22, 28, 20, 22, 30,              # Contato (6 cols)
+        24, 24,          # Vendedor, SDR
+    ]
+    for col_idx, width in enumerate(col_widths[:len(TEMPLATE_COLUMNS)], 1):
         ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = width
 
-    # Congela a primeira linha
-    ws.freeze_panes = "A3"
+    ws.row_dimensions[1].height = 40
+    ws.row_dimensions[2].height = 20
+    ws.freeze_panes = "A3"  # Congela cabeçalho — usuário começa na linha 3
+
+    # ── Listas para dropdowns (aba oculta) ───────────────────────────────────
+    lists_ws = wb.create_sheet("Listas")
+    lists_ws.sheet_state = "hidden"
+
+    canais = ["Inbound", "Outbound", "Indicacao", "Parcerias", "Eventos", "Base"]
+    tipos = ["Nova Venda", "Cross Sell", "Up Sell"]
+    ufs = VALID_UF  # já está sorted
+
+    for i, v in enumerate(canais, 1):
+        lists_ws.cell(row=i, column=1, value=v)
+    for i, v in enumerate(tipos, 1):
+        lists_ws.cell(row=i, column=2, value=v)
+    for i, v in enumerate(ufs, 1):
+        lists_ws.cell(row=i, column=3, value=v)
+    for i, v in enumerate(VALID_EMPLOYEE_COUNTS, 1):
+        lists_ws.cell(row=i, column=4, value=v)
+    for i, v in enumerate(VALID_ANNUAL_REVENUES, 1):
+        lists_ws.cell(row=i, column=5, value=v)
+
+    # Índices das colunas com validação (1-based)
+    col_map = {h: i for i, (h, _, _) in enumerate(TEMPLATE_COLUMNS, 1)}
+
+    def col_letter(col_name: str) -> str:
+        idx = col_map.get(col_name)
+        if not idx:
+            return "Z"
+        return ws.cell(row=1, column=idx).column_letter
+
+    def add_dv(formula: str, col_name: str):
+        dv = DataValidation(
+            type="list",
+            formula1=formula,
+            allow_blank=True,
+            showErrorMessage=True,
+            error="Use um dos valores da lista suspensa.",
+            errorTitle="Valor inválido",
+        )
+        ws.add_data_validation(dv)
+        letter = col_letter(col_name)
+        dv.add(f"{letter}3:{letter}10000")
+
+    add_dv("Listas!$A$1:$A$6", "Canal de Aquisição")
+    add_dv("Listas!$B$1:$B$3", "Tipo de Negócio")
+    add_dv(f"Listas!$C$1:$C${len(ufs)}", "Estado (UF)")
+    add_dv(f"Listas!$D$1:$D${len(VALID_EMPLOYEE_COUNTS)}", "Nº de Funcionários")
+    add_dv(f"Listas!$E$1:$E${len(VALID_ANNUAL_REVENUES)}", "Receita Anual")
 
     buf = io.BytesIO()
     wb.save(buf)
