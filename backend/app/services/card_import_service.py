@@ -366,7 +366,10 @@ def process_import(
     headers = []
     for col in range(1, ws.max_column + 1):
         val = ws.cell(row=1, column=col).value
-        headers.append(str(val).strip() if val else f"__COL_{col}")
+        # Remove o sufixo " *" e " (não aplicável)" que o template adiciona nos cabeçalhos
+        h = str(val).strip() if val else f"__COL_{col}"
+        h = h.removesuffix(" *").removesuffix(" (não aplicável)").strip()
+        headers.append(h)
 
     col_index = {h: i + 1 for i, h in enumerate(headers)}
 
