@@ -4,7 +4,7 @@ Rotas para gerenciamento de cartões e campos customizados.
 """
 from typing import Any, Optional, List
 from datetime import datetime
-from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException
+from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from app.repositories.notification_repository import NotificationRepository
 
@@ -21,7 +21,8 @@ from app.schemas.card import (
     CardExpandedResponse,
     CardMarkLostRequest,
     CardReopenRequest,
-    CardReopenResponse
+    CardReopenResponse,
+    CardImportResponse,
 )
 from app.schemas.field import CardFieldValueCreate, CardFieldValueResponse
 from app.models.audit_log import AuditLog
@@ -1408,3 +1409,55 @@ async def send_email_from_card(
         db.commit()
 
     return {"success": True, "message": "E-mail enviado e atividade registrada no card."}
+
+
+# ==================== IMPORTAÇÃO EM LOTE ====================
+
+@router.get(
+    "/import/template",
+    summary="Baixar modelo de planilha para importação",
+    description="Retorna um arquivo .xlsx com o modelo de planilha para importação em lote de cards.",
+    responses={200: {"content": {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}}}},
+)
+def download_import_template(
+    current_user: User = Depends(get_current_active_user),
+):
+    from fastapi.responses import Response
+    from app.services.card_import_service import generate_template
+
+    xlsx_bytes = generate_template()
+    return Response(
+        content=xlsx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=modelo_importacao_cards.xlsx"},
+    )
+
+
+@router.post(
+    "/import",
+    response_model=CardImportResponse,
+    summary="Importar cards em lote via planilha",
+    description="""
+    Importa cards em lote a partir de um arquivo `.xlsx`.
+    Todos os cards são criados na lista **Lead Novo** do board **Prospecção**.
+
+    - Clientes são criados ou reutilizados (por CNPJ ou nome exato).
+    - Contatos são criados ou reutilizados (por e-mail comercial).
+    - Erros em uma linha não cancelam as demais.
+    """,
+)
+async def import_cards(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.services.card_import_service import process_import
+
+    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xls")):
+        raise HTTPException(status_code=400, detail="Apenas arquivos .xlsx ou .xls são aceitos.")
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:  # 10 MB
+        raise HTTPException(status_code=400, detail="Arquivo muito grande. Máximo: 10 MB.")
+
+    return process_import(db=db, file_bytes=content, current_user_id=current_user.id)

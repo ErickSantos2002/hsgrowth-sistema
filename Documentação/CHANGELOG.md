@@ -7,6 +7,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.7.28] - 2026-05-06
+
+### Adicionado
+- **Importação em lote de cards:** novo botão "Importar" na página Boards abre um modal com 3 etapas — instruções, upload e resultado. O usuário baixa um modelo `.xlsx`, preenche os dados e faz upload; o sistema cria Clientes, Pessoas e Cards automaticamente na lista **Lead Novo** do board **Prospecção**.
+  - Campos suportados: título, descrição, valor, data de vencimento, vendedor, SDR, tipo de negócio, canal de aquisição, além de dados completos de empresa (nome, CNPJ, setor, cidade, estado, website, CNAE) e contato (nome, cargo, e-mail, WhatsApp, LinkedIn).
+  - Clientes são reutilizados por CNPJ ou nome exato (sem duplicatas).
+  - Erros em uma linha não cancelam as demais; o resultado é exibido linha a linha.
+
+---
+
 ## [1.7.27] - 2026-05-05
 
 ### Adicionado

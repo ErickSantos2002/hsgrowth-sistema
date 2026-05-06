@@ -6,6 +6,7 @@ import {
   CreateCardRequest,
   UpdateCardRequest,
   MoveCardRequest,
+  CardImportResponse,
 } from "../types";
 
 /**
@@ -150,6 +151,29 @@ class CardService {
       body,
       attachments: attachments ?? [],
       ...(taskId ? { task_id: taskId } : {}),
+    });
+    return response.data;
+  }
+
+  async downloadImportTemplate(): Promise<void> {
+    const response = await api.get("/api/v1/cards/import/template", {
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "modelo_importacao_cards.xlsx");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  async importCards(file: File): Promise<CardImportResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<CardImportResponse>("/api/v1/cards/import", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;
   }

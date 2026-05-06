@@ -173,6 +173,21 @@ export interface CardListResponse {
   total_pages: number;
 }
 
+export interface CardImportRowResult {
+  row: number;
+  status: "success" | "error" | "skipped";
+  card_id: number | null;
+  title: string | null;
+  message: string;
+}
+
+export interface CardImportResponse {
+  total: number;
+  created: number;
+  errors: number;
+  results: CardImportRowResult[];
+}
+
 export interface Client {
   id: number;
   name: string;

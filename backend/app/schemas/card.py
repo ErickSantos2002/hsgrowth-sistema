@@ -651,3 +651,22 @@ class CardExpandedResponse(CardResponse):
     notes: Optional[list] = Field(None, description="Anotações do card")
 
     model_config = {"from_attributes": True}
+
+
+# ==================== IMPORT SCHEMAS ====================
+
+class CardImportRowResult(BaseModel):
+    """Resultado da importação de uma linha da planilha."""
+    row: int = Field(..., description="Número da linha na planilha (começa em 2)")
+    status: str = Field(..., description="success | error | skipped")
+    card_id: Optional[int] = Field(None, description="ID do card criado (se sucesso)")
+    title: Optional[str] = Field(None, description="Título do card")
+    message: str = Field(..., description="Mensagem de resultado ou descrição do erro")
+
+
+class CardImportResponse(BaseModel):
+    """Resultado geral da importação em lote."""
+    total: int = Field(..., description="Total de linhas processadas")
+    created: int = Field(..., description="Cards criados com sucesso")
+    errors: int = Field(..., description="Linhas com erro")
+    results: list[CardImportRowResult] = Field(..., description="Resultado linha a linha")

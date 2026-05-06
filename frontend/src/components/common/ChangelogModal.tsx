@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.28",
+    date: "06/05/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Boards — Importação em lote: novo botão 'Importar' abre um assistente de 3 etapas para criar múltiplos cards de uma vez via planilha .xlsx. Baixe o modelo, preencha os dados e faça upload — clientes, contatos e cards são criados automaticamente no Lead Novo do board Prospecção.",
+      },
+    ],
+  },
+  {
     version: "1.7.27",
     date: "05/05/2026",
     entries: [
