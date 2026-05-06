@@ -1461,4 +1461,5 @@ async def import_cards(
     if len(content) > 10 * 1024 * 1024:  # 10 MB
         raise HTTPException(status_code=400, detail="Arquivo muito grande. Máximo: 10 MB.")
 
-    return process_import(db=db, file_bytes=content, current_user_id=current_user.id)
+    user_role = current_user.role.name if current_user.role else ""
+    return process_import(db=db, file_bytes=content, current_user_id=current_user.id, current_user_role=user_role)

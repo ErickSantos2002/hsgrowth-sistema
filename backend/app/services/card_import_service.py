@@ -20,36 +20,49 @@ from app.schemas.card import CardImportRowResult, CardImportResponse
 
 TARGET_LIST_ID = 22
 TARGET_BOARD_ID = 6
+EXEMPLO_PREFIX = "[EXEMPLO]"
 
-# Ordem e definição das colunas do template
-# (header, exemplo_valor, is_required)
+# Seções e suas cores de cabeçalho
+SECTION_COLORS = {
+    "card":   "1E3A5F",  # azul escuro
+    "client": "14532D",  # verde escuro
+    "person": "3B0764",  # roxo escuro
+    "owner":  "78350F",  # âmbar escuro
+}
+
+# Colunas: (header, exemplo, obrigatório, seção, campo_person_model)
+# campo_person_model: usado para mapear colunas de telefone na criação da Person
 TEMPLATE_COLUMNS = [
-    ("Título do Card", "Proposta Empresa XYZ", True),
-    ("Descrição", "Interesse no produto A - cliente indicado por João", False),
-    ("Tipo de Negócio", "Nova Venda", False),
-    ("Canal de Aquisição", "Indicacao", False),
-    ("Detalhe do Canal", "Indicação do cliente XYZ", False),
-    ("Origem", "Inbound", False),
-    # Empresa
-    ("Nome da Empresa", "Empresa XYZ LTDA", False),
-    ("CNPJ/CPF", "12.345.678/0001-90", False),
-    ("Setor / Segmento", "Tecnologia", False),
-    ("Website", "www.empresa.com.br", False),
-    ("Cidade", "São Paulo", False),
-    ("Estado (UF)", "SP", False),
-    ("Nº de Funcionários", "Ate 50 colaboradores", False),
-    ("Receita Anual", "Ate R$ 10 milhoes", False),
-    ("CNAE", "6201-5/01", False),
-    # Contato
-    ("Nome do Contato", "Carlos Oliveira", False),
-    ("Cargo", "Diretor Comercial", False),
-    ("E-mail Comercial", "carlos@empresa.com.br", False),
-    ("WhatsApp", "(11) 99999-9999", False),
-    ("Telefone Comercial", "(11) 3333-4444", False),
-    ("LinkedIn", "linkedin.com/in/carlos", False),
-    # Responsáveis — colocados no final para serem pré-preenchidos via API
-    ("Vendedor (nome exato)", "", False),
-    ("SDR (nome exato)", "", False),
+    # ── Card ──────────────────────────────────────────────────────────────────
+    ("Título do Card",      "Proposta Empresa XYZ",               True,  "card",   None),
+    ("Descrição",           "Interesse no produto A",              False, "card",   None),
+    ("Tipo de Negócio",     "Nova Venda",                          False, "card",   None),
+    ("Canal de Aquisição",  "Indicacao",                           False, "card",   None),
+    ("Detalhe do Canal",    "Indicação do cliente XYZ",            False, "card",   None),
+    ("Origem",              "Inbound",                             False, "card",   None),
+    # ── Empresa ───────────────────────────────────────────────────────────────
+    ("Nome da Empresa",     "Empresa XYZ LTDA",                    False, "client", None),
+    ("CNPJ/CPF",            "12.345.678/0001-90",                  False, "client", None),
+    ("Setor / Segmento",    "Tecnologia",                          False, "client", None),
+    ("Website",             "www.empresa.com.br",                  False, "client", None),
+    ("Cidade",              "São Paulo",                           False, "client", None),
+    ("Estado (UF)",         "SP",                                  False, "client", None),
+    ("Nº de Funcionários",  "Ate 50 colaboradores",                False, "client", None),
+    ("Receita Anual",       "Ate R$ 10 milhoes",                   False, "client", None),
+    ("CNAE",                "6201-5/01",                           False, "client", None),
+    # ── Contato ───────────────────────────────────────────────────────────────
+    ("Nome do Contato",     "Carlos Oliveira",                     False, "person", None),
+    ("Cargo",               "Diretor Comercial",                   False, "person", None),
+    ("E-mail Comercial",    "carlos@empresa.com.br",               False, "person", "email_commercial"),
+    ("WhatsApp",            "(11) 99999-9999",                     False, "person", "phone_whatsapp"),
+    ("Telefone Comercial",  "(11) 3333-4444",                      False, "person", "phone_commercial"),
+    ("Telefone Alternativo","(11) 3333-5555",                      False, "person", "phone_alternative"),
+    ("Telefone Extra 1",    "(11) 3333-6666",                      False, "person", "phone_extra1"),
+    ("Telefone Extra 2",    "(11) 3333-7777",                      False, "person", "phone_extra2"),
+    ("LinkedIn",            "linkedin.com/in/carlos",              False, "person", "linkedin"),
+    # ── Responsáveis ──────────────────────────────────────────────────────────
+    ("Vendedor (nome exato)", "",                                  False, "owner",  None),
+    ("SDR (nome exato)",      "",                                  False, "owner",  None),
 ]
 
 VALID_CHANNELS = {
@@ -84,6 +97,26 @@ VALID_ANNUAL_REVENUES = [
     "R$ 100-300 milhoes",
     "R$ 300 milhoes - R$ 1 bilhao",
     "Acima de R$ 1 bilhao",
+]
+
+# Sugestões de detalhe do canal (não bloqueante — usuário pode digitar livremente)
+CHANNEL_DETAIL_SUGGESTIONS = [
+    "Base - Resgate",
+    "Base - Levantada de Mão",
+    "Inbound - Site",
+    "Inbound - LinkedIn Ads",
+    "Inbound - Google Ads",
+    "Inbound - Webinar",
+    "Inbound - Formulário",
+    "Outbound - Cold Call",
+    "Outbound - LinkedIn",
+    "Outbound - WhatsApp",
+    "Outbound - Cold Email",
+    "Indicação - Cliente",
+    "Indicação - Parceiro",
+    "Parcerias - Parceiro",
+    "Eventos - Presencial",
+    "Eventos - Online",
 ]
 
 STATE_TO_UF = {
@@ -164,8 +197,7 @@ def _find_user(db: Session, name: str) -> int | None:
     if not name:
         return None
     name_norm = _strip_accents(name.lower())
-    users = db.query(User).filter(User.is_active == True).all()
-    for user in users:
+    for user in db.query(User).filter(User.is_active == True).all():
         if not user.name:
             continue
         user_norm = _strip_accents(user.name.lower())
@@ -249,9 +281,12 @@ def _get_or_create_person(db: Session, row: dict, client_id: int | None) -> int 
         first_name=first_name,
         last_name=last_name,
         position=_clean(row.get("Cargo")),
+        email_commercial=email,
         phone_whatsapp=_clean(row.get("WhatsApp")),
         phone_commercial=_clean(row.get("Telefone Comercial")),
-        email_commercial=email,
+        phone_alternative=_clean(row.get("Telefone Alternativo")),
+        phone_extra1=_clean(row.get("Telefone Extra 1")),
+        phone_extra2=_clean(row.get("Telefone Extra 2")),
         linkedin=_clean(row.get("LinkedIn")),
         organization_id=client_id,
         is_active=True,
@@ -274,7 +309,7 @@ def _create_card(
     if not title:
         raise ValueError("Título do Card é obrigatório")
 
-    # Mantém compatibilidade com templates antigos que possam ter esses campos
+    # Compatibilidade com templates antigos
     value = 0.0
     valor_raw = row.get("Valor (R$)")
     if valor_raw is not None:
@@ -313,20 +348,20 @@ def _create_card(
         entered_at=datetime.now(),
     )
     db.add(history)
-
     return new_card.id
 
 
 # ─── Importação ─────────────────────────────────────────────────────────────
 
-EXEMPLO_PREFIX = "[EXEMPLO]"
-
-
-def process_import(db: Session, file_bytes: bytes, current_user_id: int) -> CardImportResponse:
+def process_import(
+    db: Session,
+    file_bytes: bytes,
+    current_user_id: int,
+    current_user_role: str = "",
+) -> CardImportResponse:
     wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
     ws = wb.active
 
-    # Cabeçalhos na linha 1
     headers = []
     for col in range(1, ws.max_column + 1):
         val = ws.cell(row=1, column=col).value
@@ -336,9 +371,7 @@ def process_import(db: Session, file_bytes: bytes, current_user_id: int) -> Card
 
     def get_cell(row_num: int, col_name: str):
         idx = col_index.get(col_name)
-        if idx is None:
-            return None
-        return ws.cell(row=row_num, column=idx).value
+        return ws.cell(row=row_num, column=idx).value if idx else None
 
     results: list[CardImportRowResult] = []
     created = 0
@@ -350,6 +383,9 @@ def process_import(db: Session, file_bytes: bytes, current_user_id: int) -> Card
         .count()
     )
 
+    is_sdr = current_user_role == "sdr"
+    is_salesperson = current_user_role == "salesperson"
+
     for row_num in range(2, ws.max_row + 1):
         row_values = [ws.cell(row=row_num, column=c).value for c in range(1, ws.max_column + 1)]
         if all(v is None or str(v).strip() == "" for v in row_values):
@@ -358,27 +394,32 @@ def process_import(db: Session, file_bytes: bytes, current_user_id: int) -> Card
         row_data = {col_name: get_cell(row_num, col_name) for col_name in headers}
         title = _clean(row_data.get("Título do Card"))
 
-        # Ignora linha de exemplo independente de onde estiver
+        # Ignora linha de exemplo independentemente de onde estiver
         if title and title.startswith(EXEMPLO_PREFIX):
             continue
 
         if not title:
             results.append(CardImportRowResult(
-                row=row_num,
-                status="error",
-                card_id=None,
-                title=None,
+                row=row_num, status="error", card_id=None, title=None,
                 message="Título do Card é obrigatório",
             ))
             errors += 1
             continue
 
         try:
-            sdr_name = _clean(row_data.get("SDR (nome exato)"))
-            sdr_id = _find_user(db, sdr_name) if sdr_name else None
-
-            vendor_name = _clean(row_data.get("Vendedor (nome exato)"))
-            vendor_id = _find_user(db, vendor_name) if vendor_name else None
+            # SDR: só pode definir seu próprio sdr_id, nunca vendor_id
+            # Vendedor: só pode definir seu próprio vendor_id, nunca sdr_id
+            if is_sdr:
+                sdr_id = current_user_id
+                vendor_id = None
+            elif is_salesperson:
+                vendor_id = current_user_id
+                sdr_id = None
+            else:
+                sdr_name = _clean(row_data.get("SDR (nome exato)"))
+                sdr_id = _find_user(db, sdr_name) if sdr_name else None
+                vendor_name = _clean(row_data.get("Vendedor (nome exato)"))
+                vendor_id = _find_user(db, vendor_name) if vendor_name else None
 
             client_id = _get_or_create_client(db, row_data)
             person_id = _get_or_create_person(db, row_data, client_id)
@@ -389,10 +430,7 @@ def process_import(db: Session, file_bytes: bytes, current_user_id: int) -> Card
             created += 1
 
             results.append(CardImportRowResult(
-                row=row_num,
-                status="success",
-                card_id=card_id,
-                title=title,
+                row=row_num, status="success", card_id=card_id, title=title,
                 message="Card criado com sucesso",
             ))
 
@@ -400,19 +438,11 @@ def process_import(db: Session, file_bytes: bytes, current_user_id: int) -> Card
             db.rollback()
             errors += 1
             results.append(CardImportRowResult(
-                row=row_num,
-                status="error",
-                card_id=None,
-                title=title,
+                row=row_num, status="error", card_id=None, title=title,
                 message=str(e),
             ))
 
-    return CardImportResponse(
-        total=len(results),
-        created=created,
-        errors=errors,
-        results=results,
-    )
+    return CardImportResponse(total=len(results), created=created, errors=errors, results=results)
 
 
 # ─── Geração do template ─────────────────────────────────────────────────────
@@ -422,123 +452,134 @@ def generate_template(user_name: str = "", user_role: str = "") -> bytes:
     ws = wb.active
     ws.title = "Importação"
 
-    # ── Estilos ──────────────────────────────────────────────────────────────
-    header_fill = PatternFill(start_color="1E3A5F", end_color="1E3A5F", fill_type="solid")
-    required_fill = PatternFill(start_color="1A5C32", end_color="1A5C32", fill_type="solid")
+    is_sdr = user_role == "sdr"
+    is_salesperson = user_role == "salesperson"
+
     header_font = Font(color="FFFFFF", bold=True, size=11)
     header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
-
-    example_fill = PatternFill(start_color="FFF3CD", end_color="FFF3CD", fill_type="solid")
-    example_font = Font(color="856404", italic=True, size=10)
-    example_title_font = Font(color="856404", italic=True, bold=True, size=10)
-
     thin_border = Border(
         left=Side(style="thin", color="CBD5E0"),
         right=Side(style="thin", color="CBD5E0"),
         bottom=Side(style="thin", color="CBD5E0"),
     )
 
-    # ── Pré-preenchimento de SDR/Vendedor baseado no usuário logado ──────────
-    # "sdr" → preenche coluna SDR; demais → preenche coluna Vendedor
-    pre_sdr = user_name if user_role == "sdr" else ""
-    pre_vendor = user_name if user_role != "sdr" and user_name else ""
+    example_fill = PatternFill(start_color="FFF3CD", end_color="FFF3CD", fill_type="solid")
+    example_font = Font(color="856404", italic=True, size=10)
+    example_title_font = Font(color="856404", italic=True, bold=True, size=10)
 
-    # Monta os valores de exemplo com os campos de responsável já preenchidos
-    example_values = {}
-    for header, example, _ in TEMPLATE_COLUMNS:
+    locked_fill = PatternFill(start_color="D1D5DB", end_color="D1D5DB", fill_type="solid")
+    locked_header_fill = PatternFill(start_color="4B5563", end_color="4B5563", fill_type="solid")
+    locked_font = Font(color="6B7280", italic=True, size=10)
+
+    # ── Pré-preenchimento de exemplo com dados do usuário logado ─────────────
+    example_values: dict[str, str] = {}
+    for header, example, _, section, _ in TEMPLATE_COLUMNS:
         if header == "SDR (nome exato)":
-            example_values[header] = pre_sdr or "Maria Santos"
+            if is_sdr:
+                example_values[header] = user_name or "Maria Santos"
+            elif is_salesperson:
+                example_values[header] = "N/A"
+            else:
+                example_values[header] = "Maria Santos"
         elif header == "Vendedor (nome exato)":
-            example_values[header] = pre_vendor or "João Silva"
+            if is_salesperson:
+                example_values[header] = user_name or "João Silva"
+            elif is_sdr:
+                example_values[header] = "N/A"
+            else:
+                example_values[header] = "João Silva"
         else:
             example_values[header] = example
 
-    # Prefixo [EXEMPLO] no título para que o backend ignore esta linha
     example_values["Título do Card"] = f"{EXEMPLO_PREFIX} Proposta Empresa XYZ"
 
+    # ── Mapa de índice de coluna pelo nome ───────────────────────────────────
+    col_map = {h: i for i, (h, _, _, _, _) in enumerate(TEMPLATE_COLUMNS, 1)}
+
+    def col_letter(col_name: str) -> str:
+        return ws.cell(row=1, column=col_map[col_name]).column_letter
+
+    def is_locked_col(header: str) -> bool:
+        if is_sdr and header == "Vendedor (nome exato)":
+            return True
+        if is_salesperson and header == "SDR (nome exato)":
+            return True
+        return False
+
     # ── Linha 1: cabeçalhos ──────────────────────────────────────────────────
-    for col_idx, (header, _, is_required) in enumerate(TEMPLATE_COLUMNS, 1):
-        label = header + (" *" if is_required else "")
+    for col_idx, (header, _, is_required, section, _) in enumerate(TEMPLATE_COLUMNS, 1):
+        if is_locked_col(header):
+            label = header + " (não aplicável)"
+            fill = locked_header_fill
+        else:
+            label = header + (" *" if is_required else "")
+            color = SECTION_COLORS[section]
+            fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+
         cell = ws.cell(row=1, column=col_idx, value=label)
-        cell.fill = required_fill if is_required else header_fill
+        cell.fill = fill
         cell.font = header_font
         cell.alignment = header_align
         cell.border = thin_border
 
-    # ── Linha 2: exemplo (amarelo) ───────────────────────────────────────────
-    for col_idx, (header, _, _) in enumerate(TEMPLATE_COLUMNS, 1):
+    # ── Linha 2: exemplo ─────────────────────────────────────────────────────
+    for col_idx, (header, _, _, _, _) in enumerate(TEMPLATE_COLUMNS, 1):
         val = example_values[header]
+        locked = is_locked_col(header)
         cell = ws.cell(row=2, column=col_idx, value=val)
-        cell.fill = example_fill
-        cell.font = example_title_font if col_idx == 1 else example_font
+        if locked:
+            cell.fill = locked_fill
+            cell.font = locked_font
+        else:
+            cell.fill = example_fill
+            cell.font = example_title_font if col_idx == 1 else example_font
         cell.alignment = Alignment(vertical="center")
         cell.border = thin_border
 
-    # ── Coluna A1 — instrução de início ─────────────────────────────────────
-    # Adiciona comentário explicativo à célula A1
-    try:
-        from openpyxl.comments import Comment
-        comment = Comment(
-            "Preencha a partir da LINHA 3.\nA linha amarela (linha 2) é apenas um exemplo — pode apagar ou deixar como está.",
-            "HSGrowth",
-        )
-        comment.width = 260
-        comment.height = 60
-        ws["A1"].comment = comment
-    except Exception:
-        pass  # Comentários são opcional
-
     # ── Larguras das colunas ─────────────────────────────────────────────────
     col_widths = [
-        30, 38,          # Título, Descrição
-        20, 22, 32, 16,  # Tipo, Canal, Detalhe, Origem
-        32, 20, 20, 25, 16, 10, 28, 28, 14,  # Empresa (9 cols)
-        28, 22, 28, 20, 22, 30,              # Contato (6 cols)
-        24, 24,          # Vendedor, SDR
+        30, 38, 20, 22, 32, 16,          # Card (6)
+        32, 20, 20, 25, 16, 10, 28, 28, 14,  # Empresa (9)
+        28, 22, 28, 20, 22, 22, 20, 20, 30,  # Contato (9)
+        24, 24,                              # Responsáveis (2)
     ]
     for col_idx, width in enumerate(col_widths[:len(TEMPLATE_COLUMNS)], 1):
         ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = width
 
     ws.row_dimensions[1].height = 40
     ws.row_dimensions[2].height = 20
-    ws.freeze_panes = "A3"  # Congela cabeçalho — usuário começa na linha 3
+    ws.freeze_panes = "A3"
 
-    # ── Listas para dropdowns (aba oculta) ───────────────────────────────────
+    # ── Aba oculta com listas de validação ───────────────────────────────────
     lists_ws = wb.create_sheet("Listas")
     lists_ws.sheet_state = "hidden"
 
     canais = ["Inbound", "Outbound", "Indicacao", "Parcerias", "Eventos", "Base"]
     tipos = ["Nova Venda", "Cross Sell", "Up Sell"]
-    ufs = VALID_UF  # já está sorted
 
     for i, v in enumerate(canais, 1):
         lists_ws.cell(row=i, column=1, value=v)
     for i, v in enumerate(tipos, 1):
         lists_ws.cell(row=i, column=2, value=v)
-    for i, v in enumerate(ufs, 1):
+    for i, v in enumerate(VALID_UF, 1):
         lists_ws.cell(row=i, column=3, value=v)
     for i, v in enumerate(VALID_EMPLOYEE_COUNTS, 1):
         lists_ws.cell(row=i, column=4, value=v)
     for i, v in enumerate(VALID_ANNUAL_REVENUES, 1):
         lists_ws.cell(row=i, column=5, value=v)
+    for i, v in enumerate(CHANNEL_DETAIL_SUGGESTIONS, 1):
+        lists_ws.cell(row=i, column=6, value=v)
 
-    # Índices das colunas com validação (1-based)
-    col_map = {h: i for i, (h, _, _) in enumerate(TEMPLATE_COLUMNS, 1)}
-
-    def col_letter(col_name: str) -> str:
-        idx = col_map.get(col_name)
-        if not idx:
-            return "Z"
-        return ws.cell(row=1, column=idx).column_letter
-
-    def add_dv(formula: str, col_name: str):
+    def add_dv(formula: str, col_name: str, warning: bool = False):
+        """warning=True permite digitar livremente além da lista (sugestões)."""
         dv = DataValidation(
             type="list",
             formula1=formula,
             allow_blank=True,
             showErrorMessage=True,
-            error="Use um dos valores da lista suspensa.",
-            errorTitle="Valor inválido",
+            errorStyle="warning" if warning else "stop",
+            error="Use um dos valores da lista." if not warning else "Valor não está na lista de sugestões. Você pode digitar livremente se necessário.",
+            errorTitle="Valor inválido" if not warning else "Sugestão não encontrada",
         )
         ws.add_data_validation(dv)
         letter = col_letter(col_name)
@@ -546,9 +587,27 @@ def generate_template(user_name: str = "", user_role: str = "") -> bytes:
 
     add_dv("Listas!$A$1:$A$6", "Canal de Aquisição")
     add_dv("Listas!$B$1:$B$3", "Tipo de Negócio")
-    add_dv(f"Listas!$C$1:$C${len(ufs)}", "Estado (UF)")
+    add_dv(f"Listas!$C$1:$C${len(VALID_UF)}", "Estado (UF)")
     add_dv(f"Listas!$D$1:$D${len(VALID_EMPLOYEE_COUNTS)}", "Nº de Funcionários")
     add_dv(f"Listas!$E$1:$E${len(VALID_ANNUAL_REVENUES)}", "Receita Anual")
+    # Detalhe do Canal: lista de sugestões, mas permite texto livre (warning)
+    add_dv(f"Listas!$F$1:$F${len(CHANNEL_DETAIL_SUGGESTIONS)}", "Detalhe do Canal", warning=True)
+
+    # ── Colunas bloqueadas: DV que impede qualquer digitação ──────────────────
+    for header, _, _, _, _ in TEMPLATE_COLUMNS:
+        if is_locked_col(header):
+            dv_lock = DataValidation(
+                type="custom",
+                formula1=f'"{col_letter(header)}2"',  # força célula vazia/N-A
+                allow_blank=True,
+                showErrorMessage=True,
+                errorStyle="stop",
+                error="Este campo não é aplicável ao seu perfil.",
+                errorTitle="Coluna bloqueada",
+            )
+            ws.add_data_validation(dv_lock)
+            letter = col_letter(header)
+            dv_lock.add(f"{letter}3:{letter}10000")
 
     buf = io.BytesIO()
     wb.save(buf)
