@@ -390,10 +390,18 @@ def process_import(
     is_sdr = current_user_role == "sdr"
     is_salesperson = current_user_role == "salesperson"
 
-    for row_num in range(2, ws.max_row + 1):
-        row_values = [ws.cell(row=row_num, column=c).value for c in range(1, ws.max_column + 1)]
+    # Não usa ws.max_row pois a extensão de DataValidation (x14) do Excel
+    # faz o openpyxl subestimar o número de linhas. Iteramos até 5000 linhas
+    # e paramos após 10 linhas vazias consecutivas.
+    empty_streak = 0
+    for row_num in range(2, 5001):
+        row_values = [ws.cell(row=row_num, column=c).value for c in range(1, len(headers) + 1)]
         if all(v is None or str(v).strip() == "" for v in row_values):
+            empty_streak += 1
+            if empty_streak >= 10:
+                break
             continue
+        empty_streak = 0
 
         row_data = {col_name: get_cell(row_num, col_name) for col_name in headers}
         title = _clean(row_data.get("Título do Card"))
