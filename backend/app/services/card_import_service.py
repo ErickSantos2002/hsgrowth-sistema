@@ -53,6 +53,7 @@ TEMPLATE_COLUMNS = [
     ("Nome do Contato",     "Carlos Oliveira",                     False, "person", None),
     ("Cargo",               "Diretor Comercial",                   False, "person", None),
     ("E-mail Comercial",    "carlos@empresa.com.br",               False, "person", "email_commercial"),
+    ("Telefone Principal",  "(11) 88888-8888",                     False, "person", "phone"),
     ("WhatsApp",            "(11) 99999-9999",                     False, "person", "phone_whatsapp"),
     ("Telefone Comercial",  "(11) 3333-4444",                      False, "person", "phone_commercial"),
     ("Telefone Alternativo","(11) 3333-5555",                      False, "person", "phone_alternative"),
@@ -281,6 +282,7 @@ def _get_or_create_person(db: Session, row: dict, client_id: int | None) -> int 
         last_name=last_name,
         position=_clean(row.get("Cargo")),
         email_commercial=email,
+        phone=_clean(row.get("Telefone Principal")),
         phone_whatsapp=_clean(row.get("WhatsApp")),
         phone_commercial=_clean(row.get("Telefone Comercial")),
         phone_alternative=_clean(row.get("Telefone Alternativo")),
@@ -539,7 +541,7 @@ def generate_template(user_name: str = "", user_role: str = "") -> bytes:
     col_widths = [
         30, 38, 20, 22, 32,              # Card (5)
         32, 20, 20, 25, 16, 10, 28, 28, 14,  # Empresa (9)
-        28, 22, 28, 20, 22, 22, 20, 20, 30,  # Contato (9)
+        28, 22, 28, 22, 20, 22, 22, 20, 20, 30,  # Contato (10)
         24, 24,                              # Responsáveis (2)
     ]
     for col_idx, width in enumerate(col_widths[:len(TEMPLATE_COLUMNS)], 1):
