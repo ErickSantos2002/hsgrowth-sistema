@@ -359,6 +359,7 @@ def process_import(
     file_bytes: bytes,
     current_user_id: int,
     current_user_role: str = "",
+    dry_run: bool = False,
 ) -> CardImportResponse:
     wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
     ws = wb.active
@@ -437,13 +438,20 @@ def process_import(
             person_id = _get_or_create_person(db, row_data, client_id)
             card_id = _create_card(db, row_data, client_id, person_id, sdr_id, vendor_id, next_position)
 
-            db.commit()
+            if dry_run:
+                db.rollback()  # Desfaz tudo desta linha sem persistir
+                card_id = None
+                message = "Será criado"
+            else:
+                db.commit()
+                message = "Card criado com sucesso"
+
             next_position += 1
             created += 1
 
             results.append(CardImportRowResult(
                 row=row_num, status="success", card_id=card_id, title=title,
-                message="Card criado com sucesso",
+                message=message,
             ))
 
         except Exception as e:
@@ -562,64 +570,27 @@ def generate_template(user_name: str = "", user_role: str = "") -> bytes:
     ws.row_dimensions[2].height = 20
     ws.freeze_panes = "A3"
 
-    # ── Aba oculta com listas de validação ───────────────────────────────────
-    lists_ws = wb.create_sheet("Listas")
-    lists_ws.sheet_state = "hidden"
-
-    canais = ["Inbound", "Outbound", "Indicacao", "Parcerias", "Eventos", "Base"]
-    tipos = ["Nova Venda", "Cross Sell", "Up Sell"]
-
-    for i, v in enumerate(canais, 1):
-        lists_ws.cell(row=i, column=1, value=v)
-    for i, v in enumerate(tipos, 1):
-        lists_ws.cell(row=i, column=2, value=v)
-    for i, v in enumerate(VALID_UF, 1):
-        lists_ws.cell(row=i, column=3, value=v)
-    for i, v in enumerate(VALID_EMPLOYEE_COUNTS, 1):
-        lists_ws.cell(row=i, column=4, value=v)
-    for i, v in enumerate(VALID_ANNUAL_REVENUES, 1):
-        lists_ws.cell(row=i, column=5, value=v)
-    for i, v in enumerate(CHANNEL_DETAIL_SUGGESTIONS, 1):
-        lists_ws.cell(row=i, column=6, value=v)
-
-    def add_dv(formula: str, col_name: str, warning: bool = False):
-        """warning=True permite digitar livremente além da lista (sugestões)."""
+    def add_dv(values: list, col_name: str, warning: bool = False):
+        """Usa valores inline (não referência de aba) para evitar x14 DataValidation.
+        Referências de aba (Listas!$A$1:$A$6) forçam openpyxl a usar x14, que ele
+        não consegue ler de volta — causando perda de todos os dados do arquivo.
+        """
+        formula = '"' + ",".join(values) + '"'
         dv = DataValidation(
             type="list",
             formula1=formula,
             allow_blank=True,
-            showErrorMessage=True,
             errorStyle="warning" if warning else "stop",
-            error="Use um dos valores da lista." if not warning else "Valor não está na lista de sugestões. Você pode digitar livremente se necessário.",
-            errorTitle="Valor inválido" if not warning else "Sugestão não encontrada",
         )
         ws.add_data_validation(dv)
         letter = col_letter(col_name)
         dv.add(f"{letter}3:{letter}10000")
 
-    add_dv("Listas!$A$1:$A$6", "Canal de Aquisição")
-    add_dv("Listas!$B$1:$B$3", "Tipo de Negócio")
-    add_dv(f"Listas!$C$1:$C${len(VALID_UF)}", "Estado (UF)")
-    add_dv(f"Listas!$D$1:$D${len(VALID_EMPLOYEE_COUNTS)}", "Nº de Funcionários")
-    add_dv(f"Listas!$E$1:$E${len(VALID_ANNUAL_REVENUES)}", "Receita Anual")
-    # Detalhe do Canal: lista de sugestões, mas permite texto livre (warning)
-    add_dv(f"Listas!$F$1:$F${len(CHANNEL_DETAIL_SUGGESTIONS)}", "Detalhe do Canal", warning=True)
-
-    # ── Colunas bloqueadas: DV que impede qualquer digitação ──────────────────
-    for header, _, _, _, _ in TEMPLATE_COLUMNS:
-        if is_locked_col(header):
-            dv_lock = DataValidation(
-                type="custom",
-                formula1=f'"{col_letter(header)}2"',  # força célula vazia/N-A
-                allow_blank=True,
-                showErrorMessage=True,
-                errorStyle="stop",
-                error="Este campo não é aplicável ao seu perfil.",
-                errorTitle="Coluna bloqueada",
-            )
-            ws.add_data_validation(dv_lock)
-            letter = col_letter(header)
-            dv_lock.add(f"{letter}3:{letter}10000")
+    add_dv(["Inbound", "Outbound", "Indicacao", "Parcerias", "Eventos", "Base"], "Canal de Aquisição")
+    add_dv(["Nova Venda", "Cross Sell", "Up Sell"], "Tipo de Negócio")
+    add_dv(list(VALID_UF), "Estado (UF)")
+    add_dv(VALID_EMPLOYEE_COUNTS, "Nº de Funcionários")
+    add_dv(VALID_ANNUAL_REVENUES, "Receita Anual")
 
     buf = io.BytesIO()
     wb.save(buf)

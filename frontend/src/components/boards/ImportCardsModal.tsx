@@ -11,6 +11,7 @@ import {
   ArrowRight,
   ArrowLeft,
   RotateCcw,
+  Eye,
 } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import cardService from "../../services/cardService";
@@ -21,7 +22,7 @@ interface Props {
   onClose: () => void;
 }
 
-type Step = "instructions" | "upload" | "result";
+type Step = "instructions" | "upload" | "preview" | "result";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -29,9 +30,15 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [step, setStep] = useState<Step>("instructions");
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [importing, setImporting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<{
+    total: number;
+    created: number;
+    errors: number;
+    rows: CardImportRowResult[];
+  } | null>(null);
   const [results, setResults] = useState<{
     total: number;
     created: number;
@@ -45,8 +52,9 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     setStep("instructions");
     setFile(null);
     setFileError(null);
+    setPreviewData(null);
     setResults(null);
-    setImporting(false);
+    setLoading(false);
     onClose();
   };
 
@@ -90,15 +98,43 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     try {
       await cardService.downloadImportTemplate();
     } catch {
-      // silently fail — browser will show nothing
+      // silently fail
     } finally {
       setDownloadingTemplate(false);
     }
   };
 
-  const handleImport = async () => {
+  const handlePreview = async () => {
     if (!file) return;
-    setImporting(true);
+    setLoading(true);
+    try {
+      const res = await cardService.previewImport(file);
+      setPreviewData({
+        total: res.total,
+        created: res.created,
+        errors: res.errors,
+        rows: res.results,
+      });
+      setStep("preview");
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.detail ||
+        "Erro inesperado ao processar a planilha. Verifique o arquivo e tente novamente.";
+      setPreviewData({
+        total: 0,
+        created: 0,
+        errors: 1,
+        rows: [{ row: 0, status: "error", card_id: null, title: null, message: msg }],
+      });
+      setStep("preview");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!file) return;
+    setLoading(true);
     try {
       const res = await cardService.importCards(file);
       setResults({
@@ -111,7 +147,7 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     } catch (err: any) {
       const msg =
         err?.response?.data?.detail ||
-        "Erro inesperado ao processar a planilha. Verifique o arquivo e tente novamente.";
+        "Erro inesperado ao importar. Tente novamente.";
       setResults({
         total: 0,
         created: 0,
@@ -120,7 +156,7 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
       });
       setStep("result");
     } finally {
-      setImporting(false);
+      setLoading(false);
     }
   };
 
@@ -128,6 +164,7 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     setStep("upload");
     setFile(null);
     setFileError(null);
+    setPreviewData(null);
     setResults(null);
   };
 
@@ -136,6 +173,97 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
+
+  // ─── Results table (shared between preview and result) ────────────────────
+
+  const ResultsTable = ({ data, isPreview }: { data: typeof previewData; isPreview: boolean }) =>
+    data ? (
+      <div className="space-y-4">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-700 dark:bg-slate-800/50">
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{data.total}</p>
+            <p className="text-xs text-slate-500">Total</p>
+          </div>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center dark:border-emerald-800/40 dark:bg-emerald-900/20">
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{data.created}</p>
+            <p className="text-xs text-emerald-600 dark:text-emerald-400">
+              {isPreview ? "Serão criados" : "Criados"}
+            </p>
+          </div>
+          <div
+            className={`rounded-xl border p-3 text-center ${
+              data.errors > 0
+                ? "border-red-200 bg-red-50 dark:border-red-800/40 dark:bg-red-900/20"
+                : "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50"
+            }`}
+          >
+            <p
+              className={`text-2xl font-bold ${
+                data.errors > 0 ? "text-red-600 dark:text-red-400" : "text-slate-400"
+              }`}
+            >
+              {data.errors}
+            </p>
+            <p
+              className={`text-xs ${
+                data.errors > 0 ? "text-red-600 dark:text-red-400" : "text-slate-500"
+              }`}
+            >
+              Erros
+            </p>
+          </div>
+        </div>
+
+        {isPreview && data.errors > 0 && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-400">
+            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <span>
+              Existem linhas com erro. Você pode confirmar a importação assim mesmo (as linhas com erro
+              serão ignoradas) ou voltar e corrigir o arquivo antes de importar.
+            </span>
+          </div>
+        )}
+
+        <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800">
+              <tr>
+                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Linha</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Título</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Status</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Mensagem</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+              {data.rows.map((r, idx) => (
+                <tr key={idx} className="bg-white dark:bg-slate-900">
+                  <td className="px-3 py-2 text-slate-500">{r.row || "—"}</td>
+                  <td className="max-w-[160px] truncate px-3 py-2 text-slate-700 dark:text-slate-300">
+                    {r.title || "—"}
+                  </td>
+                  <td className="px-3 py-2">
+                    {r.status === "success" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                        <CheckCircle size={11} /> {isPreview ? "OK" : "Criado"}
+                      </span>
+                    ) : r.status === "skipped" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                        — Ignorado
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                        <XCircle size={11} /> Erro
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">{r.message}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ) : null;
 
   // ─── Footer por etapa ────────────────────────────────────────────────────────
 
@@ -165,19 +293,47 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
         <ArrowLeft size={16} /> Voltar
       </button>
       <button
-        onClick={handleImport}
-        disabled={!file || importing}
+        onClick={handlePreview}
+        disabled={!file || loading}
         className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {importing ? (
+        {loading ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            Analisando...
+          </>
+        ) : (
+          <>
+            <Eye size={16} />
+            Analisar Prévia
+          </>
+        )}
+      </button>
+    </div>
+  );
+
+  const footerPreview = (
+    <div className="flex w-full items-center justify-between">
+      <button
+        onClick={() => setStep("upload")}
+        className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+      >
+        <ArrowLeft size={16} /> Voltar e corrigir
+      </button>
+      <button
+        onClick={handleConfirmImport}
+        disabled={loading || (previewData?.created ?? 0) === 0}
+        className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {loading ? (
           <>
             <Loader2 size={16} className="animate-spin" />
             Importando...
           </>
         ) : (
           <>
-            <Upload size={16} />
-            Importar
+            <CheckCircle size={16} />
+            Confirmar Importação
           </>
         )}
       </button>
@@ -206,6 +362,8 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
       ? footerInstructions
       : step === "upload"
       ? footerUpload
+      : step === "preview"
+      ? footerPreview
       : footerResult;
 
   // ─── Stepper visual ──────────────────────────────────────────────────────────
@@ -213,6 +371,7 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const steps = [
     { key: "instructions", label: "Instruções" },
     { key: "upload", label: "Upload" },
+    { key: "preview", label: "Prévia" },
     { key: "result", label: "Resultado" },
   ];
   const currentIdx = steps.findIndex((s) => s.key === step);
@@ -237,7 +396,7 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
           </div>
           {i < steps.length - 1 && (
             <div
-              className={`mb-5 h-0.5 w-16 transition-colors ${
+              className={`mb-5 h-0.5 w-12 transition-colors ${
                 i < currentIdx ? "bg-emerald-400" : "bg-slate-200 dark:bg-slate-700"
               }`}
             />
@@ -269,12 +428,17 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
           {
             num: "2",
             title: "Preencha os dados",
-            desc: "Preencha as colunas com as informações dos leads. Apenas 'Título do Card' é obrigatório. Clientes e contatos serão criados e vinculados automaticamente.",
+            desc: "Preencha as colunas com as informações dos leads. Clientes e contatos serão criados e vinculados automaticamente.",
           },
           {
             num: "3",
-            title: "Importe o arquivo",
-            desc: "Na próxima etapa, faça o upload da planilha preenchida. Erros em uma linha não cancelam as demais.",
+            title: "Analise a prévia",
+            desc: "Antes de criar os cards, o sistema mostrará uma prévia com o que será criado e os erros encontrados.",
+          },
+          {
+            num: "4",
+            title: "Confirme a importação",
+            desc: "Se estiver tudo certo, confirme. Erros em linhas individuais não cancelam as demais.",
           },
         ].map((item) => (
           <div key={item.num} className="flex gap-3">
@@ -369,74 +533,29 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
       )}
 
-      {importing && (
+      {loading && (
         <div className="flex items-center justify-center gap-2 py-2 text-sm text-slate-500">
           <Loader2 size={16} className="animate-spin" />
-          Processando planilha...
+          Analisando planilha...
         </div>
       )}
     </div>
   );
 
-  const StepResult = results && (
-    <div className="space-y-4">
-      {/* Resumo */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-700 dark:bg-slate-800/50">
-          <p className="text-2xl font-bold text-slate-800 dark:text-white">{results.total}</p>
-          <p className="text-xs text-slate-500">Total</p>
-        </div>
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center dark:border-emerald-800/40 dark:bg-emerald-900/20">
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{results.created}</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">Criados</p>
-        </div>
-        <div className={`rounded-xl border p-3 text-center ${
-          results.errors > 0
-            ? "border-red-200 bg-red-50 dark:border-red-800/40 dark:bg-red-900/20"
-            : "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50"
-        }`}>
-          <p className={`text-2xl font-bold ${results.errors > 0 ? "text-red-600 dark:text-red-400" : "text-slate-400"}`}>
-            {results.errors}
-          </p>
-          <p className={`text-xs ${results.errors > 0 ? "text-red-600 dark:text-red-400" : "text-slate-500"}`}>Erros</p>
-        </div>
+  const StepPreview = (
+    <div className="space-y-3">
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 dark:border-blue-800/40 dark:bg-blue-900/20">
+        <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+          Prévia — nenhum card foi criado ainda. Confirme para importar.
+        </p>
       </div>
+      <ResultsTable data={previewData} isPreview={true} />
+    </div>
+  );
 
-      {/* Tabela de resultados */}
-      <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Linha</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Título</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Status</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Mensagem</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-            {results.rows.map((r, idx) => (
-              <tr key={idx} className="bg-white dark:bg-slate-900">
-                <td className="px-3 py-2 text-slate-500">{r.row || "—"}</td>
-                <td className="max-w-[160px] truncate px-3 py-2 text-slate-700 dark:text-slate-300">
-                  {r.title || "—"}
-                </td>
-                <td className="px-3 py-2">
-                  {r.status === "success" ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
-                      <CheckCircle size={11} /> OK
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                      <XCircle size={11} /> Erro
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">{r.message}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+  const StepResult = (
+    <div className="space-y-3">
+      <ResultsTable data={results} isPreview={false} />
     </div>
   );
 
@@ -452,6 +571,7 @@ const ImportCardsModal: React.FC<Props> = ({ isOpen, onClose }) => {
       {Stepper}
       {step === "instructions" && StepInstructions}
       {step === "upload" && StepUpload}
+      {step === "preview" && StepPreview}
       {step === "result" && StepResult}
     </BaseModal>
   );

@@ -1435,6 +1435,30 @@ def download_import_template(
 
 
 @router.post(
+    "/import/preview",
+    response_model=CardImportResponse,
+    summary="Pré-visualizar importação (dry-run)",
+    description="Valida o arquivo sem criar nenhum registro. Retorna o que seria criado ou os erros por linha.",
+)
+async def preview_import(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.services.card_import_service import process_import
+
+    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xls")):
+        raise HTTPException(status_code=400, detail="Apenas arquivos .xlsx ou .xls são aceitos.")
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande. Máximo: 10 MB.")
+
+    user_role = current_user.role.name if current_user.role else ""
+    return process_import(db=db, file_bytes=content, current_user_id=current_user.id, current_user_role=user_role, dry_run=True)
+
+
+@router.post(
     "/import",
     response_model=CardImportResponse,
     summary="Importar cards em lote via planilha",

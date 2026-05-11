@@ -169,6 +169,15 @@ class CardService {
     window.URL.revokeObjectURL(url);
   }
 
+  async previewImport(file: File): Promise<CardImportResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<CardImportResponse>("/api/v1/cards/import/preview", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  }
+
   async importCards(file: File): Promise<CardImportResponse> {
     const formData = new FormData();
     formData.append("file", file);
