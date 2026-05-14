@@ -7,7 +7,7 @@ interface FormFieldProps {
   label: string | React.ReactNode; // Aceita string ou JSX elements (com ícones, etc)
   required?: boolean;
   error?: string;
-  hint?: string;
+  hint?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }

@@ -148,7 +148,7 @@ class ReportService {
    * (Mantido para compatibilidade com Dashboard.tsx existente)
    */
   async getDashboardKPIs(
-    period?: "today" | "yesterday" | "week" | "month" | "quarter" | "year" | "custom",
+    period?: "today" | "yesterday" | "week" | "month" | "last_month" | "quarter" | "year" | "custom",
     board_id?: number,
     user_id?: number,
     start_date?: string,

@@ -103,6 +103,8 @@ export interface Card {
     payment_method?: string;
     installments?: number;
     notes?: string;
+    global_discount?: number;
+    global_discount_type?: "value" | "percent";
   } | null;
   is_won: boolean; // true se ganho
   is_lost: boolean; // true se perdido (backend converte -1 para true)
@@ -899,9 +901,11 @@ export interface UpdateCardRequest {
   due_date?: string | null;
   contact_info?: Record<string, any> | null;
   payment_info?: {
-    payment_method: string;
-    installments: number;
+    payment_method?: string;
+    installments?: number;
     notes?: string;
+    global_discount?: number;
+    global_discount_type?: "value" | "percent";
   } | null;
 
   // Campos de status
