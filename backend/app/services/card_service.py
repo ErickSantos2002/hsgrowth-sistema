@@ -913,8 +913,21 @@ class CardService:
             from app.repositories.product_repository import ProductRepository
             product_repo = ProductRepository(self.db)
             totals = product_repo.get_card_products_total(card_id)
+            total_products = totals["total"]
             shipping = float(updated_card.shipping_cost) if updated_card.shipping_cost else 0
-            updated_card.value = totals["total"] + shipping
+
+            # Aplica desconto global armazenado em payment_info
+            global_discount_amount = 0.0
+            if updated_card.payment_info and isinstance(updated_card.payment_info, dict):
+                gd = updated_card.payment_info.get("global_discount") or 0
+                gdt = updated_card.payment_info.get("global_discount_type", "value")
+                if gd and float(gd) > 0:
+                    if gdt == "percent":
+                        global_discount_amount = float(total_products) * float(gd) / 100
+                    else:
+                        global_discount_amount = float(gd)
+
+            updated_card.value = total_products - global_discount_amount + shipping
             self.db.commit()
             self.db.refresh(updated_card)
 

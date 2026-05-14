@@ -14,9 +14,6 @@ interface ProductSectionProps {
   readOnly?: boolean;
 }
 
-/**
- * Interface de Produto retornado pelo backend
- */
 interface ProductItem {
   id: number;
   card_id: number;
@@ -25,34 +22,36 @@ interface ProductItem {
   product_sku: string;
   quantity: number;
   unit_price: number;
-  discount: number; // Valor absoluto em reais
+  discount: number;
   subtotal: number;
   total: number;
 }
 
-/**
- * Seção "Produto" - Gerenciamento de produtos vinculados ao card
- * Quarta seção da coluna esquerda, expandida por padrão quando há produtos
- */
+type DiscountType = "value" | "percent";
+
 const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnly = false }) => {
   const { confirm } = useConfirm();
-  // Produtos vindos do backend (card.products)
-  const products = (card as any).products || [];
-  const productsTotal = (card as any).products_total || 0;
+  const products: ProductItem[] = (card as any).products || [];
 
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Estado de edição: { [productId]: { quantity, discountValue } }
+  // Edição por produto
   const [editingProduct, setEditingProduct] = useState<number | null>(null);
-  const [editValues, setEditValues] = useState<{ quantity: number; discountValue: number }>({
-    quantity: 1,
-    discountValue: 0,
-  });
+  const [editValues, setEditValues] = useState<{
+    quantity: string;
+    discountType: DiscountType;
+    discountInput: string;
+  }>({ quantity: "1", discountType: "value", discountInput: "" });
 
-  // Estado do modal de pagamento
+  // Desconto global
+  const [globalDiscountInput, setGlobalDiscountInput] = useState<string>("");
+  const [globalDiscountType, setGlobalDiscountType] = useState<DiscountType>("value");
+  const [savingDiscount, setSavingDiscount] = useState(false);
+
+  // Modal de pagamento
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     payment_method: "",
@@ -60,60 +59,77 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
     notes: "",
   });
 
-  // Dados de pagamento do card
   const paymentInfo = (card as any).payment_info;
 
-  // Carrega produtos disponíveis quando abrir o modal
+  // Sincroniza desconto global quando card atualiza
   useEffect(() => {
-    if (showProductSearch) {
-      loadAvailableProducts();
+    const gd: number = paymentInfo?.global_discount ?? 0;
+    const gdt: DiscountType = paymentInfo?.global_discount_type === "percent" ? "percent" : "value";
+    setGlobalDiscountType(gdt);
+    if (gd > 0) {
+      setGlobalDiscountInput(
+        gdt === "percent"
+          ? String(gd).replace(".", ",")
+          : gd.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      );
+    } else {
+      setGlobalDiscountInput("");
     }
+  }, [card]);
+
+  useEffect(() => {
+    if (showProductSearch) loadAvailableProducts();
   }, [showProductSearch]);
 
-  /**
-   * Carrega lista de produtos disponíveis
-   */
   const loadAvailableProducts = async () => {
     try {
       setLoading(true);
       const response = await productService.list({ page_size: 10000, is_active: true });
       setAvailableProducts(response.products);
-    } catch (error) {
-      console.error("Erro ao carregar produtos:", error);
+    } catch {
       showError("Erro ao carregar lista de produtos");
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Calcula subtotal de todos os produtos
-   */
-  const calculateSubtotal = () => {
-    return products.reduce((sum: number, p: ProductItem) => sum + p.subtotal, 0);
+  const parseDecimalInput = (value: string): number =>
+    parseFloat(value.replace(",", ".")) || 0;
+
+  const sanitizeDecimalInput = (value: string): string =>
+    value.replace(/[^0-9,.]/g, "");
+
+  const formatCurrency = (value: number) =>
+    `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  // Totais dos produtos (sem desconto global)
+  const calcSubtotal = () => products.reduce((s, p) => s + p.subtotal, 0);
+  const calcProductDiscount = () => products.reduce((s, p) => s + p.discount, 0);
+  const calcAfterProductDiscount = () => products.reduce((s, p) => s + p.total, 0);
+
+  // Desconto global em valor absoluto (baseado no after-product-discount total)
+  const calcGlobalDiscountAmount = () => {
+    const base = calcAfterProductDiscount();
+    const inputVal = parseDecimalInput(globalDiscountInput);
+    return globalDiscountType === "percent"
+      ? Math.round((base * inputVal / 100) * 100) / 100
+      : inputVal;
   };
 
-  /**
-   * Calcula desconto total
-   */
-  const calculateTotalDiscount = () => {
-    return products.reduce((sum: number, p: ProductItem) => sum + p.discount, 0);
+  const calcTotal = () => calcAfterProductDiscount() - calcGlobalDiscountAmount();
+
+  // Desconto por produto em valor absoluto (para o edit preview)
+  const calcProductDiscountAmount = (unitPrice: number, quantity: number) => {
+    const subtotal = quantity * unitPrice;
+    const inputVal = parseDecimalInput(editValues.discountInput);
+    return editValues.discountType === "percent"
+      ? Math.round((subtotal * inputVal / 100) * 100) / 100
+      : inputVal;
   };
 
-  /**
-   * Calcula valor total do card
-   */
-  const calculateTotal = () => {
-    return products.reduce((sum: number, p: ProductItem) => sum + p.total, 0);
-  };
-
-  /**
-   * Adiciona produto
-   */
   const handleAddProduct = async (productId: number) => {
     const product = availableProducts.find(p => p.id === productId);
     if (!product) return;
-
     try {
       setLoading(true);
       await productService.addToCard(card.id, {
@@ -122,21 +138,16 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
         unit_price: parseFloat(product.unit_price),
         discount: 0,
       });
-
       setShowProductSearch(false);
       setSearchTerm("");
       onUpdate();
-    } catch (error) {
-      console.error("Erro ao adicionar produto:", error);
+    } catch {
       showError("Erro ao adicionar produto");
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Remove produto
-   */
   const handleRemoveProduct = async (cardProductId: number) => {
     const confirmed = await confirm({
       title: "Remover produto",
@@ -145,117 +156,112 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
       isDanger: true,
     });
     if (!confirmed) return;
-
     try {
       setLoading(true);
       await productService.removeFromCard(cardProductId);
       onUpdate();
-    } catch (error) {
-      console.error("Erro ao remover produto:", error);
+    } catch {
       showError("Erro ao remover produto");
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Inicia edição de um produto
-   */
   const handleStartEdit = (product: ProductItem) => {
     setEditingProduct(product.id);
-
-    // Usa o valor de desconto em reais diretamente (arredondado para inteiro)
     setEditValues({
-      quantity: product.quantity,
-      discountValue: Math.round(product.discount),
+      quantity: String(product.quantity).replace(".", ","),
+      discountType: "value",
+      discountInput: product.discount > 0
+        ? product.discount.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : "",
     });
   };
 
-  /**
-   * Cancela edição
-   */
   const handleCancelEdit = () => {
     setEditingProduct(null);
-    setEditValues({ quantity: 1, discountValue: 0 });
+    setEditValues({ quantity: "1", discountType: "value", discountInput: "" });
   };
 
-  /**
-   * Salva alterações do produto
-   */
   const handleSaveEdit = async (product: ProductItem) => {
-    if (editValues.quantity < 1) {
-      showWarning("Quantidade deve ser maior que 0");
+    const qty = parseDecimalInput(editValues.quantity);
+    if (qty <= 0) { showWarning("Quantidade deve ser maior que 0"); return; }
+
+    const subtotal = qty * product.unit_price;
+    const discount = calcProductDiscountAmount(product.unit_price, qty);
+
+    if (discount < 0) { showWarning("Desconto não pode ser negativo"); return; }
+    if (discount > subtotal) {
+      showWarning(`Desconto não pode ser maior que o subtotal da linha (${formatCurrency(subtotal)})`);
       return;
     }
-
-    if (editValues.discountValue < 0) {
-      showWarning("Desconto não pode ser negativo");
-      return;
-    }
-
-    // Calcula subtotal para validar que o desconto não ultrapassa o total
-    const subtotal = editValues.quantity * product.unit_price;
-    if (editValues.discountValue > subtotal) {
-      showWarning(`Desconto não pode ser maior que o valor total da linha (${formatCurrency(subtotal)})`);
-      return;
+    if (editValues.discountType === "percent") {
+      const pct = parseDecimalInput(editValues.discountInput);
+      if (pct > 100) { showWarning("Percentual de desconto não pode ultrapassar 100%"); return; }
     }
 
     try {
       setLoading(true);
-
-      await productService.updateCardProduct(product.id, {
-        quantity: editValues.quantity,
-        discount: editValues.discountValue,
-      });
-
+      await productService.updateCardProduct(product.id, { quantity: qty, discount });
       setEditingProduct(null);
       onUpdate();
-    } catch (error) {
-      console.error("Erro ao atualizar produto:", error);
+    } catch {
       showError("Erro ao atualizar produto");
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Formata moeda
-   */
-  const formatCurrency = (value: number) => {
-    return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
-  /**
-   * Abre modal de pagamento
-   */
-  const handleOpenPaymentModal = () => {
-    if (paymentInfo) {
-      // Se já tem informações de pagamento, carrega no form para editar
-      setPaymentForm({
-        payment_method: paymentInfo.payment_method || "",
-        installments: paymentInfo.installments || 1,
-        notes: paymentInfo.notes || "",
-      });
-    } else {
-      // Senão, limpa o form
-      setPaymentForm({
-        payment_method: "",
-        installments: 1,
-        notes: "",
-      });
-    }
-    setShowPaymentModal(true);
-  };
-
-  /**
-   * Salva condições de pagamento
-   */
-  const handleSavePayment = async () => {
-    if (!paymentForm.payment_method) {
-      showWarning("Selecione a forma de pagamento");
+  const handleSaveGlobalDiscount = async () => {
+    const inputVal = parseDecimalInput(globalDiscountInput);
+    if (inputVal < 0) { showWarning("Desconto não pode ser negativo"); return; }
+    if (globalDiscountType === "percent" && inputVal > 100) {
+      showWarning("Percentual de desconto não pode ultrapassar 100%");
       return;
     }
 
+    const base = calcAfterProductDiscount();
+    const discountAmount = globalDiscountType === "percent"
+      ? base * inputVal / 100
+      : inputVal;
+
+    if (discountAmount > base) {
+      showWarning(`Desconto global não pode ser maior que ${formatCurrency(base)}`);
+      return;
+    }
+
+    const shippingCost = parseFloat((card as any).shipping_cost) || 0;
+    const newCardValue = base - discountAmount + shippingCost;
+
+    try {
+      setSavingDiscount(true);
+      await cardService.update(card.id, {
+        payment_info: {
+          ...(paymentInfo || {}),
+          global_discount: inputVal || 0,
+          global_discount_type: globalDiscountType,
+        },
+        value: newCardValue,
+      });
+      onUpdate();
+    } catch {
+      showError("Erro ao salvar desconto global");
+    } finally {
+      setSavingDiscount(false);
+    }
+  };
+
+  const handleOpenPaymentModal = () => {
+    setPaymentForm({
+      payment_method: paymentInfo?.payment_method || "",
+      installments: paymentInfo?.installments || 1,
+      notes: paymentInfo?.notes || "",
+    });
+    setShowPaymentModal(true);
+  };
+
+  const handleSavePayment = async () => {
+    if (!paymentForm.payment_method) { showWarning("Selecione a forma de pagamento"); return; }
     try {
       setLoading(true);
       await cardService.update(card.id, {
@@ -263,21 +269,20 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
           payment_method: paymentForm.payment_method,
           installments: paymentForm.installments,
           notes: paymentForm.notes,
+          // Preserva desconto global ao salvar condições de pagamento
+          global_discount: paymentInfo?.global_discount,
+          global_discount_type: paymentInfo?.global_discount_type,
         },
       });
       setShowPaymentModal(false);
       onUpdate();
-    } catch (error) {
-      console.error("Erro ao salvar condições de pagamento:", error);
+    } catch {
       showError("Erro ao salvar condições de pagamento");
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Remove condições de pagamento
-   */
   const handleRemovePayment = async () => {
     const confirmed = await confirm({
       title: "Remover condições de pagamento",
@@ -286,28 +291,55 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
       isDanger: true,
     });
     if (!confirmed) return;
-
     try {
       setLoading(true);
-      await cardService.update(card.id, {
-        payment_info: null,
-      });
+      await cardService.update(card.id, { payment_info: null });
       onUpdate();
-    } catch (error) {
-      console.error("Erro ao remover condições de pagamento:", error);
+    } catch {
       showError("Erro ao remover condições de pagamento");
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Filtra produtos disponíveis
-   */
   const filteredProducts = availableProducts.filter(p =>
-    !products.some((prod: ProductItem) => prod.product_id === p.id) &&
+    !products.some(prod => prod.product_id === p.id) &&
     (p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
      p.sku?.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  // Componente de toggle R$/% reutilizável
+  const DiscountTypeToggle = ({
+    value,
+    onChange,
+  }: {
+    value: DiscountType;
+    onChange: (t: DiscountType) => void;
+  }) => (
+    <div className="flex overflow-hidden rounded border border-gray-300 dark:border-slate-600 text-xs">
+      <button
+        type="button"
+        onClick={() => onChange("value")}
+        className={`px-2 py-1 transition-colors ${
+          value === "value"
+            ? "bg-blue-500 text-white"
+            : "bg-transparent text-slate-400 hover:text-slate-200"
+        }`}
+      >
+        R$
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("percent")}
+        className={`px-2 py-1 transition-colors ${
+          value === "percent"
+            ? "bg-blue-500 text-white"
+            : "bg-transparent text-slate-400 hover:text-slate-200"
+        }`}
+      >
+        %
+      </button>
+    </div>
   );
 
   return (
@@ -319,66 +351,59 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
       readOnly={readOnly}
     >
       <div className="space-y-4">
-        {/* Lista de produtos */}
         {products.length > 0 ? (
           <div className="space-y-3">
-            {products.map((product: ProductItem) => {
+            {products.map((product) => {
               const isEditing = editingProduct === product.id;
-
-              // Calcula valores para o modo de edição
-              const editSubtotal = isEditing
-                ? editValues.quantity * product.unit_price
-                : product.subtotal;
-              const editDiscount = isEditing
-                ? editValues.discountValue
-                : product.discount;
-              const editTotal = editSubtotal - editDiscount;
+              const editQty = isEditing ? parseDecimalInput(editValues.quantity) : product.quantity;
+              const lineSubtotal = editQty * product.unit_price;
+              const lineDiscount = isEditing ? calcProductDiscountAmount(product.unit_price, editQty) : product.discount;
+              const lineTotal = lineSubtotal - lineDiscount;
 
               return (
                 <div
                   key={product.id}
                   className="space-y-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3"
                 >
-                  {/* Header do produto */}
+                  {/* Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <p className="font-medium text-slate-900 dark:text-white">{product.product_name || "Produto sem nome"}</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500">
-                        SKU: {product.product_sku || "N/A"}
-                      </p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">SKU: {product.product_sku || "N/A"}</p>
                     </div>
-                    <div className="flex gap-1">
-                      {!isEditing && (
-                        <>
-                          <button
-                            onClick={() => handleStartEdit(product)}
-                            className="rounded p-1 text-blue-400 transition-colors hover:bg-blue-500/20 hover:text-blue-300"
-                            title="Editar produto"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleRemoveProduct(product.id)}
-                            className="rounded p-1 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300"
-                            title="Remover produto"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    {!isEditing && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleStartEdit(product)}
+                          className="rounded p-1 text-blue-400 transition-colors hover:bg-blue-500/20 hover:text-blue-300"
+                          title="Editar produto"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveProduct(product.id)}
+                          className="rounded p-1 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300"
+                          title="Remover produto"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Campos de quantidade e valores */}
+                  {/* Campos */}
                   <div className="grid grid-cols-2 gap-2 text-sm">
+                    {/* Quantidade */}
                     <div>
-                      <label className="text-xs text-slate-400 dark:text-slate-400">Quantidade</label>
+                      <label className="text-xs text-slate-400">Quantidade</label>
                       {isEditing ? (
                         <input
-                          type="number"
-                          min="1"
+                          type="text"
+                          inputMode="decimal"
                           value={editValues.quantity}
-                          onChange={(e) => setEditValues({ ...editValues, quantity: parseInt(e.target.value) || 1 })}
+                          onChange={(e) =>
+                            setEditValues({ ...editValues, quantity: sanitizeDecimalInput(e.target.value) })
+                          }
                           className="w-full rounded border border-blue-500 bg-gray-100 dark:bg-slate-800 px-2 py-1.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       ) : (
@@ -388,40 +413,55 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
                       )}
                     </div>
 
+                    {/* Valor unitário */}
                     <div>
-                      <label className="text-xs text-slate-400 dark:text-slate-400">Valor unitário</label>
+                      <label className="text-xs text-slate-400">Valor unitário</label>
                       <p className="rounded border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 px-2 py-1.5 text-slate-900 dark:text-white">
                         {formatCurrency(product.unit_price)}
                       </p>
                     </div>
 
+                    {/* Desconto por produto */}
                     <div>
-                      <label className="text-xs text-slate-400 dark:text-slate-400">Desconto (R$)</label>
+                      <label className="text-xs text-slate-400">Desconto</label>
                       {isEditing ? (
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={editValues.discountValue}
-                          onChange={(e) => setEditValues({ ...editValues, discountValue: parseInt(e.target.value) || 0 })}
-                          className="w-full rounded border border-blue-500 bg-gray-100 dark:bg-slate-800 px-2 py-1.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={editValues.discountInput}
+                            onChange={(e) =>
+                              setEditValues({ ...editValues, discountInput: sanitizeDecimalInput(e.target.value) })
+                            }
+                            placeholder="0"
+                            className="min-w-0 flex-1 rounded border border-blue-500 bg-gray-100 dark:bg-slate-800 px-2 py-1.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <DiscountTypeToggle
+                            value={editValues.discountType}
+                            onChange={(t) => setEditValues({ ...editValues, discountType: t })}
+                          />
+                        </div>
                       ) : (
-                        <p className="rounded border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 px-2 py-1.5 text-slate-900 dark:text-white">
-                          {formatCurrency(product.discount)}
+                        <p className={`rounded border px-2 py-1.5 ${
+                          product.discount > 0
+                            ? "border-red-500/30 bg-red-500/10 text-red-400"
+                            : "border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 text-slate-400"
+                        }`}>
+                          {product.discount > 0 ? `- ${formatCurrency(product.discount)}` : "—"}
                         </p>
                       )}
                     </div>
 
+                    {/* Total da linha */}
                     <div>
-                      <label className="text-xs text-slate-400 dark:text-slate-400">Total da linha</label>
+                      <label className="text-xs text-slate-400">Total da linha</label>
                       <p className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1.5 font-medium text-blue-400">
-                        {formatCurrency(isEditing ? editTotal : product.total)}
+                        {formatCurrency(isEditing ? lineTotal : product.total)}
                       </p>
                     </div>
                   </div>
 
-                  {/* Botões de edição */}
+                  {/* Botões edição */}
                   {isEditing && (
                     <div className="flex gap-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-2">
                       <button
@@ -448,28 +488,61 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
 
             {/* Totalizadores */}
             <div className="space-y-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-3">
+              {/* Subtotal bruto */}
               <div className="flex justify-between text-sm">
-                <span className="text-slate-400 dark:text-slate-400">Subtotal:</span>
-                <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(calculateSubtotal())}</span>
+                <span className="text-slate-400">Subtotal:</span>
+                <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(calcSubtotal())}</span>
               </div>
 
-              {calculateTotalDiscount() > 0 && (
+              {/* Desconto dos produtos (somente se houver) */}
+              {calcProductDiscount() > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400 dark:text-slate-400">Desconto total:</span>
-                  <span className="font-medium text-red-400">- {formatCurrency(calculateTotalDiscount())}</span>
+                  <span className="text-slate-400">Desc. produtos:</span>
+                  <span className="font-medium text-red-400">- {formatCurrency(calcProductDiscount())}</span>
                 </div>
               )}
 
+              {/* Desconto global */}
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <span className="flex-shrink-0 text-slate-400">Desc. global:</span>
+                {readOnly ? (
+                  calcGlobalDiscountAmount() > 0 ? (
+                    <span className="font-medium text-red-400">- {formatCurrency(calcGlobalDiscountAmount())}</span>
+                  ) : (
+                    <span className="text-slate-500">—</span>
+                  )
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={globalDiscountInput}
+                      onChange={(e) => setGlobalDiscountInput(sanitizeDecimalInput(e.target.value))}
+                      placeholder={globalDiscountType === "percent" ? "0" : "0,00"}
+                      className="w-28 rounded border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800 px-2 py-1 text-right text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                    />
+                    <DiscountTypeToggle value={globalDiscountType} onChange={setGlobalDiscountType} />
+                    <button
+                      onClick={handleSaveGlobalDiscount}
+                      disabled={savingDiscount}
+                      className="rounded p-1 text-emerald-400 transition-colors hover:bg-emerald-500/20 disabled:opacity-50"
+                      title="Salvar desconto global"
+                    >
+                      <Check size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Valor total */}
               <div className="flex justify-between border-t border-gray-200/50 dark:border-slate-700/50 pt-2 text-base">
                 <span className="font-semibold text-slate-900 dark:text-white">Valor total:</span>
-                <span className="text-lg font-semibold text-emerald-400">
-                  {formatCurrency(calculateTotal())}
-                </span>
+                <span className="text-lg font-semibold text-emerald-400">{formatCurrency(calcTotal())}</span>
               </div>
             </div>
 
-            {/* Condições de pagamento (se existirem) */}
-            {paymentInfo && (
+            {/* Condições de pagamento */}
+            {paymentInfo?.payment_method && (
               <div className="space-y-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-slate-600 dark:text-slate-300">Condições de Pagamento</h4>
@@ -490,26 +563,24 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
                     </button>
                   </div>
                 </div>
-
                 <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
                   <div className="flex items-center gap-2 text-sm">
                     <CreditCard size={16} className="flex-shrink-0 text-emerald-400" />
                     <span className="text-slate-600 dark:text-slate-300">
                       <span className="font-medium text-emerald-400">{paymentInfo.payment_method}</span>
                       {paymentInfo.installments > 1 && (
-                        <span className="text-slate-400 dark:text-slate-400"> - {paymentInfo.installments}x</span>
+                        <span className="text-slate-400"> - {paymentInfo.installments}x</span>
                       )}
                     </span>
                   </div>
-
                   {paymentInfo.notes && (
-                    <p className="pl-6 text-xs text-slate-400 dark:text-slate-400">{paymentInfo.notes}</p>
+                    <p className="pl-6 text-xs text-slate-400">{paymentInfo.notes}</p>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Info sobre sincronização com Resumo */}
+            {/* Info sincronização */}
             <div className="flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
               <Info size={16} className="mt-0.5 flex-shrink-0 text-blue-400" />
               <p className="text-xs text-blue-300">
@@ -521,7 +592,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
         ) : (
           <div className="py-6 text-center">
             <Package size={32} className="mx-auto mb-2 text-slate-600" />
-            <p className="mb-4 text-sm text-slate-400 dark:text-slate-400">Nenhum produto adicionado</p>
+            <p className="mb-4 text-sm text-slate-400">Nenhum produto adicionado</p>
           </div>
         )}
 
@@ -534,7 +605,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
           Adicionar produto
         </button>
 
-        {/* Botão adicionar/editar parcelamento */}
+        {/* Botão condições de pagamento */}
         <button
           onClick={handleOpenPaymentModal}
           disabled={products.length === 0}
@@ -545,17 +616,14 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
           }`}
         >
           <CreditCard size={18} />
-          {paymentInfo ? "Editar condições de pagamento" : "Adicionar condições de pagamento"}
+          {paymentInfo?.payment_method ? "Editar condições de pagamento" : "Adicionar condições de pagamento"}
         </button>
 
-        {/* Modal de busca de produtos (renderizado no body via Portal) */}
+        {/* Modal busca de produtos */}
         {showProductSearch && ReactDOM.createPortal(
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={() => {
-              setShowProductSearch(false);
-              setSearchTerm("");
-            }}
+            onClick={() => { setShowProductSearch(false); setSearchTerm(""); }}
           >
             <div
               className="flex max-h-[600px] w-full max-w-lg flex-col rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-2xl"
@@ -564,20 +632,15 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
               <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 p-4">
                 <h3 className="font-semibold text-slate-900 dark:text-white">Adicionar Produto</h3>
                 <button
-                  onClick={() => {
-                    setShowProductSearch(false);
-                    setSearchTerm("");
-                  }}
-                  className="text-slate-400 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
+                  onClick={() => { setShowProductSearch(false); setSearchTerm(""); }}
+                  className="text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
                 >
                   <X size={20} />
                 </button>
               </div>
-
-              {/* Campo de busca dentro do modal */}
               <div className="border-b border-gray-200 dark:border-slate-700 p-4">
                 <div className="relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     value={searchTerm}
@@ -589,22 +652,18 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >
                       <X size={18} />
                     </button>
                   )}
                 </div>
               </div>
-
-              {/* Resultados */}
               <div className="flex-1 overflow-y-auto p-4">
                 {loading ? (
-                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-400">
-                    Carregando produtos...
-                  </div>
+                  <div className="p-8 text-center text-sm text-slate-400">Carregando produtos...</div>
                 ) : filteredProducts.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-400">
+                  <div className="p-8 text-center text-sm text-slate-400">
                     {searchTerm
                       ? "Nenhum produto encontrado com esse critério"
                       : availableProducts.length === 0
@@ -638,7 +697,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
           document.body
         )}
 
-        {/* Modal de condições de pagamento (renderizado no body via Portal) */}
+        {/* Modal condições de pagamento */}
         {showPaymentModal && ReactDOM.createPortal(
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
@@ -652,15 +711,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
                 <h3 className="font-semibold text-slate-900 dark:text-white">Condições de Pagamento</h3>
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="text-slate-400 dark:text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
+                  className="text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white"
                 >
                   <X size={20} />
                 </button>
               </div>
-
               <div className="p-6">
                 <div className="space-y-4">
-                  {/* Forma de pagamento */}
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
                       Forma de pagamento *
@@ -679,8 +736,6 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
                       <option value="Outro">Outro</option>
                     </select>
                   </div>
-
-                  {/* Número de parcelas */}
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
                       Número de parcelas
@@ -694,8 +749,6 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
                       className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
                     />
                   </div>
-
-                  {/* Observações */}
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
                       Observações
@@ -709,8 +762,6 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
                     />
                   </div>
                 </div>
-
-                {/* Botões */}
                 <div className="mt-6 flex gap-2">
                   <button
                     onClick={handleSavePayment}

@@ -10,7 +10,8 @@
       "Bash(npx tsc:*)",
       "Bash(python -c ':*)",
       "Bash(python -m py_compile app/services/card_service.py app/services/report_service.py)",
-      "Bash(grep -E \"\\\\.\\(py\\)$\")"
+      "Bash(grep -E \"\\\\.\\(py\\)$\")",
+      "Bash(Select-String -Path \"c:\\\\Users\\\\HS\\\\Documents\\\\GitHub\\\\hsgrowth-sistema\\\\backend\\\\app\\\\models\\\\card.py\" -Pattern \"quick\")"
     ]
   }
 }

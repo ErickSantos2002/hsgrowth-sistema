@@ -167,6 +167,8 @@ class PaymentInfo(BaseModel):
     payment_method: Optional[str] = Field(None, max_length=50, description="Forma de pagamento (Boleto, Cartão, PIX, etc)")
     installments: Optional[int] = Field(None, ge=1, le=120, description="Número de parcelas")
     notes: Optional[str] = Field(None, description="Observações sobre o pagamento")
+    global_discount: Optional[float] = Field(None, ge=0, description="Desconto global aplicado sobre o total dos produtos (valor ou percentual)")
+    global_discount_type: Optional[str] = Field(None, description="Tipo do desconto global: 'value' (R$) ou 'percent' (%)")
 
     model_config = {
         "json_schema_extra": {
