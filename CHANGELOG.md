@@ -5,6 +5,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.29] — 14/05/2026
+
+### Adicionado
+- **Produtos — Desconto global:** novo campo de desconto aplicado sobre o total geral, com toggle R$ ou %, painel de edição colapsável e preview em tempo real antes de salvar.
+- **Produtos — Desconto por produto:** campo de desconto no modo de edição de cada produto agora suporta R$ ou %, com toggle visual.
+- **Produtos — Linha de desconto total:** nova linha consolidando a soma dos descontos por produto e o desconto global.
+- **Motivo de perda:** opção "Terceirizam o serviço" adicionada nos três boards (Prospecção, Aquisição e Expansão).
+- **Histórico — Agrupamento por tarefa:** eventos da mesma tarefa (criação, edição, conclusão, reabertura, exclusão) agrupados em um único card colapsável. Registros anteriores ficam ocultos por padrão e podem ser expandidos clicando em "X registros anteriores".
+
+### Melhorado
+- **Produtos:** campos de valor e desconto agora aceitam vírgula como separador decimal (centavos).
+
+---
+
+## [1.7.28] — 06/05/2026
+
+### Adicionado
+- **Boards — Importação em lote:** novo botão "Importar" abre um assistente de 3 etapas para criar múltiplos cards via planilha .xlsx. Baixe o modelo, preencha os dados e faça upload — clientes, contatos e cards são criados automaticamente no Lead Novo do board Prospecção. Inclui prévia dos dados antes de confirmar a importação.
+
+---
+
 ## [1.7.27] — 05/05/2026
 
 ### Adicionado

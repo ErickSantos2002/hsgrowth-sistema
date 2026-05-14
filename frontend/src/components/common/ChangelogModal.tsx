@@ -25,6 +25,36 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.29",
+    date: "14/05/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Produtos — Desconto global: novo campo de desconto aplicado sobre o total geral, com toggle R$ ou %, painel colapsável e preview em tempo real antes de salvar.",
+      },
+      {
+        type: "feature",
+        text: "Produtos — Desconto por produto: campo de desconto no modo de edição de cada produto agora suporta R$ ou %, com toggle visual.",
+      },
+      {
+        type: "feature",
+        text: "Produtos — Linha de desconto total: nova linha consolidando a soma dos descontos por produto e o desconto global.",
+      },
+      {
+        type: "feature",
+        text: "Motivo de perda: opção 'Terceirizam o serviço' adicionada nos três boards (Prospecção, Aquisição e Expansão).",
+      },
+      {
+        type: "feature",
+        text: "Histórico — Agrupamento por tarefa: eventos da mesma tarefa (criação, edição, conclusão, reabertura, exclusão) agrupados em um único card colapsável. Registros anteriores ficam ocultos e podem ser expandidos ao clicar.",
+      },
+      {
+        type: "improvement",
+        text: "Produtos: campos de valor e desconto agora aceitam vírgula como separador decimal (centavos).",
+      },
+    ],
+  },
+  {
     version: "1.7.28",
     date: "06/05/2026",
     entries: [
