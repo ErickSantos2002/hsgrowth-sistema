@@ -50,6 +50,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
   const [globalDiscountInput, setGlobalDiscountInput] = useState<string>("");
   const [globalDiscountType, setGlobalDiscountType] = useState<DiscountType>("value");
   const [savingDiscount, setSavingDiscount] = useState(false);
+  const [editingGlobalDiscount, setEditingGlobalDiscount] = useState(false);
 
   // Modal de pagamento
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -243,6 +244,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
         },
         value: newCardValue,
       });
+      setEditingGlobalDiscount(false);
       onUpdate();
     } catch {
       showError("Erro ao salvar desconto global");
@@ -487,57 +489,101 @@ const ProductSection: React.FC<ProductSectionProps> = ({ card, onUpdate, readOnl
             })}
 
             {/* Totalizadores */}
-            <div className="space-y-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-3">
-              {/* Subtotal bruto */}
+            <div className="space-y-1.5 border-t border-gray-200/50 dark:border-slate-700/50 pt-3">
+              {/* Subtotal */}
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Subtotal:</span>
                 <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(calcSubtotal())}</span>
               </div>
 
-              {/* Desconto dos produtos (somente se houver) */}
+              {/* Desc. por produtos */}
               {calcProductDiscount() > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">Desc. produtos:</span>
-                  <span className="font-medium text-red-400">- {formatCurrency(calcProductDiscount())}</span>
+                  <span className="font-medium text-orange-400">- {formatCurrency(calcProductDiscount())}</span>
                 </div>
               )}
 
-              {/* Desconto global */}
-              <div className="flex items-center justify-between gap-2 text-sm">
-                <span className="flex-shrink-0 text-slate-400">Desc. global:</span>
+              {/* Desc. global — linha de valor + botão editar */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">Desc. global:</span>
                 {readOnly ? (
-                  calcGlobalDiscountAmount() > 0 ? (
-                    <span className="font-medium text-red-400">- {formatCurrency(calcGlobalDiscountAmount())}</span>
-                  ) : (
-                    <span className="text-slate-500">—</span>
-                  )
+                  <span className={`font-medium ${calcGlobalDiscountAmount() > 0 ? "text-orange-400" : "text-slate-500"}`}>
+                    {calcGlobalDiscountAmount() > 0 ? `- ${formatCurrency(calcGlobalDiscountAmount())}` : "—"}
+                  </span>
                 ) : (
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={globalDiscountInput}
-                      onChange={(e) => setGlobalDiscountInput(sanitizeDecimalInput(e.target.value))}
-                      placeholder={globalDiscountType === "percent" ? "0" : "0,00"}
-                      className="w-28 rounded border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800 px-2 py-1 text-right text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-                    />
-                    <DiscountTypeToggle value={globalDiscountType} onChange={setGlobalDiscountType} />
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-sm font-medium ${calcGlobalDiscountAmount() > 0 ? "text-orange-400" : "text-slate-500"}`}>
+                      {calcGlobalDiscountAmount() > 0 ? `- ${formatCurrency(calcGlobalDiscountAmount())}` : "—"}
+                    </span>
                     <button
-                      onClick={handleSaveGlobalDiscount}
-                      disabled={savingDiscount}
-                      className="rounded p-1 text-emerald-400 transition-colors hover:bg-emerald-500/20 disabled:opacity-50"
-                      title="Salvar desconto global"
+                      onClick={() => setEditingGlobalDiscount(!editingGlobalDiscount)}
+                      className={`rounded p-0.5 transition-colors ${editingGlobalDiscount ? "text-blue-400 bg-blue-500/20" : "text-slate-400 hover:text-blue-400 hover:bg-blue-500/10"}`}
+                      title="Editar desconto global"
                     >
-                      <Check size={16} />
+                      <Edit2 size={13} />
                     </button>
                   </div>
                 )}
               </div>
 
+              {/* Painel de edição do desconto global */}
+              {!readOnly && editingGlobalDiscount && (
+                <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3 space-y-2">
+                  <p className="text-xs font-medium text-blue-300">Desconto global sobre o total</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={globalDiscountInput}
+                      onChange={(e) => setGlobalDiscountInput(sanitizeDecimalInput(e.target.value))}
+                      placeholder={globalDiscountType === "percent" ? "Ex: 10" : "Ex: 500,00"}
+                      className="flex-1 rounded border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800 px-3 py-1.5 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                      autoFocus
+                    />
+                    <DiscountTypeToggle value={globalDiscountType} onChange={setGlobalDiscountType} />
+                  </div>
+                  {/* Preview */}
+                  {calcGlobalDiscountAmount() > 0 && (
+                    <p className="text-xs text-slate-400">
+                      = <span className="text-orange-400 font-medium">- {formatCurrency(calcGlobalDiscountAmount())}</span>
+                    </p>
+                  )}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={handleSaveGlobalDiscount}
+                      disabled={savingDiscount}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+                    >
+                      <Check size={13} />
+                      {savingDiscount ? "Salvando..." : "Aplicar"}
+                    </button>
+                    <button
+                      onClick={() => setEditingGlobalDiscount(false)}
+                      disabled={savingDiscount}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded border border-gray-300 dark:border-slate-600 bg-gray-200/50 dark:bg-slate-700/50 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-300 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700 disabled:opacity-50"
+                    >
+                      <X size={13} />
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Desconto total consolidado */}
+              {(calcProductDiscount() > 0 || calcGlobalDiscountAmount() > 0) && (
+                <div className="flex justify-between items-center rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 mt-1">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Desconto total:</span>
+                  <span className="font-semibold text-red-400">
+                    - {formatCurrency(calcProductDiscount() + calcGlobalDiscountAmount())}
+                  </span>
+                </div>
+              )}
+
               {/* Valor total */}
-              <div className="flex justify-between border-t border-gray-200/50 dark:border-slate-700/50 pt-2 text-base">
+              <div className="flex justify-between items-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2.5 mt-1">
                 <span className="font-semibold text-slate-900 dark:text-white">Valor total:</span>
-                <span className="text-lg font-semibold text-emerald-400">{formatCurrency(calcTotal())}</span>
+                <span className="text-xl font-bold text-emerald-400">{formatCurrency(calcTotal())}</span>
               </div>
             </div>
 
