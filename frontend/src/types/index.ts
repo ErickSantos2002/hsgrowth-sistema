@@ -609,6 +609,9 @@ export interface DashboardKPIs {
   // Reuniões qualificadas (SDR)
   qualified_meetings: number;
 
+  // Reuniões reagendadas (no-shows)
+  rescheduled_meetings: number;
+
   // Propostas geradas
   propostas_geradas: number;
 

@@ -563,6 +563,21 @@ class ReportService:
             *uf
         ).scalar() or 0
 
+        # Reuniões Reagendadas — tarefas do tipo "meeting" marcadas como no-show no período
+        rescheduled_meetings = self.db.query(
+            func.count(func.distinct(CardTask.id))
+        ).join(
+            Card, Card.id == CardTask.card_id
+        ).filter(
+            CardTask.task_type == "meeting",
+            CardTask.is_noshow == True,
+            CardTask.is_completed == True,
+            Card.sdr_id.isnot(None),
+            func.date(CardTask.completed_at) >= start_of_period,
+            func.date(CardTask.completed_at) <= end_of_period,
+            *uf
+        ).scalar() or 0
+
         # Top 5 vendedores do mês — sempre global (sem user filter) para que
         # vendedores/SDRs possam ver onde estão no ranking da equipe
         top_sellers_query = self.db.query(
@@ -869,6 +884,7 @@ class ReportService:
             propostas_geradas=propostas_geradas,
             meetings_received_from_sdr=meetings_received_from_sdr,
             qualified_meetings=qualified_meetings,
+            rescheduled_meetings=rescheduled_meetings,
             overdue_cards=overdue_cards,
             due_today=due_today,
             due_this_week=due_this_week,

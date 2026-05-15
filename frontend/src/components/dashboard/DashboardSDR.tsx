@@ -1,7 +1,7 @@
 import React from "react";
 import {
   UserPlus, Users, CalendarCheck, TrendingUp, TrendingDown,
-  AlertTriangle, Clock, Activity, Trophy, Medal, Award,
+  AlertTriangle, Clock, Activity, Trophy, Medal, Award, RotateCcw,
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -73,8 +73,8 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           Visão Geral · {periodLabel}
         </h2>
-        {/* Linha 1 — 5 cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 xl:grid-cols-5">
+        {/* Linha 1 — 6 cards (funil SDR) */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 xl:grid-cols-6">
           <KpiCard
             icon={<UserPlus size={18} className="text-blue-400" />}
             iconBg="bg-blue-500/20"
@@ -101,6 +101,15 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             className="sm:col-span-2 xl:col-span-1"
           />
           <KpiCard
+            icon={<TrendingUp size={18} className="text-cyan-400" />}
+            iconBg="bg-cyan-500/20"
+            label="Conectados"
+            value={conectados}
+            format="number"
+            sub="Cards no estágio Conectado"
+            className="sm:col-span-2 xl:col-span-1"
+          />
+          <KpiCard
             icon={<CalendarCheck size={18} className="text-emerald-400" />}
             iconBg="bg-emerald-500/20"
             label="Reuniões Agendadas"
@@ -111,23 +120,24 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             className="sm:col-span-2 xl:col-span-1"
           />
           <KpiCard
+            icon={<RotateCcw size={18} className="text-amber-400" />}
+            iconBg="bg-amber-500/20"
+            label="Reagendadas"
+            value={kpis.rescheduled_meetings ?? 0}
+            format="number"
+            highlight="yellow"
+            sub="No-shows reagendados no período"
+            className="sm:col-span-2 xl:col-span-1"
+          />
+          <KpiCard
             icon={<CalendarCheck size={18} className="text-teal-400" />}
             iconBg="bg-teal-500/20"
             label="Reuniões Qualificadas"
             value={kpis.qualified_meetings ?? 0}
             format="number"
             highlight="green"
-            sub="Realizadas pelo vendedor no período"
-            className="sm:col-span-3 xl:col-span-1"
-          />
-          <KpiCard
-            icon={<TrendingUp size={18} className="text-cyan-400" />}
-            iconBg="bg-cyan-500/20"
-            label="Conectados"
-            value={conectados}
-            format="number"
-            sub="Cards no estágio Conectado"
-            className="sm:col-span-3 xl:col-span-1"
+            sub="Realizadas sem no-show no período"
+            className="sm:col-span-2 xl:col-span-1"
           />
         </div>
 
