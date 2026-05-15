@@ -41,18 +41,33 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
   const conectados   = getStageCount(LIST_CONECTADO);
 
   const newLeads = kpis.new_cards_this_month;
+
+  // Taxa Lead → Prospecção
+  const taxaLeadProspeccao =
+    newLeads > 0 && emProspeccao !== null
+      ? Math.round((emProspeccao / newLeads) * 1000) / 10
+      : null;
+  // Taxa Prospecção → Conectado
   const taxaConexao =
-    newLeads > 0 && conectados !== null
-      ? Math.round((conectados / newLeads) * 1000) / 10
+    emProspeccao !== null && emProspeccao > 0 && conectados !== null
+      ? Math.round((conectados / emProspeccao) * 1000) / 10
       : null;
-  const taxaAgendamento =
-    newLeads > 0 && agendados !== null
-      ? Math.round((agendados / newLeads) * 1000) / 10
-      : null;
+  // Taxa Conectado → Agendado
   const taxaConectadoAgendado =
     conectados !== null && conectados > 0 && agendados !== null
       ? Math.round((agendados / conectados) * 1000) / 10
       : null;
+  // Taxa Lead → Agendado
+  const taxaLeadAgendado =
+    newLeads > 0 && agendados !== null
+      ? Math.round((agendados / newLeads) * 1000) / 10
+      : null;
+  // Taxa Prospecção → Agendado
+  const taxaAgendamento =
+    emProspeccao !== null && emProspeccao > 0 && agendados !== null
+      ? Math.round((agendados / emProspeccao) * 1000) / 10
+      : null;
+  // Taxa Agendado → Ganho
   const taxaAgendadoGanho =
     agendados !== null && agendados > 0
       ? Math.round((kpis.won_cards_this_month / agendados) * 1000) / 10
@@ -150,7 +165,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={taxaConexao}
             format="percent"
             highlight="blue"
-            sub="Leads → Conectado"
+            sub="Prospecção → Conectado"
           />
           <KpiCard
             icon={<CalendarCheck size={18} className="text-orange-400" />}
@@ -159,7 +174,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={taxaAgendamento}
             format="percent"
             highlight="orange"
-            sub="Leads → Agendado"
+            sub="Prospecção → Agendado"
           />
           <KpiCard
             icon={<TrendingUp size={18} className="text-emerald-400" />}
@@ -269,12 +284,14 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           Conversão
         </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {[
-            { label: "Lead → Conectado", value: taxaConexao },
-            { label: "Conectado → Agendado", value: taxaConectadoAgendado },
-            { label: "Lead → Agendado", value: taxaAgendamento },
-            { label: "Agendado → Ganho", value: taxaAgendadoGanho },
+            { label: "Lead → Prospecção",      value: taxaLeadProspeccao },
+            { label: "Prospecção → Conectado", value: taxaConexao },
+            { label: "Conectado → Agendado",   value: taxaConectadoAgendado },
+            { label: "Lead → Agendado",        value: taxaLeadAgendado },
+            { label: "Prospecção → Agendado",  value: taxaAgendamento },
+            { label: "Agendado → Ganho",       value: taxaAgendadoGanho },
           ].map((item, i) => (
             <div key={i} className="rounded-xl border border-gray-200 bg-white p-4 text-center dark:border-slate-700/50 dark:bg-slate-800/50">
               <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">{item.label}</p>
