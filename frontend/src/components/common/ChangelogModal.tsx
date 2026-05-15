@@ -25,6 +25,28 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.30",
+    date: "15/05/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Dashboard SDR — Reuniões Reagendadas: novo KPI no funil exibindo quantas reuniões tiveram no-show no período, posicionado entre Reuniões Agendadas e Reuniões Qualificadas.",
+      },
+      {
+        type: "feature",
+        text: "Dashboard SDR — Funil completo: sequência reorganizada para Novos Leads → Em Prospecção → Conectados → Reuniões Agendadas → Reagendadas → Reuniões Qualificadas.",
+      },
+      {
+        type: "improvement",
+        text: "Dashboard SDR — Taxa de Conexão e Taxa de Agendamento: passam a usar 'Em Prospecção' como base do cálculo (Prospecção → Conectado e Prospecção → Agendado).",
+      },
+      {
+        type: "improvement",
+        text: "Dashboard SDR — Seção Conversão: ampliada de 4 para 6 cards incluindo Lead → Prospecção, Prospecção → Conectado, Conectado → Agendado, Lead → Agendado, Prospecção → Agendado e Agendado → Ganho.",
+      },
+    ],
+  },
+  {
     version: "1.7.29",
     date: "14/05/2026",
     entries: [

@@ -5,6 +5,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.30] — 15/05/2026
+
+### Adicionado
+- **Dashboard SDR — Reuniões Reagendadas:** novo KPI no funil exibindo quantas reuniões tiveram no-show no período. Posicionado entre Reuniões Agendadas e Reuniões Qualificadas para refletir o fluxo real do funil.
+- **Dashboard SDR — Funil completo:** sequência de KPI cards reorganizada para: Novos Leads → Em Prospecção → Conectados → Reuniões Agendadas → Reagendadas → Reuniões Qualificadas.
+
+### Melhorado
+- **Dashboard SDR — Taxa de Conexão:** passa a usar "Em Prospecção" como base do cálculo (Prospecção → Conectado), substituindo a base de Novos Leads.
+- **Dashboard SDR — Taxa de Agendamento:** passa a usar "Em Prospecção" como base (Prospecção → Agendado), substituindo a base de Novos Leads.
+- **Dashboard SDR — Seção Conversão:** ampliada de 4 para 6 cards: Lead → Prospecção, Prospecção → Conectado, Conectado → Agendado, Lead → Agendado, Prospecção → Agendado e Agendado → Ganho.
+
+---
+
 ## [1.7.29] — 14/05/2026
 
 ### Adicionado
