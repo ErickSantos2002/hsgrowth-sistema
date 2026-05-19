@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.31] — 19/05/2026
+
+### Corrigido
+- **Boards — Movimentação retroativa:** ao voltar um card para uma etapa anterior no board de Prospecção, a validação de campos obrigatórios não é mais exibida. As regras continuam sendo aplicadas normalmente ao avançar.
+
+---
+
 ## [1.7.30] — 15/05/2026
 
 ### Adicionado

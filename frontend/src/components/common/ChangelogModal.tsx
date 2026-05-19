@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.31",
+    date: "19/05/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Boards — Movimentação retroativa: ao voltar um card para uma etapa anterior no board de Prospecção, a validação de campos obrigatórios não é mais exibida. As regras continuam sendo aplicadas normalmente ao avançar.",
+      },
+    ],
+  },
+  {
     version: "1.7.30",
     date: "15/05/2026",
     entries: [
