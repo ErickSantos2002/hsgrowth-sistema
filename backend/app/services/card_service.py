@@ -1258,7 +1258,7 @@ class CardService:
         # Isso garante que campos obrigatórios permaneçam preenchidos mesmo após
         # o avanço inicial. Produto só é exigido a partir da etapa 2.
         #
-        if source_list.board_id == 6 and source_index in (0, 1, 2):
+        if source_list.board_id == 6 and source_index in (0, 1, 2) and target_index > source_index:
             missing = []
             MIN_NOTE_LENGTH = 20
 
