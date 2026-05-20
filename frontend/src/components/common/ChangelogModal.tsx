@@ -33,6 +33,10 @@ const CHANGELOG: ChangelogVersion[] = [
         text: "Reuniões — Editar: novo botão em reuniões pendentes abre modal pré-preenchido para corrigir título, data, hora, duração, contato e descrição.",
       },
       {
+        type: "fix",
+        text: "Reuniões — Editar: ao alterar data/hora de uma reunião, o Microsoft Teams/Outlook agora envia automaticamente o e-mail de atualização para todos os participantes.",
+      },
+      {
         type: "feature",
         text: "Reuniões — Cancelar Reunião: novo botão cancela o evento no Teams/Outlook e move a reunião para a seção 'Reuniões canceladas' no card.",
       },
