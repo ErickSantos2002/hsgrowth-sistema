@@ -267,6 +267,7 @@ class MicrosoftGraphService:
             with httpx.Client(timeout=15) as client:
                 resp = client.patch(
                     f"{GRAPH_EVENTS_URL}/{event_id}",
+                    params={"sendUpdates": "all"},
                     json=payload,
                     headers=self._auth_headers(access_token),
                 )
