@@ -278,6 +278,34 @@ class MicrosoftGraphService:
         except Exception as e:
             raise ValueError(f"Erro ao atualizar evento no calendário: {e}")
 
+    def delete_calendar_event(
+        self,
+        user: User,
+        db: Session,
+        event_id: str,
+    ) -> None:
+        """
+        Cancela/exclui um evento do calendário do Outlook via DELETE.
+
+        Raises:
+            ValueError: Se o usuário não tiver token MS válido ou a chamada falhar
+        """
+        access_token = self._require_token(user, db)
+
+        try:
+            with httpx.Client(timeout=15) as client:
+                resp = client.delete(
+                    f"{GRAPH_EVENTS_URL}/{event_id}",
+                    headers=self._auth_headers(access_token),
+                )
+            if resp.status_code not in (204, 200):
+                error_msg = resp.json().get("error", {}).get("message", f"HTTP {resp.status_code}")
+                raise ValueError(f"Erro ao cancelar evento no calendário: {error_msg}")
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Erro ao cancelar evento no calendário: {e}")
+
     def _resolve_meeting_id_by_join_url(self, access_token: str, join_url: str) -> str:
         """
         Resolve o ID do online meeting a partir do join URL.

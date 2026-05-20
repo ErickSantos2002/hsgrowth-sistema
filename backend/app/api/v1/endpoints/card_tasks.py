@@ -965,6 +965,45 @@ async def create_teams_meeting(
 
 
 @router.post(
+    "/{task_id}/cancel-teams",
+    response_model=CardTaskResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Cancelar evento Teams da reunião",
+)
+def cancel_teams_meeting(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_not_viewer),
+):
+    """Remove o evento do calendário do Outlook e limpa os campos Teams da tarefa."""
+    from app.services.microsoft_graph_service import microsoft_graph_service
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    if task.teams_event_id:
+        try:
+            microsoft_graph_service.delete_calendar_event(
+                user=current_user,
+                db=db,
+                event_id=task.teams_event_id,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    task.teams_meeting_id = None
+    task.teams_join_url = None
+    task.teams_event_id = None
+    db.commit()
+    db.refresh(task)
+
+    service = CardTaskService(db)
+    return service.get_task(task_id)
+
+
+@router.post(
     "/{task_id}/fetch-transcript",
     response_model=CardTaskResponse,
     summary="Buscar transcrição da reunião e analisar com IA",

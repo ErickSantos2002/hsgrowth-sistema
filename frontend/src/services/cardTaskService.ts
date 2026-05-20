@@ -255,6 +255,11 @@ class CardTaskService {
     return response.data;
   }
 
+  async cancelTeamsMeeting(taskId: number): Promise<CardTask> {
+    const response = await api.post<CardTask>(`/api/v1/card-tasks/${taskId}/cancel-teams`);
+    return response.data;
+  }
+
   /**
    * Busca a transcrição da reunião Teams e executa análise com IA (GPT-4o).
    * Salva transcript_raw e transcript_analysis na atividade.

@@ -18,6 +18,8 @@ import {
   Trash2,
   Calendar,
   Copy,
+  Pencil,
+  CalendarX,
 } from "lucide-react";
 import cardTaskService, { CardTask } from "../../services/cardTaskService";
 import { showSuccess, showError } from "../../utils/toast";
@@ -78,6 +80,11 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<NewMeetingForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+
+  // Modal editar reunião
+  const [editingMeeting, setEditingMeeting] = useState<CardTask | null>(null);
+  const [editForm, setEditForm] = useState<NewMeetingForm>(EMPTY_FORM);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Loading states
   const [teamsLoadingId, setTeamsLoadingId] = useState<number | null>(null);
@@ -155,6 +162,12 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
   };
 
   const handleComplete = async (id: number) => {
+    const ok = await confirm({
+      title: "Concluir reunião?",
+      message: "Confirma que a reunião foi realizada com sucesso?",
+      confirmText: "Sim, concluir",
+    });
+    if (!ok) return;
     try {
       setActionLoadingId(id);
       await cardTaskService.toggleComplete(id, true);
@@ -207,6 +220,74 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
       showError("Erro ao excluir reunião");
     } finally {
       setActionLoadingId(null);
+    }
+  };
+
+  const handleCancelTeams = async (meeting: CardTask) => {
+    const ok = await confirm({
+      title: "Cancelar reunião?",
+      message: meeting.teams_join_url
+        ? "O evento será removido da agenda do Teams/Outlook. Esta ação não pode ser desfeita."
+        : "A reunião não possui evento no Teams. Deseja apenas remover os dados de reunião?",
+      confirmText: "Sim, cancelar",
+      isDanger: true,
+    });
+    if (!ok) return;
+    try {
+      setActionLoadingId(meeting.id);
+      await cardTaskService.cancelTeamsMeeting(meeting.id);
+      showSuccess("Reunião cancelada e removida da agenda.");
+      await loadMeetings();
+    } catch (error: any) {
+      showError(error.response?.data?.detail || "Erro ao cancelar reunião no Teams");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleOpenEdit = (meeting: CardTask) => {
+    if (meeting.due_date) {
+      const d = new Date(meeting.due_date);
+      const local = new Date(d.getTime() - 3 * 60 * 60 * 1000);
+      const date = local.toISOString().slice(0, 10);
+      const time = local.toISOString().slice(11, 16);
+      setEditForm({
+        title: meeting.title || "",
+        date,
+        time,
+        duration: String(meeting.duration_minutes || 30),
+        contact_name: meeting.contact_name || "",
+        description: meeting.description || "",
+      });
+    } else {
+      setEditForm({ ...EMPTY_FORM, title: meeting.title || "" });
+    }
+    setEditingMeeting(meeting);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMeeting) return;
+    if (!editForm.title.trim() || !editForm.date || !editForm.time) {
+      showError("Título, data e hora são obrigatórios");
+      return;
+    }
+    try {
+      setSavingEdit(true);
+      const dueDateUTC = convertBrazilToUTC(editForm.date, editForm.time);
+      await cardTaskService.update(editingMeeting.id, {
+        title: editForm.title.trim(),
+        due_date: dueDateUTC,
+        duration_minutes: parseInt(editForm.duration) || 30,
+        contact_name: editForm.contact_name.trim() || undefined,
+        description: editForm.description.trim() || undefined,
+      });
+      showSuccess("Reunião atualizada!");
+      setEditingMeeting(null);
+      await loadMeetings();
+    } catch (error: any) {
+      showError(error.response?.data?.detail || "Erro ao atualizar reunião");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -550,6 +631,22 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
                       {isActioning ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
                       No-Show
                     </button>
+                    <button
+                      onClick={() => handleOpenEdit(meeting)}
+                      disabled={isActioning}
+                      className="flex items-center gap-1.5 rounded border border-slate-600/60 bg-slate-700/30 px-2.5 py-1 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700/60 disabled:opacity-50"
+                    >
+                      <Pencil size={12} />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleCancelTeams(meeting)}
+                      disabled={isActioning}
+                      className="flex items-center gap-1.5 rounded border border-red-500/40 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+                    >
+                      {isActioning ? <Loader2 size={12} className="animate-spin" /> : <CalendarX size={12} />}
+                      Cancelar Reunião
+                    </button>
                   </>
                 )}
                 {isAdmin && (
@@ -632,6 +729,107 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
           )}
         </div>
       )}
+
+      {/* Modal editar reunião */}
+      <BaseModal
+        isOpen={!!editingMeeting}
+        onClose={() => setEditingMeeting(null)}
+        title="Editar Reunião"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              Título <span className="text-red-400">*</span>
+            </label>
+            <input
+              autoFocus
+              type="text"
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              placeholder="Ex: Apresentação de proposta"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Data <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="date"
+                value={editForm.date}
+                onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Hora <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="time"
+                value={editForm.time}
+                onChange={(e) => setEditForm({ ...editForm, time: e.target.value })}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">Duração (min)</label>
+              <select
+                value={editForm.duration}
+                onChange={(e) => setEditForm({ ...editForm, duration: e.target.value })}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+              >
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">1 hora</option>
+                <option value="90">1h30</option>
+                <option value="120">2 horas</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">Contato</label>
+              <input
+                type="text"
+                value={editForm.contact_name}
+                onChange={(e) => setEditForm({ ...editForm, contact_name: e.target.value })}
+                placeholder="Nome do participante"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-400">Descrição / Pauta</label>
+            <textarea
+              value={editForm.description}
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              placeholder="Tópicos da reunião, agenda, observações..."
+              rows={3}
+              className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={() => setEditingMeeting(null)}
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              disabled={savingEdit}
+              className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50"
+            >
+              {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Pencil size={14} />}
+              {savingEdit ? "Salvando..." : "Salvar alterações"}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
 
       {/* Modal nova reunião — usa BaseModal (portal) para não ficar preso no stacking context */}
       <BaseModal
