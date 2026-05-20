@@ -25,6 +25,32 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.32",
+    date: "20/05/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Reuniões — Editar: novo botão em reuniões pendentes abre modal pré-preenchido para corrigir título, data, hora, duração, contato e descrição.",
+      },
+      {
+        type: "feature",
+        text: "Reuniões — Cancelar Reunião: novo botão cancela o evento no Teams/Outlook e move a reunião para a seção 'Reuniões canceladas' no card.",
+      },
+      {
+        type: "feature",
+        text: "Reuniões — Seção de canceladas: reuniões canceladas ficam em seção colapsável separada ao final da aba, igual ao histórico de concluídas.",
+      },
+      {
+        type: "improvement",
+        text: "Reuniões — Confirmações: botões 'Concluir' e 'Excluir' agora pedem confirmação antes de agir, evitando cliques acidentais.",
+      },
+      {
+        type: "improvement",
+        text: "Reuniões — Excluir: botão só aparece em reuniões pendentes. Reuniões concluídas ou canceladas não podem ser excluídas.",
+      },
+    ],
+  },
+  {
     version: "1.7.31",
     date: "19/05/2026",
     entries: [

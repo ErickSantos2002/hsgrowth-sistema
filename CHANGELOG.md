@@ -5,6 +5,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.32] — 20/05/2026
+
+### Adicionado
+- **Reuniões — Editar:** novo botão "Editar" em reuniões pendentes abre modal pré-preenchido para corrigir título, data, hora, duração, contato e descrição.
+- **Reuniões — Cancelar Reunião:** novo botão cancela o evento no Teams/Outlook e move a reunião para a seção "Reuniões canceladas" no card.
+- **Reuniões — Seção de canceladas:** reuniões canceladas ficam em seção colapsável separada ao final da aba, igual ao histórico de concluídas.
+
+### Melhorado
+- **Reuniões — Confirmações:** botões "Concluir" e "Excluir" agora pedem confirmação antes de agir, evitando cliques acidentais.
+- **Reuniões — Excluir:** botão só aparece em reuniões pendentes. Reuniões concluídas ou canceladas não podem ser excluídas.
+
+---
+
 ## [1.7.31] — 19/05/2026
 
 ### Corrigido
