@@ -74,6 +74,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [showHistory, setShowHistory] = useState(false);
+  const [showCancelled, setShowCancelled] = useState(false);
   const [showTranscriptIds, setShowTranscriptIds] = useState<Set<number>>(new Set());
 
   // Modal nova reunião
@@ -113,8 +114,9 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
     loadMeetings(true);
   }, [cardId]);
 
-  const pending = meetings.filter((m) => !m.is_completed);
-  const completed = meetings.filter((m) => m.is_completed);
+  const pending = meetings.filter((m) => !m.is_completed && !m.is_cancelled);
+  const completed = meetings.filter((m) => m.is_completed && !m.is_cancelled);
+  const cancelled = meetings.filter((m) => m.is_cancelled);
 
   const toggleExpand = (id: number) => {
     setExpandedIds((prev) => {
@@ -206,7 +208,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
   const handleDelete = async (id: number) => {
     const ok = await confirm({
       title: "Excluir reunião?",
-      message: "Esta ação não pode ser desfeita.",
+      message: "Esta ação apaga o registro permanentemente. Não pode ser desfeita.",
       confirmText: "Excluir",
       isDanger: true,
     });
@@ -649,7 +651,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
                     </button>
                   </>
                 )}
-                {isAdmin && (
+                {isAdmin && !meeting.is_completed && !meeting.is_cancelled && (
                   <button
                     onClick={() => handleDelete(meeting.id)}
                     disabled={isActioning}
@@ -699,7 +701,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
       )}
 
       {/* Reuniões pendentes */}
-      {!loading && pending.length === 0 && completed.length === 0 && (
+      {!loading && pending.length === 0 && completed.length === 0 && cancelled.length === 0 && (
         <div className="rounded-lg border border-dashed border-slate-700/50 py-8 text-center">
           <Users size={24} className="mx-auto mb-2 text-slate-600" />
           <p className="text-sm text-slate-500">Nenhuma reunião registrada</p>
@@ -725,6 +727,25 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
           {showHistory && (
             <div className="mt-2 space-y-2">
               {completed.map((m) => renderMeetingCard(m, true))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Reuniões canceladas */}
+      {!loading && cancelled.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowCancelled((v) => !v)}
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            {showCancelled ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            <CalendarX size={12} className="text-red-400/60" />
+            {cancelled.length} reunião{cancelled.length !== 1 ? "s" : ""} cancelada{cancelled.length !== 1 ? "s" : ""}
+          </button>
+          {showCancelled && (
+            <div className="mt-2 space-y-2">
+              {cancelled.map((m) => renderMeetingCard(m, true))}
             </div>
           )}
         </div>

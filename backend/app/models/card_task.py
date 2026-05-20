@@ -76,6 +76,8 @@ class CardTask(Base, TimestampMixin):
     is_valid = Column(Boolean, nullable=True)
     # Indica que a reunião ocorreu mas o contato não compareceu (NoShow)
     is_noshow = Column(Boolean, default=False, nullable=False)
+    # Indica que a reunião foi cancelada (evento removido da agenda)
+    is_cancelled = Column(Boolean, default=False, nullable=False)
 
     # Informações adicionais
     location = Column(String(255), nullable=True)  # Local (físico ou virtual)

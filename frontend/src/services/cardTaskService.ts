@@ -20,6 +20,8 @@ export interface CardTask {
   status: "free" | "busy";
   is_completed: boolean;
   is_valid?: boolean | null;
+  is_noshow?: boolean;
+  is_cancelled?: boolean;
   completed_at?: string;
   created_at: string;
   updated_at: string;
@@ -30,6 +32,7 @@ export interface CardTask {
   // Microsoft Teams
   teams_meeting_id?: string | null;
   teams_join_url?: string | null;
+  teams_event_id?: string | null;
   transcript_raw?: string | null;
   transcript_analysis?: string | null;
 }

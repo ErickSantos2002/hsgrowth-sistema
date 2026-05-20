@@ -137,6 +137,7 @@ class CardTaskResponse(BaseModel):
     completed_at: Optional[datetime] = Field(None, description="Data/hora de conclusão")
     is_valid: Optional[bool] = Field(None, description="NULL=não concluída, TRUE=válida, FALSE=não válida")
     is_noshow: bool = Field(False, description="Se a reunião teve NoShow (contato não compareceu)")
+    is_cancelled: bool = Field(False, description="Se a reunião foi cancelada")
     created_at: datetime = Field(..., description="Data de criação")
     updated_at: datetime = Field(..., description="Data da última atualização")
 

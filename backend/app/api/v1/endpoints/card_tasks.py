@@ -993,6 +993,7 @@ def cancel_teams_meeting(
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
+    task.is_cancelled = True
     task.teams_meeting_id = None
     task.teams_join_url = None
     task.teams_event_id = None
