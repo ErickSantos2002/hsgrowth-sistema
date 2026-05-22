@@ -1261,6 +1261,7 @@ const CardDetails: React.FC = () => {
                 {card && (
                   <MeetingSection
                     cardId={card.id}
+                    assignedToId={card.assigned_to_id}
                     onCountChange={setMeetingCount}
                     readOnly={isReadOnly}
                     onCardUpdate={loadCardData}

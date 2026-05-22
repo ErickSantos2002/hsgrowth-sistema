@@ -33,6 +33,7 @@ import BaseModal from "../common/BaseModal";
 
 interface MeetingSectionProps {
   cardId: number;
+  assignedToId?: number | null;
   onCountChange?: (count: number) => void;
   readOnly?: boolean;
   /** Chamado após ações que movem o card (ex: NoShow) para atualizar o pipeline */
@@ -66,7 +67,7 @@ const EMPTY_FORM: NewMeetingForm = {
   description: "",
 };
 
-const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, readOnly, onCardUpdate }) => {
+const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, onCountChange, readOnly, onCardUpdate }) => {
   const { confirm } = useConfirm();
   const { user } = useAuth();
   const isAdmin = user?.role?.toLowerCase() === "admin" || user?.role?.toLowerCase() === "manager";
@@ -683,13 +684,25 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, onCountChange, 
           )}
         </div>
         {!readOnly && (
-          <button
-            onClick={() => { setForm(EMPTY_FORM); setShowModal(true); }}
-            className="flex items-center gap-1.5 rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 py-1.5 text-xs font-medium text-purple-400 transition-colors hover:bg-purple-500/20"
-          >
-            <Plus size={13} />
-            Nova Reunião
-          </button>
+          <div className="relative group">
+            <button
+              onClick={() => { if (assignedToId) { setForm(EMPTY_FORM); setShowModal(true); } }}
+              disabled={!assignedToId}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                assignedToId
+                  ? "border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"
+                  : "border-slate-700 bg-slate-800/50 text-slate-500 cursor-not-allowed"
+              }`}
+            >
+              <Plus size={13} />
+              Nova Reunião
+            </button>
+            {!assignedToId && (
+              <div className="absolute right-0 top-full mt-1.5 z-10 hidden group-hover:block w-56 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-400 shadow-lg">
+                Vincule um vendedor ao card antes de agendar uma reunião.
+              </div>
+            )}
+          </div>
         )}
       </div>
 

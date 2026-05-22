@@ -105,10 +105,21 @@ class CardTaskService:
 
     def create_task(self, task_data: CardTaskCreate, current_user: User) -> CardTaskResponse:
         """Cria uma nova tarefa"""
-        # TODO: Verificar se o card existe e se o usuário tem permissão
+        from app.models.card import Card
+        from fastapi import HTTPException
 
-        # Se não foi especificado assigned_to_id, atribui ao usuário atual
-        if task_data.assigned_to_id is None:
+        task_type_value = task_data.task_type if isinstance(task_data.task_type, str) else task_data.task_type.value
+
+        if task_type_value == "meeting":
+            card = self.db.query(Card).filter(Card.id == task_data.card_id).first()
+            if not card or not card.assigned_to_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Não é possível agendar uma reunião sem um vendedor vinculado ao card."
+                )
+            if task_data.assigned_to_id is None:
+                task_data.assigned_to_id = card.assigned_to_id
+        elif task_data.assigned_to_id is None:
             task_data.assigned_to_id = current_user.id
 
         task = self.repository.create(task_data)
