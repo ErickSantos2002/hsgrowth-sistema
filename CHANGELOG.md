@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.33] — 22/05/2026
+
+### Corrigido
+- **Reuniões — Responsável:** ao criar uma reunião, o sistema agora atribui corretamente ao vendedor do card em vez de quem está criando. Resolvia caso em que reuniões criadas pelo SDR ficavam no nome dele, sumindo do dashboard do vendedor.
+
+### Melhorado
+- **Reuniões — Validação:** não é mais possível agendar uma reunião em cards sem vendedor vinculado. O botão "Nova Reunião" fica desabilitado com aviso explicativo até que um vendedor seja atribuído ao card.
+
+---
+
 ## [1.7.32] — 20/05/2026
 
 ### Adicionado

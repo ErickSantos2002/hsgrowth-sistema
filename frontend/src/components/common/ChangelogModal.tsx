@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.33",
+    date: "22/05/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Reuniões — Responsável: ao criar uma reunião, o sistema agora atribui corretamente ao vendedor do card em vez de quem está criando. Corrige casos em que reuniões feitas pelo SDR ficavam no nome dele e não apareciam no dashboard do vendedor.",
+      },
+      {
+        type: "improvement",
+        text: "Reuniões — Validação: não é mais possível agendar uma reunião em cards sem vendedor vinculado. O botão 'Nova Reunião' fica desabilitado com aviso explicativo até que um vendedor seja atribuído ao card.",
+      },
+    ],
+  },
+  {
     version: "1.7.32",
     date: "20/05/2026",
     entries: [
