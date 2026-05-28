@@ -10,13 +10,16 @@ A planilha tem **2189 linhas** de empresas. O tamanho e a distribuição de cada
 O controle de quais já foram importadas fica na coluna **`Status_Importacao`** (col 51) do arquivo `_fixed.xlsx` — linhas marcadas como `Importado` são puladas automaticamente na próxima execução.
 
 **SDRs e seus IDs no sistema:**
-| Nome na planilha | Nome completo no sistema | ID |
-|---|---|---|
-| Ãhwaryoné | Ãhwaryoné Barbosa Bandeira De Melo | 14 |
-| Miguel | Miguel Luiz Pereira de Melo | 16 |
-| Lucas | Lucas | 17 |
-| Sérgio | Sérgio Viana | 15 | ⚠️ Existe outro usuário chamado "Sérgio" (id=12) que não é SDR. ✅ Resolvido via `SDR_NAME_MAP` a partir do Lote 5. |
-| Claudia | Claudia | 8 |
+| Nome na planilha | Nome completo no sistema | ID | Status |
+|---|---|---|---|
+| Miguel | Miguel Luiz Pereira de Melo | 16 | ✅ Ativo |
+| Claudia | Claudia | 8 | ✅ Ativo |
+| Karolaine | Karolaine Martins | 9 | ✅ Ativo |
+| Ãhwaryoné | Ãhwaryoné Barbosa Bandeira De Melo | 14 | ❌ Inativo (desligado 12/05/2026) |
+| Lucas | Lucas | 17 | ❌ Inativo (desligado 12/05/2026) |
+| Sérgio | Sérgio Viana | 15 | ❌ Inativo (desligado anteriormente) |
+
+> ⚠️ **Ao gerar novos lotes, usar apenas os SDRs ativos: Claudia (8), Karolaine (9) e Miguel (16).**
 
 ---
 
@@ -63,7 +66,7 @@ python scripts/imports/fix_novos_sdr_lote2.py
 ```
 Gera: `Planilha_Importacao_CRM_Novos_SDR_lote2.xlsx`
 
-**Para lotes futuros:** crie um novo script baseado no `fix_novos_sdr_lote2.py`, ajustando `SDR_NAME`, `CARDS_TO_IMPORT` e `OUTPUT_LOTE`.
+**Para lotes futuros:** crie um novo script baseado no `fix_novos_sdr_lote6.py`, ajustando `SDRS`, `CARDS_PER_SDR` e `OUTPUT_LOTE`. Usar apenas SDRs ativos: Claudia (8), Karolaine (9) e Miguel (16).
 
 Resultado esperado de qualquer script:
 - Atualiza `_fixed.xlsx` marcando as linhas processadas como `Importado`
@@ -198,13 +201,21 @@ db.close()
 | Lote 3 | 13/04/2026 | 300 | Ãhwaryoné, Miguel, Lucas, Sérgio, Claudia, Karolaine | 5451–5749 + 5750 | ✅ Importado |
 | Lote 4 | 22/04/2026 | 300 | Ãhwaryoné, Miguel, Lucas, Sérgio, Claudia, Karolaine | 5792–6091 | ✅ Importado |
 | Lote 5 | 27/04/2026 | 180 | Ãhwaryoné, Miguel, Lucas, Sérgio, Claudia, Karolaine | 6344–6523 | ✅ Importado |
+| Lote 6 | 11/05/2026 | 150 | Ãhwaryoné, Miguel, Lucas, Claudia, Karolaine | 6689–6838 | ✅ Importado |
+| Lote 7 | 28/05/2026 | 150 | Claudia, Karolaine, Miguel | 7051–7200 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
 **Obs. Lote 3:** 299 importados pelo script + 1 manual (EFITRANS TRANSPORTES LTDA, id=5750, Ãhwaryoné). Karolaine Martins (id=9) incluída pela primeira vez.
 
 **Obs. Lote 5:** A partir deste lote, `import_from_planilha.py` preenche automaticamente: `deal_type="Nova Venda"` (Card), `relationship_type="Lead"` e `commercial_activity="Ativo"` (Client). SDRs não precisam mais preencher esses campos manualmente.
 
-**Total importado:** 1030 leads | **Disponíveis na planilha:** 1159
+**Obs. Lote 6:** Último lote com Aury (id=14). A partir do Lote 7 usar apenas Claudia, Karolaine e Miguel.
+
+**Obs. Desligamento Aury e Lucas (12/05/2026):** 169 cards movidos da Prospecção para Lead Novo (86 Aury + 83 Lucas) e 239 cards redistribuídos entre os SDRs ativos via round-robin (Claudia: 80, Karolaine: 80, Miguel: 79). 2.345 tarefas reatribuídas automaticamente.
+
+**Obs. Lote 7:** Primeiro lote apenas com SDRs ativos (Claudia, Karolaine, Miguel). 50 cards cada, 0 erros, 132 clientes criados e 18 reutilizados.
+
+**Total importado:** 1330 leads | **Disponíveis na planilha:** 859
 
 ---
 

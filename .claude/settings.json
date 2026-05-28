@@ -18,7 +18,11 @@
       "Bash(PYTHONPATH=. python scripts/imports/redistribuir_cards_sergio.py --dry)",
       "Bash(PYTHONPATH=. python scripts/imports/redistribuir_cards_sergio.py)",
       "Bash(PYTHONPATH=. python scripts/imports/reatribuir_tarefas_sergio.py --dry)",
-      "Bash(PYTHONPATH=. python scripts/imports/reatribuir_tarefas_sergio.py)"
+      "Bash(PYTHONPATH=. python scripts/imports/reatribuir_tarefas_sergio.py)",
+      "Bash(docker stop *)",
+      "Bash(python3 -c ' *)",
+      "Bash(python scripts/imports/fix_novos_sdr_lote6.py)",
+      "Bash(python scripts/imports/import_from_planilha.py d:/GitHub/hsgrowth-sistema/backend/scripts/imports/Planilha_Importacao_CRM_Novos_SDR_lote6.xlsx)"
     ]
   }
 }

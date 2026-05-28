@@ -15,7 +15,16 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\HS\\\\Documents\\\\GitHub\\\\hsgrowth-sistema\" -Recurse -Filter \"*report*\" -File -ErrorAction SilentlyContinue)",
       "Bash(Select-Object FullName)",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\HS\\\\Documents\\\\GitHub\\\\hsgrowth-sistema\" -Recurse -Filter \"*dashboard*\" -File -ErrorAction SilentlyContinue)",
-      "Bash(findstr -i kpi)"
+      "Bash(findstr -i kpi)",
+      "Bash(python -c ' *)",
+      "Bash(python C:\\\\Temp\\\\relatorio_aquisicao.py)",
+      "Bash(python \"C:/Temp/relatorio_aquisicao.py\")",
+      "Bash(python \"C:/Temp/investigar_perdidos.py\")",
+      "Bash(python \"C:/Temp/relatorio_aquisicao2.py\")",
+      "Bash(python scripts/imports/fix_novos_sdr_lote7.py)",
+      "Bash(python scripts/imports/import_from_planilha.py d:/GitHub/hsgrowth-sistema/backend/scripts/imports/Planilha_Importacao_CRM_Novos_SDR_lote7.xlsx)",
+      "Bash(python \"C:/Temp/filtro_outbound.py\")",
+      "Bash(python \"C:/Temp/negociacao_valor.py\")"
     ]
   }
 }
