@@ -545,23 +545,29 @@ class ReportService:
             *uf
         ).scalar() or 0
 
-        # Reuniões Qualificadas — tarefas do tipo "meeting" concluídas com sucesso
-        # (is_completed=True, is_noshow=False) em cards que têm SDR vinculado,
-        # dentro do período. Representa reuniões que o SDR agendou e o vendedor
-        # compareceu e marcou como concluída.
-        qualified_meetings = self.db.query(
-            func.count(func.distinct(CardTask.id))
-        ).join(
-            Card, Card.id == CardTask.card_id
-        ).filter(
-            CardTask.task_type == "meeting",
-            CardTask.is_completed == True,
-            CardTask.is_noshow == False,
-            Card.sdr_id.isnot(None),
-            func.date(CardTask.completed_at) >= start_of_period,
-            func.date(CardTask.completed_at) <= end_of_period,
-            *uf
-        ).scalar() or 0
+        # Reuniões Qualificadas — cards com SDR vinculado que ENTRARAM na lista
+        # "Qualificação" do board Aquisição no período.
+        # Um card entra em Qualificação quando o vendedor avança manualmente,
+        # sinalizando que a reunião foi qualificada — sem depender de marcação manual do vendedor.
+        _qualificacao_list_id = self.db.query(BoardList.id).filter(
+            BoardList.board_id == 7,
+            BoardList.name == "Qualificação"
+        ).scalar()
+
+        if _qualificacao_list_id:
+            qualified_meetings = self.db.query(
+                func.count(func.distinct(CardListHistory.card_id))
+            ).join(
+                Card, Card.id == CardListHistory.card_id
+            ).filter(
+                CardListHistory.list_id == _qualificacao_list_id,
+                func.date(CardListHistory.entered_at) >= start_of_period,
+                func.date(CardListHistory.entered_at) <= end_of_period,
+                Card.sdr_id.isnot(None),
+                *uf
+            ).scalar() or 0
+        else:
+            qualified_meetings = 0
 
         # Reuniões Reagendadas — tarefas do tipo "meeting" marcadas como no-show no período
         rescheduled_meetings = self.db.query(

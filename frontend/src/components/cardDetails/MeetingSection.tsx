@@ -28,6 +28,8 @@ import { useAuth } from "../../context/AuthContext";
 import {
   formatBrazilDate,
   convertBrazilToUTC,
+  extractBrazilDateForInput,
+  extractBrazilTimeForInput,
 } from "../../utils/timezone";
 import BaseModal from "../common/BaseModal";
 
@@ -250,10 +252,8 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
 
   const handleOpenEdit = (meeting: CardTask) => {
     if (meeting.due_date) {
-      const d = new Date(meeting.due_date);
-      const local = new Date(d.getTime() - 3 * 60 * 60 * 1000);
-      const date = local.toISOString().slice(0, 10);
-      const time = local.toISOString().slice(11, 16);
+      const date = extractBrazilDateForInput(meeting.due_date);
+      const time = extractBrazilTimeForInput(meeting.due_date);
       setEditForm({
         title: meeting.title || "",
         date,

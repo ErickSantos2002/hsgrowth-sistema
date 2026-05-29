@@ -16,9 +16,13 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
    * Formata a data de vencimento
    */
   const formatDueDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const isOverdue = date < now;
+    // Extrai só YYYY-MM-DD e constrói como data local para evitar shift de fuso horário
+    const datePart = dateString.split("T")[0];
+    const [year, month, day] = datePart.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isOverdue = date < today;
 
     return {
       text: date.toLocaleDateString("pt-BR", {
