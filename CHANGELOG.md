@@ -5,6 +5,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.34] — 29/05/2026
+
+### Corrigido
+- **Kanban — Data de fechamento:** data esperada de fechamento exibida nos cards do kanban não avançava mais um dia por conta de conversão de fuso horário incorreta.
+- **Reuniões — Editar:** horário exibido no modal de edição estava 3 horas adiantado (UTC em vez de horário de Brasília). Agora mostra corretamente o horário local.
+
+### Melhorado
+- **Dashboard SDR — Reuniões Qualificadas:** passa a contar cards que entraram na etapa "Qualificação" do board Aquisição no período, em vez de depender do vendedor marcar a reunião manualmente como válida. Como Qualificação só é acessível vindo de Reunião Agendada, a métrica reflete fielmente as reuniões que avançaram no funil.
+
+---
+
 ## [1.7.33] — 22/05/2026
 
 ### Corrigido
