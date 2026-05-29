@@ -203,7 +203,8 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, readOnl
    * Atualiza a data esperada de fechamento
    */
   const handleUpdateDueDate = async (value: string) => {
-    const dateStr = value.includes("T") ? value : `${value}T12:00:00`;
+    // Usa meio-dia UTC explícito (Z) para evitar qualquer interpretação de fuso
+    const dateStr = value.includes("T") ? value : `${value}T12:00:00Z`;
     await onUpdate({ due_date: dateStr });
   };
 
@@ -307,7 +308,11 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, readOnl
    */
   const formatDate = (date: string | null) => {
     if (!date) return "";
-    return new Date(date).toLocaleDateString("pt-BR");
+    // Extrai YYYY-MM-DD e cria data local para evitar que string só de data
+    // seja interpretada como UTC meia-noite (causaria -1 dia no Brasil UTC-3)
+    const datePart = date.substring(0, 10);
+    const [year, month, day] = datePart.split("-").map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString("pt-BR");
   };
 
   /**

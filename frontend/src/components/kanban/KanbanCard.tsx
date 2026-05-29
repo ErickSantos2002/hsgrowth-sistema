@@ -16,10 +16,10 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
    * Formata a data de vencimento
    */
   const formatDueDate = (dateString: string) => {
-    // Extrai só YYYY-MM-DD e constrói como data local para evitar shift de fuso horário
-    const datePart = dateString.split("T")[0];
+    // Pega sempre os 10 primeiros caracteres (YYYY-MM-DD) independente do separador T ou espaço
+    const datePart = dateString.substring(0, 10);
     const [year, month, day] = datePart.split("-").map(Number);
-    const date = new Date(year, month - 1, day);
+    const date = new Date(year, month - 1, day); // data local, sem conversão de fuso
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const isOverdue = date < today;
