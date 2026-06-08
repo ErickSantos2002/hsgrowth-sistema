@@ -71,6 +71,11 @@ from app.models.cadence import CadenceTemplate, CadenceStep, CardCadence
 # Templates de e-mail
 from app.models.email_template import EmailTemplate
 
+# Modelos de Serviços (tabelas independentes das de Vendas)
+from app.models.service_board import ServiceBoard
+from app.models.service_list import ServiceList
+from app.models.service_card import ServiceCard
+
 # Lista de todos os modelos (útil para imports)
 __all__ = [
     "Base",
@@ -112,4 +117,7 @@ __all__ = [
     "Cadencia",
     "CadenciaItem",
     "EmailTemplate",
+    "ServiceBoard",
+    "ServiceList",
+    "ServiceCard",
 ]

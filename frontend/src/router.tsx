@@ -9,6 +9,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Boards from './pages/Boards';
 import KanbanBoard from './pages/KanbanBoard';
+import ServiceBoards from './pages/ServiceBoards';
+import ServiceKanban from './pages/ServiceKanban';
 import CardDetails from './pages/CardDetails';
 import Clients from './pages/Clients';
 import Persons from './pages/Persons';
@@ -80,8 +82,8 @@ const AppRoutes: React.FC = () => (
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/boards" element={<Boards category="vendas" />} />
       <Route path="/boards/:boardId" element={<KanbanBoard />} />
-      <Route path="/servicos" element={<Boards category="servicos" />} />
-      <Route path="/servicos/:boardId" element={<KanbanBoard />} />
+      <Route path="/servicos" element={<ServiceBoards />} />
+      <Route path="/servicos/:boardId" element={<ServiceKanban />} />
       <Route path="/cards/:cardId" element={<CardDetails />} />
       <Route path="/activities" element={<Activities />} />
       <Route path="/clients" element={<Clients />} />
