@@ -15,6 +15,7 @@ class BoardBase(BaseModel):
     description: Optional[str] = Field(None, max_length=1000, description="Descrição do board")
     color: Optional[str] = Field("#3B82F6", max_length=50, description="Cor do board (hexadecimal)")
     icon: Optional[str] = Field("grid", max_length=50, description="Ícone do board (Lucide)")
+    category: Optional[str] = Field("vendas", max_length=20, description="Categoria do board: vendas ou servicos")
 
 
 class BoardCreate(BoardBase):
@@ -44,6 +45,7 @@ class BoardUpdate(BaseModel):
     color: Optional[str] = Field(None, max_length=50, description="Cor do board (hexadecimal)")
     icon: Optional[str] = Field(None, max_length=50, description="Ícone do board (Lucide)")
     is_deleted: Optional[bool] = Field(None, description="Board arquivado (soft delete)")
+    category: Optional[str] = Field(None, max_length=20, description="Categoria do board: vendas ou servicos")
 
     model_config = {
         "json_schema_extra": {

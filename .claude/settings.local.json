@@ -26,7 +26,17 @@
       "Bash(python \"C:/Temp/filtro_outbound.py\")",
       "Bash(python \"C:/Temp/negociacao_valor.py\")",
       "Bash(python scripts/imports/fix_novos_sdr_lote8.py)",
-      "Bash(python scripts/imports/import_from_planilha.py d:/GitHub/hsgrowth-sistema/backend/scripts/imports/Planilha_Importacao_CRM_Novos_SDR_lote8.xlsx)"
+      "Bash(python scripts/imports/import_from_planilha.py d:/GitHub/hsgrowth-sistema/backend/scripts/imports/Planilha_Importacao_CRM_Novos_SDR_lote8.xlsx)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\HS\\\\Documents\\\\GitHub\\\\hsgrowth-sistema\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(alembic upgrade *)",
+      "Bash(.venv/Scripts/alembic upgrade *)",
+      "Bash(python3 -c \"import alembic; print\\(alembic.__file__\\)\")",
+      "Bash(pip show *)",
+      "Bash(find /c/Users/HS -name \"alembic.exe\" 2>/dev/null | head -5; find /c/Users/HS -name \"alembic\" -type f 2>/dev/null | head -5)",
+      "Read(//c/Users/HS/**)",
+      "Bash(docker exec *)",
+      "PowerShell(Get-Process | Where-Object {$_.Name -match \"python|uvicorn|fastapi\"} | Select-Object Name, Id, CPU | Format-Table)"
     ]
   }
 }

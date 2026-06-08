@@ -21,6 +21,7 @@ import { showError } from "../../utils/toast";
 
 interface BoardModalProps {
   board?: Board | null;
+  defaultCategory?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -29,7 +30,7 @@ interface BoardModalProps {
  * Modal para criar ou editar boards na página de listagem
  * Gerencia a criação e edição de boards com validação
  */
-const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) => {
+const BoardModal: React.FC<BoardModalProps> = ({ board, defaultCategory, onClose, onSuccess }) => {
   const isEditing = !!board;
 
   // Estado do formulário
@@ -142,6 +143,7 @@ const BoardModal: React.FC<BoardModalProps> = ({ board, onClose, onSuccess }) =>
           description: formData.description.trim() || undefined,
           color: formData.color,
           icon: formData.icon,
+          category: defaultCategory || "vendas",
         };
 
         await boardService.create(createData);

@@ -25,6 +25,9 @@ class Board(Base, TimestampMixin, SoftDeleteMixin):
     # Tipo do board para gamificação (prospecting, acquisition, None = não pontua)
     board_type = Column(String(20), nullable=True)
 
+    # Categoria do board: "vendas" ou "servicos"
+    category = Column(String(20), nullable=False, server_default="vendas")
+
     # Personalização visual
     color = Column(String(50), nullable=True, default="#3B82F6")  # Cor hexadecimal
     icon = Column(String(50), nullable=True, default="grid")  # Nome do ícone Lucide

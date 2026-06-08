@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle, Trello, Download, Upload, CalendarDays } from "lucide-react";
+import { Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle, Trello, Download, Upload, CalendarDays, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 import boardService from "../services/boardService";
 import { Board } from "../types";
@@ -12,7 +12,11 @@ import EmptyState from "../components/common/EmptyState";
 import { useAuth } from "../hooks/useAuth";
 import { useConfirm } from "../contexts/ConfirmContext";
 
-const Boards: React.FC = () => {
+interface BoardsProps {
+  category?: "vendas" | "servicos";
+}
+
+const Boards: React.FC<BoardsProps> = ({ category }) => {
   const { user } = useAuth(); // Pegar usuário logado
   const { confirm } = useConfirm();
   const [boards, setBoards] = useState<Board[]>([]);
@@ -33,7 +37,7 @@ const Boards: React.FC = () => {
   // Carregar boards ao montar o componente
   useEffect(() => {
     loadBoards();
-  }, [filterStatus, searchTerm]);
+  }, [filterStatus, searchTerm, category]);
 
   /**
    * Carrega a lista de boards do backend
@@ -43,6 +47,7 @@ const Boards: React.FC = () => {
       setLoading(true);
       const filters: any = {
         search: searchTerm || undefined,
+        category: category || undefined,
       };
 
       // Aplicar filtro de status
@@ -147,17 +152,24 @@ const Boards: React.FC = () => {
     loadBoards();
   };
 
+  const isServicos = category === "servicos";
+  const pageTitle = isServicos ? "Boards (Serviços)" : "Boards (Vendas)";
+  const pageDescription = isServicos
+    ? "Gerencie os quadros de serviços, calibração e manutenção"
+    : "Gerencie seus quadros Kanban e organize seus projetos";
+  const PageIcon = isServicos ? Wrench : Trello;
+
   return (
     <div className="space-y-6 p-6">
       {/* Header com título e botões */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
-            <Trello className="text-slate-900 dark:text-white" size={32} />
-            Boards
+            <PageIcon className="text-slate-900 dark:text-white" size={32} />
+            {pageTitle}
           </h1>
           <p className="mt-1 text-slate-500 dark:text-gray-400">
-            Gerencie seus quadros Kanban e organize seus projetos
+            {pageDescription}
           </p>
         </div>
         {/* Botões do header */}
@@ -317,6 +329,7 @@ const Boards: React.FC = () => {
       {isModalOpen && (
         <BoardModal
           board={editingBoard}
+          defaultCategory={category}
           onClose={() => {
             setIsModalOpen(false);
             setEditingBoard(null);

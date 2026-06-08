@@ -36,7 +36,8 @@ class BoardRepository:
         self,
         skip: int = 0,
         limit: int = 100,
-        is_deleted: Optional[bool] = None
+        is_deleted: Optional[bool] = None,
+        category: Optional[str] = None
     ) -> List[Board]:
         """
         Lista todos os boards do sistema.
@@ -45,6 +46,7 @@ class BoardRepository:
             skip: Número de registros para pular (paginação)
             limit: Limite de registros a retornar
             is_deleted: Filtro por status arquivado (opcional)
+            category: Filtro por categoria (vendas ou servicos)
 
         Returns:
             Lista de boards
@@ -54,14 +56,18 @@ class BoardRepository:
         if is_deleted is not None:
             query = query.filter(Board.is_deleted == is_deleted)
 
+        if category is not None:
+            query = query.filter(Board.category == category)
+
         return query.offset(skip).limit(limit).all()
 
-    def count_all(self, is_deleted: Optional[bool] = None) -> int:
+    def count_all(self, is_deleted: Optional[bool] = None, category: Optional[str] = None) -> int:
         """
         Conta todos os boards do sistema.
 
         Args:
             is_deleted: Filtro por status arquivado (opcional)
+            category: Filtro por categoria (vendas ou servicos)
 
         Returns:
             Número de boards
@@ -70,6 +76,9 @@ class BoardRepository:
 
         if is_deleted is not None:
             query = query.filter(Board.is_deleted == is_deleted)
+
+        if category is not None:
+            query = query.filter(Board.category == category)
 
         return query.count()
 
@@ -87,7 +96,8 @@ class BoardRepository:
             name=board_data.name,
             description=board_data.description,
             color=board_data.color,
-            icon=board_data.icon
+            icon=board_data.icon,
+            category=board_data.category or "vendas"
         )
 
         self.db.add(board)

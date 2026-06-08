@@ -146,6 +146,7 @@ async def list_boards(
     page: int = Query(1, ge=1, description="Número da página"),
     page_size: int = Query(50, ge=1, le=100, description="Tamanho da página"),
     is_deleted: Optional[bool] = Query(None, description="Filtrar por status arquivado"),
+    category: Optional[str] = Query(None, description="Filtrar por categoria: vendas ou servicos"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Any:
@@ -155,12 +156,14 @@ async def list_boards(
     - **page**: Número da página (padrão: 1)
     - **page_size**: Tamanho da página (padrão: 50, máx: 100)
     - **is_deleted**: Filtrar por boards arquivados (opcional)
+    - **category**: Filtrar por categoria (vendas ou servicos)
     """
     service = BoardService(db)
     return service.list_boards(
         page=page,
         page_size=page_size,
-        is_deleted=is_deleted
+        is_deleted=is_deleted,
+        category=category
     )
 
 
@@ -208,6 +211,7 @@ async def get_board(
         is_deleted=board.is_deleted,
         created_at=board.created_at,
         updated_at=board.updated_at,
+        category=board.category,
         lists_count=lists_count,
         cards_count=cards_count
     )
@@ -308,7 +312,8 @@ async def create_board(
         icon=board.icon,
         is_deleted=board.is_deleted,
         created_at=board.created_at,
-        updated_at=board.updated_at
+        updated_at=board.updated_at,
+        category=board.category
     )
 
 
@@ -413,7 +418,8 @@ async def update_board(
         icon=board.icon,
         is_deleted=board.is_deleted,
         created_at=board.created_at,
-        updated_at=board.updated_at
+        updated_at=board.updated_at,
+        category=board.category
     )
 
 
@@ -539,7 +545,8 @@ async def duplicate_board(
         icon=board.icon,
         is_deleted=board.is_deleted,
         created_at=board.created_at,
-        updated_at=board.updated_at
+        updated_at=board.updated_at,
+        category=board.category
     )
 
 

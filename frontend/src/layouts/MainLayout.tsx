@@ -3,6 +3,7 @@ import {
     LayoutDashboard,
     Users,
     Trello,
+    Wrench,
     UserCircle,
     Settings,
     Menu,
@@ -33,7 +34,8 @@ import { AgentGrowthWidget } from "../components/agentGrowth";
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/activities", icon: CheckSquare, label: "Atividades", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
-    { path: "/boards", icon: Trello, label: "Boards", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/boards", icon: Trello, label: "Boards (Vendas)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/servicos", icon: Wrench, label: "Boards (Serviços)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -175,7 +177,8 @@ export default function MainLayout() {
                                     location.pathname === item.path ||
                                     (item.path === "/boards" &&
                                      (location.pathname.startsWith("/boards/") ||
-                                      location.pathname.startsWith("/cards/")));
+                                      location.pathname.startsWith("/cards/")) &&
+                                     !location.pathname.startsWith("/servicos"));
 
                                 return (
                                     <li key={item.path}>

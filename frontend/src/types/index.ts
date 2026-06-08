@@ -55,6 +55,7 @@ export interface Board {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+  category?: string;
   lists_count?: number;
   cards_count?: number;
 }
@@ -773,6 +774,7 @@ export interface UserFilters extends PaginationParams {
 export interface BoardFilters extends PaginationParams {
   is_deleted?: boolean;
   search?: string;
+  category?: string;
 }
 
 // ==================== FORMS ====================
@@ -847,6 +849,7 @@ export interface CreateBoardRequest {
   description?: string;
   color?: string;
   icon?: string;
+  category?: string;
 }
 
 export interface UpdateBoardRequest {

@@ -51,7 +51,8 @@ class BoardService:
         self,
         page: int = 1,
         page_size: int = 50,
-        is_deleted: Optional[bool] = None
+        is_deleted: Optional[bool] = None,
+        category: Optional[str] = None
     ) -> BoardListResponse:
         """
         Lista todos os boards do sistema com paginação.
@@ -71,12 +72,14 @@ class BoardService:
         boards = self.board_repository.list_all(
             skip=skip,
             limit=page_size,
-            is_deleted=is_deleted
+            is_deleted=is_deleted,
+            category=category
         )
 
         # Conta total
         total = self.board_repository.count_all(
-            is_deleted=is_deleted
+            is_deleted=is_deleted,
+            category=category
         )
 
         # Calcula total de páginas
@@ -100,6 +103,7 @@ class BoardService:
                     is_deleted=board.is_deleted,
                     created_at=board.created_at,
                     updated_at=board.updated_at,
+                    category=board.category,
                     lists_count=lists_count,
                     cards_count=cards_count
                 )

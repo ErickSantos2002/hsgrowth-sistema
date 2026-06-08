@@ -42,6 +42,10 @@ echo "Executando migrations do banco de dados..."
 alembic upgrade heads
 echo "Migrations concluidas!"
 
+# Cria board de Servicos se ainda nao existe (idempotente)
+echo "Verificando board de Servicos..."
+python scripts/create_servicos_board.py || echo "Board de Servicos ja existe ou nao foi possivel criar"
+
 # Se for ambiente de desenvolvimento, pode rodar seed (opcional)
 if [ "$ENVIRONMENT" = "development" ] && [ "$RUN_SEED" = "true" ]; then
     echo "Executando seed do banco de dados..."
