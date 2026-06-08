@@ -303,6 +303,7 @@ const Boards: React.FC<BoardsProps> = ({ category }) => {
               onToggleArchive={handleToggleArchive}
               onDelete={handleDeleteBoard}
               canManageBoard={canCreateBoard}
+              basePath={isServicos ? "/servicos" : "/boards"}
             />
           ))}
         </div>

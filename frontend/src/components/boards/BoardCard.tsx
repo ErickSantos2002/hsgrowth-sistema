@@ -31,6 +31,7 @@ interface BoardCardProps {
   onToggleArchive: (_board: Board) => void;
   onDelete: (_board: Board) => void;
   canManageBoard?: boolean;
+  basePath?: string;
 }
 
 const BoardCard: React.FC<BoardCardProps> = ({
@@ -40,6 +41,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
   onToggleArchive,
   onDelete,
   canManageBoard = false,
+  basePath = "/boards",
 }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
@@ -95,7 +97,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
    * Navega para a página de visualização do board (Kanban)
    */
   const handleViewBoard = () => {
-    navigate(`/boards/${board.id}`);
+    navigate(`${basePath}/${board.id}`);
   };
 
   /**

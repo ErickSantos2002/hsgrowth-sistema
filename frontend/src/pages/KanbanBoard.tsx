@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Plus,
@@ -45,6 +45,8 @@ import { useAuth } from "../context/AuthContext";
 const KanbanBoard: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const boardsBasePath = location.pathname.startsWith("/servicos") ? "/servicos" : "/boards";
   const { user } = useAuth(); // Pegar usuário logado
   const { confirm } = useConfirm();
 
@@ -504,7 +506,7 @@ const KanbanBoard: React.FC = () => {
       if (!controller.signal.aborted) {
         console.error("Erro ao carregar board:", error);
         showError("Erro ao carregar board");
-        navigate("/boards");
+        navigate(boardsBasePath);
       }
     }
   };
