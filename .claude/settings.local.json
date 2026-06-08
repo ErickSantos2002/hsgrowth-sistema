@@ -24,7 +24,9 @@
       "Bash(python scripts/imports/fix_novos_sdr_lote7.py)",
       "Bash(python scripts/imports/import_from_planilha.py d:/GitHub/hsgrowth-sistema/backend/scripts/imports/Planilha_Importacao_CRM_Novos_SDR_lote7.xlsx)",
       "Bash(python \"C:/Temp/filtro_outbound.py\")",
-      "Bash(python \"C:/Temp/negociacao_valor.py\")"
+      "Bash(python \"C:/Temp/negociacao_valor.py\")",
+      "Bash(python scripts/imports/fix_novos_sdr_lote8.py)",
+      "Bash(python scripts/imports/import_from_planilha.py d:/GitHub/hsgrowth-sistema/backend/scripts/imports/Planilha_Importacao_CRM_Novos_SDR_lote8.xlsx)"
     ]
   }
 }
