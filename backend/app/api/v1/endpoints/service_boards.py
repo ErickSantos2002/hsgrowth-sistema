@@ -14,6 +14,8 @@ from app.schemas.service_board import (
     ServiceListCreate, ServiceListUpdate, ServiceListResponse, ServiceListMoveRequest,
     ServiceCardCreate, ServiceCardUpdate, ServiceCardResponse,
     ServiceCardListResponse, ServiceCardMoveRequest,
+    ServiceCardProductCreate, ServiceCardProductUpdate,
+    ServiceCardProductResponse, ServiceCardProductSummary,
 )
 from app.models.user import User
 
@@ -266,6 +268,7 @@ async def create_service_card(
         assigned_to_id=card.assigned_to_id,
         due_date=card.due_date,
         contact_info=card.contact_info,
+        payment_info=card.payment_info,
         client_id=card.client_id,
         person_id=card.person_id,
         client_name=card.client.name if card.client else None,
@@ -294,6 +297,7 @@ async def get_service_card(
         assigned_to_id=card.assigned_to_id,
         due_date=card.due_date,
         contact_info=card.contact_info,
+        payment_info=card.payment_info,
         client_id=card.client_id,
         person_id=card.person_id,
         client_name=card.client.name if card.client else None,
@@ -323,6 +327,7 @@ async def update_service_card(
         assigned_to_id=card.assigned_to_id,
         due_date=card.due_date,
         contact_info=card.contact_info,
+        payment_info=card.payment_info,
         client_id=card.client_id,
         person_id=card.person_id,
         client_name=card.client.name if card.client else None,
@@ -364,6 +369,7 @@ async def move_service_card(
         assigned_to_id=card.assigned_to_id,
         due_date=card.due_date,
         contact_info=card.contact_info,
+        payment_info=card.payment_info,
         client_id=card.client_id,
         person_id=card.person_id,
         client_name=card.client.name if card.client else None,
@@ -373,3 +379,53 @@ async def move_service_card(
         created_at=card.created_at,
         updated_at=card.updated_at,
     )
+
+
+# ─── Card Products ──────────────────────────────────────────────────────────────
+
+@router.get("/{board_id}/cards/{card_id}/products", response_model=ServiceCardProductSummary)
+async def list_service_card_products(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.get_card_products(card_id)
+
+
+@router.post("/{board_id}/cards/{card_id}/products", response_model=ServiceCardProductResponse)
+async def add_service_card_product(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    data: ServiceCardProductCreate = ...,
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.add_card_product(card_id, data, current_user)
+
+
+@router.put("/{board_id}/cards/{card_id}/products/{item_id}", response_model=ServiceCardProductResponse)
+async def update_service_card_product(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    item_id: int = Path(...),
+    data: ServiceCardProductUpdate = ...,
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.update_card_product(item_id, data, current_user)
+
+
+@router.delete("/{board_id}/cards/{card_id}/products/{item_id}")
+async def remove_service_card_product(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    item_id: int = Path(...),
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.remove_card_product(item_id, current_user)

@@ -37,7 +37,15 @@
       "Read(//c/Users/HS/**)",
       "Bash(docker exec *)",
       "PowerShell(Get-Process | Where-Object {$_.Name -match \"python|uvicorn|fastapi\"} | Select-Object Name, Id, CPU | Format-Table)",
-      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\('Microscope:', !!l.Microscope, 'FlaskConical:', !!l.FlaskConical, 'Hammer:', !!l.Hammer, 'Gauge:', !!l.Gauge, 'Cog:', !!l.Cog, 'ClipboardList:', !!l.ClipboardList\\)\")"
+      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\('Microscope:', !!l.Microscope, 'FlaskConical:', !!l.FlaskConical, 'Hammer:', !!l.Hammer, 'Gauge:', !!l.Gauge, 'Cog:', !!l.Cog, 'ClipboardList:', !!l.ClipboardList\\)\")",
+      "Bash(git stash *)",
+      "Bash(npx --prefix frontend tsc --noEmit -p frontend/tsconfig.json)",
+      "Bash(npx vite *)",
+      "Bash(cd /c/Users/HS/Documents/GitHub/hsgrowth-sistema/backend && grep -rn \"def add_product_to_card\\\\|def get_card_products\\\\|def update_card_product\\\\|def remove_product_from_card\\\\|def get_card_product\" app/repositories/product_repository.py app/services/product_service.py 2>/dev/null)",
+      "Read(//c/c/Users/HS/Documents/GitHub/hsgrowth-sistema/backend/app/repositories/**)",
+      "Bash(python -c \"import app.models, app.schemas.service_board, app.repositories.service_board_repository, app.services.service_board_service, app.api.v1.endpoints.service_boards; print\\('OK imports'\\)\")",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(python -m py_compile app/models/service_card_product.py app/models/service_card.py app/models/__init__.py app/schemas/service_board.py app/repositories/service_board_repository.py app/services/service_board_service.py app/api/v1/endpoints/service_boards.py alembic/versions/2026_06_09_0200-create_service_card_products.py)"
     ]
   }
 }

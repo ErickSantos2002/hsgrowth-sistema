@@ -3,7 +3,8 @@ Schemas Pydantic para ServiceBoards, ServiceLists e ServiceCards.
 """
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, Field
+from decimal import Decimal
+from pydantic import BaseModel, Field, field_validator
 
 
 # ─── Service Board ────────────────────────────────────────────────────────────
@@ -95,6 +96,7 @@ class ServiceCardBase(BaseModel):
     assigned_to_id: Optional[int] = None
     due_date: Optional[datetime] = None
     contact_info: Optional[dict] = None
+    payment_info: Optional[dict] = None
     client_id: Optional[int] = None
     person_id: Optional[int] = None
 
@@ -110,6 +112,7 @@ class ServiceCardUpdate(BaseModel):
     assigned_to_id: Optional[int] = None
     due_date: Optional[datetime] = None
     contact_info: Optional[dict] = None
+    payment_info: Optional[dict] = None
     client_id: Optional[int] = None
     person_id: Optional[int] = None
     position: Optional[float] = None
@@ -140,3 +143,53 @@ class ServiceCardListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+# ─── Service Card Product (Produtos no card de serviços) ──────────────────────
+
+class ServiceCardProductBase(BaseModel):
+    product_id: int = Field(..., description="ID do produto no catálogo")
+    quantity: int = Field(..., ge=1, description="Quantidade")
+    unit_price: float = Field(..., ge=0, description="Preço unitário")
+    discount: float = Field(0, ge=0, description="Desconto em valor absoluto")
+    notes: Optional[str] = Field(None, description="Observações sobre o produto")
+
+
+class ServiceCardProductCreate(ServiceCardProductBase):
+    pass
+
+
+class ServiceCardProductUpdate(BaseModel):
+    quantity: Optional[int] = Field(None, ge=1)
+    unit_price: Optional[float] = Field(None, ge=0)
+    discount: Optional[float] = Field(None, ge=0)
+    notes: Optional[str] = None
+
+
+class ServiceCardProductResponse(ServiceCardProductBase):
+    id: int
+    service_card_id: int
+    subtotal: float
+    total: float
+    created_at: datetime
+    updated_at: datetime
+    product_name: Optional[str] = None
+    product_sku: Optional[str] = None
+    product_category: Optional[str] = None
+
+    @field_validator("unit_price", "discount", "subtotal", "total", mode="before")
+    @classmethod
+    def convert_decimal_to_float(cls, v):
+        if isinstance(v, Decimal):
+            return float(v)
+        return v
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceCardProductSummary(BaseModel):
+    items: List[ServiceCardProductResponse]
+    total_items: int
+    subtotal: float
+    total_discount: float
+    total: float

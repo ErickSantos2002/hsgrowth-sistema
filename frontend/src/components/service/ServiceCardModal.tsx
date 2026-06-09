@@ -180,7 +180,7 @@ const ServiceCardModal: React.FC<ServiceCardModalProps> = ({
         list_id: listId,
         title: title.trim(),
         description: description || undefined,
-        due_date: dueDate || undefined,
+        due_date: dueDate ? `${dueDate}T00:00:00` : undefined,
         client_id: selectedClient?.id ?? (card?.client_id || null),
         person_id: selectedPerson?.id ?? (card?.person_id || null),
       });

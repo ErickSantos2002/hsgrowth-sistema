@@ -32,6 +32,11 @@ class ServiceCard(Base, TimestampMixin, SoftDeleteMixin):
     # Dados de contato/cliente (JSON livre para customização futura)
     contact_info = Column(JSON, nullable=True)
 
+    # Condições de pagamento e desconto global dos produtos (JSON)
+    # Ex: { "global_discount": 100, "global_discount_type": "value",
+    #       "payment_method": "PIX", "installments": 1, "notes": "..." }
+    payment_info = Column(JSON, nullable=True)
+
     # Data prevista de conclusão
     due_date = Column(DateTime, nullable=True)
 
@@ -40,6 +45,11 @@ class ServiceCard(Base, TimestampMixin, SoftDeleteMixin):
     assigned_to = relationship("User", foreign_keys=[assigned_to_id])
     client = relationship("Client", foreign_keys=[client_id])
     person = relationship("Person", foreign_keys=[person_id])
+    products = relationship(
+        "ServiceCardProduct",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<ServiceCard(id={self.id}, title='{self.title}')>"

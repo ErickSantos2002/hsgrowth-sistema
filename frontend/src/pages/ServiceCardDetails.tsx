@@ -1,0 +1,744 @@
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import ReactDOM from "react-dom";
+import {
+  ArrowLeft,
+  Building2,
+  User,
+  Calendar,
+  Info,
+  Clock,
+  FileText,
+  Trash2,
+  ExternalLink,
+  Search,
+  X,
+  Plus,
+  Mail,
+  Phone,
+  Briefcase,
+  Linkedin,
+  Check,
+  Pencil,
+  Activity,
+  StickyNote,
+  CalendarDays,
+  Paperclip,
+  PhoneCall,
+  Users as UsersIcon,
+} from "lucide-react";
+import serviceBoardService, {
+  ServiceCard,
+  ServiceList,
+} from "../services/serviceBoardService";
+import clientService, { Client } from "../services/clientService";
+import personService, { Person } from "../services/personService";
+import ExpandableSection from "../components/cardDetails/ExpandableSection";
+import ActionButton from "../components/cardDetails/ActionButton";
+import ServiceProductSection from "../components/service/ServiceProductSection";
+import ClientModal from "../components/clients/ClientModal";
+import PersonModal from "../components/persons/PersonModal";
+import { showSuccess, showError } from "../utils/toast";
+import { useConfirm } from "../contexts/ConfirmContext";
+import { LoadingSpinner } from "../components/common";
+
+/**
+ * Página de detalhes do Card de Serviços — Layout estilo Pipedrive (tema escuro)
+ * Layout: 30% (informações) + 70% (atividades/histórico)
+ * Espelha o padrão da página de detalhes de Vendas (CardDetails.tsx)
+ */
+
+type TabKey =
+  | "atividade"
+  | "anotacoes"
+  | "calendario"
+  | "arquivos"
+  | "ligacoes"
+  | "reunioes"
+  | "email";
+
+const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  { key: "atividade", label: "Atividade", icon: <Activity size={16} /> },
+  { key: "anotacoes", label: "Anotações", icon: <StickyNote size={16} /> },
+  { key: "calendario", label: "Calendário", icon: <CalendarDays size={16} /> },
+  { key: "arquivos", label: "Arquivos", icon: <Paperclip size={16} /> },
+  { key: "ligacoes", label: "Ligações", icon: <PhoneCall size={16} /> },
+  { key: "reunioes", label: "Reuniões", icon: <UsersIcon size={16} /> },
+  { key: "email", label: "E-mail", icon: <Mail size={16} /> },
+];
+
+// ─── Seção: Resumo ──────────────────────────────────────────────────────────────
+
+const ServiceSummarySection: React.FC<{
+  card: ServiceCard;
+  onUpdate: (data: { due_date?: string | null; description?: string }) => Promise<void>;
+}> = ({ card, onUpdate }) => {
+  const [editingDue, setEditingDue] = useState(false);
+  const [dueValue, setDueValue] = useState(card.due_date ? card.due_date.split("T")[0] : "");
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descValue, setDescValue] = useState(card.description || "");
+
+  useEffect(() => {
+    setDueValue(card.due_date ? card.due_date.split("T")[0] : "");
+    setDescValue(card.description || "");
+  }, [card.due_date, card.description]);
+
+  const formatDate = (date?: string | null) => {
+    if (!date) return "Não definida";
+    const datePart = date.substring(0, 10);
+    const [year, month, day] = datePart.split("-").map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString("pt-BR");
+  };
+
+  const formatDateTime = (date?: string | null) => {
+    if (!date) return "-";
+    return new Date(date).toLocaleString("pt-BR");
+  };
+
+  const handleSaveDue = async () => {
+    await onUpdate({ due_date: dueValue ? `${dueValue}T00:00:00` : null });
+    setEditingDue(false);
+  };
+
+  const handleSaveDesc = async () => {
+    await onUpdate({ description: descValue });
+    setEditingDesc(false);
+  };
+
+  return (
+    <ExpandableSection title="Resumo" defaultExpanded={false} icon={<Info size={18} />}>
+      <div className="space-y-5">
+        {/* Data de Vencimento */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <Calendar size={14} className="text-slate-400" />
+              <span>Data de vencimento</span>
+            </div>
+            {!editingDue && (
+              <button
+                onClick={() => setEditingDue(true)}
+                className="text-slate-400 transition-colors hover:text-blue-400"
+                title="Editar"
+              >
+                <Pencil size={14} />
+              </button>
+            )}
+          </div>
+          {editingDue ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dueValue}
+                onChange={(e) => setDueValue(e.target.value)}
+                className="flex-1 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                autoFocus
+              />
+              <button onClick={handleSaveDue} className="rounded-lg bg-emerald-500/20 p-2 text-emerald-400 hover:bg-emerald-500/30">
+                <Check size={16} />
+              </button>
+              <button onClick={() => { setEditingDue(false); setDueValue(card.due_date ? card.due_date.split("T")[0] : ""); }} className="rounded-lg bg-gray-200/50 dark:bg-slate-700/50 p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
+              <span className={`text-sm ${card.due_date ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
+                {formatDate(card.due_date)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Descrição */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <FileText size={14} className="text-slate-400" />
+              <span>Descrição</span>
+            </div>
+            {!editingDesc && (
+              <button
+                onClick={() => setEditingDesc(true)}
+                className="text-slate-400 transition-colors hover:text-blue-400"
+                title="Editar"
+              >
+                <Pencil size={14} />
+              </button>
+            )}
+          </div>
+          {editingDesc ? (
+            <div className="space-y-2">
+              <textarea
+                value={descValue}
+                onChange={(e) => setDescValue(e.target.value)}
+                rows={4}
+                placeholder="Clique para adicionar uma descrição..."
+                className="w-full resize-none rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                autoFocus
+              />
+              <div className="flex items-center gap-2">
+                <button onClick={handleSaveDesc} className="flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30">
+                  <Check size={14} /> Salvar
+                </button>
+                <button onClick={() => { setEditingDesc(false); setDescValue(card.description || ""); }} className="flex items-center gap-1 rounded-lg bg-gray-200/50 dark:bg-slate-700/50 px-3 py-1.5 text-sm text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                  <X size={14} /> Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 min-h-[60px]">
+              <span className={`whitespace-pre-wrap text-sm ${card.description ? "text-slate-900 dark:text-white" : "italic text-slate-400 dark:text-slate-500"}`}>
+                {card.description || "Nenhuma descrição"}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Informações gerais */}
+        <div className="space-y-3 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
+          <h4 className="text-sm font-semibold text-slate-400">Informações Gerais</h4>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-sm text-slate-400">
+              <Clock size={14} />
+              <span>Criado em:</span>
+            </div>
+            <span className="text-sm font-medium text-slate-900 dark:text-white">{formatDateTime(card.created_at)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-sm text-slate-400">
+              <Clock size={14} />
+              <span>Atualizado em:</span>
+            </div>
+            <span className="text-sm font-medium text-slate-900 dark:text-white">{formatDateTime(card.updated_at)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-400">ID:</span>
+            <span className="font-mono text-sm font-medium text-slate-600 dark:text-slate-300">#{card.id}</span>
+          </div>
+        </div>
+      </div>
+    </ExpandableSection>
+  );
+};
+
+// ─── Seção: Empresa (Cliente) ───────────────────────────────────────────────────
+
+const ServiceClientSection: React.FC<{
+  card: ServiceCard;
+  onLink: (clientId: number | null) => Promise<void>;
+}> = ({ card, onLink }) => {
+  const { confirm } = useConfirm();
+  const [client, setClient] = useState<Client | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [results, setResults] = useState<Client[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!card.client_id) { setClient(null); return; }
+      try {
+        setLoading(true);
+        setClient(await clientService.getById(card.client_id));
+      } catch { /* ignora */ } finally { setLoading(false); }
+    };
+    load();
+  }, [card.client_id]);
+
+  useEffect(() => {
+    if (!searchTerm.trim() || !showModal) { setResults([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        setSearching(true);
+        const r = await clientService.list({ page_size: 100, is_active: true, search: searchTerm.trim() });
+        setResults(r.clients.filter((c) => {
+          if (!c.document) return true;
+          const d = c.document.replace(/\D/g, "");
+          return d.length === 11 || d.length === 14 || d.length === 0;
+        }));
+      } catch { /* ignora */ } finally { setSearching(false); }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [searchTerm, showModal]);
+
+  const formatDocument = (doc?: string) => {
+    if (!doc) return "";
+    const c = doc.replace(/\D/g, "");
+    if (c.length === 11) return c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    if (c.length === 14) return c.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+    return doc;
+  };
+
+  const handleLink = async (id: number) => {
+    await onLink(id);
+    setShowModal(false);
+    setSearchTerm("");
+  };
+
+  const handleUnlink = async () => {
+    const ok = await confirm({ title: "Desvincular cliente", message: "Deseja desvincular este cliente do card?", confirmText: "Desvincular", isDanger: false });
+    if (!ok) return;
+    await onLink(null);
+  };
+
+  const handleCreated = async () => {
+    setShowCreateModal(false);
+    await new Promise((r) => setTimeout(r, 500));
+    try {
+      const r = await clientService.list({ page_size: 1, is_active: true });
+      if (r.clients.length > 0) await onLink(r.clients[0].id);
+    } catch {
+      showError("Cliente criado, mas houve erro ao vincular. Vincule manualmente.");
+    }
+  };
+
+  const searchModal = showModal && ReactDOM.createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowModal(false)}>
+      <div className="flex max-h-[600px] w-full max-w-lg flex-col rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 p-4">
+          <h3 className="font-semibold text-slate-900 dark:text-white">Vincular Cliente</h3>
+          <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white"><X size={20} /></button>
+        </div>
+        <div className="border-b border-gray-200 dark:border-slate-700 p-4">
+          <div className="relative">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar por nome, CPF ou CNPJ..." autoFocus
+              className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 py-3 pl-10 pr-10 text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {searching ? <div className="p-8 text-center text-sm text-slate-400">Buscando clientes...</div>
+            : !searchTerm.trim() ? <div className="p-8 text-center text-sm text-slate-400">Digite o nome, CPF ou CNPJ para buscar</div>
+            : results.length === 0 ? <div className="p-8 text-center text-sm text-slate-400">Nenhum cliente encontrado</div>
+            : <div className="space-y-2">{results.map((c) => (
+                <button key={c.id} onClick={() => handleLink(c.id)} className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3 text-left transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50">
+                  <p className="font-medium text-slate-900 dark:text-white">{c.company_name || c.name}</p>
+                  {c.document && <p className="mt-1 text-xs text-slate-400">{formatDocument(c.document)}</p>}
+                </button>
+              ))}</div>}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+
+  if (!card.client_id && !loading) {
+    return (
+      <>
+        <ExpandableSection title="Empresa (Cliente)" defaultExpanded={false} icon={<Building2 size={18} />}>
+          <div className="space-y-3">
+            <p className="py-2 text-center text-sm text-slate-400">Nenhum cliente vinculado a este card</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => { setShowModal(true); setSearchTerm(""); }} className="flex items-center justify-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-3 font-medium text-slate-900 dark:text-blue-400 transition-colors hover:bg-blue-500/30">
+                <ExternalLink size={16} /> Vincular
+              </button>
+              <button onClick={() => setShowCreateModal(true)} className="flex items-center justify-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-3 font-medium text-slate-900 dark:text-green-400 transition-colors hover:bg-green-500/30">
+                <Plus size={16} /> Cadastrar
+              </button>
+            </div>
+          </div>
+        </ExpandableSection>
+        {searchModal}
+        {showCreateModal && <ClientModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSave={handleCreated} client={null} />}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <ExpandableSection title="Empresa (Cliente)" defaultExpanded={false} icon={<Building2 size={18} />}>
+        {loading ? <div className="py-4 text-center text-sm text-slate-400">Carregando...</div> : (
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300"><Building2 size={14} className="text-slate-400" /><span>Nome da empresa</span></div>
+              <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2"><p className="text-slate-900 dark:text-white">{client?.company_name || client?.name || "Não informado"}</p></div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-sm font-medium text-slate-600 dark:text-slate-300">{client?.document && client.document.replace(/\D/g, "").length === 11 ? "CPF" : "CNPJ"}</div>
+              <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2"><p className={client?.document ? "text-slate-900 dark:text-white" : "italic text-slate-400 dark:text-slate-500"}>{client?.document ? formatDocument(client.document) : "Não informado"}</p></div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-sm font-medium text-slate-600 dark:text-slate-300">Contato</div>
+              <div className="space-y-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
+                <div><p className="text-xs text-slate-400">Telefone</p><p className={client?.phone ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>{client?.phone || "Não informado"}</p></div>
+                <div><p className="text-xs text-slate-400">Email</p><p className={client?.email ? "text-sm text-blue-400" : "text-sm italic text-slate-400 dark:text-slate-500"}>{client?.email || "Não informado"}</p></div>
+              </div>
+            </div>
+            <div className="space-y-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-3">
+              <ActionButton icon={<ExternalLink size={16} />} label="Modificar cadastro do cliente" onClick={() => setShowEditModal(true)} variant="warning" className="w-full" />
+              <ActionButton icon={<Trash2 size={16} />} label="Desvincular cliente" onClick={handleUnlink} variant="danger" className="w-full" />
+            </div>
+          </div>
+        )}
+      </ExpandableSection>
+      {showEditModal && client && <ClientModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} onSave={async () => { setShowEditModal(false); if (card.client_id) setClient(await clientService.getById(card.client_id)); }} client={client} />}
+    </>
+  );
+};
+
+// ─── Seção: Contato (Pessoa) ────────────────────────────────────────────────────
+
+const ServiceContactSection: React.FC<{
+  card: ServiceCard;
+  onLink: (personId: number | null) => Promise<void>;
+}> = ({ card, onLink }) => {
+  const { confirm } = useConfirm();
+  const [person, setPerson] = useState<Person | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [results, setResults] = useState<Person[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!card.person_id) { setPerson(null); return; }
+      try {
+        setLoading(true);
+        setPerson(await personService.getById(card.person_id));
+      } catch { /* ignora */ } finally { setLoading(false); }
+    };
+    load();
+  }, [card.person_id]);
+
+  useEffect(() => {
+    if (!searchTerm.trim() || !showModal) { setResults([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        setSearching(true);
+        const r = await personService.list({ page_size: 100, is_active: true, search: searchTerm.trim() });
+        setResults(r.persons);
+      } catch { /* ignora */ } finally { setSearching(false); }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [searchTerm, showModal]);
+
+  const formatPhone = (phone?: string | null) => {
+    if (!phone) return "Não informado";
+    const c = phone.replace(/\D/g, "");
+    if (c.length === 11) return c.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+    if (c.length === 10) return c.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+    return phone;
+  };
+
+  const handleLink = async (id: number) => {
+    await onLink(id);
+    setShowModal(false);
+    setSearchTerm("");
+  };
+
+  const handleUnlink = async () => {
+    const ok = await confirm({ title: "Desvincular pessoa", message: "Deseja desvincular esta pessoa do card?", confirmText: "Desvincular", isDanger: false });
+    if (!ok) return;
+    await onLink(null);
+  };
+
+  const handleCreated = async (created?: Person) => {
+    setShowCreateModal(false);
+    if (!created) { showError("Pessoa criada, mas não foi possível vinculá-la automaticamente."); return; }
+    await onLink(created.id);
+  };
+
+  const searchModal = showModal && ReactDOM.createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowModal(false)}>
+      <div className="flex max-h-[600px] w-full max-w-lg flex-col rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 p-4">
+          <h3 className="font-semibold text-slate-900 dark:text-white">Vincular Pessoa</h3>
+          <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white"><X size={20} /></button>
+        </div>
+        <div className="border-b border-gray-200 dark:border-slate-700 p-4">
+          <div className="relative">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar por nome, email, telefone ou cargo..." autoFocus
+              className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 py-3 pl-10 pr-10 text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {searching ? <div className="p-8 text-center text-sm text-slate-400">Buscando pessoas...</div>
+            : !searchTerm.trim() ? <div className="p-8 text-center text-sm text-slate-400">Digite para buscar</div>
+            : results.length === 0 ? <div className="p-8 text-center text-sm text-slate-400">Nenhuma pessoa encontrada</div>
+            : <div className="space-y-2">{results.map((p) => (
+                <button key={p.id} onClick={() => handleLink(p.id)} className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3 text-left transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50">
+                  <p className="font-medium text-slate-900 dark:text-white">{p.name}</p>
+                  {p.position && <p className="mt-1 text-xs text-slate-400">{p.position}</p>}
+                  {(p.email_commercial || p.email) && <p className="mt-1 text-xs text-blue-400">{p.email_commercial || p.email}</p>}
+                </button>
+              ))}</div>}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+
+  if (!card.person_id && !loading) {
+    return (
+      <>
+        <ExpandableSection title="Informação de Contato (Pessoa)" defaultExpanded={false} icon={<User size={18} />}>
+          <div className="space-y-3">
+            <p className="py-2 text-center text-sm text-slate-400">Nenhuma pessoa vinculada a este card</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => { setShowModal(true); setSearchTerm(""); }} className="flex items-center justify-center gap-2 rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-3 font-medium text-slate-900 dark:text-blue-400 transition-colors hover:bg-blue-500/30">
+                <ExternalLink size={16} /> Vincular
+              </button>
+              <button onClick={() => setShowCreateModal(true)} className="flex items-center justify-center gap-2 rounded-lg border border-green-500/50 bg-green-500/20 px-4 py-3 font-medium text-slate-900 dark:text-green-400 transition-colors hover:bg-green-500/30">
+                <Plus size={16} /> Cadastrar
+              </button>
+            </div>
+          </div>
+        </ExpandableSection>
+        {searchModal}
+        {showCreateModal && <PersonModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSave={handleCreated} person={null} />}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <ExpandableSection title="Informação de Contato (Pessoa)" defaultExpanded={false} icon={<User size={18} />}>
+        {loading ? <div className="py-4 text-center text-sm text-slate-400">Carregando...</div> : (
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300"><User size={14} className="text-slate-400" /><span>Nome completo</span></div>
+              <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2"><p className="text-slate-900 dark:text-white">{person?.name || "Não informado"}</p></div>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300"><Briefcase size={14} className="text-slate-400" /><span>Cargo/Posição</span></div>
+              <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2"><p className={person?.position ? "text-slate-900 dark:text-white" : "italic text-slate-400 dark:text-slate-500"}>{person?.position || "Não informado"}</p></div>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300"><Mail size={14} className="text-slate-400" /><span>E-mail</span></div>
+              <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2"><p className={(person?.email || person?.email_commercial) ? "text-sm text-blue-400" : "text-sm italic text-slate-400 dark:text-slate-500"}>{person?.email || person?.email_commercial || "Não informado"}</p></div>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300"><Phone size={14} className="text-slate-400" /><span>Telefone</span></div>
+              <div className="space-y-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
+                <div><p className="text-xs text-slate-400">Principal</p><p className={person?.phone ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>{formatPhone(person?.phone)}</p></div>
+                <div><p className="text-xs text-slate-400">WhatsApp</p><p className={person?.phone_whatsapp ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>{formatPhone(person?.phone_whatsapp)}</p></div>
+              </div>
+            </div>
+            {person?.linkedin && /^https?:\/\//i.test(person.linkedin) && (
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-300">LinkedIn</div>
+                <a href={person.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-blue-400 hover:underline"><Linkedin size={14} /> Ver perfil</a>
+              </div>
+            )}
+            <div className="space-y-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-3">
+              <ActionButton icon={<ExternalLink size={16} />} label="Modificar cadastro da pessoa" onClick={() => setShowEditModal(true)} variant="warning" className="w-full" />
+              <ActionButton icon={<Trash2 size={16} />} label="Desvincular pessoa" onClick={handleUnlink} variant="danger" className="w-full" />
+            </div>
+          </div>
+        )}
+      </ExpandableSection>
+      {showEditModal && person && <PersonModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} onSave={async () => { setShowEditModal(false); if (card.person_id) setPerson(await personService.getById(card.person_id)); }} person={person} />}
+    </>
+  );
+};
+
+// ─── Placeholder de aba ─────────────────────────────────────────────────────────
+
+const TabPlaceholder: React.FC<{ label: string; icon: React.ReactNode }> = ({ label, icon }) => (
+  <div className="flex flex-col items-center justify-center py-20 text-center">
+    <div className="mb-3 text-slate-300 dark:text-slate-600">{icon}</div>
+    <p className="text-lg font-medium text-slate-500 dark:text-slate-400">{label}</p>
+    <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">Em breve para o board de serviços.</p>
+  </div>
+);
+
+// ─── Página principal ───────────────────────────────────────────────────────────
+
+const ServiceCardDetails: React.FC = () => {
+  const { boardId, cardId } = useParams<{ boardId: string; cardId: string }>();
+  const navigate = useNavigate();
+  const { confirm } = useConfirm();
+
+  const numBoardId = Number(boardId);
+  const numCardId = Number(cardId);
+
+  const [card, setCard] = useState<ServiceCard | null>(null);
+  const [lists, setLists] = useState<ServiceList[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabKey>("atividade");
+
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState("");
+
+  const loadCard = async () => {
+    try {
+      setLoading(true);
+      const [cardData, listsData] = await Promise.all([
+        serviceBoardService.getCard(numBoardId, numCardId),
+        serviceBoardService.getLists(numBoardId),
+      ]);
+      setCard(cardData);
+      setTitleValue(cardData.title);
+      setLists([...listsData].sort((a, b) => a.position - b.position));
+    } catch (error: any) {
+      console.error("Erro ao carregar card:", error);
+      showError("Erro ao carregar card de serviço.");
+      navigate(`/servicos/${numBoardId}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (numBoardId && numCardId) loadCard();
+  }, [numBoardId, numCardId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const updateCard = async (data: Parameters<typeof serviceBoardService.updateCard>[2]) => {
+    const updated = await serviceBoardService.updateCard(numBoardId, numCardId, data);
+    setCard((prev) => (prev ? { ...prev, ...updated } : updated));
+    return updated;
+  };
+
+  const handleSaveTitle = async () => {
+    if (!titleValue.trim()) { setTitleValue(card?.title || ""); setEditingTitle(false); return; }
+    try {
+      await updateCard({ title: titleValue.trim() });
+      setEditingTitle(false);
+      showSuccess("Título atualizado!");
+    } catch {
+      showError("Erro ao atualizar título");
+    }
+  };
+
+  const handleMove = async (newListId: number) => {
+    try {
+      await serviceBoardService.moveCard(numBoardId, numCardId, newListId);
+      setCard((prev) => (prev ? { ...prev, list_id: newListId } : prev));
+      showSuccess("Card movido!");
+    } catch {
+      showError("Erro ao mover card");
+    }
+  };
+
+  const handleDelete = async () => {
+    const ok = await confirm({ title: "Deletar card", message: "Deseja deletar este card? Esta ação não pode ser desfeita.", confirmText: "Deletar", isDanger: true });
+    if (!ok) return;
+    try {
+      await serviceBoardService.deleteCard(numBoardId, numCardId);
+      showSuccess("Card deletado!");
+      navigate(`/servicos/${numBoardId}`);
+    } catch {
+      showError("Erro ao deletar card");
+    }
+  };
+
+  if (loading || !card) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-slate-500 dark:text-slate-400">Carregando card...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentList = lists.find((l) => l.id === card.list_id);
+
+  return (
+    <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      {/* Header */}
+      <div className="flex-shrink-0 border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700/50 dark:bg-slate-900/50">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(`/servicos/${numBoardId}`)}
+            className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50"
+            title="Voltar para o board"
+          >
+            <ArrowLeft size={20} className="text-slate-500 dark:text-slate-400" />
+          </button>
+          <div className="min-w-0 flex-1">
+            {editingTitle ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={titleValue}
+                  onChange={(e) => setTitleValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); if (e.key === "Escape") { setTitleValue(card.title); setEditingTitle(false); } }}
+                  autoFocus
+                  className="flex-1 rounded-lg border border-blue-500 bg-white/50 dark:bg-slate-900/50 px-3 py-1.5 text-xl font-bold text-slate-900 dark:text-white focus:outline-none"
+                />
+                <button onClick={handleSaveTitle} className="rounded-lg bg-emerald-500/20 p-2 text-emerald-400 hover:bg-emerald-500/30"><Check size={18} /></button>
+                <button onClick={() => { setTitleValue(card.title); setEditingTitle(false); }} className="rounded-lg bg-gray-200/50 dark:bg-slate-700/50 p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white"><X size={18} /></button>
+              </div>
+            ) : (
+              <div className="group flex items-center gap-2">
+                <h1 className="truncate text-2xl font-bold text-slate-900 dark:text-white">{card.title}</h1>
+                <button onClick={() => setEditingTitle(true)} className="text-slate-400 opacity-0 transition-opacity hover:text-blue-400 group-hover:opacity-100" title="Editar título"><Pencil size={16} /></button>
+              </div>
+            )}
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-sm text-slate-500 dark:text-slate-400">na lista</span>
+              <select
+                value={card.list_id}
+                onChange={(e) => handleMove(Number(e.target.value))}
+                className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-2 py-1 text-sm font-medium text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
+              >
+                {lists.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <button onClick={handleDelete} className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20">
+            <Trash2 size={16} /> Deletar
+          </button>
+        </div>
+      </div>
+
+      {/* Conteúdo: 30/70 */}
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        {/* Coluna esquerda — 30% */}
+        <div className="w-full flex-shrink-0 space-y-3 overflow-y-auto border-b border-gray-200 p-4 dark:border-slate-700/50 lg:w-[30%] lg:border-b-0 lg:border-r">
+          <ServiceSummarySection card={card} onUpdate={async (d) => { await updateCard(d); showSuccess("Card atualizado!"); }} />
+          <ServiceClientSection card={card} onLink={async (id) => { await updateCard({ client_id: id }); showSuccess(id ? "Cliente vinculado!" : "Cliente desvinculado!"); }} />
+          <ServiceContactSection card={card} onLink={async (id) => { await updateCard({ person_id: id }); showSuccess(id ? "Pessoa vinculada!" : "Pessoa desvinculada!"); }} />
+          <ServiceProductSection
+            boardId={numBoardId}
+            cardId={numCardId}
+            paymentInfo={card.payment_info}
+            onSavePaymentInfo={async (pi) => { await updateCard({ payment_info: pi }); showSuccess("Card atualizado!"); }}
+          />
+        </div>
+
+        {/* Coluna direita — 70% */}
+        <div className="flex min-h-0 w-full flex-1 flex-col">
+          {/* Abas */}
+          <div className="flex-shrink-0 overflow-x-auto border-b border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-900/30">
+            <div className="flex gap-1">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                    activeTab === tab.key
+                      ? "border-violet-500 text-violet-500 dark:text-violet-400"
+                      : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Conteúdo da aba */}
+          <div className="min-h-0 flex-1 overflow-y-auto p-6">
+            {TABS.filter((t) => t.key === activeTab).map((t) => (
+              <TabPlaceholder key={t.key} label={t.label} icon={React.cloneElement(t.icon as React.ReactElement<{ size?: number }>, { size: 48 })} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ServiceCardDetails;

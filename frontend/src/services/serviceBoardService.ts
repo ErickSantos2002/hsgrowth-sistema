@@ -44,6 +44,7 @@ export interface ServiceCard {
   assigned_to_id?: number;
   due_date?: string;
   contact_info?: Record<string, any>;
+  payment_info?: Record<string, any>;
   client_id?: number;
   person_id?: number;
   client_name?: string;
@@ -52,6 +53,46 @@ export interface ServiceCard {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface ServiceCardProduct {
+  id: number;
+  service_card_id: number;
+  product_id: number;
+  quantity: number;
+  unit_price: number;
+  discount: number;
+  notes?: string;
+  subtotal: number;
+  total: number;
+  created_at: string;
+  updated_at: string;
+  product_name?: string;
+  product_sku?: string;
+  product_category?: string;
+}
+
+export interface ServiceCardProductSummary {
+  items: ServiceCardProduct[];
+  total_items: number;
+  subtotal: number;
+  total_discount: number;
+  total: number;
+}
+
+export interface CreateServiceCardProductRequest {
+  product_id: number;
+  quantity: number;
+  unit_price: number;
+  discount?: number;
+  notes?: string;
+}
+
+export interface UpdateServiceCardProductRequest {
+  quantity?: number;
+  unit_price?: number;
+  discount?: number;
+  notes?: string;
 }
 
 export interface ServiceCardListResponse {
@@ -101,8 +142,8 @@ export interface CreateServiceCardRequest {
   assigned_to_id?: number;
   due_date?: string;
   contact_info?: Record<string, any>;
-  client_id?: number;
-  person_id?: number;
+  client_id?: number | null;
+  person_id?: number | null;
 }
 
 export interface UpdateServiceCardRequest {
@@ -110,10 +151,11 @@ export interface UpdateServiceCardRequest {
   description?: string;
   list_id?: number;
   assigned_to_id?: number;
-  due_date?: string;
+  due_date?: string | null;
   contact_info?: Record<string, any>;
-  client_id?: number;
-  person_id?: number;
+  payment_info?: Record<string, any> | null;
+  client_id?: number | null;
+  person_id?: number | null;
   position?: number;
   is_deleted?: boolean;
 }
@@ -189,6 +231,11 @@ class ServiceBoardService {
     return r.data;
   }
 
+  async getCard(boardId: number, cardId: number): Promise<ServiceCard> {
+    const r = await api.get<ServiceCard>(`${BASE}/${boardId}/cards/${cardId}`);
+    return r.data;
+  }
+
   async createCard(boardId: number, data: CreateServiceCardRequest): Promise<ServiceCard> {
     const r = await api.post<ServiceCard>(`${BASE}/${boardId}/cards`, data);
     return r.data;
@@ -209,6 +256,26 @@ class ServiceBoardService {
       position,
     });
     return r.data;
+  }
+
+  // Card Products
+  async getCardProducts(boardId: number, cardId: number): Promise<ServiceCardProductSummary> {
+    const r = await api.get<ServiceCardProductSummary>(`${BASE}/${boardId}/cards/${cardId}/products`);
+    return r.data;
+  }
+
+  async addCardProduct(boardId: number, cardId: number, data: CreateServiceCardProductRequest): Promise<ServiceCardProduct> {
+    const r = await api.post<ServiceCardProduct>(`${BASE}/${boardId}/cards/${cardId}/products`, data);
+    return r.data;
+  }
+
+  async updateCardProduct(boardId: number, cardId: number, itemId: number, data: UpdateServiceCardProductRequest): Promise<ServiceCardProduct> {
+    const r = await api.put<ServiceCardProduct>(`${BASE}/${boardId}/cards/${cardId}/products/${itemId}`, data);
+    return r.data;
+  }
+
+  async removeCardProduct(boardId: number, cardId: number, itemId: number): Promise<void> {
+    await api.delete(`${BASE}/${boardId}/cards/${cardId}/products/${itemId}`);
   }
 }
 

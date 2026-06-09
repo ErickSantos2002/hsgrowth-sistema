@@ -2,15 +2,17 @@
 Repository para ServiceBoard, ServiceList e ServiceCard.
 """
 from typing import Optional, List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
+from app.models.service_card_product import ServiceCardProduct
 from app.schemas.service_board import (
     ServiceBoardCreate, ServiceBoardUpdate,
     ServiceListCreate, ServiceListUpdate,
     ServiceCardCreate, ServiceCardUpdate,
+    ServiceCardProductCreate, ServiceCardProductUpdate,
 )
 
 
@@ -247,3 +249,61 @@ class ServiceBoardRepository:
         self.db.commit()
         self.db.refresh(card)
         return card
+
+    # ─── Card Products ────────────────────────────────────────────────────────
+
+    def list_card_products(self, card_id: int) -> List[ServiceCardProduct]:
+        return (
+            self.db.query(ServiceCardProduct)
+            .options(joinedload(ServiceCardProduct.product))
+            .filter(ServiceCardProduct.service_card_id == card_id)
+            .order_by(ServiceCardProduct.id)
+            .all()
+        )
+
+    def get_card_product_by_id(self, item_id: int) -> Optional[ServiceCardProduct]:
+        return (
+            self.db.query(ServiceCardProduct)
+            .options(joinedload(ServiceCardProduct.product))
+            .filter(ServiceCardProduct.id == item_id)
+            .first()
+        )
+
+    def get_card_product_by_card_and_product(
+        self, card_id: int, product_id: int
+    ) -> Optional[ServiceCardProduct]:
+        return (
+            self.db.query(ServiceCardProduct)
+            .filter(
+                ServiceCardProduct.service_card_id == card_id,
+                ServiceCardProduct.product_id == product_id,
+            )
+            .first()
+        )
+
+    def add_card_product(self, card_id: int, data: ServiceCardProductCreate) -> ServiceCardProduct:
+        item = ServiceCardProduct(service_card_id=card_id, **data.model_dump())
+        self.db.add(item)
+        self.db.commit()
+        self.db.refresh(item)
+        return self.get_card_product_by_id(item.id)
+
+    def update_card_product(
+        self, item_id: int, data: ServiceCardProductUpdate
+    ) -> Optional[ServiceCardProduct]:
+        item = self.get_card_product_by_id(item_id)
+        if not item:
+            return None
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(item, field, value)
+        self.db.commit()
+        self.db.refresh(item)
+        return item
+
+    def remove_card_product(self, item_id: int) -> bool:
+        item = self.get_card_product_by_id(item_id)
+        if not item:
+            return False
+        self.db.delete(item)
+        self.db.commit()
+        return True

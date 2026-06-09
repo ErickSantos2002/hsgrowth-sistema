@@ -371,68 +371,19 @@ const ServiceListModal: React.FC<ServiceListModalProps> = ({ list, boardId, onCl
 
 interface KanbanCardProps {
   card: ServiceCard;
-  lists: ServiceList[];
-  canManage: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-  onMoveToList: (listId: number) => void;
+  onOpenDetail: () => void;
 }
 
-const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, lists, canManage, onEdit, onDelete, onMoveToList }) => {
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!showMenu) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showMenu]);
-
+const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail }) => {
   return (
     <div
       data-service-card
-      className="group relative rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
+      onClick={onOpenDetail}
+      className="cursor-pointer rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
     >
-      <div className="flex items-start justify-between gap-2">
-        <h4 className="flex-1 text-sm font-medium leading-snug text-slate-900 dark:text-white">
-          {card.title}
-        </h4>
-        <div className="relative flex-shrink-0" ref={menuRef}>
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-slate-700"
-          >
-            <MoreVertical size={14} className="text-slate-400" />
-          </button>
-          {showMenu && (
-            <div className="absolute right-0 z-50 mt-1 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900" style={{ top: "100%" }}>
-              <button onClick={() => { setShowMenu(false); onEdit(); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                <Edit size={14} /> Editar
-              </button>
-              {lists.filter((l) => l.id !== card.list_id).map((l) => (
-                <button key={l.id} onClick={() => { setShowMenu(false); onMoveToList(l.id); }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                  <ChevronRight size={14} /> Mover para: {l.name}
-                </button>
-              ))}
-              {canManage && (
-                <>
-                  <div className="border-t border-gray-200 dark:border-gray-700" />
-                  <button onClick={() => { setShowMenu(false); onDelete(); }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10">
-                    <Trash2 size={14} /> Deletar
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
+      <h4 className="text-sm font-medium leading-snug text-slate-900 dark:text-white">
+        {card.title}
+      </h4>
       {card.client_name && (
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{card.client_name}</p>
       )}
@@ -441,6 +392,12 @@ const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, lists, canManage, 
       )}
       {card.description && (
         <p className="mt-1 line-clamp-2 text-xs text-slate-400 dark:text-slate-500">{card.description}</p>
+      )}
+      {card.due_date && (
+        <p className="mt-2 flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+          <span>📅</span>
+          {new Date(card.due_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+        </p>
       )}
     </div>
   );
@@ -452,7 +409,6 @@ interface KanbanColumnProps {
   list: ServiceList;
   cards: ServiceCard[];
   allLists: ServiceList[];
-  boardId: number;
   canManage: boolean;
   isFirst: boolean;
   isLast: boolean;
@@ -461,15 +417,13 @@ interface KanbanColumnProps {
   onDeleteList: () => void;
   onMoveLeft: () => void;
   onMoveRight: () => void;
-  onEditCard: (card: ServiceCard) => void;
-  onDeleteCard: (card: ServiceCard) => void;
-  onMoveCard: (card: ServiceCard, listId: number) => void;
+  onOpenCard: (card: ServiceCard) => void;
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
   list, cards, allLists, canManage, isFirst, isLast,
   onAddCard, onEditList, onDeleteList, onMoveLeft, onMoveRight,
-  onEditCard, onDeleteCard, onMoveCard,
+  onOpenCard,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -538,11 +492,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
             <KanbanServiceCard
               key={card.id}
               card={card}
-              lists={allLists}
-              canManage={canManage}
-              onEdit={() => onEditCard(card)}
-              onDelete={() => onDeleteCard(card)}
-              onMoveToList={(lid) => onMoveCard(card, lid)}
+              onOpenDetail={() => onOpenCard(card)}
             />
           ))
         ) : (
@@ -714,17 +664,8 @@ const ServiceKanban: React.FC = () => {
 
   // Card handlers
   const handleAddCard = (listId: number) => { setEditingCard(null); setSelectedListId(listId); setShowCardModal(true); };
-  const handleEditCard = (card: ServiceCard) => { setEditingCard(card); setSelectedListId(card.list_id); setShowCardModal(true); };
-  const handleDeleteCard = async (card: ServiceCard) => {
-    const ok = await confirm({ title: "Deletar Card", message: `Deletar "${card.title}"?`, confirmText: "Deletar", isDanger: true });
-    if (!ok) return;
-    try { await serviceBoardService.deleteCard(numId, card.id); await reloadCards(); showSuccess("Card deletado!"); }
-    catch { showError("Erro ao deletar card"); }
-  };
-  const handleMoveCard = async (card: ServiceCard, newListId: number) => {
-    try { await serviceBoardService.moveCard(numId, card.id, newListId); await reloadCards(); }
-    catch { showError("Erro ao mover card"); }
-  };
+  const handleOpenDetail = (card: ServiceCard) => { navigate(`/servicos/${numId}/cards/${card.id}`); };
+
   const handleSaveCard = async (data: { list_id: number; title: string; description?: string; due_date?: string; client_id?: number | null; person_id?: number | null }) => {
     try {
       if (editingCard) {
@@ -902,7 +843,6 @@ const ServiceKanban: React.FC = () => {
                   list={list}
                   cards={listCards}
                   allLists={lists}
-                  boardId={numId}
                   canManage={canManage}
                   isFirst={idx === 0}
                   isLast={idx === lists.length - 1}
@@ -911,9 +851,7 @@ const ServiceKanban: React.FC = () => {
                   onDeleteList={() => handleDeleteList(list)}
                   onMoveLeft={() => handleMoveListLeft(list)}
                   onMoveRight={() => handleMoveListRight(list)}
-                  onEditCard={handleEditCard}
-                  onDeleteCard={handleDeleteCard}
-                  onMoveCard={handleMoveCard}
+                  onOpenCard={handleOpenDetail}
                 />
               );
             })
@@ -953,7 +891,7 @@ const ServiceKanban: React.FC = () => {
         />
       )}
 
-      {/* Modal de card */}
+      {/* Modal de criar/editar card */}
       <ServiceCardModal
         isOpen={showCardModal}
         card={editingCard}
@@ -962,6 +900,7 @@ const ServiceKanban: React.FC = () => {
         onClose={() => setShowCardModal(false)}
         onSave={handleSaveCard}
       />
+
     </div>
   );
 };

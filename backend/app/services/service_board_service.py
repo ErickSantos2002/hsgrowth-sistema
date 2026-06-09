@@ -6,14 +6,18 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.repositories.service_board_repository import ServiceBoardRepository
+from app.repositories.product_repository import ProductRepository
 from app.schemas.service_board import (
     ServiceBoardCreate, ServiceBoardUpdate, ServiceBoardResponse, ServiceBoardListResponse,
     ServiceListCreate, ServiceListUpdate, ServiceListResponse,
     ServiceCardCreate, ServiceCardUpdate, ServiceCardResponse, ServiceCardListResponse,
+    ServiceCardProductCreate, ServiceCardProductUpdate,
+    ServiceCardProductResponse, ServiceCardProductSummary,
 )
 from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
+from app.models.service_card_product import ServiceCardProduct
 from app.models.user import User
 
 
@@ -158,6 +162,7 @@ class ServiceBoardService:
                 assigned_to_id=c.assigned_to_id,
                 due_date=c.due_date,
                 contact_info=c.contact_info,
+                payment_info=c.payment_info,
                 client_id=c.client_id,
                 person_id=c.person_id,
                 client_name=c.client.name if c.client else None,
@@ -194,3 +199,81 @@ class ServiceBoardService:
         self.get_card(card_id)
         self.get_list(new_list_id)
         return self.repo.move_card(card_id, new_list_id, new_position)
+
+    # ─── Card Products ────────────────────────────────────────────────────────
+
+    def _build_card_product_response(self, item: ServiceCardProduct) -> ServiceCardProductResponse:
+        return ServiceCardProductResponse(
+            id=item.id,
+            service_card_id=item.service_card_id,
+            product_id=item.product_id,
+            quantity=item.quantity,
+            unit_price=item.unit_price,
+            discount=item.discount,
+            notes=item.notes,
+            subtotal=item.subtotal,
+            total=item.total,
+            created_at=item.created_at,
+            updated_at=item.updated_at,
+            product_name=item.product.name if item.product else None,
+            product_sku=item.product.sku if item.product else None,
+            product_category=item.product.category if item.product else None,
+        )
+
+    def get_card_products(self, card_id: int) -> ServiceCardProductSummary:
+        self.get_card(card_id)
+        items = self.repo.list_card_products(card_id)
+        subtotal = sum(i.subtotal for i in items)
+        total_discount = sum(float(i.discount) for i in items)
+        total = sum(i.total for i in items)
+        return ServiceCardProductSummary(
+            items=[self._build_card_product_response(i) for i in items],
+            total_items=len(items),
+            subtotal=subtotal,
+            total_discount=total_discount,
+            total=total,
+        )
+
+    def add_card_product(
+        self, card_id: int, data: ServiceCardProductCreate, user: User
+    ) -> ServiceCardProductResponse:
+        self.get_card(card_id)
+
+        product = ProductRepository(self.db).get_product_by_id(data.product_id)
+        if not product:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Produto {data.product_id} não encontrado",
+            )
+
+        existing = self.repo.get_card_product_by_card_and_product(card_id, data.product_id)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"O produto '{product.name}' já está adicionado neste card",
+            )
+
+        item = self.repo.add_card_product(card_id, data)
+        return self._build_card_product_response(item)
+
+    def update_card_product(
+        self, item_id: int, data: ServiceCardProductUpdate, user: User
+    ) -> ServiceCardProductResponse:
+        item = self.repo.get_card_product_by_id(item_id)
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Produto do card {item_id} não encontrado",
+            )
+        updated = self.repo.update_card_product(item_id, data)
+        return self._build_card_product_response(updated)
+
+    def remove_card_product(self, item_id: int, user: User) -> dict:
+        item = self.repo.get_card_product_by_id(item_id)
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Produto do card {item_id} não encontrado",
+            )
+        self.repo.remove_card_product(item_id)
+        return {"message": "Produto removido do card com sucesso"}

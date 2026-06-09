@@ -11,6 +11,7 @@ import Boards from './pages/Boards';
 import KanbanBoard from './pages/KanbanBoard';
 import ServiceBoards from './pages/ServiceBoards';
 import ServiceKanban from './pages/ServiceKanban';
+import ServiceCardDetails from './pages/ServiceCardDetails';
 import CardDetails from './pages/CardDetails';
 import Clients from './pages/Clients';
 import Persons from './pages/Persons';
@@ -84,6 +85,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/boards/:boardId" element={<KanbanBoard />} />
       <Route path="/servicos" element={<ServiceBoards />} />
       <Route path="/servicos/:boardId" element={<ServiceKanban />} />
+      <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceCardDetails />} />
       <Route path="/cards/:cardId" element={<CardDetails />} />
       <Route path="/activities" element={<Activities />} />
       <Route path="/clients" element={<Clients />} />

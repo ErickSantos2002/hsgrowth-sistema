@@ -75,6 +75,7 @@ from app.models.email_template import EmailTemplate
 from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
+from app.models.service_card_product import ServiceCardProduct
 
 # Lista de todos os modelos (útil para imports)
 __all__ = [
@@ -120,4 +121,5 @@ __all__ = [
     "ServiceBoard",
     "ServiceList",
     "ServiceCard",
+    "ServiceCardProduct",
 ]
