@@ -273,8 +273,8 @@ const CardDetails: React.FC = () => {
     const confirmed = await confirm({
       title: "Clonar card",
       message: `Deseja clonar o card "${card.title}"? Um card idêntico será criado na mesma lista.`,
-      confirmLabel: "Clonar",
-      cancelLabel: "Cancelar",
+      confirmText: "Clonar",
+      cancelText: "Cancelar",
     });
     if (!confirmed) return;
     setIsCloning(true);

@@ -442,6 +442,7 @@ const ServiceCardModal: React.FC<ServiceCardModalProps> = ({
         <ClientModal
           isOpen={showCreateClientModal}
           onClose={() => setShowCreateClientModal(false)}
+          client={null}
           onSave={(client) => {
             if (client) handleSelectClient(client);
             setShowCreateClientModal(false);
@@ -454,6 +455,7 @@ const ServiceCardModal: React.FC<ServiceCardModalProps> = ({
         <PersonModal
           isOpen={showCreatePersonModal}
           onClose={() => setShowCreatePersonModal(false)}
+          person={null}
           onSave={(person) => {
             if (person) handleSelectPerson(person);
             setShowCreatePersonModal(false);

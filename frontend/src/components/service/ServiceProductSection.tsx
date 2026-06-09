@@ -132,6 +132,10 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
       : inputVal;
   };
 
+  // Valor usado nos serviços: o valor da calibração do produto
+  const getCalibrationPrice = (product: any): number =>
+    parseFloat(product?.calibration_price ?? 0) || 0;
+
   const handleAddProduct = async (productId: number) => {
     const product = availableProducts.find((p) => p.id === productId);
     if (!product) return;
@@ -140,7 +144,7 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
       await serviceBoardService.addCardProduct(boardId, cardId, {
         product_id: product.id,
         quantity: 1,
-        unit_price: parseFloat(product.unit_price),
+        unit_price: getCalibrationPrice(product),
         discount: 0,
       });
       setShowProductSearch(false);
@@ -358,7 +362,7 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
                     </div>
 
                     <div>
-                      <label className="text-xs text-slate-400">Valor unitário</label>
+                      <label className="text-xs text-slate-400">Valor da calibração</label>
                       <p className="rounded border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 px-2 py-1.5 text-slate-900 dark:text-white">{formatCurrency(product.unit_price)}</p>
                     </div>
 
@@ -531,7 +535,12 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
                             <p className="font-medium text-slate-900 dark:text-white">{product.name}</p>
                             <p className="text-xs text-slate-400 dark:text-slate-500">SKU: {product.sku}</p>
                           </div>
-                          <p className="text-sm font-medium text-emerald-400">{formatCurrency(parseFloat(product.unit_price))}</p>
+                          <div className="text-right">
+                            <p className="text-xs text-slate-400">Calibração</p>
+                            <p className={`text-sm font-medium ${getCalibrationPrice(product) > 0 ? "text-emerald-400" : "text-slate-400 dark:text-slate-500"}`}>
+                              {formatCurrency(getCalibrationPrice(product))}
+                            </p>
+                          </div>
                         </div>
                       </button>
                     ))}

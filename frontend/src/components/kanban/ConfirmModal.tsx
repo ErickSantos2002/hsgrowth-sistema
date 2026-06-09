@@ -9,6 +9,7 @@ interface ConfirmModalProps {
   title: string;
   message: string;
   confirmText?: string;
+  cancelText?: string;
   isDanger?: boolean;
 }
 
@@ -23,6 +24,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   title,
   message,
   confirmText = "Confirmar",
+  cancelText = "Cancelar",
   isDanger = false,
 }) => {
   /**
@@ -44,7 +46,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       footer={
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose}>
-            Cancelar
+            {cancelText}
           </Button>
           <Button variant={isDanger ? "danger" : "primary"} onClick={handleConfirm}>
             {confirmText}

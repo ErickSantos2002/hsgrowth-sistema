@@ -8,6 +8,7 @@ interface ConfirmOptions {
   title: string;
   message: string;
   confirmText?: string;
+  cancelText?: string;
   isDanger?: boolean;
 }
 
@@ -91,6 +92,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
         title={state.options.title}
         message={state.options.message}
         confirmText={state.options.confirmText}
+        cancelText={state.options.cancelText}
         isDanger={state.options.isDanger}
       />
     </ConfirmContext.Provider>

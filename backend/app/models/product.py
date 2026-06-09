@@ -24,7 +24,9 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
     sku = Column(String(100), nullable=True, unique=True, index=True)  # Código SKU
 
     # Preço padrão
-    unit_price = Column(Numeric(12, 2), nullable=False)  # Preço unitário padrão
+    unit_price = Column(Numeric(12, 2), nullable=False)  # Preço unitário padrão (vendas)
+    # Valor da calibração — usado nos boards de serviços
+    calibration_price = Column(Numeric(12, 2), nullable=True, default=0)
     currency = Column(String(3), default="BRL", nullable=False)  # BRL, USD, EUR
 
     # Categorização

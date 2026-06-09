@@ -15,7 +15,8 @@ class ProductBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Nome do produto")
     description: Optional[str] = Field(None, description="Descrição detalhada")
     sku: Optional[str] = Field(None, max_length=100, description="Código SKU")
-    unit_price: float = Field(..., ge=0, description="Preço unitário")
+    unit_price: float = Field(..., ge=0, description="Preço unitário (vendas)")
+    calibration_price: Optional[float] = Field(0, ge=0, description="Valor da calibração (serviços)")
     currency: str = Field("BRL", max_length=3, description="Moeda (BRL, USD, EUR)")
     category: Optional[str] = Field(None, max_length=100, description="Categoria do produto")
 
@@ -47,6 +48,7 @@ class ProductUpdate(BaseModel):
     description: Optional[str] = None
     sku: Optional[str] = Field(None, max_length=100)
     unit_price: Optional[float] = Field(None, ge=0)
+    calibration_price: Optional[float] = Field(None, ge=0)
     currency: Optional[str] = Field(None, max_length=3)
     category: Optional[str] = Field(None, max_length=100)
     is_active: Optional[bool] = None
@@ -59,7 +61,7 @@ class ProductResponse(ProductBase):
     created_at: datetime = Field(..., description="Data de criação")
     updated_at: datetime = Field(..., description="Data de atualização")
 
-    @field_validator('unit_price', mode='before')
+    @field_validator('unit_price', 'calibration_price', mode='before')
     @classmethod
     def convert_decimal_to_float(cls, v):
         """Converte Decimal para float"""

@@ -9,6 +9,7 @@ export interface Product {
   description?: string;
   sku?: string;
   unit_price: number;
+  calibration_price?: number;
   currency: string;
   category?: string;
   is_active: boolean;
@@ -21,6 +22,7 @@ export interface CreateProductRequest {
   description?: string;
   sku?: string;
   unit_price: number;
+  calibration_price?: number;
   currency?: string;
   category?: string;
   is_active?: boolean;
@@ -31,6 +33,7 @@ export interface UpdateProductRequest {
   description?: string;
   sku?: string;
   unit_price?: number;
+  calibration_price?: number;
   currency?: string;
   category?: string;
   is_active?: boolean;
