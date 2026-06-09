@@ -157,6 +157,13 @@ class ServiceBoardService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card de serviços não encontrado")
         return card
 
+    def get_card_in_board(self, board_id: int, card_id: int) -> ServiceCard:
+        """Busca o card garantindo que ele pertence ao board informado (anti-IDOR)."""
+        card = self.get_card(card_id)
+        if not card.list or card.list.board_id != board_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card não encontrado neste board")
+        return card
+
     def list_cards(self, board_id: int, page: int = 1, page_size: int = 200) -> ServiceCardListResponse:
         self.get_board(board_id)
         skip = (page - 1) * page_size
@@ -360,13 +367,21 @@ class ServiceBoardService:
         except Exception as e:  # pragma: no cover
             print(f"[SERVICE-ACTIVITY] erro ao registrar evento: {e}")
 
-    def list_activities(self, card_id: int) -> List[ServiceCardActivityResponse]:
-        self.get_card(card_id)
+    def _get_activity_scoped(self, board_id: int, card_id: int, activity_id: int) -> ServiceCardActivity:
+        """Busca a atividade garantindo que pertence ao card e ao board (anti-IDOR)."""
+        self.get_card_in_board(board_id, card_id)
+        activity = self.repo.get_activity_by_id(activity_id)
+        if not activity or activity.service_card_id != card_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Atividade não encontrada")
+        return activity
+
+    def list_activities(self, board_id: int, card_id: int) -> List[ServiceCardActivityResponse]:
+        self.get_card_in_board(board_id, card_id)
         items = self.repo.list_card_activities(card_id)
         return [self._build_activity_response(a) for a in items]
 
-    def create_activity(self, card_id: int, data: ServiceCardActivityCreate, user: User) -> ServiceCardActivityResponse:
-        self.get_card(card_id)
+    def create_activity(self, board_id: int, card_id: int, data: ServiceCardActivityCreate, user: User) -> ServiceCardActivityResponse:
+        self.get_card_in_board(board_id, card_id)
         if data.category not in ("atividade", "anotacao"):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Categoria inválida")
         activity = self.repo.create_activity(
@@ -381,27 +396,21 @@ class ServiceBoardService:
         )
         return self._build_activity_response(activity)
 
-    def update_activity(self, activity_id: int, data: ServiceCardActivityUpdate, user: User) -> ServiceCardActivityResponse:
-        activity = self.repo.get_activity_by_id(activity_id)
-        if not activity:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Atividade não encontrada")
+    def update_activity(self, board_id: int, card_id: int, activity_id: int, data: ServiceCardActivityUpdate, user: User) -> ServiceCardActivityResponse:
+        activity = self._get_activity_scoped(board_id, card_id, activity_id)
         updated = self.repo.update_activity(activity, data.model_dump(exclude_unset=True))
         return self._build_activity_response(updated)
 
-    def complete_activity(self, activity_id: int, is_completed: bool, user: User) -> ServiceCardActivityResponse:
-        activity = self.repo.get_activity_by_id(activity_id)
-        if not activity:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Atividade não encontrada")
+    def complete_activity(self, board_id: int, card_id: int, activity_id: int, is_completed: bool, user: User) -> ServiceCardActivityResponse:
+        activity = self._get_activity_scoped(board_id, card_id, activity_id)
         updated = self.repo.update_activity(activity, {
             "is_completed": is_completed,
             "completed_at": datetime.utcnow() if is_completed else None,
         })
         return self._build_activity_response(updated)
 
-    def delete_activity(self, activity_id: int, user: User) -> dict:
-        activity = self.repo.get_activity_by_id(activity_id)
-        if not activity:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Atividade não encontrada")
+    def delete_activity(self, board_id: int, card_id: int, activity_id: int, user: User) -> dict:
+        activity = self._get_activity_scoped(board_id, card_id, activity_id)
         # Remove o arquivo físico, se for um anexo
         if activity.category == "arquivo" and activity.file_path:
             try:
@@ -413,8 +422,8 @@ class ServiceBoardService:
         self.repo.delete_activity(activity)
         return {"message": "Removido com sucesso"}
 
-    async def upload_file(self, card_id: int, file: UploadFile, user: User) -> ServiceCardActivityResponse:
-        self.get_card(card_id)
+    async def upload_file(self, board_id: int, card_id: int, file: UploadFile, user: User) -> ServiceCardActivityResponse:
+        self.get_card_in_board(board_id, card_id)
         content = await file.read()
         if len(content) > MAX_FILE_SIZE:
             raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -443,9 +452,9 @@ class ServiceBoardService:
         )
         return self._build_activity_response(activity)
 
-    def get_file_for_download(self, activity_id: int):
-        activity = self.repo.get_activity_by_id(activity_id)
-        if not activity or activity.category != "arquivo" or not activity.file_path:
+    def get_file_for_download(self, board_id: int, card_id: int, activity_id: int):
+        activity = self._get_activity_scoped(board_id, card_id, activity_id)
+        if activity.category != "arquivo" or not activity.file_path:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Arquivo não encontrado")
         fp = UPLOAD_DIR / activity.file_path
         if not fp.exists():

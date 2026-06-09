@@ -56,7 +56,8 @@
       "Read(//c/c/Users/HS/Documents/GitHub/hsgrowth-sistema/frontend/src/pages/**)",
       "Bash(grep -E \"\\\\.\\(py|ts\\)$\")",
       "Bash(python -m py_compile app/models/service_card_activity.py app/models/service_card.py app/models/__init__.py app/schemas/service_board.py app/repositories/service_board_repository.py app/services/service_board_service.py app/api/v1/endpoints/service_boards.py alembic/versions/2026_06_09_0400-create_service_card_activities.py)",
-      "Bash(python -m py_compile app/services/service_board_service.py app/api/v1/endpoints/service_boards.py app/repositories/service_board_repository.py app/schemas/service_board.py app/models/service_card_activity.py app/models/__init__.py)"
+      "Bash(python -m py_compile app/services/service_board_service.py app/api/v1/endpoints/service_boards.py app/repositories/service_board_repository.py app/schemas/service_board.py app/models/service_card_activity.py app/models/__init__.py)",
+      "Bash(python -m py_compile app/services/service_board_service.py app/api/v1/endpoints/service_boards.py)"
     ]
   }
 }

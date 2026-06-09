@@ -444,7 +444,7 @@ async def list_service_card_activities(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.list_activities(card_id)
+    return svc.list_activities(board_id, card_id)
 
 
 @router.post("/{board_id}/cards/{card_id}/activities", response_model=ServiceCardActivityResponse)
@@ -456,7 +456,7 @@ async def create_service_card_activity(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.create_activity(card_id, data, current_user)
+    return svc.create_activity(board_id, card_id, data, current_user)
 
 
 @router.put("/{board_id}/cards/{card_id}/activities/{activity_id}", response_model=ServiceCardActivityResponse)
@@ -469,7 +469,7 @@ async def update_service_card_activity(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.update_activity(activity_id, data, current_user)
+    return svc.update_activity(board_id, card_id, activity_id, data, current_user)
 
 
 @router.patch("/{board_id}/cards/{card_id}/activities/{activity_id}/complete", response_model=ServiceCardActivityResponse)
@@ -482,7 +482,7 @@ async def complete_service_card_activity(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.complete_activity(activity_id, data.is_completed, current_user)
+    return svc.complete_activity(board_id, card_id, activity_id, data.is_completed, current_user)
 
 
 @router.delete("/{board_id}/cards/{card_id}/activities/{activity_id}")
@@ -494,7 +494,7 @@ async def delete_service_card_activity(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.delete_activity(activity_id, current_user)
+    return svc.delete_activity(board_id, card_id, activity_id, current_user)
 
 
 @router.post("/{board_id}/cards/{card_id}/activities/files", response_model=ServiceCardActivityResponse)
@@ -506,7 +506,7 @@ async def upload_service_card_file(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return await svc.upload_file(card_id, file, current_user)
+    return await svc.upload_file(board_id, card_id, file, current_user)
 
 
 @router.get("/{board_id}/cards/{card_id}/activities/files/{activity_id}/download")
@@ -518,5 +518,5 @@ async def download_service_card_file(
     db: Session = Depends(get_db),
 ):
     svc = ServiceBoardService(db)
-    path, filename, mime = svc.get_file_for_download(activity_id)
+    path, filename, mime = svc.get_file_for_download(board_id, card_id, activity_id)
     return FileResponse(path=str(path), filename=filename, media_type=mime)
