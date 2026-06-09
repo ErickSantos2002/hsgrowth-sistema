@@ -94,7 +94,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
    */
   const getTypeColorClasses = (type: ActivityType, isSelected: boolean) => {
     const unselected = "bg-gray-100 dark:bg-slate-800 text-slate-900 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700";
-    const configs = {
+    const configs: Record<string, string> = {
       call: isSelected
         ? "bg-blue-500/30 text-slate-900 dark:text-blue-400 border-blue-500"
         : unselected,
@@ -117,7 +117,7 @@ const QuickActivityForm: React.FC<QuickActivityFormProps> = ({ cardId, onSave, o
         ? "bg-slate-500/30 text-slate-900 dark:text-slate-400 border-gray-400 dark:border-slate-500"
         : unselected,
     };
-    return configs[type];
+    return configs[type] ?? unselected;
   };
 
   /**
