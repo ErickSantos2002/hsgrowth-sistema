@@ -383,6 +383,7 @@ class ProductService:
             description=product.description,
             sku=product.sku,
             unit_price=float(product.unit_price),
+            calibration_price=float(product.calibration_price) if product.calibration_price is not None else 0,
             currency=product.currency,
             category=product.category,
             is_active=product.is_active,

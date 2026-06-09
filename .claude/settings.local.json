@@ -49,7 +49,9 @@
       "Bash(echo \"=== exit: $? \\(no lines above = zero errors\\) ===\")",
       "Bash(python -m py_compile app/models/product.py app/schemas/product.py alembic/versions/2026_06_09_0300-add_calibration_price_to_products.py)",
       "Bash(grep -rln \"unit_price\" src/pages/Products.tsx src/components/products/)",
-      "Bash(ls src/components/products/)"
+      "Bash(ls src/components/products/)",
+      "Read(//c/c/Users/HS/Documents/GitHub/hsgrowth-sistema/backend/**)",
+      "Bash(python -m py_compile app/services/product_service.py)"
     ]
   }
 }
