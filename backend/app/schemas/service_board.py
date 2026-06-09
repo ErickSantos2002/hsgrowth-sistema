@@ -95,6 +95,8 @@ class ServiceCardBase(BaseModel):
     assigned_to_id: Optional[int] = None
     due_date: Optional[datetime] = None
     contact_info: Optional[dict] = None
+    client_id: Optional[int] = None
+    person_id: Optional[int] = None
 
 
 class ServiceCardCreate(ServiceCardBase):
@@ -108,6 +110,8 @@ class ServiceCardUpdate(BaseModel):
     assigned_to_id: Optional[int] = None
     due_date: Optional[datetime] = None
     contact_info: Optional[dict] = None
+    client_id: Optional[int] = None
+    person_id: Optional[int] = None
     position: Optional[float] = None
     is_deleted: Optional[bool] = None
 
@@ -124,6 +128,8 @@ class ServiceCardResponse(ServiceCardBase):
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
+    client_name: Optional[str] = None
+    person_name: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

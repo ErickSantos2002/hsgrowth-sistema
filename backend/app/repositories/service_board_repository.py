@@ -207,6 +207,8 @@ class ServiceBoardRepository:
             assigned_to_id=data.assigned_to_id,
             due_date=data.due_date,
             contact_info=data.contact_info,
+            client_id=data.client_id,
+            person_id=data.person_id,
             position=next_position,
         )
         self.db.add(card)

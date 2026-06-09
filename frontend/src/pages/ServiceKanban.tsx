@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Plus, Search, MoreVertical, Edit, Trash2,
-  Wrench, X, Loader2, ChevronLeft, ChevronRight, ChevronDown,
+  Wrench, X, ChevronLeft, ChevronRight, ChevronDown,
   Grid3x3, Target, TrendingUp, Users, Briefcase, FolderKanban,
   Lightbulb, Rocket, Star, Heart, LucideIcon,
   Settings, Hammer, Gauge, Package, ClipboardList, Cog, FlaskConical,
@@ -18,6 +18,7 @@ import { useConfirm } from "../contexts/ConfirmContext";
 import { BaseModal, FormField, Input, Textarea, Button, LoadingSpinner } from "../components/common";
 import { useAuth } from "../hooks/useAuth";
 import { COLORS } from "../constants/colors";
+import ServiceCardModal from "../components/service/ServiceCardModal";
 
 // ─── Icon maps ────────────────────────────────────────────────────────────────
 
@@ -366,124 +367,6 @@ const ServiceListModal: React.FC<ServiceListModalProps> = ({ list, boardId, onCl
   );
 };
 
-// ─── Modal de card ────────────────────────────────────────────────────────────
-
-interface ServiceCardModalProps {
-  card?: ServiceCard | null;
-  lists: ServiceList[];
-  defaultListId: number;
-  boardId: number;
-  onClose: () => void;
-  onSuccess: () => void;
-}
-
-const ServiceCardModal: React.FC<ServiceCardModalProps> = ({ card, lists, defaultListId, boardId, onClose, onSuccess }) => {
-  const [title, setTitle] = useState(card?.title || "");
-  const [description, setDescription] = useState(card?.description || "");
-  const [listId, setListId] = useState(card?.list_id || defaultListId);
-  const [contactName, setContactName] = useState(card?.contact_info?.name || "");
-  const [contactPhone, setContactPhone] = useState(card?.contact_info?.phone || "");
-  const [errors, setErrors] = useState<{ title?: string }>({});
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) { setErrors({ title: "Título é obrigatório" }); return; }
-    setSaving(true);
-    try {
-      const contact_info = (contactName || contactPhone)
-        ? { name: contactName, phone: contactPhone }
-        : undefined;
-      if (card) {
-        await serviceBoardService.updateCard(boardId, card.id, { title: title.trim(), description, list_id: listId, contact_info });
-      } else {
-        await serviceBoardService.createCard(boardId, { list_id: listId, title: title.trim(), description, contact_info });
-      }
-      onSuccess();
-    } catch {
-      showError("Erro ao salvar card");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <BaseModal
-      isOpen={true}
-      onClose={onClose}
-      title={card ? "Editar Card" : "Novo Card"}
-      subtitle={card ? "Edite as informações do card" : "Adicione um novo card à lista"}
-      size="lg"
-      footer={
-        <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={onClose} disabled={saving}>Cancelar</Button>
-          <Button variant="primary" onClick={handleSubmit} loading={saving} disabled={!title.trim()}>
-            {card ? "Salvar Alterações" : "Criar Card"}
-          </Button>
-        </div>
-      }
-    >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <FormField label="Título" required error={errors.title}>
-          <Input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex: Calibração equipamento X, Manutenção preventiva..."
-            error={!!errors.title}
-            disabled={saving}
-            autoFocus
-          />
-        </FormField>
-
-        <FormField label="Descrição">
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Detalhes sobre o serviço..."
-            rows={3}
-            disabled={saving}
-          />
-        </FormField>
-
-        <FormField label="Lista">
-          <select
-            value={listId}
-            onChange={(e) => setListId(Number(e.target.value))}
-            disabled={saving}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-          >
-            {lists.map((l) => (
-              <option key={l.id} value={l.id}>{l.name}</option>
-            ))}
-          </select>
-        </FormField>
-
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label="Nome do contato">
-            <Input
-              type="text"
-              value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
-              placeholder="Nome do cliente"
-              disabled={saving}
-            />
-          </FormField>
-          <FormField label="Telefone">
-            <Input
-              type="text"
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
-              placeholder="(00) 00000-0000"
-              disabled={saving}
-            />
-          </FormField>
-        </div>
-      </form>
-    </BaseModal>
-  );
-};
-
 // ─── Card do kanban ───────────────────────────────────────────────────────────
 
 interface KanbanCardProps {
@@ -550,11 +433,11 @@ const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, lists, canManage, 
         </div>
       </div>
 
-      {card.contact_info?.name && (
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{card.contact_info.name}</p>
+      {card.client_name && (
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{card.client_name}</p>
       )}
-      {card.contact_info?.phone && (
-        <p className="text-xs text-slate-400 dark:text-slate-500">{card.contact_info.phone}</p>
+      {card.person_name && (
+        <p className="text-xs text-slate-400 dark:text-slate-500">{card.person_name}</p>
       )}
       {card.description && (
         <p className="mt-1 line-clamp-2 text-xs text-slate-400 dark:text-slate-500">{card.description}</p>
@@ -842,6 +725,20 @@ const ServiceKanban: React.FC = () => {
     try { await serviceBoardService.moveCard(numId, card.id, newListId); await reloadCards(); }
     catch { showError("Erro ao mover card"); }
   };
+  const handleSaveCard = async (data: { list_id: number; title: string; description?: string; due_date?: string; client_id?: number | null; person_id?: number | null }) => {
+    try {
+      if (editingCard) {
+        await serviceBoardService.updateCard(numId, editingCard.id, data);
+      } else {
+        await serviceBoardService.createCard(numId, data);
+      }
+      setShowCardModal(false);
+      await reloadCards();
+      showSuccess(editingCard ? "Card atualizado!" : "Card criado!");
+    } catch {
+      showError("Erro ao salvar card");
+    }
+  };
 
   if (loading) {
     return (
@@ -873,7 +770,8 @@ const ServiceKanban: React.FC = () => {
   const filteredCards = searchTerm.trim()
     ? cards.filter((c) =>
         c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.contact_info?.name || "").toLowerCase().includes(searchTerm.toLowerCase())
+        (c.client_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.person_name || "").toLowerCase().includes(searchTerm.toLowerCase())
       )
     : cards;
 
@@ -1056,16 +954,14 @@ const ServiceKanban: React.FC = () => {
       )}
 
       {/* Modal de card */}
-      {showCardModal && (
-        <ServiceCardModal
-          card={editingCard}
-          lists={lists}
-          defaultListId={selectedListId || lists[0]?.id || 0}
-          boardId={numId}
-          onClose={() => setShowCardModal(false)}
-          onSuccess={() => { setShowCardModal(false); reloadCards(); }}
-        />
-      )}
+      <ServiceCardModal
+        isOpen={showCardModal}
+        card={editingCard}
+        lists={lists}
+        defaultListId={selectedListId || lists[0]?.id || 0}
+        onClose={() => setShowCardModal(false)}
+        onSave={handleSaveCard}
+      />
     </div>
   );
 };

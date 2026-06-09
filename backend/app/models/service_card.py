@@ -25,6 +25,10 @@ class ServiceCard(Base, TimestampMixin, SoftDeleteMixin):
     # Posição no kanban
     position = Column(Numeric(12, 2), default=0, nullable=False)
 
+    # Empresa e contato vinculados
+    client_id = Column(Integer, ForeignKey("clients.id", ondelete="SET NULL"), nullable=True, index=True)
+    person_id = Column(Integer, ForeignKey("persons.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # Dados de contato/cliente (JSON livre para customização futura)
     contact_info = Column(JSON, nullable=True)
 
@@ -34,6 +38,8 @@ class ServiceCard(Base, TimestampMixin, SoftDeleteMixin):
     # Relacionamentos
     list = relationship("ServiceList", back_populates="cards")
     assigned_to = relationship("User", foreign_keys=[assigned_to_id])
+    client = relationship("Client", foreign_keys=[client_id])
+    person = relationship("Person", foreign_keys=[person_id])
 
     def __repr__(self):
         return f"<ServiceCard(id={self.id}, title='{self.title}')>"

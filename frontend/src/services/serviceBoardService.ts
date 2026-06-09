@@ -44,6 +44,10 @@ export interface ServiceCard {
   assigned_to_id?: number;
   due_date?: string;
   contact_info?: Record<string, any>;
+  client_id?: number;
+  person_id?: number;
+  client_name?: string;
+  person_name?: string;
   position: number;
   is_deleted: boolean;
   created_at: string;
@@ -97,6 +101,8 @@ export interface CreateServiceCardRequest {
   assigned_to_id?: number;
   due_date?: string;
   contact_info?: Record<string, any>;
+  client_id?: number;
+  person_id?: number;
 }
 
 export interface UpdateServiceCardRequest {
@@ -106,6 +112,8 @@ export interface UpdateServiceCardRequest {
   assigned_to_id?: number;
   due_date?: string;
   contact_info?: Record<string, any>;
+  client_id?: number;
+  person_id?: number;
   position?: number;
   is_deleted?: boolean;
 }
