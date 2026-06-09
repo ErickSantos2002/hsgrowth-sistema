@@ -1,21 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Plus, Search, Grid3x3, Archive, RefreshCw, CheckCircle, Wrench,
   Eye, Edit, Copy, ArchiveRestore, Trash2, MoreVertical, Calendar as CalendarIcon,
+  CalendarDays, ChevronDown, Settings, Hammer, Gauge, Package,
+  ClipboardList, Cog, FlaskConical, Microscope, LucideIcon,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import serviceBoardService, {
   ServiceBoard,
-  CreateServiceBoardRequest,
-  UpdateServiceBoardRequest,
 } from "../services/serviceBoardService";
 import { showSuccess, showError } from "../utils/toast";
 import EmptyState from "../components/common/EmptyState";
 import { useAuth } from "../hooks/useAuth";
 import { useConfirm } from "../contexts/ConfirmContext";
+import { BaseModal, FormField, Input, Textarea, Button, Alert } from "../components/common";
 import { COLORS } from "../constants/colors";
 
-// ─── Modal simples de criar/editar board de serviço ──────────────────────────
+// ─── Modal de criar/editar board de serviço ───────────────────────────────────
 
 interface ServiceBoardModalProps {
   board?: ServiceBoard | null;
@@ -23,27 +24,81 @@ interface ServiceBoardModalProps {
   onSuccess: () => void;
 }
 
-const SERVICE_COLORS = [
-  "#8B5CF6", "#10B981", "#3B82F6", "#F59E0B",
-  "#EF4444", "#06B6D4", "#EC4899", "#14B8A6",
+const iconOptions: { value: string; label: string; icon: LucideIcon }[] = [
+  { value: "wrench",        label: "Chave",       icon: Wrench },
+  { value: "settings",      label: "Engrenagem",  icon: Settings },
+  { value: "hammer",        label: "Martelo",     icon: Hammer },
+  { value: "gauge",         label: "Calibração",  icon: Gauge },
+  { value: "package",       label: "Pacote",      icon: Package },
+  { value: "clipboard",     label: "Checklist",   icon: ClipboardList },
+  { value: "cog",           label: "Peça",        icon: Cog },
+  { value: "flask",         label: "Lab",         icon: FlaskConical },
+  { value: "microscope",    label: "Análise",     icon: Microscope },
+  { value: "grid",          label: "Grid",        icon: Grid3x3 },
+];
+
+const colorPresets = [
+  COLORS.board.purple,
+  COLORS.board.blue,
+  COLORS.board.green,
+  COLORS.board.amber,
+  COLORS.board.red,
+  COLORS.board.pink,
+  COLORS.board.gray,
 ];
 
 const ServiceBoardModal: React.FC<ServiceBoardModalProps> = ({ board, onClose, onSuccess }) => {
-  const [name, setName] = useState(board?.name || "");
-  const [description, setDescription] = useState(board?.description || "");
-  const [color, setColor] = useState(board?.color || "#8B5CF6");
+  const isEditing = !!board;
+  const [formData, setFormData] = useState({
+    name: board?.name || "",
+    description: board?.description || "",
+    color: board?.color || COLORS.board.purple,
+    icon: board?.icon || "wrench",
+  });
+  const [errors, setErrors] = useState<{ name?: string }>({});
   const [saving, setSaving] = useState(false);
+  const [isIconOpen, setIsIconOpen] = useState(false);
+  const [isColorOpen, setIsColorOpen] = useState(false);
+  const iconRef = useRef<HTMLDivElement | null>(null);
+  const colorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (iconRef.current && !iconRef.current.contains(e.target as Node)) setIsIconOpen(false);
+      if (colorRef.current && !colorRef.current.contains(e.target as Node)) setIsColorOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const validate = () => {
+    const errs: { name?: string } = {};
+    if (!formData.name.trim()) errs.name = "Nome é obrigatório";
+    else if (formData.name.trim().length < 3) errs.name = "Nome deve ter pelo menos 3 caracteres";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!validate()) return;
     setSaving(true);
     try {
-      if (board) {
-        await serviceBoardService.update(board.id, { name, description, color });
+      if (isEditing && board) {
+        await serviceBoardService.update(board.id, {
+          name: formData.name.trim(),
+          description: formData.description.trim() || undefined,
+          color: formData.color,
+          icon: formData.icon,
+        });
         showSuccess("Board atualizado com sucesso!");
       } else {
-        await serviceBoardService.create({ name, description, color, icon: "wrench" });
+        await serviceBoardService.create({
+          name: formData.name.trim(),
+          description: formData.description.trim() || undefined,
+          color: formData.color,
+          icon: formData.icon,
+        });
         showSuccess("Board criado com sucesso!");
       }
       onSuccess();
@@ -54,61 +109,169 @@ const ServiceBoardModal: React.FC<ServiceBoardModalProps> = ({ board, onClose, o
     }
   };
 
+  const selectedIcon = iconOptions.find((o) => o.value === formData.icon) || iconOptions[0];
+  const SelectedIconComp = selectedIcon.icon;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">
-          {board ? "Editar Board" : "Novo Board de Serviços"}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Nome *</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Descrição</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Cor</label>
-            <div className="flex flex-wrap gap-2">
-              {SERVICE_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={`h-8 w-8 rounded-full border-2 transition-transform hover:scale-110 ${color === c ? "border-white ring-2 ring-offset-1" : "border-transparent"}`}
-                  style={{ backgroundColor: c, ringColor: c }}
-                />
-              ))}
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={isEditing ? "Editar Board" : "Novo Board de Serviços"}
+      subtitle={isEditing ? "Edite as informações do board" : "Crie um novo board para organizar os serviços"}
+      size="lg"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Cancelar</Button>
+          <Button variant="primary" onClick={handleSubmit} loading={saving} disabled={!formData.name.trim()}>
+            {isEditing ? "Salvar Alterações" : "Criar Board"}
+          </Button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {!isEditing && (
+          <Alert type="help">
+            <strong>Dica:</strong> Após criar o board, você poderá adicionar listas e cards para organizar os serviços.
+          </Alert>
+        )}
+
+        <FormField label="Nome do Board" required error={errors.name}>
+          <Input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Ex: Calibração 2024, Manutenção Preventiva..."
+            error={!!errors.name}
+            disabled={saving}
+            autoFocus
+          />
+        </FormField>
+
+        <FormField label="Descrição" hint="Breve descrição sobre o objetivo deste board (opcional, até 200 caracteres)">
+          <Textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Ex: Board para gerenciar serviços de calibração e manutenção..."
+            rows={3}
+            disabled={saving}
+            maxLength={200}
+          />
+        </FormField>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Ícone */}
+          <FormField label="Ícone" hint="Clique para escolher um ícone do board">
+            <div ref={iconRef} className="relative">
+              <button
+                type="button"
+                onClick={() => { setIsIconOpen((o) => !o); setIsColorOpen(false); }}
+                disabled={saving}
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-700 dark:text-slate-200 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700"
+              >
+                <span className="flex items-center gap-3">
+                  <SelectedIconComp size={20} />
+                  <span className="text-sm">{selectedIcon.label}</span>
+                </span>
+                <ChevronDown size={18} className="text-slate-400" />
+              </button>
+              {isIconOpen && (
+                <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-xl">
+                  <div className="grid grid-cols-5 gap-2">
+                    {iconOptions.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => { setFormData({ ...formData, icon: opt.value }); setIsIconOpen(false); }}
+                        className={`flex aspect-square items-center justify-center rounded-lg transition-all ${
+                          formData.icon === opt.value
+                            ? "scale-105 bg-gray-200 dark:bg-slate-700 ring-2 ring-white ring-offset-2 ring-offset-white dark:ring-offset-slate-900"
+                            : "bg-gray-100/50 dark:bg-slate-800/50 hover:scale-105 hover:bg-gray-200 dark:hover:bg-slate-700"
+                        }`}
+                        title={opt.label}
+                      >
+                        <opt.icon size={22} className="text-slate-700 dark:text-slate-200" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </FormField>
+
+          {/* Cor */}
+          <FormField label="Cor" hint="Clique para escolher uma cor predefinida">
+            <div ref={colorRef} className="relative">
+              <button
+                type="button"
+                onClick={() => { setIsColorOpen((o) => !o); setIsIconOpen(false); }}
+                disabled={saving}
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-700 dark:text-slate-200 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="h-6 w-6 rounded-md border border-gray-300 dark:border-slate-600" style={{ backgroundColor: formData.color }} />
+                  <span className="text-sm">{formData.color}</span>
+                </span>
+                <ChevronDown size={18} className="text-slate-400" />
+              </button>
+              {isColorOpen && (
+                <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-xl">
+                  <div className="grid grid-cols-7 gap-2">
+                    {colorPresets.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => { setFormData({ ...formData, color: c }); setIsColorOpen(false); }}
+                        className={`aspect-square rounded-lg transition-all hover:scale-105 ${formData.color === c ? "scale-105 ring-2 ring-white ring-offset-2 ring-offset-white dark:ring-offset-slate-900" : ""}`}
+                        style={{ backgroundColor: c }}
+                      >
+                        {formData.color === c && (
+                          <svg className="h-full w-full p-2 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="color"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      className="h-10 w-12 cursor-pointer rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800"
+                    />
+                    <Input
+                      type="text"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      placeholder="#8B5CF6"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </FormField>
+        </div>
+
+        {/* Preview */}
+        <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
+          <p className="mb-3 text-xs font-medium text-slate-400">Preview:</p>
+          <div className="flex items-center gap-4">
+            <div className="rounded-lg p-3" style={{ backgroundColor: `${formData.color}20` }}>
+              <SelectedIconComp size={28} style={{ color: formData.color }} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                {formData.name.trim() || "Nome do Board"}
+              </h3>
+              <p className="mt-0.5 text-sm text-slate-400">
+                {(formData.description.trim() || "Sem descrição").slice(0, 200)}
+              </p>
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-slate-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800">
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={saving || !name.trim()}
-              className="rounded-lg bg-violet-600 px-4 py-2 text-white hover:bg-violet-700 disabled:opacity-50"
-            >
-              {saving ? "Salvando..." : "Salvar"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -181,7 +344,7 @@ const ServiceBoardCard: React.FC<ServiceBoardCardProps> = ({
           {board.description || "Sem descrição"}
         </p>
 
-        {/* Contagem */}
+        {/* Contagem de listas e cards */}
         <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-gray-500">
           <span>{board.lists_count ?? 0} listas</span>
           <span>{board.cards_count ?? 0} cards</span>
@@ -222,7 +385,10 @@ const ServiceBoardCard: React.FC<ServiceBoardCardProps> = ({
                     <Copy size={16} /> Duplicar
                   </button>
                   <button onClick={() => { setShowMenu(false); onToggleArchive(); }} className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700">
-                    {!board.is_deleted ? <><Archive size={16} /> Arquivar</> : <><ArchiveRestore size={16} /> Restaurar</>}
+                    {!board.is_deleted
+                      ? <><Archive size={16} /> Arquivar</>
+                      : <><ArchiveRestore size={16} /> Restaurar</>
+                    }
                   </button>
                   <div className="border-t border-gray-200 dark:border-gray-700" />
                   <button onClick={() => { setShowMenu(false); onDelete(); }} className="flex w-full items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10">
@@ -256,7 +422,7 @@ const ServiceBoards: React.FC = () => {
 
   useEffect(() => {
     loadBoards();
-  }, [filterStatus]);
+  }, [filterStatus, searchTerm]);
 
   const loadBoards = async () => {
     setLoading(true);
@@ -279,29 +445,34 @@ const ServiceBoards: React.FC = () => {
     return b.name.toLowerCase().includes(t) || (b.description || "").toLowerCase().includes(t);
   });
 
-  const handleEdit = (board: ServiceBoard) => { setEditingBoard(board); setIsModalOpen(true); };
   const handleCreate = () => { setEditingBoard(null); setIsModalOpen(true); };
+  const handleEdit = (board: ServiceBoard) => { setEditingBoard(board); setIsModalOpen(true); };
 
   const handleDuplicate = async (board: ServiceBoard) => {
     try {
       await serviceBoardService.duplicate(board.id, `${board.name} - Cópia`);
       await loadBoards();
       showSuccess("Board duplicado com sucesso!");
-    } catch { showError("Erro ao duplicar board"); }
+    } catch {
+      showError("Erro ao duplicar board");
+    }
   };
 
   const handleToggleArchive = async (board: ServiceBoard) => {
     try {
       await serviceBoardService.update(board.id, { is_deleted: !board.is_deleted });
       await loadBoards();
-      showSuccess(board.is_deleted ? "Board restaurado!" : "Board arquivado!");
-    } catch { showError("Erro ao atualizar board"); }
+      const action = board.is_deleted ? "restaurado" : "arquivado";
+      showSuccess(`Board ${action} com sucesso!`);
+    } catch {
+      showError("Erro ao atualizar status do board");
+    }
   };
 
   const handleDelete = async (board: ServiceBoard) => {
     const ok = await confirm({
       title: "Deletar Board",
-      message: `Deletar "${board.name}"? Todas as listas e cards serão removidos permanentemente.`,
+      message: `Tem certeza que deseja deletar o board "${board.name}"? Todos os cards e listas serão removidos permanentemente.`,
       confirmText: "Deletar",
       isDanger: true,
     });
@@ -309,13 +480,15 @@ const ServiceBoards: React.FC = () => {
     try {
       await serviceBoardService.delete(board.id);
       await loadBoards();
-      showSuccess("Board deletado!");
-    } catch { showError("Erro ao deletar board"); }
+      showSuccess("Board deletado com sucesso!");
+    } catch {
+      showError("Erro ao deletar board");
+    }
   };
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
+      {/* Header com título e botões */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
@@ -326,19 +499,34 @@ const ServiceBoards: React.FC = () => {
             Gerencie os quadros de serviços, calibração e manutenção
           </p>
         </div>
-        {canManage && (
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-white shadow-lg transition-all hover:from-violet-600 hover:to-purple-600"
+
+        {/* Botões do header */}
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          {/* Botão Calendário Global */}
+          <Link
+            to="/calendar"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-2 transition-all hover:bg-blue-500/20 sm:flex-none"
           >
-            <Plus size={20} />
-            Novo Board
-          </button>
-        )}
+            <CalendarDays size={20} className="text-slate-900 dark:text-blue-400" />
+            <span className="hidden sm:inline text-slate-900 dark:text-blue-400">Calendário</span>
+          </Link>
+
+          {/* Botão Novo Board - Apenas Admin e Manager */}
+          {canManage && (
+            <button
+              onClick={handleCreate}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-white shadow-lg transition-all hover:from-violet-600 hover:to-purple-600 hover:shadow-xl sm:w-auto"
+            >
+              <Plus size={20} />
+              Novo Board
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Filtros */}
+      {/* Barra de filtros e busca */}
       <div className="flex flex-col gap-4 sm:flex-row">
+        {/* Campo de busca */}
         <div className="relative flex-1">
           <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -346,46 +534,68 @@ const ServiceBoards: React.FC = () => {
             placeholder="Buscar boards..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-11 w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="h-11 w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400"
           />
         </div>
-        <div className="flex items-center gap-2">
-          {(["all", "active", "archived"] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilterStatus(s)}
-              className={`flex h-11 items-center gap-1.5 rounded-lg px-4 py-2 transition-colors ${
-                filterStatus === s
-                  ? s === "all" ? "bg-violet-500 text-white" : s === "active" ? "bg-green-500 text-white" : "bg-yellow-500 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800/50 dark:text-gray-400"
-              }`}
-            >
-              {s === "all" && <Grid3x3 size={16} />}
-              {s === "active" && <CheckCircle size={16} />}
-              {s === "archived" && <Archive size={16} />}
-              <span className="hidden sm:inline">{s === "all" ? "Todos" : s === "active" ? "Ativos" : "Arquivados"}</span>
-            </button>
-          ))}
+
+        {/* Filtro por status + atualizar */}
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <button
+            onClick={() => setFilterStatus("all")}
+            className={`flex h-11 flex-1 items-center justify-center rounded-lg px-4 py-2 transition-colors sm:flex-none ${
+              filterStatus === "all"
+                ? "bg-violet-500 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-700"
+            }`}
+          >
+            <Grid3x3 size={20} className="inline sm:mr-2" />
+            <span className="hidden sm:inline">Todos</span>
+          </button>
+          <button
+            onClick={() => setFilterStatus("active")}
+            className={`flex h-11 flex-1 items-center justify-center rounded-lg px-4 py-2 transition-colors sm:flex-none ${
+              filterStatus === "active"
+                ? "bg-green-500 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-700"
+            }`}
+          >
+            <CheckCircle size={20} className="inline sm:mr-2" />
+            <span className="hidden sm:inline">Ativos</span>
+          </button>
+          <button
+            onClick={() => setFilterStatus("archived")}
+            className={`flex h-11 flex-1 items-center justify-center rounded-lg px-4 py-2 transition-colors sm:flex-none ${
+              filterStatus === "archived"
+                ? "bg-yellow-500 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-700"
+            }`}
+          >
+            <Archive size={20} className="inline sm:mr-2" />
+            <span className="hidden sm:inline">Arquivados</span>
+          </button>
+
+          {/* Botão de refresh */}
           <button
             onClick={loadBoards}
             disabled={loading}
-            className="flex h-11 items-center rounded-lg bg-gray-100 px-4 text-gray-600 transition-colors hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-800/50 dark:text-gray-300"
+            className="flex h-11 flex-1 items-center justify-center rounded-lg bg-gray-100 px-4 py-2 text-gray-600 transition-colors hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-800/50 dark:text-gray-300 dark:hover:bg-gray-700 sm:flex-none"
+            title="Atualizar lista"
           >
             <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
       </div>
 
-      {/* Loading */}
+      {/* Loading skeleton */}
       {loading && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-48 animate-pulse rounded-xl bg-gray-200/80 dark:bg-gray-800/30" />
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-48 animate-pulse rounded-xl bg-gray-200/80 backdrop-blur-sm dark:bg-gray-800/30" />
           ))}
         </div>
       )}
 
-      {/* Grid */}
+      {/* Grid de boards */}
       {!loading && filtered.length > 0 && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((board) => (
@@ -403,7 +613,7 @@ const ServiceBoards: React.FC = () => {
         </div>
       )}
 
-      {/* Empty */}
+      {/* Estado vazio */}
       {!loading && filtered.length === 0 && (
         <EmptyState
           icon={Grid3x3}
@@ -412,7 +622,7 @@ const ServiceBoards: React.FC = () => {
             searchTerm || filterStatus !== "all"
               ? "Tente ajustar os filtros"
               : canManage
-              ? "Crie seu primeiro board de serviços para começar"
+              ? "Crie seu primeiro board de serviços para começar a organizar as tarefas"
               : "Entre em contato com o administrador para criar boards"
           }
           actionLabel={canManage ? "Criar Primeiro Board" : undefined}
@@ -420,7 +630,7 @@ const ServiceBoards: React.FC = () => {
         />
       )}
 
-      {/* Modal */}
+      {/* Modal de criar/editar board */}
       {isModalOpen && (
         <ServiceBoardModal
           board={editingBoard}

@@ -2,9 +2,11 @@ import React, { useRef, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Plus, Search, MoreVertical, Edit, Trash2,
-  Wrench, X, Loader2, GripVertical, ChevronLeft, ChevronRight,
+  Wrench, X, Loader2, ChevronLeft, ChevronRight, ChevronDown,
   Grid3x3, Target, TrendingUp, Users, Briefcase, FolderKanban,
   Lightbulb, Rocket, Star, Heart, LucideIcon,
+  Settings, Hammer, Gauge, Package, ClipboardList, Cog, FlaskConical,
+  Microscope, Archive, Copy,
 } from "lucide-react";
 import serviceBoardService, {
   ServiceBoard,
@@ -13,99 +15,360 @@ import serviceBoardService, {
 } from "../services/serviceBoardService";
 import { showSuccess, showError } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
-import { LoadingSpinner } from "../components/common";
+import { BaseModal, FormField, Input, Textarea, Button, LoadingSpinner } from "../components/common";
 import { useAuth } from "../hooks/useAuth";
+import { COLORS } from "../constants/colors";
 
-// ─── Icon map ─────────────────────────────────────────────────────────────────
+// ─── Icon maps ────────────────────────────────────────────────────────────────
 
 const ICON_MAP: Record<string, LucideIcon> = {
   grid: Grid3x3, target: Target, "trending-up": TrendingUp, users: Users,
   briefcase: Briefcase, "folder-kanban": FolderKanban, lightbulb: Lightbulb,
   rocket: Rocket, star: Star, heart: Heart, wrench: Wrench,
+  settings: Settings, hammer: Hammer, gauge: Gauge, package: Package,
+  clipboard: ClipboardList, cog: Cog, flask: FlaskConical, microscope: Microscope,
 };
-const getIcon = (name: string): LucideIcon => ICON_MAP[name] || Grid3x3;
+const getIcon = (name: string): LucideIcon => ICON_MAP[name] || Wrench;
+
+const SERVICE_ICON_OPTIONS: { value: string; label: string; icon: LucideIcon }[] = [
+  { value: "wrench",     label: "Chave",      icon: Wrench },
+  { value: "settings",   label: "Engrenagem", icon: Settings },
+  { value: "hammer",     label: "Martelo",    icon: Hammer },
+  { value: "gauge",      label: "Calibração", icon: Gauge },
+  { value: "package",    label: "Pacote",     icon: Package },
+  { value: "clipboard",  label: "Checklist",  icon: ClipboardList },
+  { value: "cog",        label: "Peça",       icon: Cog },
+  { value: "flask",      label: "Lab",        icon: FlaskConical },
+  { value: "microscope", label: "Análise",    icon: Microscope },
+  { value: "grid",       label: "Grid",       icon: Grid3x3 },
+];
+
+const COLOR_PRESETS = [
+  COLORS.board.purple, COLORS.board.blue, COLORS.board.green,
+  COLORS.board.amber,  COLORS.board.red,  COLORS.board.pink, COLORS.board.gray,
+];
+
+// ─── Modal de edição do board ─────────────────────────────────────────────────
+
+interface BoardEditModalProps {
+  board: ServiceBoard;
+  onClose: () => void;
+  onSuccess: (updated: { name: string; description?: string; color: string; icon: string }) => void;
+}
+
+const BoardEditModal: React.FC<BoardEditModalProps> = ({ board, onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    name: board.name,
+    description: board.description || "",
+    color: board.color || COLORS.board.purple,
+    icon: board.icon || "wrench",
+  });
+  const [errors, setErrors] = useState<{ name?: string }>({});
+  const [saving, setSaving] = useState(false);
+  const [isIconOpen, setIsIconOpen] = useState(false);
+  const [isColorOpen, setIsColorOpen] = useState(false);
+  const iconRef = useRef<HTMLDivElement>(null);
+  const colorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (iconRef.current && !iconRef.current.contains(e.target as Node)) setIsIconOpen(false);
+      if (colorRef.current && !colorRef.current.contains(e.target as Node)) setIsColorOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const validate = () => {
+    const errs: { name?: string } = {};
+    if (!formData.name.trim()) errs.name = "Nome é obrigatório";
+    else if (formData.name.trim().length < 3) errs.name = "Nome deve ter pelo menos 3 caracteres";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setSaving(true);
+    try {
+      await serviceBoardService.update(board.id, {
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined,
+        color: formData.color,
+        icon: formData.icon,
+      });
+      onSuccess({ name: formData.name.trim(), description: formData.description.trim() || undefined, color: formData.color, icon: formData.icon });
+      showSuccess("Board atualizado!");
+    } catch {
+      showError("Erro ao salvar board");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const selectedIcon = SERVICE_ICON_OPTIONS.find((o) => o.value === formData.icon) || SERVICE_ICON_OPTIONS[0];
+  const SelectedIconComp = selectedIcon.icon;
+
+  return (
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title="Editar Board"
+      subtitle="Edite as informações do board de serviços"
+      size="lg"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Cancelar</Button>
+          <Button variant="primary" onClick={handleSubmit} loading={saving} disabled={!formData.name.trim()}>
+            Salvar Alterações
+          </Button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <FormField label="Nome do Board" required error={errors.name}>
+          <Input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Ex: Calibração 2024, Manutenção Preventiva..."
+            error={!!errors.name}
+            disabled={saving}
+            autoFocus
+          />
+        </FormField>
+
+        <FormField label="Descrição" hint="Breve descrição (opcional, até 200 caracteres)">
+          <Textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={3}
+            disabled={saving}
+            maxLength={200}
+          />
+        </FormField>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <FormField label="Ícone" hint="Clique para escolher">
+            <div ref={iconRef} className="relative">
+              <button
+                type="button"
+                onClick={() => { setIsIconOpen((o) => !o); setIsColorOpen(false); }}
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-700 dark:text-slate-200 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700"
+              >
+                <span className="flex items-center gap-3"><SelectedIconComp size={20} /><span className="text-sm">{selectedIcon.label}</span></span>
+                <ChevronDown size={18} className="text-slate-400" />
+              </button>
+              {isIconOpen && (
+                <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-xl">
+                  <div className="grid grid-cols-5 gap-2">
+                    {SERVICE_ICON_OPTIONS.map((opt) => (
+                      <button key={opt.value} type="button"
+                        onClick={() => { setFormData({ ...formData, icon: opt.value }); setIsIconOpen(false); }}
+                        className={`flex aspect-square items-center justify-center rounded-lg transition-all ${formData.icon === opt.value ? "scale-105 bg-gray-200 dark:bg-slate-700 ring-2 ring-white ring-offset-2 ring-offset-white dark:ring-offset-slate-900" : "bg-gray-100/50 dark:bg-slate-800/50 hover:scale-105 hover:bg-gray-200 dark:hover:bg-slate-700"}`}
+                        title={opt.label}
+                      >
+                        <opt.icon size={22} className="text-slate-700 dark:text-slate-200" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </FormField>
+
+          <FormField label="Cor" hint="Clique para escolher">
+            <div ref={colorRef} className="relative">
+              <button
+                type="button"
+                onClick={() => { setIsColorOpen((o) => !o); setIsIconOpen(false); }}
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-700 dark:text-slate-200 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="h-6 w-6 rounded-md border border-gray-300 dark:border-slate-600" style={{ backgroundColor: formData.color }} />
+                  <span className="text-sm">{formData.color}</span>
+                </span>
+                <ChevronDown size={18} className="text-slate-400" />
+              </button>
+              {isColorOpen && (
+                <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-xl">
+                  <div className="grid grid-cols-7 gap-2">
+                    {COLOR_PRESETS.map((c) => (
+                      <button key={c} type="button"
+                        onClick={() => { setFormData({ ...formData, color: c }); setIsColorOpen(false); }}
+                        className={`aspect-square rounded-lg transition-all hover:scale-105 ${formData.color === c ? "scale-105 ring-2 ring-white ring-offset-2 ring-offset-white dark:ring-offset-slate-900" : ""}`}
+                        style={{ backgroundColor: c }}
+                      >
+                        {formData.color === c && (
+                          <svg className="h-full w-full p-2 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <input type="color" value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      className="h-10 w-12 cursor-pointer rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800" />
+                    <Input type="text" value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} placeholder="#8B5CF6" className="flex-1" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </FormField>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
+          <p className="mb-3 text-xs font-medium text-slate-400">Preview:</p>
+          <div className="flex items-center gap-4">
+            <div className="rounded-lg p-3" style={{ backgroundColor: `${formData.color}20` }}>
+              <SelectedIconComp size={28} style={{ color: formData.color }} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">{formData.name.trim() || "Nome do Board"}</h3>
+              <p className="mt-0.5 text-sm text-slate-400">{formData.description.trim() || "Sem descrição"}</p>
+            </div>
+          </div>
+        </div>
+      </form>
+    </BaseModal>
+  );
+};
 
 // ─── Modal de lista ───────────────────────────────────────────────────────────
 
-interface ListModalProps {
+interface ServiceListModalProps {
   list?: ServiceList | null;
   boardId: number;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const LIST_COLORS = [
-  "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
-  "#8B5CF6", "#06B6D4", "#EC4899", "#14B8A6",
-];
-
-const ListModal: React.FC<ListModalProps> = ({ list, boardId, onClose, onSuccess }) => {
+const ServiceListModal: React.FC<ServiceListModalProps> = ({ list, boardId, onClose, onSuccess }) => {
   const [name, setName] = useState(list?.name || "");
-  const [color, setColor] = useState(list?.color || "#3B82F6");
+  const [color, setColor] = useState(list?.color || COLORS.board.purple);
+  const [errors, setErrors] = useState<{ name?: string }>({});
   const [saving, setSaving] = useState(false);
+  const [isColorOpen, setIsColorOpen] = useState(false);
+  const colorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (colorRef.current && !colorRef.current.contains(e.target as Node)) setIsColorOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) { setErrors({ name: "Nome é obrigatório" }); return; }
     setSaving(true);
     try {
       if (list) {
-        await serviceBoardService.updateList(boardId, list.id, { name, color });
+        await serviceBoardService.updateList(boardId, list.id, { name: name.trim(), color });
       } else {
-        await serviceBoardService.createList(boardId, { board_id: boardId, name, color });
+        await serviceBoardService.createList(boardId, { board_id: boardId, name: name.trim(), color });
       }
       onSuccess();
-    } catch { showError("Erro ao salvar lista"); }
-    finally { setSaving(false); }
+    } catch {
+      showError("Erro ao salvar lista");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">
-          {list ? "Editar Lista" : "Nova Lista"}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Nome *</label>
-            <input
-              autoFocus
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-            />
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={list ? "Editar Lista" : "Nova Lista"}
+      subtitle={list ? "Edite as informações da lista" : "Crie uma nova lista para organizar os cards"}
+      size="lg"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Cancelar</Button>
+          <Button variant="primary" onClick={handleSubmit} loading={saving} disabled={!name.trim()}>
+            {list ? "Salvar Alterações" : "Criar Lista"}
+          </Button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <FormField label="Nome da Lista" required error={errors.name}>
+          <Input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ex: Em Análise, Aguardando Aprovação, Concluído..."
+            error={!!errors.name}
+            disabled={saving}
+            autoFocus
+          />
+        </FormField>
+
+        <FormField label="Cor da Lista" hint="Clique para escolher uma cor predefinida">
+          <div ref={colorRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsColorOpen((o) => !o)}
+              className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              <span className="flex items-center gap-3">
+                <span className="h-6 w-6 rounded-md border border-gray-300 dark:border-slate-600" style={{ backgroundColor: color }} />
+                <span className="text-sm">{color}</span>
+              </span>
+              <ChevronDown size={18} className="text-slate-500 dark:text-slate-400" />
+            </button>
+            {isColorOpen && (
+              <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <div className="grid grid-cols-7 gap-2">
+                  {COLOR_PRESETS.map((c) => (
+                    <button key={c} type="button"
+                      onClick={() => { setColor(c); setIsColorOpen(false); }}
+                      className={`aspect-square rounded-lg transition-all hover:scale-105 ${color === c ? "scale-105 ring-2 ring-white ring-offset-2 ring-offset-gray-50 dark:ring-offset-slate-900" : ""}`}
+                      style={{ backgroundColor: c }}
+                    >
+                      {color === c && (
+                        <svg className="h-full w-full p-2 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <input type="color" value={color} onChange={(e) => setColor(e.target.value)}
+                    className="h-10 w-12 cursor-pointer rounded-lg border border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-800" />
+                  <Input type="text" value={color} onChange={(e) => setColor(e.target.value)} placeholder={COLORS.board.purple} className="flex-1" />
+                </div>
+              </div>
+            )}
           </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Cor</label>
-            <div className="flex flex-wrap gap-2">
-              {LIST_COLORS.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)}
-                  className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${color === c ? "border-slate-900 dark:border-white" : "border-transparent"}`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
+        </FormField>
+
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+          <p className="mb-3 text-xs font-medium text-slate-600 dark:text-slate-400">Preview:</p>
+          <div className="rounded-lg border p-4" style={{ borderColor: `${color}50`, backgroundColor: `${color}14` }}>
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-1 rounded-full" style={{ backgroundColor: color }} />
+              <div className="flex-1">
+                <h4 className="font-semibold text-slate-900 dark:text-white">{name.trim() || "Nome da Lista"}</h4>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Lista de cards</p>
+              </div>
+              <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800/70 dark:text-slate-400">0 cards</span>
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-slate-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800">
-              Cancelar
-            </button>
-            <button type="submit" disabled={saving || !name.trim()}
-              className="rounded-lg bg-violet-600 px-4 py-2 text-white hover:bg-violet-700 disabled:opacity-50">
-              {saving ? "Salvando..." : "Salvar"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
 // ─── Modal de card ────────────────────────────────────────────────────────────
 
-interface CardModalProps {
+interface ServiceCardModalProps {
   card?: ServiceCard | null;
   lists: ServiceList[];
   defaultListId: number;
@@ -114,108 +377,110 @@ interface CardModalProps {
   onSuccess: () => void;
 }
 
-const CardModal: React.FC<CardModalProps> = ({ card, lists, defaultListId, boardId, onClose, onSuccess }) => {
+const ServiceCardModal: React.FC<ServiceCardModalProps> = ({ card, lists, defaultListId, boardId, onClose, onSuccess }) => {
   const [title, setTitle] = useState(card?.title || "");
   const [description, setDescription] = useState(card?.description || "");
   const [listId, setListId] = useState(card?.list_id || defaultListId);
   const [contactName, setContactName] = useState(card?.contact_info?.name || "");
   const [contactPhone, setContactPhone] = useState(card?.contact_info?.phone || "");
+  const [errors, setErrors] = useState<{ title?: string }>({});
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) { setErrors({ title: "Título é obrigatório" }); return; }
     setSaving(true);
     try {
       const contact_info = (contactName || contactPhone)
         ? { name: contactName, phone: contactPhone }
         : undefined;
-
       if (card) {
-        await serviceBoardService.updateCard(boardId, card.id, {
-          title, description, list_id: listId, contact_info,
-        });
+        await serviceBoardService.updateCard(boardId, card.id, { title: title.trim(), description, list_id: listId, contact_info });
       } else {
-        await serviceBoardService.createCard(boardId, {
-          list_id: listId, title, description, contact_info,
-        });
+        await serviceBoardService.createCard(boardId, { list_id: listId, title: title.trim(), description, contact_info });
       }
       onSuccess();
-    } catch { showError("Erro ao salvar card"); }
-    finally { setSaving(false); }
+    } catch {
+      showError("Erro ao salvar card");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">
-          {card ? "Editar Card" : "Novo Card"}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Título *</label>
-            <input
-              autoFocus
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={card ? "Editar Card" : "Novo Card"}
+      subtitle={card ? "Edite as informações do card" : "Adicione um novo card à lista"}
+      size="lg"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Cancelar</Button>
+          <Button variant="primary" onClick={handleSubmit} loading={saving} disabled={!title.trim()}>
+            {card ? "Salvar Alterações" : "Criar Card"}
+          </Button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <FormField label="Título" required error={errors.title}>
+          <Input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex: Calibração equipamento X, Manutenção preventiva..."
+            error={!!errors.title}
+            disabled={saving}
+            autoFocus
+          />
+        </FormField>
+
+        <FormField label="Descrição">
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Detalhes sobre o serviço..."
+            rows={3}
+            disabled={saving}
+          />
+        </FormField>
+
+        <FormField label="Lista">
+          <select
+            value={listId}
+            onChange={(e) => setListId(Number(e.target.value))}
+            disabled={saving}
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          >
+            {lists.map((l) => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </select>
+        </FormField>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Nome do contato">
+            <Input
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              placeholder="Nome do cliente"
+              disabled={saving}
             />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Descrição</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+          </FormField>
+          <FormField label="Telefone">
+            <Input
+              type="text"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              placeholder="(00) 00000-0000"
+              disabled={saving}
             />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Lista</label>
-            <select
-              value={listId}
-              onChange={(e) => setListId(Number(e.target.value))}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-            >
-              {lists.map((l) => (
-                <option key={l.id} value={l.id}>{l.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Nome do contato</label>
-              <input
-                type="text"
-                value={contactName}
-                onChange={(e) => setContactName(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Telefone</label>
-              <input
-                type="text"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-slate-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800">
-              Cancelar
-            </button>
-            <button type="submit" disabled={saving || !title.trim()}
-              className="rounded-lg bg-violet-600 px-4 py-2 text-white hover:bg-violet-700 disabled:opacity-50">
-              {saving ? "Salvando..." : "Salvar"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </FormField>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -223,14 +488,14 @@ const CardModal: React.FC<CardModalProps> = ({ card, lists, defaultListId, board
 
 interface KanbanCardProps {
   card: ServiceCard;
+  lists: ServiceList[];
+  canManage: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onMoveToList: (listId: number) => void;
-  lists: ServiceList[];
-  canManage: boolean;
 }
 
-const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onEdit, onDelete, onMoveToList, lists, canManage }) => {
+const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, lists, canManage, onEdit, onDelete, onMoveToList }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -249,7 +514,7 @@ const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onEdit, onDelete, 
       className="group relative rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
     >
       <div className="flex items-start justify-between gap-2">
-        <h4 className="flex-1 text-sm font-medium text-slate-900 dark:text-white leading-snug">
+        <h4 className="flex-1 text-sm font-medium leading-snug text-slate-900 dark:text-white">
           {card.title}
         </h4>
         <div className="relative flex-shrink-0" ref={menuRef}>
@@ -319,7 +584,7 @@ interface KanbanColumnProps {
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
-  list, cards, allLists, boardId, canManage, isFirst, isLast,
+  list, cards, allLists, canManage, isFirst, isLast,
   onAddCard, onEditList, onDeleteList, onMoveLeft, onMoveRight,
   onEditCard, onDeleteCard, onMoveCard,
 }) => {
@@ -335,71 +600,96 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
     return () => document.removeEventListener("mousedown", handler);
   }, [showMenu]);
 
-  const colColor = list.color || "#8B5CF6";
+  const colColor = list.color || COLORS.board.purple;
 
   return (
-    <div className="flex w-72 flex-shrink-0 flex-col rounded-xl border border-gray-200 bg-gray-50 dark:border-slate-700/50 dark:bg-slate-800/30" style={{ maxHeight: "calc(100vh - 180px)" }}>
-      {/* Header da coluna */}
-      <div className="flex flex-shrink-0 items-center gap-2 rounded-t-xl px-3 py-3" style={{ borderBottom: `2px solid ${colColor}` }}>
-        <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: colColor }} />
-        <h3 className="flex-1 truncate text-sm font-semibold text-slate-900 dark:text-white">{list.name}</h3>
-        <span className="flex-shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-          {cards.length}
-        </span>
+    <div
+      className="flex h-full w-80 flex-shrink-0 flex-col overflow-visible rounded-xl border p-4 backdrop-blur-sm"
+      style={{
+        backgroundColor: `${colColor}14`,
+        borderColor: `${colColor}50`,
+      }}
+    >
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex flex-1 items-center gap-2">
+          <div className="h-6 w-1 flex-shrink-0 rounded-full" style={{ backgroundColor: colColor }} />
+          <h3 className="truncate font-semibold text-slate-900 dark:text-white">{list.name}</h3>
+          <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800/70 dark:text-slate-400">
+            {cards.length}
+          </span>
+        </div>
 
         {canManage && (
-          <div className="relative flex items-center gap-1" ref={menuRef}>
-            <button onClick={onMoveLeft} disabled={isFirst} title="Mover para esquerda"
-              className="rounded p-1 text-slate-400 hover:bg-gray-200 disabled:opacity-30 dark:hover:bg-slate-700">
-              <ChevronLeft size={14} />
-            </button>
-            <button onClick={onMoveRight} disabled={isLast} title="Mover para direita"
-              className="rounded p-1 text-slate-400 hover:bg-gray-200 disabled:opacity-30 dark:hover:bg-slate-700">
-              <ChevronRight size={14} />
-            </button>
-            <button onClick={() => setShowMenu(!showMenu)}
-              className="rounded p-1 text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700">
-              <MoreVertical size={14} />
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="rounded p-1 transition-colors hover:bg-gray-200 dark:hover:bg-slate-800/60"
+            >
+              <MoreVertical size={16} className="text-slate-500 dark:text-slate-400" />
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <button onClick={() => { setShowMenu(false); onEditList(); }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                  <Edit size={14} /> Editar
-                </button>
-                <div className="border-t border-gray-200 dark:border-gray-700" />
-                <button onClick={() => { setShowMenu(false); onDeleteList(); }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10">
-                  <Trash2 size={14} /> Deletar
-                </button>
-              </div>
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                <div className="absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700/50 dark:bg-slate-900">
+                  <button onClick={() => { setShowMenu(false); onEditList(); }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                    <Edit size={14} /> Editar lista
+                  </button>
+                  <div className="border-t border-gray-200 dark:border-slate-700/50" />
+                  <button onClick={() => { setShowMenu(false); onDeleteList(); }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10">
+                    <Trash2 size={14} /> Deletar lista
+                  </button>
+                </div>
+              </>
             )}
           </div>
         )}
       </div>
 
       {/* Cards */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-hidden">
-        {cards.map((card) => (
-          <KanbanServiceCard
-            key={card.id}
-            card={card}
-            lists={allLists}
-            canManage={canManage}
-            onEdit={() => onEditCard(card)}
-            onDelete={() => onDeleteCard(card)}
-            onMoveToList={(lid) => onMoveCard(card, lid)}
-          />
-        ))}
+      <div className="scrollbar-desktop min-h-0 flex-1 space-y-3 overflow-y-auto">
+        {cards.length > 0 ? (
+          cards.map((card) => (
+            <KanbanServiceCard
+              key={card.id}
+              card={card}
+              lists={allLists}
+              canManage={canManage}
+              onEdit={() => onEditCard(card)}
+              onDelete={() => onDeleteCard(card)}
+              onMoveToList={(lid) => onMoveCard(card, lid)}
+            />
+          ))
+        ) : (
+          <div className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+            Nenhum card nesta lista
+          </div>
+        )}
+      </div>
 
-        {/* Botão adicionar card */}
+      {/* Rodapé: setas + Adicionar card */}
+      <div className="mt-3 flex flex-shrink-0 items-center gap-2">
+        {canManage && !isFirst && (
+          <button onClick={onMoveLeft} title="Mover para esquerda"
+            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white">
+            <ChevronLeft size={16} />
+          </button>
+        )}
         <button
           onClick={onAddCard}
-          className="flex w-full items-center gap-2 rounded-lg border-2 border-dashed border-gray-200 px-3 py-2 text-sm text-slate-400 transition-colors hover:border-violet-400 hover:text-violet-400 dark:border-slate-700 dark:hover:border-violet-500"
+          className="group flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white"
         >
-          <Plus size={14} />
+          <Plus size={16} className="transition-transform group-hover:scale-110" />
           Adicionar card
         </button>
+        {canManage && !isLast && (
+          <button onClick={onMoveRight} title="Mover para direita"
+            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white">
+            <ChevronRight size={16} />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -414,6 +704,7 @@ const ServiceKanban: React.FC = () => {
   const { confirm } = useConfirm();
 
   const canManage = user?.role === "admin" || user?.role === "manager";
+  const isViewer = user?.role === "viewer";
 
   const [board, setBoard] = useState<ServiceBoard | null>(null);
   const [lists, setLists] = useState<ServiceList[]>([]);
@@ -421,17 +712,16 @@ const ServiceKanban: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [showBoardMenu, setShowBoardMenu] = useState(false);
+  const [showBoardEditModal, setShowBoardEditModal] = useState(false);
 
-  // List modal
   const [showListModal, setShowListModal] = useState(false);
   const [editingList, setEditingList] = useState<ServiceList | null>(null);
 
-  // Card modal
   const [showCardModal, setShowCardModal] = useState(false);
   const [editingCard, setEditingCard] = useState<ServiceCard | null>(null);
   const [selectedListId, setSelectedListId] = useState<number>(0);
 
-  // Scroll drag
   const boardScrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({ startX: 0, scrollLeft: 0 });
@@ -447,13 +737,11 @@ const ServiceKanban: React.FC = () => {
         serviceBoardService.getLists(numId),
       ]);
       setBoard(boardData);
-      const sorted = [...listsData].sort((a, b) => a.position - b.position);
-      setLists(sorted);
+      setLists([...listsData].sort((a, b) => a.position - b.position));
       setLoading(false);
-      // Carrega cards em background
       const cardsData = await serviceBoardService.getCards(numId);
       setCards(cardsData.cards || []);
-    } catch (err) {
+    } catch {
       setLoading(false);
       showError("Erro ao carregar board de serviços");
       navigate("/servicos");
@@ -468,9 +756,9 @@ const ServiceKanban: React.FC = () => {
     } catch { /* silencioso */ }
   };
 
-  useEffect(() => { loadData(); }, [numId]);
+  useEffect(() => { loadData(); }, [numId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Handlers de scroll drag
+  // Scroll drag
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
@@ -484,7 +772,39 @@ const ServiceKanban: React.FC = () => {
   };
   const onMouseUp = () => setIsDragging(false);
 
-  // List ops
+  // Board handlers
+  const handleArchiveBoard = async () => {
+    setShowBoardMenu(false);
+    if (!board) return;
+    const ok = await confirm({
+      title: "Arquivar Board",
+      message: `Arquivar "${board.name}"? Ele ficará disponível na seção de arquivados.`,
+      confirmText: "Arquivar",
+      isDanger: false,
+    });
+    if (!ok) return;
+    try {
+      await serviceBoardService.update(board.id, { is_deleted: true });
+      showSuccess("Board arquivado com sucesso!");
+      navigate("/servicos");
+    } catch {
+      showError("Erro ao arquivar board");
+    }
+  };
+
+  const handleDuplicateBoard = async () => {
+    setShowBoardMenu(false);
+    if (!board) return;
+    try {
+      await serviceBoardService.duplicate(board.id, `${board.name} - Cópia`);
+      showSuccess("Board duplicado com sucesso!");
+      navigate("/servicos");
+    } catch {
+      showError("Erro ao duplicar board");
+    }
+  };
+
+  // List handlers
   const handleCreateList = () => { setEditingList(null); setShowListModal(true); };
   const handleEditList = (list: ServiceList) => { setEditingList(list); setShowListModal(true); };
   const handleDeleteList = async (list: ServiceList) => {
@@ -499,37 +819,28 @@ const ServiceKanban: React.FC = () => {
   const handleMoveListLeft = async (list: ServiceList) => {
     const idx = lists.findIndex((l) => l.id === list.id);
     if (idx <= 0) return;
-    try {
-      await serviceBoardService.moveList(numId, list.id, lists[idx - 1].position);
-      await loadData();
-    } catch { showError("Erro ao mover lista"); }
+    try { await serviceBoardService.moveList(numId, list.id, lists[idx - 1].position); await loadData(); }
+    catch { showError("Erro ao mover lista"); }
   };
   const handleMoveListRight = async (list: ServiceList) => {
     const idx = lists.findIndex((l) => l.id === list.id);
     if (idx >= lists.length - 1) return;
-    try {
-      await serviceBoardService.moveList(numId, list.id, lists[idx + 1].position);
-      await loadData();
-    } catch { showError("Erro ao mover lista"); }
+    try { await serviceBoardService.moveList(numId, list.id, lists[idx + 1].position); await loadData(); }
+    catch { showError("Erro ao mover lista"); }
   };
 
-  // Card ops
+  // Card handlers
   const handleAddCard = (listId: number) => { setEditingCard(null); setSelectedListId(listId); setShowCardModal(true); };
   const handleEditCard = (card: ServiceCard) => { setEditingCard(card); setSelectedListId(card.list_id); setShowCardModal(true); };
   const handleDeleteCard = async (card: ServiceCard) => {
     const ok = await confirm({ title: "Deletar Card", message: `Deletar "${card.title}"?`, confirmText: "Deletar", isDanger: true });
     if (!ok) return;
-    try {
-      await serviceBoardService.deleteCard(numId, card.id);
-      await reloadCards();
-      showSuccess("Card deletado!");
-    } catch { showError("Erro ao deletar card"); }
+    try { await serviceBoardService.deleteCard(numId, card.id); await reloadCards(); showSuccess("Card deletado!"); }
+    catch { showError("Erro ao deletar card"); }
   };
   const handleMoveCard = async (card: ServiceCard, newListId: number) => {
-    try {
-      await serviceBoardService.moveCard(numId, card.id, newListId);
-      await reloadCards();
-    } catch { showError("Erro ao mover card"); }
+    try { await serviceBoardService.moveCard(numId, card.id, newListId); await reloadCards(); }
+    catch { showError("Erro ao mover card"); }
   };
 
   if (loading) {
@@ -547,9 +858,9 @@ const ServiceKanban: React.FC = () => {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <p className="mb-4 text-slate-500">Board não encontrado</p>
+          <p className="mb-4 text-lg text-slate-500 dark:text-slate-400">Board não encontrado</p>
           <button onClick={() => navigate("/servicos")} className="rounded-lg bg-violet-500 px-4 py-2 text-white hover:bg-violet-600">
-            Voltar
+            Voltar para Boards
           </button>
         </div>
       </div>
@@ -557,11 +868,13 @@ const ServiceKanban: React.FC = () => {
   }
 
   const BoardIcon = getIcon(board.icon || "wrench");
-  const boardColor = board.color || "#8B5CF6";
+  const boardColor = board.color || COLORS.board.purple;
 
   const filteredCards = searchTerm.trim()
-    ? cards.filter((c) => c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.contact_info?.name || "").toLowerCase().includes(searchTerm.toLowerCase()))
+    ? cards.filter((c) =>
+        c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.contact_info?.name || "").toLowerCase().includes(searchTerm.toLowerCase())
+      )
     : cards;
 
   return (
@@ -569,8 +882,8 @@ const ServiceKanban: React.FC = () => {
       {/* Header */}
       <div className="relative z-20 flex-shrink-0 border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700/50 dark:bg-slate-900/50 lg:z-50">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          {/* Esquerda */}
-          <div className="flex items-center gap-4">
+          {/* Lado esquerdo: Voltar + Nome do Board */}
+          <div className="flex w-full items-center gap-4 sm:w-auto">
             <button
               onClick={() => navigate("/servicos")}
               className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50"
@@ -591,41 +904,80 @@ const ServiceKanban: React.FC = () => {
             </div>
           </div>
 
-          {/* Direita */}
-          <div className="flex items-center gap-2">
+          {/* Lado direito: Ações */}
+          <div className="mt-1 flex w-full items-center justify-end gap-2 sm:mt-0 sm:w-auto sm:gap-3">
+            {/* Busca expansível */}
             {showSearch ? (
-              <div className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 dark:bg-slate-800/50">
-                <Search size={18} className="text-slate-400" />
+              <div className="flex w-full items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 dark:bg-slate-800/50 sm:w-auto">
+                <Search size={18} className="text-slate-400 dark:text-slate-400" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar cards..."
                   autoFocus
-                  className="w-48 bg-transparent text-slate-900 placeholder-slate-400 outline-none dark:text-white"
+                  className="min-w-0 flex-1 bg-transparent text-slate-900 placeholder-slate-400 outline-none dark:text-white sm:w-64"
                   onBlur={() => { if (!searchTerm) setShowSearch(false); }}
                 />
                 {searchTerm && (
-                  <button onClick={() => { setSearchTerm(""); setShowSearch(false); }}>
-                    <X size={16} className="text-slate-400" />
+                  <button onClick={() => { setSearchTerm(""); setShowSearch(false); }}
+                    className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <X size={16} />
                   </button>
                 )}
               </div>
             ) : (
-              <button onClick={() => setShowSearch(true)}
-                className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50">
-                <Search size={20} className="text-slate-500 dark:text-slate-400" />
+              <button
+                onClick={() => setShowSearch(true)}
+                className={`rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50 ${searchTerm ? "bg-violet-500/20 text-violet-400" : ""}`}
+                title="Buscar cards"
+              >
+                <Search size={20} className={searchTerm ? "text-violet-400" : "text-slate-500 dark:text-slate-400"} />
               </button>
             )}
 
+            {/* Botão Nova Lista */}
             {canManage && (
               <button
                 onClick={handleCreateList}
-                className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg hover:from-violet-600 hover:to-purple-600 sm:h-auto sm:w-auto sm:px-4 sm:py-2"
+                className="flex h-10 w-10 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-0 py-0 text-white shadow-lg transition-all hover:from-violet-600 hover:to-purple-600 sm:h-auto sm:w-auto sm:px-4 sm:py-2"
+                title="Adicionar nova lista"
               >
                 <Plus size={20} />
-                <span className="hidden sm:ml-2 sm:inline">Nova Lista</span>
+                <span className="hidden sm:inline">Nova Lista</span>
               </button>
+            )}
+
+            {/* Menu do board — apenas admin */}
+            {!isViewer && user?.role === "admin" && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowBoardMenu(!showBoardMenu)}
+                  className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50"
+                  title="Opções do board"
+                >
+                  <MoreVertical size={20} className="text-slate-500 dark:text-slate-400" />
+                </button>
+                {showBoardMenu && (
+                  <>
+                    <div className="fixed inset-0 z-[100]" onClick={() => setShowBoardMenu(false)} />
+                    <div className="absolute right-0 z-[110] mt-2 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700/50 dark:bg-slate-900">
+                      <button onClick={() => { setShowBoardMenu(false); setShowBoardEditModal(true); }}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                        <Edit size={16} /> Editar Board
+                      </button>
+                      <button onClick={handleDuplicateBoard}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                        <Copy size={16} /> Duplicar Board
+                      </button>
+                      <button onClick={handleArchiveBoard}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                        <Archive size={16} /> Arquivar Board
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -646,7 +998,6 @@ const ServiceKanban: React.FC = () => {
               const listCards = filteredCards
                 .filter((c) => c.list_id === list.id && !c.is_deleted)
                 .sort((a, b) => (a.position || 0) - (b.position || 0));
-
               return (
                 <KanbanColumn
                   key={list.id}
@@ -682,9 +1033,21 @@ const ServiceKanban: React.FC = () => {
         </div>
       </div>
 
+      {/* Modal de edição do board */}
+      {showBoardEditModal && board && (
+        <BoardEditModal
+          board={board}
+          onClose={() => setShowBoardEditModal(false)}
+          onSuccess={(updated) => {
+            setBoard({ ...board, ...updated });
+            setShowBoardEditModal(false);
+          }}
+        />
+      )}
+
       {/* Modal de lista */}
       {showListModal && (
-        <ListModal
+        <ServiceListModal
           list={editingList}
           boardId={numId}
           onClose={() => setShowListModal(false)}
@@ -694,7 +1057,7 @@ const ServiceKanban: React.FC = () => {
 
       {/* Modal de card */}
       {showCardModal && (
-        <CardModal
+        <ServiceCardModal
           card={editingCard}
           lists={lists}
           defaultListId={selectedListId || lists[0]?.id || 0}
