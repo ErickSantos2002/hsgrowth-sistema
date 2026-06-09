@@ -3,7 +3,8 @@ Endpoints de ServiceBoards (Boards de Serviços).
 Completamente independentes dos boards de vendas.
 """
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, Query, Path, HTTPException, status
+from fastapi import APIRouter, Depends, Query, Path, HTTPException, status, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user, require_not_viewer
@@ -16,6 +17,8 @@ from app.schemas.service_board import (
     ServiceCardListResponse, ServiceCardMoveRequest,
     ServiceCardProductCreate, ServiceCardProductUpdate,
     ServiceCardProductResponse, ServiceCardProductSummary,
+    ServiceCardActivityCreate, ServiceCardActivityUpdate,
+    ServiceCardActivityResponse, ServiceCardActivityComplete,
 )
 from app.models.user import User
 
@@ -429,3 +432,91 @@ async def remove_service_card_product(
 ) -> Any:
     svc = ServiceBoardService(db)
     return svc.remove_card_product(item_id, current_user)
+
+
+# ─── Card Activities (Atividade / Anotação / Arquivo / Alteração) ────────────────
+
+@router.get("/{board_id}/cards/{card_id}/activities", response_model=List[ServiceCardActivityResponse])
+async def list_service_card_activities(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.list_activities(card_id)
+
+
+@router.post("/{board_id}/cards/{card_id}/activities", response_model=ServiceCardActivityResponse)
+async def create_service_card_activity(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    data: ServiceCardActivityCreate = ...,
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.create_activity(card_id, data, current_user)
+
+
+@router.put("/{board_id}/cards/{card_id}/activities/{activity_id}", response_model=ServiceCardActivityResponse)
+async def update_service_card_activity(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    activity_id: int = Path(...),
+    data: ServiceCardActivityUpdate = ...,
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.update_activity(activity_id, data, current_user)
+
+
+@router.patch("/{board_id}/cards/{card_id}/activities/{activity_id}/complete", response_model=ServiceCardActivityResponse)
+async def complete_service_card_activity(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    activity_id: int = Path(...),
+    data: ServiceCardActivityComplete = ...,
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.complete_activity(activity_id, data.is_completed, current_user)
+
+
+@router.delete("/{board_id}/cards/{card_id}/activities/{activity_id}")
+async def delete_service_card_activity(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    activity_id: int = Path(...),
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.delete_activity(activity_id, current_user)
+
+
+@router.post("/{board_id}/cards/{card_id}/activities/files", response_model=ServiceCardActivityResponse)
+async def upload_service_card_file(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return await svc.upload_file(card_id, file, current_user)
+
+
+@router.get("/{board_id}/cards/{card_id}/activities/files/{activity_id}/download")
+async def download_service_card_file(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    activity_id: int = Path(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    svc = ServiceBoardService(db)
+    path, filename, mime = svc.get_file_for_download(activity_id)
+    return FileResponse(path=str(path), filename=filename, media_type=mime)

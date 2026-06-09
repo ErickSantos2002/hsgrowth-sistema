@@ -193,3 +193,49 @@ class ServiceCardProductSummary(BaseModel):
     subtotal: float
     total_discount: float
     total: float
+
+
+# ─── Service Card Activity (Atividade / Anotação / Arquivo / Alteração) ────────
+
+class ServiceCardActivityCreate(BaseModel):
+    category: str = Field(..., description="atividade | anotacao")
+    activity_type: Optional[str] = Field(None, description="call|task|follow_up|email|note|...")
+    title: Optional[str] = Field(None, max_length=500)
+    description: Optional[str] = None
+    priority: Optional[str] = Field(None, description="normal|high|urgent")
+    due_date: Optional[datetime] = None
+
+
+class ServiceCardActivityUpdate(BaseModel):
+    title: Optional[str] = Field(None, max_length=500)
+    description: Optional[str] = None
+    activity_type: Optional[str] = None
+    priority: Optional[str] = None
+    due_date: Optional[datetime] = None
+
+
+class ServiceCardActivityComplete(BaseModel):
+    is_completed: bool = True
+
+
+class ServiceCardActivityResponse(BaseModel):
+    id: int
+    service_card_id: int
+    user_id: Optional[int] = None
+    user_name: Optional[str] = None
+    category: str
+    activity_type: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    activity_metadata: Optional[dict] = None
+    priority: Optional[str] = None
+    due_date: Optional[datetime] = None
+    is_completed: bool = False
+    completed_at: Optional[datetime] = None
+    file_name: Optional[str] = None
+    file_size: Optional[int] = None
+    mime_type: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}

@@ -51,7 +51,12 @@
       "Bash(grep -rln \"unit_price\" src/pages/Products.tsx src/components/products/)",
       "Bash(ls src/components/products/)",
       "Read(//c/c/Users/HS/Documents/GitHub/hsgrowth-sistema/backend/**)",
-      "Bash(python -m py_compile app/services/product_service.py)"
+      "Bash(python -m py_compile app/services/product_service.py)",
+      "Bash(cd /c/Users/HS/Documents/GitHub/hsgrowth-sistema/frontend && grep -n \"currentList\" src/pages/ServiceCardDetails.tsx)",
+      "Read(//c/c/Users/HS/Documents/GitHub/hsgrowth-sistema/frontend/src/pages/**)",
+      "Bash(grep -E \"\\\\.\\(py|ts\\)$\")",
+      "Bash(python -m py_compile app/models/service_card_activity.py app/models/service_card.py app/models/__init__.py app/schemas/service_board.py app/repositories/service_board_repository.py app/services/service_board_service.py app/api/v1/endpoints/service_boards.py alembic/versions/2026_06_09_0400-create_service_card_activities.py)",
+      "Bash(python -m py_compile app/services/service_board_service.py app/api/v1/endpoints/service_boards.py app/repositories/service_board_repository.py app/schemas/service_board.py app/models/service_card_activity.py app/models/__init__.py)"
     ]
   }
 }

@@ -1,8 +1,12 @@
 """
 Service para lógica de negócio de ServiceBoard, ServiceList e ServiceCard.
 """
+import uuid
+from pathlib import Path
+from datetime import datetime
 from typing import Optional, List
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
+
 from sqlalchemy.orm import Session
 
 from app.repositories.service_board_repository import ServiceBoardRepository
@@ -13,12 +17,19 @@ from app.schemas.service_board import (
     ServiceCardCreate, ServiceCardUpdate, ServiceCardResponse, ServiceCardListResponse,
     ServiceCardProductCreate, ServiceCardProductUpdate,
     ServiceCardProductResponse, ServiceCardProductSummary,
+    ServiceCardActivityCreate, ServiceCardActivityUpdate, ServiceCardActivityResponse,
 )
 from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
 from app.models.service_card_product import ServiceCardProduct
+from app.models.service_card_activity import ServiceCardActivity
 from app.models.user import User
+
+
+# Diretório base de uploads (mesmo volume usado pelos anexos de vendas)
+UPLOAD_DIR = Path("/app/uploads")
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
 class ServiceBoardService:
@@ -185,20 +196,46 @@ class ServiceBoardService:
 
     def create_card(self, data: ServiceCardCreate, user: User) -> ServiceCard:
         self.get_list(data.list_id)
-        return self.repo.create_card(data)
+        card = self.repo.create_card(data)
+        self.log_event(card.id, user, "card_created", "Card criado")
+        return card
 
     def update_card(self, card_id: int, data: ServiceCardUpdate, user: User) -> ServiceCard:
         card = self.get_card(card_id)
-        return self.repo.update_card(card, data)
+        old_title, old_client, old_person = card.title, card.client_id, card.person_id
+        updated = self.repo.update_card(card, data)
+        changed = data.model_dump(exclude_unset=True)
+        if "title" in changed and old_title != updated.title:
+            self.log_event(card_id, user, "card_title_changed", f"Título alterado para: {updated.title}")
+        if "client_id" in changed and old_client != updated.client_id:
+            if updated.client_id:
+                self.log_event(card_id, user, "client_linked", "Cliente vinculado", {"client_id": updated.client_id})
+            else:
+                self.log_event(card_id, user, "client_unlinked", "Cliente desvinculado")
+        if "person_id" in changed and old_person != updated.person_id:
+            if updated.person_id:
+                self.log_event(card_id, user, "person_linked", "Pessoa vinculada", {"person_id": updated.person_id})
+            else:
+                self.log_event(card_id, user, "person_unlinked", "Pessoa desvinculada")
+        return updated
 
     def delete_card(self, card_id: int, user: User) -> None:
         card = self.get_card(card_id)
         self.repo.delete_card(card)
 
     def move_card(self, card_id: int, new_list_id: int, new_position: Optional[float], user: User) -> ServiceCard:
-        self.get_card(card_id)
-        self.get_list(new_list_id)
-        return self.repo.move_card(card_id, new_list_id, new_position)
+        card = self.get_card(card_id)
+        old_list = self.repo.find_list_by_id(card.list_id)
+        new_list = self.get_list(new_list_id)
+        old_list_id = card.list_id
+        moved = self.repo.move_card(card_id, new_list_id, new_position)
+        if old_list_id != new_list_id:
+            self.log_event(
+                card_id, user, "stage_change",
+                f"Etapa alterada: {old_list.name if old_list else '—'} → {new_list.name}",
+                {"from_list_id": old_list_id, "to_list_id": new_list_id},
+            )
+        return moved
 
     # ─── Card Products ────────────────────────────────────────────────────────
 
@@ -254,6 +291,8 @@ class ServiceBoardService:
             )
 
         item = self.repo.add_card_product(card_id, data)
+        self.log_event(card_id, user, "product_added", f"Produto adicionado: {product.name}",
+                       {"product_id": product.id})
         return self._build_card_product_response(item)
 
     def update_card_product(
@@ -275,5 +314,140 @@ class ServiceBoardService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Produto do card {item_id} não encontrado",
             )
+        product_name = item.product.name if item.product else "Produto"
+        card_id = item.service_card_id
         self.repo.remove_card_product(item_id)
+        self.log_event(card_id, user, "product_removed", f"Produto removido: {product_name}",
+                       {"product_id": item.product_id})
         return {"message": "Produto removido do card com sucesso"}
+
+    # ─── Card Activities (Atividade / Anotação / Arquivo / Alteração) ─────────
+
+    def _build_activity_response(self, a: ServiceCardActivity) -> ServiceCardActivityResponse:
+        return ServiceCardActivityResponse(
+            id=a.id,
+            service_card_id=a.service_card_id,
+            user_id=a.user_id,
+            user_name=a.user.name if a.user else None,
+            category=a.category,
+            activity_type=a.activity_type,
+            title=a.title,
+            description=a.description,
+            activity_metadata=a.activity_metadata,
+            priority=a.priority,
+            due_date=a.due_date,
+            is_completed=a.is_completed,
+            completed_at=a.completed_at,
+            file_name=a.file_name,
+            file_size=a.file_size,
+            mime_type=a.mime_type,
+            created_at=a.created_at,
+            updated_at=a.updated_at,
+        )
+
+    def log_event(self, card_id: int, user: Optional[User], activity_type: str,
+                  description: str, metadata: Optional[dict] = None) -> None:
+        """Registra um evento automático (categoria 'alteracao'). Nunca quebra o fluxo."""
+        try:
+            self.repo.create_activity(
+                service_card_id=card_id,
+                user_id=user.id if user else None,
+                category="alteracao",
+                activity_type=activity_type,
+                description=description,
+                activity_metadata=metadata,
+            )
+        except Exception as e:  # pragma: no cover
+            print(f"[SERVICE-ACTIVITY] erro ao registrar evento: {e}")
+
+    def list_activities(self, card_id: int) -> List[ServiceCardActivityResponse]:
+        self.get_card(card_id)
+        items = self.repo.list_card_activities(card_id)
+        return [self._build_activity_response(a) for a in items]
+
+    def create_activity(self, card_id: int, data: ServiceCardActivityCreate, user: User) -> ServiceCardActivityResponse:
+        self.get_card(card_id)
+        if data.category not in ("atividade", "anotacao"):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Categoria inválida")
+        activity = self.repo.create_activity(
+            service_card_id=card_id,
+            user_id=user.id,
+            category=data.category,
+            activity_type=data.activity_type or ("note" if data.category == "anotacao" else "task"),
+            title=data.title,
+            description=data.description,
+            priority=data.priority,
+            due_date=data.due_date,
+        )
+        return self._build_activity_response(activity)
+
+    def update_activity(self, activity_id: int, data: ServiceCardActivityUpdate, user: User) -> ServiceCardActivityResponse:
+        activity = self.repo.get_activity_by_id(activity_id)
+        if not activity:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Atividade não encontrada")
+        updated = self.repo.update_activity(activity, data.model_dump(exclude_unset=True))
+        return self._build_activity_response(updated)
+
+    def complete_activity(self, activity_id: int, is_completed: bool, user: User) -> ServiceCardActivityResponse:
+        activity = self.repo.get_activity_by_id(activity_id)
+        if not activity:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Atividade não encontrada")
+        updated = self.repo.update_activity(activity, {
+            "is_completed": is_completed,
+            "completed_at": datetime.utcnow() if is_completed else None,
+        })
+        return self._build_activity_response(updated)
+
+    def delete_activity(self, activity_id: int, user: User) -> dict:
+        activity = self.repo.get_activity_by_id(activity_id)
+        if not activity:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Atividade não encontrada")
+        # Remove o arquivo físico, se for um anexo
+        if activity.category == "arquivo" and activity.file_path:
+            try:
+                fp = UPLOAD_DIR / activity.file_path
+                if fp.exists():
+                    fp.unlink()
+            except Exception as e:  # pragma: no cover
+                print(f"[SERVICE-ACTIVITY] erro ao remover arquivo: {e}")
+        self.repo.delete_activity(activity)
+        return {"message": "Removido com sucesso"}
+
+    async def upload_file(self, card_id: int, file: UploadFile, user: User) -> ServiceCardActivityResponse:
+        self.get_card(card_id)
+        content = await file.read()
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                                detail="Arquivo muito grande. Máximo: 10MB")
+        original = file.filename or "arquivo"
+        ext = Path(original).suffix
+        unique = f"{uuid.uuid4().hex}{ext}"
+        card_dir = UPLOAD_DIR / "service_cards" / str(card_id)
+        card_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(card_dir / unique, "wb") as f:
+                f.write(content)
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                                detail="Erro ao salvar arquivo no disco")
+        activity = self.repo.create_activity(
+            service_card_id=card_id,
+            user_id=user.id,
+            category="arquivo",
+            activity_type="file_attached",
+            title=original,
+            file_name=original,
+            file_path=f"service_cards/{card_id}/{unique}",
+            file_size=len(content),
+            mime_type=file.content_type,
+        )
+        return self._build_activity_response(activity)
+
+    def get_file_for_download(self, activity_id: int):
+        activity = self.repo.get_activity_by_id(activity_id)
+        if not activity or activity.category != "arquivo" or not activity.file_path:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Arquivo não encontrado")
+        fp = UPLOAD_DIR / activity.file_path
+        if not fp.exists():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Arquivo não encontrado no disco")
+        return fp, activity.file_name or "arquivo", activity.mime_type or "application/octet-stream"

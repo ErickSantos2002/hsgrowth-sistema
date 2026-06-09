@@ -76,6 +76,7 @@ from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
 from app.models.service_card_product import ServiceCardProduct
+from app.models.service_card_activity import ServiceCardActivity
 
 # Lista de todos os modelos (útil para imports)
 __all__ = [
@@ -122,4 +123,5 @@ __all__ = [
     "ServiceList",
     "ServiceCard",
     "ServiceCardProduct",
+    "ServiceCardActivity",
 ]

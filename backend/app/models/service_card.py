@@ -50,6 +50,11 @@ class ServiceCard(Base, TimestampMixin, SoftDeleteMixin):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    activities = relationship(
+        "ServiceCardActivity",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<ServiceCard(id={self.id}, title='{self.title}')>"

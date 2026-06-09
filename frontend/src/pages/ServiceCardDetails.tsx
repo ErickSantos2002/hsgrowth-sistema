@@ -26,11 +26,14 @@ import {
   Paperclip,
   PhoneCall,
   Users as UsersIcon,
+  Loader2,
 } from "lucide-react";
 import serviceBoardService, {
   ServiceCard,
   ServiceList,
 } from "../services/serviceBoardService";
+import serviceActivityService, { ServiceCardActivity } from "../services/serviceActivityService";
+import { ServiceActivityTab, ServiceNotesTab, ServiceFilesTab } from "../components/service/ServiceActivityTab";
 import clientService, { Client } from "../services/clientService";
 import personService, { Person } from "../services/personService";
 import ExpandableSection from "../components/cardDetails/ExpandableSection";
@@ -550,6 +553,98 @@ const TabPlaceholder: React.FC<{ label: string; icon: React.ReactNode }> = ({ la
   </div>
 );
 
+// ─── Pipeline visual (posição do card entre as listas) ──────────────────────────
+
+const ServicePipelineStages: React.FC<{
+  lists: ServiceList[];
+  currentListId: number;
+  onMove: (listId: number) => void;
+  isMoving?: boolean;
+}> = ({ lists, currentListId, onMove, isMoving = false }) => {
+  const [hovered, setHovered] = useState<number | null>(null);
+  if (lists.length === 0) return null;
+
+  const currentPosition = lists.findIndex((l) => l.id === currentListId);
+
+  const getClasses = (list: ServiceList, index: number) => {
+    const isCurrent = list.id === currentListId;
+    const isPassed = index < currentPosition;
+    const isHovered = hovered === list.id;
+    if (isCurrent) {
+      return { container: "bg-emerald-500/20 border-emerald-500 ring-2 ring-emerald-500/30", text: "text-slate-900 dark:text-emerald-400 font-semibold", dot: "bg-emerald-500" };
+    }
+    if (isPassed) {
+      return {
+        container: isHovered ? "bg-blue-500/30 border-blue-500 cursor-pointer" : "bg-blue-500/10 border-blue-500/50 hover:bg-blue-500/20 cursor-pointer",
+        text: isHovered ? "text-slate-900 dark:text-blue-300 font-medium" : "text-slate-900 dark:text-blue-400",
+        dot: "bg-blue-500",
+      };
+    }
+    return {
+      container: isHovered ? "bg-slate-600/30 border-gray-400 dark:border-slate-500 cursor-pointer" : "bg-gray-100/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 hover:bg-gray-200/50 dark:hover:bg-slate-700/50 cursor-pointer",
+      text: isHovered ? "text-slate-900 dark:text-slate-300 font-medium" : "text-slate-900 dark:text-slate-400",
+      dot: "bg-slate-600",
+    };
+  };
+
+  const getLineClasses = (index: number) => {
+    if (index < currentPosition) return "bg-blue-500";
+    if (index === currentPosition) return "bg-gradient-to-r from-emerald-500 to-slate-700";
+    return "bg-gray-200 dark:bg-slate-700";
+  };
+
+  return (
+    <div className="relative">
+      {isMoving && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px]">
+          <div className="flex items-center gap-2 font-medium text-blue-400">
+            <Loader2 size={18} className="animate-spin" />
+            <span className="text-sm">Movendo card...</span>
+          </div>
+        </div>
+      )}
+      <div className={`scrollbar-thin flex items-center gap-1 overflow-x-auto px-1 py-2 ${isMoving ? "pointer-events-none opacity-60" : ""}`}>
+        {lists.map((list, index) => {
+          const classes = getClasses(list, index);
+          const isPassed = index < currentPosition;
+          const isCurrent = list.id === currentListId;
+          return (
+            <React.Fragment key={list.id}>
+              <button
+                onClick={() => { if (!isCurrent) onMove(list.id); }}
+                onMouseEnter={() => !isCurrent && setHovered(list.id)}
+                onMouseLeave={() => setHovered(null)}
+                disabled={isCurrent}
+                className={`relative flex items-center gap-2 rounded-lg border px-3 py-2 transition-all ${classes.container} ${isCurrent ? "cursor-not-allowed" : ""}`}
+                title={isCurrent ? `Etapa atual: ${list.name}` : `Mover para: ${list.name}`}
+              >
+                <div className="relative flex items-center justify-center">
+                  {isPassed || isCurrent ? (
+                    <div className={`flex h-5 w-5 items-center justify-center rounded-full ${classes.dot}`}>
+                      {isPassed && <Check size={12} className="text-slate-900 dark:text-white" />}
+                      {isCurrent && <div className="h-2 w-2 animate-pulse rounded-full bg-white" />}
+                    </div>
+                  ) : (
+                    <div className={`h-4 w-4 rounded-full border-2 ${hovered === list.id ? "border-slate-400" : "border-gray-300 dark:border-slate-600"}`} />
+                  )}
+                </div>
+                <span className={`whitespace-nowrap text-sm ${classes.text}`}>{list.name}</span>
+                {list.is_done_stage && <span className="ml-1 rounded border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-xs text-emerald-400">Concluído</span>}
+                {list.is_lost_stage && <span className="ml-1 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-xs text-red-400">Perdido</span>}
+              </button>
+              {index < lists.length - 1 && (
+                <div className="relative flex items-center">
+                  <div className={`h-0.5 w-6 transition-all ${getLineClasses(index)}`} />
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ─── Página principal ───────────────────────────────────────────────────────────
 
 const ServiceCardDetails: React.FC = () => {
@@ -567,6 +662,14 @@ const ServiceCardDetails: React.FC = () => {
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState("");
+  const [isMoving, setIsMoving] = useState(false);
+  const [activities, setActivities] = useState<ServiceCardActivity[]>([]);
+
+  const reloadActivities = async () => {
+    try {
+      setActivities(await serviceActivityService.list(numBoardId, numCardId));
+    } catch { /* silencioso */ }
+  };
 
   const loadCard = async () => {
     try {
@@ -578,6 +681,7 @@ const ServiceCardDetails: React.FC = () => {
       setCard(cardData);
       setTitleValue(cardData.title);
       setLists([...listsData].sort((a, b) => a.position - b.position));
+      reloadActivities();
     } catch (error: any) {
       console.error("Erro ao carregar card:", error);
       showError("Erro ao carregar card de serviço.");
@@ -594,7 +698,16 @@ const ServiceCardDetails: React.FC = () => {
   const updateCard = async (data: Parameters<typeof serviceBoardService.updateCard>[2]) => {
     const updated = await serviceBoardService.updateCard(numBoardId, numCardId, data);
     setCard((prev) => (prev ? { ...prev, ...updated } : updated));
+    reloadActivities();
     return updated;
+  };
+
+  // Badge de contagem por aba (Foco / Anotações / Arquivos)
+  const tabBadge = (key: TabKey): number | undefined => {
+    if (key === "atividade") return activities.filter((a) => a.category === "atividade" && !a.is_completed).length;
+    if (key === "anotacoes") return activities.filter((a) => a.category === "anotacao").length;
+    if (key === "arquivos") return activities.filter((a) => a.category === "arquivo").length;
+    return undefined;
   };
 
   const handleSaveTitle = async () => {
@@ -609,12 +722,17 @@ const ServiceCardDetails: React.FC = () => {
   };
 
   const handleMove = async (newListId: number) => {
+    if (newListId === card?.list_id) return;
+    setIsMoving(true);
     try {
       await serviceBoardService.moveCard(numBoardId, numCardId, newListId);
       setCard((prev) => (prev ? { ...prev, list_id: newListId } : prev));
+      reloadActivities();
       showSuccess("Card movido!");
     } catch {
       showError("Erro ao mover card");
+    } finally {
+      setIsMoving(false);
     }
   };
 
@@ -640,8 +758,6 @@ const ServiceCardDetails: React.FC = () => {
       </div>
     );
   }
-
-  const currentList = lists.find((l) => l.id === card.list_id);
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -675,20 +791,15 @@ const ServiceCardDetails: React.FC = () => {
                 <button onClick={() => setEditingTitle(true)} className="text-slate-400 opacity-0 transition-opacity hover:text-blue-400 group-hover:opacity-100" title="Editar título"><Pencil size={16} /></button>
               </div>
             )}
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-sm text-slate-500 dark:text-slate-400">na lista</span>
-              <select
-                value={card.list_id}
-                onChange={(e) => handleMove(Number(e.target.value))}
-                className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-2 py-1 text-sm font-medium text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
-              >
-                {lists.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-              </select>
-            </div>
           </div>
           <button onClick={handleDelete} className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20">
             <Trash2 size={16} /> Deletar
           </button>
+        </div>
+
+        {/* Pipeline visual — posição do card entre as listas */}
+        <div className="mt-3">
+          <ServicePipelineStages lists={lists} currentListId={card.list_id} onMove={handleMove} isMoving={isMoving} />
         </div>
       </div>
 
@@ -704,6 +815,7 @@ const ServiceCardDetails: React.FC = () => {
             cardId={numCardId}
             paymentInfo={card.payment_info}
             onSavePaymentInfo={async (pi) => { await updateCard({ payment_info: pi }); showSuccess("Card atualizado!"); }}
+            onChange={reloadActivities}
           />
         </div>
 
@@ -712,28 +824,44 @@ const ServiceCardDetails: React.FC = () => {
           {/* Abas */}
           <div className="flex-shrink-0 overflow-x-auto border-b border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-900/30">
             <div className="flex gap-1">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-                    activeTab === tab.key
-                      ? "border-violet-500 text-violet-500 dark:text-violet-400"
-                      : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                  }`}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </button>
-              ))}
+              {TABS.map((tab) => {
+                const badge = tabBadge(tab.key);
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                      activeTab === tab.key
+                        ? "border-violet-500 text-violet-500 dark:text-violet-400"
+                        : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                    {badge !== undefined && badge > 0 && (
+                      <span className="rounded-full bg-violet-500/20 px-1.5 text-xs text-violet-400">{badge}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Conteúdo da aba */}
           <div className="min-h-0 flex-1 overflow-y-auto p-6">
-            {TABS.filter((t) => t.key === activeTab).map((t) => (
-              <TabPlaceholder key={t.key} label={t.label} icon={React.cloneElement(t.icon as React.ReactElement<{ size?: number }>, { size: 48 })} />
-            ))}
+            {activeTab === "atividade" && (
+              <ServiceActivityTab boardId={numBoardId} cardId={numCardId} activities={activities} reload={reloadActivities} />
+            )}
+            {activeTab === "anotacoes" && (
+              <ServiceNotesTab boardId={numBoardId} cardId={numCardId} activities={activities} reload={reloadActivities} />
+            )}
+            {activeTab === "arquivos" && (
+              <ServiceFilesTab boardId={numBoardId} cardId={numCardId} activities={activities} reload={reloadActivities} />
+            )}
+            {(activeTab === "calendario" || activeTab === "ligacoes" || activeTab === "reunioes" || activeTab === "email") &&
+              TABS.filter((t) => t.key === activeTab).map((t) => (
+                <TabPlaceholder key={t.key} label={t.label} icon={React.cloneElement(t.icon as React.ReactElement<{ size?: number }>, { size: 48 })} />
+              ))}
           </div>
         </div>
       </div>

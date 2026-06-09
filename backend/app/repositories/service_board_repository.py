@@ -8,6 +8,7 @@ from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
 from app.models.service_card_product import ServiceCardProduct
+from app.models.service_card_activity import ServiceCardActivity
 from app.schemas.service_board import (
     ServiceBoardCreate, ServiceBoardUpdate,
     ServiceListCreate, ServiceListUpdate,
@@ -307,3 +308,40 @@ class ServiceBoardRepository:
         self.db.delete(item)
         self.db.commit()
         return True
+
+    # ─── Card Activities (atividade/anotacao/arquivo/alteracao) ───────────────
+
+    def list_card_activities(self, card_id: int) -> List[ServiceCardActivity]:
+        return (
+            self.db.query(ServiceCardActivity)
+            .options(joinedload(ServiceCardActivity.user))
+            .filter(ServiceCardActivity.service_card_id == card_id)
+            .order_by(ServiceCardActivity.created_at.desc())
+            .all()
+        )
+
+    def get_activity_by_id(self, activity_id: int) -> Optional[ServiceCardActivity]:
+        return (
+            self.db.query(ServiceCardActivity)
+            .options(joinedload(ServiceCardActivity.user))
+            .filter(ServiceCardActivity.id == activity_id)
+            .first()
+        )
+
+    def create_activity(self, **kwargs) -> ServiceCardActivity:
+        activity = ServiceCardActivity(**kwargs)
+        self.db.add(activity)
+        self.db.commit()
+        self.db.refresh(activity)
+        return self.get_activity_by_id(activity.id)
+
+    def update_activity(self, activity: ServiceCardActivity, data: dict) -> ServiceCardActivity:
+        for field, value in data.items():
+            setattr(activity, field, value)
+        self.db.commit()
+        self.db.refresh(activity)
+        return activity
+
+    def delete_activity(self, activity: ServiceCardActivity) -> None:
+        self.db.delete(activity)
+        self.db.commit()

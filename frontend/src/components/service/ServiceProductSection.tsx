@@ -13,6 +13,8 @@ interface ServiceProductSectionProps {
   paymentInfo?: Record<string, any>;
   /** Persiste o payment_info (desconto global + condições de pagamento) no card. */
   onSavePaymentInfo: (paymentInfo: Record<string, any> | null) => Promise<void>;
+  /** Avisa o pai quando produtos mudam (para atualizar o histórico de atividades). */
+  onChange?: () => void;
 }
 
 type DiscountType = "value" | "percent";
@@ -27,6 +29,7 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
   cardId,
   paymentInfo,
   onSavePaymentInfo,
+  onChange,
 }) => {
   const { confirm } = useConfirm();
 
@@ -150,6 +153,7 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
       setShowProductSearch(false);
       setSearchTerm("");
       await loadProducts();
+      onChange?.();
     } catch {
       showError("Erro ao adicionar produto");
     } finally {
@@ -169,6 +173,7 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
       setLoading(true);
       await serviceBoardService.removeCardProduct(boardId, cardId, itemId);
       await loadProducts();
+      onChange?.();
     } catch {
       showError("Erro ao remover produto");
     } finally {
