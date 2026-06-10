@@ -4,7 +4,7 @@ import {
   Plus, Check, Trash2, Clock, Phone, CheckSquare, Mail, Users, FileText,
   StickyNote, ArrowRight, Package, User, Activity as ActivityIcon, Search,
   Download, Upload, X, Calendar, MessageCircle, Linkedin, MapPin, Video,
-  MoreHorizontal, Save, Edit, ChevronDown, ChevronRight, Loader2,
+  MoreHorizontal, Save, Edit, ChevronDown, ChevronRight, Loader2, MailX,
 } from "lucide-react";
 import serviceActivityService, { ServiceCardActivity } from "../../services/serviceActivityService";
 import api4comService from "../../services/api4comService";
@@ -108,6 +108,14 @@ const dueBadge = (due?: string): { label: string; cls: string } | null => {
   return { label: "AGENDADO", cls: "border-blue-500/40 bg-blue-500/20 text-blue-400" };
 };
 
+// Estilos dos botões de confirmação por tipo
+const BTN_BASE = "flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors";
+const GREEN_BTN = `${BTN_BASE} border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20`;
+const EMERALD_BTN = GREEN_BTN;
+const RED_BTN = `${BTN_BASE} border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20`;
+const ORANGE_BTN = `${BTN_BASE} border-orange-500/40 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20`;
+const GRAY_BTN = `${BTN_BASE} border-slate-400/40 bg-slate-400/10 text-slate-400 hover:bg-slate-400/20`;
+
 // ─── Item do Foco (estilo board de vendas) ───────────────────────────────────────
 
 const FocoItem: React.FC<{
@@ -155,9 +163,28 @@ const FocoItem: React.FC<{
     setShowPhones(true);
   };
 
+  const isCall = activity.activity_type === "call";
+
   const markResult = async (isValid: boolean) => {
     try { await serviceActivityService.complete(boardId, cardId, activity.id, true, isValid); await onChanged(); }
     catch { showError("Erro ao registrar resultado"); }
+  };
+
+  const conclude = async () => {
+    try { await serviceActivityService.complete(boardId, cardId, activity.id, true); await onChanged(); }
+    catch { showError("Erro ao concluir"); }
+  };
+
+  const primaryEmail = contact?.email || contact?.email_commercial || contact?.email_personal;
+  const whatsappNumber = contact?.phone_whatsapp || contact?.phone;
+
+  const openEmail = () => {
+    if (!primaryEmail) { showWarning("Pessoa sem e-mail cadastrado"); return; }
+    window.open(`mailto:${primaryEmail}`, "_blank");
+  };
+  const openWhatsapp = () => {
+    if (!whatsappNumber) { showWarning("Pessoa sem WhatsApp cadastrado"); return; }
+    window.open(`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`, "_blank");
   };
 
   const saveEdit = async () => {
@@ -214,10 +241,10 @@ const FocoItem: React.FC<{
           {md.location && <p className="flex items-center gap-1 text-xs text-slate-400"><MapPin size={12} /> {md.location}</p>}
           {md.video_link && <a href={md.video_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-400 hover:underline"><Video size={12} /> Link da videochamada</a>}
 
-          {/* Telefone */}
-          {phones.length > 0 && (
+          {/* Telefone — só em atividades de ligação */}
+          {isCall && phones.length > 0 && (
             <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50/50 px-2 py-1.5 dark:border-slate-700 dark:bg-slate-800/40">
-              <FileText size={14} className="text-slate-400" />
+              <Phone size={14} className="text-slate-400" />
               <span className="text-sm text-slate-700 dark:text-slate-300">
                 {phones[0].number}{phones.length > 1 ? ` (+${phones.length - 1})` : ""}
               </span>
@@ -250,18 +277,48 @@ const FocoItem: React.FC<{
               </div>
             </div>
           ) : (
-            /* Ações */
+            /* Ações — confirmação específica por tipo de atividade */
             <div className="flex items-center gap-2">
-              <button onClick={handleCall} disabled={calling} title="Ligar"
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white transition-colors hover:bg-emerald-600 disabled:opacity-60">
-                {calling ? <Loader2 size={16} className="animate-spin" /> : <Phone size={16} />}
-              </button>
-              <button onClick={() => markResult(true)} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20">
-                <Check size={16} /> Válido
-              </button>
-              <button onClick={() => markResult(false)} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20">
-                <X size={16} /> Não Válido
-              </button>
+              {/* Ação principal por tipo (ligar / e-mail / whatsapp) */}
+              {isCall && (
+                <button onClick={handleCall} disabled={calling} title="Ligar"
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white transition-colors hover:bg-emerald-600 disabled:opacity-60">
+                  {calling ? <Loader2 size={16} className="animate-spin" /> : <Phone size={16} />}
+                </button>
+              )}
+
+              {/* Botões de confirmação por tipo */}
+              {isCall && (
+                <>
+                  <button onClick={() => markResult(true)} className={GREEN_BTN}><Check size={16} /> Válido</button>
+                  <button onClick={() => markResult(false)} className={RED_BTN}><X size={16} /> Não Válido</button>
+                </>
+              )}
+              {activity.activity_type === "email" && (
+                <>
+                  <button onClick={openEmail} className={ORANGE_BTN}><Mail size={16} /> Enviar E-mail</button>
+                  <button onClick={() => markResult(true)} className={GREEN_BTN}><Check size={16} /> Já enviado</button>
+                  <button onClick={() => markResult(false)} className={GRAY_BTN}><MailX size={16} /> Sem e-mail</button>
+                </>
+              )}
+              {activity.activity_type === "whatsapp" && (
+                <>
+                  <button onClick={openWhatsapp} className={EMERALD_BTN}><MessageCircle size={16} /> Abrir WhatsApp</button>
+                  <button onClick={() => markResult(true)} className={GREEN_BTN}><Check size={16} /> Respondeu</button>
+                  <button onClick={() => markResult(false)} className={GRAY_BTN}><X size={16} /> Sem resposta</button>
+                </>
+              )}
+              {activity.activity_type === "meeting" && (
+                <>
+                  <button onClick={() => markResult(true)} className={GREEN_BTN}><Check size={16} /> Realizada</button>
+                  <button onClick={() => markResult(false)} className={RED_BTN}><X size={16} /> Não realizada</button>
+                </>
+              )}
+              {!isCall && !["email", "whatsapp", "meeting"].includes(activity.activity_type || "") && (
+                <button onClick={conclude} className={GREEN_BTN}><Check size={16} /> Concluir</button>
+              )}
+
+              {/* Ações comuns */}
               <button onClick={() => setEditing(true)} title="Editar" className="flex-shrink-0 rounded-lg border border-blue-500/40 bg-blue-500/10 p-2 text-blue-400 transition-colors hover:bg-blue-500/20"><Edit size={16} /></button>
               <button onClick={() => setRescheduling(true)} title="Reagendar" className="flex-shrink-0 rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-2 text-yellow-400 transition-colors hover:bg-yellow-500/20"><Calendar size={16} /></button>
               <button onClick={handleDelete} title="Remover" className="flex-shrink-0 rounded-lg border border-red-500/40 bg-red-500/10 p-2 text-red-400 transition-colors hover:bg-red-500/20"><Trash2 size={16} /></button>

@@ -33,6 +33,7 @@ import serviceBoardService, {
   ServiceList,
 } from "../services/serviceBoardService";
 import serviceActivityService, { ServiceCardActivity } from "../services/serviceActivityService";
+import api4comService from "../services/api4comService";
 import { ServiceActivityTab, ServiceNotesTab, ServiceFilesTab } from "../components/service/ServiceActivityTab";
 import clientService, { Client } from "../services/clientService";
 import personService, { Person } from "../services/personService";
@@ -661,6 +662,8 @@ const ServiceCardDetails: React.FC = () => {
   const [isMoving, setIsMoving] = useState(false);
   const [activities, setActivities] = useState<ServiceCardActivity[]>([]);
   const [contactPerson, setContactPerson] = useState<Person | null>(null);
+  const [isQuickCalling, setIsQuickCalling] = useState(false);
+  const [quickCallNumbers, setQuickCallNumbers] = useState<{ label: string; number: string }[] | null>(null);
 
   const reloadActivities = async () => {
     try {
@@ -744,6 +747,44 @@ const ServiceCardDetails: React.FC = () => {
     } finally {
       setIsMoving(false);
     }
+  };
+
+  // ─── Ligação rápida (header) ────────────────────────────────────────────────
+  const phonesOf = (p: Person | null) => {
+    if (!p) return [] as { label: string; number: string }[];
+    return [
+      p.phone && { label: "Principal", number: p.phone },
+      p.phone_whatsapp && { label: "WhatsApp", number: p.phone_whatsapp },
+      p.phone_commercial && { label: "Comercial", number: p.phone_commercial },
+      p.phone_alternative && { label: "Alternativo", number: p.phone_alternative },
+      p.phone_extra1 && { label: "Extra 1", number: p.phone_extra1 },
+      p.phone_extra2 && { label: "Extra 2", number: p.phone_extra2 },
+    ].filter(Boolean) as { label: string; number: string }[];
+  };
+
+  const hasOpenCall = activities.some((a) => a.category === "atividade" && a.activity_type === "call" && !a.is_completed);
+
+  const execQuickCall = async (phone: string) => {
+    setIsQuickCalling(true);
+    try {
+      const r = await api4comService.makeCall({ phone, service_card_id: numCardId });
+      if (r.success) showSuccess("Chamada iniciada! O webphone abrirá automaticamente.");
+      else showError(`Erro ao iniciar chamada: ${r.error || r.message}`);
+      reloadActivities();
+    } catch (e: any) {
+      showError(`Erro ao iniciar chamada: ${e.response?.data?.detail || e.message}`);
+    } finally {
+      setIsQuickCalling(false);
+      setQuickCallNumbers(null);
+    }
+  };
+
+  const handleQuickCall = () => {
+    if (!contactPerson) { showError("Nenhuma pessoa vinculada ao card"); return; }
+    const nums = phonesOf(contactPerson);
+    if (nums.length === 0) { showError("A pessoa vinculada não possui telefone cadastrado"); return; }
+    if (nums.length === 1) { execQuickCall(nums[0].number); return; }
+    setQuickCallNumbers(nums);
   };
 
   const handleDelete = async () => {
@@ -832,8 +873,8 @@ const ServiceCardDetails: React.FC = () => {
         {/* Coluna direita — 70% */}
         <div className="flex min-h-0 w-full flex-1 flex-col">
           {/* Abas */}
-          <div className="flex-shrink-0 overflow-x-auto border-b border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-900/30">
-            <div className="flex gap-1">
+          <div className="flex flex-shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-900/30">
+            <div className="flex flex-1 gap-1 overflow-x-auto">
               {TABS.map((tab) => {
                 const badge = tabBadge(tab.key);
                 return (
@@ -855,6 +896,27 @@ const ServiceCardDetails: React.FC = () => {
                 );
               })}
             </div>
+
+            {/* Botão de ligação rápida (sempre visível) */}
+            <button
+              onClick={handleQuickCall}
+              disabled={isQuickCalling || hasOpenCall || !card.person_id}
+              title={
+                hasOpenCall ? "Já existe uma atividade de ligação em aberto"
+                : !card.person_id ? "Nenhuma pessoa vinculada ao card"
+                : "Ligar agora para o contato"
+              }
+              className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isQuickCalling ? <Loader2 size={16} className="animate-spin" /> : <Phone size={16} />}
+              {(hasOpenCall || !card.person_id) && !isQuickCalling && (
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden="true">
+                    <line x1="4" y1="4" x2="20" y2="20" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Conteúdo da aba */}
@@ -875,6 +937,31 @@ const ServiceCardDetails: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de seleção de número para ligação rápida (2+ números) */}
+      {quickCallNumbers && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setQuickCallNumbers(null)}>
+          <div className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 p-4">
+              <h3 className="font-semibold text-slate-900 dark:text-white">Ligar para {contactPerson?.name}</h3>
+              <button onClick={() => setQuickCallNumbers(null)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="space-y-2 p-4">
+              {quickCallNumbers.map((p) => (
+                <button key={p.label + p.number} onClick={() => execQuickCall(p.number)} disabled={isQuickCalling}
+                  className="flex w-full items-center justify-between rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3 text-left transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50 disabled:opacity-60">
+                  <div>
+                    <p className="text-xs text-slate-400">{p.label}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{p.number}</p>
+                  </div>
+                  <Phone size={16} className="text-emerald-400" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
