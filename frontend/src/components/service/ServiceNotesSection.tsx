@@ -287,7 +287,7 @@ const ServiceNotesSection: React.FC<ServiceNotesSectionProps> = ({ boardId, card
                     </div>
                   </div>
                   <NoteRenderer content={sanitizeNoteHTML(note.content)} />
-                  {note.updated_at !== note.created_at && (
+                  {new Date(note.updated_at).getTime() - new Date(note.created_at).getTime() > 2000 && (
                     <p className="mt-2 text-xs italic text-slate-400 dark:text-slate-500">Editado em {formatRelativeTime(note.updated_at)}</p>
                   )}
                 </>

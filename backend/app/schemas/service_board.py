@@ -133,6 +133,12 @@ class ServiceCardResponse(ServiceCardBase):
     updated_at: datetime
     client_name: Optional[str] = None
     person_name: Optional[str] = None
+    assigned_to_name: Optional[str] = None
+    # Agregados para o card do kanban (estilo vendas)
+    value: Optional[float] = None
+    pending_status: Optional[str] = None   # overdue | today | future | none
+    pending_count: Optional[int] = None
+    is_stuck_3d: Optional[bool] = None
 
     model_config = {"from_attributes": True}
 
@@ -213,6 +219,7 @@ class ServiceCardActivityUpdate(BaseModel):
     activity_type: Optional[str] = None
     priority: Optional[str] = None
     due_date: Optional[datetime] = None
+    activity_metadata: Optional[dict] = None
 
 
 class ServiceCardActivityComplete(BaseModel):

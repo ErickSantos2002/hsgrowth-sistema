@@ -49,6 +49,11 @@ export interface ServiceCard {
   person_id?: number;
   client_name?: string;
   person_name?: string;
+  assigned_to_name?: string;
+  value?: number;
+  pending_status?: "overdue" | "today" | "future" | "none";
+  pending_count?: number;
+  is_stuck_3d?: boolean;
   position: number;
   is_deleted: boolean;
   created_at: string;

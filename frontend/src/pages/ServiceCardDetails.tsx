@@ -27,6 +27,9 @@ import {
   PhoneCall,
   Users as UsersIcon,
   Loader2,
+  Copy,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import serviceBoardService, {
   ServiceCard,
@@ -627,8 +630,6 @@ const ServicePipelineStages: React.FC<{
                   )}
                 </div>
                 <span className={`whitespace-nowrap text-sm ${classes.text}`}>{list.name}</span>
-                {list.is_done_stage && <span className="ml-1 rounded border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-xs text-emerald-400">Concluído</span>}
-                {list.is_lost_stage && <span className="ml-1 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-xs text-red-400">Perdido</span>}
               </button>
               {index < lists.length - 1 && (
                 <div className="relative flex items-center">
@@ -788,6 +789,58 @@ const ServiceCardDetails: React.FC = () => {
     setQuickCallNumbers(nums);
   };
 
+  // ─── Ganho / Perdido / Clonar ───────────────────────────────────────────────
+  const handleWin = async () => {
+    const doneList = lists.find((l) => l.is_done_stage) || lists.find((l) => /ganho/i.test(l.name));
+    if (!doneList) { showError("Nenhuma etapa de 'Ganho' configurada no board"); return; }
+    if (card?.list_id === doneList.id) { showError("O card já está em Negócio Ganho"); return; }
+    const ok = await confirm({ title: "Marcar como Ganho", message: `Mover este card para "${doneList.name}"?`, confirmText: "Ganho", isDanger: false });
+    if (!ok) return;
+    await handleMove(doneList.id);
+  };
+
+  const handleLose = async () => {
+    let lostList = lists.find((l) => l.is_lost_stage) || lists.find((l) => /perdido/i.test(l.name));
+    const ok = await confirm({ title: "Marcar como Perdido", message: "Mover este card para a etapa de Negócio Perdido?", confirmText: "Perdido", isDanger: true });
+    if (!ok) return;
+    try {
+      // Cria a lista "Negócio Perdido" automaticamente se ainda não existir
+      if (!lostList) {
+        lostList = await serviceBoardService.createList(numBoardId, {
+          board_id: numBoardId,
+          name: "Negócio Perdido",
+          color: "#EF4444",
+          is_lost_stage: true,
+        });
+        setLists((prev) => [...prev, lostList!].sort((a, b) => a.position - b.position));
+      }
+      await handleMove(lostList.id);
+    } catch {
+      showError("Erro ao marcar como perdido");
+    }
+  };
+
+  const handleClone = async () => {
+    if (!card) return;
+    const ok = await confirm({ title: "Clonar card", message: "Criar uma cópia deste card na mesma lista?", confirmText: "Clonar", isDanger: false });
+    if (!ok) return;
+    try {
+      const novo = await serviceBoardService.createCard(numBoardId, {
+        list_id: card.list_id,
+        title: card.title,
+        description: card.description,
+        due_date: card.due_date,
+        client_id: card.client_id ?? null,
+        person_id: card.person_id ?? null,
+        contact_info: card.contact_info,
+      });
+      showSuccess("Card clonado!");
+      navigate(`/servicos/${numBoardId}/cards/${novo.id}`);
+    } catch {
+      showError("Erro ao clonar card");
+    }
+  };
+
   const handleDelete = async () => {
     const ok = await confirm({ title: "Deletar card", message: "Deseja deletar este card? Esta ação não pode ser desfeita.", confirmText: "Deletar", isDanger: true });
     if (!ok) return;
@@ -844,9 +897,20 @@ const ServiceCardDetails: React.FC = () => {
               </div>
             )}
           </div>
-          <button onClick={handleDelete} className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20">
-            <Trash2 size={16} /> Deletar
-          </button>
+          <div className="flex flex-shrink-0 items-center gap-2">
+            <button onClick={handleClone} className="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+              <Copy size={16} /> Clonar
+            </button>
+            <button onClick={handleWin} className="flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-600">
+              <CheckCircle2 size={16} /> Ganho
+            </button>
+            <button onClick={handleLose} className="flex items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600">
+              <XCircle size={16} /> Perdido
+            </button>
+            <button onClick={handleDelete} className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20">
+              <Trash2 size={16} /> Deletar
+            </button>
+          </div>
         </div>
 
         {/* Pipeline visual — posição do card entre as listas */}

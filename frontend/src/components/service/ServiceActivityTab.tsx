@@ -49,10 +49,13 @@ const ACTIVITY_TYPES: { type: string; label: string; icon: React.ReactNode }[] =
 ];
 
 const PRIORITY_META: Record<string, { label: string; cls: string }> = {
-  normal: { label: "Normal", cls: "border-blue-500/30 bg-blue-500/20 text-blue-400" },
-  high: { label: "Alta", cls: "border-yellow-500/30 bg-yellow-500/20 text-yellow-400" },
-  urgent: { label: "Urgente", cls: "border-red-500/30 bg-red-500/20 text-red-400" },
+  normal: { label: "Normal", cls: "border-blue-500/40 bg-blue-500/15 text-slate-900 dark:text-blue-300" },
+  high: { label: "Alta", cls: "border-yellow-500/40 bg-yellow-500/15 text-slate-900 dark:text-yellow-300" },
+  urgent: { label: "Urgente", cls: "border-red-500/40 bg-red-500/15 text-slate-900 dark:text-red-300" },
 };
+
+// Estilo do badge de prioridade — igual ao board de vendas (retângulo, não pílula)
+const PRIORITY_BADGE = "inline-flex min-w-[64px] flex-shrink-0 items-center justify-center rounded border px-1.5 py-0.5 text-xs font-medium";
 
 const UNSELECTED_BTN = "bg-gray-100 dark:bg-slate-800 text-slate-900 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700";
 
@@ -126,14 +129,22 @@ const FocoItem: React.FC<{
   boardId: number;
   cardId: number;
   contact?: Person | null;
+  expanded: boolean;
+  onToggle: () => void;
   onChanged: () => Promise<void> | void;
-}> = ({ activity, boardId, cardId, contact, onChanged }) => {
+}> = ({ activity, boardId, cardId, contact, expanded, onToggle, onChanged }) => {
   const { confirm } = useConfirm();
-  const [expanded, setExpanded] = useState(true);
   const [calling, setCalling] = useState(false);
   const [showPhones, setShowPhones] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ title: activity.title || "", description: activity.description || "" });
+  const [editForm, setEditForm] = useState({
+    title: activity.title || "",
+    type: activity.activity_type || "other",
+    description: activity.description || "",
+    notes: activity.activity_metadata?.notes || "",
+    video_link: activity.activity_metadata?.video_link || "",
+    priority: activity.priority || "normal",
+  });
   const [rescheduling, setRescheduling] = useState(false);
   const [reForm, setReForm] = useState({
     date: activity.due_date ? activity.due_date.substring(0, 10) : todayStr(),
@@ -193,7 +204,16 @@ const FocoItem: React.FC<{
   const saveEdit = async () => {
     if (!editForm.title.trim()) { showWarning("Informe um título"); return; }
     try {
-      await serviceActivityService.update(boardId, cardId, activity.id, { title: editForm.title.trim(), description: editForm.description.trim() });
+      await serviceActivityService.update(boardId, cardId, activity.id, {
+        title: editForm.title.trim(),
+        description: editForm.description.trim(),
+        activity_type: editForm.type,
+        priority: editForm.priority,
+        activity_metadata: {
+          notes: editForm.notes.trim(),
+          video_link: editForm.video_link.trim(),
+        },
+      });
       setEditing(false); await onChanged();
     } catch { showError("Erro ao salvar"); }
   };
@@ -215,55 +235,97 @@ const FocoItem: React.FC<{
 
   return (
     <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between gap-2">
+      {/* Cabeçalho — clicável para expandir/recolher (sempre visível) */}
+      <button onClick={onToggle} className="flex w-full items-center justify-between gap-2 text-left">
         <div className="flex min-w-0 items-center gap-2">
           <span className={meta.color}>{meta.icon}</span>
           <span className="truncate font-medium text-slate-900 dark:text-white">{activity.title}</span>
-          {prio && <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${prio.cls}`}>{prio.label}</span>}
+          {prio && <span className={`${PRIORITY_BADGE} ${prio.cls}`}>{prio.label}</span>}
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
           <span className="hidden rounded-md border border-gray-200 px-2 py-1 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400 sm:inline">{meta.label}</span>
-          <button onClick={() => setExpanded(!expanded)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
-            {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-          </button>
+          <span className="text-slate-400">{expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</span>
         </div>
+      </button>
+
+      {/* Resumo (data / prazo / responsável) — sempre visível */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+        {badge && <span className={`rounded border px-1.5 py-0.5 font-medium ${badge.cls}`}>{badge.label}</span>}
+        {activity.due_date && <span>{formatDateTime(activity.due_date)}</span>}
+        {activity.user_name && <span>• {activity.user_name}</span>}
       </div>
 
       {expanded && (
         <div className="mt-2 space-y-3">
-          {/* Data / responsável */}
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-            {badge && <span className={`rounded border px-1.5 py-0.5 font-medium ${badge.cls}`}>{badge.label}</span>}
-            {activity.due_date && <span>{formatDateTime(activity.due_date)}</span>}
-            {activity.user_name && <span>• {activity.user_name}</span>}
-          </div>
-
-          {activity.description && <p className="whitespace-pre-wrap break-words text-sm text-slate-600 dark:text-slate-300">{activity.description}</p>}
-          {md.notes && <p className="whitespace-pre-wrap break-words text-xs text-slate-400">📝 {md.notes}</p>}
-          {md.location && <p className="flex items-start gap-1 break-words text-xs text-slate-400"><MapPin size={12} className="mt-0.5 flex-shrink-0" /> <span className="min-w-0 break-words">{md.location}</span></p>}
-          {md.video_link && <a href={md.video_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 break-all text-xs text-blue-400 hover:underline"><Video size={12} className="flex-shrink-0" /> Link da videochamada</a>}
-
-          {/* Telefone — só em atividades de ligação */}
-          {isCall && phones.length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50/50 px-2 py-1.5 dark:border-slate-700 dark:bg-slate-800/40">
-              <Phone size={14} className="text-slate-400" />
-              <span className="text-sm text-slate-700 dark:text-slate-300">
-                {phones[0].number}{phones.length > 1 ? ` (+${phones.length - 1})` : ""}
-              </span>
+          {/* Descrição (com ícone, igual board de vendas) */}
+          {activity.description && (
+            <div className="flex items-start gap-2 text-sm">
+              <FileText size={16} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-500" />
+              <p className="min-w-0 whitespace-pre-wrap break-words text-slate-600 dark:text-slate-300">{activity.description}</p>
             </div>
           )}
+          {md.notes && (
+            <div className="flex items-start gap-2 text-sm">
+              <StickyNote size={16} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-500" />
+              <p className="min-w-0 whitespace-pre-wrap break-words text-slate-600 dark:text-slate-300">{md.notes}</p>
+            </div>
+          )}
+          {md.location && <p className="flex items-start gap-1 break-words text-xs text-slate-400"><MapPin size={12} className="mt-0.5 flex-shrink-0" /> <span className="min-w-0 break-words">{md.location}</span></p>}
+          {md.video_link && <a href={md.video_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 break-all text-xs text-blue-400 hover:underline"><Video size={12} className="flex-shrink-0" /> Link da gravação</a>}
 
-          {/* Edição inline */}
+          {/* Edição inline — completo (igual board de vendas) */}
           {editing ? (
-            <div className="space-y-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-2">
-              <input type="text" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-2 py-1.5 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
-              <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} placeholder="Descrição..."
-                className="w-full resize-none rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-2 py-1.5 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
-              <div className="flex gap-2">
-                <button onClick={saveEdit} className="flex flex-1 items-center justify-center gap-1 rounded bg-emerald-500/20 px-3 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30"><Check size={14} /> Salvar</button>
-                <button onClick={() => setEditing(false)} className="flex flex-1 items-center justify-center gap-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-3 py-1.5 text-sm text-slate-500 dark:text-slate-300"><X size={14} /> Cancelar</button>
+            <div className="space-y-3 rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+              {/* Título */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Título *</label>
+                <input type="text" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} placeholder="Digite o título"
+                  className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              {/* Tipo de Atividade */}
+              <div>
+                <label className="mb-2 block text-xs font-medium text-slate-400">Tipo de Atividade</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {ACTIVITY_TYPES.map((t) => (
+                    <button key={t.type} type="button" onClick={() => setEditForm({ ...editForm, type: t.type })}
+                      className={`flex items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors ${typeBtnClasses(t.type, editForm.type === t.type)}`}>
+                      {t.icon}<span>{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Descrição */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Descrição</label>
+                <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={3} placeholder="Adicione uma descrição"
+                  className="w-full resize-none rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              {/* Anotações */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Anotações</label>
+                <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} placeholder="Adicione anotações da reunião"
+                  className="w-full resize-none rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              {/* Link da gravação */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Link da gravação</label>
+                <input type="url" value={editForm.video_link} onChange={(e) => setEditForm({ ...editForm, video_link: e.target.value })} placeholder="https://meet.google.com/... ou link da gravação"
+                  className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              {/* Prioridade */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Prioridade</label>
+                <select value={editForm.priority} onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
+                  className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="normal">Normal</option>
+                  <option value="high">Alta</option>
+                  <option value="urgent">Urgente</option>
+                </select>
+              </div>
+              {/* Ações */}
+              <div className="flex gap-2 pt-1">
+                <button onClick={saveEdit} className="flex flex-1 items-center justify-center gap-1 rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"><Check size={14} /> Salvar alterações</button>
+                <button onClick={() => setEditing(false)} className="rounded bg-gray-200 px-3 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-gray-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600">Cancelar</button>
               </div>
             </div>
           ) : rescheduling ? (
@@ -427,11 +489,19 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
   const [histFilter, setHistFilter] = useState<HistoryFilter>("todos");
   const [search, setSearch] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedFoco, setExpandedFoco] = useState<Set<number>>(new Set());
 
   const toggleGroup = (key: string) =>
     setExpandedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+
+  const toggleFoco = (id: number) =>
+    setExpandedFoco((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
 
@@ -609,13 +679,27 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
 
       {/* Foco */}
       <div>
-        <h3 className="mb-3 text-lg font-semibold text-slate-900 dark:text-white">Foco</h3>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Foco</h3>
+          {foco.length > 0 && (
+            <button
+              onClick={() => {
+                const allExpanded = foco.every((a) => expandedFoco.has(a.id));
+                setExpandedFoco(allExpanded ? new Set() : new Set(foco.map((a) => a.id)));
+              }}
+              className="text-sm font-medium text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              {foco.every((a) => expandedFoco.has(a.id)) ? "Recolher todos" : "Expandir todos"}
+            </button>
+          )}
+        </div>
         {foco.length === 0 ? (
           <p className="rounded-lg border border-dashed border-gray-200 dark:border-slate-700 py-6 text-center text-sm text-slate-400">Nenhuma atividade pendente</p>
         ) : (
           <div className="space-y-2">
             {foco.map((a) => (
-              <FocoItem key={a.id} activity={a} boardId={boardId} cardId={cardId} contact={contact} onChanged={reload} />
+              <FocoItem key={a.id} activity={a} boardId={boardId} cardId={cardId} contact={contact}
+                expanded={expandedFoco.has(a.id)} onToggle={() => toggleFoco(a.id)} onChanged={reload} />
             ))}
           </div>
         )}

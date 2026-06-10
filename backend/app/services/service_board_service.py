@@ -3,10 +3,11 @@ Service para lógica de negócio de ServiceBoard, ServiceList e ServiceCard.
 """
 import uuid
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List
 from fastapi import HTTPException, status, UploadFile
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.repositories.service_board_repository import ServiceBoardRepository
@@ -164,6 +165,74 @@ class ServiceBoardService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card não encontrado neste board")
         return card
 
+    def _cards_aggregates(self, card_ids: List[int]) -> dict:
+        """Calcula, para cada card: valor (produtos), status da próxima atividade
+        pendente, contagem de pendentes e se está parado há 3+ dias."""
+        if not card_ids:
+            return {}
+        db = self.db
+        now = datetime.utcnow()
+        threshold = now - timedelta(days=3)
+        today_start = datetime(now.year, now.month, now.day)
+        today_end = today_start + timedelta(days=1)
+
+        # Valor por card (soma de quantidade*preço - desconto dos produtos)
+        value_rows = (
+            db.query(
+                ServiceCardProduct.service_card_id,
+                func.coalesce(func.sum(ServiceCardProduct.quantity * ServiceCardProduct.unit_price - ServiceCardProduct.discount), 0),
+            )
+            .filter(ServiceCardProduct.service_card_id.in_(card_ids))
+            .group_by(ServiceCardProduct.service_card_id)
+            .all()
+        )
+        value_by_card = {cid: float(v or 0) for cid, v in value_rows}
+
+        # Atividades pendentes (category=atividade, não concluída)
+        pending_rows = (
+            db.query(ServiceCardActivity.service_card_id, ServiceCardActivity.due_date)
+            .filter(
+                ServiceCardActivity.service_card_id.in_(card_ids),
+                ServiceCardActivity.category == "atividade",
+                ServiceCardActivity.is_completed == False,  # noqa: E712
+            )
+            .all()
+        )
+        pending_map: dict = {}
+        for cid, due in pending_rows:
+            entry = pending_map.setdefault(cid, {"count": 0, "overdue": False, "today": False, "future": False})
+            entry["count"] += 1
+            if due:
+                if due < today_start:
+                    entry["overdue"] = True
+                elif due < today_end:
+                    entry["today"] = True
+                else:
+                    entry["future"] = True
+
+        # Parado 3d+: tem alguma atividade, mas nenhuma nos últimos 3 dias E card não atualizado há 3 dias
+        has_activity = {cid for (cid,) in db.query(ServiceCardActivity.service_card_id)
+                        .filter(ServiceCardActivity.service_card_id.in_(card_ids)).distinct().all()}
+        recent_activity = {cid for (cid,) in db.query(ServiceCardActivity.service_card_id)
+                           .filter(ServiceCardActivity.service_card_id.in_(card_ids),
+                                   ServiceCardActivity.created_at >= threshold).distinct().all()}
+
+        result = {}
+        for cid in card_ids:
+            p = pending_map.get(cid)
+            if p:
+                status_str = "overdue" if p["overdue"] else "today" if p["today"] else "future" if p["future"] else "none"
+            else:
+                status_str = "none"
+            result[cid] = {
+                "value": value_by_card.get(cid, 0.0),
+                "pending_status": status_str,
+                "pending_count": p["count"] if p else 0,
+                "has_activity": cid in has_activity,
+                "recent_activity": cid in recent_activity,
+            }
+        return result
+
     def list_cards(self, board_id: int, page: int = 1, page_size: int = 200) -> ServiceCardListResponse:
         self.get_board(board_id)
         skip = (page - 1) * page_size
@@ -171,13 +240,20 @@ class ServiceBoardService:
         total = self.repo.count_cards_by_board(board_id)
         total_pages = max(1, (total + page_size - 1) // page_size)
 
-        items = [
-            ServiceCardResponse(
+        threshold = datetime.utcnow() - timedelta(days=3)
+        agg = self._cards_aggregates([c.id for c in cards])
+
+        items = []
+        for c in cards:
+            a = agg.get(c.id, {})
+            is_stuck = bool(a.get("has_activity") and not a.get("recent_activity") and c.updated_at and c.updated_at < threshold)
+            items.append(ServiceCardResponse(
                 id=c.id,
                 list_id=c.list_id,
                 title=c.title,
                 description=c.description,
                 assigned_to_id=c.assigned_to_id,
+                assigned_to_name=c.assigned_to.name if c.assigned_to else None,
                 due_date=c.due_date,
                 contact_info=c.contact_info,
                 payment_info=c.payment_info,
@@ -189,9 +265,11 @@ class ServiceBoardService:
                 is_deleted=c.is_deleted,
                 created_at=c.created_at,
                 updated_at=c.updated_at,
-            )
-            for c in cards
-        ]
+                value=a.get("value", 0.0),
+                pending_status=a.get("pending_status", "none"),
+                pending_count=a.get("pending_count", 0),
+                is_stuck_3d=is_stuck,
+            ))
 
         return ServiceCardListResponse(
             cards=items,
@@ -400,13 +478,18 @@ class ServiceBoardService:
     def update_activity(self, board_id: int, card_id: int, activity_id: int, data: ServiceCardActivityUpdate, user: User) -> ServiceCardActivityResponse:
         activity = self._get_activity_scoped(board_id, card_id, activity_id)
         changes = data.model_dump(exclude_unset=True)
-        # Registra a edição no ciclo de vida da atividade (para o histórico)
+        incoming_meta = changes.pop("activity_metadata", None)
         if activity.category == "atividade":
             meta = dict(activity.activity_metadata or {})
+            if incoming_meta:
+                meta.update(incoming_meta)
+            # Registra a edição no ciclo de vida da atividade (para o histórico)
             edits = list(meta.get("edits") or [])
             edits.append(datetime.utcnow().isoformat())
             meta["edits"] = edits
             changes["activity_metadata"] = meta
+        elif incoming_meta is not None:
+            changes["activity_metadata"] = incoming_meta
         updated = self.repo.update_activity(activity, changes)
         return self._build_activity_response(updated)
 

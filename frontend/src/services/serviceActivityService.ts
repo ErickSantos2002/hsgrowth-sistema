@@ -41,6 +41,7 @@ export interface UpdateServiceActivityRequest {
   activity_type?: string;
   priority?: string;
   due_date?: string;
+  activity_metadata?: Record<string, any>;
 }
 
 const BASE = "/api/v1/service-boards";

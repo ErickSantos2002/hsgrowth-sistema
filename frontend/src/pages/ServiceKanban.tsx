@@ -6,7 +6,7 @@ import {
   Grid3x3, Target, TrendingUp, Users, Briefcase, FolderKanban,
   Lightbulb, Rocket, Star, Heart, LucideIcon,
   Settings, Hammer, Gauge, Package, ClipboardList, Cog, FlaskConical,
-  Microscope, Archive, Copy,
+  Microscope, Archive, Copy, CheckSquare, AlarmClock, Calendar,
 } from "lucide-react";
 import serviceBoardService, {
   ServiceBoard,
@@ -374,31 +374,82 @@ interface KanbanCardProps {
   onOpenDetail: () => void;
 }
 
+const CardBadge: React.FC<{ cls: string; icon: React.ReactNode; label: string; title?: string }> = ({ cls, icon, label, title }) => (
+  <span title={title} className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${cls}`}>
+    {icon}{label}
+  </span>
+);
+
+const CardAvatar: React.FC<{ name: string }> = ({ name }) => {
+  const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+  return (
+    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-semibold text-violet-400" title={name}>
+      {initials}
+    </div>
+  );
+};
+
 const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail }) => {
+  const status = card.pending_status || "none";
+  const stuck = card.is_stuck_3d;
+  const pendingCount = card.pending_count || 0;
+
+  const topBadgeCls =
+    status === "overdue" ? "bg-red-500/20 text-red-400"
+    : status === "today" ? "bg-green-500/20 text-green-400"
+    : status === "future" ? "bg-purple-500/20 text-purple-400"
+    : "bg-gray-100 text-slate-400 dark:bg-slate-700/40 dark:text-slate-500";
+
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const dueOverdue = card.due_date ? new Date(card.due_date) < todayStart : false;
+  const fmtValue = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
   return (
     <div
       data-service-card
       onClick={onOpenDetail}
-      className="cursor-pointer rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
+      className={`relative cursor-pointer rounded-lg border p-3.5 shadow-sm transition-all hover:shadow-md ${
+        stuck ? "border-red-500/40 bg-white dark:border-red-500/30 dark:bg-red-950/20" : "border-gray-200 bg-white dark:border-slate-700/30 dark:bg-white/5"
+      }`}
     >
-      <h4 className="text-sm font-medium leading-snug text-slate-900 dark:text-white">
-        {card.title}
-      </h4>
-      {card.client_name && (
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{card.client_name}</p>
-      )}
-      {card.person_name && (
-        <p className="text-xs text-slate-400 dark:text-slate-500">{card.person_name}</p>
-      )}
-      {card.description && (
-        <p className="mt-1 line-clamp-2 text-xs text-slate-400 dark:text-slate-500">{card.description}</p>
-      )}
-      {card.due_date && (
-        <p className="mt-2 flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
-          <span>📅</span>
-          {new Date(card.due_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-        </p>
-      )}
+      {/* Indicador de atividades pendentes (canto superior direito) */}
+      <div
+        className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full ${topBadgeCls}`}
+        title={
+          status === "overdue" ? `${pendingCount} atividade(s) atrasada(s)`
+          : status === "today" ? `${pendingCount} atividade(s) para hoje`
+          : status === "future" ? `${pendingCount} atividade(s) futura(s)`
+          : "Sem atividades pendentes"
+        }
+      >
+        <CheckSquare size={13} />
+      </div>
+
+      <h4 className="mb-2 line-clamp-2 pr-9 text-sm font-medium leading-snug text-slate-900 dark:text-white">{card.title}</h4>
+
+      {card.client_name && <p className="mb-1 truncate text-xs text-slate-500 dark:text-slate-400">{card.client_name}</p>}
+
+      {/* Badges de atividade / parado */}
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {stuck && <CardBadge cls="bg-red-500/15 text-red-500 dark:text-red-400" icon={<AlarmClock size={11} />} label="Parado 3d+" title="Card sem movimentação há mais de 3 dias" />}
+        {status === "overdue" && <CardBadge cls="bg-red-500/15 text-red-500 dark:text-red-400" icon={<CheckSquare size={11} />} label="Atrasada" />}
+        {status === "today" && <CardBadge cls="bg-green-500/15 text-green-600 dark:text-green-400" icon={<CheckSquare size={11} />} label="Para Hoje" />}
+        {status === "future" && <CardBadge cls="bg-purple-500/15 text-purple-600 dark:text-purple-400" icon={<CheckSquare size={11} />} label="Futura" />}
+        {pendingCount === 0 && <CardBadge cls="bg-slate-500/10 text-slate-400 dark:text-slate-500" icon={<CheckSquare size={11} />} label="Sem Atividade" />}
+        {card.due_date && (
+          <CardBadge
+            cls={dueOverdue ? "bg-red-500/20 font-medium text-red-400" : "bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400"}
+            icon={<Calendar size={11} />}
+            label={new Date(card.due_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+          />
+        )}
+      </div>
+
+      {/* Rodapé: valor + responsável */}
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-medium text-green-500 dark:text-green-400">{card.value ? fmtValue(card.value) : ""}</span>
+        {card.assigned_to_name && <CardAvatar name={card.assigned_to_name} />}
+      </div>
     </div>
   );
 };
