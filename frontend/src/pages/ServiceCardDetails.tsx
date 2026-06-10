@@ -44,6 +44,7 @@ import personService, { Person } from "../services/personService";
 import ExpandableSection from "../components/cardDetails/ExpandableSection";
 import ActionButton from "../components/cardDetails/ActionButton";
 import ServiceProductSection from "../components/service/ServiceProductSection";
+import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ClientModal from "../components/clients/ClientModal";
 import PersonModal from "../components/persons/PersonModal";
 import { showSuccess, showError } from "../utils/toast";
@@ -64,6 +65,18 @@ type TabKey =
   | "ligacoes"
   | "reunioes"
   | "email";
+
+// Motivos de perda (provisórios — serão refinados depois)
+const LOSS_REASONS = [
+  "Preço acima do orçamento",
+  "Sem orçamento no momento",
+  "Escolheu concorrente",
+  "Sem retorno / contato perdido",
+  "Não é o momento",
+  "Fora do perfil",
+  "Equipamento sem necessidade de calibração",
+  "Outro",
+];
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: "atividade", label: "Atividade", icon: <Activity size={16} /> },
@@ -666,6 +679,7 @@ const ServiceCardDetails: React.FC = () => {
   const [contactPerson, setContactPerson] = useState<Person | null>(null);
   const [isQuickCalling, setIsQuickCalling] = useState(false);
   const [quickCallNumbers, setQuickCallNumbers] = useState<{ label: string; number: string }[] | null>(null);
+  const [showLossModal, setShowLossModal] = useState(false);
 
   const reloadActivities = async () => {
     try {
@@ -799,11 +813,12 @@ const ServiceCardDetails: React.FC = () => {
     await handleMove(doneList.id);
   };
 
-  const handleLose = async () => {
-    let lostList = lists.find((l) => l.is_lost_stage) || lists.find((l) => /perdido/i.test(l.name));
-    const ok = await confirm({ title: "Marcar como Perdido", message: "Mover este card para a etapa de Negócio Perdido?", confirmText: "Perdido", isDanger: true });
-    if (!ok) return;
+  // Abre o modal de motivo da perda
+  const handleLose = () => setShowLossModal(true);
+
+  const confirmLose = async (reason: string) => {
     try {
+      let lostList = lists.find((l) => l.is_lost_stage) || lists.find((l) => /perdido/i.test(l.name));
       // Cria a lista "Negócio Perdido" automaticamente se ainda não existir
       if (!lostList) {
         lostList = await serviceBoardService.createList(numBoardId, {
@@ -814,7 +829,13 @@ const ServiceCardDetails: React.FC = () => {
         });
         setLists((prev) => [...prev, lostList!].sort((a, b) => a.position - b.position));
       }
-      await handleMove(lostList.id);
+      // Registra o motivo da perda como anotação (fica no histórico)
+      await serviceActivityService.create(numBoardId, numCardId, { category: "anotacao", description: `Motivo da perda: ${reason}` });
+      await serviceBoardService.moveCard(numBoardId, numCardId, lostList.id);
+      setCard((prev) => (prev ? { ...prev, list_id: lostList!.id } : prev));
+      reloadActivities();
+      setShowLossModal(false);
+      showSuccess("Card marcado como perdido!");
     } catch {
       showError("Erro ao marcar como perdido");
     }
@@ -838,18 +859,6 @@ const ServiceCardDetails: React.FC = () => {
       navigate(`/servicos/${numBoardId}/cards/${novo.id}`);
     } catch {
       showError("Erro ao clonar card");
-    }
-  };
-
-  const handleDelete = async () => {
-    const ok = await confirm({ title: "Deletar card", message: "Deseja deletar este card? Esta ação não pode ser desfeita.", confirmText: "Deletar", isDanger: true });
-    if (!ok) return;
-    try {
-      await serviceBoardService.deleteCard(numBoardId, numCardId);
-      showSuccess("Card deletado!");
-      navigate(`/servicos/${numBoardId}`);
-    } catch {
-      showError("Erro ao deletar card");
     }
   };
 
@@ -906,9 +915,6 @@ const ServiceCardDetails: React.FC = () => {
             </button>
             <button onClick={handleLose} className="flex items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600">
               <XCircle size={16} /> Perdido
-            </button>
-            <button onClick={handleDelete} className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20">
-              <Trash2 size={16} /> Deletar
             </button>
           </div>
         </div>
@@ -1002,6 +1008,16 @@ const ServiceCardDetails: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de motivo da perda (mesmo do board de vendas) */}
+      <LossReasonModal
+        isOpen={showLossModal}
+        onClose={() => setShowLossModal(false)}
+        onConfirm={confirmLose}
+        boardId={numBoardId}
+        boardName="Serviços"
+        reasons={LOSS_REASONS}
+      />
 
       {/* Modal de seleção de número para ligação rápida (2+ números) */}
       {quickCallNumbers && ReactDOM.createPortal(

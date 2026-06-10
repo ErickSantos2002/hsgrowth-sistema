@@ -10,6 +10,8 @@ interface LossReasonModalProps {
   onConfirm: (_reason: string) => void;
   boardId: number;
   boardName: string;
+  /** Motivos customizados (ex: board de serviços). Se omitido, usa os do board de vendas. */
+  reasons?: string[];
 }
 
 /**
@@ -23,11 +25,12 @@ const LossReasonModal: React.FC<LossReasonModalProps> = ({
   onConfirm,
   boardId,
   boardName,
+  reasons: reasonsProp,
 }) => {
   const [selectedReason, setSelectedReason] = useState<string>("");
 
-  // Obtém os motivos específicos do board atual
-  const reasons = LOSS_REASONS_BY_BOARD_ID[boardId] || [];
+  // Motivos customizados (serviços) ou os específicos do board de vendas
+  const reasons = reasonsProp ?? (LOSS_REASONS_BY_BOARD_ID[boardId] || []);
 
   /**
    * Handler para confirmar a perda

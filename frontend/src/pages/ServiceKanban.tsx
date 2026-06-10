@@ -6,7 +6,7 @@ import {
   Grid3x3, Target, TrendingUp, Users, Briefcase, FolderKanban,
   Lightbulb, Rocket, Star, Heart, LucideIcon,
   Settings, Hammer, Gauge, Package, ClipboardList, Cog, FlaskConical,
-  Microscope, Archive, Copy, CheckSquare, AlarmClock, Calendar,
+  Microscope, Archive, Copy, CheckSquare, AlarmClock, Calendar, Filter,
 } from "lucide-react";
 import serviceBoardService, {
   ServiceBoard,
@@ -19,6 +19,8 @@ import { BaseModal, FormField, Input, Textarea, Button, LoadingSpinner } from ".
 import { useAuth } from "../hooks/useAuth";
 import { COLORS } from "../constants/colors";
 import ServiceCardModal from "../components/service/ServiceCardModal";
+import userService from "../services/userService";
+import { User as UserType } from "../types";
 
 // ─── Icon maps ────────────────────────────────────────────────────────────────
 
@@ -610,6 +612,22 @@ const ServiceKanban: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({ startX: 0, scrollLeft: 0 });
 
+  // ─── Filtros ──────────────────────────────────────────────────────────────
+  const [showFilters, setShowFilters] = useState(false);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [fStatus, setFStatus] = useState("abertos"); // abertos | todos | ganhos | perdidos
+  const [fAssignee, setFAssignee] = useState("");
+  const [fValue, setFValue] = useState("");
+  const [fTag, setFTag] = useState("");
+  const [fCriacao, setFCriacao] = useState("");
+  const [fFechamento, setFFechamento] = useState("");
+
+  const clearFilters = () => {
+    setFStatus("abertos"); setFAssignee(""); setFValue(""); setFTag("");
+    setFCriacao(""); setFFechamento("");
+  };
+  const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
+
   const numId = Number(boardId);
 
   const loadData = async () => {
@@ -641,6 +659,11 @@ const ServiceKanban: React.FC = () => {
   };
 
   useEffect(() => { loadData(); }, [numId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Carrega usuários para o filtro "Pós Vendas"
+  useEffect(() => {
+    userService.listActive().then(setUsers).catch(() => {});
+  }, []);
 
   // Scroll drag
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -759,13 +782,64 @@ const ServiceKanban: React.FC = () => {
   const BoardIcon = getIcon(board.icon || "wrench");
   const boardColor = board.color || COLORS.board.purple;
 
-  const filteredCards = searchTerm.trim()
-    ? cards.filter((c) =>
-        c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.client_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.person_name || "").toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : cards;
+  // ─── Aplicação dos filtros (client-side) ────────────────────────────────────
+  const listById = (id: number) => lists.find((l) => l.id === id);
+  const isDoneCard = (c: ServiceCard) => { const l = listById(c.list_id); return !!(l?.is_done_stage || /ganho/i.test(l?.name || "")); };
+  const isLostCard = (c: ServiceCard) => { const l = listById(c.list_id); return !!(l?.is_lost_stage || /perdido/i.test(l?.name || "")); };
+
+  const inPeriod = (dateStr: string | undefined, period: string): boolean => {
+    if (!period) return true;
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const now = new Date();
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    switch (period) {
+      case "hoje": return d >= startToday;
+      case "ontem": { const y = new Date(startToday); y.setDate(y.getDate() - 1); return d >= y && d < startToday; }
+      case "semana": { const w = new Date(startToday); w.setDate(w.getDate() - 7); return d >= w; }
+      case "mes": return d >= new Date(now.getFullYear(), now.getMonth(), 1);
+      case "ano": return d >= new Date(now.getFullYear(), 0, 1);
+      default: return true;
+    }
+  };
+
+  const filteredCards = cards.filter((c) => {
+    // Busca
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      if (!(c.title.toLowerCase().includes(q) || (c.client_name || "").toLowerCase().includes(q) || (c.person_name || "").toLowerCase().includes(q))) return false;
+    }
+    // Status
+    if (fStatus === "abertos" && (isDoneCard(c) || isLostCard(c))) return false;
+    if (fStatus === "ganhos" && !isDoneCard(c)) return false;
+    if (fStatus === "perdidos" && !isLostCard(c)) return false;
+    // Pós Vendas (responsável)
+    if (fAssignee && String(c.assigned_to_id || "") !== fAssignee) return false;
+    // Valor
+    if (fValue) {
+      const v = c.value || 0;
+      if (fValue === "0-1000" && !(v <= 1000)) return false;
+      if (fValue === "1000-5000" && !(v > 1000 && v <= 5000)) return false;
+      if (fValue === "5000-10000" && !(v > 5000 && v <= 10000)) return false;
+      if (fValue === "10000+" && !(v > 10000)) return false;
+    }
+    // Etiqueta
+    if (fTag) {
+      if (fTag === "atrasada" && c.pending_status !== "overdue") return false;
+      if (fTag === "hoje" && c.pending_status !== "today") return false;
+      if (fTag === "futura" && c.pending_status !== "future") return false;
+      if (fTag === "sem" && (c.pending_count || 0) !== 0) return false;
+      if (fTag === "parado" && !c.is_stuck_3d) return false;
+    }
+    // Criação (created_at)
+    if (!inPeriod(c.created_at, fCriacao)) return false;
+    // Fechamento (cards em etapa final, por updated_at)
+    if (fFechamento) {
+      if (!isDoneCard(c) && !isLostCard(c)) return false;
+      if (!inPeriod(c.updated_at, fFechamento)) return false;
+    }
+    return true;
+  });
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -826,6 +900,15 @@ const ServiceKanban: React.FC = () => {
               </button>
             )}
 
+            {/* Botão Filtros */}
+            <button
+              onClick={() => setShowFilters((s) => !s)}
+              className={`rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50 ${showFilters || filtersActive ? "bg-violet-500/20 text-violet-400" : ""}`}
+              title="Filtros"
+            >
+              <Filter size={20} className={showFilters || filtersActive ? "text-violet-400" : "text-slate-500 dark:text-slate-400"} />
+            </button>
+
             {/* Botão Nova Lista */}
             {canManage && (
               <button
@@ -871,6 +954,58 @@ const ServiceKanban: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Painel de filtros */}
+        {showFilters && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-200 pt-3 dark:border-slate-700/50">
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Filtros:</span>
+            <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <option value="abertos">Apenas Abertos</option>
+              <option value="todos">Todos</option>
+              <option value="ganhos">Apenas Ganhos</option>
+              <option value="perdidos">Apenas Perdidos</option>
+            </select>
+            <select value={fAssignee} onChange={(e) => setFAssignee(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <option value="">Todos os Pós Vendas</option>
+              {users.map((u) => <option key={u.id} value={String(u.id)}>{u.name}</option>)}
+            </select>
+            <select value={fValue} onChange={(e) => setFValue(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <option value="">Qualquer valor</option>
+              <option value="0-1000">R$ 0 - 1.000</option>
+              <option value="1000-5000">R$ 1.000 - 5.000</option>
+              <option value="5000-10000">R$ 5.000 - 10.000</option>
+              <option value="10000+">R$ 10.000+</option>
+            </select>
+            <select value={fTag} onChange={(e) => setFTag(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <option value="">Qualquer etiqueta</option>
+              <option value="atrasada">🔴 Atividade Atrasada</option>
+              <option value="hoje">🟢 Atividade para Hoje</option>
+              <option value="futura">🟣 Atividade Futura</option>
+              <option value="sem">⚪ Sem Atividade</option>
+              <option value="parado">🔴 Parado 3d+</option>
+            </select>
+            <select value={fCriacao} onChange={(e) => setFCriacao(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <option value="">Qualquer criação</option>
+              <option value="hoje">Criado hoje</option>
+              <option value="ontem">Criado ontem</option>
+              <option value="semana">Criado esta semana</option>
+              <option value="mes">Criado este mês</option>
+              <option value="ano">Criado este ano</option>
+            </select>
+            <select value={fFechamento} onChange={(e) => setFFechamento(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <option value="">Qualquer fechamento</option>
+              <option value="hoje">Fechado hoje</option>
+              <option value="semana">Fechado esta semana</option>
+              <option value="mes">Fechado este mês</option>
+              <option value="ano">Fechado este ano</option>
+            </select>
+            {filtersActive && (
+              <button onClick={clearFilters} className="flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700 dark:hover:text-slate-300">
+                <X size={14} /> Limpar filtros
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Área kanban */}

@@ -65,7 +65,13 @@
       "Bash(cd /c/Users/HS/Documents/GitHub/hsgrowth-sistema/frontend && grep -rn \"note-editor\\\\|note-content\" src/index.css src/*.css 2>/dev/null | head; echo \"=== procura em todo css ===\"; grep -rln \"note-editor\" src/ | head)",
       "Read(//c/c/Users/HS/Documents/GitHub/hsgrowth-sistema/frontend/src/**)",
       "Bash(echo \"exit: $?\")",
-      "Bash(python -m py_compile app/services/service_board_service.py)"
+      "Bash(python -m py_compile app/services/service_board_service.py)",
+      "Bash(python -m py_compile app/schemas/service_board.py app/services/service_board_service.py)",
+      "Bash(git add *)",
+      "Bash(git commit -m '@ *)",
+      "Bash(git commit --amend -m 'ajustes board serviço: foco, histórico, ganho/perdido e card estilo vendas' -m '- Foco estilo vendas: recolhido por padrão, Expandir todos, confirmações por tipo e edição completa *)",
+      "Bash(git push *)",
+      "Bash(gh auth *)"
     ]
   }
 }
