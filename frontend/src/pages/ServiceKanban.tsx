@@ -15,7 +15,7 @@ import serviceBoardService, {
 } from "../services/serviceBoardService";
 import { showSuccess, showError } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
-import { BaseModal, FormField, Input, Textarea, Button, LoadingSpinner } from "../components/common";
+import { BaseModal, FormField, Input, Textarea, Button, LoadingSpinner, SelectMenu } from "../components/common";
 import { useAuth } from "../hooks/useAuth";
 import { COLORS } from "../constants/colors";
 import ServiceCardModal from "../components/service/ServiceCardModal";
@@ -620,11 +620,16 @@ const ServiceKanban: React.FC = () => {
   const [fValue, setFValue] = useState("");
   const [fTag, setFTag] = useState("");
   const [fCriacao, setFCriacao] = useState("");
+  const [fCriacaoStart, setFCriacaoStart] = useState("");
+  const [fCriacaoEnd, setFCriacaoEnd] = useState("");
   const [fFechamento, setFFechamento] = useState("");
+  const [fFechamentoStart, setFFechamentoStart] = useState("");
+  const [fFechamentoEnd, setFFechamentoEnd] = useState("");
 
   const clearFilters = () => {
     setFStatus("abertos"); setFAssignee(""); setFValue(""); setFTag("");
-    setFCriacao(""); setFFechamento("");
+    setFCriacao(""); setFCriacaoStart(""); setFCriacaoEnd("");
+    setFFechamento(""); setFFechamentoStart(""); setFFechamentoEnd("");
   };
   const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
 
@@ -832,11 +837,21 @@ const ServiceKanban: React.FC = () => {
       if (fTag === "parado" && !c.is_stuck_3d) return false;
     }
     // Criação (created_at)
-    if (!inPeriod(c.created_at, fCriacao)) return false;
+    if (fCriacao === "custom") {
+      if (fCriacaoStart && fCriacaoEnd) {
+        const d = new Date(c.created_at);
+        if (d < new Date(`${fCriacaoStart}T00:00:00`) || d > new Date(`${fCriacaoEnd}T23:59:59`)) return false;
+      }
+    } else if (!inPeriod(c.created_at, fCriacao)) return false;
     // Fechamento (cards em etapa final, por updated_at)
     if (fFechamento) {
       if (!isDoneCard(c) && !isLostCard(c)) return false;
-      if (!inPeriod(c.updated_at, fFechamento)) return false;
+      if (fFechamento === "custom") {
+        if (fFechamentoStart && fFechamentoEnd) {
+          const d = new Date(c.updated_at);
+          if (d < new Date(`${fFechamentoStart}T00:00:00`) || d > new Date(`${fFechamentoEnd}T23:59:59`)) return false;
+        }
+      } else if (!inPeriod(c.updated_at, fFechamento)) return false;
     }
     return true;
   });
@@ -959,46 +974,78 @@ const ServiceKanban: React.FC = () => {
         {showFilters && (
           <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-200 pt-3 dark:border-slate-700/50">
             <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Filtros:</span>
-            <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-              <option value="abertos">Apenas Abertos</option>
-              <option value="todos">Todos</option>
-              <option value="ganhos">Apenas Ganhos</option>
-              <option value="perdidos">Apenas Perdidos</option>
-            </select>
-            <select value={fAssignee} onChange={(e) => setFAssignee(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-              <option value="">Todos os Pós Vendas</option>
-              {users.map((u) => <option key={u.id} value={String(u.id)}>{u.name}</option>)}
-            </select>
-            <select value={fValue} onChange={(e) => setFValue(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-              <option value="">Qualquer valor</option>
-              <option value="0-1000">R$ 0 - 1.000</option>
-              <option value="1000-5000">R$ 1.000 - 5.000</option>
-              <option value="5000-10000">R$ 5.000 - 10.000</option>
-              <option value="10000+">R$ 10.000+</option>
-            </select>
-            <select value={fTag} onChange={(e) => setFTag(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-              <option value="">Qualquer etiqueta</option>
-              <option value="atrasada">🔴 Atividade Atrasada</option>
-              <option value="hoje">🟢 Atividade para Hoje</option>
-              <option value="futura">🟣 Atividade Futura</option>
-              <option value="sem">⚪ Sem Atividade</option>
-              <option value="parado">🔴 Parado 3d+</option>
-            </select>
-            <select value={fCriacao} onChange={(e) => setFCriacao(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-              <option value="">Qualquer criação</option>
-              <option value="hoje">Criado hoje</option>
-              <option value="ontem">Criado ontem</option>
-              <option value="semana">Criado esta semana</option>
-              <option value="mes">Criado este mês</option>
-              <option value="ano">Criado este ano</option>
-            </select>
-            <select value={fFechamento} onChange={(e) => setFFechamento(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-violet-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-              <option value="">Qualquer fechamento</option>
-              <option value="hoje">Fechado hoje</option>
-              <option value="semana">Fechado esta semana</option>
-              <option value="mes">Fechado este mês</option>
-              <option value="ano">Fechado este ano</option>
-            </select>
+            <div className="min-w-[150px]">
+              <SelectMenu size="sm" value={fStatus} onChange={setFStatus} options={[
+                { value: "abertos", label: "Apenas Abertos" },
+                { value: "todos", label: "Todos" },
+                { value: "ganhos", label: "Apenas Ganhos" },
+                { value: "perdidos", label: "Apenas Perdidos" },
+              ]} />
+            </div>
+            <div className="min-w-[170px]">
+              <SelectMenu size="sm" value={fAssignee} onChange={setFAssignee} options={[
+                { value: "", label: "Todos os Pós Vendas" },
+                ...users.map((u) => ({ value: String(u.id), label: u.name })),
+              ]} />
+            </div>
+            <div className="min-w-[150px]">
+              <SelectMenu size="sm" value={fValue} onChange={setFValue} options={[
+                { value: "", label: "Qualquer valor" },
+                { value: "0-1000", label: "R$ 0 - 1.000" },
+                { value: "1000-5000", label: "R$ 1.000 - 5.000" },
+                { value: "5000-10000", label: "R$ 5.000 - 10.000" },
+                { value: "10000+", label: "R$ 10.000+" },
+              ]} />
+            </div>
+            <div className="min-w-[180px]">
+              <SelectMenu size="sm" value={fTag} onChange={setFTag} options={[
+                { value: "", label: "Qualquer etiqueta" },
+                { value: "atrasada", label: "🔴 Atividade Atrasada" },
+                { value: "hoje", label: "🟢 Atividade para Hoje" },
+                { value: "futura", label: "🟣 Atividade Futura" },
+                { value: "sem", label: "⚪ Sem Atividade" },
+                { value: "parado", label: "🔴 Parado 3d+" },
+              ]} />
+            </div>
+            <div className="min-w-[160px]">
+              <SelectMenu size="sm" value={fCriacao} onChange={(v) => { setFCriacao(v); if (v !== "custom") { setFCriacaoStart(""); setFCriacaoEnd(""); } }} options={[
+                { value: "", label: "Qualquer criação" },
+                { value: "hoje", label: "Criado hoje" },
+                { value: "ontem", label: "Criado ontem" },
+                { value: "semana", label: "Criado esta semana" },
+                { value: "mes", label: "Criado este mês" },
+                { value: "ano", label: "Criado este ano" },
+                { value: "custom", label: "Período personalizado" },
+              ]} />
+            </div>
+            {fCriacao === "custom" && (
+              <div className="flex items-center gap-2">
+                <input type="date" value={fCriacaoStart} max={fCriacaoEnd || undefined} onChange={(e) => setFCriacaoStart(e.target.value)}
+                  className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
+                <span className="text-xs text-slate-400">até</span>
+                <input type="date" value={fCriacaoEnd} min={fCriacaoStart || undefined} onChange={(e) => setFCriacaoEnd(e.target.value)}
+                  className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
+              </div>
+            )}
+            <div className="min-w-[170px]">
+              <SelectMenu size="sm" value={fFechamento} onChange={(v) => { setFFechamento(v); if (v !== "custom") { setFFechamentoStart(""); setFFechamentoEnd(""); } }} options={[
+                { value: "", label: "Qualquer fechamento" },
+                { value: "hoje", label: "Fechado hoje" },
+                { value: "semana", label: "Fechado esta semana" },
+                { value: "mes", label: "Fechado este mês" },
+                { value: "ano", label: "Fechado este ano" },
+                { value: "custom", label: "Período personalizado" },
+              ]} />
+            </div>
+            {fFechamento === "custom" && (
+              <div className="flex items-center gap-2">
+                <input type="date" value={fFechamentoStart} max={fFechamentoEnd || undefined} onChange={(e) => setFFechamentoStart(e.target.value)}
+                  className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
+                <span className="text-xs text-slate-400">até</span>
+                <input type="date" value={fFechamentoEnd} min={fFechamentoStart || undefined} onChange={(e) => setFFechamentoEnd(e.target.value)}
+                  className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
+              </div>
+            )}
             {filtersActive && (
               <button onClick={clearFilters} className="flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700 dark:hover:text-slate-300">
                 <X size={14} /> Limpar filtros
