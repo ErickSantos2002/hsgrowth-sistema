@@ -482,7 +482,7 @@ async def complete_service_card_activity(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.complete_activity(board_id, card_id, activity_id, data.is_completed, current_user)
+    return svc.complete_activity(board_id, card_id, activity_id, data.is_completed, current_user, data.is_valid)
 
 
 @router.delete("/{board_id}/cards/{card_id}/activities/{activity_id}")

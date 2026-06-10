@@ -101,9 +101,10 @@ const api4comService = {
   // ========== Chamadas ==========
 
   /**
-   * Inicia uma chamada telefônica
+   * Inicia uma chamada telefônica.
+   * Informe `card_id` (board de vendas) OU `service_card_id` (board de serviços).
    */
-  async makeCall(data: { phone: string; card_id: number }): Promise<{ success: boolean; message: string; call_log_id?: number; error?: string }> {
+  async makeCall(data: { phone: string; card_id?: number; service_card_id?: number }): Promise<{ success: boolean; message: string; call_log_id?: number; error?: string }> {
     const response = await api.post('/api/v1/api4com/call', data);
     return response.data;
   },

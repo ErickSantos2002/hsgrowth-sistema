@@ -217,6 +217,7 @@ class ServiceCardActivityUpdate(BaseModel):
 
 class ServiceCardActivityComplete(BaseModel):
     is_completed: bool = True
+    is_valid: Optional[bool] = None  # resultado da atividade (Válido / Não Válido)
 
 
 class ServiceCardActivityResponse(BaseModel):

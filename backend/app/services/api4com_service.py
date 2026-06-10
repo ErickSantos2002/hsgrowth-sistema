@@ -406,7 +406,8 @@ class API4ComService:
             user_id=current_user.id,
             card_id=call_request.card_id,
             phone=call_request.phone,
-            extension=extension.extension
+            extension=extension.extension,
+            service_card_id=call_request.service_card_id,
         )
 
         # 5. Chama a API4COM para iniciar a chamada
@@ -417,6 +418,7 @@ class API4ComService:
             metadata = {
                 "gateway": "GrowthHS",
                 "card_id": call_request.card_id,
+                "service_card_id": call_request.service_card_id,
                 "user_id": current_user.id,
                 "call_log_id": call_log.id
             }

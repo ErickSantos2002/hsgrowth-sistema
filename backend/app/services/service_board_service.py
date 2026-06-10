@@ -402,12 +402,17 @@ class ServiceBoardService:
         updated = self.repo.update_activity(activity, data.model_dump(exclude_unset=True))
         return self._build_activity_response(updated)
 
-    def complete_activity(self, board_id: int, card_id: int, activity_id: int, is_completed: bool, user: User) -> ServiceCardActivityResponse:
+    def complete_activity(self, board_id: int, card_id: int, activity_id: int, is_completed: bool, user: User, is_valid: Optional[bool] = None) -> ServiceCardActivityResponse:
         activity = self._get_activity_scoped(board_id, card_id, activity_id)
-        updated = self.repo.update_activity(activity, {
+        changes = {
             "is_completed": is_completed,
             "completed_at": datetime.utcnow() if is_completed else None,
-        })
+        }
+        if is_valid is not None:
+            meta = dict(activity.activity_metadata or {})
+            meta["is_valid"] = is_valid
+            changes["activity_metadata"] = meta
+        updated = self.repo.update_activity(activity, changes)
         return self._build_activity_response(updated)
 
     def delete_activity(self, board_id: int, card_id: int, activity_id: int, user: User) -> dict:

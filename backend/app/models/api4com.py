@@ -100,13 +100,22 @@ class CallLog(Base):
         comment="ID do vendedor que fez a chamada"
     )
 
-    # Contexto da chamada
+    # Contexto da chamada (card de vendas — opcional)
     card_id = Column(
         Integer,
         ForeignKey("cards.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
-        comment="ID do card de onde a chamada foi originada"
+        comment="ID do card de vendas de onde a chamada foi originada"
+    )
+
+    # Contexto da chamada (card de serviços — opcional)
+    service_card_id = Column(
+        Integer,
+        ForeignKey("service_cards.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        comment="ID do card de serviços de onde a chamada foi originada"
     )
 
     # Dados da chamada
@@ -140,3 +149,4 @@ class CallLog(Base):
     # Relationships
     user = relationship("User", backref="call_logs")
     card = relationship("Card", backref="call_logs")
+    service_card = relationship("ServiceCard", foreign_keys=[service_card_id])

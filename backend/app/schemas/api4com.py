@@ -167,7 +167,8 @@ class API4ComTestResponse(BaseModel):
 class CallRequest(BaseModel):
     """Inicia uma chamada telefônica via API4COM."""
     phone: str = Field(..., description="Número de telefone para ligar (com DDI, ex: +5548999999999)")
-    card_id: int = Field(..., description="ID do card que originou a chamada (para rastreabilidade)")
+    card_id: Optional[int] = Field(None, description="ID do card de vendas que originou a chamada")
+    service_card_id: Optional[int] = Field(None, description="ID do card de serviços que originou a chamada")
 
     model_config = ConfigDict(
         json_schema_extra={

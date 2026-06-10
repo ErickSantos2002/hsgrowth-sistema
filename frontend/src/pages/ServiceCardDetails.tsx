@@ -660,6 +660,7 @@ const ServiceCardDetails: React.FC = () => {
   const [titleValue, setTitleValue] = useState("");
   const [isMoving, setIsMoving] = useState(false);
   const [activities, setActivities] = useState<ServiceCardActivity[]>([]);
+  const [contactPerson, setContactPerson] = useState<Person | null>(null);
 
   const reloadActivities = async () => {
     try {
@@ -690,6 +691,19 @@ const ServiceCardDetails: React.FC = () => {
   useEffect(() => {
     if (numBoardId && numCardId) loadCard();
   }, [numBoardId, numCardId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Carrega a pessoa vinculada (telefone usado na ligação do Foco)
+  useEffect(() => {
+    const loadPerson = async () => {
+      if (card?.person_id) {
+        try { setContactPerson(await personService.getById(card.person_id)); }
+        catch { setContactPerson(null); }
+      } else {
+        setContactPerson(null);
+      }
+    };
+    loadPerson();
+  }, [card?.person_id]);
 
   const updateCard = async (data: Parameters<typeof serviceBoardService.updateCard>[2]) => {
     const updated = await serviceBoardService.updateCard(numBoardId, numCardId, data);
@@ -846,7 +860,7 @@ const ServiceCardDetails: React.FC = () => {
           {/* Conteúdo da aba */}
           <div className="min-h-0 flex-1 overflow-y-auto p-6">
             {activeTab === "atividade" && (
-              <ServiceActivityTab boardId={numBoardId} cardId={numCardId} activities={activities} reload={reloadActivities} />
+              <ServiceActivityTab boardId={numBoardId} cardId={numCardId} activities={activities} reload={reloadActivities} contact={contactPerson} />
             )}
             {activeTab === "anotacoes" && (
               <ServiceNotesTab boardId={numBoardId} cardId={numCardId} activities={activities} reload={reloadActivities} />

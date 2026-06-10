@@ -289,18 +289,20 @@ class API4ComRepository:
     def create_call_log(
         self,
         user_id: int,
-        card_id: int,
+        card_id: Optional[int],
         phone: str,
-        extension: str
+        extension: str,
+        service_card_id: Optional[int] = None,
     ) -> CallLog:
         """
         Cria registro de chamada telefônica.
 
         Args:
             user_id: ID do vendedor que está fazendo a chamada
-            card_id: ID do card de onde a chamada foi originada
+            card_id: ID do card de vendas de origem (opcional)
             phone: Telefone para onde está ligando
             extension: Ramal usado para fazer a chamada
+            service_card_id: ID do card de serviços de origem (opcional)
 
         Returns:
             Registro de chamada criado
@@ -308,6 +310,7 @@ class API4ComRepository:
         call_log = CallLog(
             user_id=user_id,
             card_id=card_id,
+            service_card_id=service_card_id,
             phone=phone,
             extension=extension,
             status="pending"  # Status inicial

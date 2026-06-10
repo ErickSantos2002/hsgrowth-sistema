@@ -61,8 +61,8 @@ class ServiceActivityService {
     return r.data;
   }
 
-  async complete(boardId: number, cardId: number, id: number, isCompleted: boolean): Promise<ServiceCardActivity> {
-    const r = await api.patch<ServiceCardActivity>(`${BASE}/${boardId}/cards/${cardId}/activities/${id}/complete`, { is_completed: isCompleted });
+  async complete(boardId: number, cardId: number, id: number, isCompleted: boolean, isValid?: boolean | null): Promise<ServiceCardActivity> {
+    const r = await api.patch<ServiceCardActivity>(`${BASE}/${boardId}/cards/${cardId}/activities/${id}/complete`, { is_completed: isCompleted, is_valid: isValid ?? null });
     return r.data;
   }
 

@@ -1,12 +1,15 @@
 import React, { useState, useRef } from "react";
+import ReactDOM from "react-dom";
 import {
   Plus, Check, Trash2, Clock, Phone, CheckSquare, Mail, Users, FileText,
   StickyNote, ArrowRight, Package, User, Activity as ActivityIcon, Search,
   Download, Upload, X, Calendar, MessageCircle, Linkedin, MapPin, Video,
-  MoreHorizontal, Save,
+  MoreHorizontal, Save, Edit, ChevronDown, ChevronRight, Loader2,
 } from "lucide-react";
 import serviceActivityService, { ServiceCardActivity } from "../../services/serviceActivityService";
-import { showSuccess, showError } from "../../utils/toast";
+import api4comService from "../../services/api4comService";
+import { Person } from "../../services/personService";
+import { showSuccess, showError, showWarning } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface TabProps {
@@ -14,6 +17,8 @@ interface TabProps {
   cardId: number;
   activities: ServiceCardActivity[];
   reload: () => Promise<void> | void;
+  /** Pessoa vinculada ao card — usada para a ligação e exibição do telefone no Foco. */
+  contact?: Person | null;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -81,6 +86,218 @@ const nowStr = (): string => {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
 
+const getPhones = (contact?: Person | null): { label: string; number: string }[] => {
+  if (!contact) return [];
+  const list = [
+    contact.phone && { label: "Principal", number: contact.phone },
+    contact.phone_whatsapp && { label: "WhatsApp", number: contact.phone_whatsapp },
+    contact.phone_commercial && { label: "Comercial", number: contact.phone_commercial },
+    contact.phone_alternative && { label: "Alternativo", number: contact.phone_alternative },
+    contact.phone_extra1 && { label: "Extra 1", number: contact.phone_extra1 },
+    contact.phone_extra2 && { label: "Extra 2", number: contact.phone_extra2 },
+  ].filter(Boolean) as { label: string; number: string }[];
+  return list;
+};
+
+const dueBadge = (due?: string): { label: string; cls: string } | null => {
+  if (!due) return null;
+  const d = new Date(due);
+  const now = new Date();
+  if (now.toDateString() === d.toDateString()) return { label: "HOJE", cls: "border-emerald-500/40 bg-emerald-500/20 text-emerald-400" };
+  if (d.getTime() < now.getTime()) return { label: "ATRASADO", cls: "border-red-500/40 bg-red-500/20 text-red-400" };
+  return { label: "AGENDADO", cls: "border-blue-500/40 bg-blue-500/20 text-blue-400" };
+};
+
+// ─── Item do Foco (estilo board de vendas) ───────────────────────────────────────
+
+const FocoItem: React.FC<{
+  activity: ServiceCardActivity;
+  boardId: number;
+  cardId: number;
+  contact?: Person | null;
+  onChanged: () => Promise<void> | void;
+}> = ({ activity, boardId, cardId, contact, onChanged }) => {
+  const { confirm } = useConfirm();
+  const [expanded, setExpanded] = useState(true);
+  const [calling, setCalling] = useState(false);
+  const [showPhones, setShowPhones] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ title: activity.title || "", description: activity.description || "" });
+  const [rescheduling, setRescheduling] = useState(false);
+  const [reForm, setReForm] = useState({
+    date: activity.due_date ? activity.due_date.substring(0, 10) : todayStr(),
+    time: activity.due_date ? new Date(activity.due_date).toTimeString().substring(0, 5) : nowStr(),
+  });
+
+  const meta = TYPE_META[activity.activity_type || "other"] || TYPE_META.other;
+  const prio = PRIORITY_META[activity.priority || "normal"];
+  const phones = getPhones(contact);
+  const badge = dueBadge(activity.due_date);
+  const md = activity.activity_metadata || {};
+
+  const doCall = async (phone: string) => {
+    setShowPhones(false);
+    setCalling(true);
+    try {
+      const r = await api4comService.makeCall({ phone, service_card_id: cardId });
+      if (r.success) showSuccess("Chamada iniciada! O webphone abrirá automaticamente.");
+      else showError(`Erro ao iniciar chamada: ${r.error || r.message}`);
+    } catch (e: any) {
+      showError(`Erro ao iniciar chamada: ${e.response?.data?.detail || e.message}`);
+    } finally {
+      setCalling(false);
+    }
+  };
+
+  const handleCall = () => {
+    if (phones.length === 0) { showWarning("Nenhum telefone na pessoa vinculada"); return; }
+    if (phones.length === 1) { doCall(phones[0].number); return; }
+    setShowPhones(true);
+  };
+
+  const markResult = async (isValid: boolean) => {
+    try { await serviceActivityService.complete(boardId, cardId, activity.id, true, isValid); await onChanged(); }
+    catch { showError("Erro ao registrar resultado"); }
+  };
+
+  const saveEdit = async () => {
+    if (!editForm.title.trim()) { showWarning("Informe um título"); return; }
+    try {
+      await serviceActivityService.update(boardId, cardId, activity.id, { title: editForm.title.trim(), description: editForm.description.trim() });
+      setEditing(false); await onChanged();
+    } catch { showError("Erro ao salvar"); }
+  };
+
+  const saveReschedule = async () => {
+    if (!reForm.date) { showWarning("Selecione a data"); return; }
+    try {
+      await serviceActivityService.update(boardId, cardId, activity.id, { due_date: `${reForm.date}T${reForm.time || "09:00"}:00` });
+      setRescheduling(false); await onChanged();
+    } catch { showError("Erro ao reagendar"); }
+  };
+
+  const handleDelete = async () => {
+    const ok = await confirm({ title: "Remover atividade", message: "Deseja remover esta atividade?", confirmText: "Remover", isDanger: true });
+    if (!ok) return;
+    try { await serviceActivityService.remove(boardId, cardId, activity.id); await onChanged(); }
+    catch { showError("Erro ao remover"); }
+  };
+
+  return (
+    <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3">
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className={meta.color}>{meta.icon}</span>
+          <span className="truncate font-medium text-slate-900 dark:text-white">{activity.title}</span>
+          {prio && <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${prio.cls}`}>{prio.label}</span>}
+        </div>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <span className="hidden rounded-md border border-gray-200 px-2 py-1 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400 sm:inline">{meta.label}</span>
+          <button onClick={() => setExpanded(!expanded)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
+            {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="mt-2 space-y-3">
+          {/* Data / responsável */}
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            {badge && <span className={`rounded border px-1.5 py-0.5 font-medium ${badge.cls}`}>{badge.label}</span>}
+            {activity.due_date && <span>{formatDateTime(activity.due_date)}</span>}
+            {activity.user_name && <span>• {activity.user_name}</span>}
+          </div>
+
+          {activity.description && <p className="text-sm text-slate-600 dark:text-slate-300">{activity.description}</p>}
+          {md.notes && <p className="text-xs text-slate-400">📝 {md.notes}</p>}
+          {md.location && <p className="flex items-center gap-1 text-xs text-slate-400"><MapPin size={12} /> {md.location}</p>}
+          {md.video_link && <a href={md.video_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-400 hover:underline"><Video size={12} /> Link da videochamada</a>}
+
+          {/* Telefone */}
+          {phones.length > 0 && (
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50/50 px-2 py-1.5 dark:border-slate-700 dark:bg-slate-800/40">
+              <FileText size={14} className="text-slate-400" />
+              <span className="text-sm text-slate-700 dark:text-slate-300">
+                {phones[0].number}{phones.length > 1 ? ` (+${phones.length - 1})` : ""}
+              </span>
+            </div>
+          )}
+
+          {/* Edição inline */}
+          {editing ? (
+            <div className="space-y-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-2">
+              <input type="text" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-2 py-1.5 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
+              <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} placeholder="Descrição..."
+                className="w-full resize-none rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-2 py-1.5 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
+              <div className="flex gap-2">
+                <button onClick={saveEdit} className="flex flex-1 items-center justify-center gap-1 rounded bg-emerald-500/20 px-3 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30"><Check size={14} /> Salvar</button>
+                <button onClick={() => setEditing(false)} className="flex flex-1 items-center justify-center gap-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-3 py-1.5 text-sm text-slate-500 dark:text-slate-300"><X size={14} /> Cancelar</button>
+              </div>
+            </div>
+          ) : rescheduling ? (
+            <div className="space-y-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-2">
+              <div className="grid grid-cols-2 gap-2">
+                <input type="date" value={reForm.date} onChange={(e) => setReForm({ ...reForm, date: e.target.value })}
+                  className="rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-2 py-1.5 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
+                <input type="time" value={reForm.time} onChange={(e) => setReForm({ ...reForm, time: e.target.value })}
+                  className="rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-2 py-1.5 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={saveReschedule} className="flex flex-1 items-center justify-center gap-1 rounded bg-emerald-500/20 px-3 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30"><Check size={14} /> Reagendar</button>
+                <button onClick={() => setRescheduling(false)} className="flex flex-1 items-center justify-center gap-1 rounded bg-gray-200/50 dark:bg-slate-700/50 px-3 py-1.5 text-sm text-slate-500 dark:text-slate-300"><X size={14} /> Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            /* Ações */
+            <div className="flex items-center gap-2">
+              <button onClick={handleCall} disabled={calling} title="Ligar"
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white transition-colors hover:bg-emerald-600 disabled:opacity-60">
+                {calling ? <Loader2 size={16} className="animate-spin" /> : <Phone size={16} />}
+              </button>
+              <button onClick={() => markResult(true)} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20">
+                <Check size={16} /> Válido
+              </button>
+              <button onClick={() => markResult(false)} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20">
+                <X size={16} /> Não Válido
+              </button>
+              <button onClick={() => setEditing(true)} title="Editar" className="flex-shrink-0 rounded-lg border border-blue-500/40 bg-blue-500/10 p-2 text-blue-400 transition-colors hover:bg-blue-500/20"><Edit size={16} /></button>
+              <button onClick={() => setRescheduling(true)} title="Reagendar" className="flex-shrink-0 rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-2 text-yellow-400 transition-colors hover:bg-yellow-500/20"><Calendar size={16} /></button>
+              <button onClick={handleDelete} title="Remover" className="flex-shrink-0 rounded-lg border border-red-500/40 bg-red-500/10 p-2 text-red-400 transition-colors hover:bg-red-500/20"><Trash2 size={16} /></button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal de seleção de telefone (quando 2+ números) */}
+      {showPhones && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowPhones(false)}>
+          <div className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 p-4">
+              <h3 className="font-semibold text-slate-900 dark:text-white">Escolha o número</h3>
+              <button onClick={() => setShowPhones(false)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="space-y-2 p-4">
+              {phones.map((p) => (
+                <button key={p.label + p.number} onClick={() => doCall(p.number)}
+                  className="flex w-full items-center justify-between rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3 text-left transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50">
+                  <div>
+                    <p className="text-xs text-slate-400">{p.label}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{p.number}</p>
+                  </div>
+                  <Phone size={16} className="text-emerald-400" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};
+
 const formatTimeAgo = (dateStr: string): string => {
   const date = new Date(dateStr);
   const now = new Date();
@@ -140,8 +357,7 @@ const changeIcon = (type?: string): React.ReactNode => {
 
 type HistoryFilter = "todos" | "atividade" | "anotacao" | "arquivo" | "alteracao";
 
-export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activities, reload }) => {
-  const { confirm } = useConfirm();
+export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activities, reload, contact }) => {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -205,22 +421,6 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleComplete = async (a: ServiceCardActivity) => {
-    try {
-      await serviceActivityService.complete(boardId, cardId, a.id, !a.is_completed);
-      await reload();
-    } catch { showError("Erro ao concluir atividade"); }
-  };
-
-  const handleDelete = async (a: ServiceCardActivity) => {
-    const ok = await confirm({ title: "Remover", message: "Deseja remover este item?", confirmText: "Remover", isDanger: true });
-    if (!ok) return;
-    try {
-      await serviceActivityService.remove(boardId, cardId, a.id);
-      await reload();
-    } catch { showError("Erro ao remover"); }
   };
 
   const HIST_TABS: { key: HistoryFilter; label: string }[] = [
@@ -346,30 +546,9 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
           <p className="rounded-lg border border-dashed border-gray-200 dark:border-slate-700 py-6 text-center text-sm text-slate-400">Nenhuma atividade pendente</p>
         ) : (
           <div className="space-y-2">
-            {foco.map((a) => {
-              const meta = TYPE_META[a.activity_type || "other"] || TYPE_META.other;
-              const prio = PRIORITY_META[a.priority || "normal"];
-              return (
-                <div key={a.id} className="flex items-start gap-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3">
-                  <button onClick={() => handleComplete(a)} title="Concluir"
-                    className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border border-gray-300 dark:border-slate-600 hover:border-emerald-500 hover:bg-emerald-500/20">
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className={meta.color}>{meta.icon}</span>
-                      <span className="font-medium text-slate-900 dark:text-white">{a.title}</span>
-                      {prio && <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${prio.cls}`}>{prio.label}</span>}
-                    </div>
-                    {a.description && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{a.description}</p>}
-                    <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                      {a.due_date && <span className="flex items-center gap-1"><Calendar size={12} /> {formatDateTime(a.due_date)}</span>}
-                      {a.user_name && <span>• {a.user_name}</span>}
-                    </div>
-                  </div>
-                  <button onClick={() => handleDelete(a)} className="rounded p-1 text-red-400 hover:bg-red-500/10"><Trash2 size={14} /></button>
-                </div>
-              );
-            })}
+            {foco.map((a) => (
+              <FocoItem key={a.id} activity={a} boardId={boardId} cardId={cardId} contact={contact} onChanged={reload} />
+            ))}
           </div>
         )}
       </div>
