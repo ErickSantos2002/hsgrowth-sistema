@@ -399,7 +399,15 @@ class ServiceBoardService:
 
     def update_activity(self, board_id: int, card_id: int, activity_id: int, data: ServiceCardActivityUpdate, user: User) -> ServiceCardActivityResponse:
         activity = self._get_activity_scoped(board_id, card_id, activity_id)
-        updated = self.repo.update_activity(activity, data.model_dump(exclude_unset=True))
+        changes = data.model_dump(exclude_unset=True)
+        # Registra a edição no ciclo de vida da atividade (para o histórico)
+        if activity.category == "atividade":
+            meta = dict(activity.activity_metadata or {})
+            edits = list(meta.get("edits") or [])
+            edits.append(datetime.utcnow().isoformat())
+            meta["edits"] = edits
+            changes["activity_metadata"] = meta
+        updated = self.repo.update_activity(activity, changes)
         return self._build_activity_response(updated)
 
     def complete_activity(self, board_id: int, card_id: int, activity_id: int, is_completed: bool, user: User, is_valid: Optional[bool] = None) -> ServiceCardActivityResponse:

@@ -4,11 +4,14 @@ import {
   Plus, Check, Trash2, Clock, Phone, CheckSquare, Mail, Users, FileText,
   StickyNote, ArrowRight, Package, User, Activity as ActivityIcon, Search,
   Download, Upload, X, Calendar, MessageCircle, Linkedin, MapPin, Video,
-  MoreHorizontal, Save, Edit, ChevronDown, ChevronRight, Loader2, MailX,
+  MoreHorizontal, Save, Edit, ChevronDown, ChevronRight, ChevronUp, Loader2, MailX,
+  CheckCircle,
 } from "lucide-react";
 import serviceActivityService, { ServiceCardActivity } from "../../services/serviceActivityService";
 import api4comService from "../../services/api4comService";
 import { Person } from "../../services/personService";
+import NoteRenderer from "../cardDetails/NoteRenderer";
+import { sanitizeNoteHTML } from "../../utils/sanitizeNote";
 import { showSuccess, showError, showWarning } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
 
@@ -236,10 +239,10 @@ const FocoItem: React.FC<{
             {activity.user_name && <span>• {activity.user_name}</span>}
           </div>
 
-          {activity.description && <p className="text-sm text-slate-600 dark:text-slate-300">{activity.description}</p>}
-          {md.notes && <p className="text-xs text-slate-400">📝 {md.notes}</p>}
-          {md.location && <p className="flex items-center gap-1 text-xs text-slate-400"><MapPin size={12} /> {md.location}</p>}
-          {md.video_link && <a href={md.video_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-400 hover:underline"><Video size={12} /> Link da videochamada</a>}
+          {activity.description && <p className="whitespace-pre-wrap break-words text-sm text-slate-600 dark:text-slate-300">{activity.description}</p>}
+          {md.notes && <p className="whitespace-pre-wrap break-words text-xs text-slate-400">📝 {md.notes}</p>}
+          {md.location && <p className="flex items-start gap-1 break-words text-xs text-slate-400"><MapPin size={12} className="mt-0.5 flex-shrink-0" /> <span className="min-w-0 break-words">{md.location}</span></p>}
+          {md.video_link && <a href={md.video_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 break-all text-xs text-blue-400 hover:underline"><Video size={12} className="flex-shrink-0" /> Link da videochamada</a>}
 
           {/* Telefone — só em atividades de ligação */}
           {isCall && phones.length > 0 && (
@@ -423,6 +426,14 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
   });
   const [histFilter, setHistFilter] = useState<HistoryFilter>("todos");
   const [search, setSearch] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (key: string) =>
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
 
   const foco = activities.filter((a) => a.category === "atividade" && !a.is_completed);
   const history = activities.filter((a) => {
@@ -634,7 +645,31 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
           </div>
         ) : (
           <div className="space-y-2">
-            {history.map((a) => <HistoryItem key={a.id} a={a} />)}
+            {buildHistoryGroups(history).map((group) => {
+              const expanded = expandedGroups.has(group.key);
+              return (
+                <div key={group.key} className="overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700/60 bg-white/40 dark:bg-slate-900/40 p-3">
+                  <HistoryRow ev={group.main} />
+                  {group.subs.length > 0 && (
+                    <div className="mt-2">
+                      <button onClick={() => toggleGroup(group.key)}
+                        className="flex items-center gap-1 rounded border border-gray-200 bg-gray-100/50 px-2 py-1 text-xs text-slate-500 transition-colors hover:bg-gray-200/50 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-700/50">
+                        {expanded ? (
+                          <><ChevronUp size={12} /> Ocultar registros anteriores</>
+                        ) : (
+                          <><ChevronDown size={12} /> {group.subs.length} registro{group.subs.length > 1 ? "s" : ""} anterior{group.subs.length > 1 ? "es" : ""}</>
+                        )}
+                      </button>
+                      {expanded && (
+                        <div className="mt-2 space-y-3 border-l-2 border-gray-200 pl-3 dark:border-slate-700">
+                          {group.subs.map((sub) => <HistoryRow key={sub.key} ev={sub} compact />)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -642,84 +677,96 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
   );
 };
 
-const HistoryItem: React.FC<{ a: ServiceCardActivity }> = ({ a }) => {
-  let icon: React.ReactNode;
-  let title: string;
-  if (a.category === "alteracao") { icon = changeIcon(a.activity_type); title = a.description || "Alteração"; }
-  else if (a.category === "anotacao") { icon = <StickyNote size={16} className="text-purple-400" />; title = "Anotação"; }
-  else if (a.category === "arquivo") { icon = <FileText size={16} className="text-blue-400" />; title = `Arquivo: ${a.file_name || a.title}`; }
-  else {
-    const meta = TYPE_META[a.activity_type || "other"] || TYPE_META.other;
-    icon = <span className={meta.color}>{meta.icon}</span>;
-    title = `${meta.label}: ${a.title || ""}`;
-  }
-  return (
-    <div className="flex items-start gap-3 rounded-lg border border-gray-200 dark:border-slate-700/60 bg-white/40 dark:bg-slate-900/40 p-3">
-      <div className="mt-0.5 flex-shrink-0">{icon}</div>
-      <div className="min-w-0 flex-1">
-        <p className="font-medium text-slate-900 dark:text-white">{title}</p>
-        {a.category !== "alteracao" && a.description && <p className="mt-0.5 whitespace-pre-wrap text-sm text-slate-500 dark:text-slate-400">{a.description}</p>}
-        <p className="mt-1 text-xs text-slate-400">{formatTimeAgo(a.created_at)}{a.user_name ? ` • ${a.user_name}` : " • Sistema"}</p>
-      </div>
-      <Avatar name={a.user_name} />
+// Evento individual do histórico (já "achatado" para renderização)
+interface HistEvent {
+  key: string;
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+  created_at: string;
+  user_name?: string;
+  isNote?: boolean;
+  noteContent?: string;
+}
+
+// Grupo: evento principal (mais recente) + eventos anteriores (ocultos)
+interface HistGroup {
+  key: string;
+  main: HistEvent;
+  subs: HistEvent[];
+}
+
+/**
+ * Monta os grupos do histórico. Atividades viram um grupo com as fases do ciclo
+ * de vida (criada → concluída) — a mais recente aparece e as anteriores ficam
+ * ocultas num "X registro anterior", igual ao board de vendas.
+ */
+const buildHistoryGroups = (items: ServiceCardActivity[]): HistGroup[] =>
+  items.map((a) => {
+    if (a.category === "atividade") {
+      const meta = TYPE_META[a.activity_type || "other"] || TYPE_META.other;
+      const evs: HistEvent[] = [
+        {
+          key: `a${a.id}-c`,
+          icon: <Clock size={16} className="text-slate-400" />,
+          title: `${meta.label} criada: ${a.title || ""}`,
+          description: a.description,
+          created_at: a.created_at,
+          user_name: a.user_name,
+        },
+      ];
+      // Edições registradas (timestamps no metadata.edits)
+      const edits: string[] = Array.isArray(a.activity_metadata?.edits) ? a.activity_metadata!.edits : [];
+      edits.forEach((ts, i) => {
+        evs.push({
+          key: `a${a.id}-e${i}`,
+          icon: <Edit size={16} className="text-yellow-400" />,
+          title: `${meta.label} editada: ${a.title || ""}`,
+          description: a.description,
+          created_at: ts,
+          user_name: a.user_name,
+        });
+      });
+      if (a.is_completed) {
+        evs.push({
+          key: `a${a.id}-d`,
+          icon: <CheckCircle size={16} className="text-emerald-400" />,
+          title: `${meta.label} concluída: ${a.title || ""}`,
+          description: a.description,
+          created_at: a.completed_at || a.updated_at,
+          user_name: a.user_name,
+        });
+      }
+      evs.sort((x, y) => new Date(y.created_at).getTime() - new Date(x.created_at).getTime());
+      return { key: `act-${a.id}`, main: evs[0], subs: evs.slice(1) };
+    }
+
+    let ev: HistEvent;
+    if (a.category === "anotacao") {
+      ev = { key: `ev-${a.id}`, icon: <StickyNote size={16} className="text-purple-400" />, title: "Anotação", isNote: true, noteContent: a.description, created_at: a.created_at, user_name: a.user_name };
+    } else if (a.category === "arquivo") {
+      ev = { key: `ev-${a.id}`, icon: <FileText size={16} className="text-blue-400" />, title: `Arquivo: ${a.file_name || a.title}`, created_at: a.created_at, user_name: a.user_name };
+    } else {
+      ev = { key: `ev-${a.id}`, icon: changeIcon(a.activity_type), title: a.description || "Alteração", created_at: a.created_at, user_name: a.user_name };
+    }
+    return { key: ev.key, main: ev, subs: [] };
+  });
+
+const HistoryRow: React.FC<{ ev: HistEvent; compact?: boolean }> = ({ ev, compact }) => (
+  <div className="flex items-start gap-3">
+    <div className="mt-0.5 flex-shrink-0">{ev.icon}</div>
+    <div className="min-w-0 flex-1 overflow-hidden">
+      <p className="break-words font-medium text-slate-900 dark:text-white">{ev.title}</p>
+      {ev.isNote && ev.noteContent ? (
+        <div className="mt-1"><NoteRenderer content={sanitizeNoteHTML(ev.noteContent)} /></div>
+      ) : ev.description ? (
+        <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-slate-500 dark:text-slate-400">Descrição: {ev.description}</p>
+      ) : null}
+      <p className="mt-1 text-xs text-slate-400">{formatTimeAgo(ev.created_at)}{ev.user_name ? ` • ${ev.user_name}` : " • Sistema"}</p>
     </div>
-  );
-};
-
-// ─── Aba Anotações ───────────────────────────────────────────────────────────────
-
-export const ServiceNotesTab: React.FC<TabProps> = ({ boardId, cardId, activities, reload }) => {
-  const { confirm } = useConfirm();
-  const [content, setContent] = useState("");
-  const [saving, setSaving] = useState(false);
-  const notes = activities.filter((a) => a.category === "anotacao");
-
-  const handleAdd = async () => {
-    if (!content.trim()) return;
-    setSaving(true);
-    try {
-      await serviceActivityService.create(boardId, cardId, { category: "anotacao", description: content.trim() });
-      setContent("");
-      await reload();
-      showSuccess("Anotação adicionada!");
-    } catch { showError("Erro ao adicionar anotação"); }
-    finally { setSaving(false); }
-  };
-
-  const handleDelete = async (id: number) => {
-    const ok = await confirm({ title: "Remover anotação", message: "Deseja remover esta anotação?", confirmText: "Remover", isDanger: true });
-    if (!ok) return;
-    try { await serviceActivityService.remove(boardId, cardId, id); await reload(); }
-    catch { showError("Erro ao remover"); }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3">
-        <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} placeholder="Escreva uma anotação..."
-          className="w-full resize-none rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
-        <button onClick={handleAdd} disabled={saving || !content.trim()} className="flex items-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/30 disabled:opacity-50">
-          <Plus size={16} /> {saving ? "Salvando..." : "Adicionar anotação"}
-        </button>
-      </div>
-      {notes.length === 0 ? (
-        <p className="py-8 text-center text-sm text-slate-400">Nenhuma anotação ainda</p>
-      ) : (
-        <div className="space-y-2">
-          {notes.map((n) => (
-            <div key={n.id} className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3">
-              <div className="flex items-start justify-between gap-2">
-                <p className="whitespace-pre-wrap text-sm text-slate-900 dark:text-white">{n.description}</p>
-                <button onClick={() => handleDelete(n.id)} className="flex-shrink-0 rounded p-1 text-red-400 hover:bg-red-500/10"><Trash2 size={14} /></button>
-              </div>
-              <p className="mt-2 text-xs text-slate-400">{formatTimeAgo(n.created_at)}{n.user_name ? ` • ${n.user_name}` : ""}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+    {!compact && <Avatar name={ev.user_name} />}
+  </div>
+);
 
 // ─── Aba Arquivos ────────────────────────────────────────────────────────────────
 

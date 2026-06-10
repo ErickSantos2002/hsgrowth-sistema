@@ -34,7 +34,8 @@ import serviceBoardService, {
 } from "../services/serviceBoardService";
 import serviceActivityService, { ServiceCardActivity } from "../services/serviceActivityService";
 import api4comService from "../services/api4comService";
-import { ServiceActivityTab, ServiceNotesTab, ServiceFilesTab } from "../components/service/ServiceActivityTab";
+import { ServiceActivityTab, ServiceFilesTab } from "../components/service/ServiceActivityTab";
+import ServiceNotesSection from "../components/service/ServiceNotesSection";
 import clientService, { Client } from "../services/clientService";
 import personService, { Person } from "../services/personService";
 import ExpandableSection from "../components/cardDetails/ExpandableSection";
@@ -871,7 +872,7 @@ const ServiceCardDetails: React.FC = () => {
         </div>
 
         {/* Coluna direita — 70% */}
-        <div className="flex min-h-0 w-full flex-1 flex-col">
+        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
           {/* Abas */}
           <div className="flex flex-shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-900/30">
             <div className="flex flex-1 gap-1 overflow-x-auto">
@@ -920,12 +921,12 @@ const ServiceCardDetails: React.FC = () => {
           </div>
 
           {/* Conteúdo da aba */}
-          <div className="min-h-0 flex-1 overflow-y-auto p-6">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
             {activeTab === "atividade" && (
               <ServiceActivityTab boardId={numBoardId} cardId={numCardId} activities={activities} reload={reloadActivities} contact={contactPerson} />
             )}
             {activeTab === "anotacoes" && (
-              <ServiceNotesTab boardId={numBoardId} cardId={numCardId} activities={activities} reload={reloadActivities} />
+              <ServiceNotesSection boardId={numBoardId} cardId={numCardId} activities={activities} reload={reloadActivities} />
             )}
             {activeTab === "arquivos" && (
               <ServiceFilesTab boardId={numBoardId} cardId={numCardId} activities={activities} reload={reloadActivities} />

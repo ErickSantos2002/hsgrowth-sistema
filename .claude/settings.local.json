@@ -60,7 +60,12 @@
       "Bash(python -m py_compile app/services/service_board_service.py app/api/v1/endpoints/service_boards.py)",
       "Bash(cd /c/Users/HS/Documents/GitHub/hsgrowth-sistema/frontend && grep -n \"handleCall\\\\|makeCall\\\\|handleMarkValid\\\\|toggleComplete\\\\|is_valid\\\\|getPhoneNumbers\\\\|person\\\\.\" src/components/cardDetails/FocusSection.tsx | head -40)",
       "Read(//c/c/Users/HS/Documents/GitHub/hsgrowth-sistema/frontend/src/components/cardDetails/**)",
-      "Bash(python -m py_compile app/models/api4com.py app/schemas/api4com.py app/repositories/api4com_repository.py app/services/api4com_service.py app/schemas/service_board.py app/services/service_board_service.py app/api/v1/endpoints/service_boards.py alembic/versions/2026_06_10_0100-call_logs_service_card.py)"
+      "Bash(python -m py_compile app/models/api4com.py app/schemas/api4com.py app/repositories/api4com_repository.py app/services/api4com_service.py app/schemas/service_board.py app/services/service_board_service.py app/api/v1/endpoints/service_boards.py alembic/versions/2026_06_10_0100-call_logs_service_card.py)",
+      "Bash(node -e \"console.log\\(require\\('dompurify/package.json'\\).version\\)\")",
+      "Bash(cd /c/Users/HS/Documents/GitHub/hsgrowth-sistema/frontend && grep -rn \"note-editor\\\\|note-content\" src/index.css src/*.css 2>/dev/null | head; echo \"=== procura em todo css ===\"; grep -rln \"note-editor\" src/ | head)",
+      "Read(//c/c/Users/HS/Documents/GitHub/hsgrowth-sistema/frontend/src/**)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(python -m py_compile app/services/service_board_service.py)"
     ]
   }
 }

@@ -748,7 +748,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
                         {activity.description && (
                           <div className="flex items-start gap-2 text-sm">
                             <FileText size={16} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-500" />
-                            <p className="text-slate-600 dark:text-slate-300">{activity.description}</p>
+                            <p className="min-w-0 whitespace-pre-wrap break-words text-slate-600 dark:text-slate-300">{activity.description}</p>
                           </div>
                         )}
 
@@ -756,7 +756,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
                         {activity.location && (
                           <div className="flex items-start gap-2 text-sm">
                             <MapPin size={16} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-500" />
-                            <p className="text-slate-600 dark:text-slate-300">{activity.location}</p>
+                            <p className="min-w-0 break-words text-slate-600 dark:text-slate-300">{activity.location}</p>
                           </div>
                         )}
 
@@ -777,7 +777,7 @@ const FocusSection: React.FC<FocusSectionProps> = ({ tasks, card, onUpdate, onOp
 
                         {/* Notas */}
                         {activity.notes && (
-                          <div className="rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-2 text-sm text-slate-600 dark:text-slate-300">
+                          <div className="whitespace-pre-wrap break-words rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-2 text-sm text-slate-600 dark:text-slate-300">
                             <p className="mb-1 text-xs text-slate-400 dark:text-slate-500">Notas:</p>
                             {activity.notes}
                           </div>

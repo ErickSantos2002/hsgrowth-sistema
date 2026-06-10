@@ -62,6 +62,16 @@
 }
 
 /* Editor de anotações (contenteditable) - placeholder e estilos de imagem */
+.note-editor {
+  /* Garante que textos longos sem espaço quebrem dentro do campo,
+     sem esticar o editor e gerar scroll horizontal na página */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 .note-editor:empty::before {
   content: attr(data-placeholder);
   color: var(--note-placeholder-color);
