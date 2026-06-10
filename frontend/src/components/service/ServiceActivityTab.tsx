@@ -2,7 +2,8 @@ import React, { useState, useRef } from "react";
 import {
   Plus, Check, Trash2, Clock, Phone, CheckSquare, Mail, Users, FileText,
   StickyNote, ArrowRight, Package, User, Activity as ActivityIcon, Search,
-  Download, Upload, X, Calendar,
+  Download, Upload, X, Calendar, MessageCircle, Linkedin, MapPin, Video,
+  MoreHorizontal, Save,
 } from "lucide-react";
 import serviceActivityService, { ServiceCardActivity } from "../../services/serviceActivityService";
 import { showSuccess, showError } from "../../utils/toast";
@@ -20,18 +21,64 @@ interface TabProps {
 const TYPE_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   call: { label: "Ligação", icon: <Phone size={14} />, color: "text-blue-400" },
   task: { label: "Tarefa", icon: <CheckSquare size={14} />, color: "text-green-400" },
-  follow_up: { label: "Follow-up", icon: <Clock size={14} />, color: "text-yellow-400" },
+  follow_up: { label: "Follow Up", icon: <Clock size={14} />, color: "text-yellow-400" },
   email: { label: "E-mail", icon: <Mail size={14} />, color: "text-orange-400" },
+  whatsapp: { label: "WhatsApp", icon: <MessageCircle size={14} />, color: "text-emerald-400" },
+  linkedin: { label: "LinkedIn", icon: <Linkedin size={14} />, color: "text-sky-400" },
   meeting: { label: "Reunião", icon: <Users size={14} />, color: "text-sky-400" },
-  other: { label: "Outro", icon: <ActivityIcon size={14} />, color: "text-slate-400" },
+  other: { label: "Outro", icon: <MoreHorizontal size={14} />, color: "text-slate-400" },
 };
 
-const TYPE_OPTIONS = ["call", "task", "follow_up", "email", "meeting", "other"];
+// Tipos exibidos como botões no formulário (igual ao board de vendas)
+const ACTIVITY_TYPES: { type: string; label: string; icon: React.ReactNode }[] = [
+  { type: "call", label: "Ligação", icon: <Phone size={16} /> },
+  { type: "task", label: "Tarefa", icon: <CheckSquare size={16} /> },
+  { type: "follow_up", label: "Follow Up", icon: <Clock size={16} /> },
+  { type: "email", label: "E-mail", icon: <Mail size={16} /> },
+  { type: "whatsapp", label: "WhatsApp", icon: <MessageCircle size={16} /> },
+  { type: "linkedin", label: "LinkedIn", icon: <Linkedin size={16} /> },
+  { type: "other", label: "Outro", icon: <MoreHorizontal size={16} /> },
+];
 
 const PRIORITY_META: Record<string, { label: string; cls: string }> = {
   normal: { label: "Normal", cls: "border-blue-500/30 bg-blue-500/20 text-blue-400" },
   high: { label: "Alta", cls: "border-yellow-500/30 bg-yellow-500/20 text-yellow-400" },
   urgent: { label: "Urgente", cls: "border-red-500/30 bg-red-500/20 text-red-400" },
+};
+
+const UNSELECTED_BTN = "bg-gray-100 dark:bg-slate-800 text-slate-900 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700";
+
+const typeBtnClasses = (type: string, selected: boolean): string => {
+  if (!selected) return UNSELECTED_BTN;
+  const map: Record<string, string> = {
+    call: "bg-blue-500/30 text-slate-900 dark:text-blue-400 border-blue-500",
+    task: "bg-green-500/30 text-slate-900 dark:text-green-400 border-green-500",
+    follow_up: "bg-yellow-500/30 text-slate-900 dark:text-yellow-400 border-yellow-500",
+    email: "bg-orange-500/30 text-slate-900 dark:text-orange-400 border-orange-500",
+    whatsapp: "bg-emerald-500/30 text-slate-900 dark:text-emerald-400 border-emerald-500",
+    linkedin: "bg-sky-500/30 text-slate-900 dark:text-sky-400 border-sky-500",
+    other: "bg-slate-500/30 text-slate-900 dark:text-slate-400 border-gray-400 dark:border-slate-500",
+  };
+  return map[type] ?? UNSELECTED_BTN;
+};
+
+const priorityBtnClasses = (priority: string, selected: boolean): string => {
+  if (!selected) return UNSELECTED_BTN;
+  const map: Record<string, string> = {
+    normal: "bg-blue-500/30 text-slate-900 dark:text-blue-300 border-blue-500",
+    high: "bg-yellow-500/30 text-slate-900 dark:text-yellow-400 border-yellow-500",
+    urgent: "bg-red-500/30 text-slate-900 dark:text-red-400 border-red-500",
+  };
+  return map[priority] ?? UNSELECTED_BTN;
+};
+
+const todayStr = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const nowStr = (): string => {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
 
 const formatTimeAgo = (dateStr: string): string => {
@@ -97,7 +144,10 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
   const { confirm } = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ type: "call", title: "", description: "", date: "", time: "", priority: "normal" });
+  const [form, setForm] = useState({
+    type: "", title: "", date: todayStr(), time: nowStr(), duration: "30",
+    priority: "normal", description: "", notes: "", location: "", video_link: "",
+  });
   const [histFilter, setHistFilter] = useState<HistoryFilter>("todos");
   const [search, setSearch] = useState("");
 
@@ -119,7 +169,12 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
     alteracao: activities.filter((a) => a.category === "alteracao").length,
   };
 
-  const resetForm = () => setForm({ type: "call", title: "", description: "", date: "", time: "", priority: "normal" });
+  const resetForm = () => setForm({
+    type: "", title: "", date: todayStr(), time: nowStr(), duration: "30",
+    priority: "normal", description: "", notes: "", location: "", video_link: "",
+  });
+
+  const openForm = () => { resetForm(); setShowForm(true); };
 
   const handleSave = async () => {
     if (!form.title.trim()) { showError("Informe um título"); return; }
@@ -127,13 +182,19 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
     try {
       let due_date: string | undefined;
       if (form.date) due_date = `${form.date}T${form.time || "09:00"}:00`;
+      const meta: Record<string, any> = {};
+      if (form.duration) meta.duration_minutes = parseInt(form.duration) || undefined;
+      if (form.notes.trim()) meta.notes = form.notes.trim();
+      if (form.location.trim()) meta.location = form.location.trim();
+      if (form.video_link.trim()) meta.video_link = form.video_link.trim();
       await serviceActivityService.create(boardId, cardId, {
         category: "atividade",
-        activity_type: form.type,
+        activity_type: form.type || "other",
         title: form.title.trim(),
         description: form.description.trim() || undefined,
         priority: form.priority,
         due_date,
+        activity_metadata: Object.keys(meta).length ? meta : undefined,
       });
       resetForm();
       setShowForm(false);
@@ -175,65 +236,104 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
       {/* Adicionar Atividade */}
       {!showForm ? (
         <button
-          onClick={() => setShowForm(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 px-4 py-3 font-medium text-emerald-400 transition-colors hover:from-emerald-500/20 hover:to-emerald-600/20"
+          onClick={openForm}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-4 py-3 font-medium text-slate-900 dark:text-emerald-300 transition-colors hover:bg-emerald-500/25"
         >
           <Plus size={18} /> Adicionar Atividade
         </button>
       ) : (
-        <div className="space-y-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-4">
-          <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-slate-900 dark:text-white">Nova atividade</h4>
-            <button onClick={() => { setShowForm(false); resetForm(); }} className="text-slate-400 hover:text-slate-900 dark:hover:text-white"><X size={18} /></button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-slate-400">Tipo</label>
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
-                {TYPE_OPTIONS.map((t) => <option key={t} value={t}>{TYPE_META[t].label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-slate-400">Prioridade</label>
-              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
-                <option value="normal">Normal</option>
-                <option value="high">Alta</option>
-                <option value="urgent">Urgente</option>
-              </select>
-            </div>
-          </div>
+        <div className="space-y-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 p-4">
+          {/* Título */}
           <div>
-            <label className="mb-1 block text-xs text-slate-400">Título *</label>
+            <label className="mb-2 block text-xs font-medium text-slate-400">Título da atividade *</label>
             <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Ex: Ligar para o cliente" autoFocus
-              className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+              placeholder="Título da atividade..." autoFocus
+              className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-slate-400">Data</label>
-              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-slate-400">Hora</label>
-              <input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
-            </div>
-          </div>
+
+          {/* Tipo de atividade */}
           <div>
-            <label className="mb-1 block text-xs text-slate-400">Descrição</label>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-              placeholder="Detalhes da atividade..."
-              className="w-full resize-none rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+            <label className="mb-2 block text-xs font-medium text-slate-400">Tipo de atividade</label>
+            <div className="grid grid-cols-3 gap-2 md:grid-cols-7">
+              {ACTIVITY_TYPES.map((t) => (
+                <button key={t.type} onClick={() => setForm({ ...form, type: t.type })}
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${typeBtnClasses(t.type, form.type === t.type)}`}>
+                  {t.icon}
+                  <span className="hidden lg:inline">{t.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={handleSave} disabled={saving} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 font-medium text-emerald-400 hover:bg-emerald-500/30 disabled:opacity-50">
-              <Check size={16} /> {saving ? "Salvando..." : "Salvar"}
+
+          {/* Data, Hora e Duração */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-400">Data</label>
+              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
+                className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-400">Hora</label>
+              <input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })}
+                className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-400">Duração (min)</label>
+              <input type="number" min="5" step="5" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none" />
+            </div>
+          </div>
+
+          {/* Prioridade */}
+          <div>
+            <label className="mb-2 block text-xs font-medium text-slate-400">Prioridade</label>
+            <div className="grid grid-cols-3 gap-2">
+              <button onClick={() => setForm({ ...form, priority: "normal" })} className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${priorityBtnClasses("normal", form.priority === "normal")}`}>Normal</button>
+              <button onClick={() => setForm({ ...form, priority: "high" })} className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${priorityBtnClasses("high", form.priority === "high")}`}>Alta</button>
+              <button onClick={() => setForm({ ...form, priority: "urgent" })} className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${priorityBtnClasses("urgent", form.priority === "urgent")}`}>Urgente</button>
+            </div>
+          </div>
+
+          {/* Descrição */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-400">Descrição</label>
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
+              placeholder="Descreva a atividade..."
+              className="w-full resize-none rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+          </div>
+
+          {/* Notas adicionais */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-400">Notas adicionais (opcional)</label>
+            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2}
+              placeholder="Adicionar notas extras..."
+              className="w-full resize-none rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+          </div>
+
+          {/* Opções adicionais */}
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-slate-400">Opções adicionais</label>
+            <div className="flex items-center gap-2">
+              <MapPin size={16} className="text-slate-400" />
+              <input type="text" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })}
+                placeholder="Adicionar localização..."
+                className="flex-1 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-1.5 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Video size={16} className="text-slate-400" />
+              <input type="url" value={form.video_link} onChange={(e) => setForm({ ...form, video_link: e.target.value })}
+                placeholder="Link da videochamada (Google Meet, Zoom, etc.)"
+                className="flex-1 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-1.5 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+            </div>
+          </div>
+
+          {/* Botões */}
+          <div className="flex gap-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-2">
+            <button onClick={() => { setShowForm(false); resetForm(); }} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700">
+              <X size={18} /> Cancelar
             </button>
-            <button onClick={() => { setShowForm(false); resetForm(); }} className="rounded-lg bg-gray-200/50 dark:bg-slate-700/50 px-4 py-2 font-medium text-slate-500 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700">
-              Cancelar
+            <button onClick={handleSave} disabled={saving} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50">
+              <Save size={18} /> {saving ? "Salvando..." : "Salvar atividade"}
             </button>
           </div>
         </div>

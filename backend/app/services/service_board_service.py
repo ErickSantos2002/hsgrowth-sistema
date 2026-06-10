@@ -393,6 +393,7 @@ class ServiceBoardService:
             description=data.description,
             priority=data.priority,
             due_date=data.due_date,
+            activity_metadata=data.activity_metadata,
         )
         return self._build_activity_response(activity)
 

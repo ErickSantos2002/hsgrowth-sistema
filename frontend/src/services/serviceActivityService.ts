@@ -32,6 +32,7 @@ export interface CreateServiceActivityRequest {
   description?: string;
   priority?: string;
   due_date?: string;
+  activity_metadata?: Record<string, any>;
 }
 
 export interface UpdateServiceActivityRequest {

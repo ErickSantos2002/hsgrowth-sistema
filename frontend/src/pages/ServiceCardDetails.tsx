@@ -561,7 +561,6 @@ const ServicePipelineStages: React.FC<{
   onMove: (listId: number) => void;
   isMoving?: boolean;
 }> = ({ lists, currentListId, onMove, isMoving = false }) => {
-  const [hovered, setHovered] = useState<number | null>(null);
   if (lists.length === 0) return null;
 
   const currentPosition = lists.findIndex((l) => l.id === currentListId);
@@ -569,20 +568,19 @@ const ServicePipelineStages: React.FC<{
   const getClasses = (list: ServiceList, index: number) => {
     const isCurrent = list.id === currentListId;
     const isPassed = index < currentPosition;
-    const isHovered = hovered === list.id;
     if (isCurrent) {
       return { container: "bg-emerald-500/20 border-emerald-500 ring-2 ring-emerald-500/30", text: "text-slate-900 dark:text-emerald-400 font-semibold", dot: "bg-emerald-500" };
     }
     if (isPassed) {
       return {
-        container: isHovered ? "bg-blue-500/30 border-blue-500 cursor-pointer" : "bg-blue-500/10 border-blue-500/50 hover:bg-blue-500/20 cursor-pointer",
-        text: isHovered ? "text-slate-900 dark:text-blue-300 font-medium" : "text-slate-900 dark:text-blue-400",
+        container: "bg-blue-500/10 border-blue-500/50 cursor-pointer",
+        text: "text-slate-900 dark:text-blue-400",
         dot: "bg-blue-500",
       };
     }
     return {
-      container: isHovered ? "bg-slate-600/30 border-gray-400 dark:border-slate-500 cursor-pointer" : "bg-gray-100/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 hover:bg-gray-200/50 dark:hover:bg-slate-700/50 cursor-pointer",
-      text: isHovered ? "text-slate-900 dark:text-slate-300 font-medium" : "text-slate-900 dark:text-slate-400",
+      container: "bg-gray-100/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 cursor-pointer",
+      text: "text-slate-900 dark:text-slate-400",
       dot: "bg-slate-600",
     };
   };
@@ -612,10 +610,8 @@ const ServicePipelineStages: React.FC<{
             <React.Fragment key={list.id}>
               <button
                 onClick={() => { if (!isCurrent) onMove(list.id); }}
-                onMouseEnter={() => !isCurrent && setHovered(list.id)}
-                onMouseLeave={() => setHovered(null)}
                 disabled={isCurrent}
-                className={`relative flex items-center gap-2 rounded-lg border px-3 py-2 transition-all ${classes.container} ${isCurrent ? "cursor-not-allowed" : ""}`}
+                className={`relative flex items-center gap-2 rounded-lg border px-3 py-2 ${classes.container} ${isCurrent ? "cursor-not-allowed" : ""}`}
                 title={isCurrent ? `Etapa atual: ${list.name}` : `Mover para: ${list.name}`}
               >
                 <div className="relative flex items-center justify-center">
@@ -625,7 +621,7 @@ const ServicePipelineStages: React.FC<{
                       {isCurrent && <div className="h-2 w-2 animate-pulse rounded-full bg-white" />}
                     </div>
                   ) : (
-                    <div className={`h-4 w-4 rounded-full border-2 ${hovered === list.id ? "border-slate-400" : "border-gray-300 dark:border-slate-600"}`} />
+                    <div className="h-4 w-4 rounded-full border-2 border-gray-300 dark:border-slate-600" />
                   )}
                 </div>
                 <span className={`whitespace-nowrap text-sm ${classes.text}`}>{list.name}</span>

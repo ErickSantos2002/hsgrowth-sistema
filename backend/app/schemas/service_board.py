@@ -204,6 +204,7 @@ class ServiceCardActivityCreate(BaseModel):
     description: Optional[str] = None
     priority: Optional[str] = Field(None, description="normal|high|urgent")
     due_date: Optional[datetime] = None
+    activity_metadata: Optional[dict] = None
 
 
 class ServiceCardActivityUpdate(BaseModel):
