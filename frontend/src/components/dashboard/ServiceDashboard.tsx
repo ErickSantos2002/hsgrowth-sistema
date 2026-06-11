@@ -18,7 +18,8 @@ const fmtMoney = (v: number) => `R$ ${(v || 0).toLocaleString("pt-BR", { minimum
 
 const periodRange = (period: string, cs?: string, ce?: string): { start?: string; end?: string } => {
   const now = new Date();
-  const iso = (d: Date) => d.toISOString();
+  // UTC sem 'Z' e sem milissegundos → compatível com datetime.fromisoformat do backend
+  const iso = (d: Date) => d.toISOString().slice(0, 19);
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   switch (period) {
     case "today": return { start: iso(startOfDay(now)), end: iso(now) };

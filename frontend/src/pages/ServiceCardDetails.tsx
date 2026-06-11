@@ -848,7 +848,7 @@ const ServiceCardDetails: React.FC = () => {
     try {
       const novo = await serviceBoardService.createCard(numBoardId, {
         list_id: card.list_id,
-        title: card.title,
+        title: `[CLONE] ${card.title}`,
         description: card.description,
         due_date: card.due_date,
         client_id: card.client_id ?? null,
