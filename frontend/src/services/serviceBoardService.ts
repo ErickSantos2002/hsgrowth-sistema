@@ -54,6 +54,7 @@ export interface ServiceCard {
   pending_status?: "overdue" | "today" | "future" | "none";
   pending_count?: number;
   is_stuck_3d?: boolean;
+  collaborators?: { id: number; name: string }[];
   position: number;
   is_deleted: boolean;
   created_at: string;

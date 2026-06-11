@@ -5,7 +5,7 @@ import {
   StickyNote, ArrowRight, Package, User, Activity as ActivityIcon, Search,
   Download, Upload, X, Calendar, MessageCircle, Linkedin, MapPin, Video,
   MoreHorizontal, Save, Edit, ChevronDown, ChevronRight, ChevronUp, Loader2, MailX,
-  CheckCircle,
+  CheckCircle, XCircle,
 } from "lucide-react";
 import serviceActivityService, { ServiceCardActivity } from "../../services/serviceActivityService";
 import api4comService from "../../services/api4comService";
@@ -463,6 +463,8 @@ const Avatar: React.FC<{ name?: string }> = ({ name }) => {
 const changeIcon = (type?: string): React.ReactNode => {
   switch (type) {
     case "stage_change": return <ArrowRight size={16} className="text-blue-400" />;
+    case "card_won": return <CheckCircle size={16} className="text-emerald-400" />;
+    case "card_lost": return <XCircle size={16} className="text-red-400" />;
     case "product_added":
     case "product_removed": return <Package size={16} className="text-violet-400" />;
     case "client_linked":

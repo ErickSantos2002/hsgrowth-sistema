@@ -217,6 +217,18 @@ class ServiceBoardService:
                            .filter(ServiceCardActivity.service_card_id.in_(card_ids),
                                    ServiceCardActivity.created_at >= threshold).distinct().all()}
 
+        # Colaboradores: quem agiu em cada card (modelo colaborativo — sem dono único)
+        collab_rows = (
+            db.query(ServiceCardActivity.service_card_id, ServiceCardActivity.user_id, User.name)
+            .join(User, ServiceCardActivity.user_id == User.id)
+            .filter(ServiceCardActivity.service_card_id.in_(card_ids), ServiceCardActivity.user_id.isnot(None))
+            .distinct()
+            .all()
+        )
+        collab_map: dict = {}
+        for cid, uid, name in collab_rows:
+            collab_map.setdefault(cid, {})[uid] = name  # dedup por usuário
+
         result = {}
         for cid in card_ids:
             p = pending_map.get(cid)
@@ -230,6 +242,7 @@ class ServiceBoardService:
                 "pending_count": p["count"] if p else 0,
                 "has_activity": cid in has_activity,
                 "recent_activity": cid in recent_activity,
+                "collaborators": [{"id": uid, "name": nm} for uid, nm in (collab_map.get(cid) or {}).items()],
             }
         return result
 
@@ -269,6 +282,7 @@ class ServiceBoardService:
                 pending_status=a.get("pending_status", "none"),
                 pending_count=a.get("pending_count", 0),
                 is_stuck_3d=is_stuck,
+                collaborators=a.get("collaborators", []),
             ))
 
         return ServiceCardListResponse(
@@ -315,11 +329,18 @@ class ServiceBoardService:
         old_list_id = card.list_id
         moved = self.repo.move_card(card_id, new_list_id, new_position)
         if old_list_id != new_list_id:
-            self.log_event(
-                card_id, user, "stage_change",
-                f"Etapa alterada: {old_list.name if old_list else '—'} → {new_list.name}",
-                {"from_list_id": old_list_id, "to_list_id": new_list_id},
-            )
+            meta = {"from_list_id": old_list_id, "to_list_id": new_list_id}
+            new_name = (new_list.name or "").lower()
+            if new_list.is_done_stage or "ganho" in new_name:
+                self.log_event(card_id, user, "card_won", f"Negócio marcado como Ganho ({new_list.name})", meta)
+            elif new_list.is_lost_stage or "perdido" in new_name:
+                self.log_event(card_id, user, "card_lost", f"Negócio marcado como Perdido ({new_list.name})", meta)
+            else:
+                self.log_event(
+                    card_id, user, "stage_change",
+                    f"Etapa alterada: {old_list.name if old_list else '—'} → {new_list.name}",
+                    meta,
+                )
         return moved
 
     # ─── Card Products ────────────────────────────────────────────────────────

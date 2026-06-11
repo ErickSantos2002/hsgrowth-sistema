@@ -382,11 +382,25 @@ const CardBadge: React.FC<{ cls: string; icon: React.ReactNode; label: string; t
   </span>
 );
 
-const CardAvatar: React.FC<{ name: string }> = ({ name }) => {
-  const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+const initialsOf = (name: string) => name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+
+// Pilha de avatares dos colaboradores que agiram no card (modelo colaborativo)
+const CollaboratorStack: React.FC<{ people: { id: number; name: string }[] }> = ({ people }) => {
+  if (!people || people.length === 0) return null;
+  const shown = people.slice(0, 3);
+  const extra = people.length - shown.length;
   return (
-    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-semibold text-violet-400" title={name}>
-      {initials}
+    <div className="flex items-center -space-x-1.5" title={people.map((p) => p.name).join(", ")}>
+      {shown.map((p) => (
+        <div key={p.id} className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-white bg-violet-500/30 text-[10px] font-semibold text-violet-300 dark:border-slate-800" title={p.name}>
+          {initialsOf(p.name)}
+        </div>
+      ))}
+      {extra > 0 && (
+        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-white bg-slate-500/30 text-[10px] font-semibold text-slate-300 dark:border-slate-800">
+          +{extra}
+        </div>
+      )}
     </div>
   );
 };
@@ -447,10 +461,10 @@ const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail }) =>
         )}
       </div>
 
-      {/* Rodapé: valor + responsável */}
+      {/* Rodapé: valor + colaboradores que participaram */}
       <div className="flex items-center justify-between text-xs">
         <span className="font-medium text-green-500 dark:text-green-400">{card.value ? fmtValue(card.value) : ""}</span>
-        {card.assigned_to_name && <CardAvatar name={card.assigned_to_name} />}
+        <CollaboratorStack people={card.collaborators || []} />
       </div>
     </div>
   );
@@ -625,6 +639,7 @@ const ServiceKanban: React.FC = () => {
   const [fFechamento, setFFechamento] = useState("");
   const [fFechamentoStart, setFFechamentoStart] = useState("");
   const [fFechamentoEnd, setFFechamentoEnd] = useState("");
+  const [filtersReady, setFiltersReady] = useState(false);
 
   const clearFilters = () => {
     setFStatus("abertos"); setFAssignee(""); setFValue(""); setFTag("");
@@ -669,6 +684,35 @@ const ServiceKanban: React.FC = () => {
   useEffect(() => {
     userService.listActive().then(setUsers).catch(() => {});
   }, []);
+
+  // Carrega filtros salvos (localStorage por board)
+  useEffect(() => {
+    if (!numId) return;
+    try {
+      const raw = localStorage.getItem(`service_kanban_filters_${numId}`);
+      if (raw) {
+        const s = JSON.parse(raw);
+        setFStatus(s.fStatus ?? "abertos");
+        setFAssignee(s.fAssignee ?? "");
+        setFValue(s.fValue ?? "");
+        setFTag(s.fTag ?? "");
+        setFCriacao(s.fCriacao ?? "");
+        setFCriacaoStart(s.fCriacaoStart ?? "");
+        setFCriacaoEnd(s.fCriacaoEnd ?? "");
+        setFFechamento(s.fFechamento ?? "");
+        setFFechamentoStart(s.fFechamentoStart ?? "");
+        setFFechamentoEnd(s.fFechamentoEnd ?? "");
+      }
+    } catch { /* ignora */ }
+    setFiltersReady(true);
+  }, [numId]);
+
+  // Salva filtros quando mudam
+  useEffect(() => {
+    if (!numId || !filtersReady) return;
+    const s = { fStatus, fAssignee, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
+    try { localStorage.setItem(`service_kanban_filters_${numId}`, JSON.stringify(s)); } catch { /* ignora */ }
+  }, [numId, filtersReady, fStatus, fAssignee, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
 
   // Scroll drag
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -818,8 +862,8 @@ const ServiceKanban: React.FC = () => {
     if (fStatus === "abertos" && (isDoneCard(c) || isLostCard(c))) return false;
     if (fStatus === "ganhos" && !isDoneCard(c)) return false;
     if (fStatus === "perdidos" && !isLostCard(c)) return false;
-    // Pós Vendas (responsável)
-    if (fAssignee && String(c.assigned_to_id || "") !== fAssignee) return false;
+    // Pós Vendas (colaborador que agiu no card)
+    if (fAssignee && !(c.collaborators || []).some((p) => String(p.id) === fAssignee)) return false;
     // Valor
     if (fValue) {
       const v = c.value || 0;

@@ -886,24 +886,28 @@ const ServiceCardDetails: React.FC = () => {
             <ArrowLeft size={20} className="text-slate-500 dark:text-slate-400" />
           </button>
           <div className="min-w-0 flex-1">
+            {/* Título — clique para editar (igual board de vendas) */}
             {editingTitle ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={titleValue}
-                  onChange={(e) => setTitleValue(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); if (e.key === "Escape") { setTitleValue(card.title); setEditingTitle(false); } }}
-                  autoFocus
-                  className="flex-1 rounded-lg border border-blue-500 bg-white/50 dark:bg-slate-900/50 px-3 py-1.5 text-xl font-bold text-slate-900 dark:text-white focus:outline-none"
-                />
-                <button onClick={handleSaveTitle} className="rounded-lg bg-emerald-500/20 p-2 text-emerald-400 hover:bg-emerald-500/30"><Check size={18} /></button>
-                <button onClick={() => { setTitleValue(card.title); setEditingTitle(false); }} className="rounded-lg bg-gray-200/50 dark:bg-slate-700/50 p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white"><X size={18} /></button>
-              </div>
+              <input
+                type="text"
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={handleSaveTitle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveTitle();
+                  if (e.key === "Escape") { setTitleValue(card.title); setEditingTitle(false); }
+                }}
+                autoFocus
+                className="rounded border-b-2 border-blue-500 bg-white px-2 py-1 text-2xl font-bold text-slate-900 focus:outline-none dark:bg-slate-800/50 dark:text-white"
+              />
             ) : (
-              <div className="group flex items-center gap-2">
-                <h1 className="truncate text-2xl font-bold text-slate-900 dark:text-white">{card.title}</h1>
-                <button onClick={() => setEditingTitle(true)} className="text-slate-400 opacity-0 transition-opacity hover:text-blue-400 group-hover:opacity-100" title="Editar título"><Pencil size={16} /></button>
-              </div>
+              <h1
+                onClick={() => setEditingTitle(true)}
+                className="cursor-pointer truncate text-2xl font-bold text-slate-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
+                title="Clique para editar"
+              >
+                {card.title}
+              </h1>
             )}
           </div>
           <div className="flex flex-shrink-0 items-center gap-2">
