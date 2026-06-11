@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, RefreshCw, Download, Calendar,
-  ChevronDown, Users, UserCheck, Briefcase,
+  ChevronDown, Users, UserCheck, Briefcase, Wrench,
 } from "lucide-react";
 import CountUp from "react-countup";
 import toast from "react-hot-toast";
@@ -18,6 +18,7 @@ import { User } from "../types";
 
 import DashboardSDR      from "../components/dashboard/DashboardSDR";
 import DashboardVendedor from "../components/dashboard/DashboardVendedor";
+import ServiceDashboard  from "../components/dashboard/ServiceDashboard";
 
 // ─── Tipos de visão ──────────────────────────────────────────────────────────
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -38,6 +39,9 @@ const Dashboard: React.FC = () => {
   const isAdminOrManager = user?.role === "admin" || user?.role === "manager";
   const isSdr         = user?.role === "sdr";
   const isSalesperson = user?.role === "salesperson";
+
+  // Modo Serviço (dashboard de serviços — paralelo ao SDR/Vendedor de vendas)
+  const [serviceMode, setServiceMode] = useState(false);
 
   // Lista de usuários para o seletor (admin/manager)
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -264,9 +268,9 @@ const Dashboard: React.FC = () => {
           {isAdminOrManager && (
             <div className="flex w-full rounded-lg border border-gray-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-800 sm:w-auto">
               <button
-                onClick={() => handleViewChange("sdr")}
+                onClick={() => { setServiceMode(false); handleViewChange("sdr"); }}
                 className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all sm:flex-none ${
-                  view === "sdr"
+                  !serviceMode && view === "sdr"
                     ? "bg-blue-500 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
                 }`}
@@ -274,20 +278,30 @@ const Dashboard: React.FC = () => {
                 <UserCheck size={14} /> SDR
               </button>
               <button
-                onClick={() => handleViewChange("vendedor")}
+                onClick={() => { setServiceMode(false); handleViewChange("vendedor"); }}
                 className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all sm:flex-none ${
-                  view === "vendedor"
+                  !serviceMode && view === "vendedor"
                     ? "bg-emerald-500 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
                 <Briefcase size={14} /> Vendedor
               </button>
+              <button
+                onClick={() => setServiceMode(true)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all sm:flex-none ${
+                  serviceMode
+                    ? "bg-violet-500 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
+                }`}
+              >
+                <Wrench size={14} /> Serviço
+              </button>
             </div>
           )}
 
-          {/* Seletor de usuário — filtrado pelo papel da visão */}
-          {isAdminOrManager && filteredUsers.length > 0 && (
+          {/* Seletor de usuário — filtrado pelo papel da visão (oculto no modo Serviço) */}
+          {isAdminOrManager && !serviceMode && filteredUsers.length > 0 && (
             <SelectMenu
               value={selectedUserId ? String(selectedUserId) : ""}
               options={[
@@ -362,7 +376,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* ── CONTEÚDO DA VISÃO ───────────────────────────────────────── */}
-      {kpis ? (
+      {serviceMode ? (
+        <ServiceDashboard period={period} customStart={customStart} customEnd={customEnd} periodLabel={periodLabel[period]} />
+      ) : kpis ? (
         view === "sdr" || isSdr ? (
           <DashboardSDR kpis={kpis} periodLabel={periodLabel[period]} />
         ) : (

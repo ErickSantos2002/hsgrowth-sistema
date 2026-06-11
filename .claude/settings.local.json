@@ -73,7 +73,8 @@
       "Bash(git push *)",
       "Bash(gh auth *)",
       "Bash(python -m py_compile app/services/board_service.py)",
-      "Bash(python -m py_compile app/services/service_board_service.py app/schemas/service_board.py)"
+      "Bash(python -m py_compile app/services/service_board_service.py app/schemas/service_board.py)",
+      "Bash(python -m py_compile app/schemas/service_dashboard.py app/services/service_dashboard_service.py app/api/v1/endpoints/service_dashboard.py app/api/v1/__init__.py)"
     ]
   }
 }
