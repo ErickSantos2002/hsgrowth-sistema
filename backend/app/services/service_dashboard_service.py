@@ -89,13 +89,18 @@ class ServiceDashboardService:
                 .all()
             )
 
+        # Eventos card_won/card_lost (usados para atribuição no ranking de colaboradores)
         won_events = events("card_won")
         lost_events = events("card_lost")
-        won_card_ids = {cid for cid, _ in won_events}
-        lost_card_ids = {cid for cid, _ in lost_events}
-        won_count = len(won_card_ids)
-        lost_count = len(lost_card_ids)
-        won_value = sum(value_by_card.get(cid, 0.0) for cid in won_card_ids)
+
+        # Ganhos/Perdidos no período: cards que estão em etapa final E foram
+        # marcados dentro do período (pela data de atualização). Independe do
+        # evento existir — funciona até para cards marcados antes do registro.
+        won_cards = [c for c in cards if c.list_id in done_ids and c.updated_at and start <= c.updated_at <= end]
+        lost_cards = [c for c in cards if c.list_id in lost_ids and c.updated_at and start <= c.updated_at <= end]
+        won_count = len(won_cards)
+        lost_count = len(lost_cards)
+        won_value = sum(value_by_card.get(c.id, 0.0) for c in won_cards)
         avg_ticket = (won_value / won_count) if won_count else 0.0
         win_rate = (won_count / (won_count + lost_count) * 100) if (won_count + lost_count) else 0.0
 
