@@ -71,7 +71,8 @@
       "Bash(git commit -m '@ *)",
       "Bash(git commit --amend -m 'ajustes board serviço: foco, histórico, ganho/perdido e card estilo vendas' -m '- Foco estilo vendas: recolhido por padrão, Expandir todos, confirmações por tipo e edição completa *)",
       "Bash(git push *)",
-      "Bash(gh auth *)"
+      "Bash(gh auth *)",
+      "Bash(python -m py_compile app/services/board_service.py)"
     ]
   }
 }

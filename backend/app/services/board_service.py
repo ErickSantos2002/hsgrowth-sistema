@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.repositories.board_repository import BoardRepository
 from app.repositories.list_repository import ListRepository
+from app.repositories.card_repository import CardRepository
 from app.schemas.board import BoardCreate, BoardUpdate, BoardResponse, BoardListResponse
 from app.models.board import Board
 from app.models.user import User
@@ -23,6 +24,7 @@ class BoardService:
         self.db = db
         self.board_repository = BoardRepository(db)
         self.list_repository = ListRepository(db)
+        self.card_repository = CardRepository(db)
 
     def get_board_by_id(self, board_id: int) -> Board:
         """
@@ -90,8 +92,7 @@ class BoardService:
         for board in boards:
             # Conta listas e cards
             lists_count = self.list_repository.count_by_board(board.id)
-            # TODO: Contar cards quando o módulo de cards estiver pronto
-            cards_count = 0
+            cards_count = self.card_repository.count_by_board(board.id)
 
             boards_response.append(
                 BoardResponse(

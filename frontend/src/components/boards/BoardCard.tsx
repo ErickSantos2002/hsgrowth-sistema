@@ -164,6 +164,12 @@ const BoardCard: React.FC<BoardCardProps> = ({
           {board.description || "Sem descrição"}
         </p>
 
+        {/* Contagem de listas e cards */}
+        <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-gray-500">
+          <span>{board.lists_count ?? 0} listas</span>
+          <span>{board.cards_count ?? 0} cards</span>
+        </div>
+
         {/* Data de criação */}
         <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500">
           <Calendar size={14} />
