@@ -30,6 +30,7 @@ import {
   Copy,
   CheckCircle2,
   XCircle,
+  RefreshCw,
 } from "lucide-react";
 import serviceBoardService, {
   ServiceCard,
@@ -862,6 +863,19 @@ const ServiceCardDetails: React.FC = () => {
     }
   };
 
+  // Reabre um negócio perdido: volta o card para a primeira etapa ativa do board
+  const handleReopen = async () => {
+    if (!card) return;
+    const firstActive = lists
+      .filter((l) => !l.is_done_stage && !l.is_lost_stage && !/ganho|perdido/i.test(l.name))
+      .sort((a, b) => a.position - b.position)[0];
+    if (!firstActive) { showError("Nenhuma etapa inicial disponível para reabrir"); return; }
+    const ok = await confirm({ title: "Reabrir Negócio", message: `Mover este card de volta para "${firstActive.name}"?`, confirmText: "Reabrir", isDanger: false });
+    if (!ok) return;
+    await handleMove(firstActive.id);
+    showSuccess("Negócio reaberto!");
+  };
+
   if (loading || !card) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -872,6 +886,11 @@ const ServiceCardDetails: React.FC = () => {
       </div>
     );
   }
+
+  // Estado derivado da lista atual (serviços não tem campo is_lost/is_won no card)
+  const currentList = lists.find((l) => l.id === card.list_id);
+  const isLost = !!currentList && (currentList.is_lost_stage || /perdido/i.test(currentList.name));
+  const isWon = !!currentList && (currentList.is_done_stage || /ganho/i.test(currentList.name));
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -911,15 +930,37 @@ const ServiceCardDetails: React.FC = () => {
             )}
           </div>
           <div className="flex flex-shrink-0 items-center gap-2">
-            <button onClick={handleClone} className="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-              <Copy size={16} /> Clonar
-            </button>
-            <button onClick={handleWin} className="flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-600">
-              <CheckCircle2 size={16} /> Ganho
-            </button>
-            <button onClick={handleLose} className="flex items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600">
-              <XCircle size={16} /> Perdido
-            </button>
+            {isLost ? (
+              <>
+                <div className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-3 py-2 text-sm font-medium text-red-500 dark:text-red-400">
+                  <XCircle size={16} /> Negócio Perdido
+                </div>
+                <button onClick={handleReopen} title="Mover o card de volta para a primeira etapa" className="flex items-center gap-2 rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600">
+                  <RefreshCw size={16} /> Reabrir Negócio
+                </button>
+              </>
+            ) : isWon ? (
+              <>
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-3 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 size={16} /> Negócio Ganho
+                </div>
+                <button onClick={handleClone} className="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                  <Copy size={16} /> Clonar
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={handleClone} className="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                  <Copy size={16} /> Clonar
+                </button>
+                <button onClick={handleWin} className="flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-600">
+                  <CheckCircle2 size={16} /> Ganho
+                </button>
+                <button onClick={handleLose} className="flex items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600">
+                  <XCircle size={16} /> Perdido
+                </button>
+              </>
+            )}
           </div>
         </div>
 
