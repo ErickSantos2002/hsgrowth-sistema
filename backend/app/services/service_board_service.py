@@ -355,6 +355,7 @@ class ServiceBoardService:
             unit_price=item.unit_price,
             discount=item.discount,
             notes=item.notes,
+            aparelhos=item.aparelhos,
             subtotal=item.subtotal,
             total=item.total,
             created_at=item.created_at,

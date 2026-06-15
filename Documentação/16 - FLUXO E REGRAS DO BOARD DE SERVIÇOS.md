@@ -78,18 +78,18 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 ### 3.2. Campos de PRODUTO (por aparelho)
 
-> Cada produto = 1 aparelho. Um negócio pode ter **vários aparelhos**, cada um com seus próprios dados.
+> **Modelagem (implementada):** o **produto escolhido = o modelo**. Dentro de cada produto há uma **sub-lista de aparelhos** (1 negócio pode ter vários aparelhos do mesmo modelo, cada um com seu próprio Nº de Série). Cada aparelho guarda os campos abaixo.
 
-| Campo | Preenchido por | Obrigatório p/ avançar (etapa) |
+| Campo | Preenchido por | Obrigatório |
 |---|---|---|
-| Número de Série | `[Laboratório]` | ✅ sim — sair de "Dados de Laboratório" |
-| Modelo (Produto) | `[Laboratório]` | ✅ sim — sair de "Dados de Laboratório" |
-| Módulo de álcool | `[Laboratório]` | ✅ sim — sair de "Dados de Laboratório" |
-| Data de próxima recalibragem | `[Laboratório]` | ✅ sim — sair de "Dados de Laboratório" |
-| Índice de reajuste | `[Serviço]` | 🔓 local em aberto (Resumo vs Produto) — debater na implementação |
+| Número de Série | `[Laboratório]` | ✅ **sim** |
+| Data de próxima recalibragem | `[Laboratório]` | ✅ **sim** |
+| Modelo | (auto) | — **já vem pré-preenchido** com o produto escolhido (editável) |
+| Módulo de álcool | `[Laboratório]` | ❌ **não** obrigatório |
+| Índice de reajuste | `[Serviço]` | 🔓 **não implementado** — local em aberto (Resumo vs Produto/aparelho) |
 
 > Legenda: `[Laboratório]` = preenchido pelo time de laboratório · `[Serviço]` = preenchido pelo time de serviço.
-> A trava de avanço de "Dados de Laboratório" exige os 4 campos `[Laboratório]` preenchidos em **todos** os aparelhos do card.
+> ✅ **Validação no "Salvar aparelhos"** (implementado 15/06/2026): não permite salvar sem pelo menos **1 aparelho**, e cada aparelho exige **Nº de Série** + **Data de próxima recalibragem**. Modelo já vem preenchido; Módulo de álcool é opcional. *(Optou-se por validar no salvar em vez de trava de avanço de etapa.)*
 
 ---
 
@@ -124,11 +124,11 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 - **O que é**: card aguardando o **time de laboratório preencher** os dados de cada aparelho. É a etapa mais "complicada" — depende de preenchimento manual **ou** de integração que traga esses dados.
 - **Atividade**: "Laboratório preenche dados básicos sobre os aparelhos".
 - **Como entra**: assim que a informação do laboratório estiver disponível (manual ou automação), o card chega aqui.
-- **Obrigatoriedades para avançar** (campos **por aparelho**, na seção **Produto**, `[Laboratório]`):
-  - Data de próxima recalibragem
-  - Número de Série
-  - Modelo (Produto)
-  - Módulo de álcool
+- **Obrigatoriedades** (campos **por aparelho**, na sub-lista de aparelhos do Produto) — validadas no **"Salvar aparelhos"** (não no avanço de etapa):
+  - **Número de Série** `[Laboratório]` ✅ obrigatório
+  - **Data de próxima recalibragem** `[Laboratório]` ✅ obrigatório
+  - Modelo — já vem **pré-preenchido** com o produto (não precisa preencher)
+  - Módulo de álcool `[Laboratório]` — **opcional**
 - ⚠️ **Implementação**: a seção **Produto** precisará ganhar esses campos **em cada produto/aparelho**. As demais informações (comerciais) já chegam preenchidas da etapa "Negócio Fechado". O laboratório só preenche os campos `[Laboratório]`.
 - **Avanço → Dados de Laboratório Preenchidos**: **automático** assim que os 4 campos estiverem preenchidos em **todos** os aparelhos.
 
@@ -272,7 +272,8 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 ### 5.3. Implementação — Campos
 - [x] **Resumo**: campos de negócio (Vendedor Responsável [leitura], Tipo de Negócio, Canal de Aquisição, Detalhamento, É venda ou locação, Deve ser faturado/aluguel) + Valor do Negócio + anexos (Proposta, OS, OC). ✅ **Feito** (15/06/2026) — coluna `business_info` (JSON) em `service_cards`; anexos com `doc_slot` nas atividades de arquivo.
-- [ ] **Produto (por aparelho)**: criar campos `[Laboratório]` (Nº Série, Modelo, Módulo de álcool, Data de próxima recalibragem) + `[Serviço]` (Índice de reajuste, conforme decisão).
+- [x] **Produto (por aparelho)**: campos `[Laboratório]` (Nº Série, Modelo, Módulo de álcool, Data de próxima recalibragem). ✅ **Feito** (15/06/2026) — modelados como **sub-lista de aparelhos** dentro de cada produto (coluna JSON `aparelhos` em `service_card_products`). Decisão de modelagem: *"1 linha por produto + sub-lista de aparelhos"*.
+  - [ ] **Índice de reajuste** `[Serviço]` — ainda **não implementado** (ponto em aberto 5.2: fica no Resumo ou no Produto/aparelho?).
 - [x] **Dependência em Vendas**: campo "É venda ou locação" criado no board de Vendas. ✅ **Feito** (15/06/2026) — coluna `modality` em `cards`; campo no Resumo de Vendas; **trava: só permite Ganho se `modality` estiver preenchido** (`move_card`).
 
 ### 5.4. Implementação — Regras (travas)

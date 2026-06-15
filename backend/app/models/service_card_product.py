@@ -2,7 +2,7 @@
 Modelo de ServiceCardProduct (Produto associado a um Card de Serviços).
 Tabela independente do card_products de vendas — relaciona ServiceCard <-> Product.
 """
-from sqlalchemy import Column, Integer, ForeignKey, Numeric, Text, UniqueConstraint
+from sqlalchemy import Column, Integer, ForeignKey, Numeric, Text, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -40,6 +40,11 @@ class ServiceCardProduct(Base, TimestampMixin):
     discount = Column(Numeric(12, 2), nullable=False, default=0)  # Desconto absoluto
 
     notes = Column(Text, nullable=True)
+
+    # Aparelhos do produto (sub-lista). Cada item = 1 aparelho com dados do laboratório.
+    # Ex: [{"serial_number": "AB123", "model": "X100", "alcohol_module": "Sim",
+    #       "next_recalibration_date": "2026-08-10"}]
+    aparelhos = Column(JSON, nullable=True)
 
     # Um card não pode ter o mesmo produto duplicado
     __table_args__ = (

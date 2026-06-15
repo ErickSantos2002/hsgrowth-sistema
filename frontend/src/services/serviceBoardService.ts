@@ -72,6 +72,14 @@ export interface ServiceCard {
   updated_at: string;
 }
 
+// 1 aparelho de um produto — dados preenchidos pelo laboratório por unidade
+export interface ServiceAparelho {
+  serial_number?: string;        // Nº de Série [Laboratório]
+  model?: string;                // Modelo [Laboratório]
+  alcohol_module?: string;       // Módulo de álcool [Laboratório]
+  next_recalibration_date?: string; // Data de próxima recalibragem (YYYY-MM-DD) [Laboratório]
+}
+
 export interface ServiceCardProduct {
   id: number;
   service_card_id: number;
@@ -80,6 +88,7 @@ export interface ServiceCardProduct {
   unit_price: number;
   discount: number;
   notes?: string;
+  aparelhos?: ServiceAparelho[];
   subtotal: number;
   total: number;
   created_at: string;
@@ -110,6 +119,7 @@ export interface UpdateServiceCardProductRequest {
   unit_price?: number;
   discount?: number;
   notes?: string;
+  aparelhos?: ServiceAparelho[];
 }
 
 export interface ServiceCardListResponse {

@@ -162,6 +162,7 @@ class ServiceCardProductBase(BaseModel):
     unit_price: float = Field(..., ge=0, description="Preço unitário")
     discount: float = Field(0, ge=0, description="Desconto em valor absoluto")
     notes: Optional[str] = Field(None, description="Observações sobre o produto")
+    aparelhos: Optional[List[dict]] = Field(None, description="Sub-lista de aparelhos (dados do laboratório por unidade)")
 
 
 class ServiceCardProductCreate(ServiceCardProductBase):
@@ -173,6 +174,7 @@ class ServiceCardProductUpdate(BaseModel):
     unit_price: Optional[float] = Field(None, ge=0)
     discount: Optional[float] = Field(None, ge=0)
     notes: Optional[str] = None
+    aparelhos: Optional[List[dict]] = None
 
 
 class ServiceCardProductResponse(ServiceCardProductBase):
@@ -180,6 +182,7 @@ class ServiceCardProductResponse(ServiceCardProductBase):
     service_card_id: int
     subtotal: float
     total: float
+    # aparelhos herdado de ServiceCardProductBase
     created_at: datetime
     updated_at: datetime
     product_name: Optional[str] = None

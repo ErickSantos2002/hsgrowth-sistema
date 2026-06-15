@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 import { Package, Plus, Trash2, Search, CreditCard, Info, Edit2, Check, X } from "lucide-react";
 import ExpandableSection from "../cardDetails/ExpandableSection";
 import productService from "../../services/productService";
-import serviceBoardService, { ServiceCardProduct } from "../../services/serviceBoardService";
+import serviceBoardService, { ServiceCardProduct, ServiceAparelho } from "../../services/serviceBoardService";
 import { showError, showWarning } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
 
@@ -18,6 +18,116 @@ interface ServiceProductSectionProps {
 }
 
 type DiscountType = "value" | "percent";
+
+/**
+ * Editor da sub-lista de aparelhos de um produto.
+ * Cada aparelho guarda os dados preenchidos pelo laboratório (Nº Série, Modelo,
+ * Módulo de álcool, Data de próxima recalibragem). Salvo como JSON na linha do produto.
+ */
+const AparelhosEditor: React.FC<{
+  product: ServiceCardProduct;
+  boardId: number;
+  cardId: number;
+  onSaved: () => void;
+}> = ({ product, boardId, cardId, onSaved }) => {
+  const [list, setList] = useState<ServiceAparelho[]>(product.aparelhos || []);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setList(product.aparelhos || []);
+    setDirty(false);
+  }, [product.aparelhos]);
+
+  const setField = (i: number, field: keyof ServiceAparelho, value: string) => {
+    setList((prev) => prev.map((a, idx) => (idx === i ? { ...a, [field]: value } : a)));
+    setDirty(true);
+  };
+  // Novo aparelho já vem com o Modelo preenchido (o produto escolhido = o modelo)
+  const add = () => { setList((prev) => [...prev, { model: product.product_name || "" }]); setDirty(true); };
+  const remove = (i: number) => { setList((prev) => prev.filter((_, idx) => idx !== i)); setDirty(true); };
+  const save = async () => {
+    // Validação: precisa de pelo menos 1 aparelho...
+    if (list.length === 0) {
+      showWarning("Adicione pelo menos 1 aparelho antes de salvar.");
+      return;
+    }
+    // ...e cada aparelho precisa de Nº de Série + Data de próxima recalibragem.
+    const invalid = list.findIndex(
+      (a) => !(a.serial_number || "").trim() || !(a.next_recalibration_date || "").trim()
+    );
+    if (invalid !== -1) {
+      showWarning(`Preencha o Nº de Série e a Data de próxima recalibragem do Aparelho ${invalid + 1}.`);
+      return;
+    }
+    setSaving(true);
+    try {
+      await serviceBoardService.updateCardProduct(boardId, cardId, product.id, { aparelhos: list });
+      setDirty(false);
+      onSaved();
+    } catch {
+      showError("Erro ao salvar aparelhos");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputCls =
+    "w-full rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none";
+
+  return (
+    <div className="space-y-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-3">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-slate-400">Aparelhos ({list.length})</span>
+        <button onClick={add} className="flex items-center gap-1 rounded border border-blue-500/40 bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-400 transition-colors hover:bg-blue-500/20">
+          <Plus size={13} /> Adicionar aparelho
+        </button>
+      </div>
+      {list.length > 0 && (
+        <p className="text-[11px] text-slate-400"><span className="text-red-400">*</span> obrigatório</p>
+      )}
+
+      {list.length === 0 ? (
+        <p className="rounded border border-dashed border-gray-300 dark:border-slate-700 px-2 py-2 text-center text-xs italic text-slate-400">
+          Nenhum aparelho. Adicione os dados do laboratório por unidade.
+        </p>
+      ) : (
+        list.map((ap, i) => (
+          <div key={i} className="space-y-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/40 p-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Aparelho {i + 1}</span>
+              <button onClick={() => remove(i)} className="rounded p-1 text-red-400 transition-colors hover:bg-red-500/20" title="Remover aparelho"><Trash2 size={14} /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[11px] text-slate-400">Nº de Série <span className="text-red-400">*</span></label>
+                <input value={ap.serial_number || ""} onChange={(e) => setField(i, "serial_number", e.target.value)} placeholder="Ex: AB123" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-400">Modelo</label>
+                <input value={ap.model || ""} onChange={(e) => setField(i, "model", e.target.value)} placeholder="Ex: X100" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-400">Módulo de álcool</label>
+                <input value={ap.alcohol_module || ""} onChange={(e) => setField(i, "alcohol_module", e.target.value)} placeholder="Opcional" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-400">Próxima recalibragem <span className="text-red-400">*</span></label>
+                <input type="date" value={ap.next_recalibration_date || ""} onChange={(e) => setField(i, "next_recalibration_date", e.target.value)} className={inputCls} />
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+
+      {dirty && (
+        <button onClick={save} disabled={saving} className="flex w-full items-center justify-center gap-2 rounded border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50">
+          <Check size={15} /> {saving ? "Salvando..." : "Salvar aparelhos"}
+        </button>
+      )}
+    </div>
+  );
+};
 
 /**
  * Seção "Produto" do card de serviços — espelha o padrão do board de vendas.
@@ -393,6 +503,14 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
                       <p className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1.5 font-medium text-blue-400">{formatCurrency(isEditing ? lineTotal : product.total)}</p>
                     </div>
                   </div>
+
+                  {/* Sub-lista de aparelhos (dados do laboratório por unidade) */}
+                  <AparelhosEditor
+                    product={product}
+                    boardId={boardId}
+                    cardId={cardId}
+                    onSaved={() => { loadProducts(); onChange?.(); }}
+                  />
 
                   {isEditing && (
                     <div className="flex gap-2 border-t border-gray-200/50 dark:border-slate-700/50 pt-2">
