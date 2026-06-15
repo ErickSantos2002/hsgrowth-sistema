@@ -124,6 +124,8 @@ const ServiceSummarySection: React.FC<{
     setBiz((prev) => ({ ...prev, [k]: v }));
   const invoiceLabel = (v?: boolean | null) => (v === true ? "Sim" : v === false ? "Não" : "Não definido");
   const modalityLabel = (v?: string) => (v === "venda" ? "Venda" : v === "locacao" ? "Locação" : "Não definido");
+  const serviceTypeLabel = (v?: string) => (v === "recalibracao" ? "Recalibração" : v === "manutencao" ? "Manutenção" : v === "ambos" ? "Ambos" : "Não definido");
+  const receivedLabel = (v?: boolean | null) => (v === true ? "Sim" : v === false ? "Não" : "Não definido");
 
   // Anexos do Resumo (slots nomeados: proposta | os | oc)
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
@@ -318,6 +320,28 @@ const ServiceSummarySection: React.FC<{
                   <option value="nao">Não</option>
                 </select>
               </div>
+              <div className="space-y-1 border-t border-gray-200/40 dark:border-slate-700/40 pt-3">
+                <p className="text-[11px] uppercase tracking-wide text-slate-400">Triagem (Oportunidade Existente)</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Recalibração e/ou Manutenção</label>
+                <select value={biz.service_type || ""} onChange={(e) => setBizField("service_type", e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
+                  <option value="">Não definido</option>
+                  <option value="recalibracao">Recalibração</option>
+                  <option value="manutencao">Manutenção</option>
+                  <option value="ambos">Ambos</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Aparelho recebido pela expedição?</label>
+                <select value={biz.device_received === true ? "sim" : biz.device_received === false ? "nao" : ""} onChange={(e) => setBizField("device_received", e.target.value === "sim" ? true : e.target.value === "nao" ? false : null)}
+                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
+                  <option value="">Não definido</option>
+                  <option value="sim">Sim</option>
+                  <option value="nao">Não</option>
+                </select>
+              </div>
               <div className="flex items-center gap-2 pt-1">
                 <button onClick={handleSaveBiz} className="flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30">
                   <Check size={14} /> Salvar
@@ -336,6 +360,8 @@ const ServiceSummarySection: React.FC<{
                 { label: "Detalhamento", value: biz.acquisition_channel_detail },
                 { label: "É venda ou locação", value: modalityLabel(biz.modality) },
                 { label: "Deve ser faturado", value: invoiceLabel(biz.should_invoice) },
+                { label: "Recalibração/Manutenção", value: serviceTypeLabel(biz.service_type) },
+                { label: "Aparelho recebido", value: receivedLabel(biz.device_received) },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between gap-3">
                   <span className="text-sm text-slate-400">{row.label}:</span>
@@ -798,13 +824,16 @@ const ServicePipelineStages: React.FC<{
           const classes = getClasses(list, index);
           const isPassed = index < currentPosition;
           const isCurrent = list.id === currentListId;
+          // Etapas terminais (Ganho/Perdido) só pelos botões — não clicáveis no stepper
+          const isTerminal = list.is_done_stage || list.is_lost_stage || /ganho|perdido/i.test(list.name);
+          const blocked = isCurrent || isTerminal;
           return (
             <React.Fragment key={list.id}>
               <button
-                onClick={() => { if (!isCurrent) onMove(list.id); }}
-                disabled={isCurrent}
-                className={`relative flex items-center gap-2 rounded-lg border px-3 py-2 ${classes.container} ${isCurrent ? "cursor-not-allowed" : ""}`}
-                title={isCurrent ? `Etapa atual: ${list.name}` : `Mover para: ${list.name}`}
+                onClick={() => { if (!blocked) onMove(list.id); }}
+                disabled={blocked}
+                className={`relative flex items-center gap-2 rounded-lg border px-3 py-2 ${classes.container} ${isCurrent ? "cursor-not-allowed" : ""} ${isTerminal && !isCurrent ? "cursor-not-allowed opacity-50" : ""}`}
+                title={isCurrent ? `Etapa atual: ${list.name}` : isTerminal ? `Use o botão "${/perdido/i.test(list.name) ? "Perdido" : "Ganho"}" para mover para esta etapa` : `Mover para: ${list.name}`}
               >
                 <div className="relative flex items-center justify-center">
                   {isPassed || isCurrent ? (
@@ -932,8 +961,9 @@ const ServiceCardDetails: React.FC = () => {
       setCard((prev) => (prev ? { ...prev, list_id: newListId } : prev));
       reloadActivities();
       showSuccess("Card movido!");
-    } catch {
-      showError("Erro ao mover card");
+    } catch (e: any) {
+      // Mostra a mensagem da trava de avanço (obrigatoriedades da etapa)
+      showError(e?.response?.data?.detail || "Erro ao mover card");
     } finally {
       setIsMoving(false);
     }

@@ -323,19 +323,118 @@ class ServiceBoardService:
         card = self.get_card(card_id)
         self.repo.delete_card(card)
 
+    def _validate_advance(self, card: ServiceCard, old_list, new_list) -> None:
+        """Trava de avanço por etapa: bloqueia mover o card se as obrigatoriedades
+        da etapa não estiverem cumpridas. Só valida avanço (não voltar etapa)."""
+        if not old_list or not new_list or old_list.id == new_list.id:
+            return
+
+        acts = self.repo.list_card_activities(card.id)
+        biz = card.business_info or {}
+        has_slot = lambda slot: any(  # noqa: E731
+            a.category == "arquivo" and (a.activity_metadata or {}).get("doc_slot") == slot for a in acts
+        )
+
+        # Momento em que o card entrou na etapa atual (última mudança para old_list)
+        def _entered_current_stage_at():
+            ts = [
+                a.created_at for a in acts
+                if a.category == "alteracao"
+                and (a.activity_metadata or {}).get("to_list_id") == (old_list.id if old_list else None)
+                and a.created_at
+            ]
+            return max(ts) if ts else card.created_at
+
+        # Exige pelo menos 1 atividade CONCLUÍDA dentro da etapa atual
+        def has_completed_activity():
+            entered = _entered_current_stage_at()
+            for a in acts:
+                if a.category != "atividade" or not a.is_completed:
+                    continue
+                done_at = a.completed_at or a.created_at
+                if done_at and entered and done_at >= entered:
+                    return True
+            return False
+
+        new_name = (new_list.name or "").lower()
+
+        # Destino: Negócio Ganho — exige OC anexada + 1 atividade de tarefa concluída
+        if new_list.is_done_stage or "ganho" in new_name:
+            miss = []
+            if not has_slot("oc"):
+                miss.append("OC (Ordem de Compra) anexada no Resumo")
+            if not any(a.category == "atividade" and a.is_completed for a in acts):
+                miss.append("1 atividade de tarefa concluída (validação dos dados)")
+            if miss:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                    detail="Para marcar como Ganho, é preciso: " + "; ".join(miss) + ".")
+            return
+
+        # Destino: Negócio Perdido — motivo é tratado pelo modal (não bloqueia aqui)
+        if new_list.is_lost_stage or "perdido" in new_name:
+            return
+
+        # Só valida avanço para frente entre etapas ativas (voltar é livre)
+        if (new_list.position or 0) <= (old_list.position or 0):
+            return
+
+        old_name = (old_list.name or "").strip().lower()
+        miss = []
+
+        if "dados de laboratório" in old_name and "preenchido" not in old_name:
+            # Avança para "Preenchidos" só se houver pelo menos 1 aparelho
+            # com Nº de Série + Data de próxima recalibragem preenchidos.
+            products = self.repo.list_card_products(card.id)
+            has_valid_aparelho = any(
+                (ap.get("serial_number") or "").strip() and (ap.get("next_recalibration_date") or "").strip()
+                for p in products for ap in (p.aparelhos or [])
+            )
+            if not has_valid_aparelho:
+                miss.append("pelo menos 1 aparelho com Nº de Série e Data de próxima recalibragem")
+        elif "oportunidade existente" in old_name:
+            if not biz.get("service_type"):
+                miss.append("Recalibração e/ou Manutenção")
+            if biz.get("device_received") is None:
+                miss.append("Aparelho recebido pela expedição (sim/não)")
+            if biz.get("device_received") is True and not has_slot("os"):
+                miss.append("OS (Ordem de Serviço) anexada (aparelho foi recebido)")
+            if not has_completed_activity():
+                miss.append("pelo menos 1 atividade concluída nesta etapa")
+        elif "tentativa de contato" in old_name:
+            if not has_slot("proposta"):
+                miss.append("Proposta anexada no Resumo")
+        elif old_name == "proposta":
+            if not has_slot("proposta"):
+                miss.append("Proposta anexada no Resumo")
+            if not has_completed_activity():
+                miss.append("pelo menos 1 atividade de follow-up concluída nesta etapa")
+        elif "operações" in old_name or "operacoes" in old_name:
+            if not has_completed_activity():
+                miss.append("pelo menos 1 atividade de follow-up concluída nesta etapa")
+
+        if miss:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Para avançar de '{old_list.name}', preencha: " + "; ".join(miss) + ".",
+            )
+
     def move_card(self, card_id: int, new_list_id: int, new_position: Optional[float], user: User) -> ServiceCard:
         card = self.get_card(card_id)
         old_list = self.repo.find_list_by_id(card.list_id)
         new_list = self.get_list(new_list_id)
         old_list_id = card.list_id
+        if old_list_id != new_list_id:
+            self._validate_advance(card, old_list, new_list)
         moved = self.repo.move_card(card_id, new_list_id, new_position)
         if old_list_id != new_list_id:
             meta = {"from_list_id": old_list_id, "to_list_id": new_list_id}
             new_name = (new_list.name or "").lower()
             if new_list.is_done_stage or "ganho" in new_name:
                 self.log_event(card_id, user, "card_won", f"Negócio marcado como Ganho ({new_list.name})", meta)
+                self._complete_pending_activities(card_id)
             elif new_list.is_lost_stage or "perdido" in new_name:
                 self.log_event(card_id, user, "card_lost", f"Negócio marcado como Perdido ({new_list.name})", meta)
+                self._complete_pending_activities(card_id)
             else:
                 self.log_event(
                     card_id, user, "stage_change",
@@ -343,6 +442,27 @@ class ServiceBoardService:
                     meta,
                 )
         return moved
+
+    def _complete_pending_activities(self, card_id: int) -> int:
+        """Conclui automaticamente as atividades pendentes do card (usado ao
+        marcar Ganho/Perdido). Nunca quebra o fluxo."""
+        try:
+            pending = [
+                a for a in self.repo.list_card_activities(card_id)
+                if a.category == "atividade" and not a.is_completed
+            ]
+            now = datetime.utcnow()
+            for a in pending:
+                a.is_completed = True
+                if not a.completed_at:
+                    a.completed_at = now
+            if pending:
+                self.db.commit()
+            return len(pending)
+        except Exception as e:  # pragma: no cover
+            self.db.rollback()
+            print(f"[SERVICE-ACTIVITY] erro ao concluir atividades pendentes: {e}")
+            return 0
 
     # ─── Card Products ────────────────────────────────────────────────────────
 

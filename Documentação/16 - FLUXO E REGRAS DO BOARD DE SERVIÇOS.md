@@ -1,8 +1,9 @@
 # 16 - FLUXO E REGRAS DO BOARD DE SERVIÇOS
 
 > **Documento vivo / em construção.** Estamos detalhando etapa por etapa a partir do Miro (Jornada do Cliente: HS).
-> Última atualização: **12/06/2026**
+> Última atualização: **15/06/2026**
 > Relacionado: [15 - MÓDULO DE SERVIÇOS.md](15%20-%20MÓDULO%20DE%20SERVIÇOS.md)
+> 📌 Para teste/revisão das regras de avanço, veja a **seção 6 (Matriz de Regras de Avanço)**.
 
 ---
 
@@ -89,7 +90,8 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 | Índice de reajuste | `[Serviço]` | 🔓 **não implementado** — local em aberto (Resumo vs Produto/aparelho) |
 
 > Legenda: `[Laboratório]` = preenchido pelo time de laboratório · `[Serviço]` = preenchido pelo time de serviço.
-> ✅ **Validação no "Salvar aparelhos"** (implementado 15/06/2026): não permite salvar sem pelo menos **1 aparelho**, e cada aparelho exige **Nº de Série** + **Data de próxima recalibragem**. Modelo já vem preenchido; Módulo de álcool é opcional. *(Optou-se por validar no salvar em vez de trava de avanço de etapa.)*
+> ✅ **Validação no "Salvar aparelhos"** (15/06/2026): não permite salvar sem pelo menos **1 aparelho**, e cada aparelho exige **Nº de Série** + **Data de próxima recalibragem**. Modelo já vem preenchido; Módulo de álcool é opcional.
+> ✅ **Trava de avanço** de "Dados de Laboratório" → "Preenchidos" (15/06/2026): só avança se houver **pelo menos 1 aparelho** (em qualquer produto) com **Nº de Série** + **Data de próxima recalibragem** preenchidos.
 
 ---
 
@@ -124,7 +126,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 - **O que é**: card aguardando o **time de laboratório preencher** os dados de cada aparelho. É a etapa mais "complicada" — depende de preenchimento manual **ou** de integração que traga esses dados.
 - **Atividade**: "Laboratório preenche dados básicos sobre os aparelhos".
 - **Como entra**: assim que a informação do laboratório estiver disponível (manual ou automação), o card chega aqui.
-- **Obrigatoriedades** (campos **por aparelho**, na sub-lista de aparelhos do Produto) — validadas no **"Salvar aparelhos"** (não no avanço de etapa):
+- **Obrigatoriedades** (campos **por aparelho**, na sub-lista de aparelhos do Produto) — validadas no **"Salvar aparelhos"** (cada aparelho) **e** na **trava de avanço** (exige ≥1 aparelho válido para sair da etapa):
   - **Número de Série** `[Laboratório]` ✅ obrigatório
   - **Data de próxima recalibragem** `[Laboratório]` ✅ obrigatório
   - Modelo — já vem **pré-preenchido** com o produto (não precisa preencher)
@@ -277,7 +279,16 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 - [x] **Dependência em Vendas**: campo "É venda ou locação" criado no board de Vendas. ✅ **Feito** (15/06/2026) — coluna `modality` em `cards`; campo no Resumo de Vendas; **trava: só permite Ganho se `modality` estiver preenchido** (`move_card`).
 
 ### 5.4. Implementação — Regras (travas)
-- [ ] **Trava de avanço** por etapa (validar obrigatoriedades antes de mover — ver seção 4).
+- [x] **Trava de avanço** por etapa. ✅ **Feito** (15/06/2026) — `_validate_advance` no `move_card` (backend) bloqueia avanço sem as obrigatoriedades; frontend `handleMove` mostra a mensagem. Regras:
+  - **Dados de Laboratório →**: pelo menos 1 aparelho com Nº de Série + Data de próxima recalibragem.
+  - **Oportunidade Existente →**: Recalibração/Manutenção + Aparelho recebido (sim/não) + OS anexada (se recebido) + **≥1 atividade concluída nesta etapa**. *(Campos novos `service_type` e `device_received` no `business_info`.)*
+  - **Tentativa de Contato →**: Proposta anexada (sem atividade obrigatória).
+  - **Proposta →**: Proposta anexada + **≥1 atividade de follow-up concluída nesta etapa**.
+  - **Operações →**: **≥1 atividade de follow-up concluída nesta etapa**.
+  - **→ Ganho**: OC anexada + 1 atividade de tarefa concluída.
+  - **Negócio Ganho / Negócio Perdido**: só acessíveis pelos **botões Ganho/Perdido** (o stepper não move para etapas terminais). Ao marcar Ganho/Perdido, as **atividades pendentes são concluídas automaticamente** (`_complete_pending_activities`).
+  - Voltar etapa é livre. **Negócio Fechado** e **Dados de Lab. Preenchidos → Oportunidade Existente** não têm trava (a 2ª é condição de 50 dias / equipamento → vira automação).
+  - ⚙️ "Atividade concluída nesta etapa" = atividade `category=atividade`, `is_completed`, concluída **após** o card entrar na etapa atual (não reaproveita atividade de etapa anterior).
 - [x] **Botão Ganho**: habilitado **somente** na última etapa ativa ("Aguardando Pedido"); opaco/desabilitado nas demais. Ao dar Ganho, valida: **OC anexada** + **1 atividade de tarefa concluída**. ✅ **Feito** (15/06/2026) — `getWinStage()` + travas no `handleWin` (`ServiceCardDetails.tsx`).
 - [x] **Esconder cards Ganhos e Perdidos** por padrão no board. ✅ **Já implementado** — filtro padrão "Apenas Abertos" (`fStatus="abertos"`) exclui done/lost; aparecem só via filtro (Todos/Ganhos/Perdidos).
 - [x] **Motivos de Perda**: lista do board de Serviços substituída pelos 10 motivos oficiais. ✅ **Feito** (15/06/2026) — `LOSS_REASONS` em `ServiceCardDetails.tsx`.
@@ -289,3 +300,34 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 - [ ] Tags dinâmicas para filtros.
 - [ ] **Resgate em 90 dias**: ao perder, criar novo card após 90 dias + cadência de resgate.
 - [ ] Integrações: Trello (Operações), Financeiro e Expedição (pós-Ganho).
+
+---
+
+## 6. MATRIZ DE REGRAS DE AVANÇO (referência rápida / roteiro de teste)
+
+> Onde a regra é aplicada: **Backend** (`_validate_advance` no `move_card` — vale para stepper e qualquer movimento). Mensagem aparece pro usuário ao tentar mover.
+> Status implementado em **15/06/2026**. Coluna "Testado" para o time preencher.
+
+| # | Transição | O que exige para avançar | Implementado | Testado |
+|---|---|---|---|---|
+| 1 | Negócio Fechado → Dados de Laboratório | nada (livre) | ✅ (sem regra) | ☐ |
+| 2 | Dados de Laboratório → Dados de Lab. Preenchidos | **≥1 aparelho** (qualquer produto) com **Nº de Série + Data de próxima recalibragem** | ✅ | ☐ |
+| 3 | Dados de Lab. Preenchidos → Oportunidade Existente | nada por enquanto (condição: 50 dias OU equipamento recebido → vira **automação**) | ✅ (sem regra manual) | ☐ |
+| 4 | Oportunidade Existente → Tentativa de Contato | **Recalibração/Manutenção** + **Aparelho recebido (sim/não)** + **OS anexada** (se recebido) + **≥1 atividade concluída nesta etapa** | ✅ | ☐ |
+| 5 | Tentativa de Contato → Proposta | **Proposta anexada** | ✅ | ☐ |
+| 6 | Proposta → Operações | **Proposta anexada** + **≥1 atividade de follow-up concluída nesta etapa** | ✅ | ☐ |
+| 7 | Operações → Aguardando Pedido | **≥1 atividade de follow-up concluída nesta etapa** | ✅ | ☐ |
+| 8 | Aguardando Pedido → **Negócio Ganho** | **só pelo botão Ganho** · **OC anexada** + **1 atividade de tarefa concluída** · botão só acende em "Aguardando Pedido" | ✅ | ☐ |
+| 9 | Qualquer etapa → **Negócio Perdido** | **só pelo botão Perdido** · exige **Motivo da perda** (modal) | ✅ | ☐ |
+
+### Regras gerais (valem para todo o board)
+- **Voltar etapa** (mover para trás) é **livre** — sem trava.
+- **Stepper não move para etapas terminais** (Ganho/Perdido ficam opacos) — só pelos botões.
+- Ao marcar **Ganho/Perdido**, as **atividades pendentes são concluídas automaticamente**.
+- **"Atividade concluída nesta etapa"** = atividade `category=atividade`, marcada como concluída **depois** de o card entrar na etapa atual (não reaproveita atividade de etapa anterior).
+- Esconder **Ganhos e Perdidos** do board por padrão (filtro "Apenas Abertos").
+
+### Pendências conhecidas (a discutir / próximas fases)
+- **Índice de reajuste** `[Serviço]`: ainda não implementado — definir se fica no Resumo ou no aparelho (Produto).
+- **Etapa Proposta**: avaliar se "Formulário respondido" e "OS anexada" entram como trava extra.
+- **Automações** (seção 5.5): nenhuma implementada ainda.
