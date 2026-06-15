@@ -267,7 +267,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 ### 5.2. Pontos em aberto (decidir antes/durante a implementação)
 - [ ] **Índice de reajuste**: fica no Resumo ou no Produto?
 - [ ] **Etapa Proposta**: "Formulário respondido" e "OS anexada" entram como trava aqui?
-- [ ] **Esconder por padrão**: vale também para os cards em **Negócio Perdido** (além de Ganho)?
+- [x] **Esconder por padrão**: ✅ decidido — esconde **Ganhos E Perdidos** por padrão (15/06/2026). Já implementado (ver 5.4).
 - [x] **Dependência em Vendas**: campo "É venda ou locação" criado no board de Vendas, com trava de Ganho. ✅ **Feito** (15/06/2026).
 
 ### 5.3. Implementação — Campos
@@ -278,9 +278,9 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 ### 5.4. Implementação — Regras (travas)
 - [ ] **Trava de avanço** por etapa (validar obrigatoriedades antes de mover — ver seção 4).
-- [ ] **Botão Ganho**: habilitado **somente** na etapa "Aguardando Pedido" (opaco nas demais); exige OC anexada + atividade de tarefa de validação.
-- [ ] **Esconder cards Ganhos** por padrão no board (mostrar só via filtro).
-- [ ] **Motivos de Perda**: substituir a lista atual do `LossReasonModal` pelos 10 motivos oficiais (seção 4.X).
+- [x] **Botão Ganho**: habilitado **somente** na última etapa ativa ("Aguardando Pedido"); opaco/desabilitado nas demais. Ao dar Ganho, valida: **OC anexada** + **1 atividade de tarefa concluída**. ✅ **Feito** (15/06/2026) — `getWinStage()` + travas no `handleWin` (`ServiceCardDetails.tsx`).
+- [x] **Esconder cards Ganhos e Perdidos** por padrão no board. ✅ **Já implementado** — filtro padrão "Apenas Abertos" (`fStatus="abertos"`) exclui done/lost; aparecem só via filtro (Todos/Ganhos/Perdidos).
+- [x] **Motivos de Perda**: lista do board de Serviços substituída pelos 10 motivos oficiais. ✅ **Feito** (15/06/2026) — `LOSS_REASONS` em `ServiceCardDetails.tsx`.
 
 ### 5.5. Fase posterior — Automações
 - [ ] Criação automática do card a partir do Ganho em Vendas (etapa 4.0).

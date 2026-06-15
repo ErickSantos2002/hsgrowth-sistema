@@ -69,16 +69,18 @@ type TabKey =
   | "reunioes"
   | "email";
 
-// Motivos de perda (provisórios — serão refinados depois)
+// Motivos de perda oficiais do board de Serviços (doc 16 - seção 4.X)
 const LOSS_REASONS = [
-  "Preço acima do orçamento",
-  "Sem orçamento no momento",
-  "Escolheu concorrente",
-  "Sem retorno / contato perdido",
-  "Não é o momento",
-  "Fora do perfil",
-  "Equipamento sem necessidade de calibração",
-  "Outro",
+  "Não chegamos no responsável pelo tema",
+  "Proposta fora do orçamento",
+  "Manutenção não aprovada",
+  "Sem budget aprovado",
+  "Solução não percebida como crítica",
+  "Aprovação interna travada",
+  "Perda para concorrência",
+  "Lead não deu mais retorno",
+  "Data de Recalibração Errada",
+  "Cliente Inadimplente",
 ];
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
@@ -976,10 +978,31 @@ const ServiceCardDetails: React.FC = () => {
   };
 
   // ─── Ganho / Perdido / Clonar ───────────────────────────────────────────────
+  // Etapa onde o Ganho é liberado = última etapa ativa do funil (ex: "Aguardando Pedido").
+  const getWinStage = () =>
+    lists
+      .filter((l) => !l.is_done_stage && !l.is_lost_stage && !/ganho|perdido/i.test(l.name))
+      .sort((a, b) => a.position - b.position)
+      .slice(-1)[0];
+
   const handleWin = async () => {
     const doneList = lists.find((l) => l.is_done_stage) || lists.find((l) => /ganho/i.test(l.name));
     if (!doneList) { showError("Nenhuma etapa de 'Ganho' configurada no board"); return; }
     if (card?.list_id === doneList.id) { showError("O card já está em Negócio Ganho"); return; }
+
+    // Trava 1: Ganho só na etapa "Aguardando Pedido" (última etapa ativa).
+    const winStage = getWinStage();
+    if (!winStage || card?.list_id !== winStage.id) {
+      showError(`O Ganho só pode ser dado quando o card está na etapa "${winStage?.name || "Aguardando Pedido"}".`);
+      return;
+    }
+    // Trava 2: OC (Ordem de Compra) anexada no Resumo.
+    const hasOC = activities.some((a) => a.category === "arquivo" && a.activity_metadata?.doc_slot === "oc");
+    if (!hasOC) { showError("Anexe a OC (Ordem de Compra) no Resumo antes de marcar como Ganho."); return; }
+    // Trava 3: pelo menos 1 atividade de tarefa concluída (validação dos dados).
+    const hasValidationTask = activities.some((a) => a.category === "atividade" && a.is_completed);
+    if (!hasValidationTask) { showError("Conclua uma atividade de tarefa (validação dos dados) antes de marcar como Ganho."); return; }
+
     const ok = await confirm({ title: "Marcar como Ganho", message: `Mover este card para "${doneList.name}"?`, confirmText: "Ganho", isDanger: false });
     if (!ok) return;
     await handleMove(doneList.id);
@@ -1062,6 +1085,9 @@ const ServiceCardDetails: React.FC = () => {
   const currentList = lists.find((l) => l.id === card.list_id);
   const isLost = !!currentList && (currentList.is_lost_stage || /perdido/i.test(currentList.name));
   const isWon = !!currentList && (currentList.is_done_stage || /ganho/i.test(currentList.name));
+  // Ganho só é liberado na última etapa ativa do funil ("Aguardando Pedido")
+  const winStageList = getWinStage();
+  const isOnWinStage = !!winStageList && !!currentList && currentList.id === winStageList.id;
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -1124,7 +1150,12 @@ const ServiceCardDetails: React.FC = () => {
                 <button onClick={handleClone} className="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
                   <Copy size={16} /> Clonar
                 </button>
-                <button onClick={handleWin} className="flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-600">
+                <button
+                  onClick={handleWin}
+                  disabled={!isOnWinStage}
+                  title={isOnWinStage ? "Marcar como Ganho" : `O Ganho só é liberado na etapa "${winStageList?.name || "Aguardando Pedido"}"`}
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors ${isOnWinStage ? "bg-emerald-500 hover:bg-emerald-600" : "cursor-not-allowed bg-emerald-500/40 opacity-50"}`}
+                >
                   <CheckCircle2 size={16} /> Ganho
                 </button>
                 <button onClick={handleLose} className="flex items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600">
