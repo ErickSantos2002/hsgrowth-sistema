@@ -1643,6 +1643,13 @@ class CardService:
         # Verifica se a lista de destino é uma lista "won" ou "lost"
         # e marca o card adequadamente
         if target_list.is_done_stage:
+            # Trava: só permite marcar como Ganho se "É venda ou locação" estiver preenchido.
+            # Necessário porque esse dado é herdado pelo módulo de Serviços.
+            if not card.modality:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Preencha o campo 'É venda ou locação' no Resumo antes de marcar o negócio como Ganho.",
+                )
             card.is_won = 1  # 1 = ganho (Integer no banco)
             card.closed_at = datetime.now()  # won_at é uma property que usa closed_at
         elif target_list.is_lost_stage:

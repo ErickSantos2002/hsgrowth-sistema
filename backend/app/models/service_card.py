@@ -37,6 +37,13 @@ class ServiceCard(Base, TimestampMixin, SoftDeleteMixin):
     #       "payment_method": "PIX", "installments": 1, "notes": "..." }
     payment_info = Column(JSON, nullable=True)
 
+    # Informações de negócio do Resumo (JSON livre) — herdadas de Vendas e
+    # específicas de Serviço. Ex:
+    # { "seller_name": "Sandra Silva", "deal_type": "Nova Venda",
+    #   "acquisition_channel": "Inbound", "acquisition_channel_detail": "Levantada de mão",
+    #   "modality": "venda" | "locacao", "should_invoice": true }
+    business_info = Column(JSON, nullable=True)
+
     # Data prevista de conclusão
     due_date = Column(DateTime, nullable=True)
 

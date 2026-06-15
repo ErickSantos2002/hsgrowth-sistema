@@ -63,6 +63,7 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     acquisition_entry_date = Column(DateTime, nullable=True)  # Data de entrada no board Aquisição
     expansion_entry_date = Column(DateTime, nullable=True)  # Data de entrada no board Expansão
     deal_type = Column(String(50), nullable=True)  # Tipo de negócio: Nova Venda, Cross Sell, Up Sell
+    modality = Column(String(20), nullable=True)  # É venda ou locação? "venda" | "locacao" (obrigatório p/ Ganho)
     acquisition_channel = Column(String(100), nullable=True)  # Canal de aquisição: Inbound, Outbound, etc
     acquisition_channel_detail = Column(String(200), nullable=True)  # Detalhamento do canal
     utm_params = Column(Text, nullable=True)  # Parâmetros UTM (campo legado)

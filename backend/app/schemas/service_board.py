@@ -97,6 +97,7 @@ class ServiceCardBase(BaseModel):
     due_date: Optional[datetime] = None
     contact_info: Optional[dict] = None
     payment_info: Optional[dict] = None
+    business_info: Optional[dict] = None
     client_id: Optional[int] = None
     person_id: Optional[int] = None
 
@@ -113,6 +114,7 @@ class ServiceCardUpdate(BaseModel):
     due_date: Optional[datetime] = None
     contact_info: Optional[dict] = None
     payment_info: Optional[dict] = None
+    business_info: Optional[dict] = None
     client_id: Optional[int] = None
     person_id: Optional[int] = None
     position: Optional[float] = None

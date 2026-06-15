@@ -268,11 +268,12 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 - [ ] **Índice de reajuste**: fica no Resumo ou no Produto?
 - [ ] **Etapa Proposta**: "Formulário respondido" e "OS anexada" entram como trava aqui?
 - [ ] **Esconder por padrão**: vale também para os cards em **Negócio Perdido** (além de Ganho)?
-- [ ] **Dependência em Vendas**: criar o campo "É venda ou locação" no board de Vendas.
+- [x] **Dependência em Vendas**: campo "É venda ou locação" criado no board de Vendas, com trava de Ganho. ✅ **Feito** (15/06/2026).
 
 ### 5.3. Implementação — Campos
-- [ ] **Resumo**: criar campos novos (Vendedor Responsável [leitura], Tipo de Negócio, Canal de Aquisição, Canal de Aquisição – Detalhamento, É venda ou locação, Deve ser faturado/aluguel) + anexos (Proposta, OS, OC).
+- [x] **Resumo**: campos de negócio (Vendedor Responsável [leitura], Tipo de Negócio, Canal de Aquisição, Detalhamento, É venda ou locação, Deve ser faturado/aluguel) + Valor do Negócio + anexos (Proposta, OS, OC). ✅ **Feito** (15/06/2026) — coluna `business_info` (JSON) em `service_cards`; anexos com `doc_slot` nas atividades de arquivo.
 - [ ] **Produto (por aparelho)**: criar campos `[Laboratório]` (Nº Série, Modelo, Módulo de álcool, Data de próxima recalibragem) + `[Serviço]` (Índice de reajuste, conforme decisão).
+- [x] **Dependência em Vendas**: campo "É venda ou locação" criado no board de Vendas. ✅ **Feito** (15/06/2026) — coluna `modality` em `cards`; campo no Resumo de Vendas; **trava: só permite Ganho se `modality` estiver preenchido** (`move_card`).
 
 ### 5.4. Implementação — Regras (travas)
 - [ ] **Trava de avanço** por etapa (validar obrigatoriedades antes de mover — ver seção 4).

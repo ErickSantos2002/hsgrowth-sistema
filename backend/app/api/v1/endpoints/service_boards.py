@@ -254,6 +254,15 @@ async def list_service_cards(
     return svc.list_cards(board_id, page=page, page_size=page_size)
 
 
+def _card_value(card) -> float:
+    """Valor do negócio = soma de (quantidade × preço unitário − desconto) dos produtos.
+    Mesmo cálculo usado no card do kanban."""
+    return sum(
+        float(p.quantity or 0) * float(p.unit_price or 0) - float(p.discount or 0)
+        for p in (card.products or [])
+    )
+
+
 @router.post("/{board_id}/cards", response_model=ServiceCardResponse, status_code=201)
 async def create_service_card(
     board_id: int = Path(...),
@@ -272,6 +281,8 @@ async def create_service_card(
         due_date=card.due_date,
         contact_info=card.contact_info,
         payment_info=card.payment_info,
+        business_info=card.business_info,
+        value=_card_value(card),
         client_id=card.client_id,
         person_id=card.person_id,
         client_name=card.client.name if card.client else None,
@@ -301,6 +312,8 @@ async def get_service_card(
         due_date=card.due_date,
         contact_info=card.contact_info,
         payment_info=card.payment_info,
+        business_info=card.business_info,
+        value=_card_value(card),
         client_id=card.client_id,
         person_id=card.person_id,
         client_name=card.client.name if card.client else None,
@@ -331,6 +344,8 @@ async def update_service_card(
         due_date=card.due_date,
         contact_info=card.contact_info,
         payment_info=card.payment_info,
+        business_info=card.business_info,
+        value=_card_value(card),
         client_id=card.client_id,
         person_id=card.person_id,
         client_name=card.client.name if card.client else None,
@@ -373,6 +388,8 @@ async def move_service_card(
         due_date=card.due_date,
         contact_info=card.contact_info,
         payment_info=card.payment_info,
+        business_info=card.business_info,
+        value=_card_value(card),
         client_id=card.client_id,
         person_id=card.person_id,
         client_name=card.client.name if card.client else None,
@@ -502,11 +519,12 @@ async def upload_service_card_file(
     board_id: int = Path(...),
     card_id: int = Path(...),
     file: UploadFile = File(...),
+    slot: Optional[str] = Query(None, description="Slot do documento no Resumo: proposta|os|oc"),
     current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return await svc.upload_file(board_id, card_id, file, current_user)
+    return await svc.upload_file(board_id, card_id, file, current_user, slot=slot)
 
 
 @router.get("/{board_id}/cards/{card_id}/activities/files/{activity_id}/download")

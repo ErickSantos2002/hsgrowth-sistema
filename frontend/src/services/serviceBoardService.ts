@@ -36,6 +36,16 @@ export interface ServiceList {
   cards_count?: number;
 }
 
+// Informações de negócio do Resumo (herdadas de Vendas + específicas de Serviço)
+export interface ServiceBusinessInfo {
+  seller_name?: string;            // Vendedor responsável (só leitura / informativo)
+  deal_type?: string;              // Tipo de Negócio (ex: Nova Venda)
+  acquisition_channel?: string;    // Canal de Aquisição (ex: Inbound)
+  acquisition_channel_detail?: string; // Detalhamento
+  modality?: "venda" | "locacao" | ""; // É venda ou locação
+  should_invoice?: boolean | null; // Deve ser faturado? (aluguel)
+}
+
 export interface ServiceCard {
   id: number;
   list_id: number;
@@ -45,6 +55,7 @@ export interface ServiceCard {
   due_date?: string;
   contact_info?: Record<string, any>;
   payment_info?: Record<string, any>;
+  business_info?: ServiceBusinessInfo;
   client_id?: number;
   person_id?: number;
   client_name?: string;
@@ -160,6 +171,7 @@ export interface UpdateServiceCardRequest {
   due_date?: string | null;
   contact_info?: Record<string, any>;
   payment_info?: Record<string, any> | null;
+  business_info?: ServiceBusinessInfo | null;
   client_id?: number | null;
   person_id?: number | null;
   position?: number;

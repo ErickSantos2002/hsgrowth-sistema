@@ -210,6 +210,7 @@ class CardCreate(CardBase):
 
     # Campos do blueprint da consultora - Informações de negócio
     deal_type: Optional[str] = Field(None, max_length=100, description="Tipo de negócio (Nova Venda, Cross Sell, Up Sell)")
+    modality: Optional[str] = Field(None, max_length=20, description="É venda ou locação: venda | locacao")
     acquisition_channel: Optional[str] = Field(None, max_length=100, description="Canal de aquisição (Inbound, Outbound, Indicação, etc)")
     acquisition_channel_detail: Optional[str] = Field(None, max_length=200, description="Detalhamento do canal de aquisição")
     utm_params: Optional[str] = Field(None, max_length=500, description="Parâmetros UTM (tracking de marketing, campo legado)")
@@ -276,6 +277,7 @@ class CardUpdate(BaseModel):
 
     # Campos do blueprint da consultora - Informações de negócio
     deal_type: Optional[str] = Field(None, max_length=100, description="Tipo de negócio (Nova Venda, Cross Sell, Up Sell)")
+    modality: Optional[str] = Field(None, max_length=20, description="É venda ou locação: venda | locacao")
     acquisition_channel: Optional[str] = Field(None, max_length=100, description="Canal de aquisição (Inbound, Outbound, Indicação, etc)")
     acquisition_channel_detail: Optional[str] = Field(None, max_length=200, description="Detalhamento do canal de aquisição")
     utm_params: Optional[str] = Field(None, max_length=500, description="Parâmetros UTM (tracking de marketing, campo legado)")
@@ -389,6 +391,7 @@ class CardResponse(CardBase):
 
     # Campos do blueprint da consultora - Informações de negócio
     deal_type: Optional[str] = Field(None, description="Tipo de negócio (Nova Venda, Cross Sell, Up Sell)")
+    modality: Optional[str] = Field(None, description="É venda ou locação: venda | locacao")
     acquisition_channel: Optional[str] = Field(None, description="Canal de aquisição (Inbound, Outbound, Indicação, etc)")
     acquisition_channel_detail: Optional[str] = Field(None, description="Detalhamento do canal de aquisição")
     utm_params: Optional[str] = Field(None, description="Parâmetros UTM (tracking de marketing, campo legado)")

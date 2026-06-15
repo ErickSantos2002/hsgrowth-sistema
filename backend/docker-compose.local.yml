@@ -36,6 +36,8 @@ services:
       - .env.local
     volumes:
       - ./app:/app/app  # Hot reload
+      - ./alembic:/app/alembic  # Migrations visíveis sem rebuild
+      - ./alembic.ini:/app/alembic.ini
       - ./logs:/app/logs
       - ./backups:/app/backups
       - ./scripts:/app/scripts

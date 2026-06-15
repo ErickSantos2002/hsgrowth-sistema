@@ -233,6 +233,13 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, readOnl
   };
 
   /**
+   * Atualiza "É venda ou locação?" (obrigatório para marcar como Ganho)
+   */
+  const handleUpdateModality = async (value: string) => {
+    await onUpdate({ modality: value || undefined });
+  };
+
+  /**
    * Atualiza canal de aquisição
    */
   const handleUpdateAcquisitionChannel = async (value: string) => {
@@ -372,6 +379,10 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, readOnl
   const userOptions = users.map((u) => ({ value: u.id.toString(), label: u.name }));
   const sdrOptions = sdrUsers.map((u) => ({ value: u.id.toString(), label: u.name }));
   const dealTypeOptions = DEAL_TYPES.map((type) => ({ value: type, label: type }));
+  const modalityOptions = [
+    { value: "venda", label: "Venda" },
+    { value: "locacao", label: "Locação" },
+  ];
   const channelOptions = ACQUISITION_CHANNELS.map((ch) => ({ value: ch, label: ch }));
 
   return (
@@ -578,6 +589,16 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, readOnl
             onSave={handleUpdateDealType}
             options={dealTypeOptions}
             placeholder="Não definido"
+            icon={<Tag size={14} />}
+          />
+
+          {/* É venda ou locação? (obrigatório para Ganho) */}
+          <EditableSelectField
+            label="É venda ou locação?"
+            value={card.modality}
+            onSave={handleUpdateModality}
+            options={modalityOptions}
+            placeholder="Não definido (obrigatório p/ Ganho)"
             icon={<Tag size={14} />}
           />
 

@@ -71,11 +71,12 @@ class ServiceActivityService {
     await api.delete(`${BASE}/${boardId}/cards/${cardId}/activities/${id}`);
   }
 
-  async uploadFile(boardId: number, cardId: number, file: File): Promise<ServiceCardActivity> {
+  async uploadFile(boardId: number, cardId: number, file: File, slot?: string): Promise<ServiceCardActivity> {
     const form = new FormData();
     form.append("file", file);
     const r = await api.post<ServiceCardActivity>(`${BASE}/${boardId}/cards/${cardId}/activities/files`, form, {
       headers: { "Content-Type": "multipart/form-data" },
+      params: slot ? { slot } : undefined,
     });
     return r.data;
   }

@@ -270,6 +270,7 @@ class ServiceBoardService:
                 due_date=c.due_date,
                 contact_info=c.contact_info,
                 payment_info=c.payment_info,
+                business_info=c.business_info,
                 client_id=c.client_id,
                 person_id=c.person_id,
                 client_name=c.client.name if c.client else None,
@@ -540,7 +541,7 @@ class ServiceBoardService:
         self.repo.delete_activity(activity)
         return {"message": "Removido com sucesso"}
 
-    async def upload_file(self, board_id: int, card_id: int, file: UploadFile, user: User) -> ServiceCardActivityResponse:
+    async def upload_file(self, board_id: int, card_id: int, file: UploadFile, user: User, slot: Optional[str] = None) -> ServiceCardActivityResponse:
         self.get_card_in_board(board_id, card_id)
         content = await file.read()
         if len(content) > MAX_FILE_SIZE:
@@ -557,6 +558,13 @@ class ServiceBoardService:
         except Exception:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                                 detail="Erro ao salvar arquivo no disco")
+        # Slot do documento no Resumo (proposta|os|oc) — usado pelos anexos nomeados.
+        # Se já houver um arquivo no mesmo slot, ele é substituído (removido o anterior).
+        valid_slots = {"proposta", "os", "oc"}
+        meta = None
+        if slot and slot in valid_slots:
+            meta = {"doc_slot": slot}
+            self._remove_files_in_slot(card_id, slot)
         activity = self.repo.create_activity(
             service_card_id=card_id,
             user_id=user.id,
@@ -567,8 +575,25 @@ class ServiceBoardService:
             file_path=f"service_cards/{card_id}/{unique}",
             file_size=len(content),
             mime_type=file.content_type,
+            activity_metadata=meta,
         )
         return self._build_activity_response(activity)
+
+    def _remove_files_in_slot(self, card_id: int, slot: str) -> None:
+        """Remove arquivos antigos do mesmo slot (proposta|os|oc) — mantém só o mais novo."""
+        try:
+            for a in self.repo.list_card_activities(card_id):
+                if a.category == "arquivo" and (a.activity_metadata or {}).get("doc_slot") == slot:
+                    if a.file_path:
+                        fp = UPLOAD_DIR / a.file_path
+                        try:
+                            if fp.exists():
+                                fp.unlink()
+                        except Exception:
+                            pass
+                    self.repo.delete_activity(a)
+        except Exception as e:  # pragma: no cover
+            print(f"[SERVICE-FILE] erro ao limpar slot {slot}: {e}")
 
     def get_file_for_download(self, board_id: int, card_id: int, activity_id: int):
         activity = self._get_activity_scoped(board_id, card_id, activity_id)

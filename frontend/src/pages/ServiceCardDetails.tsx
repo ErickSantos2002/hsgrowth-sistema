@@ -20,6 +20,7 @@ import {
   Linkedin,
   Check,
   Pencil,
+  DollarSign,
   Activity,
   StickyNote,
   CalendarDays,
@@ -35,6 +36,7 @@ import {
 import serviceBoardService, {
   ServiceCard,
   ServiceList,
+  ServiceBusinessInfo,
 } from "../services/serviceBoardService";
 import serviceActivityService, { ServiceCardActivity } from "../services/serviceActivityService";
 import api4comService from "../services/api4comService";
@@ -93,17 +95,49 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 
 const ServiceSummarySection: React.FC<{
   card: ServiceCard;
-  onUpdate: (data: { due_date?: string | null; description?: string }) => Promise<void>;
-}> = ({ card, onUpdate }) => {
+  onUpdate: (data: { due_date?: string | null; description?: string; business_info?: ServiceBusinessInfo }) => Promise<void>;
+  boardId: number;
+  cardId: number;
+  activities: ServiceCardActivity[];
+  onFilesChanged: () => void;
+}> = ({ card, onUpdate, boardId, cardId, activities, onFilesChanged }) => {
   const [editingDue, setEditingDue] = useState(false);
   const [dueValue, setDueValue] = useState(card.due_date ? card.due_date.split("T")[0] : "");
   const [editingDesc, setEditingDesc] = useState(false);
   const [descValue, setDescValue] = useState(card.description || "");
+  const [editingBiz, setEditingBiz] = useState(false);
+  const [biz, setBiz] = useState<ServiceBusinessInfo>(card.business_info || {});
 
   useEffect(() => {
     setDueValue(card.due_date ? card.due_date.split("T")[0] : "");
     setDescValue(card.description || "");
-  }, [card.due_date, card.description]);
+    setBiz(card.business_info || {});
+  }, [card.due_date, card.description, card.business_info]);
+
+  const handleSaveBiz = async () => {
+    await onUpdate({ business_info: biz });
+    setEditingBiz(false);
+  };
+  const setBizField = (k: keyof ServiceBusinessInfo, v: string | boolean | null) =>
+    setBiz((prev) => ({ ...prev, [k]: v }));
+  const invoiceLabel = (v?: boolean | null) => (v === true ? "Sim" : v === false ? "Não" : "Não definido");
+  const modalityLabel = (v?: string) => (v === "venda" ? "Venda" : v === "locacao" ? "Locação" : "Não definido");
+
+  // Anexos do Resumo (slots nomeados: proposta | os | oc)
+  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+  const fileForSlot = (slot: string) =>
+    activities
+      .filter((a) => a.category === "arquivo" && a.activity_metadata?.doc_slot === slot)
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0];
+  const handleUploadSlot = async (slot: string, file: File) => {
+    setUploadingSlot(slot);
+    try {
+      await serviceActivityService.uploadFile(boardId, cardId, file, slot);
+      onFilesChanged();
+    } finally {
+      setUploadingSlot(null);
+    }
+  };
 
   const formatDate = (date?: string | null) => {
     if (!date) return "Não definida";
@@ -130,6 +164,20 @@ const ServiceSummarySection: React.FC<{
   return (
     <ExpandableSection title="Resumo" defaultExpanded={false} icon={<Info size={18} />}>
       <div className="space-y-5">
+        {/* Valor do negócio (calculado pelos produtos) */}
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <DollarSign size={14} className="text-emerald-400" />
+              <span>Valor do negócio</span>
+            </div>
+            <span className="text-lg font-bold text-emerald-500">
+              {`R$ ${(card.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs text-slate-400">Calculado automaticamente pelos produtos.</p>
+        </div>
+
         {/* Data de Vencimento */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
@@ -215,6 +263,129 @@ const ServiceSummarySection: React.FC<{
               </span>
             </div>
           )}
+        </div>
+
+        {/* Informações de Negócio (herdadas de Vendas + específicas de Serviço) */}
+        <div className="space-y-3 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold text-slate-400">Informações de Negócio</h4>
+            {!editingBiz && (
+              <button onClick={() => setEditingBiz(true)} className="text-slate-400 transition-colors hover:text-blue-400" title="Editar">
+                <Pencil size={14} />
+              </button>
+            )}
+          </div>
+
+          {editingBiz ? (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Vendedor Responsável (informativo)</label>
+                <input value={biz.seller_name || ""} onChange={(e) => setBizField("seller_name", e.target.value)} placeholder="Quem vendeu (vem de Vendas)"
+                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Tipo de Negócio</label>
+                <input value={biz.deal_type || ""} onChange={(e) => setBizField("deal_type", e.target.value)} placeholder="Ex: Nova Venda"
+                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Canal de Aquisição</label>
+                <input value={biz.acquisition_channel || ""} onChange={(e) => setBizField("acquisition_channel", e.target.value)} placeholder="Ex: Inbound"
+                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Canal de Aquisição – Detalhamento</label>
+                <input value={biz.acquisition_channel_detail || ""} onChange={(e) => setBizField("acquisition_channel_detail", e.target.value)} placeholder="Ex: Levantada de mão"
+                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">É venda ou locação?</label>
+                <select value={biz.modality || ""} onChange={(e) => setBizField("modality", e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
+                  <option value="">Não definido</option>
+                  <option value="venda">Venda</option>
+                  <option value="locacao">Locação</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Deve ser faturado? (aluguel)</label>
+                <select value={biz.should_invoice === true ? "sim" : biz.should_invoice === false ? "nao" : ""} onChange={(e) => setBizField("should_invoice", e.target.value === "sim" ? true : e.target.value === "nao" ? false : null)}
+                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
+                  <option value="">Não definido</option>
+                  <option value="sim">Sim</option>
+                  <option value="nao">Não</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <button onClick={handleSaveBiz} className="flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30">
+                  <Check size={14} /> Salvar
+                </button>
+                <button onClick={() => { setEditingBiz(false); setBiz(card.business_info || {}); }} className="flex items-center gap-1 rounded-lg bg-gray-200/50 dark:bg-slate-700/50 px-3 py-1.5 text-sm text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                  <X size={14} /> Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {[
+                { label: "Vendedor Responsável", value: biz.seller_name },
+                { label: "Tipo de Negócio", value: biz.deal_type },
+                { label: "Canal de Aquisição", value: biz.acquisition_channel },
+                { label: "Detalhamento", value: biz.acquisition_channel_detail },
+                { label: "É venda ou locação", value: modalityLabel(biz.modality) },
+                { label: "Deve ser faturado", value: invoiceLabel(biz.should_invoice) },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-slate-400">{row.label}:</span>
+                  <span className={`text-right text-sm font-medium ${row.value && row.value !== "Não definido" ? "text-slate-900 dark:text-white" : "italic text-slate-400 dark:text-slate-500"}`}>
+                    {row.value || "Não definido"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Documentos (anexos nomeados do Resumo) */}
+        <div className="space-y-3 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
+          <h4 className="text-sm font-semibold text-slate-400">Documentos</h4>
+          {[
+            { slot: "proposta", label: "Proposta Comercial" },
+            { slot: "os", label: "OS (Ordem de Serviço)" },
+            { slot: "oc", label: "OC (Ordem de Compra)" },
+          ].map(({ slot, label }) => {
+            const f = fileForSlot(slot);
+            const busy = uploadingSlot === slot;
+            return (
+              <div key={slot} className="space-y-1">
+                <label className="text-xs text-slate-400">{label}</label>
+                {f ? (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
+                    <button
+                      onClick={() => serviceActivityService.downloadFile(boardId, cardId, f.id, f.file_name || "arquivo")}
+                      className="flex min-w-0 items-center gap-2 text-sm text-blue-500 hover:underline"
+                      title="Baixar"
+                    >
+                      <Paperclip size={14} className="flex-shrink-0" />
+                      <span className="truncate">{f.file_name}</span>
+                    </button>
+                    <label className="flex-shrink-0 cursor-pointer text-xs text-slate-400 hover:text-blue-400">
+                      {busy ? "Enviando..." : "Trocar"}
+                      <input type="file" className="hidden" disabled={busy}
+                        onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUploadSlot(slot, file); e.currentTarget.value = ""; }} />
+                    </label>
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 dark:border-slate-700 bg-white/30 dark:bg-slate-900/30 px-3 py-2 text-sm text-slate-400 hover:border-blue-400 hover:text-blue-400">
+                    <Paperclip size={14} />
+                    {busy ? "Enviando..." : "Anexar"}
+                    <input type="file" className="hidden" disabled={busy}
+                      onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUploadSlot(slot, file); e.currentTarget.value = ""; }} />
+                  </label>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Informações gerais */}
@@ -974,7 +1145,7 @@ const ServiceCardDetails: React.FC = () => {
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* Coluna esquerda — 30% */}
         <div className="w-full flex-shrink-0 space-y-3 overflow-y-auto border-b border-gray-200 p-4 dark:border-slate-700/50 lg:w-[30%] lg:border-b-0 lg:border-r">
-          <ServiceSummarySection card={card} onUpdate={async (d) => { await updateCard(d); showSuccess("Card atualizado!"); }} />
+          <ServiceSummarySection card={card} onUpdate={async (d) => { await updateCard(d); showSuccess("Card atualizado!"); }} boardId={numBoardId} cardId={numCardId} activities={activities} onFilesChanged={reloadActivities} />
           <ServiceClientSection card={card} onLink={async (id) => { await updateCard({ client_id: id }); showSuccess(id ? "Cliente vinculado!" : "Cliente desvinculado!"); }} />
           <ServiceContactSection card={card} onLink={async (id) => { await updateCard({ person_id: id }); showSuccess(id ? "Pessoa vinculada!" : "Pessoa desvinculada!"); }} />
           <ServiceProductSection

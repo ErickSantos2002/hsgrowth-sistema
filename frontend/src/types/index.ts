@@ -121,6 +121,7 @@ export interface Card {
   acquisition_entry_date?: string | null;
   expansion_entry_date?: string | null;
   deal_type?: string | null;
+  modality?: string | null;
   acquisition_channel?: string | null;
   acquisition_channel_detail?: string | null;
   utm_params?: string | null;
@@ -888,6 +889,7 @@ export interface CreateCardRequest {
   // Campos do blueprint da consultora
   sdr_id?: number;
   deal_type?: string;
+  modality?: string;
   acquisition_channel?: string;
   acquisition_channel_detail?: string;
   utm_params?: string;
@@ -921,6 +923,7 @@ export interface UpdateCardRequest {
   // Campos do blueprint da consultora
   sdr_id?: number | null;
   deal_type?: string | null;
+  modality?: string | null;
   acquisition_channel?: string | null;
   acquisition_channel_detail?: string | null;
   utm_params?: string | null;
@@ -954,6 +957,7 @@ export interface CardFormData {
   // Campos do blueprint
   sdr_id?: number | null;
   deal_type?: string | null;
+  modality?: string | null;
   acquisition_channel?: string | null;
   acquisition_channel_detail?: string | null;
   loss_reason?: string | null;
