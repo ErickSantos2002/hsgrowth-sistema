@@ -205,6 +205,7 @@ db.close()
 | Lote 7 | 28/05/2026 | 150 | Claudia, Karolaine, Miguel | 7051–7200 | ✅ Importado |
 | Lote 8 | 02/06/2026 | 150 | Claudia, Karolaine, Miguel | 7241–7390 | ✅ Importado |
 | Lote 9 | 08/06/2026 | 100 | Karolaine, Miguel | 7449–7548 | ✅ Importado |
+| Lote 10 | 15/06/2026 | 150 | Claudia, Karolaine, Miguel | 7651–7800 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
 **Obs. Lote 3:** 299 importados pelo script + 1 manual (EFITRANS TRANSPORTES LTDA, id=5750, Ãhwaryoné). Karolaine Martins (id=9) incluída pela primeira vez.
@@ -217,7 +218,7 @@ db.close()
 
 **Obs. Lote 7:** Primeiro lote apenas com SDRs ativos (Claudia, Karolaine, Miguel). 50 cards cada, 0 erros, 132 clientes criados e 18 reutilizados.
 
-**Total importado:** 1580 leads | **Disponíveis na planilha:** 609
+**Total importado:** 1730 leads | **Disponíveis na planilha:** 459
 
 ---
 

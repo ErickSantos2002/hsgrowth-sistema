@@ -76,7 +76,27 @@
       "Bash(python -m py_compile app/services/service_board_service.py app/schemas/service_board.py)",
       "Bash(python -m py_compile app/schemas/service_dashboard.py app/services/service_dashboard_service.py app/api/v1/endpoints/service_dashboard.py app/api/v1/__init__.py)",
       "Bash(python -m py_compile app/services/service_dashboard_service.py)",
-      "Bash(python -m py_compile app/api/v1/endpoints/service_dashboard.py app/services/service_dashboard_service.py)"
+      "Bash(python -m py_compile app/api/v1/endpoints/service_dashboard.py app/services/service_dashboard_service.py)",
+      "Bash(python scripts/imports/fix_novos_sdr_lote10.py)",
+      "Bash(ls -d venv .venv env)",
+      "Bash(ls Scripts/python.exe venv/Scripts/python.exe .venv/Scripts/python.exe)",
+      "Bash(python -m pip show openpyxl)",
+      "Bash(which python *)",
+      "Bash(py -0p)",
+      "PowerShell(py -0p; Write-Output \"--- default python ---\"; \\(Get-Command python\\).Source; Write-Output \"--- openpyxl in default ---\"; python -m pip show openpyxl 2>$null | Select-Object -First 2)",
+      "Read(//d/GitHub/**)",
+      "Bash(echo \"exit:$?\")",
+      "Read(//d//**)",
+      "Bash(ls /c/Python* /c/Users/HS/AppData/Local/Programs/Python)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -m pip install -r requirements.txt --quiet 2>&1 | Select-Object -Last 20; Write-Output \"EXIT: $LASTEXITCODE\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -m pip install openpyxl --quiet; Write-Output \"EXIT: $LASTEXITCODE\"; .\\\\venv\\\\Scripts\\\\python.exe scripts/imports/fix_novos_sdr_lote10.py)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -m pip install \"psycopg2-binary>=2.9.10\" \"sqlalchemy==2.0.25\" \"pydantic>=2.9\" \"pydantic-settings>=2.4\" python-dotenv loguru cachetools python-dateutil PyJWT \"passlib[bcrypt]\" bcrypt cryptography --quiet 2>&1 | Select-Object -Last 8; Write-Output \"EXIT: $LASTEXITCODE\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -c \"import sys; sys.path.insert\\(0,'.'\\); from app.db.session import SessionLocal; from app.models.card import Card; from app.models.user import User; db=SessionLocal\\(\\); print\\('users ativos:', db.query\\(User\\).filter\\(User.is_active==True\\).count\\(\\)\\); print\\('max card id:', db.query\\(__import__\\('sqlalchemy'\\).func.max\\(Card.id\\)\\).scalar\\(\\)\\); db.close\\(\\); print\\('OK conexao'\\)\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -m pip install \"sqlalchemy>=2.0.36,<2.1\" --quiet 2>&1 | Select-Object -Last 5; Write-Output \"EXIT: $LASTEXITCODE\"; .\\\\venv\\\\Scripts\\\\python.exe -c \"import sqlalchemy; print\\('sqlalchemy', sqlalchemy.__version__\\)\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -c \"import sys; sys.path.insert\\(0,'.'\\); from app.db.session import SessionLocal; from app.models.card import Card; from app.models.user import User; from sqlalchemy import func; db=SessionLocal\\(\\); print\\('users ativos:', db.query\\(User\\).filter\\(User.is_active==True\\).count\\(\\)\\); print\\('max card id:', db.query\\(func.max\\(Card.id\\)\\).scalar\\(\\)\\); db.close\\(\\); print\\('OK conexao'\\)\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -c \"import sys; sys.path.insert\\(0,'.'\\); from app.models.card import Card; from app.models.client import Client; from app.models.person import Person; from app.models.user import User; from app.models.activity import Activity; from app.models.card_list_history import CardListHistory; print\\('todos os modulos OK'\\)\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe scripts/imports/import_from_planilha.py \"C:\\\\Users\\\\HS\\\\Documents\\\\GitHub\\\\hsgrowth-sistema\\\\backend\\\\scripts\\\\imports\\\\Planilha_Importacao_CRM_Novos_SDR_lote10.xlsx\" 2>&1)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -c \"import sys; sys.path.insert\\(0,'.'\\); from app.db.session import SessionLocal; from app.models.card import Card; from sqlalchemy import func; db=SessionLocal\\(\\); q=db.query\\(Card.sdr_id, func.count\\(\\)\\).filter\\(Card.id>=7651, Card.id<=7800\\).group_by\\(Card.sdr_id\\).all\\(\\); print\\('faixa: 7651-7800'\\); print\\('por sdr_id:', dict\\(q\\)\\); print\\('total:', db.query\\(Card\\).filter\\(Card.id>=7651, Card.id<=7800\\).count\\(\\)\\); db.close\\(\\)\")"
     ]
   }
 }
