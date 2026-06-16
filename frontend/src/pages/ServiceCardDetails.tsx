@@ -52,7 +52,7 @@ import ClientModal from "../components/clients/ClientModal";
 import PersonModal from "../components/persons/PersonModal";
 import { showSuccess, showError } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
-import { LoadingSpinner } from "../components/common";
+import { LoadingSpinner, SelectMenu } from "../components/common";
 
 /**
  * Página de detalhes do Card de Serviços — Layout estilo Pipedrive (tema escuro)
@@ -304,43 +304,30 @@ const ServiceSummarySection: React.FC<{
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-slate-400">É venda ou locação?</label>
-                <select value={biz.modality || ""} onChange={(e) => setBizField("modality", e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
-                  <option value="">Não definido</option>
-                  <option value="venda">Venda</option>
-                  <option value="locacao">Locação</option>
-                </select>
+                <SelectMenu size="sm" value={biz.modality || ""} placeholder="Não definido"
+                  options={[{ value: "", label: "Não definido" }, { value: "venda", label: "Venda" }, { value: "locacao", label: "Locação" }]}
+                  onChange={(v) => setBizField("modality", v)} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-slate-400">Deve ser faturado? (aluguel)</label>
-                <select value={biz.should_invoice === true ? "sim" : biz.should_invoice === false ? "nao" : ""} onChange={(e) => setBizField("should_invoice", e.target.value === "sim" ? true : e.target.value === "nao" ? false : null)}
-                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
-                  <option value="">Não definido</option>
-                  <option value="sim">Sim</option>
-                  <option value="nao">Não</option>
-                </select>
+                <SelectMenu size="sm" value={biz.should_invoice === true ? "sim" : biz.should_invoice === false ? "nao" : ""} placeholder="Não definido"
+                  options={[{ value: "", label: "Não definido" }, { value: "sim", label: "Sim" }, { value: "nao", label: "Não" }]}
+                  onChange={(v) => setBizField("should_invoice", v === "sim" ? true : v === "nao" ? false : null)} />
               </div>
               <div className="space-y-1 border-t border-gray-200/40 dark:border-slate-700/40 pt-3">
                 <p className="text-[11px] uppercase tracking-wide text-slate-400">Triagem (Oportunidade Existente)</p>
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-slate-400">Recalibração e/ou Manutenção</label>
-                <select value={biz.service_type || ""} onChange={(e) => setBizField("service_type", e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
-                  <option value="">Não definido</option>
-                  <option value="recalibracao">Recalibração</option>
-                  <option value="manutencao">Manutenção</option>
-                  <option value="ambos">Ambos</option>
-                </select>
+                <SelectMenu size="sm" value={biz.service_type || ""} placeholder="Não definido"
+                  options={[{ value: "", label: "Não definido" }, { value: "recalibracao", label: "Recalibração" }, { value: "manutencao", label: "Manutenção" }, { value: "ambos", label: "Ambos" }]}
+                  onChange={(v) => setBizField("service_type", v)} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-slate-400">Aparelho recebido pela expedição?</label>
-                <select value={biz.device_received === true ? "sim" : biz.device_received === false ? "nao" : ""} onChange={(e) => setBizField("device_received", e.target.value === "sim" ? true : e.target.value === "nao" ? false : null)}
-                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
-                  <option value="">Não definido</option>
-                  <option value="sim">Sim</option>
-                  <option value="nao">Não</option>
-                </select>
+                <SelectMenu size="sm" value={biz.device_received === true ? "sim" : biz.device_received === false ? "nao" : ""} placeholder="Não definido"
+                  options={[{ value: "", label: "Não definido" }, { value: "sim", label: "Sim" }, { value: "nao", label: "Não" }]}
+                  onChange={(v) => setBizField("device_received", v === "sim" ? true : v === "nao" ? false : null)} />
               </div>
               <div className="flex items-center gap-2 pt-1">
                 <button onClick={handleSaveBiz} className="flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30">
@@ -741,6 +728,10 @@ const ServiceContactSection: React.FC<{
               <div className="space-y-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
                 <div><p className="text-xs text-slate-400">Principal</p><p className={person?.phone ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>{formatPhone(person?.phone)}</p></div>
                 <div><p className="text-xs text-slate-400">WhatsApp</p><p className={person?.phone_whatsapp ? "text-sm text-slate-900 dark:text-white" : "text-sm italic text-slate-400 dark:text-slate-500"}>{formatPhone(person?.phone_whatsapp)}</p></div>
+                {person?.phone_commercial && <div><p className="text-xs text-slate-400">Comercial</p><p className="text-sm text-slate-900 dark:text-white">{formatPhone(person.phone_commercial)}</p></div>}
+                {person?.phone_alternative && <div><p className="text-xs text-slate-400">Alternativo</p><p className="text-sm text-slate-900 dark:text-white">{formatPhone(person.phone_alternative)}</p></div>}
+                {person?.phone_extra1 && <div><p className="text-xs text-slate-400">Extra 1</p><p className="text-sm text-slate-900 dark:text-white">{formatPhone(person.phone_extra1)}</p></div>}
+                {person?.phone_extra2 && <div><p className="text-xs text-slate-400">Extra 2</p><p className="text-sm text-slate-900 dark:text-white">{formatPhone(person.phone_extra2)}</p></div>}
               </div>
             </div>
             {person?.linkedin && /^https?:\/\//i.test(person.linkedin) && (

@@ -8,7 +8,7 @@ import {
   Calendar,
   Radio,
 } from "lucide-react";
-import { BaseModal, FormField, Input, Textarea, Button } from "../common";
+import { BaseModal, FormField, Input, Textarea, Button, SelectMenu } from "../common";
 import clientService, { Client } from "../../services/clientService";
 import personService, { Person } from "../../services/personService";
 import ClientModal from "../clients/ClientModal";
@@ -220,16 +220,13 @@ const ServiceCardModal: React.FC<ServiceCardModalProps> = ({
           {/* ── Informações básicas ── */}
           <div className="space-y-4">
             <FormField label="Lista" hint="Selecione em qual lista o card será criado">
-              <select
-                value={listId}
-                onChange={(e) => setListId(Number(e.target.value))}
+              <SelectMenu
+                value={String(listId)}
                 disabled={saving}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-              >
-                {lists.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
-                ))}
-              </select>
+                placeholder="Selecione a lista"
+                options={lists.map((l) => ({ value: String(l.id), label: l.name }))}
+                onChange={(v) => setListId(Number(v))}
+              />
             </FormField>
 
             <FormField label="Título do Card" required error={titleError}>

@@ -10,6 +10,7 @@ import {
 import serviceActivityService, { ServiceCardActivity } from "../../services/serviceActivityService";
 import api4comService from "../../services/api4comService";
 import { Person } from "../../services/personService";
+import { SelectMenu } from "../common";
 import NoteRenderer from "../cardDetails/NoteRenderer";
 import { sanitizeNoteHTML } from "../../utils/sanitizeNote";
 import { showSuccess, showError, showWarning } from "../../utils/toast";
@@ -117,9 +118,7 @@ const dueBadge = (due?: string): { label: string; cls: string } | null => {
 // Estilos dos botões de confirmação por tipo
 const BTN_BASE = "flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors";
 const GREEN_BTN = `${BTN_BASE} border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20`;
-const EMERALD_BTN = GREEN_BTN;
 const RED_BTN = `${BTN_BASE} border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20`;
-const ORANGE_BTN = `${BTN_BASE} border-orange-500/40 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20`;
 const GRAY_BTN = `${BTN_BASE} border-slate-400/40 bg-slate-400/10 text-slate-400 hover:bg-slate-400/20`;
 
 // ─── Item do Foco (estilo board de vendas) ───────────────────────────────────────
@@ -187,18 +186,6 @@ const FocoItem: React.FC<{
   const conclude = async () => {
     try { await serviceActivityService.complete(boardId, cardId, activity.id, true); await onChanged(); }
     catch { showError("Erro ao concluir"); }
-  };
-
-  const primaryEmail = contact?.email || contact?.email_commercial || contact?.email_personal;
-  const whatsappNumber = contact?.phone_whatsapp || contact?.phone;
-
-  const openEmail = () => {
-    if (!primaryEmail) { showWarning("Pessoa sem e-mail cadastrado"); return; }
-    window.open(`mailto:${primaryEmail}`, "_blank");
-  };
-  const openWhatsapp = () => {
-    if (!whatsappNumber) { showWarning("Pessoa sem WhatsApp cadastrado"); return; }
-    window.open(`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`, "_blank");
   };
 
   const saveEdit = async () => {
@@ -315,12 +302,9 @@ const FocoItem: React.FC<{
               {/* Prioridade */}
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-400">Prioridade</label>
-                <select value={editForm.priority} onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
-                  className="w-full rounded border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="normal">Normal</option>
-                  <option value="high">Alta</option>
-                  <option value="urgent">Urgente</option>
-                </select>
+                <SelectMenu size="sm" value={editForm.priority} placeholder="Normal"
+                  options={[{ value: "normal", label: "Normal" }, { value: "high", label: "Alta" }, { value: "urgent", label: "Urgente" }]}
+                  onChange={(v) => setEditForm({ ...editForm, priority: v })} />
               </div>
               {/* Ações */}
               <div className="flex gap-2 pt-1">
@@ -361,14 +345,12 @@ const FocoItem: React.FC<{
               )}
               {activity.activity_type === "email" && (
                 <>
-                  <button onClick={openEmail} className={ORANGE_BTN}><Mail size={16} /> Enviar E-mail</button>
                   <button onClick={() => markResult(true)} className={GREEN_BTN}><Check size={16} /> Já enviado</button>
                   <button onClick={() => markResult(false)} className={GRAY_BTN}><MailX size={16} /> Sem e-mail</button>
                 </>
               )}
               {activity.activity_type === "whatsapp" && (
                 <>
-                  <button onClick={openWhatsapp} className={EMERALD_BTN}><MessageCircle size={16} /> Abrir WhatsApp</button>
                   <button onClick={() => markResult(true)} className={GREEN_BTN}><Check size={16} /> Respondeu</button>
                   <button onClick={() => markResult(false)} className={GRAY_BTN}><X size={16} /> Sem resposta</button>
                 </>

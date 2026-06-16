@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { Package, Plus, Trash2, Search, CreditCard, Info, Edit2, Check, X } from "lucide-react";
 import ExpandableSection from "../cardDetails/ExpandableSection";
+import { SelectMenu } from "../common";
 import productService from "../../services/productService";
 import serviceBoardService, { ServiceCardProduct, ServiceAparelho } from "../../services/serviceBoardService";
 import { showError, showWarning } from "../../utils/toast";
@@ -687,16 +688,17 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
                 <div className="space-y-4">
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">Forma de pagamento *</label>
-                    <select value={paymentForm.payment_method} onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}
-                      className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
-                      <option value="">Selecione...</option>
-                      <option value="Boleto">Boleto</option>
-                      <option value="Cartão de Crédito">Cartão de Crédito</option>
-                      <option value="PIX">PIX</option>
-                      <option value="Transferência">Transferência</option>
-                      <option value="Dinheiro">Dinheiro</option>
-                      <option value="Outro">Outro</option>
-                    </select>
+                    <SelectMenu value={paymentForm.payment_method} placeholder="Selecione..."
+                      options={[
+                        { value: "", label: "Selecione..." },
+                        { value: "Boleto", label: "Boleto" },
+                        { value: "Cartão de Crédito", label: "Cartão de Crédito" },
+                        { value: "PIX", label: "PIX" },
+                        { value: "Transferência", label: "Transferência" },
+                        { value: "Dinheiro", label: "Dinheiro" },
+                        { value: "Outro", label: "Outro" },
+                      ]}
+                      onChange={(v) => setPaymentForm({ ...paymentForm, payment_method: v })} />
                   </div>
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">Número de parcelas</label>
