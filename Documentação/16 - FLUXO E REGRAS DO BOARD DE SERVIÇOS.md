@@ -330,5 +330,33 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 ### Pendências conhecidas (a discutir / próximas fases)
 - **Índice de reajuste** `[Serviço]`: ainda não implementado — definir se fica no Resumo ou no aparelho (Produto).
-- **Etapa Proposta**: avaliar se "Formulário respondido" e "OS anexada" entram como trava extra.
 - **Automações** (seção 5.5): nenhuma implementada ainda.
+- **Melhorias na Dashboard de Serviços** (ver seção 7).
+
+---
+
+## 7. IDEIAS FUTURAS — DASHBOARD DE SERVIÇOS
+
+> A dashboard atual (doc 15, seção 11) tem: 8 KPIs + 4 blocos (Funil, Atividades por tipo, Ranking de colaboradores, Motivos de perda).
+> Abaixo, **ideias de informações a adicionar** (a priorizar/decidir no futuro). Muitas aproveitam os campos novos que já temos (aparelhos, `service_type`, `modality`, `is_valid` das ligações).
+
+### 7.1. Recalibrações *(maior valor — único do serviço)*
+- **Próximas recalibrações**: contagem/lista de aparelhos com **Data de próxima recalibragem** vencendo nos próximos **30 / 50 / 90 dias** (essencial para agendamento proativo; abre caminho para a automação dos 50 dias).
+- **Recalibrações vencidas**: aparelhos com data já passada.
+- **Total de aparelhos** em serviço.
+- *(Precisa de backend novo: agregar a partir do JSON `aparelhos` em `service_card_products`.)*
+
+### 7.2. Composição do negócio
+- **Venda × Locação** (campo `business_info.modality`).
+- **Recalibração × Manutenção × Ambos** (campo `business_info.service_type`).
+
+### 7.3. Conversão & tempo
+- **Taxa de conversão por etapa** (onde os negócios "vazam" no funil).
+- **Tempo médio por etapa / gargalos** (onde os cards ficam mais parados).
+- **Evolução temporal**: ganhos / perdidos / atividades ao longo dos dias.
+
+### 7.4. Financeiro & ligações
+- **Valor ganho × perdido** no período.
+- **Ligações válidas × não válidas** (efetividade — usa o `is_valid` já registrado nas atividades de ligação).
+
+> **Recomendação:** começar pela **7.1 (Recalibrações)** — é a de maior valor operacional e conecta com a automação dos 50 dias.
