@@ -268,7 +268,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 ### 5.2. Pontos em aberto (decidir antes/durante a implementação)
 - [ ] **Índice de reajuste**: fica no Resumo ou no Produto?
-- [ ] **Etapa Proposta**: "Formulário respondido" e "OS anexada" entram como trava aqui?
+- [x] **Etapa Proposta / OS**: ✅ decidido (16/06/2026) — a **OS anexada passou a ser obrigatória** para sair de **Oportunidade Existente** (não mais condicional). Na **Proposta**, criado um **checkbox "Formulário de Coleta de Dados enviado"** (`form_answered` no `business_info`) — só avança para Operações se marcado.
 - [x] **Esconder por padrão**: ✅ decidido — esconde **Ganhos E Perdidos** por padrão (15/06/2026). Já implementado (ver 5.4).
 - [x] **Dependência em Vendas**: campo "É venda ou locação" criado no board de Vendas, com trava de Ganho. ✅ **Feito** (15/06/2026).
 
@@ -281,9 +281,9 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 ### 5.4. Implementação — Regras (travas)
 - [x] **Trava de avanço** por etapa. ✅ **Feito** (15/06/2026) — `_validate_advance` no `move_card` (backend) bloqueia avanço sem as obrigatoriedades; frontend `handleMove` mostra a mensagem. Regras:
   - **Dados de Laboratório →**: pelo menos 1 aparelho com Nº de Série + Data de próxima recalibragem.
-  - **Oportunidade Existente →**: Recalibração/Manutenção + Aparelho recebido (sim/não) + OS anexada (se recebido) + **≥1 atividade concluída nesta etapa**. *(Campos novos `service_type` e `device_received` no `business_info`.)*
+  - **Oportunidade Existente →**: Recalibração/Manutenção + Aparelho recebido (sim/não) + **OS anexada (obrigatória)** + **≥1 atividade concluída nesta etapa**. *(Campos novos `service_type` e `device_received` no `business_info`.)*
   - **Tentativa de Contato →**: Proposta anexada (sem atividade obrigatória).
-  - **Proposta →**: Proposta anexada + **≥1 atividade de follow-up concluída nesta etapa**.
+  - **Proposta →**: Proposta anexada + **Formulário enviado (checkbox `form_answered`)** + **≥1 atividade de follow-up concluída nesta etapa**.
   - **Operações →**: **≥1 atividade de follow-up concluída nesta etapa**.
   - **→ Ganho**: OC anexada + 1 atividade de tarefa concluída.
   - **Negócio Ganho / Negócio Perdido**: só acessíveis pelos **botões Ganho/Perdido** (o stepper não move para etapas terminais). Ao marcar Ganho/Perdido, as **atividades pendentes são concluídas automaticamente** (`_complete_pending_activities`).
@@ -313,15 +313,16 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 | 1 | Negócio Fechado → Dados de Laboratório | nada (livre) | ✅ (sem regra) | ☐ |
 | 2 | Dados de Laboratório → Dados de Lab. Preenchidos | **≥1 aparelho** (qualquer produto) com **Nº de Série + Data de próxima recalibragem** | ✅ | ☐ |
 | 3 | Dados de Lab. Preenchidos → Oportunidade Existente | nada por enquanto (condição: 50 dias OU equipamento recebido → vira **automação**) | ✅ (sem regra manual) | ☐ |
-| 4 | Oportunidade Existente → Tentativa de Contato | **Recalibração/Manutenção** + **Aparelho recebido (sim/não)** + **OS anexada** (se recebido) + **≥1 atividade concluída nesta etapa** | ✅ | ☐ |
+| 4 | Oportunidade Existente → Tentativa de Contato | **Recalibração/Manutenção** + **Aparelho recebido (sim/não)** + **OS anexada (obrigatória)** + **≥1 atividade concluída nesta etapa** | ✅ | ☐ |
 | 5 | Tentativa de Contato → Proposta | **Proposta anexada** | ✅ | ☐ |
-| 6 | Proposta → Operações | **Proposta anexada** + **≥1 atividade de follow-up concluída nesta etapa** | ✅ | ☐ |
+| 6 | Proposta → Operações | **Proposta anexada** + **Formulário enviado (checkbox)** + **≥1 atividade de follow-up concluída nesta etapa** | ✅ | ☐ |
 | 7 | Operações → Aguardando Pedido | **≥1 atividade de follow-up concluída nesta etapa** | ✅ | ☐ |
 | 8 | Aguardando Pedido → **Negócio Ganho** | **só pelo botão Ganho** · **OC anexada** + **1 atividade de tarefa concluída** · botão só acende em "Aguardando Pedido" | ✅ | ☐ |
 | 9 | Qualquer etapa → **Negócio Perdido** | **só pelo botão Perdido** · exige **Motivo da perda** (modal) | ✅ | ☐ |
 
 ### Regras gerais (valem para todo o board)
-- **Voltar etapa** (mover para trás) é **livre** — sem trava.
+- **Não pode pular etapas**: o avanço é **uma etapa por vez** (o destino tem que ser a próxima etapa imediata). Tentar pular → bloqueia com a próxima etapa indicada.
+- **Voltar etapa** (mover para trás) é **livre** — sem trava (pode voltar mais de uma).
 - **Stepper não move para etapas terminais** (Ganho/Perdido ficam opacos) — só pelos botões.
 - Ao marcar **Ganho/Perdido**, as **atividades pendentes são concluídas automaticamente**.
 - **"Atividade concluída nesta etapa"** = atividade `category=atividade`, marcada como concluída **depois** de o card entrar na etapa atual (não reaproveita atividade de etapa anterior).

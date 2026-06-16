@@ -47,6 +47,8 @@ export interface ServiceBusinessInfo {
   // Triagem (etapa Oportunidade Existente)
   service_type?: "recalibracao" | "manutencao" | "ambos" | ""; // Recalibração e/ou Manutenção
   device_received?: boolean | null; // Aparelho recebido pela expedição?
+  // Proposta
+  form_answered?: boolean | null; // Formulário de Coleta de Dados preenchido (trava p/ Operações)
 }
 
 export interface ServiceCard {

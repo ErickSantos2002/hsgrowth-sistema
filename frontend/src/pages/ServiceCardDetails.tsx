@@ -329,6 +329,14 @@ const ServiceSummarySection: React.FC<{
                   options={[{ value: "", label: "Não definido" }, { value: "sim", label: "Sim" }, { value: "nao", label: "Não" }]}
                   onChange={(v) => setBizField("device_received", v === "sim" ? true : v === "nao" ? false : null)} />
               </div>
+              <div className="space-y-1 border-t border-gray-200/40 dark:border-slate-700/40 pt-3">
+                <p className="text-[11px] uppercase tracking-wide text-slate-400">Proposta</p>
+              </div>
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
+                <input type="checkbox" checked={!!biz.form_answered} onChange={(e) => setBizField("form_answered", e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500" />
+                <span className="text-sm text-slate-700 dark:text-slate-200">Formulário de Coleta de Dados enviado</span>
+              </label>
               <div className="flex items-center gap-2 pt-1">
                 <button onClick={handleSaveBiz} className="flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30">
                   <Check size={14} /> Salvar
@@ -349,6 +357,7 @@ const ServiceSummarySection: React.FC<{
                 { label: "Deve ser faturado", value: invoiceLabel(biz.should_invoice) },
                 { label: "Recalibração/Manutenção", value: serviceTypeLabel(biz.service_type) },
                 { label: "Aparelho recebido", value: receivedLabel(biz.device_received) },
+                { label: "Formulário enviado", value: biz.form_answered ? "Sim" : "Não" },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between gap-3">
                   <span className="text-sm text-slate-400">{row.label}:</span>

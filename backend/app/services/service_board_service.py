@@ -378,6 +378,17 @@ class ServiceBoardService:
         if (new_list.position or 0) <= (old_list.position or 0):
             return
 
+        # Não pode pular etapas: o destino tem que ser a PRÓXIMA etapa imediata.
+        all_lists = self.repo.list_lists_by_board(old_list.board_id)
+        idx = next((i for i, l in enumerate(all_lists) if l.id == old_list.id), None)
+        if idx is not None and idx + 1 < len(all_lists):
+            next_list = all_lists[idx + 1]
+            if new_list.id != next_list.id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Não é possível pular etapas — avance uma por vez. A próxima etapa é '{next_list.name}'.",
+                )
+
         old_name = (old_list.name or "").strip().lower()
         miss = []
 
@@ -396,8 +407,8 @@ class ServiceBoardService:
                 miss.append("Recalibração e/ou Manutenção")
             if biz.get("device_received") is None:
                 miss.append("Aparelho recebido pela expedição (sim/não)")
-            if biz.get("device_received") is True and not has_slot("os"):
-                miss.append("OS (Ordem de Serviço) anexada (aparelho foi recebido)")
+            if not has_slot("os"):
+                miss.append("OS (Ordem de Serviço) anexada no Resumo")
             if not has_completed_activity():
                 miss.append("pelo menos 1 atividade concluída nesta etapa")
         elif "tentativa de contato" in old_name:
@@ -406,6 +417,8 @@ class ServiceBoardService:
         elif old_name == "proposta":
             if not has_slot("proposta"):
                 miss.append("Proposta anexada no Resumo")
+            if not biz.get("form_answered"):
+                miss.append("Formulário de Coleta de Dados enviado (marque o checkbox no Resumo)")
             if not has_completed_activity():
                 miss.append("pelo menos 1 atividade de follow-up concluída nesta etapa")
         elif "operações" in old_name or "operacoes" in old_name:
