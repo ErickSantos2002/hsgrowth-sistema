@@ -653,7 +653,7 @@ const CardDetails: React.FC = () => {
                   <>
                     <button
                       onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-                      className="flex h-12 cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 font-medium transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
+                      className="flex cursor-pointer items-center gap-2 rounded-lg py-2 text-sm border border-gray-200 bg-white px-3 font-medium transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
                     >
                       <UserAvatar
                         userId={assignedUser?.id}
@@ -732,7 +732,7 @@ const CardDetails: React.FC = () => {
                   </>
                 ) : (
                   // Vendedor - apenas visualização (sem seta)
-                  <div className="flex h-12 items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-800/80">
+                  <div className="flex items-center gap-2 rounded-lg py-2 text-sm border border-gray-200 bg-white px-3 dark:border-slate-700/50 dark:bg-slate-800/80">
                     <UserAvatar
                       userId={assignedUser?.id}
                       userName={assignedUser?.name || "?"}
@@ -752,7 +752,7 @@ const CardDetails: React.FC = () => {
                     <>
                       <button
                         onClick={() => setShowSdrDropdown(!showSdrDropdown)}
-                        className="flex h-12 cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 font-medium transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
+                        className="flex cursor-pointer items-center gap-2 rounded-lg py-2 text-sm border border-gray-200 bg-white px-3 font-medium transition-colors hover:bg-gray-100 dark:border-slate-700/50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
                       >
                         <UserAvatar
                           userId={sdrUser?.id}
@@ -831,7 +831,7 @@ const CardDetails: React.FC = () => {
                     </>
                   ) : (
                     // Vendedor - apenas visualização (sem seta)
-                    <div className="flex h-12 items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-800/80">
+                    <div className="flex items-center gap-2 rounded-lg py-2 text-sm border border-gray-200 bg-white px-3 dark:border-slate-700/50 dark:bg-slate-800/80">
                       <UserAvatar
                         userId={sdrUser?.id}
                         userName={sdrUser?.name || "SDR"}
@@ -851,10 +851,10 @@ const CardDetails: React.FC = () => {
                 <button
                   onClick={handleClone}
                   disabled={isCloning}
-                  className="flex h-12 items-center gap-2 rounded-lg border border-slate-600/50 bg-slate-700/50 px-4 font-medium text-slate-200 transition-all hover:border-slate-500 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-lg py-2 text-sm border border-slate-600/50 bg-slate-700/50 px-3 font-medium text-slate-200 transition-all hover:border-slate-500 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                   title="Clonar este card na mesma lista"
                 >
-                  {isCloning ? <Loader2 size={18} className="animate-spin" /> : <Copy size={18} />}
+                  {isCloning ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
                   Clonar
                 </button>
               )}
@@ -863,9 +863,9 @@ const CardDetails: React.FC = () => {
               {!isReadOnly && !card.is_won && !card.is_lost && card.board_has_done_stage && (
                 <button
                   onClick={handleMarkAsWon}
-                  className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 font-medium text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-700 hover:to-emerald-600"
+                  className="flex items-center gap-2 rounded-lg py-2 text-sm bg-gradient-to-r from-emerald-600 to-emerald-500 px-3 font-medium text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-700 hover:to-emerald-600"
                 >
-                  <CheckCircle2 size={18} />
+                  <CheckCircle2 size={16} />
                   Ganho
                 </button>
               )}
@@ -874,9 +874,9 @@ const CardDetails: React.FC = () => {
               {!isReadOnly && !card.is_won && !card.is_lost && (
                 <button
                   onClick={handleMarkAsLost}
-                  className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-500 px-4 font-medium text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-700 hover:to-red-600"
+                  className="flex items-center gap-2 rounded-lg py-2 text-sm bg-gradient-to-r from-red-600 to-red-500 px-3 font-medium text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-700 hover:to-red-600"
                 >
-                  <XCircle size={18} />
+                  <XCircle size={16} />
                   Perdido
                 </button>
               )}
@@ -887,17 +887,17 @@ const CardDetails: React.FC = () => {
                   <button
                     onClick={() => setShowAssignConfirm(v => !v)}
                     disabled={isAutoAssigning}
-                    className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 px-4 font-medium text-white shadow-lg shadow-purple-500/20 transition-all hover:from-purple-700 hover:to-purple-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex items-center gap-2 rounded-lg py-2 text-sm bg-gradient-to-r from-purple-600 to-purple-500 px-3 font-medium text-white shadow-lg shadow-purple-500/20 transition-all hover:from-purple-700 hover:to-purple-600 disabled:cursor-not-allowed disabled:opacity-50"
                     title="Atribui automaticamente um vendedor via rodízio"
                   >
                     {isAutoAssigning ? (
                       <>
-                        <Sparkles size={18} className="animate-spin" />
+                        <Sparkles size={16} className="animate-spin" />
                         Atribuindo...
                       </>
                     ) : (
                       <>
-                        <UserPlus size={18} />
+                        <UserPlus size={16} />
                         Atribuir Vendedor
                       </>
                     )}
@@ -953,7 +953,7 @@ const CardDetails: React.FC = () => {
               {card.reopened_from_card_id && (
                 <button
                   onClick={() => navigate(`/cards/${card.reopened_from_card_id}`)}
-                  className="flex h-12 items-center gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 font-medium text-amber-400 transition-colors hover:bg-amber-500/20"
+                  className="flex items-center gap-2 rounded-lg py-2 text-sm border border-amber-500/50 bg-amber-500/10 px-3 font-medium text-amber-400 transition-colors hover:bg-amber-500/20"
                   title={`Ver card original #${card.reopened_from_card_id}`}
                 >
                   <RefreshCw size={16} />
@@ -963,14 +963,14 @@ const CardDetails: React.FC = () => {
 
               {/* Se já foi ganho ou perdido */}
               {card.is_won && (
-                <div className="flex h-12 items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-4 font-medium text-emerald-400">
+                <div className="flex items-center gap-2 rounded-lg py-2 text-sm border border-emerald-500/50 bg-emerald-500/20 px-3 font-medium text-emerald-400">
                   <CheckCircle2 size={18} />
                   Negócio Ganho
                 </div>
               )}
               {card.is_lost && (
                 <>
-                  <div className="flex h-12 items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 font-medium text-red-400">
+                  <div className="flex items-center gap-2 rounded-lg py-2 text-sm border border-red-500/50 bg-red-500/20 px-3 font-medium text-red-400">
                     <XCircle size={18} />
                     Negócio Perdido
                   </div>
@@ -978,7 +978,7 @@ const CardDetails: React.FC = () => {
                   {!isReadOnly && (
                     <button
                       onClick={() => setShowReopenModal(true)}
-                      className="flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-blue-600"
+                      className="flex items-center gap-2 rounded-lg py-2 text-sm bg-gradient-to-r from-blue-600 to-blue-500 px-3 font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-blue-600"
                       title="Cria um novo card a partir deste negócio perdido"
                     >
                       <RefreshCw size={18} />
@@ -1020,7 +1020,7 @@ const CardDetails: React.FC = () => {
               <span>👁️ Somente visualização — edição disponível apenas no board de Prospecção</span>
             </div>
           )}
-          <div className="space-y-4 p-6 sm:min-h-full">
+          <div className="space-y-4 p-4 sm:min-h-full">
             {/* Seção: Resumo */}
             <SummarySection
               card={card}
@@ -1050,114 +1050,41 @@ const CardDetails: React.FC = () => {
 
         {/* ========== COLUNA DIREITA: 70% - ATIVIDADES E HISTÓRICO (SCROLL INDEPENDENTE) ========== */}
         <div className="relative z-0 w-full flex-none overflow-visible sm:z-auto sm:min-h-0 sm:w-[70%] sm:overflow-y-auto sm:overflow-x-hidden">
-          <div className="p-6 sm:min-h-full">
+          <div className="px-6 pb-6 pt-0 sm:min-h-full">
             {/* Sistema de Abas */}
-            <div className="mb-6 border-b border-gray-200 dark:border-slate-700/50">
+            <div className="mb-6 -mx-6 border-b border-gray-200 px-6 dark:border-slate-700/50">
               {/* Wrapper: abas scrolláveis à esquerda, botão Ligar fixo à direita */}
-              <div className="flex items-end gap-2">
-                {/* Abas com scroll horizontal */}
-                <div className="scrollbar-tabs flex flex-1 min-w-0 flex-nowrap gap-2 overflow-x-auto lg:gap-6">
-                  <button
-                    onClick={() => setActiveTab("atividade")}
-                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
-                      activeTab === "atividade"
-                        ? "border-blue-500 font-medium text-blue-400"
-                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                    }`}
-                  >
-                    <Calendar size={18} />
-                    <span className="hidden lg:inline">Atividade</span>
-                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "atividade" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
-                      {card.pending_tasks?.filter((t) => t.task_type !== "meeting").length || 0}
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("anotacoes")}
-                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
-                      activeTab === "anotacoes"
-                        ? "border-blue-500 font-medium text-blue-400"
-                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                    }`}
-                  >
-                    <FileText size={18} />
-                    <span className="hidden lg:inline">Anotações</span>
-                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "anotacoes" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
-                      {card.notes?.length || 0}
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("agendador")}
-                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
-                      activeTab === "agendador"
-                        ? "border-blue-500 font-medium text-blue-400"
-                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                    }`}
-                  >
-                    <CalendarDays size={18} />
-                    <span className="hidden lg:inline">Calendário</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("arquivos")}
-                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
-                      activeTab === "arquivos"
-                        ? "border-blue-500 font-medium text-blue-400"
-                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                    }`}
-                  >
-                    <Paperclip size={18} />
-                    <span className="hidden lg:inline">Arquivos</span>
-                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "arquivos" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
-                      {attachmentsCount}
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("ligacoes")}
-                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
-                      activeTab === "ligacoes"
-                        ? "border-blue-500 font-medium text-blue-400"
-                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                    }`}
-                  >
-                    <PhoneCall size={18} />
-                    <span className="hidden lg:inline">Ligações</span>
-                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "ligacoes" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
-                      {evaluationsCount}
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("reunioes")}
-                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
-                      activeTab === "reunioes"
-                        ? "border-purple-500 font-medium text-purple-400"
-                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                    }`}
-                  >
-                    <Users size={18} />
-                    <span className="hidden lg:inline">Reuniões</span>
-                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "reunioes" ? "border-purple-500/30 bg-purple-500/20 text-purple-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
-                      {meetingCount}
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("email")}
-                    className={`flex flex-shrink-0 items-center gap-2 border-b-2 px-2 pb-3 transition-colors lg:px-1 ${
-                      activeTab === "email"
-                        ? "border-blue-500 font-medium text-blue-400"
-                        : "border-transparent text-slate-900 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                    }`}
-                  >
-                    <Mail size={18} />
-                    <span className="hidden lg:inline">E-mail</span>
-                    <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs font-medium ${activeTab === "email" ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : "border-gray-200 bg-gray-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-400"}`}>
-                      {emailCount}
-                    </span>
-                  </button>
+              <div className="flex items-center gap-2">
+                {/* Abas — estilo enxuto (badge só quando > 0), igual ao board de Serviços */}
+                <div className="flex flex-1 min-w-0 gap-1 overflow-x-auto">
+                  {([
+                    { key: "atividade", label: "Atividade", icon: <Calendar size={16} />, count: card.pending_tasks?.filter((t) => t.task_type !== "meeting").length || 0, accent: "blue" },
+                    { key: "anotacoes", label: "Anotações", icon: <FileText size={16} />, count: card.notes?.length || 0, accent: "blue" },
+                    { key: "agendador", label: "Calendário", icon: <CalendarDays size={16} />, count: 0, accent: "blue" },
+                    { key: "arquivos", label: "Arquivos", icon: <Paperclip size={16} />, count: attachmentsCount, accent: "blue" },
+                    { key: "ligacoes", label: "Ligações", icon: <PhoneCall size={16} />, count: evaluationsCount, accent: "blue" },
+                    { key: "reunioes", label: "Reuniões", icon: <Users size={16} />, count: meetingCount, accent: "purple" },
+                    { key: "email", label: "E-mail", icon: <Mail size={16} />, count: emailCount, accent: "blue" },
+                  ] as const).map((tab) => {
+                    const isActive = activeTab === tab.key;
+                    const activeCls = tab.accent === "purple" ? "border-purple-500 text-purple-500 dark:text-purple-400" : "border-blue-500 text-blue-500 dark:text-blue-400";
+                    const badgeCls = tab.accent === "purple" ? "bg-purple-500/20 text-purple-400" : "bg-blue-500/20 text-blue-400";
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key)}
+                        className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                          isActive ? activeCls : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                        }`}
+                      >
+                        {tab.icon}
+                        {tab.label}
+                        {tab.count > 0 && (
+                          <span className={`rounded-full px-1.5 text-xs ${badgeCls}`}>{tab.count}</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Botão Ligar — sempre visível fora da área de scroll */}
@@ -1172,7 +1099,7 @@ const CardDetails: React.FC = () => {
                         ? "Nenhuma pessoa vinculada ao card"
                         : "Ligar agora sem criar atividade manualmente"
                     }
-                    className="relative mb-2 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isQuickCalling ? (
                       <Loader2 size={15} className="animate-spin" />
