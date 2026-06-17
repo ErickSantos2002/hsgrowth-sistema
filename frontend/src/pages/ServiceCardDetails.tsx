@@ -1150,7 +1150,7 @@ const ServiceCardDetails: React.FC = () => {
             ) : (
               <h1
                 onClick={() => setEditingTitle(true)}
-                className="cursor-pointer truncate text-2xl font-bold text-slate-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
+                className="inline-block max-w-full cursor-pointer truncate align-bottom text-2xl font-bold text-slate-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
                 title="Clique para editar"
               >
                 {card.title}

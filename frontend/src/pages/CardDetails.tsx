@@ -634,7 +634,7 @@ const CardDetails: React.FC = () => {
                 ) : (
                   <h1
                     onClick={() => !isReadOnly && setIsTitleEditing(true)}
-                    className={`text-center text-2xl font-semibold text-slate-900 dark:text-white sm:text-left ${
+                    className={`inline-block max-w-full truncate align-bottom text-center text-2xl font-semibold text-slate-900 dark:text-white sm:text-left ${
                       !isReadOnly ? "cursor-pointer transition-colors hover:text-blue-600 dark:hover:text-blue-400" : ""
                     }`}
                     title={!isReadOnly ? "Clique para editar" : undefined}
