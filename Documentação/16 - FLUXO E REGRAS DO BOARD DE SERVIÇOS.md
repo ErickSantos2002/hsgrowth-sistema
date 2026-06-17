@@ -148,7 +148,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 ### 4.3. Oportunidade Existente ✅ *(imagem 4 — documentado)*
 
 - **Gatilho de entrada (SLA)**: Data de próxima recalibração ≤ 50 dias **OU** equipamento recebido pela expedição.
-- **Automação (futuro)**: **Atribuir Proprietário**.
+- **Sem proprietário fixo**: no board de Serviço **não há responsável atribuído** — qualquer pessoa do time pode tratar o card. (Diferente de Vendas; por isso **não** existe automação de "Atribuir Proprietário" aqui.)
 - **CRM / Tags dinâmicas (futuro)**: tag "Aparelho coletado pela expedição" (input manual, futuramente automatizado) — para uso nos filtros.
 - **Triagem (ponto de decisão)**: Validar dados e data de recalibração (próximos 50 dias).
 - **Atividades**:
@@ -296,7 +296,6 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 ### 5.5. Fase posterior — Automações
 - [ ] Criação automática do card a partir do Ganho em Vendas (etapa 4.0).
 - [ ] Avanço automático "Dados de Lab Preenchidos" → "Oportunidade Existente" (recalibração ≤ 50 dias).
-- [ ] Atribuir Proprietário (etapa 4.3).
 - [ ] Tags dinâmicas para filtros.
 - [ ] **Resgate em 90 dias**: ao perder, criar novo card após 90 dias + cadência de resgate.
 - [ ] Integrações: Trello (Operações), Financeiro e Expedição (pós-Ganho).

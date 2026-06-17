@@ -14,10 +14,7 @@ import {
   Calendar,
   Tag,
   MoreHorizontal,
-  Download,
-  Printer,
   Search,
-  Filter,
   Award,
   XCircle,
   Type,
@@ -27,7 +24,6 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { convertUTCToBrazil } from "../../utils/timezone";
-import { showInfo } from "../../utils/toast";
 import ExpandableText from "../common/ExpandableText";
 
 interface HistorySectionProps {
@@ -89,7 +85,6 @@ const TASK_EVENT_TYPES = new Set<EventType>([
 const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] }) => {
   const [activeTab, setActiveTab] = useState<HistoryTab>("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const toggleGroup = (key: string) => {
@@ -401,27 +396,6 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 py-2 pl-9 pr-3 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
           />
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-400 dark:text-slate-400 transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
-          title="Filtros"
-        >
-          <Filter size={16} />
-        </button>
-        <button
-          onClick={() => showInfo("Exportar histórico - Funcionalidade em desenvolvimento")}
-          className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-400 dark:text-slate-400 transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
-          title="Exportar"
-        >
-          <Download size={16} />
-        </button>
-        <button
-          onClick={() => showInfo("Imprimir histórico - Funcionalidade em desenvolvimento")}
-          className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100/50 dark:bg-slate-800/50 px-3 py-2 text-slate-400 dark:text-slate-400 transition-colors hover:bg-gray-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
-          title="Imprimir"
-        >
-          <Printer size={16} />
-        </button>
       </div>
 
       {/* Timeline */}

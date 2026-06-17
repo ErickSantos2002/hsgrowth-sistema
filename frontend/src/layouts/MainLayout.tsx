@@ -178,7 +178,9 @@ export default function MainLayout() {
                                     (item.path === "/boards" &&
                                      (location.pathname.startsWith("/boards/") ||
                                       location.pathname.startsWith("/cards/")) &&
-                                     !location.pathname.startsWith("/servicos"));
+                                     !location.pathname.startsWith("/servicos")) ||
+                                    (item.path === "/servicos" &&
+                                     location.pathname.startsWith("/servicos/"));
 
                                 return (
                                     <li key={item.path}>

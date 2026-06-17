@@ -678,7 +678,10 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
           )}
         </div>
         {foco.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-gray-200 dark:border-slate-700 py-6 text-center text-sm text-slate-400">Nenhuma atividade pendente</p>
+          <div className="rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-6 text-center">
+            <CheckSquare size={32} className="mx-auto mb-2 text-slate-600" />
+            <p className="text-sm text-slate-400 dark:text-slate-400">Nenhuma atividade pendente</p>
+          </div>
         ) : (
           <div className="space-y-2">
             {foco.map((a) => (
@@ -707,9 +710,11 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
             className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 py-2 pl-10 pr-3 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
         </div>
         {history.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 dark:border-slate-700 py-10 text-center">
-            <ActivityIcon size={28} className="mb-2 text-slate-300 dark:text-slate-600" />
-            <p className="text-sm text-slate-400">Nenhum evento nesta categoria</p>
+          <div className="rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-8 text-center">
+            <FileText size={32} className="mx-auto mb-2 text-slate-600" />
+            <p className="text-sm text-slate-400 dark:text-slate-400">
+              {search ? "Nenhum evento encontrado" : "Nenhum evento nesta categoria"}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
