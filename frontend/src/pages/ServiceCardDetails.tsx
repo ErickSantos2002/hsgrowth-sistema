@@ -51,6 +51,7 @@ import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ClientModal from "../components/clients/ClientModal";
 import PersonModal from "../components/persons/PersonModal";
 import { showSuccess, showError } from "../utils/toast";
+import { convertUTCToBrazil } from "../utils/timezone";
 import { useConfirm } from "../contexts/ConfirmContext";
 import { LoadingSpinner, SelectMenu } from "../components/common";
 
@@ -152,7 +153,7 @@ const ServiceSummarySection: React.FC<{
 
   const formatDateTime = (date?: string | null) => {
     if (!date) return "-";
-    return new Date(date).toLocaleString("pt-BR");
+    return convertUTCToBrazil(date).toLocaleString("pt-BR");
   };
 
   const handleSaveDue = async () => {

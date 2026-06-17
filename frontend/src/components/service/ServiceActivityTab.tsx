@@ -14,6 +14,7 @@ import { SelectMenu } from "../common";
 import NoteRenderer from "../cardDetails/NoteRenderer";
 import { sanitizeNoteHTML } from "../../utils/sanitizeNote";
 import { showSuccess, showError, showWarning } from "../../utils/toast";
+import { convertUTCToBrazil } from "../../utils/timezone";
 import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface TabProps {
@@ -403,7 +404,7 @@ const FocoItem: React.FC<{
 };
 
 const formatTimeAgo = (dateStr: string): string => {
-  const date = new Date(dateStr);
+  const date = convertUTCToBrazil(dateStr);
   const now = new Date();
   const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
   if (diff < 60) return "agora mesmo";
@@ -418,7 +419,7 @@ const formatTimeAgo = (dateStr: string): string => {
 
 const formatDateTime = (dateStr?: string): string => {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return convertUTCToBrazil(dateStr).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 };
 
 const formatFileSize = (bytes?: number): string => {

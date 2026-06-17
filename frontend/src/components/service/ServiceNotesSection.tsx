@@ -5,6 +5,7 @@ import NoteRenderer from "../cardDetails/NoteRenderer";
 import { sanitizeNoteHTML } from "../../utils/sanitizeNote";
 import { showError, showWarning } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
+import { convertUTCToBrazil } from "../../utils/timezone";
 
 interface ServiceNotesSectionProps {
   boardId: number;
@@ -182,7 +183,7 @@ const ServiceNotesSection: React.FC<ServiceNotesSectionProps> = ({ boardId, card
   };
 
   const formatRelativeTime = (dateStr: string) => {
-    const date = new Date(dateStr);
+    const date = convertUTCToBrazil(dateStr);
     const diffMs = new Date().getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
