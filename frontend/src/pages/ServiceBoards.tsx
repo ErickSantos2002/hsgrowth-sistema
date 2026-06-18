@@ -502,13 +502,13 @@ const ServiceBoards: React.FC = () => {
 
         {/* Botões do header */}
         <div className="flex w-full items-center gap-3 sm:w-auto">
-          {/* Botão Calendário Global */}
+          {/* Botão Calendário de Serviços (atividades de toda a equipe) */}
           <Link
-            to="/calendar"
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-2 transition-all hover:bg-blue-500/20 sm:flex-none"
+            to="/servicos/calendario"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-violet-500/40 bg-violet-500/10 px-4 py-2 transition-all hover:bg-violet-500/20 sm:flex-none"
           >
-            <CalendarDays size={20} className="text-slate-900 dark:text-blue-400" />
-            <span className="hidden sm:inline text-slate-900 dark:text-blue-400">Calendário</span>
+            <CalendarDays size={20} className="text-slate-900 dark:text-violet-400" />
+            <span className="hidden sm:inline text-slate-900 dark:text-violet-400">Calendário</span>
           </Link>
 
           {/* Botão Novo Board - Apenas Admin e Manager */}

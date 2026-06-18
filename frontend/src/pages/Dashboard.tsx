@@ -39,9 +39,11 @@ const Dashboard: React.FC = () => {
   const isAdminOrManager = user?.role === "admin" || user?.role === "manager";
   const isSdr         = user?.role === "sdr";
   const isSalesperson = user?.role === "salesperson";
+  const isServiceRole = user?.role === "service";
 
-  // Modo Serviço (dashboard de serviços — paralelo ao SDR/Vendedor de vendas)
-  const [serviceMode, setServiceMode] = useState(false);
+  // Modo Serviço (dashboard de serviços — paralelo ao SDR/Vendedor de vendas).
+  // Para o role "service" a dashboard é sempre a de serviços (sem alternância).
+  const [serviceMode, setServiceMode] = useState(isServiceRole);
 
   // Lista de usuários para o seletor (admin/manager)
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -82,6 +84,8 @@ const Dashboard: React.FC = () => {
   }, [selectedUserId]);
 
   useEffect(() => {
+    // Role "service" usa só a dashboard de serviços — não busca KPIs de vendas.
+    if (isServiceRole) return;
     if (!kpis) fetchDashboardData();
   }, []);
 

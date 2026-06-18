@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
-import { Plus, Edit, Trash2, RefreshCw, Shield, UserCircle, Clock, Key, ChevronDown, Users as UsersIcon } from "lucide-react";
+import { Plus, Edit, Trash2, RefreshCw, Shield, UserCircle, Clock, Key, ChevronDown, Users as UsersIcon, Wrench } from "lucide-react";
 import userService from "../services/userService";
 import { User } from "../types";
 import { useAuth, usePagination, useFilter, filterHelpers } from "../hooks";
@@ -212,6 +212,8 @@ const Users: React.FC = () => {
         return "bg-emerald-500/20 text-slate-900 dark:text-emerald-400";
       case "sdr":
         return "bg-amber-500/20 text-slate-900 dark:text-amber-400";
+      case "service":
+        return "bg-violet-500/20 text-slate-900 dark:text-violet-400";
       default:
         return "bg-slate-500/20 text-slate-900 dark:text-slate-400";
     }
@@ -228,6 +230,8 @@ const Users: React.FC = () => {
         return <UserCircle size={16} />;
       case "sdr":
         return <UserCircle size={16} />;
+      case "service":
+        return <Wrench size={16} />;
       default:
         return <UserCircle size={16} />;
     }
@@ -295,6 +299,7 @@ const Users: React.FC = () => {
               { value: "manager", label: "Gerente" },
               { value: "salesperson", label: "Vendedor" },
               { value: "sdr", label: "SDR" },
+              { value: "service", label: "Serviço" },
             ]}
             onChange={(value) => setCustomFilter("role", value)}
           />

@@ -44,9 +44,37 @@ export interface UpdateServiceActivityRequest {
   activity_metadata?: Record<string, any>;
 }
 
+// Item da visão geral de atividades de serviço (todos os cards/usuários)
+export interface ServiceActivityOverviewItem {
+  id: number;
+  service_card_id: number;
+  card_title: string;
+  board_id: number;
+  activity_type?: string;
+  title?: string;
+  description?: string;
+  priority?: string;
+  due_date?: string | null;
+  is_completed: boolean;
+  completed_at?: string | null;
+  user_id?: number | null;
+  user_name?: string | null;
+  created_at: string;
+}
+
 const BASE = "/api/v1/service-boards";
 
 class ServiceActivityService {
+  /** Lista as atividades de TODOS os cards de serviço (sem filtro por usuário).
+   *  status: "pending" (padrão) | "completed" | "all" (usado pelo calendário). */
+  async listAll(status: "pending" | "completed" | "all" = "pending"): Promise<ServiceActivityOverviewItem[]> {
+    const r = await api.get<{ activities: ServiceActivityOverviewItem[]; total: number }>(
+      `/api/v1/service-activities`,
+      { params: { status } },
+    );
+    return r.data.activities;
+  }
+
   async list(boardId: number, cardId: number): Promise<ServiceCardActivity[]> {
     const r = await api.get<ServiceCardActivity[]>(`${BASE}/${boardId}/cards/${cardId}/activities`);
     return r.data;

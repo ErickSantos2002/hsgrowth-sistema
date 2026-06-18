@@ -170,6 +170,19 @@ export default function MainLayout() {
                                     return null;
                                 }
 
+                                // Role "service": só vê o módulo de serviços + cadastros básicos
+                                // (Dashboard, Atividades, Boards Serviços, Clientes, Pessoas,
+                                //  Produtos e Configurações — esta com abas limitadas).
+                                if (user?.role === "service") {
+                                    const allowedForService = [
+                                        "/", "/activities", "/servicos",
+                                        "/clients", "/persons", "/products", "/settings",
+                                    ];
+                                    if (!allowedForService.includes(item.path)) {
+                                        return null;
+                                    }
+                                }
+
                                 const Icon = item.icon;
 
                                 // Verifica se o item está ativo

@@ -76,6 +76,13 @@ def create_roles(db: Session) -> dict:
             "description": "Acesso somente leitura a boards, clientes, pessoas e produtos",
             "permissions": ["boards.read", "cards.read", "clients.read", "persons.read", "products.read"],
             "is_system_role": True
+        },
+        {
+            "name": "service",
+            "display_name": "Serviço",
+            "description": "Acesso ao módulo de serviços (boards de serviço, atividades, clientes, pessoas e produtos)",
+            "permissions": ["boards.read", "cards.read", "cards.create", "cards.update", "clients.read", "clients.create", "persons.read", "persons.create", "products.read"],
+            "is_system_role": True
         }
     ]
 
