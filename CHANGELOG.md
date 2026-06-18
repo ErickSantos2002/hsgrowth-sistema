@@ -5,6 +5,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.35] — 18/06/2026
+
+### Adicionado
+- **Negócio Ganho — Reverter (admin):** novo botão permite ao administrador desfazer um negócio marcado como Ganho, devolvendo o card para a última etapa ativa. A ação fica registrada no histórico e o negócio deixa de ser contabilizado como ganho.
+- **Atividades — Visão por equipe:** administradores e gerentes podem alternar a página de Atividades entre Vendedor, SDR e Serviço, vendo as atividades de cada grupo.
+- **É venda ou locação:** novo campo no Resumo do card. O negócio só pode ser marcado como Ganho depois de informar se é venda ou locação.
+
+### Corrigido
+- **Automações agendadas:** corrigido um problema no agendador que impedia as automações do tipo "agendada" de dispararem. Agora voltam a rodar normalmente.
+- **Datas — Fuso horário:** corrigida a exibição de alguns horários que apareciam adiantados (em UTC em vez do horário de Brasília).
+
+### Melhorado
+- **Cards — Visual:** padronização do cabeçalho, abas, botões e da área de clique do título, deixando o card mais consistente e organizado.
+
+---
+
 ## [1.7.34] — 29/05/2026
 
 ### Corrigido
