@@ -194,6 +194,7 @@ def create_task(
 def list_tasks(
     card_id: Optional[int] = None,
     assigned_to_id: Optional[int] = None,
+    assignee_role: Optional[str] = None,
     task_type: Optional[str] = None,
     priority: Optional[str] = None,
     is_completed: Optional[bool] = None,
@@ -219,6 +220,7 @@ def list_tasks(
     filters = CardTaskFilters(
         card_id=card_id,
         assigned_to_id=assigned_to_id,
+        assignee_role=assignee_role,
         task_type=task_type,
         priority=priority,
         is_completed=is_completed,
@@ -272,6 +274,7 @@ def list_tasks(
 )
 def get_overdue_tasks(
     user_id: int = None,
+    assignee_role: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -279,9 +282,10 @@ def get_overdue_tasks(
     Busca tarefas atrasadas.
 
     Se user_id não for especificado, retorna todas as tarefas atrasadas.
+    assignee_role filtra pelo papel do responsável (ex: salesperson, sdr).
     """
     service = CardTaskService(db)
-    return service.get_overdue_tasks(user_id)
+    return service.get_overdue_tasks(user_id, assignee_role)
 
 
 @router.get(

@@ -60,6 +60,9 @@ class CardTaskRepository:
         if filters.assigned_to_id is not None:
             query = query.filter(CardTask.assigned_to_id == filters.assigned_to_id)
 
+        if getattr(filters, "assignee_role", None):
+            query = query.filter(CardTask.assigned_to_id.in_(self._user_ids_for_role(filters.assignee_role)))
+
         if filters.task_type is not None:
             query = query.filter(CardTask.task_type == filters.task_type)
 
@@ -115,7 +118,17 @@ class CardTaskRepository:
 
         return query.all()
 
-    def get_overdue_tasks(self, user_id: Optional[int] = None) -> List[CardTask]:
+    def _user_ids_for_role(self, role_name: str):
+        """Subquery com os IDs de usuários cujo papel (role.name) é o informado."""
+        from app.models.user import User
+        from app.models.role import Role
+        return (
+            self.db.query(User.id)
+            .join(Role, User.role_id == Role.id)
+            .filter(Role.name == role_name)
+        )
+
+    def get_overdue_tasks(self, user_id: Optional[int] = None, assignee_role: Optional[str] = None) -> List[CardTask]:
         """Busca tarefas atrasadas"""
         now = datetime.utcnow()
         query = self.db.query(CardTask).filter(
@@ -127,6 +140,9 @@ class CardTaskRepository:
 
         if user_id:
             query = query.filter(CardTask.assigned_to_id == user_id)
+
+        if assignee_role:
+            query = query.filter(CardTask.assigned_to_id.in_(self._user_ids_for_role(assignee_role)))
 
         return query.order_by(CardTask.due_date.asc()).all()
 

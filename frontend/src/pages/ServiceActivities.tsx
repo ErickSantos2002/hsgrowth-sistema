@@ -84,10 +84,11 @@ const ServiceActivityCard: React.FC<{
  * usuários — não há divisão por responsável no módulo de serviço.
  * Segue o mesmo padrão visual da página de Atividades de Vendas.
  */
-const ServiceActivities: React.FC = () => {
+const ServiceActivities: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const navigate = useNavigate();
   const [items, setItems] = useState<ServiceActivityOverviewItem[]>([]);
   const [loading, setLoading] = useState(false);
+  // Abre em "Hoje", igual ao board de Vendas.
   const [filters, setFilters] = useState<ActivityFilterState>(DEFAULT_FILTERS);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -158,23 +159,25 @@ const ServiceActivities: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-6 flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
-        <div className="flex flex-col items-center gap-3 sm:flex-row">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/20 text-violet-600 dark:text-violet-400">
-            <Wrench size={20} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Atividades</h1>
-            {!loading && (
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {total} {total === 1 ? "atividade pendente" : "atividades pendentes"}
-              </p>
-            )}
+    <div className={embedded ? "" : "p-6"}>
+      {/* Header (oculto quando embutido na página de Atividades do admin) */}
+      {!embedded && (
+        <div className="mb-6 flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
+          <div className="flex flex-col items-center gap-3 sm:flex-row">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/20 text-violet-600 dark:text-violet-400">
+              <Wrench size={20} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Atividades</h1>
+              {!loading && (
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {total} {total === 1 ? "atividade pendente" : "atividades pendentes"}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Container principal — filtros + lista + paginação */}
       <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/30">

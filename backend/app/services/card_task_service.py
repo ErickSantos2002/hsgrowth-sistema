@@ -227,9 +227,9 @@ class CardTaskService:
         tasks = self.repository.get_pending_by_card(card_id, limit)
         return [self._build_response(t) for t in tasks]
 
-    def get_overdue_tasks(self, user_id: Optional[int] = None) -> List[CardTaskResponse]:
+    def get_overdue_tasks(self, user_id: Optional[int] = None, assignee_role: Optional[str] = None) -> List[CardTaskResponse]:
         """Busca tarefas atrasadas"""
-        tasks = self.repository.get_overdue_tasks(user_id)
+        tasks = self.repository.get_overdue_tasks(user_id, assignee_role)
         return [self._build_response(t) for t in tasks]
 
     def update_task(self, task_id: int, task_data: CardTaskUpdate, current_user: User) -> CardTaskResponse:

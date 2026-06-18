@@ -45,6 +45,10 @@ async def list_service_activities(
         .filter(
             ServiceCardActivity.category == "atividade",
             ServiceCard.is_deleted.is_(False),
+            # Ignora negócios já fechados (Ganho/Perdido) — tarefas deles não
+            # são consideradas pendentes/atrasadas.
+            ServiceList.is_done_stage.is_(False),
+            ServiceList.is_lost_stage.is_(False),
         )
     )
 

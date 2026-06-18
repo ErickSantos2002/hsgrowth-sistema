@@ -223,6 +223,7 @@ class CardTaskFilters(BaseModel):
     """Filtros para listagem de tarefas."""
     card_id: Optional[int] = Field(None, description="Filtrar por card específico")
     assigned_to_id: Optional[int] = Field(None, description="Filtrar por responsável")
+    assignee_role: Optional[str] = Field(None, description="Filtrar pelo papel do responsável (ex: salesperson, sdr)")
     task_type: Optional[TaskType] = Field(None, description="Filtrar por tipo de tarefa")
     priority: Optional[TaskPriority] = Field(None, description="Filtrar por prioridade")
     is_completed: Optional[bool] = Field(None, description="Filtrar por status de conclusão")

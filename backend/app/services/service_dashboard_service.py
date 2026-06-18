@@ -104,22 +104,22 @@ class ServiceDashboardService:
         avg_ticket = (won_value / won_count) if won_count else 0.0
         win_rate = (won_count / (won_count + lost_count) * 100) if (won_count + lost_count) else 0.0
 
-        # ── Parados 3d+ ──────────────────────────────────────────────────────
-        has_activity = (
+        # ── Atrasados 3d+ ────────────────────────────────────────────────────
+        # Cards ativos com ao menos uma atividade pendente vencida há 3+ dias
+        # (due_date no passado, antes do threshold de 3 dias e não concluída).
+        active_ids = {c.id for c in active_cards}
+        overdue_3d_cards = (
             {cid for (cid,) in db.query(ServiceCardActivity.service_card_id)
-             .filter(ServiceCardActivity.service_card_id.in_(card_ids)).distinct().all()}
-            if card_ids else set()
+             .filter(
+                 ServiceCardActivity.service_card_id.in_(active_ids),
+                 ServiceCardActivity.category == "atividade",
+                 ServiceCardActivity.is_completed == False,  # noqa: E712
+                 ServiceCardActivity.due_date.isnot(None),
+                 ServiceCardActivity.due_date < threshold,
+             ).distinct().all()}
+            if active_ids else set()
         )
-        recent = (
-            {cid for (cid,) in db.query(ServiceCardActivity.service_card_id)
-             .filter(ServiceCardActivity.service_card_id.in_(card_ids),
-                     ServiceCardActivity.created_at >= threshold).distinct().all()}
-            if card_ids else set()
-        )
-        stuck_count = sum(
-            1 for c in active_cards
-            if c.id in has_activity and c.id not in recent and c.updated_at and c.updated_at < threshold
-        )
+        stuck_count = len(overdue_3d_cards)
 
         # ── Atividades no período (category=atividade) ───────────────────────
         act_rows = (

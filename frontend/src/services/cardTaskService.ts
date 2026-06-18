@@ -93,6 +93,7 @@ class CardTaskService {
   async list(params?: {
     card_id?: number;
     assigned_to_id?: number;
+    assignee_role?: string;
     task_type?: string;
     priority?: string;
     is_completed?: boolean;
@@ -108,9 +109,9 @@ class CardTaskService {
   /**
    * Busca tarefas atrasadas
    */
-  async getOverdue(userId?: number): Promise<CardTask[]> {
+  async getOverdue(userId?: number, assigneeRole?: string): Promise<CardTask[]> {
     const response = await api.get<CardTask[]>("/api/v1/card-tasks/overdue", {
-      params: { user_id: userId },
+      params: { user_id: userId, assignee_role: assigneeRole },
     });
     return response.data;
   }

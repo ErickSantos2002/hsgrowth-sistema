@@ -14,6 +14,9 @@ import ActivityFilters, {
 import ActivityCard from "../components/activities/ActivityCard";
 import FocusMode from "../components/activities/FocusMode";
 import CadenciaModal from "../components/activities/CadenciaModal";
+import ServiceActivities from "./ServiceActivities";
+
+type ActivityView = "salesperson" | "sdr" | "service";
 
 /**
  * Traduz o período selecionado no filtro para parâmetros de data da API.
@@ -91,6 +94,9 @@ const Activities: React.FC = () => {
   const isViewer = user?.role === "viewer";
   const canStartFocus = user?.role === "salesperson" || user?.role === "sdr";
 
+  // Visão do admin/gerente: Vendedor | SDR | Serviço (não-privilegiados só veem as suas)
+  const [view, setView] = useState<ActivityView>("salesperson");
+
   // ─── Estado ──────────────────────────────────────────────────────────────────
 
   const [tasks, setTasks] = useState<CardTask[]>([]);
@@ -113,12 +119,16 @@ const Activities: React.FC = () => {
   // ─── Busca de atividades ─────────────────────────────────────────────────────
 
   const fetchTasks = useCallback(async (activeFilters: ActivityFilterState, page: number) => {
+    // Visão "Serviço" é renderizada por outro componente — não busca card-tasks de vendas.
+    if (isAdminOrManager && view === "service") return;
+    // Para admin/gerente, filtra pelo papel selecionado (Vendedor/SDR).
+    const roleFilter = isAdminOrManager ? view : undefined;
     setLoading(true);
     try {
       // Período "overdue" usa endpoint dedicado — pagina no frontend
       if (activeFilters.period === "overdue") {
         const userId = activeFilters.assignedToId ?? (isAdminOrManager ? undefined : user?.id);
-        const overdueTasks = await cardTaskService.getOverdue(userId ?? undefined);
+        const overdueTasks = await cardTaskService.getOverdue(userId ?? undefined, roleFilter);
 
         // Aplica filtros locais de tipo e prioridade (endpoint /overdue não os suporta)
         const filtered = overdueTasks.filter((t) => {
@@ -147,6 +157,7 @@ const Activities: React.FC = () => {
         task_type: activeFilters.taskType || undefined,
         priority: activeFilters.priority || undefined,
         assigned_to_id: activeFilters.assignedToId ?? (isAdminOrManager ? undefined : user?.id ?? undefined),
+        assignee_role: roleFilter,
         is_completed: false,
         page,
         page_size: PAGE_SIZE,
@@ -160,7 +171,7 @@ const Activities: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [isAdminOrManager, user?.id]);
+  }, [isAdminOrManager, user?.id, view]);
 
   useEffect(() => {
     fetchTasks(filters, currentPage);
@@ -204,6 +215,33 @@ const Activities: React.FC = () => {
 
   return (
     <div className="p-6">
+      {/* Seletor de visão — admin/gerente alternam entre Vendedor, SDR e Serviço */}
+      {isAdminOrManager && (
+        <div className="mb-6 inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1 dark:border-slate-700 dark:bg-slate-800/50">
+          {([
+            { key: "salesperson", label: "Vendedor" },
+            { key: "sdr", label: "SDR" },
+            { key: "service", label: "Serviço" },
+          ] as { key: ActivityView; label: string }[]).map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => { setView(opt.key); setCurrentPage(1); }}
+              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                view === opt.key
+                  ? "bg-blue-500 text-white"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isAdminOrManager && view === "service" ? (
+        <ServiceActivities embedded />
+      ) : (
+      <>
       {/* Header */}
       <div className="mb-6 flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
         <div className="flex flex-col items-center gap-3 sm:flex-row">
@@ -306,6 +344,8 @@ const Activities: React.FC = () => {
         onSessionEnd={() => fetchTasks(filters, currentPage)}
         isViewer={isViewer}
       />
+      </>
+      )}
     </div>
   );
 };

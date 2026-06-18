@@ -107,7 +107,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
         <KpiCard icon={<CheckCircle2 size={18} />} label="Ganhos no período" value={String(data.won_count)} sub={fmtMoney(data.won_value)} accent="bg-green-500/15 text-green-400" />
         <KpiCard icon={<XCircle size={18} />} label="Perdidos no período" value={String(data.lost_count)} accent="bg-red-500/15 text-red-400" />
         <KpiCard icon={<ActivityIcon size={18} />} label="Atividades no período" value={String(data.activities_count)} accent="bg-blue-500/15 text-blue-400" />
-        <KpiCard icon={<AlarmClock size={18} />} label="Parados 3d+" value={String(data.stuck_count)} accent="bg-amber-500/15 text-amber-400" />
+        <KpiCard icon={<AlarmClock size={18} />} label="Atrasados 3d+" value={String(data.stuck_count)} accent="bg-amber-500/15 text-amber-400" />
         <KpiCard icon={<TrendingUp size={18} />} label="Taxa de ganho" value={`${data.win_rate}%`} accent="bg-emerald-500/15 text-emerald-400" />
         <KpiCard icon={<DollarSign size={18} />} label="Ticket médio" value={fmtMoney(data.avg_ticket)} accent="bg-sky-500/15 text-sky-400" />
       </div>
