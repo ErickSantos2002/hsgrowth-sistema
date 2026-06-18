@@ -390,8 +390,10 @@ def check_scheduled_automations_task():
         from app.repositories.automation_repository import AutomationRepository
         repo = AutomationRepository(db)
 
-        # Busca automações que devem rodar agora
-        automations = repo.find_scheduled_to_run()
+        # Busca automações que devem rodar agora.
+        # next_run_at é gravado em UTC (datetime.utcnow()), então comparamos
+        # contra a hora atual em UTC.
+        automations = repo.find_scheduled_to_run(datetime.utcnow())
 
         executed_count = 0
         for automation in automations:
