@@ -170,6 +170,15 @@ export default function MainLayout() {
                                     return null;
                                 }
 
+                                // "Boards (Serviços)": exclusivo do time de serviço + gestão
+                                // (admin, gerente e role "service"). Demais roles não veem.
+                                if (
+                                    item.path === "/servicos" &&
+                                    !["admin", "manager", "service"].includes(user?.role ?? "")
+                                ) {
+                                    return null;
+                                }
+
                                 // Role "service": só vê o módulo de serviços + cadastros básicos
                                 // (Dashboard, Atividades, Boards Serviços, Clientes, Pessoas,
                                 //  Produtos e Configurações — esta com abas limitadas).

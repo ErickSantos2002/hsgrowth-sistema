@@ -243,6 +243,28 @@ def require_manager_or_admin():
     return checker
 
 
+def require_service_access():
+    """
+    Dependency que restringe o módulo de Serviços a admin, gerente e role 'service'.
+    Vendedor, SDR e visualizador não têm acesso (403).
+
+    Returns:
+        Dependency function que verifica se o role pode acessar o módulo de Serviços
+    """
+    async def checker(
+        current_user: User = Depends(get_current_active_user)
+    ) -> User:
+        allowed_roles = ("admin", "manager", "service")
+        if not current_user.role or current_user.role.name not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso restrito ao módulo de Serviços (admin, gerente ou serviço)."
+            )
+        return current_user
+
+    return checker
+
+
 def require_not_viewer():
     """
     Dependency que bloqueia acesso de usuários com role 'viewer' a endpoints de escrita.

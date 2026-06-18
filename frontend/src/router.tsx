@@ -61,6 +61,18 @@ const ServiceGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 };
 
 /**
+ * Protege o módulo de Serviço: só admin, gerente e role 'service' acessam.
+ * Vendedor, SDR e visualizador são redirecionados para os boards de Vendas.
+ */
+const ServiceTeamGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    if (user && !["admin", "manager", "service"].includes(user.role)) {
+        return <Navigate to="/boards" replace />;
+    }
+    return <>{children}</>;
+};
+
+/**
  * Página de Atividades: o role 'service' usa a visão de serviço (sistema
  * separado de atividades), os demais usam a de vendas.
  */
@@ -112,10 +124,10 @@ const AppRoutes: React.FC = () => (
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/boards" element={<ServiceGuard><Boards category="vendas" /></ServiceGuard>} />
       <Route path="/boards/:boardId" element={<ServiceGuard><KanbanBoard /></ServiceGuard>} />
-      <Route path="/servicos" element={<ServiceBoards />} />
-      <Route path="/servicos/calendario" element={<ServiceCalendar />} />
-      <Route path="/servicos/:boardId" element={<ServiceKanban />} />
-      <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceCardDetails />} />
+      <Route path="/servicos" element={<ServiceTeamGuard><ServiceBoards /></ServiceTeamGuard>} />
+      <Route path="/servicos/calendario" element={<ServiceTeamGuard><ServiceCalendar /></ServiceTeamGuard>} />
+      <Route path="/servicos/:boardId" element={<ServiceTeamGuard><ServiceKanban /></ServiceTeamGuard>} />
+      <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceTeamGuard><ServiceCardDetails /></ServiceTeamGuard>} />
       <Route path="/cards/:cardId" element={<ServiceGuard><CardDetails /></ServiceGuard>} />
       <Route path="/activities" element={<ActivitiesPage />} />
       <Route path="/clients" element={<Clients />} />
