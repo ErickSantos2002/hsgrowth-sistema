@@ -110,6 +110,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
       file_deleted: "file_deleted",
       card_moved: "stage_moved",
       card_won: "card_won",
+      card_won_reverted: "stage_moved",
       card_lost: "card_lost",
       card_title_changed: "title_changed",
       card_value_changed: "value_changed",

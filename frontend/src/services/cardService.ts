@@ -104,6 +104,16 @@ class CardService {
   }
 
   /**
+   * Reverte um negócio Ganho (somente admin): zera o ganho e devolve o card
+   * para a última etapa ativa anterior. Não afeta gamificação nem a dashboard
+   * (que conta ganhos por snapshot is_won).
+   */
+  async reopenWon(id: number): Promise<Card> {
+    const response = await api.post<Card>(`/api/v1/cards/${id}/reopen-won`);
+    return response.data;
+  }
+
+  /**
    * Reabre um negócio perdido criando um clone na lista de Prospecção
    * O card original permanece inalterado (continua perdido)
    */

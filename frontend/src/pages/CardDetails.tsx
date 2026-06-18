@@ -258,6 +258,31 @@ const CardDetails: React.FC = () => {
   };
 
   /**
+   * Reverte um negócio Ganho (somente admin): volta o card para a etapa ativa
+   * anterior e zera o ganho. Não afeta a dashboard (conta por snapshot is_won).
+   */
+  const handleReopenWon = async () => {
+    if (!card) return;
+    const confirmed = await confirm({
+      title: "Reverter Ganho",
+      message:
+        "O negócio deixará de ser Ganho e voltará para a última etapa ativa. " +
+        "A dashboard deixa de contabilizá-lo como ganho. Depois você pode marcá-lo como Perdido. Continuar?",
+      confirmText: "Reverter Ganho",
+      isDanger: true,
+    });
+    if (!confirmed) return;
+    try {
+      await cardService.reopenWon(card.id);
+      await loadCardData();
+      showSuccess("Ganho revertido. O negócio voltou para a etapa ativa.");
+    } catch (error: any) {
+      const detail = error?.response?.data?.detail;
+      showError(detail || "Erro ao reverter o ganho.");
+    }
+  };
+
+  /**
    * Marca como perdido (abre modal de motivo)
    */
   const handleMarkAsLost = () => {
@@ -963,10 +988,23 @@ const CardDetails: React.FC = () => {
 
               {/* Se já foi ganho ou perdido */}
               {card.is_won && (
-                <div className="flex items-center gap-2 rounded-lg py-2 text-sm border border-emerald-500/50 bg-emerald-500/20 px-3 font-medium text-emerald-400">
-                  <CheckCircle2 size={18} />
-                  Negócio Ganho
-                </div>
+                <>
+                  <div className="flex items-center gap-2 rounded-lg py-2 text-sm border border-emerald-500/50 bg-emerald-500/20 px-3 font-medium text-emerald-400">
+                    <CheckCircle2 size={16} />
+                    Negócio Ganho
+                  </div>
+                  {/* Reverter Ganho — exclusivo de admin */}
+                  {currentUser?.role === "admin" && (
+                    <button
+                      onClick={handleReopenWon}
+                      className="flex items-center gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-500 transition-colors hover:bg-amber-500/20 dark:text-amber-400"
+                      title="Desfaz o Ganho e devolve o card para a etapa ativa anterior"
+                    >
+                      <RefreshCw size={16} />
+                      Reverter Ganho
+                    </button>
+                  )}
+                </>
               )}
               {card.is_lost && (
                 <>

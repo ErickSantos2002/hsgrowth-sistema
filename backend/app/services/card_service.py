@@ -1943,6 +1943,126 @@ class CardService:
 
         return moved_card
 
+    def reopen_won_card(self, card_id: int, current_user: User) -> Card:
+        """
+        Reverte um Ganho (somente admin): zera o estado de ganho e devolve o card
+        para a última etapa ativa (não-terminal) anterior.
+
+        Não cria novo card e NÃO re-executa gamificação/automação (diferente de
+        move_card). Como a dashboard conta ganhos por snapshot (is_won == 1 +
+        closed_at), zerar esses campos faz o card deixar de ser contabilizado.
+        """
+        from app.models.list import List as BoardList
+        from app.models.card_list_history import CardListHistory
+        from datetime import datetime as _dt
+
+        card = self.get_card_by_id(card_id, current_user)
+
+        if card.is_won != 1:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Este negócio não está marcado como Ganho.",
+            )
+
+        done_list = self.list_repository.find_by_id(card.list_id)
+        if not done_list:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lista do card não encontrada.",
+            )
+        board_id = done_list.board_id
+
+        # Etapa de destino = última etapa ativa onde o card esteve antes do Ganho
+        # (via histórico de listas). Fallback: etapa ativa de maior posição.
+        target_list_id = None
+        history_entries = (
+            self.db.query(CardListHistory)
+            .filter(CardListHistory.card_id == card_id)
+            .order_by(CardListHistory.entered_at.desc())
+            .all()
+        )
+        for entry in history_entries:
+            if entry.list_id == card.list_id:
+                continue
+            lst = self.list_repository.find_by_id(entry.list_id)
+            if lst and lst.board_id == board_id and not lst.is_done_stage and not lst.is_lost_stage:
+                target_list_id = entry.list_id
+                break
+
+        if target_list_id is None:
+            candidate = (
+                self.db.query(BoardList)
+                .filter(
+                    BoardList.board_id == board_id,
+                    BoardList.is_done_stage == False,  # noqa: E712
+                    BoardList.is_lost_stage == False,  # noqa: E712
+                )
+                .order_by(BoardList.position.desc())
+                .first()
+            )
+            if not candidate:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Não há etapa ativa disponível para devolver o card.",
+                )
+            target_list_id = candidate.id
+
+        # Zera o estado de Ganho (volta a ser um card ativo)
+        card.is_won = 0
+        card.closed_at = None
+
+        # Move sem re-disparar gamificação/automação
+        moved_card = self.card_repository.move_to_list(card, target_list_id, None)
+
+        # Atualiza o histórico de listas
+        try:
+            history_now = _dt.utcnow()
+            open_entry = (
+                self.db.query(CardListHistory)
+                .filter(
+                    CardListHistory.card_id == card_id,
+                    CardListHistory.exited_at == None,  # noqa: E711
+                )
+                .first()
+            )
+            if open_entry:
+                open_entry.exited_at = history_now
+            self.db.add(CardListHistory(
+                card_id=card_id,
+                list_id=target_list_id,
+                board_id=board_id,
+                entered_at=history_now,
+            ))
+        except Exception as e:
+            print(f"[CARD_LIST_HISTORY] Erro ao registrar reversão de ganho: {e}")
+
+        # Registra no histórico de atividades do card (visível na timeline)
+        try:
+            target_list_obj = self.list_repository.find_by_id(target_list_id)
+            target_name = target_list_obj.name if target_list_obj else "etapa anterior"
+            self.activity_repository.create(
+                card_id=card_id,
+                user_id=current_user.id,
+                activity_type="card_won_reverted",
+                description=(
+                    f"Ganho revertido: movido de <strong>{done_list.name}</strong> "
+                    f"de volta para <strong>{target_name}</strong>"
+                ),
+                activity_metadata={
+                    "from_list": done_list.name,
+                    "to_list": target_name,
+                    "from_list_id": done_list.id,
+                    "to_list_id": target_list_id,
+                    "reverted_by": current_user.name,
+                },
+            )
+        except Exception as e:
+            print(f"[ACTIVITY] Erro ao registrar reversão de ganho no histórico: {e}")
+
+        self.db.commit()
+        self.db.refresh(moved_card)
+        return moved_card
+
     def _generate_congratulation_message(
         self,
         card: Card,

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException, Upl
 from sqlalchemy.orm import Session
 from app.repositories.notification_repository import NotificationRepository
 
-from app.api.deps import get_db, get_current_active_user, require_not_viewer
+from app.api.deps import get_db, get_current_active_user, require_not_viewer, require_role
 from app.services.card_service import CardService
 from app.schemas.card import (
     CardCloneResponse,
@@ -940,6 +940,79 @@ async def mark_card_lost(
         entity_type="Card",
         entity_id=card_id,
         description=f"Negócio #{card_id} marcado como perdido — motivo: {data.loss_reason}",
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    db.add(audit_log)
+    db.commit()
+
+    # Monta resposta com campos relacionados
+    from app.models.list import List as BoardList
+    from app.repositories.list_repository import ListRepository
+    list_repo = ListRepository(db)
+    list_obj = list_repo.find_by_id(moved_card.list_id)
+    list_name = list_obj.name if list_obj else None
+    board_id = list_obj.board_id if list_obj else None
+
+    board_has_done_stage = False
+    if board_id:
+        board_has_done_stage = db.query(BoardList).filter(
+            BoardList.board_id == board_id,
+            BoardList.is_done_stage == True,
+        ).first() is not None
+
+    assigned_to_name = None
+    if moved_card.assigned_to_id:
+        from app.models.user import User as UserModel
+        assigned_user = db.query(UserModel).filter(UserModel.id == moved_card.assigned_to_id).first()
+        if assigned_user:
+            assigned_to_name = assigned_user.name
+
+    return card_to_response(
+        moved_card,
+        assigned_to_name=assigned_to_name,
+        list_name=list_name,
+        board_id=board_id,
+        board_has_done_stage=board_has_done_stage,
+    )
+
+
+@router.post(
+    "/{card_id}/reopen-won",
+    response_model=CardResponse,
+    summary="Reverter um negócio Ganho (somente admin)",
+    responses={
+        200: {"description": "Ganho revertido — card volta para a última etapa ativa"},
+        422: {"description": "Card não está marcado como Ganho"},
+        403: {"description": "Permissão negada (apenas admin)"},
+        404: {"description": "Card não encontrado"},
+    }
+)
+async def reopen_won_card(
+    request: Request,
+    card_id: int = Path(..., description="ID do card ganho a ser revertido"),
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Reverte um negócio marcado como **Ganho** (exclusivo de admin).
+
+    Zera o estado de ganho (is_won/closed_at) e devolve o card para a última
+    etapa ativa anterior. Não cria novo card e não re-executa gamificação ou
+    automações. A dashboard deixa de contabilizar o ganho automaticamente.
+    """
+    service = CardService(db)
+    moved_card = service.reopen_won_card(card_id, current_user)
+
+    # Registra no audit log
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="UPDATE",
+        entity_type="Card",
+        entity_id=card_id,
+        description=f"Ganho revertido: card #{card_id} voltou para etapa ativa",
         ip_address=client_ip,
         user_agent=user_agent
     )
