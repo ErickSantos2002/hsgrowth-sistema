@@ -458,11 +458,18 @@ class ServiceBoardService:
 
     def _complete_pending_activities(self, card_id: int) -> int:
         """Conclui automaticamente as atividades pendentes do card (usado ao
-        marcar Ganho/Perdido). Nunca quebra o fluxo."""
+        marcar Ganho/Perdido). Nunca quebra o fluxo.
+
+        Exceção: atividades de **follow-up** NÃO são concluídas — elas costumam
+        ser agendadas para o futuro (ex.: marcar Perdido para não acumular e
+        reabrir o card no dia), então devem permanecer pendentes.
+        """
         try:
             pending = [
                 a for a in self.repo.list_card_activities(card_id)
-                if a.category == "atividade" and not a.is_completed
+                if a.category == "atividade"
+                and not a.is_completed
+                and a.activity_type != "follow_up"
             ]
             now = datetime.utcnow()
             for a in pending:

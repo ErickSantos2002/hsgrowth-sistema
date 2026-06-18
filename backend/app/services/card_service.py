@@ -1656,6 +1656,12 @@ class CardService:
             card.is_won = -1  # -1 = perdido (Integer no banco)
             card.closed_at = datetime.now()  # lost_at é uma property que usa closed_at
 
+        # Ao fechar (Ganho/Perdido), conclui as tarefas pendentes do card —
+        # EXCETO follow-up, que costuma ser agendada para o futuro (marcam Perdido
+        # para não acumular e reabrem o card no dia).
+        if target_list.is_done_stage or target_list.is_lost_stage:
+            self._complete_pending_tasks_except_followup(card.id)
+
         # Move o card
         moved_card = self.card_repository.move_to_list(card, target_list_id, position)
 
@@ -2062,6 +2068,28 @@ class CardService:
         self.db.commit()
         self.db.refresh(moved_card)
         return moved_card
+
+    def _complete_pending_tasks_except_followup(self, card_id: int) -> int:
+        """Conclui as tarefas pendentes do card ao fechar o negócio (Ganho/Perdido),
+        EXCETO as de follow-up (que permanecem pendentes). As alterações são
+        persistidas no commit do próprio move_card. Nunca quebra o fluxo."""
+        from app.models.card_task import CardTask, TaskType
+        try:
+            pending = (
+                self.db.query(CardTask)
+                .filter(
+                    CardTask.card_id == card_id,
+                    CardTask.is_completed == False,  # noqa: E712
+                    CardTask.task_type != TaskType.FOLLOW_UP,
+                )
+                .all()
+            )
+            for t in pending:
+                t.mark_as_completed()
+            return len(pending)
+        except Exception as e:  # pragma: no cover
+            print(f"[CARD-TASK] erro ao concluir tarefas pendentes ao fechar: {e}")
+            return 0
 
     def _generate_congratulation_message(
         self,

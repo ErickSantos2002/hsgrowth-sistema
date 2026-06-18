@@ -577,13 +577,18 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
             <ChevronLeft size={16} />
           </button>
         )}
-        <button
-          onClick={onAddCard}
-          className="group flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white"
-        >
-          <Plus size={16} className="transition-transform group-hover:scale-110" />
-          Adicionar card
-        </button>
+        {/* Adicionar card só na lista inicial (primeira) — evita pular etapas */}
+        {isFirst ? (
+          <button
+            onClick={onAddCard}
+            className="group flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white"
+          >
+            <Plus size={16} className="transition-transform group-hover:scale-110" />
+            Adicionar card
+          </button>
+        ) : (
+          <div className="flex-1" />
+        )}
         {canManage && !isLast && (
           <button onClick={onMoveRight} title="Mover para direita"
             className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white">

@@ -219,10 +219,15 @@ const ServiceCardModal: React.FC<ServiceCardModalProps> = ({
 
           {/* ── Informações básicas ── */}
           <div className="space-y-4">
-            <FormField label="Lista" hint="Selecione em qual lista o card será criado">
+            <FormField
+              label="Lista"
+              hint={isCreating
+                ? "Novos cards entram pela lista inicial — não é possível criar pulando etapas"
+                : "Selecione em qual lista o card será criado"}
+            >
               <SelectMenu
                 value={String(listId)}
-                disabled={saving}
+                disabled={saving || isCreating}
                 placeholder="Selecione a lista"
                 options={lists.map((l) => ({ value: String(l.id), label: l.name }))}
                 onChange={(v) => setListId(Number(v))}

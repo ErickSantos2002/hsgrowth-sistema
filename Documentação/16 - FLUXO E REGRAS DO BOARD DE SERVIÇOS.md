@@ -321,9 +321,10 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 ### Regras gerais (valem para todo o board)
 - **Não pode pular etapas**: o avanço é **uma etapa por vez** (o destino tem que ser a próxima etapa imediata). Tentar pular → bloqueia com a próxima etapa indicada.
+- **Criar card só na lista inicial** (Negócio Fechado): novos cards entram sempre pela primeira etapa. O botão "Adicionar card" só aparece na lista inicial e, no modal, a lista fica travada na criação — não dá pra criar pulando etapas.
 - **Voltar etapa** (mover para trás) é **livre** — sem trava (pode voltar mais de uma).
 - **Stepper não move para etapas terminais** (Ganho/Perdido ficam opacos) — só pelos botões.
-- Ao marcar **Ganho/Perdido**, as **atividades pendentes são concluídas automaticamente**.
+- Ao marcar **Ganho/Perdido**, as **atividades pendentes são concluídas automaticamente** — **exceto as de follow-up**, que permanecem pendentes (costumam ser agendadas para o futuro: marcam Perdido para não acumular e reabrem o card no dia). Vale para Vendas, SDR e Serviço.
 - **"Atividade concluída nesta etapa"** = atividade `category=atividade`, marcada como concluída **depois** de o card entrar na etapa atual (não reaproveita atividade de etapa anterior).
 - Esconder **Ganhos e Perdidos** do board por padrão (filtro "Apenas Abertos").
 
