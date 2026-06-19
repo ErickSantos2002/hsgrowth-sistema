@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from "react";
 import {
   Briefcase, CheckCircle2, XCircle, DollarSign, Activity as ActivityIcon,
-  AlarmClock, TrendingUp, Wrench, Trophy, Phone, CheckSquare, Clock, Mail,
-  MessageCircle, Users, Linkedin, MoreHorizontal,
+  AlarmClock, TrendingUp, Wrench, Trophy, Clock, Gauge,
 } from "lucide-react";
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Cell, Legend,
+} from "recharts";
 import serviceDashboardService, { ServiceDashboard as ServiceDashboardData } from "../../services/serviceDashboardService";
 import { LoadingSpinner } from "../common";
+import { getChartColors } from "../../constants/colors";
+import { useTheme } from "../../context/ThemeContext";
+import KpiCard from "./KpiCard";
 
 interface Props {
   period: string;
@@ -14,11 +20,54 @@ interface Props {
   periodLabel?: string;
 }
 
+const ACTIVITY_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16", "#94a3b8"];
+
+// Cor da barra por etapa do funil (Ganho = verde, Perdido = vermelho, resto = violeta)
+const stageColor = (name: string): string => {
+  const n = (name || "").toLowerCase();
+  if (n.includes("ganho")) return "#10b981";
+  if (n.includes("perdido")) return "#ef4444";
+  return "#8b5cf6";
+};
+
+// KPI compacto: composição por Tipo de serviço (Recalibração/Manutenção/Ambos com %)
+const ST_DOT: Record<string, string> = {
+  "Recalibração": "bg-emerald-500", "Manutenção": "bg-orange-500", "Ambos": "bg-violet-500",
+};
+const ServiceTypeKpi: React.FC<{ items: { name: string; count: number }[] }> = ({ items }) => {
+  const total = items.reduce((s, x) => s + x.count, 0);
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="rounded-lg bg-emerald-500/20 p-2"><Wrench size={16} className="text-emerald-400" /></div>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Tipo de serviço</p>
+      </div>
+      {total === 0 ? (
+        <p className="text-sm text-slate-400">Sem dados</p>
+      ) : (
+        <div className="space-y-1.5">
+          {["Recalibração", "Manutenção", "Ambos"].map((name) => {
+            const cnt = items.find((x) => x.name === name)?.count || 0;
+            const pct = Math.round((cnt / total) * 100);
+            return (
+              <div key={name} className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                  <span className={`h-2 w-2 rounded-full ${ST_DOT[name]}`} /> {name}
+                </span>
+                <span className="font-semibold text-slate-900 dark:text-white">{pct}%</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const fmtMoney = (v: number) => `R$ ${(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 const periodRange = (period: string, cs?: string, ce?: string): { start?: string; end?: string } => {
   const now = new Date();
-  // UTC sem 'Z' e sem milissegundos → compatível com datetime.fromisoformat do backend
   const iso = (d: Date) => d.toISOString().slice(0, 19);
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   switch (period) {
@@ -34,39 +83,20 @@ const periodRange = (period: string, cs?: string, ce?: string): { start?: string
   }
 };
 
-const TYPE_ICON: Record<string, React.ReactNode> = {
-  "Ligação": <Phone size={14} className="text-blue-400" />,
-  "Tarefa": <CheckSquare size={14} className="text-green-400" />,
-  "Follow-up": <Clock size={14} className="text-yellow-400" />,
-  "E-mail": <Mail size={14} className="text-orange-400" />,
-  "WhatsApp": <MessageCircle size={14} className="text-emerald-400" />,
-  "Reunião": <Users size={14} className="text-sky-400" />,
-  "LinkedIn": <Linkedin size={14} className="text-sky-400" />,
-  "Outro": <MoreHorizontal size={14} className="text-slate-400" />,
-};
-
-const KpiCard: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string; accent?: string }> = ({ icon, label, value, sub, accent }) => (
-  <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700/50 dark:bg-slate-800/40">
-    <div className="flex items-start justify-between">
-      <div className={`rounded-lg p-2 ${accent || "bg-violet-500/15 text-violet-400"}`}>{icon}</div>
-      <span className="text-2xl font-bold text-slate-900 dark:text-white">{value}</span>
+const ChartCard: React.FC<{ icon: React.ReactNode; iconBg: string; title: string; right?: React.ReactNode; children: React.ReactNode }> = ({ icon, iconBg, title, right, children }) => (
+  <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50">
+    <div className="mb-4 flex items-center gap-2">
+      <div className={`rounded-lg ${iconBg} p-2`}>{icon}</div>
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
+      {right && <div className="ml-auto">{right}</div>}
     </div>
-    <p className="mt-2 text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
-    {sub && <p className="text-xs text-slate-400 dark:text-slate-500">{sub}</p>}
-  </div>
-);
-
-const BarRow: React.FC<{ label: React.ReactNode; count: number; max: number; color?: string }> = ({ label, count, max, color }) => (
-  <div className="flex items-center gap-3">
-    <div className="flex w-40 flex-shrink-0 items-center gap-1.5 truncate text-sm text-slate-600 dark:text-slate-300">{label}</div>
-    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700/40">
-      <div className={`h-full rounded-full ${color || "bg-violet-500"}`} style={{ width: `${max > 0 ? (count / max) * 100 : 0}%` }} />
-    </div>
-    <span className="w-10 flex-shrink-0 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">{count}</span>
+    {children}
   </div>
 );
 
 const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, periodLabel }) => {
+  const { darkMode } = useTheme();
+  const chartColors = getChartColors(darkMode);
   const [data, setData] = useState<ServiceDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -92,99 +122,178 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
     return <p className="py-20 text-center text-slate-400">Não foi possível carregar a dashboard de serviços.</p>;
   }
 
-  const maxStage = Math.max(1, ...data.cards_by_stage.map((s) => s.count));
-  const maxType = Math.max(1, ...data.activities_by_type.map((t) => t.count));
-  const maxCollab = Math.max(1, ...data.collaborators.map((c) => c.activities));
+  const maxCollab = Math.max(1, ...data.collaborators.map((c) => c.activities + c.recalibrations));
+  const rec = data.recalibrations;
+
+  const tooltipStyle = {
+    contentStyle: { backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" },
+    labelStyle: { color: darkMode ? "#ffffff" : "#0f172a" },
+    itemStyle: { color: darkMode ? "#ffffff" : "#0f172a" },
+  };
 
   return (
     <div className="space-y-6">
       <p className="text-xs uppercase tracking-wide text-slate-400">Visão geral · {periodLabel || "Período"}</p>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-        <KpiCard icon={<Briefcase size={18} />} label="Negócios ativos" value={String(data.active_count)} accent="bg-violet-500/15 text-violet-400" />
-        <KpiCard icon={<DollarSign size={18} />} label="Pipeline (em aberto)" value={fmtMoney(data.pipeline_value)} accent="bg-emerald-500/15 text-emerald-400" />
-        <KpiCard icon={<CheckCircle2 size={18} />} label="Ganhos no período" value={String(data.won_count)} sub={fmtMoney(data.won_value)} accent="bg-green-500/15 text-green-400" />
-        <KpiCard icon={<XCircle size={18} />} label="Perdidos no período" value={String(data.lost_count)} accent="bg-red-500/15 text-red-400" />
-        <KpiCard icon={<ActivityIcon size={18} />} label="Atividades no período" value={String(data.activities_count)} accent="bg-blue-500/15 text-blue-400" />
-        <KpiCard icon={<AlarmClock size={18} />} label="Atrasados 3d+" value={String(data.stuck_count)} accent="bg-amber-500/15 text-amber-400" />
-        <KpiCard icon={<TrendingUp size={18} />} label="Taxa de ganho" value={`${data.win_rate}%`} accent="bg-emerald-500/15 text-emerald-400" />
-        <KpiCard icon={<DollarSign size={18} />} label="Ticket médio" value={fmtMoney(data.avg_ticket)} accent="bg-sky-500/15 text-sky-400" />
+      {/* ── KPIs (5 em cima · 4 embaixo, cada linha de canto a canto) ── */}
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <KpiCard icon={<Briefcase size={18} className="text-violet-400" />} iconBg="bg-violet-500/20" label="Negócios ativos" value={data.active_count} sub="Em aberto no pipeline" highlight="purple" />
+          <KpiCard icon={<DollarSign size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Pipeline (em aberto)" value={data.pipeline_value} format="currency" sub="Valor em aberto no período" highlight="green" />
+          <KpiCard icon={<CheckCircle2 size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Ganhos no período" value={data.won_count} sub={`${fmtMoney(data.won_value)} em receita`} highlight="green" />
+          <KpiCard icon={<XCircle size={18} className="text-red-400" />} iconBg="bg-red-500/20" label="Perdidos no período" value={data.lost_count} sub="Negócios perdidos no período" highlight="red" />
+          <KpiCard icon={<ActivityIcon size={18} className="text-blue-400" />} iconBg="bg-blue-500/20" label="Atividades no período" value={data.activities_count} sub="Registradas no período" highlight="blue" />
+        </div>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <KpiCard icon={<AlarmClock size={18} className="text-amber-400" />} iconBg="bg-amber-500/20" label="Atrasados 3d+" value={data.stuck_count} sub="Atividade vencida há 3+ dias" highlight="orange" />
+          <KpiCard icon={<TrendingUp size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Taxa de ganho" value={data.win_rate} format="percent" sub="Ganhos sobre fechados" highlight="green" />
+          <KpiCard icon={<DollarSign size={18} className="text-sky-400" />} iconBg="bg-sky-500/20" label="Ticket médio" value={data.avg_ticket} format="currency" sub="Valor médio por negócio ganho" highlight="blue" />
+          <ServiceTypeKpi items={data.service_type} />
+        </div>
       </div>
 
+      {/* ── Gráficos: Evolução + Funil ── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Funil */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/40">
-          <h3 className="mb-4 flex items-center gap-2 font-semibold text-slate-900 dark:text-white"><Wrench size={18} className="text-violet-400" /> Funil de serviços</h3>
+        <ChartCard icon={<TrendingUp size={16} className="text-violet-400" />} iconBg="bg-violet-500/20" title="Evolução de Serviços">
+          {data.evolution.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={data.evolution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
+                <XAxis dataKey="period" tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} />
+                <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} />
+                <Tooltip {...tooltipStyle} formatter={(v: number, name: string) => [v, name === "won" ? "Ganhos" : name === "lost" ? "Perdidos" : "Atividades"]} />
+                <Legend formatter={(value) => (value === "won" ? "Ganhos" : value === "lost" ? "Perdidos" : "Atividades")} wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="activities" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: "#3b82f6" }} name="activities" />
+                <Line type="monotone" dataKey="won" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: "#10b981" }} name="won" />
+                <Line type="monotone" dataKey="lost" stroke="#ef4444" strokeWidth={2} dot={{ r: 3, fill: "#ef4444" }} name="lost" />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-48 items-center justify-center text-sm text-slate-400">Sem dados</div>
+          )}
+        </ChartCard>
+
+        <ChartCard
+          icon={<Wrench size={16} className="text-violet-400" />}
+          iconBg="bg-violet-500/20"
+          title="Funil de serviços"
+          right={<span className="rounded-full bg-violet-500/20 px-2.5 py-0.5 text-xs font-semibold text-violet-400">{data.cards_by_stage.reduce((s, x) => s + x.count, 0)} cards</span>}
+        >
           {data.cards_by_stage.length === 0 ? (
             <p className="py-6 text-center text-sm text-slate-400">Sem dados</p>
           ) : (
-            <div className="space-y-2.5">
-              {data.cards_by_stage.map((s) => (
-                <BarRow key={s.stage_name} label={<span className="truncate">{s.stage_name}</span>} count={s.count} max={maxStage} color="bg-violet-500" />
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={data.cards_by_stage} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
+                <XAxis dataKey="stage_name" tick={{ fill: chartColors.content.secondary, fontSize: 9 }} angle={-35} textAnchor="end" height={70} interval={0} tickLine={false} />
+                <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "Cards"]} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {data.cards_by_stage.map((s, i) => (
+                    <Cell key={i} fill={stageColor(s.stage_name)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           )}
-        </div>
+        </ChartCard>
+      </div>
 
-        {/* Atividades por tipo */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/40">
-          <h3 className="mb-4 flex items-center gap-2 font-semibold text-slate-900 dark:text-white"><ActivityIcon size={18} className="text-blue-400" /> Atividades por tipo</h3>
+      {/* ── Gráficos: Atividades por tipo + Motivos de perda ── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <ChartCard icon={<ActivityIcon size={16} className="text-blue-400" />} iconBg="bg-blue-500/20" title="Atividades por tipo">
           {data.activities_by_type.length === 0 ? (
             <p className="py-6 text-center text-sm text-slate-400">Nenhuma atividade no período</p>
           ) : (
-            <div className="space-y-2.5">
-              {data.activities_by_type.map((t) => (
-                <BarRow key={t.name} label={<>{TYPE_ICON[t.name] || <ActivityIcon size={14} />} <span className="truncate">{t.name}</span></>} count={t.count} max={maxType} color="bg-blue-500" />
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={data.activities_by_type} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: chartColors.content.secondary, fontSize: 10 }} tickLine={false} />
+                <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "Atividades"]} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {data.activities_by_type.map((_, i) => (
+                    <Cell key={i} fill={ACTIVITY_COLORS[i % ACTIVITY_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           )}
-        </div>
-      </div>
+        </ChartCard>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Ranking colaboradores */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/40">
-          <h3 className="mb-4 flex items-center gap-2 font-semibold text-slate-900 dark:text-white"><Trophy size={18} className="text-amber-400" /> Ranking de colaboradores</h3>
-          {data.collaborators.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-400">Nenhuma atividade no período</p>
-          ) : (
-            <div className="space-y-2">
-              {data.collaborators.map((c, i) => (
-                <div key={c.user_id} className="flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50/50 p-2.5 dark:border-slate-700/40 dark:bg-slate-900/30">
-                  <span className="w-5 text-center text-sm font-bold text-slate-400">{i + 1}</span>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/20 text-xs font-semibold text-violet-400">
-                    {c.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{c.name}</p>
-                    <div className="mt-0.5 flex flex-1 items-center gap-1 overflow-hidden rounded-full">
-                      <div className="h-1.5 rounded-full bg-violet-500" style={{ width: `${(c.activities / maxCollab) * 100}%` }} />
-                    </div>
-                  </div>
-                  <div className="flex flex-shrink-0 items-center gap-3 text-xs">
-                    <span className="text-slate-500 dark:text-slate-400"><b className="text-slate-700 dark:text-slate-200">{c.activities}</b> ativ.</span>
-                    <span className="text-green-500"><b>{c.won}</b> ✓</span>
-                    <span className="text-red-400"><b>{c.lost}</b> ✗</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Motivos de perda */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/40">
-          <h3 className="mb-4 flex items-center gap-2 font-semibold text-slate-900 dark:text-white"><XCircle size={18} className="text-red-400" /> Motivos de perda</h3>
+        <ChartCard icon={<XCircle size={16} className="text-red-400" />} iconBg="bg-red-500/20" title="Motivos de perda">
           {data.loss_reasons.length === 0 ? (
             <p className="py-6 text-center text-sm text-slate-400">Nenhuma perda no período</p>
           ) : (
-            <div className="space-y-2.5">
-              {data.loss_reasons.map((r) => (
-                <BarRow key={r.name} label={<span className="truncate">{r.name}</span>} count={r.count} max={Math.max(1, ...data.loss_reasons.map((x) => x.count))} color="bg-red-500" />
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={data.loss_reasons} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fill: chartColors.content.secondary, fontSize: 9 }}
+                  angle={-35}
+                  textAnchor="end"
+                  height={70}
+                  interval={0}
+                  tickLine={false}
+                  tickFormatter={(v: string) => (v.length > 16 ? `${v.slice(0, 16)}…` : v)}
+                />
+                <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "Perdas"]} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="#ef4444" />
+              </BarChart>
+            </ResponsiveContainer>
           )}
+        </ChartCard>
+      </div>
+
+      {/* ── Ranking de colaboradores ── */}
+      <ChartCard icon={<Trophy size={16} className="text-amber-400" />} iconBg="bg-amber-500/20" title="Ranking de colaboradores">
+        {data.collaborators.length === 0 ? (
+          <p className="py-6 text-center text-sm text-slate-400">Nenhuma atividade no período</p>
+        ) : (
+          <div className="space-y-2">
+            {data.collaborators.map((c, i) => (
+              <div key={c.user_id} className="flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50/50 p-2.5 dark:border-slate-700/40 dark:bg-slate-900/30">
+                <span className="w-5 text-center text-sm font-bold text-slate-400">{i + 1}</span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/20 text-xs font-semibold text-violet-400">
+                  {c.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{c.name}</p>
+                  <div className="mt-0.5 flex flex-1 items-center gap-1 overflow-hidden rounded-full">
+                    <div className="h-1.5 rounded-full bg-violet-500" style={{ width: `${((c.activities + c.recalibrations) / maxCollab) * 100}%` }} />
+                  </div>
+                </div>
+                <div className="flex flex-shrink-0 items-center gap-3 text-xs">
+                  <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400" title="Atividades realizadas">
+                    <ActivityIcon size={13} className="text-blue-400" /> <b className="text-slate-700 dark:text-slate-200">{c.activities}</b>
+                  </span>
+                  <span className="flex items-center gap-1 text-violet-500 dark:text-violet-400" title="Recalibrações concluídas">
+                    <Wrench size={13} /> <b>{c.recalibrations}</b>
+                  </span>
+                  <span className="flex items-center gap-1 text-green-500" title="Negócios ganhos">
+                    <CheckCircle2 size={13} /> <b>{c.won}</b>
+                  </span>
+                  <span className="flex items-center gap-1 text-red-400" title="Negócios perdidos">
+                    <XCircle size={13} /> <b>{c.lost}</b>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </ChartCard>
+
+      {/* ── Atenção · Riscos ── */}
+      <div>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-red-400">Atenção · Riscos</h2>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <KpiCard icon={<Gauge size={18} className="text-red-400" />} iconBg="bg-red-500/20" label="Recalibrações vencidas" value={rec.overdue} sub="aparelhos" highlight="red" />
+          <KpiCard icon={<Clock size={18} className="text-orange-400" />} iconBg="bg-orange-500/20" label="Vencem em 30 dias" value={rec.due_30} sub="aparelhos" highlight="orange" />
+          <KpiCard icon={<Clock size={18} className="text-yellow-500" />} iconBg="bg-yellow-500/20" label="Vencem em 90 dias" value={rec.due_90} sub="aparelhos" highlight="yellow" />
+          <KpiCard icon={<AlarmClock size={18} className="text-amber-400" />} iconBg="bg-amber-500/20" label="Cards atrasados 3d+" value={data.stuck_count} sub="atividade vencida" highlight="orange" />
+          <KpiCard icon={<Wrench size={18} className="text-sky-400" />} iconBg="bg-sky-500/20" label="Aparelhos monitorados" value={rec.total_devices} sub="com data de recalibração" highlight="blue" />
         </div>
       </div>
     </div>

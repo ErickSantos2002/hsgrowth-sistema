@@ -17,7 +17,10 @@ from app.models.service_card_activity import ServiceCardActivity
 from app.models.user import User
 from app.schemas.service_dashboard import (
     ServiceDashboardResponse, NameCount, StageCount, CollaboratorStat,
+    DayPoint, RecalibrationStats,
 )
+
+MONTH_ABBR = ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
 TYPE_LABELS = {
     "call": "Ligação", "task": "Tarefa", "follow_up": "Follow-up",
@@ -121,6 +124,48 @@ class ServiceDashboardService:
         )
         stuck_count = len(overdue_3d_cards)
 
+        # ── Recalibrações (a partir dos aparelhos) ───────────────────────────
+        today = datetime(now.year, now.month, now.day)
+        active_ids_set = {c.id for c in active_cards}
+        overdue_r = due_30 = due_50 = due_90 = total_devices = 0
+        devices_per_card: dict = {}  # card_id -> nº de aparelhos (p/ ranking)
+        if card_ids:
+            prod_rows = (
+                db.query(ServiceCardProduct.service_card_id, ServiceCardProduct.aparelhos)
+                .filter(ServiceCardProduct.service_card_id.in_(card_ids))
+                .all()
+            )
+            for cid, aparelhos in prod_rows:
+                if not aparelhos:
+                    continue
+                for ap in aparelhos:
+                    devices_per_card[cid] = devices_per_card.get(cid, 0) + 1
+                    # Estatística de vencimento só p/ cards ativos (pipeline)
+                    if cid not in active_ids_set:
+                        continue
+                    raw = (ap or {}).get("next_recalibration_date")
+                    if not raw:
+                        continue
+                    try:
+                        d = datetime.fromisoformat(str(raw)[:10])
+                    except Exception:
+                        continue
+                    total_devices += 1
+                    delta = (d - today).days
+                    if delta < 0:
+                        overdue_r += 1
+                    else:
+                        if delta <= 30:
+                            due_30 += 1
+                        if delta <= 50:
+                            due_50 += 1
+                        if delta <= 90:
+                            due_90 += 1
+        recalibrations = RecalibrationStats(
+            overdue=overdue_r, due_30=due_30, due_50=due_50, due_90=due_90,
+            total_devices=total_devices,
+        )
+
         # ── Atividades no período (category=atividade) ───────────────────────
         act_rows = (
             db.query(ServiceCardActivity.activity_type, ServiceCardActivity.user_id)
@@ -144,6 +189,12 @@ class ServiceDashboardService:
         collab_act = Counter(uid for _, uid in act_rows if uid)
         collab_won = Counter(uid for _, uid in won_events if uid)
         collab_lost = Counter(uid for _, uid in lost_events if uid)
+        # Recalibrações concluídas = aparelhos dos negócios ganhos no período,
+        # atribuídos a quem registrou o ganho.
+        collab_recal: Counter = Counter()
+        for cid, uid in won_events:
+            if uid:
+                collab_recal[uid] += devices_per_card.get(cid, 0)
         all_uids = set(collab_act) | set(collab_won) | set(collab_lost)
         names = (
             {u.id: u.name for u in db.query(User).filter(User.id.in_(list(all_uids))).all()}
@@ -157,10 +208,11 @@ class ServiceDashboardService:
                     activities=collab_act.get(uid, 0),
                     won=collab_won.get(uid, 0),
                     lost=collab_lost.get(uid, 0),
+                    recalibrations=collab_recal.get(uid, 0),
                 )
                 for uid in all_uids
             ],
-            key=lambda x: (x.activities, x.won),
+            key=lambda x: (x.activities + x.recalibrations, x.won),
             reverse=True,
         )
 
@@ -184,6 +236,66 @@ class ServiceDashboardService:
                     reason_counter[r] += 1
         loss_reasons = [NameCount(name=r, count=c) for r, c in reason_counter.most_common()]
 
+        # ── Composição dos negócios em aberto (business_info) ────────────────
+        MOD_LABELS = {"venda": "Venda", "locacao": "Locação"}
+        ST_LABELS = {"recalibracao": "Recalibração", "manutencao": "Manutenção", "ambos": "Ambos"}
+        modality_counter: Counter = Counter()
+        service_type_counter: Counter = Counter()
+        for c in active_cards:
+            bi = c.business_info or {}
+            m = str(bi.get("modality") or "").strip()
+            if m in MOD_LABELS:
+                modality_counter[MOD_LABELS[m]] += 1
+            st = str(bi.get("service_type") or "").strip()
+            if st in ST_LABELS:
+                service_type_counter[ST_LABELS[st]] += 1
+        modality = [NameCount(name=k, count=v) for k, v in modality_counter.most_common()]
+        service_type = [NameCount(name=k, count=v) for k, v in service_type_counter.most_common()]
+
+        # ── Evolução temporal (últimos 6 meses, independe do filtro) ─────────
+        months = []
+        yy, mm = now.year, now.month
+        for _ in range(6):
+            months.append((yy, mm))
+            mm -= 1
+            if mm == 0:
+                mm = 12
+                yy -= 1
+        months.reverse()
+        won_by_month: Counter = Counter()
+        lost_by_month: Counter = Counter()
+        for c in cards:
+            if c.updated_at:
+                key = (c.updated_at.year, c.updated_at.month)
+                if c.list_id in done_ids:
+                    won_by_month[key] += 1
+                elif c.list_id in lost_ids:
+                    lost_by_month[key] += 1
+        act_by_month: Counter = Counter()
+        if card_ids:
+            range_start = datetime(months[0][0], months[0][1], 1)
+            act_dates = (
+                db.query(ServiceCardActivity.created_at)
+                .filter(
+                    ServiceCardActivity.service_card_id.in_(card_ids),
+                    ServiceCardActivity.category == "atividade",
+                    ServiceCardActivity.created_at >= range_start,
+                )
+                .all()
+            )
+            for (dt,) in act_dates:
+                if dt:
+                    act_by_month[(dt.year, dt.month)] += 1
+        evolution = [
+            DayPoint(
+                period=f"{MONTH_ABBR[m]}/{str(y)[2:]}",
+                won=won_by_month.get((y, m), 0),
+                lost=lost_by_month.get((y, m), 0),
+                activities=act_by_month.get((y, m), 0),
+            )
+            for (y, m) in months
+        ]
+
         return ServiceDashboardResponse(
             active_count=len(active_cards),
             pipeline_value=pipeline_value,
@@ -198,4 +310,8 @@ class ServiceDashboardService:
             activities_by_type=activities_by_type,
             collaborators=collaborators,
             loss_reasons=loss_reasons,
+            evolution=evolution,
+            recalibrations=recalibrations,
+            modality=modality,
+            service_type=service_type,
         )

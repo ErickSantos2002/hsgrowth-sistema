@@ -2,7 +2,9 @@ import api from "./api";
 
 export interface NameCount { name: string; count: number; }
 export interface StageCount { stage_name: string; count: number; }
-export interface CollaboratorStat { user_id: number; name: string; activities: number; won: number; lost: number; }
+export interface CollaboratorStat { user_id: number; name: string; activities: number; won: number; lost: number; recalibrations: number; }
+export interface DayPoint { period: string; won: number; lost: number; activities: number; }
+export interface RecalibrationStats { overdue: number; due_30: number; due_50: number; due_90: number; total_devices: number; }
 
 export interface ServiceDashboard {
   active_count: number;
@@ -18,6 +20,10 @@ export interface ServiceDashboard {
   activities_by_type: NameCount[];
   collaborators: CollaboratorStat[];
   loss_reasons: NameCount[];
+  evolution: DayPoint[];
+  recalibrations: RecalibrationStats;
+  modality: NameCount[];
+  service_type: NameCount[];
 }
 
 class ServiceDashboardService {
