@@ -363,3 +363,44 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 - **Ligações válidas × não válidas** (efetividade — usa o `is_valid` já registrado nas atividades de ligação).
 
 > **Recomendação:** começar pela **7.1 (Recalibrações)** — é a de maior valor operacional e conecta com a automação dos 50 dias.
+
+---
+
+## 8. BOARD DE COBRANÇA (Serviços - Atrasados)
+
+> Board **independente** do funil oficial (id 2, "Serviços - Atrasados", chamado de **Cobrança**).
+> Mesmo padrão do board principal: regras de avanço próprias, comportamento de Ganho/Perdido
+> (auto-conclui atividades pendentes **exceto follow-up**) e **dashboard própria** ("Cobrança").
+> **Acesso:** os mesmos do módulo de Serviço (admin, gerente e role "serviço").
+> Implementação: o `_validate_advance` passa a ser **por board** — board 1 com as regras do funil
+> oficial, board 2 (Cobrança) com as regras abaixo.
+
+### 8.1. Estrutura (6 etapas)
+
+| # | Lista | Tipo |
+|---|---|---|
+| 1 | Oportunidade Existente | Entrada (1ª etapa) |
+| 2 | Tentativa de Contato | Ativa |
+| 3 | Proposta | Ativa |
+| 4 | Operações | Ativa |
+| 5 | Negócio Ganho | `is_done_stage` |
+| 6 | Negócio Perdido | terminal (nome "perdido") |
+
+### 8.2. Matriz de regras de avanço
+
+| # | Transição | O que exige para avançar |
+|---|---|---|
+| 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada |
+| 2 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) + **Recalibração/Manutenção** (`service_type`) preenchido |
+| 3 | Proposta → Operações | **Proposta anexada** + **Formulário enviado** (checkbox `form_answered`) |
+| 4 | Operações → **Negócio Ganho** | botão Ganho acende em **Operações** · **sem regra por enquanto** (a definir depois) |
+| 5 | → **Negócio Perdido** | só pelo botão Perdido · **Motivo da perda** (modal) |
+
+### 8.3. Regras gerais
+- **Não pode pular etapas** (uma por vez); voltar é livre.
+- **Criar card só na lista inicial** (Oportunidade Existente).
+- **Ganho/Perdido** só pelos botões; ao marcar, conclui atividades pendentes **exceto follow-up**.
+
+### 8.4. Pendências
+- [ ] **Dashboard "Cobrança"** (passo 3) — mesmo padrão da dashboard de Serviço, filtrando o board 2.
+- [ ] Regra de avanço **Operações → Ganho** (a definir).
