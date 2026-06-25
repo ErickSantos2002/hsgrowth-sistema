@@ -989,15 +989,24 @@ const ServiceCardDetails: React.FC = () => {
     const hasProposta = activities.some((a) => a.category === "arquivo" && a.activity_metadata?.doc_slot === "proposta");
     const hasOC = activities.some((a) => a.category === "arquivo" && a.activity_metadata?.doc_slot === "oc");
 
-    if (isProposta && closingType === "faturamento_direto") {
-      // Caminho Faturamento direto: Proposta → Ganho (exige Proposta anexada)
-      if (!hasProposta) { showError("Anexe a Proposta no Resumo antes de marcar como Ganho."); return; }
-    } else if (isAwaiting) {
-      // Caminho Pedido: Aguardando Pedido → Ganho (exige OC anexada)
-      if (!hasOC) { showError("Anexe a OC (Ordem de Compra) no Resumo antes de marcar como Ganho."); return; }
+    if (numBoardId === 1) {
+      // Funil oficial — dois caminhos:
+      if (isProposta && closingType === "faturamento_direto") {
+        // Faturamento direto: Proposta → Ganho (exige Proposta anexada)
+        if (!hasProposta) { showError("Anexe a Proposta no Resumo antes de marcar como Ganho."); return; }
+      } else if (isAwaiting) {
+        // Pedido: Aguardando Pedido → Ganho (exige OC anexada)
+        if (!hasOC) { showError("Anexe a OC (Ordem de Compra) no Resumo antes de marcar como Ganho."); return; }
+      } else {
+        showError("O Ganho só é liberado em 'Aguardando Pedido' (Pedido) ou em 'Proposta' com Forma de fechamento = Faturamento direto.");
+        return;
+      }
     } else {
-      showError("O Ganho só é liberado em 'Aguardando Pedido' (Pedido) ou em 'Proposta' com Forma de fechamento = Faturamento direto.");
-      return;
+      // Demais boards com regra (ex: Cobrança): Ganho na última etapa ativa, sem trava.
+      if (!isAwaiting) {
+        showError(`O Ganho só é liberado na etapa "${winStage?.name || "última etapa ativa"}".`);
+        return;
+      }
     }
 
     const ok = await confirm({ title: "Marcar como Ganho", message: `Mover este card para "${doneList.name}"?`, confirmText: "Ganho", isDanger: false });
@@ -1087,6 +1096,7 @@ const ServiceCardDetails: React.FC = () => {
   const winStageList = getWinStage();
   const isOnAwaiting = !!winStageList && !!currentList && currentList.id === winStageList.id;
   const isOnPropostaDirect =
+    numBoardId === 1 &&
     !!currentList && /^proposta$/i.test((currentList.name || "").trim()) &&
     card?.business_info?.closing_type === "faturamento_direto";
   const isOnWinStage = isOnAwaiting || isOnPropostaDirect;

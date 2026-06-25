@@ -27,8 +27,8 @@ export interface ServiceDashboard {
 }
 
 class ServiceDashboardService {
-  async get(start?: string, end?: string): Promise<ServiceDashboard> {
-    const r = await api.get<ServiceDashboard>("/api/v1/service-dashboard", { params: { start, end } });
+  async get(start?: string, end?: string, board?: number): Promise<ServiceDashboard> {
+    const r = await api.get<ServiceDashboard>("/api/v1/service-dashboard", { params: { start, end, board } });
     return r.data;
   }
 }

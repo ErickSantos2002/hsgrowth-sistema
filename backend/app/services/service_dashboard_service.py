@@ -34,17 +34,18 @@ class ServiceDashboardService:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_dashboard(self, start: datetime, end: datetime) -> ServiceDashboardResponse:
+    def get_dashboard(self, start: datetime, end: datetime, boards=None) -> ServiceDashboardResponse:
         db = self.db
         now = datetime.utcnow()
         threshold = now - timedelta(days=3)
 
         # ── Boards / listas ──────────────────────────────────────────────────
-        # Dashboard considera apenas o funil oficial — boards duplicados (kanban
-        # livre) ficam de fora dos KPIs.
+        # Por padrão, considera só o funil oficial. `boards` permite filtrar outro
+        # board com regra (ex: Cobrança = {2}). Boards livres ficam de fora.
+        target = boards if boards is not None else SERVICE_FUNNEL_BOARD_IDS
         board_ids = [
             b.id for b in db.query(ServiceBoard.id)
-            .filter(ServiceBoard.is_deleted == False, ServiceBoard.id.in_(SERVICE_FUNNEL_BOARD_IDS))  # noqa: E712
+            .filter(ServiceBoard.is_deleted == False, ServiceBoard.id.in_(target))  # noqa: E712
             .all()
         ]
         lists = db.query(ServiceList).filter(ServiceList.board_id.in_(board_ids)).all() if board_ids else []

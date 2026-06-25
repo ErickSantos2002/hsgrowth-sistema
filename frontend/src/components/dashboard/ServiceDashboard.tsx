@@ -18,6 +18,7 @@ interface Props {
   customStart?: string;
   customEnd?: string;
   periodLabel?: string;
+  board?: number; // 1 = funil oficial (padrão), 2 = Cobrança
 }
 
 const ACTIVITY_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16", "#94a3b8"];
@@ -94,7 +95,7 @@ const ChartCard: React.FC<{ icon: React.ReactNode; iconBg: string; title: string
   </div>
 );
 
-const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, periodLabel }) => {
+const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, periodLabel, board }) => {
   const { darkMode } = useTheme();
   const chartColors = getChartColors(darkMode);
   const [data, setData] = useState<ServiceDashboardData | null>(null);
@@ -105,7 +106,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
       setLoading(true);
       try {
         const { start, end } = periodRange(period, customStart, customEnd);
-        setData(await serviceDashboardService.get(start, end));
+        setData(await serviceDashboardService.get(start, end, board));
       } catch {
         setData(null);
       } finally {
@@ -113,7 +114,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
       }
     };
     load();
-  }, [period, customStart, customEnd]);
+  }, [period, customStart, customEnd, board]);
 
   if (loading) {
     return <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>;

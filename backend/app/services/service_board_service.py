@@ -27,9 +27,14 @@ from app.models.service_card_product import ServiceCardProduct
 from app.models.service_card_activity import ServiceCardActivity
 from app.models.user import User
 
-# Board(s) de serviço que possuem as regras de avanço (funil oficial).
-# Boards duplicados (outros IDs) funcionam como kanban livre, sem travas.
+# Funil oficial de serviço (board 1) — usado pela dashboard principal de Serviço.
 SERVICE_FUNNEL_BOARD_IDS = {1}
+
+# Boards que possuem regras de avanço + comportamento de Ganho/Perdido:
+#   1 = Serviços (funil oficial) · 2 = Cobrança (Serviços - Atrasados).
+# Cada um tem regras próprias (ver _validate_advance). Demais boards de serviço
+# (duplicados) funcionam como kanban livre, sem regras.
+SERVICE_RULE_BOARD_IDS = {1, 2}
 
 
 # Diretório base de uploads (mesmo volume usado pelos anexos de vendas)
@@ -331,15 +336,16 @@ class ServiceBoardService:
         """Trava de avanço por etapa: bloqueia mover o card se as obrigatoriedades
         da etapa não estiverem cumpridas. Só valida avanço (não voltar etapa).
 
-        As regras valem APENAS para o funil oficial (SERVICE_FUNNEL_BOARD_IDS).
-        Boards duplicados/outros funcionam como kanban livre — sem travas, mesmo
-        que as listas tenham os mesmos nomes."""
+        As regras valem para os boards com regra (SERVICE_RULE_BOARD_IDS), cada um
+        com seu próprio conjunto: board 1 = funil oficial, board 2 = Cobrança.
+        Boards duplicados/outros funcionam como kanban livre."""
         if not old_list or not new_list or old_list.id == new_list.id:
             return
 
-        # Boards fora do funil oficial: kanban livre (sem regras de avanço).
-        if old_list.board_id not in SERVICE_FUNNEL_BOARD_IDS:
+        # Boards sem regra: kanban livre (sem travas de avanço).
+        if old_list.board_id not in SERVICE_RULE_BOARD_IDS:
             return
+        board_id = old_list.board_id
 
         acts = self.repo.list_card_activities(card.id)
         biz = card.business_info or {}
@@ -371,19 +377,22 @@ class ServiceBoardService:
         new_name = (new_list.name or "").lower()
         src_name = (old_list.name or "").strip().lower()
 
-        # Destino: Negócio Ganho — dois caminhos conforme a etapa de origem:
-        #   • De "Proposta" (Faturamento direto): exige forma=faturamento_direto + Proposta anexada
-        #   • De "Aguardando Pedido" (Pedido): exige OC anexada
+        # Destino: Negócio Ganho — regras por board.
         if new_list.is_done_stage or "ganho" in new_name:
             miss = []
-            if src_name == "proposta":
-                if biz.get("closing_type") != "faturamento_direto":
-                    miss.append("selecionar 'Faturamento direto' na Forma de fechamento (Resumo) — se for 'Pedido', avance para 'Aguardando Pedido'")
-                if not has_slot("proposta"):
-                    miss.append("Proposta anexada no Resumo")
-            else:
-                if not has_slot("oc"):
-                    miss.append("OC (Ordem de Compra) anexada no Resumo")
+            if board_id == 1:
+                # Funil oficial — dois caminhos conforme a origem:
+                #   De "Proposta" (Faturamento direto): forma=faturamento_direto + Proposta anexada
+                #   De "Aguardando Pedido" (Pedido): OC anexada
+                if src_name == "proposta":
+                    if biz.get("closing_type") != "faturamento_direto":
+                        miss.append("selecionar 'Faturamento direto' na Forma de fechamento (Resumo) — se for 'Pedido', avance para 'Aguardando Pedido'")
+                    if not has_slot("proposta"):
+                        miss.append("Proposta anexada no Resumo")
+                else:
+                    if not has_slot("oc"):
+                        miss.append("OC (Ordem de Compra) anexada no Resumo")
+            # board 2 (Cobrança): Operações → Ganho sem regra (por enquanto).
             if miss:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                     detail="Para marcar como Ganho, é preciso: " + "; ".join(miss) + ".")
@@ -411,31 +420,57 @@ class ServiceBoardService:
         old_name = (old_list.name or "").strip().lower()
         miss = []
 
-        if "liberados do laboratório" in old_name or "liberados do laboratorio" in old_name:
-            # Liberados do Laboratório → Dados Preenchidos
-            if not has_slot("os"):
-                miss.append("OS (Ordem de Serviço) anexada no Resumo")
-        elif "dados preenchidos" in old_name:
-            # Dados Preenchidos → Tentativa de Contato
-            products = self.repo.list_card_products(card.id)
-            if not products:
-                miss.append("ao menos 1 produto no card")
-            if not card.client_id:
-                miss.append("Empresa (Cliente) vinculada")
-            if not card.person_id:
-                miss.append("Pessoa (Contato de informação) vinculada")
-            if not biz.get("service_type"):
-                miss.append("Recalibração e/ou Manutenção (no Resumo)")
-        elif "tentativa de contato" in old_name:
-            # Tentativa de Contato → Proposta
-            if not has_completed_activity():
-                miss.append("pelo menos 1 atividade concluída nesta etapa")
-        elif old_name == "proposta":
-            # Proposta → Aguardando Pedido (caminho Pedido)
-            if biz.get("closing_type") != "pedido":
-                miss.append("selecionar 'Pedido' na Forma de fechamento (Resumo) — se for 'Faturamento direto', use o botão Ganho")
-            if not has_slot("proposta"):
-                miss.append("Proposta anexada no Resumo")
+        if board_id == 1:
+            # ── Funil oficial ──
+            if "liberados do laboratório" in old_name or "liberados do laboratorio" in old_name:
+                # Liberados do Laboratório → Dados Preenchidos
+                if not has_slot("os"):
+                    miss.append("OS (Ordem de Serviço) anexada no Resumo")
+            elif "dados preenchidos" in old_name:
+                # Dados Preenchidos → Tentativa de Contato
+                products = self.repo.list_card_products(card.id)
+                if not products:
+                    miss.append("ao menos 1 produto no card")
+                if not card.client_id:
+                    miss.append("Empresa (Cliente) vinculada")
+                if not card.person_id:
+                    miss.append("Pessoa (Contato de informação) vinculada")
+                if not biz.get("service_type"):
+                    miss.append("Recalibração e/ou Manutenção (no Resumo)")
+            elif "tentativa de contato" in old_name:
+                # Tentativa de Contato → Proposta
+                if not has_completed_activity():
+                    miss.append("pelo menos 1 atividade concluída nesta etapa")
+            elif old_name == "proposta":
+                # Proposta → Aguardando Pedido (caminho Pedido)
+                if biz.get("closing_type") != "pedido":
+                    miss.append("selecionar 'Pedido' na Forma de fechamento (Resumo) — se for 'Faturamento direto', use o botão Ganho")
+                if not has_slot("proposta"):
+                    miss.append("Proposta anexada no Resumo")
+
+        elif board_id == 2:
+            # ── Cobrança (Serviços - Atrasados) ──
+            if "oportunidade existente" in old_name:
+                # Oportunidade Existente → Tentativa de Contato
+                products = self.repo.list_card_products(card.id)
+                if not products:
+                    miss.append("ao menos 1 produto no card")
+                if not card.client_id:
+                    miss.append("Empresa (Cliente) vinculada")
+                if not card.person_id:
+                    miss.append("Pessoa (Contato de informação) vinculada")
+            elif "tentativa de contato" in old_name:
+                # Tentativa de Contato → Proposta
+                if not has_completed_activity():
+                    miss.append("pelo menos 1 atividade concluída nesta etapa")
+                if not biz.get("service_type"):
+                    miss.append("Recalibração e/ou Manutenção (no Resumo)")
+            elif old_name == "proposta":
+                # Proposta → Operações
+                if not has_slot("proposta"):
+                    miss.append("Proposta anexada no Resumo")
+                if not biz.get("form_answered"):
+                    miss.append("Formulário de Coleta de Dados enviado (marque o checkbox no Resumo)")
 
         if miss:
             raise HTTPException(
@@ -454,9 +489,9 @@ class ServiceBoardService:
         if old_list_id != new_list_id:
             meta = {"from_list_id": old_list_id, "to_list_id": new_list_id}
             new_name = (new_list.name or "").lower()
-            # Comportamento de Ganho/Perdido só vale no funil oficial.
-            # Em boards duplicados (kanban livre) qualquer movimento é só "stage_change".
-            is_funnel = new_list.board_id in SERVICE_FUNNEL_BOARD_IDS
+            # Comportamento de Ganho/Perdido vale nos boards com regra (funil + Cobrança).
+            # Em boards livres (duplicados) qualquer movimento é só "stage_change".
+            is_funnel = new_list.board_id in SERVICE_RULE_BOARD_IDS
             if is_funnel and (new_list.is_done_stage or "ganho" in new_name):
                 self.log_event(card_id, user, "card_won", f"Negócio marcado como Ganho ({new_list.name})", meta)
                 self._complete_pending_activities(card_id)

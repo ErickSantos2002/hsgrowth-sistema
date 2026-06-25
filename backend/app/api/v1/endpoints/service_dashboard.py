@@ -29,12 +29,16 @@ def _parse_dt(value: Optional[str]) -> Optional[datetime]:
 async def get_service_dashboard(
     start: Optional[str] = Query(None, description="Início do período (ISO, ex: 2026-06-01)"),
     end: Optional[str] = Query(None, description="Fim do período (ISO, ex: 2026-06-30)"),
+    board: Optional[int] = Query(None, description="Board de serviço (1=Funil oficial, 2=Cobrança). Padrão: funil."),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> Any:
+    from app.services.service_board_service import SERVICE_RULE_BOARD_IDS
     now = datetime.utcnow()
     # Padrão: mês atual
     start_dt = _parse_dt(start) or datetime(now.year, now.month, 1)
     end_dt = _parse_dt(end) or now
+    # Só permite boards com regra (funil/cobrança); demais caem no padrão.
+    boards = {board} if (board in SERVICE_RULE_BOARD_IDS) else None
     svc = ServiceDashboardService(db)
-    return svc.get_dashboard(start_dt, end_dt)
+    return svc.get_dashboard(start_dt, end_dt, boards=boards)

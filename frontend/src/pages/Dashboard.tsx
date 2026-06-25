@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, RefreshCw, Download, Calendar,
-  ChevronDown, Users, UserCheck, Briefcase, Wrench,
+  ChevronDown, Users, Wrench,
 } from "lucide-react";
 import CountUp from "react-countup";
 import toast from "react-hot-toast";
@@ -44,6 +44,8 @@ const Dashboard: React.FC = () => {
   // Modo Serviço (dashboard de serviços — paralelo ao SDR/Vendedor de vendas).
   // Para o role "service" a dashboard é sempre a de serviços (sem alternância).
   const [serviceMode, setServiceMode] = useState(isServiceRole);
+  // Qual board de serviço a dashboard mostra: 1 = Serviço (funil), 2 = Cobrança.
+  const [serviceBoard, setServiceBoard] = useState(1);
 
   // Lista de usuários para o seletor (admin/manager)
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -268,40 +270,37 @@ const Dashboard: React.FC = () => {
         {/* Controles */}
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
 
-          {/* Toggle SDR | Vendedor — apenas admin/manager */}
+          {/* Select de dashboard — apenas admin/manager (padrão: SDR) */}
           {isAdminOrManager && (
-            <div className="flex w-full rounded-lg border border-gray-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-800 sm:w-auto">
-              <button
-                onClick={() => { setServiceMode(false); handleViewChange("sdr"); }}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all sm:flex-none ${
-                  !serviceMode && view === "sdr"
-                    ? "bg-blue-500 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
-                }`}
-              >
-                <UserCheck size={14} /> SDR
-              </button>
-              <button
-                onClick={() => { setServiceMode(false); handleViewChange("vendedor"); }}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all sm:flex-none ${
-                  !serviceMode && view === "vendedor"
-                    ? "bg-emerald-500 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
-                }`}
-              >
-                <Briefcase size={14} /> Vendedor
-              </button>
-              <button
-                onClick={() => setServiceMode(true)}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all sm:flex-none ${
-                  serviceMode
-                    ? "bg-violet-500 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
-                }`}
-              >
-                <Wrench size={14} /> Serviço
-              </button>
-            </div>
+            <SelectMenu
+              value={serviceMode ? (serviceBoard === 2 ? "cobranca" : "servico") : view}
+              options={[
+                { value: "sdr", label: "SDR" },
+                { value: "vendedor", label: "Vendedor" },
+                { value: "servico", label: "Serviço" },
+                { value: "cobranca", label: "Serviço - Cobrança" },
+              ]}
+              onChange={(val) => {
+                if (val === "sdr") { setServiceMode(false); handleViewChange("sdr"); }
+                else if (val === "vendedor") { setServiceMode(false); handleViewChange("vendedor"); }
+                else if (val === "servico") { setServiceMode(true); setServiceBoard(1); }
+                else if (val === "cobranca") { setServiceMode(true); setServiceBoard(2); }
+              }}
+              icon={<Wrench size={14} className="text-slate-400" />}
+            />
+          )}
+
+          {/* Select de dashboard de serviço — apenas role "service" (Serviço × Cobrança) */}
+          {isServiceRole && (
+            <SelectMenu
+              value={serviceBoard === 2 ? "cobranca" : "servico"}
+              options={[
+                { value: "servico", label: "Serviço" },
+                { value: "cobranca", label: "Serviço - Cobrança" },
+              ]}
+              onChange={(val) => setServiceBoard(val === "cobranca" ? 2 : 1)}
+              icon={<Wrench size={14} className="text-slate-400" />}
+            />
           )}
 
           {/* Seletor de usuário — filtrado pelo papel da visão (oculto no modo Serviço) */}
@@ -381,7 +380,7 @@ const Dashboard: React.FC = () => {
 
       {/* ── CONTEÚDO DA VISÃO ───────────────────────────────────────── */}
       {serviceMode ? (
-        <ServiceDashboard period={period} customStart={customStart} customEnd={customEnd} periodLabel={periodLabel[period]} />
+        <ServiceDashboard period={period} customStart={customStart} customEnd={customEnd} periodLabel={periodLabel[period]} board={serviceBoard} />
       ) : kpis ? (
         view === "sdr" || isSdr ? (
           <DashboardSDR kpis={kpis} periodLabel={periodLabel[period]} />
