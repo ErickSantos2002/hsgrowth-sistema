@@ -27,6 +27,10 @@ from app.models.service_card_product import ServiceCardProduct
 from app.models.service_card_activity import ServiceCardActivity
 from app.models.user import User
 
+# Board(s) de serviço que possuem as regras de avanço (funil oficial).
+# Boards duplicados (outros IDs) funcionam como kanban livre, sem travas.
+SERVICE_FUNNEL_BOARD_IDS = {1}
+
 
 # Diretório base de uploads (mesmo volume usado pelos anexos de vendas)
 UPLOAD_DIR = Path("/app/uploads")
@@ -325,8 +329,16 @@ class ServiceBoardService:
 
     def _validate_advance(self, card: ServiceCard, old_list, new_list) -> None:
         """Trava de avanço por etapa: bloqueia mover o card se as obrigatoriedades
-        da etapa não estiverem cumpridas. Só valida avanço (não voltar etapa)."""
+        da etapa não estiverem cumpridas. Só valida avanço (não voltar etapa).
+
+        As regras valem APENAS para o funil oficial (SERVICE_FUNNEL_BOARD_IDS).
+        Boards duplicados/outros funcionam como kanban livre — sem travas, mesmo
+        que as listas tenham os mesmos nomes."""
         if not old_list or not new_list or old_list.id == new_list.id:
+            return
+
+        # Boards fora do funil oficial: kanban livre (sem regras de avanço).
+        if old_list.board_id not in SERVICE_FUNNEL_BOARD_IDS:
             return
 
         acts = self.repo.list_card_activities(card.id)
@@ -442,10 +454,13 @@ class ServiceBoardService:
         if old_list_id != new_list_id:
             meta = {"from_list_id": old_list_id, "to_list_id": new_list_id}
             new_name = (new_list.name or "").lower()
-            if new_list.is_done_stage or "ganho" in new_name:
+            # Comportamento de Ganho/Perdido só vale no funil oficial.
+            # Em boards duplicados (kanban livre) qualquer movimento é só "stage_change".
+            is_funnel = new_list.board_id in SERVICE_FUNNEL_BOARD_IDS
+            if is_funnel and (new_list.is_done_stage or "ganho" in new_name):
                 self.log_event(card_id, user, "card_won", f"Negócio marcado como Ganho ({new_list.name})", meta)
                 self._complete_pending_activities(card_id)
-            elif new_list.is_lost_stage or "perdido" in new_name:
+            elif is_funnel and (new_list.is_lost_stage or "perdido" in new_name):
                 self.log_event(card_id, user, "card_lost", f"Negócio marcado como Perdido ({new_list.name})", meta)
                 self._complete_pending_activities(card_id)
             else:

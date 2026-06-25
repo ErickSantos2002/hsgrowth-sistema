@@ -15,6 +15,7 @@ from app.models.service_card import ServiceCard
 from app.models.service_card_product import ServiceCardProduct
 from app.models.service_card_activity import ServiceCardActivity
 from app.models.user import User
+from app.services.service_board_service import SERVICE_FUNNEL_BOARD_IDS
 from app.schemas.service_dashboard import (
     ServiceDashboardResponse, NameCount, StageCount, CollaboratorStat,
     DayPoint, RecalibrationStats,
@@ -39,7 +40,13 @@ class ServiceDashboardService:
         threshold = now - timedelta(days=3)
 
         # ── Boards / listas ──────────────────────────────────────────────────
-        board_ids = [b.id for b in db.query(ServiceBoard.id).filter(ServiceBoard.is_deleted == False).all()]  # noqa: E712
+        # Dashboard considera apenas o funil oficial — boards duplicados (kanban
+        # livre) ficam de fora dos KPIs.
+        board_ids = [
+            b.id for b in db.query(ServiceBoard.id)
+            .filter(ServiceBoard.is_deleted == False, ServiceBoard.id.in_(SERVICE_FUNNEL_BOARD_IDS))  # noqa: E712
+            .all()
+        ]
         lists = db.query(ServiceList).filter(ServiceList.board_id.in_(board_ids)).all() if board_ids else []
         list_ids = [l.id for l in lists]
         done_ids = {l.id for l in lists if l.is_done_stage or "ganho" in (l.name or "").lower()}
