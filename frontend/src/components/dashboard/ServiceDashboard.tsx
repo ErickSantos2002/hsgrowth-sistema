@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Briefcase, CheckCircle2, XCircle, DollarSign, Activity as ActivityIcon,
-  AlarmClock, TrendingUp, Wrench, Trophy, Clock, Gauge,
+  AlarmClock, TrendingUp, Wrench, Trophy,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -124,7 +124,6 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
   }
 
   const maxCollab = Math.max(1, ...data.collaborators.map((c) => c.activities + c.recalibrations));
-  const rec = data.recalibrations;
 
   const tooltipStyle = {
     contentStyle: { backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" },
@@ -285,18 +284,6 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
           </div>
         )}
       </ChartCard>
-
-      {/* ── Atenção · Riscos ── */}
-      <div>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-red-400">Atenção · Riscos</h2>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-          <KpiCard icon={<Gauge size={18} className="text-red-400" />} iconBg="bg-red-500/20" label="Recalibrações vencidas" value={rec.overdue} sub="aparelhos" highlight="red" />
-          <KpiCard icon={<Clock size={18} className="text-orange-400" />} iconBg="bg-orange-500/20" label="Vencem em 30 dias" value={rec.due_30} sub="aparelhos" highlight="orange" />
-          <KpiCard icon={<Clock size={18} className="text-yellow-500" />} iconBg="bg-yellow-500/20" label="Vencem em 90 dias" value={rec.due_90} sub="aparelhos" highlight="yellow" />
-          <KpiCard icon={<AlarmClock size={18} className="text-amber-400" />} iconBg="bg-amber-500/20" label="Cards atrasados 3d+" value={data.stuck_count} sub="atividade vencida" highlight="orange" />
-          <KpiCard icon={<Wrench size={18} className="text-sky-400" />} iconBg="bg-sky-500/20" label="Aparelhos monitorados" value={rec.total_devices} sub="com data de recalibração" highlight="blue" />
-        </div>
-      </div>
     </div>
   );
 };

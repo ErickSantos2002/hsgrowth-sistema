@@ -63,7 +63,8 @@ const AparelhosEditor: React.FC<{
     }
     setSaving(true);
     try {
-      await serviceBoardService.updateCardProduct(boardId, cardId, product.id, { aparelhos: list });
+      // Quantidade do produto = nº de aparelhos (não é editável pelo usuário).
+      await serviceBoardService.updateCardProduct(boardId, cardId, product.id, { aparelhos: list, quantity: list.length });
       setDirty(false);
       onSaved();
     } catch {
@@ -468,13 +469,8 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <label className="text-xs text-slate-400">Quantidade</label>
-                      {isEditing ? (
-                        <input type="text" inputMode="decimal" value={editValues.quantity}
-                          onChange={(e) => setEditValues({ ...editValues, quantity: sanitizeDecimalInput(e.target.value) })}
-                          className="w-full rounded border border-blue-500 bg-gray-100 dark:bg-slate-800 px-2 py-1.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      ) : (
-                        <p className="rounded border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 px-2 py-1.5 text-slate-900 dark:text-white">{product.quantity}</p>
-                      )}
+                      <p className="rounded border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 px-2 py-1.5 text-slate-900 dark:text-white">{product.quantity}</p>
+                      <p className="mt-0.5 text-[10px] text-slate-400">automático = nº de aparelhos</p>
                     </div>
 
                     <div>
