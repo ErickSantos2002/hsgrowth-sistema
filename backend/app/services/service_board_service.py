@@ -369,14 +369,21 @@ class ServiceBoardService:
             return False
 
         new_name = (new_list.name or "").lower()
+        src_name = (old_list.name or "").strip().lower()
 
-        # Destino: Negócio Ganho — exige OC anexada + 1 atividade de tarefa concluída
+        # Destino: Negócio Ganho — dois caminhos conforme a etapa de origem:
+        #   • De "Proposta" (Faturamento direto): exige forma=faturamento_direto + Proposta anexada
+        #   • De "Aguardando Pedido" (Pedido): exige OC anexada
         if new_list.is_done_stage or "ganho" in new_name:
             miss = []
-            if not has_slot("oc"):
-                miss.append("OC (Ordem de Compra) anexada no Resumo")
-            if not any(a.category == "atividade" and a.is_completed for a in acts):
-                miss.append("1 atividade de tarefa concluída (validação dos dados)")
+            if src_name == "proposta":
+                if biz.get("closing_type") != "faturamento_direto":
+                    miss.append("selecionar 'Faturamento direto' na Forma de fechamento (Resumo) — se for 'Pedido', avance para 'Aguardando Pedido'")
+                if not has_slot("proposta"):
+                    miss.append("Proposta anexada no Resumo")
+            else:
+                if not has_slot("oc"):
+                    miss.append("OC (Ordem de Compra) anexada no Resumo")
             if miss:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                     detail="Para marcar como Ganho, é preciso: " + "; ".join(miss) + ".")
@@ -404,38 +411,31 @@ class ServiceBoardService:
         old_name = (old_list.name or "").strip().lower()
         miss = []
 
-        if "dados de laboratório" in old_name and "preenchido" not in old_name:
-            # Avança para "Preenchidos" só se houver pelo menos 1 aparelho
-            # com Nº de Série + Data de próxima recalibragem preenchidos.
-            products = self.repo.list_card_products(card.id)
-            has_valid_aparelho = any(
-                (ap.get("serial_number") or "").strip() and (ap.get("next_recalibration_date") or "").strip()
-                for p in products for ap in (p.aparelhos or [])
-            )
-            if not has_valid_aparelho:
-                miss.append("pelo menos 1 aparelho com Nº de Série e Data de próxima recalibragem")
-        elif "oportunidade existente" in old_name:
-            if not biz.get("service_type"):
-                miss.append("Recalibração e/ou Manutenção")
-            if biz.get("device_received") is None:
-                miss.append("Aparelho recebido pela expedição (sim/não)")
+        if "liberados do laboratório" in old_name or "liberados do laboratorio" in old_name:
+            # Liberados do Laboratório → Dados Preenchidos
             if not has_slot("os"):
                 miss.append("OS (Ordem de Serviço) anexada no Resumo")
+        elif "dados preenchidos" in old_name:
+            # Dados Preenchidos → Tentativa de Contato
+            products = self.repo.list_card_products(card.id)
+            if not products:
+                miss.append("ao menos 1 produto no card")
+            if not card.client_id:
+                miss.append("Empresa (Cliente) vinculada")
+            if not card.person_id:
+                miss.append("Pessoa (Contato de informação) vinculada")
+            if not biz.get("service_type"):
+                miss.append("Recalibração e/ou Manutenção (no Resumo)")
+        elif "tentativa de contato" in old_name:
+            # Tentativa de Contato → Proposta
             if not has_completed_activity():
                 miss.append("pelo menos 1 atividade concluída nesta etapa")
-        elif "tentativa de contato" in old_name:
-            if not has_slot("proposta"):
-                miss.append("Proposta anexada no Resumo")
         elif old_name == "proposta":
+            # Proposta → Aguardando Pedido (caminho Pedido)
+            if biz.get("closing_type") != "pedido":
+                miss.append("selecionar 'Pedido' na Forma de fechamento (Resumo) — se for 'Faturamento direto', use o botão Ganho")
             if not has_slot("proposta"):
                 miss.append("Proposta anexada no Resumo")
-            if not biz.get("form_answered"):
-                miss.append("Formulário de Coleta de Dados enviado (marque o checkbox no Resumo)")
-            if not has_completed_activity():
-                miss.append("pelo menos 1 atividade de follow-up concluída nesta etapa")
-        elif "operações" in old_name or "operacoes" in old_name:
-            if not has_completed_activity():
-                miss.append("pelo menos 1 atividade de follow-up concluída nesta etapa")
 
         if miss:
             raise HTTPException(

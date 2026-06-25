@@ -123,10 +123,8 @@ const ServiceSummarySection: React.FC<{
   };
   const setBizField = (k: keyof ServiceBusinessInfo, v: string | boolean | null) =>
     setBiz((prev) => ({ ...prev, [k]: v }));
-  const invoiceLabel = (v?: boolean | null) => (v === true ? "Sim" : v === false ? "Não" : "Não definido");
-  const modalityLabel = (v?: string) => (v === "venda" ? "Venda" : v === "locacao" ? "Locação" : "Não definido");
   const serviceTypeLabel = (v?: string) => (v === "recalibracao" ? "Recalibração" : v === "manutencao" ? "Manutenção" : v === "ambos" ? "Ambos" : "Não definido");
-  const receivedLabel = (v?: boolean | null) => (v === true ? "Sim" : v === false ? "Não" : "Não definido");
+  const closingLabel = (v?: string) => (v === "faturamento_direto" ? "Faturamento direto" : v === "pedido" ? "Pedido" : "Não definido");
 
   // Anexos do Resumo (slots nomeados: proposta | os | oc)
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
@@ -284,51 +282,13 @@ const ServiceSummarySection: React.FC<{
           {editingBiz ? (
             <div className="space-y-3">
               <div className="space-y-1">
-                <label className="text-xs text-slate-400">Vendedor Responsável (informativo)</label>
-                <input value={biz.seller_name || ""} onChange={(e) => setBizField("seller_name", e.target.value)} placeholder="Quem vendeu (vem de Vendas)"
-                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400">Tipo de Negócio</label>
-                <input value={biz.deal_type || ""} onChange={(e) => setBizField("deal_type", e.target.value)} placeholder="Ex: Nova Venda"
-                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400">Canal de Aquisição</label>
-                <input value={biz.acquisition_channel || ""} onChange={(e) => setBizField("acquisition_channel", e.target.value)} placeholder="Ex: Inbound"
-                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400">Canal de Aquisição – Detalhamento</label>
-                <input value={biz.acquisition_channel_detail || ""} onChange={(e) => setBizField("acquisition_channel_detail", e.target.value)} placeholder="Ex: Levantada de mão"
-                  className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400">É venda ou locação?</label>
-                <SelectMenu size="sm" value={biz.modality || ""} placeholder="Não definido"
-                  options={[{ value: "", label: "Não definido" }, { value: "venda", label: "Venda" }, { value: "locacao", label: "Locação" }]}
-                  onChange={(v) => setBizField("modality", v)} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400">Deve ser faturado? (aluguel)</label>
-                <SelectMenu size="sm" value={biz.should_invoice === true ? "sim" : biz.should_invoice === false ? "nao" : ""} placeholder="Não definido"
-                  options={[{ value: "", label: "Não definido" }, { value: "sim", label: "Sim" }, { value: "nao", label: "Não" }]}
-                  onChange={(v) => setBizField("should_invoice", v === "sim" ? true : v === "nao" ? false : null)} />
-              </div>
-              <div className="space-y-1 border-t border-gray-200/40 dark:border-slate-700/40 pt-3">
-                <p className="text-[11px] uppercase tracking-wide text-slate-400">Triagem (Oportunidade Existente)</p>
+                <p className="text-[11px] uppercase tracking-wide text-slate-400">Triagem</p>
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-slate-400">Recalibração e/ou Manutenção</label>
                 <SelectMenu size="sm" value={biz.service_type || ""} placeholder="Não definido"
                   options={[{ value: "", label: "Não definido" }, { value: "recalibracao", label: "Recalibração" }, { value: "manutencao", label: "Manutenção" }, { value: "ambos", label: "Ambos" }]}
                   onChange={(v) => setBizField("service_type", v)} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400">Aparelho recebido pela expedição?</label>
-                <SelectMenu size="sm" value={biz.device_received === true ? "sim" : biz.device_received === false ? "nao" : ""} placeholder="Não definido"
-                  options={[{ value: "", label: "Não definido" }, { value: "sim", label: "Sim" }, { value: "nao", label: "Não" }]}
-                  onChange={(v) => setBizField("device_received", v === "sim" ? true : v === "nao" ? false : null)} />
               </div>
               <div className="space-y-1 border-t border-gray-200/40 dark:border-slate-700/40 pt-3">
                 <p className="text-[11px] uppercase tracking-wide text-slate-400">Proposta</p>
@@ -338,6 +298,12 @@ const ServiceSummarySection: React.FC<{
                   className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500" />
                 <span className="text-sm text-slate-700 dark:text-slate-200">Formulário de Coleta de Dados enviado</span>
               </label>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Forma de fechamento</label>
+                <SelectMenu size="sm" value={biz.closing_type || ""} placeholder="Não definido"
+                  options={[{ value: "", label: "Não definido" }, { value: "faturamento_direto", label: "Faturamento direto" }, { value: "pedido", label: "Pedido" }]}
+                  onChange={(v) => setBizField("closing_type", v)} />
+              </div>
               <div className="flex items-center gap-2 pt-1">
                 <button onClick={handleSaveBiz} className="flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30">
                   <Check size={14} /> Salvar
@@ -350,15 +316,9 @@ const ServiceSummarySection: React.FC<{
           ) : (
             <div className="space-y-2">
               {[
-                { label: "Vendedor Responsável", value: biz.seller_name },
-                { label: "Tipo de Negócio", value: biz.deal_type },
-                { label: "Canal de Aquisição", value: biz.acquisition_channel },
-                { label: "Detalhamento", value: biz.acquisition_channel_detail },
-                { label: "É venda ou locação", value: modalityLabel(biz.modality) },
-                { label: "Deve ser faturado", value: invoiceLabel(biz.should_invoice) },
                 { label: "Recalibração/Manutenção", value: serviceTypeLabel(biz.service_type) },
-                { label: "Aparelho recebido", value: receivedLabel(biz.device_received) },
                 { label: "Formulário enviado", value: biz.form_answered ? "Sim" : "Não" },
+                { label: "Forma de fechamento", value: closingLabel(biz.closing_type) },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between gap-3">
                   <span className="text-sm text-slate-400">{row.label}:</span>
@@ -1021,18 +981,24 @@ const ServiceCardDetails: React.FC = () => {
     if (!doneList) { showError("Nenhuma etapa de 'Ganho' configurada no board"); return; }
     if (card?.list_id === doneList.id) { showError("O card já está em Negócio Ganho"); return; }
 
-    // Trava 1: Ganho só na etapa "Aguardando Pedido" (última etapa ativa).
+    const cur = lists.find((l) => l.id === card?.list_id);
     const winStage = getWinStage();
-    if (!winStage || card?.list_id !== winStage.id) {
-      showError(`O Ganho só pode ser dado quando o card está na etapa "${winStage?.name || "Aguardando Pedido"}".`);
+    const isProposta = !!cur && /^proposta$/i.test((cur.name || "").trim());
+    const isAwaiting = !!winStage && card?.list_id === winStage.id;
+    const closingType = card?.business_info?.closing_type;
+    const hasProposta = activities.some((a) => a.category === "arquivo" && a.activity_metadata?.doc_slot === "proposta");
+    const hasOC = activities.some((a) => a.category === "arquivo" && a.activity_metadata?.doc_slot === "oc");
+
+    if (isProposta && closingType === "faturamento_direto") {
+      // Caminho Faturamento direto: Proposta → Ganho (exige Proposta anexada)
+      if (!hasProposta) { showError("Anexe a Proposta no Resumo antes de marcar como Ganho."); return; }
+    } else if (isAwaiting) {
+      // Caminho Pedido: Aguardando Pedido → Ganho (exige OC anexada)
+      if (!hasOC) { showError("Anexe a OC (Ordem de Compra) no Resumo antes de marcar como Ganho."); return; }
+    } else {
+      showError("O Ganho só é liberado em 'Aguardando Pedido' (Pedido) ou em 'Proposta' com Forma de fechamento = Faturamento direto.");
       return;
     }
-    // Trava 2: OC (Ordem de Compra) anexada no Resumo.
-    const hasOC = activities.some((a) => a.category === "arquivo" && a.activity_metadata?.doc_slot === "oc");
-    if (!hasOC) { showError("Anexe a OC (Ordem de Compra) no Resumo antes de marcar como Ganho."); return; }
-    // Trava 3: pelo menos 1 atividade de tarefa concluída (validação dos dados).
-    const hasValidationTask = activities.some((a) => a.category === "atividade" && a.is_completed);
-    if (!hasValidationTask) { showError("Conclua uma atividade de tarefa (validação dos dados) antes de marcar como Ganho."); return; }
 
     const ok = await confirm({ title: "Marcar como Ganho", message: `Mover este card para "${doneList.name}"?`, confirmText: "Ganho", isDanger: false });
     if (!ok) return;
@@ -1116,9 +1082,14 @@ const ServiceCardDetails: React.FC = () => {
   const currentList = lists.find((l) => l.id === card.list_id);
   const isLost = !!currentList && (currentList.is_lost_stage || /perdido/i.test(currentList.name));
   const isWon = !!currentList && (currentList.is_done_stage || /ganho/i.test(currentList.name));
-  // Ganho só é liberado na última etapa ativa do funil ("Aguardando Pedido")
+  // Ganho liberado em "Aguardando Pedido" (caminho Pedido) OU em "Proposta" com
+  // Forma de fechamento = Faturamento direto (caminho direto).
   const winStageList = getWinStage();
-  const isOnWinStage = !!winStageList && !!currentList && currentList.id === winStageList.id;
+  const isOnAwaiting = !!winStageList && !!currentList && currentList.id === winStageList.id;
+  const isOnPropostaDirect =
+    !!currentList && /^proposta$/i.test((currentList.name || "").trim()) &&
+    card?.business_info?.closing_type === "faturamento_direto";
+  const isOnWinStage = isOnAwaiting || isOnPropostaDirect;
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -1187,7 +1158,7 @@ const ServiceCardDetails: React.FC = () => {
                 <button
                   onClick={handleWin}
                   disabled={!isOnWinStage}
-                  title={isOnWinStage ? "Marcar como Ganho" : `O Ganho só é liberado na etapa "${winStageList?.name || "Aguardando Pedido"}"`}
+                  title={isOnWinStage ? "Marcar como Ganho" : `O Ganho é liberado em "${winStageList?.name || "Aguardando Pedido"}" (Pedido) ou em "Proposta" com Forma de fechamento = Faturamento direto`}
                   className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors ${isOnWinStage ? "bg-emerald-500 hover:bg-emerald-600" : "cursor-not-allowed bg-emerald-500/40 opacity-50"}`}
                 >
                   <CheckCircle2 size={16} /> Ganho

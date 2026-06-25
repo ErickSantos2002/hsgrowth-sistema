@@ -1,15 +1,20 @@
 # 16 - FLUXO E REGRAS DO BOARD DE SERVIÇOS
 
-> **Documento vivo / em construção.** Estamos detalhando etapa por etapa a partir do Miro (Jornada do Cliente: HS).
-> Última atualização: **15/06/2026**
+> **Documento vivo.** Última atualização: **19/06/2026**
 > Relacionado: [15 - MÓDULO DE SERVIÇOS.md](15%20-%20MÓDULO%20DE%20SERVIÇOS.md)
-> 📌 Para teste/revisão das regras de avanço, veja a **seção 6 (Matriz de Regras de Avanço)**.
+> 📌 **Fontes da verdade (atuais):** estrutura → **seção 2**; regras de avanço → **seção 6**.
+>
+> ⚠️ **Funil reestruturado em 19/06/2026.** O time simplificou o funil de **9 → 7 etapas**
+> (removidas: Negócio Fechado, Oportunidade Existente, Operações; renomeadas as de laboratório).
+> As seções **2** (estrutura) e **6** (matriz de regras) estão atualizadas. A **seção 4**
+> (fichas etapa por etapa) descreve a **jornada original do Miro** e foi mantida como
+> **referência histórica** — não reflete mais 1:1 o funil em produção.
 
 ---
 
 ## 1. DECISÕES GLOBAIS (confirmadas)
 
-1. **Início tem 3 listas**: `Negócio Fechado` → `Dados de Laboratório` → `Dados de Laboratório Preenchidos`.
+1. **Entrada pela 1ª etapa**: `Liberados do Laboratório` (novos cards entram só por ela; o botão "Adicionar card" e o modal travam na lista inicial). *(Estrutura atual completa na seção 2.)*
 2. **Regra de avanço = TRAVA (hard gate)**: o card **não pode avançar** de etapa se as obrigatoriedades não estiverem preenchidas. O sistema bloqueia o movimento.
 3. **Campos divididos entre Resumo e Produto**:
    - **Resumo** (nível do card): dados comerciais/negócio.
@@ -21,24 +26,23 @@
 
 ## 2. ESTRUTURA DAS ETAPAS (listas do board)
 
+**Funil atual (board oficial "Serviços", id 1) — 7 etapas:**
+
 | # | Lista | Tipo |
 |---|---|---|
-| 0 | Negócio Fechado | Entrada (vem do board de Vendas) |
-| 1 | Dados de Laboratório | Ativa |
-| 2 | Dados de Laboratório Preenchidos | Ativa |
-| 3 | Oportunidade Existente | Ativa |
-| 4 | Tentativa de Contato | Ativa |
-| 5 | Proposta | Ativa |
-| 6 | Operações | Ativa |
-| 7 | Aguardando Pedido | Ativa |
-| 8 | Negócio Ganho | `is_done_stage` |
-| ❌ | Negócio Perdido | `is_lost_stage` |
+| 1 | Liberados do Laboratório | Entrada (1ª etapa) |
+| 2 | Dados Preenchidos | Ativa |
+| 3 | Tentativa de Contato | Ativa |
+| 4 | Proposta | Ativa |
+| 5 | Aguardando Pedido | Ativa |
+| 6 | Negócio Ganho | `is_done_stage` |
+| 7 | Negócio Perdido | terminal (detectado pelo nome "perdido") |
 
-> Fonte da estrutura: `backend/scripts/create_servicos_board.py`.
+> ⚠️ As listas podem ser editadas pelo time. As **regras estão presas ao board oficial** (`SERVICE_FUNNEL_BOARD_IDS = {1}`) — boards duplicados são kanban livre, sem regras nem dashboard.
 
-### 2.1. Tag "Parado 3d+" (global)
+### 2.1. Tag "Parado 3d+" / Atrasados (global)
 
-A tag de **card parado há 3 dias ou mais** **já existe** e vale para **todas as etapas de "Oportunidade Existente" até "Aguardando Pedido"**. Quando o card fica 3+ dias sem movimentação, recebe a tag (usada nos filtros do Kanban). Onde houver integração, o time é alertado automaticamente; onde não houver, o acompanhamento é manual.
+Cards com **atividade pendente vencida há 3+ dias** entram na contagem **"Atrasados 3d+"** da dashboard. Usada para acompanhamento de negócios estagnados nas etapas ativas.
 
 ---
 
@@ -48,34 +52,24 @@ A tag de **card parado há 3 dias ou mais** **já existe** e vale para **todas a
 
 Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
-| Seção | Campo | Origem | Status |
+> **Atualizado em 19/06/2026:** o Resumo foi enxugado — os campos herdados de Vendas
+> (Vendedor Responsável, Tipo de Negócio, Canal de Aquisição, Detalhamento, É venda ou
+> locação, Deve ser faturado) foram **removidos**. Layout atual:
+
+| Seção | Campo | Origem | Obrigatório |
 |---|---|---|---|
-| **Valores** | Valor do negócio (auto pelos produtos) | vem de Vendas | já existe |
-| **Responsável** | Vendedor Responsável (**só leitura / informativo** — quem vendeu) | vem de Vendas | **criar** |
-| **Informações de Negócio** | Tipo de Negócio (ex: Nova Venda) | vem de Vendas | **criar** |
-| **Informações de Negócio** | Canal de Aquisição (ex: Inbound) | vem de Vendas | **criar** |
-| **Informações de Negócio** | Canal de Aquisição – Detalhamento | vem de Vendas | **criar** |
-| **Informações de Serviço** | É venda ou locação | vem de Vendas ⚠️ | **criar** |
-| **Informações de Serviço** | Deve ser faturado? (aluguel) | vem de Vendas | **criar** |
-| **Proposta Comercial (Serviço)** | Anexar Proposta (PDF, máx 10MB) | Serviço anexa | **criar** |
-| **Documentos** | OS – Ordem de Serviço (anexo) | Serviço anexa | **criar** |
-| **Documentos** | OC – Ordem de Compra (anexo) | Serviço anexa | **criar** |
-| **Informações Gerais** | Criado em / Tempo no funil / ID | auto | já existe |
+| **Valores** | Valor do negócio (auto pelos produtos) | auto | — |
+| **Triagem** | Recalibração e/ou Manutenção (`service_type`) | Serviço | ✅ p/ sair de Dados Preenchidos |
+| **Proposta** | Formulário de Coleta de Dados enviado (`form_answered`, checkbox) | Serviço | ❌ (informativo) |
+| **Proposta** | **Forma de fechamento** (`closing_type`: Faturamento direto / Pedido) | Serviço | ✅ na etapa Proposta |
+| **Documentos** | Proposta Comercial (anexo) | Serviço | ✅ a partir da Proposta |
+| **Documentos** | OS – Ordem de Serviço (anexo) | Serviço | ✅ p/ sair de Liberados do Laboratório |
+| **Documentos** | OC – Ordem de Compra (anexo) | Serviço | ✅ p/ Ganho via Aguardando Pedido |
+| **Informações Gerais** | Criado em / Tempo no funil / ID | auto | — |
 
-> ⚠️ **Dependência em Vendas**: o campo **"É venda ou locação" não existe em Vendas** hoje. Para chegar preenchido no Serviço, será preciso **criar esse campo no board de Vendas primeiro** (venda → preenche um conjunto de dados; locação → outro). A ser tratado na fase de implementação/automação.
+**Cliente (Organização)** e **Pessoa (Contato)** ficam nas suas seções próprias e são exigidos para sair de **Dados Preenchidos**.
 
-**Cliente (Organização)** e **Pessoa (Contato)** ficam nas suas seções próprias (já existem) e virão preenchidos de Vendas — cliente/empresa não mudam.
-
-**Cortados do Resumo de Vendas** (NÃO vão para o Serviço): Frete, Probabilidade de fechamento, Data esperada de fechamento, SDR Responsável, Tracking de Boards (Prospecção/Aquisição/Expansão), Tem Implementação, Tem Pessoas para Manusear, Rastreamento de Origem/UTMs.
-
-#### 3.1.1. Campos adicionais no Resumo (preenchidos pelo Serviço na etapa *Oportunidade Existente*)
-
-| Campo | Obrigatório | Observação |
-|---|---|---|
-| Recalibração e/ou Manutenção | ✅ sim | tipo do serviço a executar |
-| Aparelho recebido pela expedição (sim/não) | ✅ sim | |
-| OS (Ordem de Serviço) | ⚠️ condicional | obrigatório **se** aparelho recebido · ✅ é um **documento anexado no Resumo** |
-| Índice de reajuste | ❌ não | 🔓 reajuste para o próximo ano · **local em aberto** — debater na implementação |
+> 🔓 **Índice de reajuste**: ainda **não implementado** — ponto em aberto (fica no Resumo ou no Produto/aparelho?).
 
 ### 3.2. Campos de PRODUTO (por aparelho)
 
@@ -95,7 +89,12 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 ---
 
-## 4. REGRAS POR ETAPA
+## 4. REGRAS POR ETAPA — *(histórico: jornada original do Miro)*
+
+> ⚠️ **As fichas abaixo (4.0 a 4.6) descrevem a jornada ORIGINAL do Miro (9 etapas).**
+> O funil foi **simplificado para 7 etapas** em 19/06/2026 e algumas etapas saíram
+> (Negócio Fechado, Oportunidade Existente, Operações). **Para a estrutura e as regras
+> vigentes, use a seção 2 e a seção 6.** Esta seção fica como referência da concepção.
 
 > Cada etapa terá: **gatilho de entrada**, **atividades**, **obrigatoriedades para avançar (trava)**, **condição/critério de perda** e **automações (futuro)**.
 
@@ -268,28 +267,29 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 ### 5.2. Pontos em aberto (decidir antes/durante a implementação)
 - [ ] **Índice de reajuste**: fica no Resumo ou no Produto?
-- [x] **Etapa Proposta / OS**: ✅ decidido (16/06/2026) — a **OS anexada passou a ser obrigatória** para sair de **Oportunidade Existente** (não mais condicional). Na **Proposta**, criado um **checkbox "Formulário de Coleta de Dados enviado"** (`form_answered` no `business_info`) — só avança para Operações se marcado.
+- [x] **OS / Forma de fechamento**: ✅ (atualizado 19/06/2026) — **OS anexada** passou a ser obrigatória para sair de **Liberados do Laboratório**. Na **Proposta**, o avanço depende da **Forma de fechamento** (`closing_type`): *Faturamento direto* libera o Ganho ali; *Pedido* avança para Aguardando Pedido. *(O antigo checkbox `form_answered` deixou de ser trava — virou informativo.)*
 - [x] **Esconder por padrão**: ✅ decidido — esconde **Ganhos E Perdidos** por padrão (15/06/2026). Já implementado (ver 5.4).
 - [x] **Dependência em Vendas**: campo "É venda ou locação" criado no board de Vendas, com trava de Ganho. ✅ **Feito** (15/06/2026).
 
 ### 5.3. Implementação — Campos
-- [x] **Resumo**: campos de negócio (Vendedor Responsável [leitura], Tipo de Negócio, Canal de Aquisição, Detalhamento, É venda ou locação, Deve ser faturado/aluguel) + Valor do Negócio + anexos (Proposta, OS, OC). ✅ **Feito** (15/06/2026) — coluna `business_info` (JSON) em `service_cards`; anexos com `doc_slot` nas atividades de arquivo.
+- [x] **Resumo**: `business_info` (JSON) em `service_cards` + anexos (Proposta, OS, OC) com `doc_slot`. ✅ **Feito** (15/06). ⚠️ **Enxugado em 19/06/2026**: removidos os campos herdados de Vendas (Vendedor Responsável, Tipo de Negócio, Canal de Aquisição, Detalhamento, É venda ou locação, Deve ser faturado, Aparelho recebido). Atual: Recalibração/Manutenção, Formulário enviado, **Forma de fechamento**.
 - [x] **Produto (por aparelho)**: campos `[Laboratório]` (Nº Série, Modelo, Módulo de álcool, Data de próxima recalibragem). ✅ **Feito** (15/06/2026) — modelados como **sub-lista de aparelhos** dentro de cada produto (coluna JSON `aparelhos` em `service_card_products`). Decisão de modelagem: *"1 linha por produto + sub-lista de aparelhos"*.
   - [ ] **Índice de reajuste** `[Serviço]` — ainda **não implementado** (ponto em aberto 5.2: fica no Resumo ou no Produto/aparelho?).
 - [x] **Dependência em Vendas**: campo "É venda ou locação" criado no board de Vendas. ✅ **Feito** (15/06/2026) — coluna `modality` em `cards`; campo no Resumo de Vendas; **trava: só permite Ganho se `modality` estiver preenchido** (`move_card`).
 
 ### 5.4. Implementação — Regras (travas)
 - [x] **Trava de avanço** por etapa. ✅ **Feito** (15/06/2026) — `_validate_advance` no `move_card` (backend) bloqueia avanço sem as obrigatoriedades; frontend `handleMove` mostra a mensagem. Regras:
-  - **Dados de Laboratório →**: pelo menos 1 aparelho com Nº de Série + Data de próxima recalibragem.
-  - **Oportunidade Existente →**: Recalibração/Manutenção + Aparelho recebido (sim/não) + **OS anexada (obrigatória)** + **≥1 atividade concluída nesta etapa**. *(Campos novos `service_type` e `device_received` no `business_info`.)*
-  - **Tentativa de Contato →**: Proposta anexada (sem atividade obrigatória).
-  - **Proposta →**: Proposta anexada + **Formulário enviado (checkbox `form_answered`)** + **≥1 atividade de follow-up concluída nesta etapa**.
-  - **Operações →**: **≥1 atividade de follow-up concluída nesta etapa**.
-  - **→ Ganho**: OC anexada + 1 atividade de tarefa concluída.
-  - **Negócio Ganho / Negócio Perdido**: só acessíveis pelos **botões Ganho/Perdido** (o stepper não move para etapas terminais). Ao marcar Ganho/Perdido, as **atividades pendentes são concluídas automaticamente** (`_complete_pending_activities`).
-  - Voltar etapa é livre. **Negócio Fechado** e **Dados de Lab. Preenchidos → Oportunidade Existente** não têm trava (a 2ª é condição de 50 dias / equipamento → vira automação).
-  - ⚙️ "Atividade concluída nesta etapa" = atividade `category=atividade`, `is_completed`, concluída **após** o card entrar na etapa atual (não reaproveita atividade de etapa anterior).
-- [x] **Botão Ganho**: habilitado **somente** na última etapa ativa ("Aguardando Pedido"); opaco/desabilitado nas demais. Ao dar Ganho, valida: **OC anexada** + **1 atividade de tarefa concluída**. ✅ **Feito** (15/06/2026) — `getWinStage()` + travas no `handleWin` (`ServiceCardDetails.tsx`).
+  > ⚠️ **Atualizado em 19/06/2026** para o funil de 7 etapas (ver matriz na seção 6). Regras vigentes:
+  - **Liberados do Laboratório →**: **OS (Ordem de Serviço) anexada**.
+  - **Dados Preenchidos →**: **≥1 produto** + **Cliente** vinculado + **Pessoa** vinculada + **Recalibração/Manutenção** (`service_type`) preenchido.
+  - **Tentativa de Contato →**: **≥1 atividade concluída nesta etapa** (qualquer tipo).
+  - **Proposta → Aguardando Pedido**: **Forma de fechamento = Pedido** (`closing_type`) + **Proposta anexada**.
+  - **Proposta → Ganho (direto)**: **Forma de fechamento = Faturamento direto** + **Proposta anexada**.
+  - **Aguardando Pedido → Ganho**: **OC anexada**.
+  - **Negócio Ganho / Perdido**: só pelos **botões** (stepper não move para terminais). Ao marcar, as **atividades pendentes são concluídas automaticamente — exceto follow-up**.
+  - Voltar etapa é livre. **Regras só valem no funil oficial** (`SERVICE_FUNNEL_BOARD_IDS = {1}`); boards duplicados são kanban livre.
+  - ⚙️ "Atividade concluída nesta etapa" = `category=atividade`, `is_completed`, concluída **após** o card entrar na etapa atual.
+- [x] **Botão Ganho**: habilitado em **"Aguardando Pedido"** (caminho Pedido → exige OC) **ou** em **"Proposta"** com **Forma de fechamento = Faturamento direto** (→ exige Proposta anexada); opaco/desabilitado nas demais. ✅ **Atualizado** (19/06/2026) — `handleWin` (`ServiceCardDetails.tsx`).
 - [x] **Esconder cards Ganhos e Perdidos** por padrão no board. ✅ **Já implementado** — filtro padrão "Apenas Abertos" (`fStatus="abertos"`) exclui done/lost; aparecem só via filtro (Todos/Ganhos/Perdidos).
 - [x] **Motivos de Perda**: lista do board de Serviços substituída pelos 10 motivos oficiais. ✅ **Feito** (15/06/2026) — `LOSS_REASONS` em `ServiceCardDetails.tsx`.
 
@@ -305,23 +305,26 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 ## 6. MATRIZ DE REGRAS DE AVANÇO (referência rápida / roteiro de teste)
 
 > Onde a regra é aplicada: **Backend** (`_validate_advance` no `move_card` — vale para stepper e qualquer movimento). Mensagem aparece pro usuário ao tentar mover.
-> Status implementado em **15/06/2026**. Coluna "Testado" para o time preencher.
+> **Atualizado em 19/06/2026** com a nova estrutura do funil (7 etapas) e o caminho de fechamento (Faturamento direto × Pedido).
+> ⚠️ As regras valem **apenas para o funil oficial** (`SERVICE_FUNNEL_BOARD_IDS = {1}`). Boards de serviço duplicados são kanban livre, sem regras.
 
 | # | Transição | O que exige para avançar | Implementado | Testado |
 |---|---|---|---|---|
-| 1 | Negócio Fechado → Dados de Laboratório | nada (livre) | ✅ (sem regra) | ☐ |
-| 2 | Dados de Laboratório → Dados de Lab. Preenchidos | **≥1 aparelho** (qualquer produto) com **Nº de Série + Data de próxima recalibragem** | ✅ | ☐ |
-| 3 | Dados de Lab. Preenchidos → Oportunidade Existente | nada por enquanto (condição: 50 dias OU equipamento recebido → vira **automação**) | ✅ (sem regra manual) | ☐ |
-| 4 | Oportunidade Existente → Tentativa de Contato | **Recalibração/Manutenção** + **Aparelho recebido (sim/não)** + **OS anexada (obrigatória)** + **≥1 atividade concluída nesta etapa** | ✅ | ☐ |
-| 5 | Tentativa de Contato → Proposta | **Proposta anexada** | ✅ | ☐ |
-| 6 | Proposta → Operações | **Proposta anexada** + **Formulário enviado (checkbox)** + **≥1 atividade de follow-up concluída nesta etapa** | ✅ | ☐ |
-| 7 | Operações → Aguardando Pedido | **≥1 atividade de follow-up concluída nesta etapa** | ✅ | ☐ |
-| 8 | Aguardando Pedido → **Negócio Ganho** | **só pelo botão Ganho** · **OC anexada** + **1 atividade de tarefa concluída** · botão só acende em "Aguardando Pedido" | ✅ | ☐ |
-| 9 | Qualquer etapa → **Negócio Perdido** | **só pelo botão Perdido** · exige **Motivo da perda** (modal) | ✅ | ☐ |
+| 1 | Liberados do Laboratório → Dados Preenchidos | **OS (Ordem de Serviço) anexada** no Resumo | ✅ | ☐ |
+| 2 | Dados Preenchidos → Tentativa de Contato | **≥1 produto** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Recalibração/Manutenção** preenchido | ✅ | ☐ |
+| 3 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) | ✅ | ☐ |
+| 4 | Proposta → Aguardando Pedido | **Forma de fechamento = "Pedido"** + **Proposta anexada** | ✅ | ☐ |
+| 5 | Proposta → **Negócio Ganho** *(direto)* | **Forma de fechamento = "Faturamento direto"** + **Proposta anexada** · botão Ganho acende na Proposta só nesse caso | ✅ | ☐ |
+| 6 | Aguardando Pedido → **Negócio Ganho** | **só pelo botão Ganho** · **OC (Ordem de Compra) anexada** | ✅ | ☐ |
+| 7 | Qualquer etapa → **Negócio Perdido** | **só pelo botão Perdido** · exige **Motivo da perda** (modal) | ✅ | ☐ |
 
-### Regras gerais (valem para todo o board)
+> **Forma de fechamento** (campo novo no Resumo): define o caminho na etapa Proposta —
+> **Faturamento direto** libera o botão Ganho ali mesmo (exige Proposta anexada);
+> **Pedido** obriga avançar para "Aguardando Pedido" (exige Proposta anexada) e depois o Ganho exige a OC.
+
+### Regras gerais (valem para o funil oficial)
 - **Não pode pular etapas**: o avanço é **uma etapa por vez** (o destino tem que ser a próxima etapa imediata). Tentar pular → bloqueia com a próxima etapa indicada.
-- **Criar card só na lista inicial** (Negócio Fechado): novos cards entram sempre pela primeira etapa. O botão "Adicionar card" só aparece na lista inicial e, no modal, a lista fica travada na criação — não dá pra criar pulando etapas.
+- **Criar card só na lista inicial** (Liberados do Laboratório): novos cards entram sempre pela primeira etapa. O botão "Adicionar card" só aparece na lista inicial e, no modal, a lista fica travada na criação — não dá pra criar pulando etapas.
 - **Voltar etapa** (mover para trás) é **livre** — sem trava (pode voltar mais de uma).
 - **Stepper não move para etapas terminais** (Ganho/Perdido ficam opacos) — só pelos botões.
 - Ao marcar **Ganho/Perdido**, as **atividades pendentes são concluídas automaticamente** — **exceto as de follow-up**, que permanecem pendentes (costumam ser agendadas para o futuro: marcam Perdido para não acumular e reabrem o card no dia). Vale para Vendas, SDR e Serviço.

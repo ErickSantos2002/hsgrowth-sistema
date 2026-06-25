@@ -49,6 +49,9 @@ export interface ServiceBusinessInfo {
   device_received?: boolean | null; // Aparelho recebido pela expedição?
   // Proposta
   form_answered?: boolean | null; // Formulário de Coleta de Dados preenchido (trava p/ Operações)
+  // Fechamento (etapa Proposta): define se vai por Faturamento direto (dá Ganho)
+  // ou por Pedido (avança para Aguardando Pedido).
+  closing_type?: "faturamento_direto" | "pedido" | ""; // Forma de fechamento
 }
 
 export interface ServiceCard {
