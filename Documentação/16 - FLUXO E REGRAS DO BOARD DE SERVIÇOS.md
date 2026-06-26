@@ -86,6 +86,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 > Legenda: `[Laboratório]` = preenchido pelo time de laboratório · `[Serviço]` = preenchido pelo time de serviço.
 > ✅ **Validação no "Salvar aparelhos"** (15/06/2026): não permite salvar sem pelo menos **1 aparelho**, e cada aparelho exige **Nº de Série** + **Data de próxima recalibragem**. Modelo já vem preenchido; Módulo de álcool é opcional.
 > ✅ **Trava de avanço** de "Dados de Laboratório" → "Preenchidos" (15/06/2026): só avança se houver **pelo menos 1 aparelho** (em qualquer produto) com **Nº de Série** + **Data de próxima recalibragem** preenchidos.
+> ✅ **Quantidade automática** (25/06/2026): o campo **Quantidade** do produto é **somente leitura** e passa a ser **igual ao nº de aparelhos** adicionados — sincroniza ao "Salvar aparelhos" (`quantity = aparelhos.length`). O usuário não edita mais a quantidade manualmente.
 
 ---
 
@@ -338,31 +339,28 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 ---
 
-## 7. IDEIAS FUTURAS — DASHBOARD DE SERVIÇOS
+## 7. DASHBOARD DE SERVIÇOS
 
-> A dashboard atual (doc 15, seção 11) tem: 8 KPIs + 4 blocos (Funil, Atividades por tipo, Ranking de colaboradores, Motivos de perda).
-> Abaixo, **ideias de informações a adicionar** (a priorizar/decidir no futuro). Muitas aproveitam os campos novos que já temos (aparelhos, `service_type`, `modality`, `is_valid` das ligações).
+> **Atualizado em 25/06/2026.** A dashboard de Serviço foi refeita no **mesmo padrão visual das dashboards de SDR/Vendedor** (recharts + `KpiCard` com CountUp). O **mesmo componente** (`ServiceDashboard.tsx`) atende as **duas** dashboards de serviço, parametrizado por `board`: **Serviço** = board 1 (funil oficial) · **Cobrança** = board 2.
+>
+> **Seleção:** na página de Dashboard há um **select** — admin/gerente veem 4 opções (**SDR · Vendedor · Serviço · Cobrança**, padrão SDR); quem tem role **serviço** vê só **Serviço · Cobrança**; SDR/Vendedor não têm select (cada um vê a sua).
+>
+> Backend: `service_dashboard_service.get_dashboard(start, end, boards=...)` + endpoint `GET /api/v1/service-dashboard?board=` (aceita só boards com regra; demais caem no funil padrão).
 
-### 7.1. Recalibrações *(maior valor — único do serviço)*
-- **Próximas recalibrações**: contagem/lista de aparelhos com **Data de próxima recalibragem** vencendo nos próximos **30 / 50 / 90 dias** (essencial para agendamento proativo; abre caminho para a automação dos 50 dias).
-- **Recalibrações vencidas**: aparelhos com data já passada.
-- **Total de aparelhos** em serviço.
-- *(Precisa de backend novo: agregar a partir do JSON `aparelhos` em `service_card_products`.)*
+### 7.1. O que a dashboard mostra hoje *(implementado)*
+- **KPIs (9):** 5 na linha de cima + 4 embaixo, mesma largura — ativos, valor de pipeline, ganhos, perdidos, valor ganho, ticket médio, taxa de ganho, atividades, **tipo de serviço** (Recalibração/Manutenção/Ambos) numa KPI.
+- **Recalibrações:** vencidas + a vencer em **30 / 50 / 90 dias** + total de aparelhos (agregado do JSON `aparelhos`).
+- **Evolução temporal** (gráfico recharts): ganhos / perdidos / atividades ao longo do período.
+- **Funil** em gráfico (cards por etapa).
+- **Ranking de colaboradores:** atividades + **recalibrações concluídas** + ganhos/perdidos.
+- **Composição:** Recalibração × Manutenção × Ambos (`service_type`) e Venda × Locação (`modality`).
+- **Motivos de perda.**
+- *(A seção "Atenção · Riscos" foi **removida** das duas dashboards em 25/06/2026.)*
 
-### 7.2. Composição do negócio
-- **Venda × Locação** (campo `business_info.modality`).
-- **Recalibração × Manutenção × Ambos** (campo `business_info.service_type`).
-
-### 7.3. Conversão & tempo
+### 7.2. Ideias futuras *(ainda não feito)*
 - **Taxa de conversão por etapa** (onde os negócios "vazam" no funil).
 - **Tempo médio por etapa / gargalos** (onde os cards ficam mais parados).
-- **Evolução temporal**: ganhos / perdidos / atividades ao longo dos dias.
-
-### 7.4. Financeiro & ligações
-- **Valor ganho × perdido** no período.
-- **Ligações válidas × não válidas** (efetividade — usa o `is_valid` já registrado nas atividades de ligação).
-
-> **Recomendação:** começar pela **7.1 (Recalibrações)** — é a de maior valor operacional e conecta com a automação dos 50 dias.
+- **Ligações válidas × não válidas** (efetividade — usa o `is_valid` das atividades de ligação).
 
 ---
 
@@ -401,6 +399,9 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 - **Criar card só na lista inicial** (Oportunidade Existente).
 - **Ganho/Perdido** só pelos botões; ao marcar, conclui atividades pendentes **exceto follow-up**.
 
-### 8.4. Pendências
-- [ ] **Dashboard "Cobrança"** (passo 3) — mesmo padrão da dashboard de Serviço, filtrando o board 2.
+### 8.4. Dashboard "Cobrança" *(implementada — 25/06/2026)*
+- ✅ Usa o **mesmo componente** da dashboard de Serviço (`ServiceDashboard.tsx`), filtrando o **board 2** (`board=2`). Conteúdo e layout idênticos aos descritos na [seção 7.1](#71-o-que-a-dashboard-mostra-hoje-implementado).
+- ✅ Acessível pelo **select** de dashboard (opção "Cobrança") para admin/gerente e role "serviço".
+
+### 8.5. Pendências
 - [ ] Regra de avanço **Operações → Ganho** (a definir).
