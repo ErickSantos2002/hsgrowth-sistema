@@ -1,9 +1,10 @@
 # 13 - DICIONÁRIO DE DADOS
 
 **HSGrowth CRM - Internal Sales Management System**
-**Versão**: 1.0
-**Data**: 15/12/2025
+**Versão**: v1.7.35 — Junho/2026
 **Autor**: Equipe de Desenvolvimento HSGrowth
+
+> **Nota de arquitetura (v1.7.35)**: o sistema é **single-tenant** — **não existe** a tabela `accounts` nem a coluna `account_id` em nenhum model. As PKs são `INTEGER` (auto-increment). As entidades-chave usam os mixins `TimestampMixin` (`created_at`, `updated_at`) e `SoftDeleteMixin` (`deleted_at`, `is_deleted`). As tabelas reais relevantes são: `roles`, `users`, `boards`, `lists`, `cards`, `field_definitions`, `card_field_values`, `clients`, `persons`, `products`, `card_products`, `card_notes`, `card_tasks`, `card_list_history`, `activities`, `attachments`, `card_transfers`, `transfer_approvals`, `gamification_*`, `user_badges`, `automations`, `automation_executions`, `audit_logs`, `notifications`, `user_notification_settings`, `email_templates`, `custom_reports`, `integration_clients`, `leads`, `cadence_templates`/`cadence_steps`/`card_cadences`, `cadencias`/`cadencia_itens`, `call_evaluations`, `api4com_config`/`user_extensions`/`call_logs` e o **módulo de Serviços** (`service_boards`, `service_lists`, `service_cards`, `service_card_products`, `service_card_activities`). Tabelas citadas neste documento que **não existem** no código: `accounts`, `organizations`, `people`, `card_people`, `custom_fields` (real: `field_definitions`), `tags`/`card_tags`, `notes` (real: `card_notes`), `card_movements` (real: `card_list_history`), `api_tokens` (real: `integration_clients`), `import_history`, `transfer_limit_exceptions`, `transfer_requests`.
 
 ---
 
@@ -37,132 +38,113 @@ Este documento é o **Dicionário de Dados** completo do HSGrowth CRM, contendo:
 
 ## 2. Tabelas Core
 
-### 2.1 ACCOUNTS
+### 2.1 ACCOUNTS — NÃO IMPLEMENTADA
 
-**Propósito**: Representa uma conta/empresa no sistema. Cada conta é um ambiente isolado (multi-tenant).
-
-**Padrão de Uso**: Criada uma vez durante onboarding. Todos os recursos (users, boards, cards) pertencem a uma account.
-
-#### Campos
-
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único da conta | - |
-| `name` | VARCHAR(255) | NOT NULL, UNIQUE | Nome da empresa/conta | - Obrigatório<br>- Único no sistema<br>- Mínimo 3 caracteres<br>- Máximo 255 caracteres |
-| `email_domain` | VARCHAR(255) | UNIQUE | Domínio de email da empresa (@hsgrowth.com.br) | - Opcional<br>- Se fornecido, deve ser domínio válido<br>- Único no sistema |
-| `subscription_plan` | VARCHAR(50) | DEFAULT 'free' | Plano de assinatura | - Valores permitidos: 'free', 'basic', 'pro', 'enterprise'<br>- Default: 'free' |
-| `status` | VARCHAR(50) | DEFAULT 'active' | Status da conta | - Valores permitidos: 'active', 'suspended', 'deleted'<br>- Default: 'active' |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação da conta | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
-
-#### Relacionamentos
-
-- **1:N** com `USERS` - Uma conta possui múltiplos usuários
-- **1:N** com `BOARDS` - Uma conta possui múltiplos quadros
-- **1:N** com `ORGANIZATIONS` - Uma conta gerencia múltiplas organizações (clientes)
-- **1:N** com `TAGS` - Uma conta possui múltiplas etiquetas
-
-#### Índices
-
-```sql
-CREATE UNIQUE INDEX idx_accounts_name ON accounts(name);
-CREATE UNIQUE INDEX idx_accounts_email_domain ON accounts(email_domain);
-```
-
-**Justificativa**:
-- `name`: Garantir unicidade de nome de conta (evitar duplicatas)
-- `email_domain`: Lookup rápido durante login (verificar domínio de email)
-
-#### Queries de Exemplo
-
-```sql
--- Buscar conta por nome
-SELECT * FROM accounts WHERE name = 'HSGrowth';
-
--- Listar contas ativas
-SELECT id, name, subscription_plan, created_at
-FROM accounts
-WHERE status = 'active'
-ORDER BY created_at DESC;
-
--- Contar usuários por conta
-SELECT a.name, COUNT(u.id) as total_users
-FROM accounts a
-LEFT JOIN users u ON a.id = u.account_id
-GROUP BY a.id, a.name
-ORDER BY total_users DESC;
-```
+**Propósito**: O conceito multi-tenant **não existe** no código. O sistema é single-tenant: não há tabela `accounts` nem coluna `account_id`. Esta seção é mantida apenas como referência histórica; ignore-a ao validar o schema. Onde o restante deste documento citar `account_id`, considere-o inexistente.
 
 ---
 
 ### 2.2 USERS
 
-**Propósito**: Representa um usuário do sistema (admin, gerente, vendedor, visualizador).
+**Propósito**: Representa um usuário do sistema. O papel vem de `role_id` (FK para `roles`), não de uma coluna VARCHAR. Usa `TimestampMixin` e `SoftDeleteMixin`.
 
-**Padrão de Uso**: Criado pelo admin da conta. Cada usuário pertence a uma única conta.
+**Padrão de Uso**: Criado pelo admin. Não há multi-tenant.
 
 #### Campos
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único do usuário | - |
-| `account_id` | BIGINT | NOT NULL, FK | Referência para ACCOUNTS | - Obrigatório<br>- Deve existir em ACCOUNTS |
-| `email` | VARCHAR(255) | NOT NULL, UNIQUE | Email do usuário | - Obrigatório<br>- Formato de email válido<br>- Único no sistema |
-| `username` | VARCHAR(100) | UNIQUE | Username para login | - Opcional<br>- Se fornecido, único no sistema<br>- Alfanumérico + _ - |
-| `password_hash` | VARCHAR(255) | NOT NULL | Hash bcrypt da senha (12 rounds) | - Obrigatório<br>- Mínimo 8 caracteres (plaintext)<br>- Armazenado como bcrypt hash |
-| `first_name` | VARCHAR(100) | | Primeiro nome | - Opcional<br>- Máximo 100 caracteres |
-| `last_name` | VARCHAR(100) | | Último nome | - Opcional<br>- Máximo 100 caracteres |
-| `role` | VARCHAR(50) | NOT NULL, DEFAULT 'vendedor' | Papel do usuário | - Valores permitidos: 'admin', 'gerente', 'vendedor', 'visualizador'<br>- Default: 'vendedor' |
-| `status` | VARCHAR(50) | DEFAULT 'active' | Status do usuário | - Valores permitidos: 'active', 'inactive', 'deleted'<br>- Default: 'active' |
-| `last_login_at` | TIMESTAMP | | Último acesso | - Automático (atualizado no login) |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único do usuário | - |
+| `role_id` | INTEGER | NOT NULL, FK (roles, ON DELETE RESTRICT) | Papel/role do usuário | - Obrigatório<br>- Deve existir em ROLES |
+| `email` | VARCHAR(255) | NOT NULL, UNIQUE | Email do usuário | - Formato válido<br>- Único |
+| `username` | VARCHAR(100) | UNIQUE, NULL | Username para login | - Opcional<br>- Único se fornecido |
+| `name` | VARCHAR(255) | NOT NULL | Nome completo | - **Campo único** (não há first_name/last_name) |
+| `password_hash` | VARCHAR(255) | NOT NULL | Hash bcrypt da senha | - Armazenado como bcrypt hash |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT true | Usuário ativo | - Substitui o antigo `status` |
+| `is_verified` | BOOLEAN | NOT NULL, DEFAULT false | Email verificado | - |
+| `last_login_at` | TIMESTAMP | NULL | Último acesso | - Atualizado no login |
+| `password_changed_at` | TIMESTAMP | NULL | Última troca de senha | - |
+| `reset_token` | VARCHAR(255) | NULL | Token de reset de senha | - |
+| `reset_token_expires_at` | TIMESTAMP | NULL | Expiração do token de reset | - |
+| `avatar_url` | VARCHAR(500) | NULL | URL da foto/avatar | - |
+| `phone` | VARCHAR(20) | NULL | Telefone de contato | - |
+| `ms_access_token` | TEXT | NULL | Access token Microsoft Graph | - SSO/Graph API |
+| `ms_refresh_token` | TEXT | NULL | Refresh token Microsoft | - |
+| `ms_token_expires_at` | TIMESTAMP | NULL | Expiração do ms_access_token | - |
+| `email_signature` | TEXT | NULL | Assinatura HTML do e-mail | - Anexada ao enviar pelo CRM |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - Automático |
+| `deleted_at` / `is_deleted` | | | Soft delete | - |
+
+> **Não existem** os campos `account_id`, `first_name`, `last_name`, `role` (VARCHAR) nem `status`.
 
 #### Relacionamentos
 
-- **N:1** com `ACCOUNTS` - Pertence a uma única conta
-- **1:N** com `CARDS` (assigned_to) - Responsável por múltiplos cartões
-- **1:N** com `CARDS` (created_by) - Criou múltiplos cartões
-- **1:N** com `GAMIFICATION_POINTS` - Possui múltiplos registros de pontos
-- **1:N** com `CARD_TRANSFERS` (from_user_id, to_user_id) - Envolvido em transferências
+- **N:1** com `ROLES` - Cada usuário tem uma role
+- **1:N** com `CARDS` (assigned_to_id / sdr_id) - Responsável/SDR de cartões
+- **1:N** com `CARD_TASKS`, `GAMIFICATION_POINTS`, `USER_BADGES`, `NOTIFICATIONS`, `CADENCIAS`
+- **1:N** com `CARD_TRANSFERS` (from_user_id, to_user_id)
+- **1:1** com `USER_NOTIFICATION_SETTINGS`
 
 #### Índices
 
 ```sql
-CREATE UNIQUE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_account_status ON users(account_id, status);
-CREATE INDEX idx_users_email_active ON users(email, is_active);
-CREATE INDEX idx_users_role ON users(role);
+CREATE UNIQUE INDEX ix_users_email ON users(email);
+CREATE UNIQUE INDEX ix_users_username ON users(username);
+CREATE INDEX ix_users_role_id ON users(role_id);
 ```
-
-**Justificativa**:
-- `email`: Login rápido (UNIQUE)
-- `account_id, status`: Listar usuários ativos de uma conta
-- `email, is_active`: Login com verificação de conta ativa
-- `role`: Filtrar usuários por papel
 
 #### Queries de Exemplo
 
 ```sql
 -- Login
-SELECT id, email, password_hash, role, status
+SELECT id, email, password_hash, role_id, is_active
 FROM users
-WHERE email = 'joao@hsgrowth.com.br' AND status = 'active';
+WHERE email = 'joao@hsgrowth.com.br' AND is_active = true;
 
--- Listar vendedores de uma conta
-SELECT id, first_name, last_name, email, last_login_at
-FROM users
-WHERE account_id = 1 AND role = 'vendedor' AND status = 'active'
-ORDER BY first_name;
+-- Listar vendedores
+SELECT u.id, u.name, u.email, u.last_login_at
+FROM users u JOIN roles r ON u.role_id = r.id
+WHERE r.name = 'salesperson' AND u.is_active = true
+ORDER BY u.name;
 
 -- Vendedores com mais cartões atribuídos
-SELECT u.id, u.first_name, u.last_name, COUNT(c.id) as total_cards
+SELECT u.id, u.name, COUNT(c.id) as total_cards
 FROM users u
-LEFT JOIN cards c ON u.id = c.assigned_to
-WHERE u.account_id = 1 AND u.role = 'vendedor'
-GROUP BY u.id, u.first_name, u.last_name
+LEFT JOIN cards c ON u.id = c.assigned_to_id
+JOIN roles r ON u.role_id = r.id
+WHERE r.name = 'salesperson'
+GROUP BY u.id, u.name
 ORDER BY total_cards DESC;
 ```
+
+---
+
+### 2.2.1 ROLES
+
+**Propósito**: Define os papéis (RBAC) e suas permissões (lista JSON). Há **6 roles** de sistema.
+
+#### Campos
+
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único |
+| `name` | VARCHAR(50) | NOT NULL, UNIQUE | Nome interno |
+| `display_name` | VARCHAR(100) | NOT NULL | Nome amigável |
+| `description` | VARCHAR(500) | NULL | Descrição |
+| `permissions` | JSON | NOT NULL, DEFAULT [] | Lista de permissões (ex: `["boards.read","cards.create"]`) |
+| `is_system_role` | BOOLEAN | NOT NULL, DEFAULT false | Roles de sistema não podem ser deletadas |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps |
+
+#### Roles padrão
+
+| name | display_name | Descrição |
+|------|--------------|-----------|
+| `admin` | Administrador | Acesso total |
+| `manager` | Gerente | Gerencia equipe e relatórios |
+| `salesperson` | Vendedor | Acessa os próprios negócios |
+| `sdr` | SDR | Prospecção e qualificação de leads |
+| `viewer` | Visualizador | Somente leitura |
+| `service` | Serviço | Acesso ao módulo de serviços |
 
 ---
 
@@ -176,40 +158,32 @@ ORDER BY total_cards DESC;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único do quadro | - |
-| `account_id` | BIGINT | NOT NULL, FK | Referência para ACCOUNTS | - Obrigatório |
-| `name` | VARCHAR(255) | NOT NULL | Nome do quadro | - Obrigatório<br>- Mínimo 3 caracteres<br>- Máximo 255 caracteres |
-| `description` | TEXT | | Descrição do quadro | - Opcional |
-| `color` | VARCHAR(7) | DEFAULT '#3498db' | Cor do quadro (hex) | - Formato: #RRGGBB<br>- Default: '#3498db' |
-| `type` | VARCHAR(50) | DEFAULT 'kanban' | Tipo do quadro | - Valores permitidos: 'kanban', 'list', 'calendar'<br>- Default: 'kanban' |
-| `roundrobin_enabled` | BOOLEAN | DEFAULT false | Distribuição em rodízio ativada | - Default: false |
-| `created_by` | BIGINT | FK | Referência para USERS (criador) | - Opcional |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único do quadro | - |
+| `name` | VARCHAR(255) | NOT NULL | Nome do quadro | - Obrigatório |
+| `description` | TEXT | NULL | Descrição do quadro | - Opcional |
+| `board_type` | VARCHAR(20) | NULL | Tipo p/ gamificação | - Valores: 'prospecting', 'acquisition' ou NULL (não pontua) |
+| `category` | VARCHAR(20) | NOT NULL, DEFAULT 'vendas' | Categoria | - Valores: 'vendas', 'servicos' |
+| `color` | VARCHAR(50) | NULL, DEFAULT '#3B82F6' | Cor hexadecimal | - |
+| `icon` | VARCHAR(50) | NULL, DEFAULT 'grid' | Nome do ícone (Lucide) | - |
+| `settings` | JSON | NOT NULL, DEFAULT {} | Configurações do quadro | - |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - |
+| `deleted_at` / `is_deleted` | | | Soft delete | - |
+
+> **Não existem** `account_id`, `type`, `roundrobin_enabled` nem `created_by`. O rodízio é implementado por automações (campo `state`).
 
 #### Relacionamentos
 
-- **N:1** com `ACCOUNTS` - Pertence a uma única conta
 - **1:N** com `LISTS` - Contém múltiplas listas (colunas)
-- **1:N** com `CUSTOM_FIELDS` - Define campos customizados para os cartões
-- **1:N** com `AUTOMATIONS` - Possui múltiplas automações
-
-#### Índices
-
-```sql
-CREATE INDEX idx_boards_account ON boards(account_id, created_at);
-```
-
-**Justificativa**:
-- `account_id, created_at`: Listar boards de uma conta ordenados por data de criação
+- **1:N** com `FIELD_DEFINITIONS` - Define campos customizados
+- **1:N** com `AUTOMATIONS` - Automações são por quadro (board_id)
 
 #### Queries de Exemplo
 
 ```sql
--- Listar todos os boards de uma conta
-SELECT id, name, description, type, created_at
+-- Listar todos os boards de vendas
+SELECT id, name, description, board_type, created_at
 FROM boards
-WHERE account_id = 1
+WHERE category = 'vendas' AND is_deleted = false
 ORDER BY created_at DESC;
 
 -- Board com total de cartões
@@ -217,7 +191,6 @@ SELECT b.id, b.name, COUNT(c.id) as total_cards
 FROM boards b
 LEFT JOIN lists l ON b.id = l.board_id
 LEFT JOIN cards c ON l.id = c.list_id
-WHERE b.account_id = 1
 GROUP BY b.id, b.name;
 ```
 
@@ -233,14 +206,16 @@ GROUP BY b.id, b.name;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único da lista | - |
-| `board_id` | BIGINT | NOT NULL, FK | Referência para BOARDS | - Obrigatório |
-| `name` | VARCHAR(255) | NOT NULL | Nome da lista | - Obrigatório<br>- Exemplos: "Novo Lead", "Qualificação", "Proposta", "Venda Fechada" |
-| `description` | TEXT | | Descrição da lista | - Opcional |
-| `color` | VARCHAR(7) | | Cor da lista (hex) | - Formato: #RRGGBB<br>- Opcional |
-| `position` | INT | NOT NULL | Posição na ordem (0, 1, 2...) | - Obrigatório<br>- Inteiro >= 0<br>- Único dentro do board |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único da lista | - |
+| `board_id` | INTEGER | NOT NULL, FK (boards, CASCADE) | Referência para BOARDS | - Obrigatório |
+| `name` | VARCHAR(255) | NOT NULL | Nome da lista | - Exemplos: "Leads Novos", "Em Negociação", "Fechados" |
+| `color` | VARCHAR(7) | NULL | Cor da lista (hex) | - Opcional |
+| `position` | INTEGER | NOT NULL, DEFAULT 0 | Posição na ordem | - >= 0 |
+| `is_done_stage` | BOOLEAN | NOT NULL, DEFAULT false | Etapa de concluídos/ganhos | - |
+| `is_lost_stage` | BOOLEAN | NOT NULL, DEFAULT false | Etapa de perdidos | - |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - Automático |
+
+> **Não existe** `description`. A coluna `position` **não** possui UNIQUE constraint.
 
 #### Relacionamentos
 
@@ -250,13 +225,8 @@ GROUP BY b.id, b.name;
 #### Índices
 
 ```sql
-CREATE INDEX idx_lists_board_position ON lists(board_id, position);
-CREATE UNIQUE INDEX uk_lists_board_position ON lists(board_id, position);
+CREATE INDEX ix_lists_board_id ON lists(board_id);
 ```
-
-**Justificativa**:
-- `board_id, position`: Carregar listas em ordem (para renderizar Kanban)
-- UNIQUE constraint: Garantir que não há duas listas com mesma posição no mesmo board
 
 #### Queries de Exemplo
 
@@ -288,129 +258,131 @@ ORDER BY l.position;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único do cartão | - |
-| `list_id` | BIGINT | NOT NULL, FK | Referência para LISTS (lista atual) | - Obrigatório |
-| `title` | VARCHAR(255) | NOT NULL | Título do cartão (nome do lead/empresa) | - Obrigatório<br>- Mínimo 3 caracteres |
-| `description` | TEXT | | Descrição do cartão | - Opcional |
-| `assigned_to` | BIGINT | FK | Referência para USERS (responsável atual) | - Opcional<br>- Se NULL, cartão não atribuído |
-| `position` | INT | NOT NULL | Posição na lista (0, 1, 2...) | - Obrigatório<br>- Único dentro da lista |
-| `created_by` | BIGINT | FK | Referência para USERS (criador) | - Obrigatório |
-| `original_owner_id` | BIGINT | FK | Vendedor original (primeira atribuição) | - Define a quem pertence o cartão originalmente<br>- Usado para gamificação e comissões |
-| `current_owner_id` | BIGINT | FK | Responsável atual (igual a assigned_to) | - Atualizado a cada transferência |
-| `last_transfer_date` | TIMESTAMP | | Data da última transferência | - Atualizado automaticamente em transferências |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
-| `archived_at` | TIMESTAMP | | Data de arquivamento | - NULL se não arquivado |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único do cartão | - |
+| `list_id` | INTEGER | NOT NULL, FK (lists, CASCADE) | Lista atual | - Obrigatório |
+| `client_id` | INTEGER | FK (clients, SET NULL) | Cliente/empresa | - Opcional |
+| `person_id` | INTEGER | FK (persons, SET NULL) | Pessoa de contato | - Opcional |
+| `assigned_to_id` | INTEGER | FK (users, SET NULL) | Responsável | - NULL = não atribuído |
+| `sdr_id` | INTEGER | FK (users, SET NULL) | SDR vinculado | - Opcional |
+| `title` | VARCHAR(500) | NOT NULL, INDEX | Título do cartão | - Obrigatório |
+| `description` | TEXT | NULL | Descrição | - Opcional |
+| `position` | NUMERIC(12,2) | NOT NULL, DEFAULT 0 | Posição fracionária no Kanban | - Permite reordenação sem colisão |
+| `value` | NUMERIC(12,2) | NULL | Valor do negócio | - Opcional |
+| `shipping_cost` | NUMERIC(12,2) | NULL | Custo de frete/envio | - Somado ao total |
+| `currency` | VARCHAR(3) | NOT NULL, DEFAULT 'BRL' | Moeda | - |
+| `due_date` | TIMESTAMP | NULL | Data de vencimento | - |
+| `closed_at` | TIMESTAMP | NULL | Data de fechamento (ganho/perdido) | - |
+| `is_won` | INTEGER | NOT NULL, DEFAULT 0 | Status | - 0=aberto, 1=ganho, -1=perdido |
+| `contact_info` | JSON | NULL | Dados de contato | - |
+| `payment_info` | JSON | NULL | Condições de pagamento | - |
+| `prospection_entry_date` | TIMESTAMP | NULL | Entrada no board Prospecção | - |
+| `acquisition_entry_date` | TIMESTAMP | NULL | Entrada no board Aquisição | - |
+| `expansion_entry_date` | TIMESTAMP | NULL | Entrada no board Expansão | - |
+| `deal_type` | VARCHAR(50) | NULL | Tipo de negócio | - Nova Venda, Cross Sell, Up Sell |
+| `modality` | VARCHAR(20) | NULL | Venda ou locação | - 'venda' \| 'locacao' (obrigatório p/ Ganho) |
+| `acquisition_channel` | VARCHAR(100) | NULL | Canal de aquisição | - Inbound, Outbound... |
+| `acquisition_channel_detail` | VARCHAR(200) | NULL | Detalhamento do canal | - |
+| `utm_params` | TEXT | NULL | UTM (legado) | - |
+| `origin` | VARCHAR(200) | NULL | Origem do lead | - Editável pelo frontend |
+| `utm_campaign` / `utm_source` / `utm_term` | VARCHAR(200) | NULL | Parâmetros UTM | - |
+| `loss_reason` | VARCHAR(200) | NULL | Motivo da perda | - |
+| `reopened_from_card_id` | INTEGER | FK (cards, SET NULL) | Card original (reabertura) | - |
+| `has_implementation` | INTEGER | NULL | Tem implementação? | - 0=false, 1=true, NULL=não informado |
+| `has_personnel` | INTEGER | NULL | Tem pessoas para manusear? | - 0=false, 1=true, NULL |
+| `automacao01` | BOOLEAN | NULL, DEFAULT false | Automação de nutrição | - Dispara webhook externo |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - |
+| `deleted_at` / `is_deleted` | | | Soft delete | - |
+
+> **Não existem** `account_id`, `created_by`, `original_owner_id`, `current_owner_id`, `last_transfer_date` nem `archived_at`. O responsável é `assigned_to_id`; o "arquivamento" é o soft delete (`is_deleted`/`deleted_at`); o histórico de donos vem de `card_transfers`.
 
 #### Relacionamentos
 
-- **N:1** com `LISTS` - Pertence a uma única lista
-- **N:1** com `USERS` (assigned_to) - Atribuído a um usuário
-- **N:1** com `USERS` (created_by) - Criado por um usuário
-- **N:1** com `USERS` (original_owner_id) - Proprietário original
-- **1:N** com `CARD_FIELD_VALUES` - Possui múltiplos valores de campos customizados
-- **1:N** with `CARD_TRANSFERS` - Possui histórico de transferências
-- **1:N** with `CARD_MOVEMENTS` - Possui histórico de movimentos entre listas
+- **N:1** com `LISTS`, `CLIENTS`, `PERSONS`
+- **N:1** com `USERS` (assigned_to_id, sdr_id)
+- **N:1** com `CARDS` (reopened_from_card_id) - autorreferência (reabertura)
+- **1:N** com `CARD_FIELD_VALUES`, `CARD_PRODUCTS`, `CARD_NOTES`, `CARD_TASKS`, `ACTIVITIES`, `ATTACHMENTS`, `CARD_TRANSFERS`, `CARD_CADENCES`, `CARD_LIST_HISTORY`
 
 #### Índices
 
 ```sql
-CREATE INDEX idx_cards_list_position ON cards(list_id, position);
-CREATE INDEX idx_cards_assigned_to ON cards(assigned_to);
-CREATE INDEX idx_cards_created_at ON cards(created_at DESC);
-CREATE UNIQUE INDEX uk_cards_list_position ON cards(list_id, position);
-
--- Índices adicionais de performance
-CREATE INDEX idx_cards_assigned_due ON cards(assigned_to, due_date) WHERE due_date IS NOT NULL;
-CREATE INDEX idx_cards_search ON cards(account_id, name, company_name);
+CREATE INDEX ix_cards_list_id ON cards(list_id);
+CREATE INDEX ix_cards_assigned_to_id ON cards(assigned_to_id);
+CREATE INDEX ix_cards_client_id ON cards(client_id);
+CREATE INDEX ix_cards_person_id ON cards(person_id);
+CREATE INDEX ix_cards_sdr_id ON cards(sdr_id);
+CREATE INDEX ix_cards_title ON cards(title);
+CREATE INDEX ix_cards_reopened_from_card_id ON cards(reopened_from_card_id);
 ```
-
-**Justificativa**:
-- `list_id, position`: Carregar cartões de uma lista em ordem
-- `assigned_to`: Dashboard "Meus Cartões"
-- `created_at`: Ordenar por data de criação
-- `assigned_to, due_date`: Query frequente "Meus cartões vencidos"
-- `name, company_name`: Busca/autocomplete
 
 #### Queries de Exemplo
 
 ```sql
--- Meus cartões
+-- Meus cartões abertos
 SELECT id, title, description, list_id
 FROM cards
-WHERE assigned_to = 123 AND archived_at IS NULL
+WHERE assigned_to_id = 123 AND is_deleted = false
 ORDER BY created_at DESC;
 
--- Cartões vencidos
-SELECT c.id, c.title, c.due_date, u.first_name, u.last_name
+-- Cartões vencidos (em aberto)
+SELECT c.id, c.title, c.due_date, u.name
 FROM cards c
-JOIN users u ON c.assigned_to = u.id
-WHERE c.due_date < NOW() AND c.archived_at IS NULL
+JOIN users u ON c.assigned_to_id = u.id
+WHERE c.due_date < NOW() AND c.is_won = 0 AND c.is_deleted = false
 ORDER BY c.due_date;
 
 -- Cartões de uma lista
-SELECT id, title, assigned_to, position
+SELECT id, title, assigned_to_id, position
 FROM cards
-WHERE list_id = 5 AND archived_at IS NULL
+WHERE list_id = 5 AND is_deleted = false
 ORDER BY position;
 ```
 
 ---
 
-### 2.6 CUSTOM_FIELDS
+### 2.6 FIELD_DEFINITIONS (Campos Customizados)
 
-**Propósito**: Define campos customizados para um board (ex: "Valor do Negócio", "Data de Fechamento Esperada").
+**Propósito**: Define campos customizados por board (tabela real: `field_definitions`, não `custom_fields`).
 
-**Padrão de Uso**: Criado pelo admin ao configurar o board. Cada board pode ter campos específicos.
+**Padrão de Uso**: Criado ao configurar o board. Cada board pode ter campos específicos.
 
 #### Campos
 
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único do campo | - |
-| `board_id` | BIGINT | NOT NULL, FK | Referência para BOARDS | - Obrigatório |
-| `name` | VARCHAR(255) | NOT NULL | Nome do campo | - Obrigatório<br>- Exemplos: "Valor do Negócio", "Empresa", "Telefone" |
-| `type` | VARCHAR(50) | NOT NULL | Tipo do campo | - Valores: 'text', 'email', 'date', 'number', 'currency', 'select', 'checkbox', 'user' |
-| `description` | TEXT | | Descrição do campo | - Opcional |
-| `required` | BOOLEAN | DEFAULT false | Campo obrigatório | - Default: false |
-| `default_value` | TEXT | | Valor padrão | - Opcional |
-| `options` | JSON | | Opções para select (JSON array) | - Obrigatório se type='select'<br>- Exemplo: ["Opção 1", "Opção 2"] |
-| `position` | INT | NOT NULL | Posição na ordem de exibição | - Obrigatório<br>- Único dentro do board |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único |
+| `board_id` | INTEGER | NOT NULL, FK (boards, CASCADE) | Referência para BOARDS |
+| `name` | VARCHAR(255) | NOT NULL | Nome do campo |
+| `field_type` | VARCHAR(50) | NOT NULL | Tipo (text, email, phone, number, currency, date, select...) |
+| `is_required` | BOOLEAN | NOT NULL, DEFAULT false | Campo obrigatório |
+| `is_unique` | BOOLEAN | NOT NULL, DEFAULT false | Valor único |
+| `position` | INTEGER | NOT NULL, DEFAULT 0 | Ordem de exibição |
+| `placeholder` | VARCHAR(255) | NULL | Placeholder |
+| `help_text` | TEXT | NULL | Texto de ajuda |
+| `options` | JSON | NULL, DEFAULT [] | Opções para select/multiselect |
+| `validations` | JSON | NULL, DEFAULT {} | Validações (ex: {"min":0,"max":1000000}) |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps |
+
+> Diferenças vs antigo "custom_fields": coluna é `field_type` (não `type`), `is_required`/`is_unique` (não `required`), há `placeholder`/`help_text`/`validations` e **não há** `description`/`default_value`. Sem UNIQUE em (board_id, position).
 
 #### Relacionamentos
 
-- **N:1** com `BOARDS` - Pertence a um único board
-- **1:N** com `CARD_FIELD_VALUES` - Possui múltiplos valores (um por cartão)
+- **N:1** com `BOARDS`
+- **1:N** com `CARD_FIELD_VALUES`
 
 #### Índices
 
 ```sql
-CREATE INDEX idx_custom_fields_board ON custom_fields(board_id, position);
-CREATE UNIQUE INDEX uk_custom_fields_position ON custom_fields(board_id, position);
+CREATE INDEX ix_field_definitions_board_id ON field_definitions(board_id);
 ```
-
-**Justificativa**:
-- `board_id, position`: Carregar campos em ordem de exibição
 
 #### Queries de Exemplo
 
 ```sql
 -- Listar campos de um board
-SELECT id, name, type, required, position
-FROM custom_fields
+SELECT id, name, field_type, is_required, position
+FROM field_definitions
 WHERE board_id = 1
 ORDER BY position;
-
--- Campos obrigatórios não preenchidos em um cartão
-SELECT cf.id, cf.name
-FROM custom_fields cf
-WHERE cf.board_id = 1 AND cf.required = true
-AND NOT EXISTS (
-  SELECT 1 FROM card_field_values cfv
-  WHERE cfv.field_id = cf.id AND cfv.card_id = 123
-);
 ```
 
 ---
@@ -425,188 +397,161 @@ AND NOT EXISTS (
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `card_id` | BIGINT | NOT NULL, FK | Referência para CARDS | - Obrigatório |
-| `field_id` | BIGINT | NOT NULL, FK | Referência para CUSTOM_FIELDS | - Obrigatório |
-| `value` | TEXT | | Valor do campo | - Validação depende do tipo do campo<br>- TEXT: qualquer string<br>- EMAIL: formato de email<br>- NUMBER/CURRENCY: numérico<br>- DATE: formato YYYY-MM-DD |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único | - |
+| `card_id` | INTEGER | NOT NULL, FK (cards, CASCADE) | Referência para CARDS | - Obrigatório |
+| `field_definition_id` | INTEGER | NOT NULL, FK (field_definitions, CASCADE) | Referência para FIELD_DEFINITIONS | - Obrigatório |
+| `value` | TEXT | NULL | Valor do campo | - Convertido conforme o field_type |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - Automático |
+
+> A FK é `field_definition_id` (não `field_id`).
 
 #### Relacionamentos
 
-- **N:1** com `CARDS` - Pertence a um único cartão
-- **N:1** com `CUSTOM_FIELDS` - Referencia um único campo
+- **N:1** com `CARDS`
+- **N:1** com `FIELD_DEFINITIONS`
 
-#### Índices
+#### Índices/Constraints
 
 ```sql
-CREATE UNIQUE INDEX uk_card_field_values ON card_field_values(card_id, field_id);
-CREATE INDEX idx_card_field_values_card ON card_field_values(card_id);
+CREATE UNIQUE INDEX unique_card_field ON card_field_values(card_id, field_definition_id);
+CREATE INDEX ix_card_field_values_card_id ON card_field_values(card_id);
+CREATE INDEX ix_card_field_values_field_definition_id ON card_field_values(field_definition_id);
 ```
-
-**Justificativa**:
-- UNIQUE (card_id, field_id): Um cartão só pode ter um valor por campo
-- `card_id`: Carregar todos os campos de um cartão
 
 #### Queries de Exemplo
 
 ```sql
 -- Carregar todos os campos de um cartão
-SELECT cf.name, cf.type, cfv.value
+SELECT fd.name, fd.field_type, cfv.value
 FROM card_field_values cfv
-JOIN custom_fields cf ON cfv.field_id = cf.id
+JOIN field_definitions fd ON cfv.field_definition_id = fd.id
 WHERE cfv.card_id = 123
-ORDER BY cf.position;
-
--- Atualizar valor de campo
-INSERT INTO card_field_values (card_id, field_id, value)
-VALUES (123, 5, '50000.00')
-ON CONFLICT (card_id, field_id)
-DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
+ORDER BY fd.position;
 ```
 
 ---
 
 ## 3. Tabelas de Relacionamento
 
-### 3.1 ORGANIZATIONS
+### 3.1 CLIENTS
 
-**Propósito**: Representa uma organização/empresa cliente.
-
-**Padrão de Uso**: Criada ao adicionar um novo cliente. Pode ser associada a múltiplos contatos (PEOPLE).
+**Propósito**: Representa um cliente (PF ou PJ). Substitui a antiga "ORGANIZATIONS" (tabela real: `clients`). Usa `TimestampMixin` e `SoftDeleteMixin`.
 
 #### Campos
 
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `account_id` | BIGINT | NOT NULL, FK | Referência para ACCOUNTS | - Obrigatório |
-| `name` | VARCHAR(255) | NOT NULL | Nome da organização | - Obrigatório<br>- Mínimo 2 caracteres |
-| `email` | VARCHAR(255) | | Email da organização | - Opcional<br>- Formato de email válido |
-| `phone` | VARCHAR(20) | | Telefone | - Opcional |
-| `website` | VARCHAR(255) | | Website | - Opcional<br>- URL válida |
-| `address` | TEXT | | Endereço completo | - Opcional |
-| `city` | VARCHAR(100) | | Cidade | - Opcional |
-| `state` | VARCHAR(50) | | Estado/UF | - Opcional |
-| `country` | VARCHAR(100) | | País | - Opcional |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único |
+| `name` | VARCHAR(255) | NOT NULL, INDEX | Nome do contato |
+| `email` | VARCHAR(255) | NULL, INDEX | Email |
+| `phone` | VARCHAR(20) | NULL | Telefone |
+| `company_name` | VARCHAR(255) | NULL | Razão social |
+| `document` | VARCHAR(20) | NULL, INDEX | CPF (11) ou CNPJ (14) |
+| `address` | TEXT | NULL | Endereço |
+| `city` | VARCHAR(100) | NULL | Cidade |
+| `state` | VARCHAR(2) | NULL | UF |
+| `country` | VARCHAR(100) | NULL, DEFAULT 'Brasil' | País |
+| `website` | VARCHAR(255) | NULL | Website |
+| `notes` | TEXT | NULL | Observações |
+| `cnae` | VARCHAR(20) | NULL | Código CNAE |
+| `linkedin_url` | VARCHAR(500) | NULL | LinkedIn da empresa |
+| `relationship_type` | VARCHAR(50) | NULL | Cliente, Prospect, Lead... |
+| `commercial_activity` | VARCHAR(50) | NULL | Ativo, Dormente, Inativo |
+| `sector` | VARCHAR(100) | NULL | Setor/Indústria |
+| `employee_count` | VARCHAR(50) | NULL | Faixa de colaboradores |
+| `annual_revenue` | VARCHAR(50) | NULL | Faixa de faturamento anual |
+| `source` | VARCHAR(50) | NULL | pipedrive, manual, importacao... |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT true | Cliente ativo |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps |
+| `deleted_at` / `is_deleted` | | | Soft delete |
 
 #### Relacionamentos
 
-- **N:1** com `ACCOUNTS` - Pertence a uma única conta
-- **1:N** com `PEOPLE` - Possui múltiplos contatos
+- **1:N** com `PERSONS` (clients.id ← persons.organization_id)
+- **1:N** com `CARDS` e `SERVICE_CARDS` (client_id)
 
 #### Índices
 
 ```sql
-CREATE INDEX idx_organizations_account ON organizations(account_id, name);
-```
-
-#### Queries de Exemplo
-
-```sql
--- Listar organizações de uma conta
-SELECT id, name, email, phone, city
-FROM organizations
-WHERE account_id = 1
-ORDER BY name;
-
--- Organizações com total de contatos
-SELECT o.name, COUNT(p.id) as total_contacts
-FROM organizations o
-LEFT JOIN people p ON o.id = p.organization_id
-WHERE o.account_id = 1
-GROUP BY o.id, o.name;
+CREATE INDEX ix_clients_name ON clients(name);
+CREATE INDEX ix_clients_email ON clients(email);
+CREATE INDEX ix_clients_document ON clients(document);
 ```
 
 ---
 
-### 3.2 PEOPLE
+### 3.2 PERSONS
 
-**Propósito**: Representa uma pessoa/contato associado a uma organização.
-
-**Padrão de Uso**: Criado ao adicionar contatos de um cliente. Pode ser associado a cartões via CARD_PEOPLE.
+**Propósito**: Representa uma pessoa/contato vinculada a um cliente (tabela real: `persons`). O vínculo com o card é direto via `cards.person_id` — **não há** tabela de junção.
 
 #### Campos
 
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `account_id` | BIGINT | NOT NULL, FK | Referência para ACCOUNTS | - Obrigatório |
-| `organization_id` | BIGINT | FK | Referência para ORGANIZATIONS | - Opcional |
-| `first_name` | VARCHAR(100) | NOT NULL | Primeiro nome | - Obrigatório |
-| `last_name` | VARCHAR(100) | | Último nome | - Opcional |
-| `email` | VARCHAR(255) | | Email | - Opcional<br>- Formato válido |
-| `phone` | VARCHAR(20) | | Telefone | - Opcional |
-| `mobile` | VARCHAR(20) | | Celular | - Opcional |
-| `job_title` | VARCHAR(100) | | Cargo | - Opcional |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único |
+| `first_name` / `last_name` | VARCHAR(100) | NULL | Nome/sobrenome |
+| `name` | VARCHAR(200) | NOT NULL, INDEX | Nome completo |
+| `email` | VARCHAR(255) | NULL, INDEX | Email principal (legado) |
+| `email_commercial` / `email_personal` | VARCHAR(255) | NULL, INDEX | Emails adicionais |
+| `email_alternative` | VARCHAR(255) | NULL | Email alternativo |
+| `phone` | VARCHAR(50) | NULL | Telefone principal (legado) |
+| `phone_commercial` / `phone_whatsapp` | VARCHAR(50) | NULL | Telefones |
+| `phone_alternative` / `phone_extra1` / `phone_extra2` | VARCHAR(50) | NULL | Telefones extras |
+| `position` | VARCHAR(200) | NULL | Cargo |
+| `area` | VARCHAR(200) | NULL | Área/Departamento |
+| `linkedin` / `instagram` / `facebook` | VARCHAR(500) | NULL | Redes sociais |
+| `organization_id` | INTEGER | FK (clients) | Cliente vinculado |
+| `owner_id` | INTEGER | FK (users) | Dono/responsável |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT true | Ativo |
+| `pipedrive_id` | INTEGER | NULL, INDEX | Referência ao Pipedrive |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps |
 
 #### Relacionamentos
 
-- **N:1** com `ACCOUNTS` - Pertence a uma única conta
-- **N:1** com `ORGANIZATIONS` - Pode pertencer a uma organização
-- **N:M** com `CARDS` via `CARD_PEOPLE` - Pode ser associado a múltiplos cartões
+- **N:1** com `CLIENTS` (organization_id) e `USERS` (owner_id)
+- Vínculo com cards via `cards.person_id` (1:N)
 
 ---
 
-### 3.3 CARD_PEOPLE
+### 3.3 PRODUCTS
 
-**Propósito**: Relaciona cartões com pessoas/contatos.
-
-**Padrão de Uso**: Criado ao associar um contato a uma oportunidade.
+**Propósito**: Catálogo de produtos/serviços (compartilhado entre Vendas e Serviços). Usa `TimestampMixin` e `SoftDeleteMixin`.
 
 #### Campos
 
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `card_id` | BIGINT | NOT NULL, FK | Referência para CARDS | - Obrigatório |
-| `person_id` | BIGINT | NOT NULL, FK | Referência para PEOPLE | - Obrigatório |
-| `role` | VARCHAR(50) | | Papel da pessoa | - Opcional<br>- Valores sugeridos: 'decision_maker', 'influencer', 'end_user' |
-
-#### Índices
-
-```sql
-CREATE UNIQUE INDEX uk_card_people ON card_people(card_id, person_id);
-```
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único |
+| `name` | VARCHAR(255) | NOT NULL, INDEX | Nome do produto |
+| `description` | TEXT | NULL | Descrição |
+| `sku` | VARCHAR(100) | UNIQUE, NULL, INDEX | Código SKU |
+| `unit_price` | NUMERIC(12,2) | NOT NULL | Preço unitário padrão (vendas) |
+| `calibration_price` | NUMERIC(12,2) | NULL, DEFAULT 0 | Valor da calibração (boards de serviços) |
+| `currency` | VARCHAR(3) | NOT NULL, DEFAULT 'BRL' | Moeda |
+| `category` | VARCHAR(100) | NULL, INDEX | Categoria |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT true, INDEX | Produto ativo |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps |
+| `deleted_at` / `is_deleted` | | | Soft delete |
 
 ---
 
-### 3.4 PRODUCTS
+### 3.4 CARD_PRODUCTS
 
-**Propósito**: Representa um produto/serviço oferecido pela empresa.
-
-#### Campos
-
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `account_id` | BIGINT | NOT NULL, FK | Referência para ACCOUNTS | - Obrigatório |
-| `name` | VARCHAR(255) | NOT NULL | Nome do produto | - Obrigatório |
-| `description` | TEXT | | Descrição | - Opcional |
-| `price` | DECIMAL(10, 2) | | Preço | - Opcional<br>- >= 0 |
-| `currency` | VARCHAR(3) | DEFAULT 'BRL' | Moeda | - Default: 'BRL'<br>- Código ISO 4217 |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
-
----
-
-### 3.5 CARD_PRODUCTS
-
-**Propósito**: Relaciona cartões com produtos (itens da proposta).
+**Propósito**: Produtos adicionados a um card de **vendas** (itens da proposta).
 
 #### Campos
 
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `card_id` | BIGINT | NOT NULL, FK | Referência para CARDS | - Obrigatório |
-| `product_id` | BIGINT | NOT NULL, FK | Referência para PRODUCTS | - Obrigatório |
-| `quantity` | INT | DEFAULT 1 | Quantidade | - >= 1<br>- Default: 1 |
-| `unit_price` | DECIMAL(10, 2) | | Preço unitário | - >= 0 |
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único |
+| `card_id` | INTEGER | NOT NULL, FK (cards, CASCADE) | Referência para CARDS |
+| `product_id` | INTEGER | NOT NULL, FK (products, CASCADE) | Referência para PRODUCTS |
+| `quantity` | INTEGER | NOT NULL, DEFAULT 1 | Quantidade |
+| `unit_price` | NUMERIC(12,2) | NOT NULL | Preço unitário (pode diferir do catálogo) |
+| `discount` | NUMERIC(12,2) | NOT NULL, DEFAULT 0 | Desconto absoluto |
+| `notes` | TEXT | NULL | Observações |
+
+**Constraints**: UNIQUE (card_id, product_id) — `unique_card_product`.
 
 ---
 
@@ -622,18 +567,25 @@ CREATE UNIQUE INDEX uk_card_people ON card_people(card_id, person_id);
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `user_id` | BIGINT | NOT NULL, FK | Referência para USERS | - Obrigatório |
-| `action_type` | VARCHAR(100) | NOT NULL | Tipo de ação | - Valores: 'criar_lead' (10 pts), 'fechar_venda' (100 pts), 'qualificar_lead' (20 pts), etc |
-| `points` | INT | NOT NULL | Pontos atribuídos | - Pode ser positivo ou negativo<br>- Exemplo: -50 para ação incorreta |
-| `card_id` | BIGINT | FK | Referência para CARDS | - Opcional (NULL para ações não relacionadas a cartões) |
-| `description` | TEXT | | Descrição adicional | - Opcional |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data da ação | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único | - |
+| `user_id` | INTEGER | NOT NULL, FK (users, CASCADE) | Referência para USERS | - Obrigatório |
+| `board_type` | VARCHAR(20) | NULL, INDEX | Contexto do board | - 'prospecting', 'acquisition' ou NULL |
+| `points` | INTEGER | NOT NULL | Pontos atribuídos | - Pode ser negativo (penalidade) |
+| `reason` | VARCHAR(100) | NOT NULL, INDEX | Motivo dos pontos | - card_created, card_won, card_lost, meeting_completed... |
+| `description` | TEXT | NULL | Descrição adicional | - Opcional |
+| `is_commission` | BOOLEAN | NOT NULL, DEFAULT false | É split de comissão | - |
+| `commission_source_user_id` | INTEGER | FK (users, SET NULL) | Usuário da ação original | - Apenas em comissão |
+| `commission_ratio` | VARCHAR(10) | NULL | Fração recebida | - ex: '1/4', '1/3' |
+| `original_points` | INTEGER | NULL | Pontos antes do split | - Auditoria |
+| `related_entity_type` | VARCHAR(50) | NULL | Tipo da entidade | - Card, Task, Attachment |
+| `related_entity_id` | INTEGER | NULL | ID da entidade | - |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - Automático |
+
+> Diferenças vs versão antiga: o motivo é `reason` (não `action_type`), há `board_type`, e o vínculo a card/task usa `related_entity_type`/`related_entity_id` (não `card_id`). A tabela `gamification_action_points` (board_type, action_type, points) define o valor de cada ação.
 
 #### Relacionamentos
 
-- **N:1** com `USERS` - Pertence a um único usuário
-- **N:1** com `CARDS` - Pode referenciar um cartão
+- **N:1** com `USERS` (user_id, commission_source_user_id)
 
 #### Índices
 
@@ -692,22 +644,24 @@ LIMIT 10;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `user_id` | BIGINT | NOT NULL, FK | Referência para USERS | - Obrigatório |
-| `period` | VARCHAR(50) | NOT NULL | Período do ranking | - Valores: 'weekly', 'monthly', 'quarterly', 'annual' |
-| `rank` | INT | NOT NULL | Posição no ranking | - >= 1 (1º, 2º, 3º...) |
-| `total_points` | INT | NOT NULL | Pontos DAQUELE período | - >= 0 |
-| `year` | INT | NOT NULL | Ano do ranking | - Exemplo: 2025 |
-| `period_number` | INT | NOT NULL | Número do período | - Semana: 1-52<br>- Mês: 1-12<br>- Trimestre: 1-4<br>- Anual: 1 |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação do ranking | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único | - |
+| `user_id` | INTEGER | NOT NULL, FK (users, CASCADE) | Referência para USERS | - Obrigatório |
+| `board_type` | VARCHAR(20) | NOT NULL, INDEX | Board do ranking | - 'prospecting', 'acquisition' |
+| `period_type` | VARCHAR(20) | NOT NULL, INDEX | Período | - weekly, monthly, quarterly, annual |
+| `period_start` | TIMESTAMP | NOT NULL, INDEX | Início do período | - |
+| `period_end` | TIMESTAMP | NOT NULL, INDEX | Fim do período | - |
+| `rank` | INTEGER | NOT NULL | Posição no ranking | - >= 1 |
+| `points` | INTEGER | NOT NULL, DEFAULT 0 | Pontos do período | - |
+| `cards_won` | INTEGER | NOT NULL, DEFAULT 0 | Cartões ganhos no período | - |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - Automático |
+
+> Diferenças: o ranking é separado por `board_type`; o período usa `period_type` + `period_start`/`period_end` (não `period`/`year`/`period_number`); pontos em `points` (não `total_points`).
 
 #### Constraints
 
 ```sql
-UNIQUE(user_id, period, year, period_number)
+CONSTRAINT unique_user_board_ranking_period UNIQUE(user_id, board_type, period_type, period_start)
 ```
-
-Um usuário só pode ter um registro por período.
 
 #### Relacionamentos
 
@@ -765,27 +719,18 @@ WHERE u.account_id = 1;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `account_id` | BIGINT | FK | Referência para ACCOUNTS | - NULL para badges padrão do sistema<br>- NOT NULL para badges customizadas |
-| `name` | VARCHAR(100) | NOT NULL | Nome da badge | - Obrigatório<br>- Exemplos: "Primeira Venda", "Top 10", "100 Leads" |
-| `description` | VARCHAR(200) | | Descrição da conquista | - Opcional |
-| `criteria` | TEXT | | Critério de conquista | - Opcional<br>- Exemplo: "pontos >= 1000" |
-| `criteria_type` | VARCHAR(20) | DEFAULT 'automatic' | Tipo de critério | - Valores: 'manual' (admin atribui), 'automatic' (sistema atribui por regra)<br>- Default: 'automatic' |
-| `points_required` | INT | DEFAULT 0 | Pontos necessários | - >= 0<br>- Usado se criteria_type='automatic' |
-| `icon` | VARCHAR(255) | | Emoji ou URL do ícone | - Opcional<br>- Exemplo: "🏆", "https://..." |
-| `is_custom` | BOOLEAN | DEFAULT false | Badge customizada | - false: badge padrão do sistema<br>- true: badge customizada pelo admin |
-| `is_active` | BOOLEAN | DEFAULT true | Badge ativa | - Default: true |
-| `created_by` | BIGINT | FK | Referência para USERS (criador) | - NULL para badges padrão<br>- NOT NULL para badges customizadas |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único | - |
+| `name` | VARCHAR(255) | NOT NULL | Nome da badge | - Exemplos: "Primeira Venda", "Top 10" |
+| `description` | TEXT | NULL | Descrição da conquista | - Opcional |
+| `icon_url` | VARCHAR(500) | NULL | URL do ícone | - |
+| `is_system_badge` | BOOLEAN | NOT NULL, DEFAULT false | Badge padrão do sistema | - |
+| `criteria_type` | VARCHAR(50) | NOT NULL | Tipo de critério | - 'manual' ou 'automatic' |
+| `criteria` | JSON | NULL | Critério (automática) | - ex: {"field":"total_points","operator":">=","value":500,"board_type":"prospecting"} |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT true | Badge ativa | - |
+| `deleted_at` | TIMESTAMP | NULL | Soft delete | - Preserva user_badges |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - Automático |
 
-#### Constraints
-
-```sql
-UNIQUE(account_id, name)
-```
-
-Nome de badge único por conta (badges padrão têm account_id NULL).
+> Diferenças: o critério é JSON em `criteria` (não TEXT), o ícone é `icon_url`, e há `is_system_badge` (não `is_custom`/`account_id`/`created_by`/`points_required`).
 
 #### Relacionamentos
 
@@ -827,16 +772,19 @@ ORDER BY created_at DESC;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `user_id` | BIGINT | NOT NULL, FK | Referência para USERS | - Obrigatório |
-| `badge_id` | BIGINT | NOT NULL, FK | Referência para GAMIFICATION_BADGES | - Obrigatório |
-| `assigned_by` | BIGINT | FK | Referência para USERS (quem atribuiu) | - NULL se automático<br>- NOT NULL se manual |
-| `earned_at` | TIMESTAMP | DEFAULT NOW() | Data da conquista | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único | - |
+| `user_id` | INTEGER | NOT NULL, FK (users, CASCADE) | Referência para USERS | - Obrigatório |
+| `badge_id` | INTEGER | NOT NULL, FK (gamification_badges, CASCADE) | Referência para badge | - Obrigatório |
+| `awarded_by_id` | INTEGER | FK (users, SET NULL) | Quem atribuiu (badges manuais) | - NULL se automático |
+| `awarded_at` | TIMESTAMP | NOT NULL | Data da conquista | - Automático |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - |
+
+> Diferenças: `awarded_by_id`/`awarded_at` (não `assigned_by`/`earned_at`).
 
 #### Constraints
 
 ```sql
-UNIQUE(user_id, badge_id)
+CONSTRAINT unique_user_badge UNIQUE(user_id, badge_id)
 ```
 
 Usuário não pode ganhar a mesma badge duas vezes.
@@ -888,39 +836,37 @@ ORDER BY total_users DESC;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `account_id` | BIGINT | NOT NULL, FK | Referência para ACCOUNTS | - Obrigatório |
-| `name` | VARCHAR(255) | NOT NULL | Nome da automação | - Obrigatório<br>- Exemplo: "Mover leads qualificados para Proposta" |
-| `description` | TEXT | | Descrição | - Opcional |
-| `priority` | INT | DEFAULT 50 | Prioridade (1-100) | - 1-100<br>- Default: 50<br>- Maior = executa primeiro |
-| `automation_type` | VARCHAR(20) | DEFAULT 'trigger' | Tipo de automação | - Valores: 'trigger', 'scheduled'<br>- Default: 'trigger' |
-| **TRIGGER FIELDS** | | | | |
-| `trigger_type` | VARCHAR(100) | | Tipo de gatilho | - NULL se scheduled<br>- Valores: 'card_moved', 'card_created', 'card_updated' |
-| `trigger_board_id` | BIGINT | FK | Referência para BOARDS (gatilho) | - NULL se scheduled |
-| `trigger_list_id` | BIGINT | FK | Referência para LISTS (gatilho) | - NULL se scheduled |
-| `trigger_conditions` | JSON | | Condições adicionais | - NULL se scheduled<br>- Exemplo: {"value_gt": 10000} |
-| **SCHEDULED FIELDS** | | | | |
-| `schedule_type` | VARCHAR(20) | | Tipo de agendamento | - NULL se trigger<br>- Valores: 'once' (única), 'recurring' (recorrente) |
-| `schedule_config` | JSON | | Configuração do agendamento | - NULL se trigger<br>- Estrutura varia por frequência |
-| `next_execution_at` | TIMESTAMP | | Próxima execução | - NULL se trigger |
-| `last_executed_at` | TIMESTAMP | | Última execução | - NULL se trigger ou nunca executada |
-| **ACTION FIELDS** | | | | |
-| `action_type` | VARCHAR(100) | NOT NULL | Tipo de ação | - Valores: 'move_card', 'copy_card', 'create_card', 'notify' |
-| `action_board_id` | BIGINT | FK | Referência para BOARDS (destino) | - NULL se action não envolve board |
-| `action_list_id` | BIGINT | FK | Referência para LISTS (destino) | - NULL se action não envolve lista |
-| `field_mapping` | JSON | | Mapeamento de campos | - Opcional<br>- Exemplo: {"source_field_id": target_field_id} |
-| **CONTROL FIELDS** | | | | |
-| `is_active` | BOOLEAN | DEFAULT true | Automação ativa | - Default: true |
-| `created_by` | BIGINT | FK | Referência para USERS (criador) | - Obrigatório |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único | - |
+| `board_id` | INTEGER | NOT NULL, FK (boards, CASCADE) | Quadro da automação | - Automações são por quadro |
+| `name` | VARCHAR(255) | NOT NULL | Nome da automação | - Obrigatório |
+| `description` | TEXT | NULL | Descrição | - Opcional |
+| `automation_type` | VARCHAR(20) | NOT NULL, INDEX | Tipo | - 'trigger', 'scheduled' |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT true | Automação ativa | - |
+| `priority` | INTEGER | NOT NULL, DEFAULT 50, INDEX | Prioridade (1-100) | - Maior = executa primeiro |
+| **TRIGGER** | | | | |
+| `trigger_event` | VARCHAR(50) | NULL, INDEX | Evento | - card_moved, card_created, card_updated, field_changed |
+| `trigger_conditions` | JSON | NULL | Condições | - ex: {"from_list_id":1,"to_list_id":2} |
+| **SCHEDULED** | | | | |
+| `schedule_type` | VARCHAR(20) | NULL | Tipo de agendamento | - 'once', 'recurrent' |
+| `scheduled_at` | TIMESTAMP | NULL | Data/hora (once) | - |
+| `recurrence_pattern` | VARCHAR(20) | NULL | Recorrência | - daily, weekly, monthly, annual |
+| `next_run_at` | TIMESTAMP | NULL, INDEX | Próxima execução (cron) | - |
+| **AÇÕES / ESTADO** | | | | |
+| `actions` | JSON | NOT NULL, DEFAULT [] | Ações a executar | - ex: [{"type":"move_card","target_list_id":3}] |
+| `state` | JSON | NOT NULL, DEFAULT {} | Estado persistente | - ex: {"round_robin_last_user_id":5} |
+| **CONTROLE** | | | | |
+| `execution_count` | INTEGER | NOT NULL, DEFAULT 0 | Total de execuções | - |
+| `last_run_at` | TIMESTAMP | NULL | Última execução | - |
+| `failure_count` | INTEGER | NOT NULL, DEFAULT 0 | Total de falhas | - |
+| `auto_disable_on_failures` | INTEGER | NOT NULL, DEFAULT 5 | Auto-desabilitar após X falhas | - |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - |
+
+> Diferenças: automações são por **board_id** (sem account_id); o gatilho é `trigger_event` (não trigger_type/trigger_board_id/trigger_list_id); as ações ficam em `actions` (JSON array, não colunas action_*); o agendamento usa `scheduled_at`/`recurrence_pattern`/`next_run_at` (não schedule_config/next_execution_at). O rodízio usa `state`.
 
 #### Relacionamentos
 
-- **N:1** com `ACCOUNTS` - Pertence a uma única conta
-- **N:1** com `BOARDS` (trigger_board_id, action_board_id) - Pode referenciar boards
-- **N:1** with `LISTS` (trigger_list_id, action_list_id) - Pode referenciar listas
-- **1:N** with `AUTOMATION_EXECUTIONS` - Possui histórico de execuções
+- **N:1** com `BOARDS` (board_id)
+- **1:N** com `AUTOMATION_EXECUTIONS`
 
 #### Índices
 
@@ -975,20 +921,23 @@ ORDER BY next_execution_at;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `automation_id` | BIGINT | NOT NULL, FK | Referência para AUTOMATIONS | - Obrigatório |
-| `source_card_id` | BIGINT | FK | Referência para CARDS (origem) | - NULL para automações scheduled |
-| `destination_card_id` | BIGINT | FK | Referência para CARDS (destino criado/copiado) | - NULL se ação não cria cartão |
-| `status` | VARCHAR(50) | NOT NULL | Status da execução | - Valores: 'success', 'failed', 'pending', 'success_after_retry' |
-| `retry_count` | INT | DEFAULT 0 | Contador de tentativas | - >= 0<br>- Incrementa a cada retry |
-| `error_message` | TEXT | | Mensagem de erro | - NULL se success |
-| `triggered_by` | VARCHAR(20) | DEFAULT 'event' | Como foi acionada | - Valores: 'event' (trigger), 'schedule' (agendamento) |
-| `executed_at` | TIMESTAMP | DEFAULT NOW() | Data/hora da execução | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único | - |
+| `automation_id` | INTEGER | NOT NULL, FK (automations, CASCADE) | Referência para AUTOMATIONS | - Obrigatório |
+| `card_id` | INTEGER | FK (cards, SET NULL) | Cartão que disparou | - NULL se scheduled |
+| `triggered_by_id` | INTEGER | FK (users, SET NULL) | Usuário que disparou | - Opcional |
+| `status` | VARCHAR(20) | NOT NULL, INDEX | Status da execução | - 'success', 'failed', 'pending' |
+| `started_at` | TIMESTAMP | NOT NULL, INDEX | Início da execução | - |
+| `completed_at` | TIMESTAMP | NULL | Fim da execução | - |
+| `duration_ms` | FLOAT | NULL | Duração em ms | - |
+| `execution_data` | JSON | NOT NULL, DEFAULT {} | Dados da execução | - Trigger, condições, ações |
+| `error_message` | TEXT | NULL | Mensagem de erro | - NULL se success |
+| `error_stack` | TEXT | NULL | Stack trace | - |
+
+> Diferenças: usa `card_id`/`triggered_by_id` (não source/destination_card_id), `started_at`/`completed_at`/`duration_ms` e `execution_data`/`error_stack` (não retry_count/triggered_by/executed_at).
 
 #### Relacionamentos
 
-- **N:1** with `AUTOMATIONS` - Pertence a uma única automação
-- **N:1** with `CARDS` (source_card_id, destination_card_id) - Pode referenciar cartões
+- **N:1** com `AUTOMATIONS`, `CARDS` (card_id), `USERS` (triggered_by_id)
 
 #### Índices
 
@@ -1046,181 +995,87 @@ HAVING COUNT(ae.id) >= 3;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `card_id` | BIGINT | NOT NULL, FK | Referência para CARDS | - Obrigatório |
-| `from_user_id` | BIGINT | NOT NULL, FK | Referência para USERS (origem) | - Obrigatório |
-| `to_user_id` | BIGINT | NOT NULL, FK | Referência para USERS (destino) | - Obrigatório |
-| `transferred_by_user_id` | BIGINT | NOT NULL, FK | Referência para USERS (quem fez) | - Obrigatório |
-| `transfer_reason` | VARCHAR(50) | NOT NULL | Motivo da transferência | - Valores: 'especialista', 'rebalanceamento', 'ferias', 'escalacao', 'outro'<br>- Obrigatório |
-| `notes` | TEXT | | Notas adicionais | - Opcional |
-| `chain_order` | INT | NOT NULL | Ordem na cadeia (1, 2, 3...) | - >= 1<br>- Incrementa a cada transferência |
-| `counts_in_limit` | BOOLEAN | DEFAULT true | Conta no limite de transferências | - false para automações/admin<br>- true para transferências manuais |
-| `batch_id` | VARCHAR(36) | | UUID para transferências em lote | - NULL para transferências individuais<br>- UUID para lote |
-| `transferred_at` | TIMESTAMP | DEFAULT NOW() | Data/hora da transferência | - Automático |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único | - |
+| `card_id` | INTEGER | NOT NULL, FK (cards, CASCADE) | Referência para CARDS | - Obrigatório |
+| `from_user_id` | INTEGER | FK (users, SET NULL) | Usuário de origem | - Nullable |
+| `to_user_id` | INTEGER | NOT NULL, FK (users, SET NULL) | Usuário de destino | - Obrigatório |
+| `reason` | VARCHAR(100) | NOT NULL | Motivo | - reassignment, workload_balance, expertise... |
+| `notes` | TEXT | NULL | Notas adicionais | - Opcional |
+| `status` | VARCHAR(20) | NOT NULL, DEFAULT 'completed', INDEX | Status | - completed, pending_approval, rejected |
+| `is_batch_transfer` | BOOLEAN | NOT NULL, DEFAULT false | Transferência em lote | - |
+| `batch_id` | VARCHAR(50) | NULL, INDEX | UUID do lote | - NULL para individuais |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - Automático |
+
+> Diferenças: o motivo é `reason` (não transfer_reason), `from_user_id` é nullable, há `status`/`is_batch_transfer` e **não existem** `transferred_by_user_id`, `chain_order`, `counts_in_limit` nem `transferred_at`. **Não há** limite de transferências no schema (sem `transfer_limit_exceptions`/`transfer_requests`).
 
 #### Relacionamentos
 
-- **N:1** with `CARDS` - Pertence a um único cartão
-- **N:1** with `USERS` (from_user_id, to_user_id, transferred_by_user_id) - Referencia usuários
+- **N:1** com `CARDS`, `USERS` (from_user_id, to_user_id)
+- **1:1** com `TRANSFER_APPROVALS` (quando aprovação está ativa)
 
 #### Índices
 
 ```sql
-CREATE INDEX idx_card_transfers_card_id ON card_transfers(card_id);
-CREATE INDEX idx_card_transfers_from_user ON card_transfers(from_user_id);
-CREATE INDEX idx_card_transfers_to_user ON card_transfers(to_user_id);
-CREATE INDEX idx_card_transfers_date ON card_transfers(transferred_at DESC);
-CREATE INDEX idx_card_transfers_chain ON card_transfers(card_id, chain_order);
-CREATE INDEX idx_card_transfers_limit ON card_transfers(from_user_id, counts_in_limit, transferred_at);
-CREATE INDEX idx_card_transfers_batch ON card_transfers(batch_id);
+CREATE INDEX ix_card_transfers_card_id ON card_transfers(card_id);
+CREATE INDEX ix_card_transfers_from_user_id ON card_transfers(from_user_id);
+CREATE INDEX ix_card_transfers_to_user_id ON card_transfers(to_user_id);
+CREATE INDEX ix_card_transfers_status ON card_transfers(status);
+CREATE INDEX ix_card_transfers_batch_id ON card_transfers(batch_id);
 ```
-
-**Justificativa**:
-- `card_id`: Histórico de transferências de um cartão
-- `from_user_id`: Transferências enviadas por um usuário
-- `to_user_id`: Transferências recebidas por um usuário
-- `transferred_at`: Ordenar por data
-- `card_id, chain_order`: Cadeia de transferências
-- `from_user_id, counts_in_limit, transferred_at`: Verificar limite de transferências
-- `batch_id`: Agrupar transferências em lote
 
 #### Queries de Exemplo
 
 ```sql
--- Histórico completo de transferências de um cartão
-SELECT ct.chain_order, u1.first_name as from_user, u2.first_name as to_user, ct.transfer_reason, ct.transferred_at
+-- Histórico de transferências de um cartão
+SELECT ct.id, u1.name as from_user, u2.name as to_user, ct.reason, ct.created_at
 FROM card_transfers ct
-JOIN users u1 ON ct.from_user_id = u1.id
+LEFT JOIN users u1 ON ct.from_user_id = u1.id
 JOIN users u2 ON ct.to_user_id = u2.id
 WHERE ct.card_id = 123
-ORDER BY ct.chain_order;
-
--- Verificar quantas transferências um vendedor fez este mês (que contam no limite)
-SELECT COUNT(*) as transfers_this_month
-FROM card_transfers
-WHERE from_user_id = 123
-AND counts_in_limit = true
-AND transferred_at >= DATE_TRUNC('month', CURRENT_DATE)
-AND transferred_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month';
+ORDER BY ct.created_at;
 
 -- Transferências em lote
 SELECT batch_id, COUNT(*) as total_cards
 FROM card_transfers
 WHERE batch_id IS NOT NULL
 GROUP BY batch_id
-ORDER BY MAX(transferred_at) DESC;
+ORDER BY MAX(created_at) DESC;
 ```
 
 ---
 
-### 6.2 TRANSFER_LIMIT_EXCEPTIONS
+### 6.2 TRANSFER_APPROVALS
 
-**Propósito**: Armazena exceções temporárias ao limite de transferências (concedidas por gerente/admin).
-
-**Padrão de Uso**: Criado manualmente pelo gerente quando vendedor precisa de transferências extras por tempo limitado.
+**Propósito**: Fluxo de aprovação de transferência (1:1 com `card_transfers`), usado quando `TRANSFER_APPROVAL_REQUIRED` está ativo. Substitui as fictícias `transfer_limit_exceptions` e `transfer_requests`.
 
 #### Campos
 
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `user_id` | BIGINT | NOT NULL, FK | Referência para USERS | - Obrigatório |
-| `additional_transfers` | INT | DEFAULT 5 | Transferências extras permitidas | - >= 1<br>- Default: 5 |
-| `period_start` | DATE | NOT NULL | Início do período da exceção | - Obrigatório |
-| `period_end` | DATE | NOT NULL | Fim do período da exceção | - Obrigatório<br>- period_end >= period_start |
-| `granted_by` | BIGINT | NOT NULL, FK | Referência para USERS (gerente/admin) | - Obrigatório |
-| `granted_at` | TIMESTAMP | DEFAULT NOW() | Data/hora da concessão | - Automático |
-| `notes` | TEXT | | Motivo da exceção | - Opcional |
-
-#### Índices
-
-```sql
-CREATE INDEX idx_transfer_exceptions_user ON transfer_limit_exceptions(user_id, period_end);
-```
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único |
+| `transfer_id` | INTEGER | NOT NULL, UNIQUE, FK (card_transfers, CASCADE) | Transferência (1:1) |
+| `approver_id` | INTEGER | FK (users, SET NULL) | Gerente responsável |
+| `status` | VARCHAR(20) | NOT NULL, DEFAULT 'pending', INDEX | pending, approved, rejected, expired |
+| `expires_at` | TIMESTAMP | NOT NULL, INDEX | Expiração (72h padrão) |
+| `decided_at` | TIMESTAMP | NULL | Data da decisão |
+| `comments` | TEXT | NULL | Comentários do gerente |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps |
 
 #### Queries de Exemplo
 
 ```sql
--- Verificar exceções ativas para um usuário
-SELECT additional_transfers, period_start, period_end, notes
-FROM transfer_limit_exceptions
-WHERE user_id = 123
-AND CURRENT_DATE BETWEEN period_start AND period_end;
+-- Aprovações pendentes
+SELECT ta.id, c.title, ta.expires_at
+FROM transfer_approvals ta
+JOIN card_transfers ct ON ta.transfer_id = ct.id
+JOIN cards c ON ct.card_id = c.id
+WHERE ta.status = 'pending'
+ORDER BY ta.created_at;
 
--- Calcular limite total (padrão + exceções)
-SELECT
-  10 as default_limit, -- padrão da conta
-  COALESCE(SUM(tle.additional_transfers), 0) as extra_transfers,
-  10 + COALESCE(SUM(tle.additional_transfers), 0) as total_limit
-FROM transfer_limit_exceptions tle
-WHERE tle.user_id = 123
-AND CURRENT_DATE BETWEEN tle.period_start AND tle.period_end;
-```
-
----
-
-### 6.3 TRANSFER_REQUESTS
-
-**Propósito**: Armazena solicitações de transferência quando aprovação está habilitada.
-
-**Padrão de Uso**: Criado quando vendedor solicita transferência. Gerente aprova/rejeita. Expira em 72h.
-
-#### Campos
-
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `card_id` | BIGINT | NOT NULL, FK | Referência para CARDS | - Obrigatório |
-| `from_user_id` | BIGINT | NOT NULL, FK | Referência para USERS (vendedor origem) | - Obrigatório |
-| `to_user_id` | BIGINT | NOT NULL, FK | Referência para USERS (vendedor destino) | - Obrigatório |
-| `transfer_reason` | VARCHAR(50) | NOT NULL | Motivo da transferência | - Obrigatório |
-| `notes` | TEXT | | Notas adicionais | - Opcional |
-| `status` | VARCHAR(20) | DEFAULT 'pending' | Status da solicitação | - Valores: 'pending', 'approved', 'rejected', 'expired'<br>- Default: 'pending' |
-| `rejection_reason` | TEXT | | Motivo da rejeição | - Obrigatório se status='rejected' |
-| `reviewed_by` | BIGINT | FK | Referência para USERS (gerente/admin) | - NULL se pending |
-| `reviewed_at` | TIMESTAMP | | Data/hora da aprovação/rejeição | - NULL se pending |
-| `expires_at` | TIMESTAMP | | Data/hora de expiração (72h) | - Calculado automaticamente: created_at + 72h |
-| `batch_id` | VARCHAR(36) | | UUID para solicitações em lote | - NULL para individuais |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
-
-#### Índices
-
-```sql
-CREATE INDEX idx_transfer_requests_card ON transfer_requests(card_id);
-CREATE INDEX idx_transfer_requests_from_user ON transfer_requests(from_user_id);
-CREATE INDEX idx_transfer_requests_status ON transfer_requests(status, expires_at);
-CREATE INDEX idx_transfer_requests_pending ON transfer_requests(status, created_at);
-CREATE INDEX idx_transfer_requests_batch ON transfer_requests(batch_id);
-```
-
-**Justificativa**:
-- `status, expires_at`: Cron job de expiração (marcar como 'expired' se NOW() > expires_at)
-- `status, created_at`: Painel de aprovações (listar pendentes)
-
-#### Queries de Exemplo
-
-```sql
--- Solicitações pendentes para gerente aprovar
-SELECT tr.id, c.title, u1.first_name as from_user, u2.first_name as to_user, tr.transfer_reason, tr.expires_at
-FROM transfer_requests tr
-JOIN cards c ON tr.card_id = c.id
-JOIN users u1 ON tr.from_user_id = u1.id
-JOIN users u2 ON tr.to_user_id = u2.id
-WHERE tr.status = 'pending'
-ORDER BY tr.created_at;
-
--- Cron job: Expirar solicitações antigas (executa a cada hora)
-UPDATE transfer_requests
+-- Cron job: expirar aprovações antigas
+UPDATE transfer_approvals
 SET status = 'expired', updated_at = NOW()
-WHERE status = 'pending'
-AND expires_at < NOW();
-
--- Aprovar solicitação
-UPDATE transfer_requests
-SET status = 'approved', reviewed_by = 456, reviewed_at = NOW()
-WHERE id = 789;
+WHERE status = 'pending' AND expires_at < NOW();
 ```
 
 ---
@@ -1237,28 +1092,29 @@ WHERE id = 789;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `user_id` | BIGINT | FK | Referência para USERS | - NULL para ações do sistema |
-| `action` | VARCHAR(50) | NOT NULL | Ação executada | - Valores: 'create', 'update', 'delete', 'login', 'logout' |
-| `table_name` | VARCHAR(100) | NOT NULL | Tabela afetada | - Obrigatório |
-| `record_id` | BIGINT | | ID do registro afetado | - Opcional (NULL para ações sem registro específico) |
-| `old_values` | JSON | | Valores anteriores | - NULL para 'create' |
-| `new_values` | JSON | | Valores novos | - NULL para 'delete' |
-| `ip_address` | VARCHAR(45) | | Endereço IP do usuário | - IPv4 ou IPv6 |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data/hora da ação | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único | - |
+| `user_id` | INTEGER | FK (users, SET NULL) | Quem executou | - NULL para ações do sistema |
+| `action` | VARCHAR(50) | NOT NULL, INDEX | Ação executada | - CREATE, UPDATE, DELETE, LOGIN, LOGOUT |
+| `entity_type` | VARCHAR(100) | NOT NULL, INDEX | Entidade afetada | - User, Card, Board... |
+| `entity_id` | INTEGER | NULL, INDEX | ID da entidade afetada | - Opcional |
+| `description` | TEXT | NOT NULL | Descrição legível | - Obrigatório |
+| `data_before` | JSON | NULL | Estado anterior | - UPDATE/DELETE |
+| `data_after` | JSON | NULL | Estado posterior | - CREATE/UPDATE |
+| `ip_address` | VARCHAR(45) | NULL | Endereço IP | - IPv4/IPv6 |
+| `user_agent` | VARCHAR(500) | NULL | Browser/client | - |
+| `created_at` | TIMESTAMP | NOT NULL, INDEX | Data/hora da ação | - Automático |
+
+> Diferenças: usa `entity_type`/`entity_id`/`description`/`data_before`/`data_after`/`user_agent` (não `table_name`/`record_id`/`old_values`/`new_values`).
 
 #### Índices
 
 ```sql
-CREATE INDEX idx_audit_logs_user ON audit_logs(user_id, created_at);
-CREATE INDEX idx_audit_logs_table_record ON audit_logs(table_name, record_id);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
+CREATE INDEX ix_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX ix_audit_logs_action ON audit_logs(action);
+CREATE INDEX ix_audit_logs_entity_type ON audit_logs(entity_type);
+CREATE INDEX ix_audit_logs_entity_id ON audit_logs(entity_id);
+CREATE INDEX ix_audit_logs_created_at ON audit_logs(created_at);
 ```
-
-**Justificativa**:
-- `user_id, created_at`: Auditoria por usuário
-- `table_name, record_id`: Histórico de um registro específico
-- `created_at`: Ordenar por data (queries temporais)
 
 #### Retenção
 
@@ -1308,196 +1164,217 @@ LIMIT 100;
 
 | Campo | Tipo | Constraints | Descrição | Regras de Validação |
 |-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `card_id` | BIGINT | NOT NULL, FK | Referência para CARDS | - Obrigatório |
-| `user_id` | BIGINT | NOT NULL, FK | Referência para USERS | - Obrigatório |
-| `activity_type` | VARCHAR(50) | NOT NULL | Tipo de atividade | - Valores: 'created', 'moved', 'updated', 'commented', 'assigned', 'transferred' |
-| `description` | TEXT | | Descrição da atividade | - Exemplo: "Moveu de 'Novo Lead' para 'Qualificação'" |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data/hora da atividade | - Automático |
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único | - |
+| `card_id` | INTEGER | NOT NULL, FK (cards, CASCADE) | Referência para CARDS | - Obrigatório |
+| `user_id` | INTEGER | FK (users, SET NULL) | Quem executou | - NULL = sistema |
+| `activity_type` | VARCHAR(50) | NOT NULL, INDEX | Tipo de atividade | - card_created, card_moved, field_updated, comment_added... |
+| `description` | TEXT | NOT NULL | Descrição da atividade | - |
+| `activity_metadata` | JSON | NOT NULL, DEFAULT {} | Metadados | - from_list_id, to_list_id, old/new value... |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps | - Automático |
+
+> Diferenças: `user_id` é nullable, e há `activity_metadata` (JSON).
 
 #### Índices
 
 ```sql
-CREATE INDEX idx_activities_card ON activities(card_id, created_at DESC);
-CREATE INDEX idx_activities_card_date ON activities(card_id, created_at DESC);
+CREATE INDEX ix_activities_card_id ON activities(card_id);
+CREATE INDEX ix_activities_user_id ON activities(user_id);
+CREATE INDEX ix_activities_activity_type ON activities(activity_type);
 ```
-
-**Justificativa**:
-- `card_id, created_at`: Timeline do cartão (query mais comum)
 
 #### Queries de Exemplo
 
 ```sql
 -- Timeline de um cartão
-SELECT a.activity_type, a.description, u.first_name, a.created_at
+SELECT a.activity_type, a.description, u.name, a.created_at
 FROM activities a
-JOIN users u ON a.user_id = u.id
+LEFT JOIN users u ON a.user_id = u.id
 WHERE a.card_id = 123
 ORDER BY a.created_at DESC;
 ```
 
 ---
 
-### 7.3 CARD_MOVEMENTS
+### 7.3 CARD_LIST_HISTORY (Histórico de Listas)
 
-**Propósito**: Histórico específico de movimentos de cartão entre listas.
-
-**Padrão de Uso**: Criado automaticamente quando cartão é movido entre listas (drag & drop no Kanban).
+**Propósito**: Rastreia entrada/saída de cada card em cada lista (análise de funil). Substitui a fictícia "CARD_MOVEMENTS".
 
 #### Campos
 
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `card_id` | BIGINT | NOT NULL, FK | Referência para CARDS | - Obrigatório |
-| `from_list_id` | BIGINT | FK | Referência para LISTS (lista anterior) | - NULL se criação de cartão |
-| `to_list_id` | BIGINT | NOT NULL, FK | Referência para LISTS (lista nova) | - Obrigatório |
-| `moved_by` | BIGINT | FK | Referência para USERS | - Obrigatório |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data/hora do movimento | - Automático |
-
-#### Índices
-
-```sql
-CREATE INDEX idx_card_movements_card ON card_movements(card_id, created_at DESC);
-```
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK, AUTO_INCREMENT | Identificador único |
+| `card_id` | INTEGER | NOT NULL, FK (cards, CASCADE) | Card movido |
+| `list_id` | INTEGER | NOT NULL, FK (lists, CASCADE) | Lista de destino |
+| `board_id` | INTEGER | NOT NULL, FK (boards, CASCADE) | Board (desnormalizado) |
+| `entered_at` | TIMESTAMP | NOT NULL | Quando entrou na lista |
+| `exited_at` | TIMESTAMP | NULL | Quando saiu (NULL = ainda está aqui) |
 
 #### Queries de Exemplo
 
 ```sql
--- Histórico de movimentos de um cartão
-SELECT cm.from_list_id, l1.name as from_list, l2.name as to_list, u.first_name, cm.created_at
-FROM card_movements cm
-LEFT JOIN lists l1 ON cm.from_list_id = l1.id
-JOIN lists l2 ON cm.to_list_id = l2.id
-JOIN users u ON cm.moved_by = u.id
-WHERE cm.card_id = 123
-ORDER BY cm.created_at DESC;
+-- Tempo em cada etapa de um card
+SELECT clh.list_id, l.name, clh.entered_at, clh.exited_at
+FROM card_list_history clh
+JOIN lists l ON clh.list_id = l.id
+WHERE clh.card_id = 123
+ORDER BY clh.entered_at;
 ```
 
 ---
 
-## 8. Tabelas de Configuração
+## 8. Tabelas de Suporte e Configuração
 
-### 8.1 TAGS
+> **Não existem** as tabelas `tags`, `card_tags`, `notes`, `api_tokens` nem `import_history`. As reais são listadas abaixo.
 
-**Propósito**: Etiquetas para categorizar cartões.
+### 8.1 CARD_NOTES (Anotações)
 
-#### Campos
-
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `account_id` | BIGINT | NOT NULL, FK | Referência para ACCOUNTS | - Obrigatório |
-| `name` | VARCHAR(100) | NOT NULL | Nome da etiqueta | - Obrigatório<br>- Exemplos: "Urgente", "VIP", "Follow-up" |
-| `color` | VARCHAR(7) | | Cor (hex) | - Formato: #RRGGBB |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-
-#### Constraints
-
-```sql
-UNIQUE(account_id, name)
-```
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK | Identificador único |
+| `card_id` | INTEGER | NOT NULL, FK (cards, CASCADE) | Card |
+| `user_id` | INTEGER | NOT NULL, FK (users, CASCADE) | Autor |
+| `content` | TEXT | NOT NULL | Conteúdo da anotação |
+| `note_type` | VARCHAR(50) | NULL | Tipo (ex: ligacao, geral) |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps |
 
 ---
 
-### 8.2 CARD_TAGS
+### 8.2 CARD_TASKS (Atividades/Tarefas)
 
-**Propósito**: Relaciona cartões com etiquetas.
+**Propósito**: Atividades criadas pelos usuários (ligação, reunião, tarefa, e-mail, WhatsApp...). Diferente de `activities` (auditoria).
 
-#### Campos
-
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `card_id` | BIGINT | NOT NULL, FK | Referência para CARDS | - Obrigatório |
-| `tag_id` | BIGINT | NOT NULL, FK | Referência para TAGS | - Obrigatório |
-
-#### Constraints
-
-```sql
-UNIQUE(card_id, tag_id)
-```
+Campos principais: `card_id` (FK), `assigned_to_id` (FK users), `created_by_id` (FK users), `title`, `description`, `task_type` (ENUM: call, meeting, task, follow_up, deadline, email, lunch, whatsapp, linkedin, other), `priority` (ENUM: normal, high, urgent), `due_date`, `duration_minutes`, `is_completed`, `completed_at`, `is_valid` (NULL/TRUE/FALSE), `is_noshow`, `is_cancelled`, `location`, `video_link`, `notes`, `contact_name`, `status` (ENUM: free, busy), integração Teams (`teams_meeting_id`, `teams_join_url`, `teams_event_id`, `transcript_raw`, `transcript_analysis`), `card_cadence_id` (FK card_cadences). Timestamps via TimestampMixin.
 
 ---
 
-### 8.3 NOTES
+### 8.3 ATTACHMENTS (Anexos)
 
-**Propósito**: Anotações/comentários em cartões.
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK | Identificador único |
+| `card_id` | INTEGER | NOT NULL, FK (cards, CASCADE) | Card |
+| `uploaded_by_id` | INTEGER | FK (users, SET NULL) | Quem fez upload |
+| `filename` | VARCHAR(255) | NOT NULL | Nome único gerado pelo sistema |
+| `original_filename` | VARCHAR(500) | NOT NULL | Nome original |
+| `file_size` | BIGINT | NOT NULL | Tamanho em bytes |
+| `mime_type` | VARCHAR(100) | NOT NULL | Tipo MIME |
+| `storage_path` | VARCHAR(1000) | NOT NULL | Caminho relativo (ex: cards/123/abc.pdf) |
+| `attachment_type` | VARCHAR(50) | NOT NULL, DEFAULT 'general', INDEX | general, proposal... |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps (+ soft delete) |
 
-#### Campos
-
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `card_id` | BIGINT | NOT NULL, FK | Referência para CARDS | - Obrigatório |
-| `user_id` | BIGINT | NOT NULL, FK | Referência para USERS | - Obrigatório |
-| `content` | TEXT | NOT NULL | Conteúdo da anotação | - Obrigatório<br>- Suporta Markdown |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
-
----
-
-### 8.4 ATTACHMENTS
-
-**Propósito**: Arquivos anexados aos cartões.
-
-#### Campos
-
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `card_id` | BIGINT | NOT NULL, FK | Referência para CARDS | - Obrigatório |
-| `filename` | VARCHAR(255) | NOT NULL | Nome do arquivo | - Obrigatório |
-| `file_path` | VARCHAR(500) | NOT NULL | Caminho (S3, local) | - Obrigatório |
-| `file_size` | BIGINT | | Tamanho em bytes | - >= 0 |
-| `mime_type` | VARCHAR(100) | | Tipo MIME | - Exemplo: "application/pdf" |
-| `uploaded_by` | BIGINT | FK | Referência para USERS | - Obrigatório |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de upload | - Automático |
+> Diferenças vs antigo: `original_filename` + `storage_path` (não `file_path`), `uploaded_by_id` (não `uploaded_by`), `attachment_type`.
 
 ---
 
-### 8.5 API_TOKENS
+### 8.4 INTEGRATION_CLIENTS (autenticação externa / API)
 
-**Propósito**: Tokens para autenticação de sistemas externos via API.
+**Propósito**: Substitui a fictícia "api_tokens". Clients externos que autenticam via client_credentials (ex: N8N).
 
-#### Campos
-
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `account_id` | BIGINT | NOT NULL, FK | Referência para ACCOUNTS | - Obrigatório |
-| `client_id` | VARCHAR(255) | NOT NULL, UNIQUE | Client ID (UUID) | - Obrigatório<br>- Único |
-| `client_secret_hash` | VARCHAR(255) | NOT NULL | Hash do Client Secret | - Armazenado como bcrypt hash |
-| `name` | VARCHAR(255) | NOT NULL | Nome descritivo do token | - Obrigatório |
-| `scopes` | TEXT | | Escopos permitidos (JSON) | - Exemplo: ["read:cards", "write:cards"] |
-| `last_used_at` | TIMESTAMP | | Último uso | - Atualizado automaticamente |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data de criação | - Automático |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() ON UPDATE | Data de última atualização | - Automático |
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK | Identificador único |
+| `name` | VARCHAR(200) | NOT NULL, INDEX | Nome descritivo |
+| `description` | TEXT | NULL | Descrição |
+| `client_id` | VARCHAR(100) | NOT NULL, UNIQUE, INDEX | ID público |
+| `client_secret_hash` | VARCHAR(255) | NOT NULL | Hash do secret |
+| `impersonate_user_id` | INTEGER | NULL | User usado como criador nas ações |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT true | Ativo |
+| `last_used_at` | TIMESTAMP | NULL | Último uso |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps |
 
 ---
 
-### 8.6 IMPORT_HISTORY
+### 8.5 Outras tabelas de suporte
 
-**Propósito**: Histórico de importações de dados (Pipedrive, CSV, etc).
+| Tabela | Descrição / Campos principais |
+|--------|-------------------------------|
+| `leads` | Leads não convertidos (title, value, source, owner_id, person_id, organization_id, board_id, list_id, status, is_archived, custom_fields JSON, pipedrive_id) |
+| `notifications` | Notificações in-app (user_id, notification_type, title, message, icon, color, notification_metadata JSON, is_read, read_at) |
+| `user_notification_settings` | Preferências por usuário (task_assigned, task_due_soon, card_moved, card_product_changed, achievement_unlocked); UNIQUE(user_id) |
+| `email_templates` | Templates de e-mail (name, subject, body com variáveis {{...}}, is_active, created_by_id, soft delete) |
+| `custom_reports` | Dashboards salvos (name, created_by_id, config JSON, charts_count) |
+| `cadence_templates` / `cadence_steps` / `card_cadences` | Cadência por lead (template → etapas com day_offset/activity_type → instância por card com status/current_step_order) |
+| `cadencias` / `cadencia_itens` | Cadência por metas de atividade (user_id, name; itens: activity_type + quantity) |
+| `call_evaluations` | Avaliação de ligação por IA (card_id, call_log_id, transcript, summary, matrix_evaluation JSON, final_score, classification) |
+| `api4com_config` / `user_extensions` / `call_logs` | VOIP API4COM (config; ramal por vendedor; histórico de chamadas — call_logs liga a `cards` OU `service_cards`, status, duration, recording_url) |
 
-#### Campos
+---
 
-| Campo | Tipo | Constraints | Descrição | Regras de Validação |
-|-------|------|-------------|-----------|---------------------|
-| `id` | BIGINT | PK, AUTO_INCREMENT | Identificador único | - |
-| `account_id` | BIGINT | NOT NULL, FK | Referência para ACCOUNTS | - Obrigatório |
-| `board_id` | BIGINT | FK | Referência para BOARDS | - Opcional |
-| `source` | VARCHAR(50) | NOT NULL | Fonte | - Valores: 'pipedrive', 'csv', 'api' |
-| `total_records` | INT | | Total de registros | - >= 0 |
-| `successful_records` | INT | | Registros com sucesso | - >= 0 |
-| `failed_records` | INT | | Registros com falha | - >= 0 |
-| `error_details` | JSON | | Detalhes dos erros | - Array de objetos de erro |
-| `imported_by` | BIGINT | FK | Referência para USERS | - Obrigatório |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Data da importação | - Automático |
+## 8.A Módulo de Serviços
+
+Módulo **independente** de Vendas, com tabelas próprias. Compartilha o catálogo `products` e as entidades `clients`/`persons`.
+
+### 8.A.1 SERVICE_BOARDS
+
+Campos: `id`, `name`, `description`, `color` (DEFAULT '#8B5CF6'), `icon` (DEFAULT 'wrench'), `settings` JSON, timestamps + soft delete. (Independente de `boards`.)
+
+### 8.A.2 SERVICE_LISTS
+
+Campos: `id`, `board_id` (FK service_boards, CASCADE), `name`, `color`, `position`, `is_done_stage`, `is_lost_stage`, timestamps.
+
+### 8.A.3 SERVICE_CARDS
+
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK | Identificador único |
+| `list_id` | INTEGER | NOT NULL, FK (service_lists, CASCADE) | Lista atual |
+| `assigned_to_id` | INTEGER | FK (users, SET NULL) | Responsável |
+| `title` | VARCHAR(500) | NOT NULL, INDEX | Título |
+| `description` | TEXT | NULL | Descrição |
+| `position` | NUMERIC(12,2) | NOT NULL, DEFAULT 0 | Posição fracionária |
+| `client_id` | INTEGER | FK (clients, SET NULL) | Empresa |
+| `person_id` | INTEGER | FK (persons, SET NULL) | Contato |
+| `contact_info` | JSON | NULL | Dados de contato |
+| `payment_info` | JSON | NULL | Desconto global, forma de pagamento, parcelas, notas |
+| `business_info` | JSON | NULL | seller_name, deal_type, acquisition_channel, modality, should_invoice... |
+| `due_date` | TIMESTAMP | NULL | Data prevista de conclusão |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps (+ soft delete) |
+
+### 8.A.4 SERVICE_CARD_PRODUCTS
+
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK | Identificador único |
+| `service_card_id` | INTEGER | NOT NULL, FK (service_cards, CASCADE) | Card de serviço |
+| `product_id` | INTEGER | NOT NULL, FK (products, CASCADE) | Produto |
+| `quantity` | INTEGER | NOT NULL, DEFAULT 1 | Quantidade |
+| `unit_price` | NUMERIC(12,2) | NOT NULL | Preço unitário |
+| `discount` | NUMERIC(12,2) | NOT NULL, DEFAULT 0 | Desconto absoluto |
+| `notes` | TEXT | NULL | Observações |
+| `aparelhos` | JSON | NULL | Sub-lista de aparelhos (1 item por aparelho) |
+| | | | Ex: `[{"serial_number":"AB123","model":"X100","alcohol_module":"Sim","next_recalibration_date":"2026-08-10"}]` |
+
+**Constraints**: UNIQUE (service_card_id, product_id) — `unique_service_card_product`.
+
+### 8.A.5 SERVICE_CARD_ACTIVITIES
+
+Registro unificado de eventos do card de serviço. `category` ∈ {atividade, anotacao, arquivo, alteracao}.
+
+| Campo | Tipo | Constraints | Descrição |
+|-------|------|-------------|-----------|
+| `id` | INTEGER | PK | Identificador único |
+| `service_card_id` | INTEGER | NOT NULL, FK (service_cards, CASCADE) | Card de serviço |
+| `user_id` | INTEGER | FK (users, SET NULL) | Autor (NULL = sistema) |
+| `category` | VARCHAR(20) | NOT NULL, INDEX | atividade, anotacao, arquivo, alteracao |
+| `activity_type` | VARCHAR(50) | NULL | call, task, note, stage_change... |
+| `title` | VARCHAR(500) | NULL | Título |
+| `description` | TEXT | NULL | Descrição |
+| `activity_metadata` | JSON | NULL | Metadados |
+| `priority` | VARCHAR(20) | NULL | normal, high, urgent (campo de "atividade") |
+| `due_date` | TIMESTAMP | NULL | Vencimento (Foco) |
+| `is_completed` | BOOLEAN | NOT NULL, DEFAULT false | Concluída |
+| `completed_at` | TIMESTAMP | NULL | Data de conclusão |
+| `file_name` / `file_path` | VARCHAR | NULL | Metadados de arquivo |
+| `file_size` | BIGINT | NULL | Tamanho |
+| `mime_type` | VARCHAR(100) | NULL | Tipo MIME |
+| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | Timestamps |
 
 ---
 
 ## 9. Índices e Otimizações
+
+> ⚠️ As queries de exemplo das seções 9 e 10 abaixo são **ilustrativas/históricas** e podem referenciar colunas que não existem no schema atual (`account_id`, `assigned_to`, `first_name`/`last_name`, `field_id`, `cf.type`). Para os nomes reais, use as seções 2–8.A acima. Equivalências rápidas: `assigned_to` → `assigned_to_id`; `u.first_name, u.last_name` → `u.name`; `custom_fields`/`field_id` → `field_definitions`/`field_definition_id`; sem `account_id` (single-tenant); "arquivado" → `is_deleted = false`.
 
 ### 9.1 Resumo de Índices Críticos
 
@@ -1638,25 +1515,24 @@ ORDER BY total_points DESC;
 ### 10.4 Queries de Automação
 
 ```sql
--- Verificar se automação deve executar (trigger-based)
-SELECT a.id, a.name, a.action_type, a.priority
+-- Verificar automações de um board para um evento (trigger-based)
+SELECT a.id, a.name, a.actions, a.priority
 FROM automations a
-WHERE a.trigger_list_id = 5 -- cartão moveu para lista 5
-AND a.trigger_type = 'card_moved'
+WHERE a.board_id = 1
+AND a.trigger_event = 'card_moved'
 AND a.is_active = true
 ORDER BY a.priority DESC, a.created_at ASC;
 
--- Automações agendadas para executar nos próximos 5 minutos (cron job)
-SELECT id, name, next_execution_at
+-- Automações agendadas para executar (cron job)
+SELECT id, name, next_run_at
 FROM automations
 WHERE automation_type = 'scheduled'
 AND is_active = true
-AND next_execution_at <= NOW() + INTERVAL '5 minutes'
-AND next_execution_at > last_executed_at
-ORDER BY next_execution_at;
+AND next_run_at <= NOW() + INTERVAL '5 minutes'
+ORDER BY next_run_at;
 ```
 
 ---
 
-**Última atualização**: 15/12/2025
-**Próxima revisão**: 15/01/2026
+**Versão**: v1.7.35 — Junho/2026
+**Status**: Atualizado para refletir os models reais (single-tenant; módulo de Serviços incluído). Seções 9–10 mantêm queries ilustrativas com nota de equivalência de colunas.

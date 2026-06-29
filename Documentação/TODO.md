@@ -1,6 +1,6 @@
 # TODO - HSGrowth CRM
 
-**Última atualização**: 12/03/2026 (v1.5.0)
+**Última atualização**: 29/06/2026 (v1.7.35)
 **Responsável**: Erick (Cientista de Dados / Full Stack)
 
 ---
@@ -20,7 +20,13 @@
 - ✅ **Sistema de Logs de Auditoria**
 - ✅ **Sistema de SDR** — Campo sdr_id + rodízio automático
 - ✅ **Sistema de Automações** — Editor visual, triggers, actions, histórico
-- ✅ **Integração API4COM (VOIP)** — Configuração de ramais e botão "Ligar"
+- ✅ **Integração API4COM (VOIP)** — Configuração de ramais, botão "Ligar", registro de chamadas (`CallLog`) e webhooks
+- ✅ **MÓDULO DE SERVIÇOS** — Independente de Vendas: 2 boards com regras próprias (**Funil** oficial + **Cobrança/Serviços - Atrasados**), travas de avanço por etapa, produtos com aparelhos (JSON `aparelhos`: nº de série, modelo, recalibração), atividades de serviço, calendário de serviços, dashboard de serviços e role **`serviço`** (acesso restrito ao módulo)
+- ✅ **Integração Microsoft 365** — SSO/OAuth (Graph API), envio de e-mail com assinatura HTML, Calendário/Outlook, reuniões do Teams e análise de transcrições com IA (tokens MS no model `User`)
+- ✅ **WhatsApp (tipo de atividade)** — registrável em cards e filtrável na página de Atividades
+- ✅ **Cadências** — sequências de passos/atividades aplicadas a cards (models `Cadencia` e `Cadence`/templates)
+- ✅ **Call Evaluations (Avaliação de Ligações com IA)** — avaliação automatizada de ligações com score, classificação e feedback; página `/ligacoes`
+- ✅ **Dashboards por Perfil** — Dashboards distintos para SDR (`DashboardSDR`) e Vendedor (`DashboardVendedor`), além do dashboard de Serviços
 - ✅ **Importação de Dados (Pipedrive)**
 - ✅ **Busca Global (Ctrl+K)**
 - ✅ **Página de Documentação da API (/api-docs)**
@@ -60,7 +66,7 @@
 ### 🟢 Baixa Prioridade / Opcional
 
 - [ ] Integração com Google Calendar (opcional)
-- [ ] Integração com Microsoft Teams/Outlook (opcional)
+- [x] Integração com Microsoft Teams/Outlook — **concluída** via Microsoft 365 (Graph API): Outlook/Calendário, Teams e transcrições (ver "Módulos Concluídos")
 - [x] Responsividade mobile — revisão concluída
 - [x] Gráficos com Recharts nos relatórios — implementado no ChartWidget.tsx (bar, line, pie, table) com multi-série e drill-down
 - [x] Exportação Excel/PDF nos relatórios — endpoint GET /reports/custom/{id}/export retorna .xlsx ou .csv; botão de download nos cards da listagem (v1.5.1)
@@ -129,6 +135,10 @@
 - ✅ **v1.3.11** (05/03/2026) - Redis Session Management: sessões em tempo real, blacklist de tokens, usuários online, notification settings
 - ✅ **v1.5.0** (12/03/2026) - Página de Atividades com filtros, paginação, FocusMode e validação inline nos modais
 - ✅ **v1.5.1** (12/03/2026) - Exportação de relatórios customizados em Excel e CSV
+- ✅ **Integração Microsoft 365** (Abr/2026) - SSO/Graph API: e-mail, Calendário/Outlook, Teams e transcrições com IA; WhatsApp como tipo de atividade
+- ✅ **Call Evaluations + Cadências** (Mai/2026) - Avaliação de ligações com IA e cadências de prospecção
+- ✅ **Módulo de Serviços** (Jun/2026) - Boards Funil + Cobrança, produtos com aparelhos, dashboard de serviços e role `serviço`
+- ✅ **v1.7.35** (Jun/2026) - Dashboard de Serviços, Cobrança com regras próprias e quantidade automática de produtos por aparelhos
 
 ---
 
@@ -145,4 +155,5 @@
 ---
 
 **Projeto em produção desde 29/01/2026**
-**Status geral**: Sistema maduro e funcional — todos os módulos core implementados
+**Última versão**: 1.7.35 (Junho/2026)
+**Status geral**: Sistema maduro e funcional — todos os módulos core implementados, além de Serviços, Microsoft 365, Cadências, Call Evaluations e dashboards por perfil

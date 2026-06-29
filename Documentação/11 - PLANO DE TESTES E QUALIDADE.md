@@ -1142,6 +1142,324 @@ test.describe('Dashboard e Relatórios', () => {
 });
 ```
 
+### 8.5 Módulo de Serviços (Funil + Cobrança)
+
+**Arquivo**: `tests/e2e/service-module.spec.ts`
+
+> O Módulo de Serviços é independente do módulo de Vendas (tabelas `service_boards`, `service_lists`,
+> `service_cards`, `service_card_products` com JSON `aparelhos`, `service_card_activities`). Acesso
+> restrito a `admin`, `gerente` e role `service`. Rotas: `/servicos`, `/servicos/:boardId`,
+> `/servicos/:boardId/cards/:cardId`, `/servicos/calendario`. Há dois boards com regras próprias:
+> board 1 = **Funil** (oficial) e board 2 = **Cobrança** (Serviços - Atrasados).
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Módulo de Serviços', () => {
+  test('usuário de serviço acessa os boards e cria card no Funil', async ({ page }) => {
+    // Login como role 'service'
+    await page.goto('/login');
+    await page.fill('[name="email"]', 'servico@hsgrowth.com');
+    await page.fill('[name="password"]', 'senha123');
+    await page.click('button[type="submit"]');
+
+    // role 'service' é redirecionado para o módulo de Serviços
+    await page.goto('/servicos');
+    await expect(page.locator('text=Funil')).toBeVisible();
+    await expect(page.locator('text=Cobrança')).toBeVisible();
+
+    // Abrir o board Funil e criar um card
+    await page.click('text=Funil');
+    await page.click('button:has-text("Novo Card")');
+    await page.fill('[name="title"]', 'Recalibração - Cliente ABC');
+    await page.click('button:has-text("Salvar")');
+    await expect(page.locator('text=Recalibração - Cliente ABC')).toBeVisible();
+  });
+
+  test('adicionar produto com aparelhos (dados de laboratório) ao card', async ({ page }) => {
+    await loginAsService(page);
+    await page.goto('/servicos/1');
+    await page.click('.service-card:has-text("Recalibração - Cliente ABC")');
+
+    // Adicionar produto do catálogo compartilhado
+    await page.click('button:has-text("Adicionar Produto")');
+    await page.selectOption('[name="product_id"]', { label: 'Etilômetro X100' });
+    await page.fill('[name="quantity"]', '1');
+
+    // Adicionar 1 aparelho (sub-lista JSON) com nº de série e recalibração
+    await page.click('button:has-text("Adicionar Aparelho")');
+    await page.fill('[name="serial_number"]', 'AB123');
+    await page.fill('[name="model"]', 'X100');
+    await page.fill('[name="next_recalibration_date"]', '2026-08-10');
+    await page.click('button:has-text("Salvar Produto")');
+
+    await expect(page.locator('text=AB123')).toBeVisible();
+    // Quantidade do produto é derivada automaticamente do nº de aparelhos
+    await expect(page.locator('[data-testid="product-quantity"]')).toHaveText('1');
+  });
+
+  test('trava de avanço de etapa bloqueia mover sem requisitos', async ({ page }) => {
+    await loginAsService(page);
+    await page.goto('/servicos/1');
+
+    // Tentar avançar "Dados Preenchidos" → "Tentativa de Contato" sem Cliente/Pessoa/produto
+    await page.dragAndDrop(
+      '.list:has-text("Dados Preenchidos") .service-card:first-child',
+      '.list:has-text("Tentativa de Contato")'
+    );
+
+    // Deve exibir erro com a lista de obrigatoriedades pendentes
+    await expect(page.locator('text=Empresa (Cliente) vinculada')).toBeVisible();
+  });
+
+  test('board Cobrança permite avançar Oportunidade Existente com requisitos', async ({ page }) => {
+    await loginAsService(page);
+    await page.goto('/servicos/2'); // Cobrança (Serviços - Atrasados)
+    await expect(page.locator('text=Oportunidade Existente')).toBeVisible();
+  });
+
+  test('dashboard de Serviços exibe KPIs do board selecionado', async ({ page }) => {
+    await loginAsService(page);
+    await page.goto('/servicos');
+    // Seletor de board (1=Funil, 2=Cobrança) no dashboard
+    await page.selectOption('[data-testid="service-dashboard-board"]', '1');
+    await expect(page.locator('[data-testid="service-kpi-total"]')).toBeVisible();
+  });
+
+  test('vendedor (role seller) NÃO acessa o módulo de Serviços', async ({ page }) => {
+    await loginAsSeller(page);
+    await page.goto('/servicos');
+    // ServiceTeamGuard redireciona quem não é admin/manager/service
+    await expect(page).not.toHaveURL(/\/servicos/);
+  });
+});
+```
+
+### 8.6 Integração Microsoft 365 (Outlook / Calendário / Teams / E-mail / Transcrições)
+
+**Arquivo**: `tests/e2e/microsoft365.spec.ts`
+
+> Tokens OAuth do Microsoft Graph ficam em `users.ms_access_token` / `ms_refresh_token` /
+> `ms_token_expires_at`. Serviços de apoio: `microsoft_auth_service.py`, `microsoft_graph_service.py`,
+> `transcript_analysis_service.py`, `email_service.py`. Callback SSO em `/auth/callback`.
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Integração Microsoft 365', () => {
+  test('deve iniciar o fluxo OAuth e retornar pelo callback', async ({ page }) => {
+    await loginAsSeller(page);
+    await page.goto('/settings');
+    await page.click('button:has-text("Conectar Microsoft 365")');
+    // Mock do provedor → redireciona para /auth/callback com code
+    await expect(page).toHaveURL(/\/auth\/callback/);
+    await expect(page.locator('text=Conta Microsoft conectada')).toBeVisible();
+  });
+
+  test('deve enviar e-mail pelo CRM com assinatura HTML anexada', async ({ page }) => {
+    await loginAsSeller(page); // usuário com email_signature configurada
+    await page.goto('/cards/1');
+    await page.click('button:has-text("Enviar E-mail")');
+    await page.fill('[name="subject"]', 'Proposta comercial');
+    await page.fill('[name="body"]', 'Segue a proposta em anexo.');
+    await page.click('button:has-text("Enviar")');
+    await expect(page.locator('text=E-mail enviado')).toBeVisible();
+  });
+
+  test('deve criar evento/reunião do Teams a partir de uma atividade', async ({ page }) => {
+    await loginAsSeller(page);
+    await page.goto('/cards/1');
+    await page.click('button:has-text("Nova Atividade")');
+    await page.selectOption('[name="type"]', 'reuniao');
+    await page.check('[name="create_teams_meeting"]');
+    await page.click('button:has-text("Salvar")');
+    await expect(page.locator('text=Link da reunião do Teams')).toBeVisible();
+  });
+
+  test('deve analisar transcrição de reunião e gerar resumo via IA', async ({ page }) => {
+    await loginAsSeller(page);
+    await page.goto('/cards/1');
+    await page.click('text=Transcrições');
+    await page.click('button:has-text("Analisar Transcrição")');
+    await expect(page.locator('[data-testid="transcript-summary"]')).toBeVisible();
+  });
+});
+```
+
+### 8.7 WhatsApp (tipo de atividade)
+
+**Arquivo**: `tests/e2e/whatsapp-activity.spec.ts`
+
+> WhatsApp é um **tipo de atividade** (não um canal externo de envio). Registra-se a atividade no card.
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('WhatsApp - Tipo de Atividade', () => {
+  test('deve registrar atividade do tipo WhatsApp no card', async ({ page }) => {
+    await loginAsSeller(page);
+    await page.goto('/cards/1');
+    await page.click('button:has-text("Nova Atividade")');
+    await page.selectOption('[name="type"]', 'whatsapp');
+    await page.fill('[name="notes"]', 'Cliente respondeu no WhatsApp confirmando interesse');
+    await page.click('button:has-text("Salvar")');
+
+    await expect(page.locator('.activity-item:has-text("WhatsApp")')).toBeVisible();
+  });
+
+  test('deve filtrar atividades por tipo WhatsApp na página de Atividades', async ({ page }) => {
+    await loginAsSeller(page);
+    await page.goto('/activities');
+    await page.selectOption('[name="type_filter"]', 'whatsapp');
+    await expect(page.locator('.activity-item')).toContainText(['WhatsApp']);
+  });
+});
+```
+
+### 8.8 Cadências (Cadences)
+
+**Arquivo**: `tests/e2e/cadences.spec.ts`
+
+> Models `cadencia` / `cadence` + `cadence_service.py`. Uma cadência é uma sequência de passos
+> (atividades agendadas) aplicada a um card/contato.
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Cadências', () => {
+  test('admin deve criar uma cadência com passos', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/settings'); // gestão de cadências
+    await page.click('button:has-text("Nova Cadência")');
+    await page.fill('[name="name"]', 'Cadência de Prospecção 5 toques');
+
+    // Passo 1: ligação no dia 0
+    await page.click('button:has-text("Adicionar Passo")');
+    await page.selectOption('[name="steps.0.type"]', 'ligacao');
+    await page.fill('[name="steps.0.day_offset"]', '0');
+
+    // Passo 2: e-mail no dia 2
+    await page.click('button:has-text("Adicionar Passo")');
+    await page.selectOption('[name="steps.1.type"]', 'email');
+    await page.fill('[name="steps.1.day_offset"]', '2');
+
+    await page.click('button:has-text("Salvar Cadência")');
+    await expect(page.locator('text=Cadência de Prospecção 5 toques')).toBeVisible();
+  });
+
+  test('deve aplicar cadência a um card e gerar as atividades', async ({ page }) => {
+    await loginAsSeller(page);
+    await page.goto('/cards/1');
+    await page.click('button:has-text("Aplicar Cadência")');
+    await page.selectOption('[name="cadence_id"]', { label: 'Cadência de Prospecção 5 toques' });
+    await page.click('button:has-text("Aplicar")');
+
+    // As atividades dos passos devem aparecer agendadas
+    await expect(page.locator('.activity-item')).toHaveCount(2);
+  });
+});
+```
+
+### 8.9 Call Evaluations (Avaliação de Ligações com IA)
+
+**Arquivo**: `tests/e2e/call-evaluations.spec.ts`
+
+> Model `call_evaluation` + página `CallEvaluationsPage` na rota `/ligacoes`. Avalia a ligação
+> (gravação/transcrição) com apoio de IA.
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Avaliação de Ligações (Call Evaluations)', () => {
+  test('deve listar ligações na página /ligacoes', async ({ page }) => {
+    await loginAsManager(page);
+    await page.goto('/ligacoes');
+    await expect(page.locator('h1, h2')).toContainText(/Liga/);
+    await expect(page.locator('[data-testid="call-list"]')).toBeVisible();
+  });
+
+  test('deve gerar avaliação por IA de uma ligação', async ({ page }) => {
+    await loginAsManager(page);
+    await page.goto('/ligacoes');
+    await page.click('[data-testid="call-row"]:first-child');
+    await page.click('button:has-text("Avaliar com IA")');
+
+    // Resultado da avaliação (nota/score + pontos fortes/fracos)
+    await expect(page.locator('[data-testid="evaluation-score"]')).toBeVisible();
+    await expect(page.locator('[data-testid="evaluation-feedback"]')).toBeVisible();
+  });
+
+  test('role service e viewer NÃO acessam /ligacoes', async ({ page }) => {
+    await loginAsService(page);
+    await page.goto('/ligacoes');
+    await expect(page).not.toHaveURL(/\/ligacoes/);
+  });
+});
+```
+
+### 8.10 Integração API4COM (VoIP / Ligações)
+
+**Arquivo**: `tests/e2e/api4com.spec.ts`
+
+> Model `api4com` + `api4com_repository.py`. Configuração de ramais e botão "Ligar"; uma chamada
+> pode opcionalmente referenciar um `service_card_id` (origem no módulo de Serviços).
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Integração API4COM (VoIP)', () => {
+  test('admin deve configurar ramal API4COM', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/settings');
+    await page.click('text=VoIP / API4COM');
+    await page.fill('[name="extension"]', '1001');
+    await page.fill('[name="api_token"]', 'token-api4com-teste');
+    await page.click('button:has-text("Salvar")');
+    await expect(page.locator('text=Configuração salva')).toBeVisible();
+  });
+
+  test('deve iniciar ligação pelo botão "Ligar" no card', async ({ page }) => {
+    await loginAsSeller(page); // vendedor com ramal configurado
+    await page.goto('/cards/1');
+    await page.click('button:has-text("Ligar")');
+    await expect(page.locator('text=Chamada iniciada')).toBeVisible();
+  });
+
+  test('deve registrar a chamada e vinculá-la ao card', async ({ page }) => {
+    await loginAsSeller(page);
+    await page.goto('/cards/1');
+    await page.click('text=Ligações');
+    await expect(page.locator('[data-testid="call-history"]')).toBeVisible();
+  });
+});
+```
+
+### 8.11 Dashboards por Perfil (SDR / Vendedor)
+
+**Arquivo**: `tests/e2e/dashboard-perfis.spec.ts`
+
+> A Dashboard (`/dashboard`) adapta KPIs e gráficos conforme o perfil: SDR vê seus cards como SDR;
+> vendedor vê seus próprios cards.
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Dashboards por Perfil', () => {
+  test('Dashboard do Vendedor mostra apenas KPIs dos próprios cards', async ({ page }) => {
+    await loginAsSeller(page);
+    await page.goto('/dashboard');
+    await expect(page.locator('[data-testid="kpi-total"]')).toBeVisible();
+    await expect(page.locator('[data-testid="kpi-conversion"]')).toBeVisible();
+  });
+
+  test('Dashboard do SDR mostra KPIs dos cards onde é SDR', async ({ page }) => {
+    await loginAsSdr(page);
+    await page.goto('/dashboard');
+    await expect(page.locator('[data-testid="kpi-sdr"]')).toBeVisible();
+  });
+});
+```
+
 ---
 
 ## 9. TESTES DE PERFORMANCE
@@ -1435,6 +1753,6 @@ export class CardFactory {
 
 ---
 
-**Versão**: 1.0
-**Data**: 15 de Dezembro 2025
-**Status**: Completo
+**Versão**: 1.7.35 (Junho/2026)
+**Data**: 29 de Junho 2026
+**Status**: Completo — inclui cobertura E2E dos módulos Serviços (Funil/Cobrança), Microsoft 365, WhatsApp, Cadências, Call Evaluations, API4COM e Dashboards por perfil (SDR/Vendedor)

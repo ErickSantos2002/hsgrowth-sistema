@@ -1,8 +1,8 @@
 # 14 - SCRIPTS DE MIGRAÇÃO
 
 **HSGrowth CRM - Internal Sales Management System**
-**Versão**: 1.0
-**Data**: 15/12/2025
+**Versão**: 1.7.35 (Junho/2026)
+**Data**: 29/06/2026
 **Autor**: Equipe de Desenvolvimento HSGrowth
 
 ---
@@ -28,19 +28,28 @@ Este documento descreve o processo completo de **migração de dados do Pipedriv
 ### 1.1 Escopo da Migração
 
 **Dados a serem migrados**:
-- ✅ Usuários (Users)
-- ✅ Organizações (Organizations)
-- ✅ Contatos (People)
-- ✅ Negócios/Deals (Cards)
-- ✅ Produtos (Products)
-- ✅ Anotações (Notes)
+- ✅ Usuários (Users → tabela `users`)
+- ✅ Organizações/Empresas (Organizations → tabela `clients`)
+- ✅ Contatos (People → tabela `persons`)
+- ✅ Negócios/Deals (Cards → tabela `cards`)
+- ✅ Produtos (Products → tabela `products`)
+- ✅ Anotações (Notes → tabela `card_notes`)
 - ✅ Atividades (Activities - limitado)
+
+> **IMPORTANTE — alvo das organizações**: no HSGrowth as organizações/empresas do Pipedrive são
+> importadas para a tabela **`clients`** (model `backend/app/models/client.py`), e **não** para uma
+> tabela chamada `organizations`. O CRM não possui tabela `organizations`. Veja o mapeamento de campos
+> na seção 3.2.
 
 **Dados que NÃO serão migrados**:
 - ❌ E-mails (permanecem no Pipedrive ou email client)
 - ❌ Arquivos anexados > 10MB (migração manual se necessário)
 - ❌ Integrações de terceiros (reconfigurar manualmente)
 - ❌ Webhooks (recriar no HSGrowth)
+- ❌ **Módulo de Serviços** (`service_boards`, `service_lists`, `service_cards`,
+  `service_card_products` com JSON `aparelhos`, `service_card_activities`) — este módulo é
+  **operado/cadastrado diretamente no sistema** (boards "Funil" e "Cobrança") e **não tem origem
+  no Pipedrive**, portanto está fora do escopo desta migração.
 
 ### 1.2 Pré-requisitos
 
@@ -276,36 +285,52 @@ node scripts/export-pipedrive.js
 
 ## 3. Mapeamento de Campos
 
-### 3.1 Usuários (Users)
+### 3.1 Usuários (Users → tabela `users`)
 
-| Pipedrive | HSGrowth CRM | Transformação |
-|-----------|--------------|---------------|
+> O model `User` (`backend/app/models/user.py`) usa um **único campo `name`** (não há
+> `first_name`/`last_name`). O role é uma FK (`role_id` → tabela `roles`), não uma string.
+
+| Pipedrive | HSGrowth CRM (`users`) | Transformação |
+|-----------|------------------------|---------------|
 | `id` | - | Mapear em dicionário externo |
-| `name` | `first_name` + `last_name` | Split por espaço |
+| `name` | `name` | Direto (campo único, sem split) |
 | `email` | `email` | Direto |
-| `active_flag` | `status` | true → 'active', false → 'inactive' |
-| `role_id` | `role` | Mapear roles: Admin → 'admin', Manager → 'gerente', User → 'vendedor' |
+| `active_flag` | `is_active` | true → true, false → false |
+| `role_id` | `role_id` | Lookup na tabela `roles`: Admin → role 'admin', Manager → 'gerente', User → 'vendedor'/'sdr'/'service' |
 
-### 3.2 Organizações (Organizations)
+### 3.2 Organizações/Empresas (Organizations → tabela `clients`)
 
-| Pipedrive | HSGrowth CRM | Transformação |
-|-----------|--------------|---------------|
+> As organizações do Pipedrive são importadas para a tabela **`clients`** (model
+> `backend/app/models/client.py`). O campo `name` guarda o nome do contato/empresa e
+> `company_name` a razão social; `document` recebe CPF/CNPJ.
+
+| Pipedrive | HSGrowth CRM (`clients`) | Transformação |
+|-----------|--------------------------|---------------|
 | `id` | - | Mapear em dicionário |
-| `name` | `name` | Direto |
+| `name` | `name` / `company_name` | Nome da organização (usar `company_name` p/ razão social) |
+| `email` | `email` | Primeiro email |
+| `phone` | `phone` | Primeiro telefone |
+| (CNPJ/CPF custom field) | `document` | CPF (11 díg.) ou CNPJ (14 díg.) |
 | `address` | `address` | Direto |
 | `address_locality` | `city` | Direto |
-| `address_admin_area_level_1` | `state` | Direto |
-| `address_country` | `country` | Direto |
+| `address_admin_area_level_1` | `state` | UF (2 caracteres) |
+| `address_country` | `country` | Direto (default "Brasil") |
+| `website` | `website` | Direto |
+| - | `source` | Fixar `'pipedrive'` (origem do registro) |
+| - | `is_active` | true |
 
-### 3.3 Pessoas/Contatos (People)
+### 3.3 Pessoas/Contatos (People → tabela `persons`)
 
-| Pipedrive | HSGrowth CRM | Transformação |
-|-----------|--------------|---------------|
+> O model `Person` (`backend/app/models/person.py`) tem o campo obrigatório `name` (nome completo)
+> e os opcionais `first_name`/`last_name`. O campo `organization_id` é FK para a tabela **`clients`**.
+
+| Pipedrive | HSGrowth CRM (`persons`) | Transformação |
+|-----------|--------------------------|---------------|
 | `id` | - | Mapear em dicionário |
-| `name` | `first_name` + `last_name` | Split por espaço |
+| `name` | `name` | Direto (e opcionalmente split em `first_name`/`last_name`) |
 | `email[0].value` | `email` | Primeiro email |
 | `phone[0].value` | `phone` | Primeiro telefone |
-| `org_id` | `organization_id` | Lookup em dicionário |
+| `org_id` | `organization_id` | Lookup no dicionário de `clients` (FK → `clients.id`) |
 
 ### 3.4 Negócios/Deals → Cards
 
@@ -346,6 +371,12 @@ node scripts/export-pipedrive.js
 ---
 
 ## 4. Scripts de Transformação
+
+> **ATENÇÃO (esquema real do HSGrowth)**: os exemplos abaixo são ilustrativos. Ao adaptar, lembre-se
+> que (1) o destino das organizações é a tabela **`clients`** (não `organizations`); (2) `users` e
+> `persons` usam o campo **único `name`** (o split em `first_name`/`last_name` é opcional e só se aplica
+> a `persons`, que tem essas colunas); (3) o role do usuário é `role_id` (FK → `roles`). Ajuste os
+> nomes de tabela/coluna nos `INSERT` da seção 6 conforme estas regras.
 
 ### 4.1 Script de Transformação Principal
 
@@ -852,25 +883,25 @@ async function importData() {
 
     for (const user of users) {
       await client.query(
-        `INSERT INTO users (account_id, email, first_name, last_name, role, status, password_hash, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [user.account_id, user.email, user.first_name, user.last_name, user.role, user.status, user.password_hash, user.created_at, user.updated_at]
+        `INSERT INTO users (email, name, role_id, is_active, password_hash, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [user.email, user.name, user.role_id, user.is_active, user.password_hash, user.created_at, user.updated_at]
       );
     }
     console.log(`✓ ${users.length} usuários importados`);
 
-    // 2. Importar Organizações
-    console.log('\n2. Importando organizações...');
+    // 2. Importar Organizações/Empresas → tabela `clients`
+    console.log('\n2. Importando organizações (clients)...');
     const organizations = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'organizations.json')));
 
     for (const org of organizations) {
       await client.query(
-        `INSERT INTO organizations (account_id, name, email, phone, website, address, city, state, country, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-        [org.account_id, org.name, org.email, org.phone, org.website, org.address, org.city, org.state, org.country, org.created_at, org.updated_at]
+        `INSERT INTO clients (name, company_name, document, email, phone, website, address, city, state, country, source, is_active, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pipedrive', true, $11, $12)`,
+        [org.name, org.company_name, org.document, org.email, org.phone, org.website, org.address, org.city, org.state, org.country, org.created_at, org.updated_at]
       );
     }
-    console.log(`✓ ${organizations.length} organizações importadas`);
+    console.log(`✓ ${organizations.length} organizações importadas em clients`);
 
     // 3. Importar Pessoas
     console.log('\n3. Importando pessoas...');
@@ -878,9 +909,9 @@ async function importData() {
 
     for (const person of persons) {
       await client.query(
-        `INSERT INTO people (account_id, organization_id, first_name, last_name, email, phone, mobile, job_title, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [person.account_id, person.organization_id, person.first_name, person.last_name, person.email, person.phone, person.mobile, person.job_title, person.created_at, person.updated_at]
+        `INSERT INTO persons (organization_id, name, first_name, last_name, email, phone, job_title, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [person.organization_id, person.name, person.first_name, person.last_name, person.email, person.phone, person.job_title, person.created_at, person.updated_at]
       );
     }
     console.log(`✓ ${persons.length} pessoas importadas`);
@@ -930,7 +961,7 @@ async function importData() {
 
     for (const note of notes) {
       await client.query(
-        `INSERT INTO notes (card_id, user_id, content, created_at, updated_at)
+        `INSERT INTO card_notes (card_id, user_id, content, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5)`,
         [note.card_id, note.user_id, note.content, note.created_at, note.updated_at]
       );
@@ -1016,7 +1047,7 @@ Se precisar limpar apenas os dados importados (sem afetar estrutura):
 -- CUIDADO: Isso deleta TODOS os dados!
 BEGIN;
 
-DELETE FROM notes;
+DELETE FROM card_notes;
 DELETE FROM activities;
 DELETE FROM card_field_values;
 DELETE FROM card_transfers;
@@ -1024,21 +1055,21 @@ DELETE FROM cards;
 DELETE FROM custom_fields;
 DELETE FROM lists;
 DELETE FROM boards;
-DELETE FROM people;
-DELETE FROM organizations;
+DELETE FROM persons;
+DELETE FROM clients;
 DELETE FROM products;
 DELETE FROM users WHERE id > 1; -- Manter usuário admin original
 DELETE FROM import_history;
 
 -- Resetar sequences
 ALTER SEQUENCE users_id_seq RESTART WITH 2;
-ALTER SEQUENCE organizations_id_seq RESTART WITH 1;
-ALTER SEQUENCE people_id_seq RESTART WITH 1;
+ALTER SEQUENCE clients_id_seq RESTART WITH 1;
+ALTER SEQUENCE persons_id_seq RESTART WITH 1;
 ALTER SEQUENCE products_id_seq RESTART WITH 1;
 ALTER SEQUENCE boards_id_seq RESTART WITH 1;
 ALTER SEQUENCE lists_id_seq RESTART WITH 1;
 ALTER SEQUENCE cards_id_seq RESTART WITH 1;
-ALTER SEQUENCE notes_id_seq RESTART WITH 1;
+ALTER SEQUENCE card_notes_id_seq RESTART WITH 1;
 
 COMMIT;
 ```
@@ -1049,11 +1080,11 @@ COMMIT;
 -- Verificar se rollback funcionou
 SELECT 'users' as table_name, COUNT(*) as count FROM users
 UNION ALL
-SELECT 'organizations', COUNT(*) FROM organizations
+SELECT 'clients', COUNT(*) FROM clients
 UNION ALL
 SELECT 'cards', COUNT(*) FROM cards
 UNION ALL
-SELECT 'notes', COUNT(*) FROM notes;
+SELECT 'card_notes', COUNT(*) FROM card_notes;
 
 -- Resultado esperado: todos os counts devem ser 0 (exceto users = 1)
 ```
@@ -1099,9 +1130,9 @@ SELECT 'notes', COUNT(*) FROM notes;
 - [ ] **Verificar contagens no banco de dados**
   ```sql
   SELECT 'users' as table_name, COUNT(*) as count FROM users
-  UNION ALL SELECT 'organizations', COUNT(*) FROM organizations
+  UNION ALL SELECT 'clients', COUNT(*) FROM clients
   UNION ALL SELECT 'cards', COUNT(*) FROM cards
-  UNION ALL SELECT 'notes', COUNT(*) FROM notes;
+  UNION ALL SELECT 'card_notes', COUNT(*) FROM card_notes;
   ```
 
 - [ ] **Testar login de usuários migrados**
@@ -1163,7 +1194,7 @@ SELECT 'notes', COUNT(*) FROM notes;
 **Sintoma**: Erro ao inserir registros com FKs inválidas
 
 **Solução**:
-1. Verificar ordem de importação (users → organizations → persons → cards → notes)
+1. Verificar ordem de importação (users → clients → persons → cards → card_notes)
 2. Verificar mapeamentos em `mappings.json`
 3. Ajustar IDs de referência
 
@@ -1215,10 +1246,10 @@ SELECT 'notes', COUNT(*) FROM notes;
 -- Executar antes e depois da migração
 
 -- Total de usuários
-SELECT COUNT(*) FROM users WHERE account_id = 1;
+SELECT COUNT(*) FROM users;
 
--- Total de organizações
-SELECT COUNT(*) FROM organizations WHERE account_id = 1;
+-- Total de organizações (tabela clients)
+SELECT COUNT(*) FROM clients;
 
 -- Total de cartões
 SELECT COUNT(*) FROM cards WHERE list_id IN (SELECT id FROM lists WHERE board_id = 1);
@@ -1242,5 +1273,5 @@ ORDER BY l.position;
 
 ---
 
-**Última atualização**: 15/12/2025
+**Última atualização**: 29/06/2026 (v1.7.35)
 **Próxima revisão**: Após primeira migração real

@@ -1,5 +1,7 @@
 # 02 - REQUISITOS FUNCIONAIS DETALHADOS
 
+> **Atualização Junho/2026 (v1.7.35):** Este documento é o **registro original de requisitos** (Dez/2025) e foi preservado como referência histórica. O sistema está hoje **em produção (v1.7.35)** e evoluiu além do escopo abaixo. Módulos atualmente em produção não cobertos (ou apenas parcialmente cobertos) por estes RFs: **Módulo de Serviços** (2 boards — Funil + Cobrança — com dashboards próprias e role "Serviço"), **Ligações/VoIP** (integração API4COM) + **Avaliação de Ligações com IA**, **Integração Microsoft 365** (Outlook/Teams/e-mail/transcrições) e **Cadências de atividades**. Roles atuais em produção: **Administrador, Gerente, Vendedor, SDR, Visualizador e Serviço**.
+
 ## 1. INTRODUÇÃO
 
 Este documento especifica todos os requisitos funcionais do sistema HSGrowth CRM. Os requisitos estão organizados por módulo/funcionalidade e seguem o padrão: cada requisito possui um identificador único (RF-XXX), descrição clara, critérios de aceitação e prioridade.

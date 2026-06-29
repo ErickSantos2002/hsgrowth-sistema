@@ -16,7 +16,7 @@ Este documento descreve a arquitetura técnica do sistema HSGrowth CRM, incluind
 │  │  ┌────────────────────────────────────────────────┐ │  │
 │  │  │ Pages (Dashboard, Boards, Reports, Admin)     │ │  │
 │  │  │ Components (Kanban, List, Calendar, Forms)    │ │  │
-│  │  │ State Management (Redux/Zustand)              │ │  │
+│  │  │ State Management (React hooks/contexts)       │ │  │
 │  │  │ API Client (Axios/Fetch)                      │ │  │
 │  │  └────────────────────────────────────────────────┘ │  │
 │  └──────────────────────────────────────────────────────┘  │
@@ -103,43 +103,63 @@ Este documento descreve a arquitetura técnica do sistema HSGrowth CRM, incluind
 
 ### 3.1 Frontend (hsgrowth-sistema)
 
+> **Versões reais conforme `frontend/package.json`.** Dev server roda na **porta 5300**
+> (5173 estava reservada pelo Windows — ver `vite.config.ts`).
+
 | Camada | Tecnologia | Versão | Propósito |
 |--------|-----------|--------|----------|
 | **Runtime** | Node.js | 18+ | Runtime JavaScript |
-| **Framework** | React | 18+ | UI Framework |
+| **Framework** | React | 19 | UI Framework |
 | **Linguagem** | TypeScript | 5+ | Type Safety |
-| **Build Tool** | Vite | 5+ | Build & Dev Server |
-| **Styling** | TailwindCSS | 3+ | Utility-first CSS |
-| **State** | Zustand/Redux | Latest | State Management |
+| **Build Tool** | Vite | 7 | Build & Dev Server (porta 5300) |
+| **Styling** | TailwindCSS | 4 | Utility-first CSS (`@tailwindcss/vite`) |
 | **HTTP Client** | Axios | 1+ | API Requests |
-| **Form** | React Hook Form | Latest | Form Management |
-| **Validation** | Zod | Latest | Schema Validation |
-| **UI Components** | Shadcn/ui | Latest | Component Library |
-| **Charts** | Recharts | Latest | Data Visualization |
-| **Date** | Day.js | Latest | Date Manipulation |
-| **Testing** | Vitest + React Testing Library | Latest | Testing Framework |
+| **Roteamento** | React Router DOM | 6 | Roteamento SPA |
+| **Drag & Drop** | @dnd-kit (core/sortable/utilities) | 6+ | Kanban (arrastar cards/listas) |
+| **Charts** | Recharts | 3 | Visualização de dados (dashboards) |
+| **Fluxo visual** | ReactFlow | 11 | Editor visual de automações |
+| **Ícones** | lucide-react | Latest | Ícones |
+| **Datas** | date-fns | 4 | Manipulação de datas |
+| **Toasts** | react-hot-toast | 2 | Notificações na UI |
+| **Markdown** | react-markdown | 10 | Render de markdown (IA / textos) |
+| **Animação de números** | react-countup | 6 | KPIs animados |
+| **Export PDF** | jsPDF + jspdf-autotable | 4 / 5 | Exportação de relatórios em PDF |
+| **Export Excel** | xlsx-js-style | 1.2 | Exportação de planilhas estilizadas |
+| **Export arquivos** | file-saver | 2 | Download de arquivos gerados |
+| **`<head>` / SEO** | react-helmet | 6 | Gerência de título/meta |
+
+> Observações: o projeto **não** usa Zustand/Redux, Zod, React Hook Form, Shadcn/ui nem Day.js
+> (estado é gerenciado com hooks/contextos do próprio React).
 
 ### 3.2 Backend (hsgrowth-api)
+
+> **Versões reais conforme `backend/requirements.txt`.**
 
 | Camada | Tecnologia | Versão | Propósito |
 |--------|-----------|--------|----------|
 | **Runtime** | Python | 3.11+ | Runtime Python |
-| **Framework** | FastAPI | 0.100+ | Web Framework |
-| **Type Safety** | Pydantic | 2.0+ | Data Validation & Type Hints |
-| **ORM** | SQLAlchemy | 2.0+ | Database ORM |
-| **Migrations** | Alembic | Latest | Database Migrations |
-| **Auth** | python-jose | Latest | JWT Tokens |
-| **Password** | passlib | Latest | Password Hashing |
-| **Cache** | cachetools | Latest | In-Memory Caching |
-| **Logging** | Loguru | Latest | Structured Logging |
-| **Testing** | Pytest | Latest | Testing Framework |
+| **Framework** | FastAPI | 0.109 | Web Framework |
+| **Type Safety** | Pydantic | 2.5 + pydantic-settings | Data Validation & Settings |
+| **ORM** | SQLAlchemy | 2.0 | Database ORM |
+| **Migrations** | Alembic | 1.13 | Database Migrations |
+| **DB Driver** | psycopg2-binary | 2.9 | Driver PostgreSQL |
+| **Auth** | PyJWT | 2.8 | JWT Tokens (substitui python-jose) |
+| **Password** | passlib[bcrypt] + bcrypt | 1.7 / 4.0 | Password Hashing |
+| **SSO / Graph** | msal | 1.31 | Microsoft Authentication Library (SSO/Graph) |
+| **Cripto** | cryptography (Fernet) | 42.0 | Criptografia de credenciais de integração (api4com) |
+| **Cache** | cachetools | 5.3 | In-Memory Caching |
+| **Sessões / Broker** | Redis | 5.0 | **OBRIGATÓRIO** — sessões, blacklist de token, broker Celery |
+| **Job Queue** | Celery | 5.3 | Background Jobs |
+| **Scheduler** | APScheduler | 3.10 | Scheduled Tasks (cron jobs) |
+| **Email** | fastapi-mail | 1.4 | Email Service (SMTP Microsoft 365) |
+| **IA** | openai | 1.40+ | Integração com LLM (avaliação de ligações, IA) |
+| **HTTP Client** | httpx | 0.26 | Integrações e testes |
+| **Export** | openpyxl + pandas | 3.1 / 2.1 | Exportação Excel/CSV |
+| **Logging** | Loguru | 0.7 | Structured Logging |
+| **Testing** | Pytest (+asyncio, cov, mock) + Faker | 7.4 | Testing Framework |
 | **API Docs** | OpenAPI (built-in) | 3.0+ | API Documentation (automático) |
-| **Environment** | python-dotenv | Latest | Environment Variables |
-| **Rate Limit** | slowapi | Latest | Rate Limiting |
-| **Job Queue** | Celery | Latest | Background Jobs |
-| **Scheduler** | APScheduler | Latest | Scheduled Tasks |
-| **Email** | FastAPI-Mail | Latest | Email Service |
-| **ASGI Server** | Uvicorn | Latest | Production Server |
+| **Environment** | python-dotenv | 1.0 | Environment Variables |
+| **ASGI Server** | Uvicorn[standard] | 0.27 | Production Server |
 
 ### 3.3 Banco de Dados
 
@@ -174,7 +194,7 @@ Este documento descreve a arquitetura técnica do sistema HSGrowth CRM, incluind
 - **Controller**: Route handlers do FastAPI que processam requisições
 
 **Frontend**:
-- **Model**: Redux/Zustand stores
+- **Model**: estado via hooks/contexts do React (`src/hooks`, `src/context`/`src/contexts`) — sem Redux/Zustand
 - **View**: React components
 - **Controller**: Custom hooks e event handlers
 
@@ -375,19 +395,39 @@ hsgrowth-api/
 ├── app/
 │   ├── api/
 │   │   ├── v1/
-│   │   │   ├── endpoints/
+│   │   │   ├── endpoints/   # ~30 arquivos de rotas (lista real abaixo)
 │   │   │   │   ├── auth.py
+│   │   │   │   ├── users.py
+│   │   │   │   ├── user_avatar.py
 │   │   │   │   ├── boards.py
 │   │   │   │   ├── cards.py
-│   │   │   │   ├── users.py
+│   │   │   │   ├── card_tasks.py
+│   │   │   │   ├── card_notes.py
+│   │   │   │   ├── fields.py
+│   │   │   │   ├── clients.py
+│   │   │   │   ├── persons.py
+│   │   │   │   ├── products.py
 │   │   │   │   ├── reports.py
+│   │   │   │   ├── custom_reports.py
 │   │   │   │   ├── gamification.py
 │   │   │   │   ├── automations.py
 │   │   │   │   ├── transfers.py
-│   │   │   │   ├── commissions.py
-│   │   │   │   └── admin.py
-│   │   │   └── api.py  # Agrupa todas as rotas
-│   │   └── deps.py  # Dependencies compartilhadas
+│   │   │   │   ├── notifications.py
+│   │   │   │   ├── attachments.py
+│   │   │   │   ├── audit_logs.py
+│   │   │   │   ├── admin.py
+│   │   │   │   ├── integration_clients.py
+│   │   │   │   ├── api4com.py            # integração telefonia 4COM
+│   │   │   │   ├── call_evaluations.py   # avaliação de ligações (IA)
+│   │   │   │   ├── cadences.py           # cadência (inglês)
+│   │   │   │   ├── cadencias.py          # cadência (legado/pt)
+│   │   │   │   ├── email_templates.py
+│   │   │   │   ├── ai.py
+│   │   │   │   ├── service_boards.py     # módulo de Serviço
+│   │   │   │   ├── service_dashboard.py
+│   │   │   │   └── service_activities.py
+│   │   │   └── __init__.py  # Agrupa todas as rotas (api_router)
+│   │   └── deps.py  # Dependencies compartilhadas (get_current_user, require_role, require_service_access, require_not_viewer, ...)
 │   ├── core/
 │   │   ├── config.py  # Configurações (Settings com Pydantic)
 │   │   ├── security.py  # JWT, password hashing
@@ -396,16 +436,27 @@ hsgrowth-api/
 │   │   ├── base.py  # Base class do SQLAlchemy
 │   │   ├── session.py  # Database session
 │   │   └── init_db.py  # Inicialização do banco
-│   ├── models/
+│   ├── models/   # ~40 modelos SQLAlchemy (lista real abaixo)
 │   │   ├── __init__.py
-│   │   ├── user.py
-│   │   ├── board.py
-│   │   ├── card.py
-│   │   ├── list.py
+│   │   ├── user.py / role.py / user_badge.py / user_notification_setting.py
+│   │   ├── board.py / list.py / card.py / lead.py
+│   │   ├── card_task.py / card_note.py / card_product.py
+│   │   ├── card_field_value.py / card_list_history.py / card_transfer.py
 │   │   ├── field_definition.py
-│   │   ├── automation.py
-│   │   ├── gamification.py
-│   │   └── ...  # Outros modelos SQLAlchemy
+│   │   ├── client.py / person.py / product.py
+│   │   ├── activity.py / attachment.py / notification.py
+│   │   ├── audit_log.py
+│   │   ├── automation.py / automation_execution.py
+│   │   ├── gamification_action_points.py / gamification_badge.py
+│   │   ├── gamification_point.py / gamification_ranking.py
+│   │   ├── cadence.py / cadencia.py            # cadências (inglês/legado)
+│   │   ├── call_evaluation.py                  # avaliação de ligações
+│   │   ├── api4com.py                          # integração telefonia 4COM
+│   │   ├── custom_report.py / email_template.py
+│   │   ├── integration_client.py / transfer_approval.py
+│   │   ├── service_board.py / service_list.py / service_card.py
+│   │   ├── service_card_product.py / service_card_activity.py   # módulo de Serviço
+│   │   └── mixins.py
 │   ├── schemas/
 │   │   ├── __init__.py
 │   │   ├── user.py
@@ -477,62 +528,42 @@ hsgrowth-api/
 ```
 hsgrowth-sistema/
 ├── src/
-│   ├── components/
-│   │   ├── Kanban/
-│   │   │   ├── KanbanBoard.tsx
-│   │   │   ├── KanbanList.tsx
-│   │   │   └── KanbanCard.tsx
-│   │   ├── List/
-│   │   │   ├── ListView.tsx
-│   │   │   └── ListTable.tsx
-│   │   ├── Calendar/
-│   │   │   └── CalendarView.tsx
-│   │   ├── Gamification/
-│   │   │   ├── GamificationDashboard.tsx
-│   │   │   ├── RankingList.tsx
-│   │   │   ├── BadgesList.tsx
-│   │   │   └── PointsHistory.tsx
-│   │   ├── Automations/
-│   │   │   ├── AutomationBuilder.tsx
-│   │   │   ├── AutomationList.tsx
-│   │   │   ├── TriggerSelector.tsx
-│   │   │   ├── ActionSelector.tsx
-│   │   │   └── FieldMapping.tsx
-│   │   ├── Transfers/
-│   │   │   ├── TransferModal.tsx
-│   │   │   ├── TransferHistory.tsx
-│   │   │   └── TransferTimeline.tsx
-│   │   ├── Commissions/
-│   │   │   ├── CommissionDashboard.tsx
-│   │   │   ├── CommissionApproval.tsx
-│   │   │   └── CommissionReport.tsx
-│   │   ├── Forms/
-│   │   │   ├── CardForm.tsx
-│   │   │   ├── BoardForm.tsx
-│   │   │   └── LoginForm.tsx
-│   │   ├── Common/
-│   │   │   ├── Header.tsx
-│   │   │   ├── Sidebar.tsx
-│   │   │   ├── Modal.tsx
-│   │   │   └── Loading.tsx
-│   │   └── ...
-│   ├── pages/
+│   ├── components/   # pastas reais por domínio
+│   │   ├── kanban/        # board kanban (dnd-kit), cards, listas
+│   │   ├── cardDetails/   # painel de detalhes do card (Vendas)
+│   │   ├── dashboard/     # KPIs, gráficos (recharts), KpiCard
+│   │   ├── boards/        # gestão de boards/listas
+│   │   ├── automations/   # editor visual (reactflow), seletores
+│   │   ├── transfers/     # modais e timeline de transferência
+│   │   ├── service/       # módulo de Serviço (kanban, detalhes, dashboard)
+│   │   ├── activities/    # atividades / calendário
+│   │   ├── clients/       # clientes (organizações)
+│   │   ├── persons/       # pessoas (contatos)
+│   │   ├── products/      # produtos
+│   │   ├── reports/       # relatórios / custom reports
+│   │   ├── users/         # gestão de usuários
+│   │   ├── settings/      # configurações
+│   │   ├── agentGrowth/   # assistente de IA "Agent Growth"
+│   │   ├── layout/        # MainLayout, Sidebar, etc.
+│   │   └── common/        # componentes compartilhados (modais, loading, ...)
+│   ├── pages/   # páginas reais (rotas)
+│   │   ├── Login.tsx / AuthCallback.tsx / Bloqueio.tsx
 │   │   ├── Dashboard.tsx
-│   │   ├── BoardDetail.tsx
+│   │   ├── Boards.tsx / KanbanBoard.tsx / CardDetails.tsx
+│   │   ├── Activities.tsx / Calendar.tsx
+│   │   ├── Automations.tsx / AutomationEditor.tsx
+│   │   ├── Clients.tsx / Persons.tsx / Products.tsx
 │   │   ├── Reports.tsx
-│   │   ├── Admin.tsx
-│   │   ├── Login.tsx
-│   │   └── 404.tsx
+│   │   ├── Gamification.tsx / BadgesAdmin.tsx
+│   │   ├── Transfers.tsx
+│   │   ├── CallEvaluationsPage.tsx
+│   │   ├── Notifications.tsx / Settings.tsx / Users.tsx
+│   │   ├── ServiceBoards.tsx / ServiceKanban.tsx / ServiceCardDetails.tsx
+│   │   ├── ServiceActivities.tsx / ServiceCalendar.tsx   # módulo de Serviço
+│   │   └── NotFound.tsx / EmConstrucao.tsx
 │   ├── hooks/
 │   │   ├── useAuth.ts
-│   │   ├── useBoard.ts
-│   │   ├── useCard.ts
-│   │   └── useFetch.ts
-│   ├── store/
-│   │   ├── authStore.ts
-│   │   ├── boardStore.ts
-│   │   ├── cardStore.ts
-│   │   └── uiStore.ts
+│   │   └── ...
 │   ├── api/
 │   │   ├── client.ts
 │   │   ├── auth.ts
@@ -2204,7 +2235,14 @@ cron.schedule('0 * * * *', monitored('email.grouped_failures', async () => {
 
 ### 17.3 Estratégia de Cache
 
-**Decisão**: **Cache em memória local (Node.js)** - SEM Redis.
+> ⚠️ **Nota de atualização (Junho/2026):** as subseções abaixo descrevem uma decisão
+> antiga (cache só em memória, sem Redis) e estão **desatualizadas**. Na implementação
+> atual o **Redis é dependência obrigatória** (`redis==5.0.1` em `backend/requirements.txt`),
+> usado para **sessões**, **blacklist de tokens JWT** e como **broker do Celery**
+> (ver `app/core/redis_sessions.py`). O cache em memória (`cachetools`) continua sendo usado
+> para dados de leitura frequente. O conteúdo a seguir é mantido como histórico de decisão.
+
+**Decisão (histórica)**: **Cache em memória local** - SEM Redis.
 
 **Justificativa**:
 - Sistema interno da HSGrowth (não SaaS com alta escala)
@@ -2671,7 +2709,7 @@ async function logAudit(data: AuditLogData) {
 
 ---
 
-**Versão**: 4.0
-**Data**: 15 de Dezembro 2025
+**Versão**: v1.7.35 — Junho/2026
+**Data**: 29 de Junho 2026
 **Status**: Completo
 

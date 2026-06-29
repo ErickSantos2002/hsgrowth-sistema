@@ -52,22 +52,37 @@ Este documento especifica as regras de negócio e validações que devem ser imp
 
 **Descrição**: Cada usuário tem um role que define suas permissões.
 
-**Roles e Permissões**:
+**Roles e Permissões** (6 roles reais — nome técnico no banco em inglês):
 
-| Role | Permissões |
-|------|------------|
-| **Admin** | Tudo: criar, ler, editar, deletar, gerenciar usuários, gerenciar roles, acessar logs |
-| **Gerente** | Criar quadros, criar campos, gerenciar listas, ver todos os cartões, gerenciar usuários (vendedores), ver relatórios |
-| **Vendedor** | Criar cartões, editar seus cartões, mover cartões, ver seus cartões, ver cartões compartilhados, comentar |
-| **Visualizador** | Apenas ler cartões, ver relatórios (sem exportar) |
+| Role (técnico) | Nome exibido | Permissões |
+|------|------|------------|
+| **admin** | Administrador | Tudo: criar, ler, editar, deletar, gerenciar usuários, gerenciar roles, acessar logs |
+| **manager** | Gerente | Criar quadros, criar campos, gerenciar listas, ver todos os cartões, gerenciar usuários, ver relatórios |
+| **salesperson** | Vendedor | Criar cartões, editar seus cartões, mover cartões, ver seus cartões, ver cartões compartilhados, comentar |
+| **sdr** | SDR | Pré-qualificação de leads / prospecção; vê e trabalha seus cartões, cadências e atividades |
+| **viewer** | Visualizador | Apenas leitura: ver cartões e relatórios; bloqueado em qualquer ação de escrita (403) |
+| **service** | Serviço | Acesso ao módulo de Serviços (boards, dashboard e atividades de serviço); ver RN-003.1 |
 
 **Regras**:
-- Vendedor vê apenas seus cartões (assigned_to = user_id)
+- Vendedor (salesperson) vê apenas seus cartões (assigned_to = user_id)
 - Vendedor vê cartões compartilhados explicitamente
 - Admin vê todos os cartões
-- Gerente vê todos os cartões do seu quadro
+- Gerente (manager) vê todos os cartões do seu quadro
+- Visualizador (viewer) é bloqueado em endpoints de escrita pela dependency `require_not_viewer` (`backend/app/api/deps.py`)
 - Permissões são verificadas em cada endpoint
 - Acesso negado retorna erro 403
+
+---
+
+### RN-003.1: Restrição de Acesso ao Módulo de Serviço
+
+**Descrição**: O módulo de Serviço (boards de serviço, dashboard de serviço e atividades de serviço) é restrito a um subconjunto de roles.
+
+**Regras**:
+- Têm acesso ao módulo de Serviço apenas: **admin**, **manager** e **service**
+- **Vendedor (salesperson), SDR e Visualizador (viewer) são bloqueados** (erro 403)
+- A restrição é aplicada no nível de roteamento via dependency `require_service_access()` (`backend/app/api/deps.py`), aplicada aos routers `service-boards`, `service-dashboard` e `service-activities` (`backend/app/api/v1/__init__.py`) — portanto vale também para leitura, não só escrita
+- Apenas **admin** e **manager** podem criar/editar boards e listas de serviço (validação adicional em `service_boards.py`); a role **service** pode criar/mover cards e atividades, mas não criar boards/listas
 
 ---
 
@@ -1464,7 +1479,99 @@ ORDER BY created_at ASC;
 
 ---
 
-**Versão**: 4.0
-**Data**: 11 de Dezembro 2025
+## 16. REGRAS DO MÓDULO DE SERVIÇO
+
+> O módulo de Serviço é **independente** dos boards de Vendas. A documentação detalhada
+> (estrutura das etapas, matriz de regras de avanço campo a campo, dashboard, board de
+> Cobrança) está em **[16 - FLUXO E REGRAS DO BOARD DE SERVIÇOS.md](16%20-%20FLUXO%20E%20REGRAS%20DO%20BOARD%20DE%20SERVIÇOS.md)** — esta seção resume e referencia.
+> As regras valem **apenas para os boards com regra** (`SERVICE_RULE_BOARD_IDS = {1, 2}`).
+> Boards de serviço duplicados são kanban livre, sem travas nem dashboard.
+
+### RN-140: Acesso ao Módulo de Serviço
+
+Ver **RN-003.1**. Apenas admin, gerente e role "serviço" acessam board/dashboard/atividades de serviço; vendedor, SDR e visualizador são bloqueados (403 via `require_service_access`).
+
+---
+
+### RN-141: Regras de Avanço de Etapa — Board 1 (funil oficial "Serviços")
+
+**Descrição**: O board oficial (`SERVICE_FUNNEL_BOARD_IDS = {1}`) tem 7 etapas e trava de avanço (hard gate) validada no backend em `_validate_advance` (`backend/app/services/service_board_service.py`), aplicada em `move_card`.
+
+**Etapas**: Liberados do Laboratório → Dados Preenchidos → Tentativa de Contato → Proposta → Aguardando Pedido → Negócio Ganho / Negócio Perdido.
+
+**Travas por transição** (resumo — detalhe na doc 16, seção 6):
+
+| Transição | O que exige para avançar |
+|---|---|
+| Liberados do Laboratório → Dados Preenchidos | **OS (Ordem de Serviço) anexada** |
+| Dados Preenchidos → Tentativa de Contato | **≥1 produto** + **Cliente (Organização)** + **Pessoa (Contato)** vinculados + **Recalibração/Manutenção** (`service_type`) preenchido |
+| Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) |
+| Proposta → Aguardando Pedido | **Forma de fechamento = "Pedido"** + **Proposta anexada** |
+| Proposta → Negócio Ganho *(direto)* | **Forma de fechamento = "Faturamento direto"** + **Proposta anexada** |
+| Aguardando Pedido → Negócio Ganho | só pelo botão Ganho + **OC (Ordem de Compra) anexada** |
+| Qualquer etapa → Negócio Perdido | só pelo botão Perdido + **Motivo da perda** (modal) |
+
+**Campo "Forma de fechamento"** (`closing_type`, no Resumo): define o caminho na etapa Proposta — *Faturamento direto* libera o Ganho na própria Proposta; *Pedido* obriga avançar para Aguardando Pedido (que depois exige a OC).
+
+**Regras gerais**:
+- Não pode pular etapas (uma de cada vez); voltar etapa é livre, sem trava.
+- Novos cards entram só pela 1ª etapa (Liberados do Laboratório).
+- Ganho/Perdido só pelos botões (o stepper não move para etapas terminais).
+
+---
+
+### RN-142: Regras de Avanço de Etapa — Board 2 (Cobrança "Serviços - Atrasados")
+
+**Descrição**: Board independente (id 2, "Serviços - Atrasados", chamado de **Cobrança**), também com regra em `_validate_advance` (board-específica). Mesmo acesso do módulo de Serviço (admin, gerente, service).
+
+**Etapas (6)**: Oportunidade Existente → Tentativa de Contato → Proposta → Operações → Negócio Ganho / Negócio Perdido.
+
+**Travas por transição** (resumo — detalhe na doc 16, seção 8.2):
+
+| Transição | O que exige para avançar |
+|---|---|
+| Oportunidade Existente → Tentativa de Contato | **≥1 produto** + **Cliente** + **Pessoa** vinculados |
+| Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** + **Recalibração/Manutenção** (`service_type`) preenchido |
+| Proposta → Operações | **Proposta anexada** + **Formulário enviado** (checkbox `form_answered`) |
+| Operações → Negócio Ganho | botão Ganho em Operações · sem regra por enquanto (a definir) |
+| → Negócio Perdido | só pelo botão Perdido + **Motivo da perda** |
+
+---
+
+### RN-143: Comportamento de Ganho / Perdido (Vendas e Serviço)
+
+**Descrição**: Ao mover um card para Ganho ou Perdido, o sistema conclui automaticamente as atividades pendentes do card.
+
+**Regras**:
+- A conclusão automática vale para os boards com regra (funil oficial + Cobrança).
+- **Exceção**: atividades de tipo **follow_up NÃO são concluídas automaticamente** — costumam ser agendadas para o futuro (ex.: marca-se Perdido para não acumular e o card reabre no dia), então permanecem pendentes.
+- Implementado em `_complete_pending_activities` (`service_board_service.py`); o mesmo comportamento "exceto follow_up" vale para Vendas/SDR.
+
+---
+
+### RN-144: Etiqueta "Parado" (sem movimentação)
+
+**Descrição**: Cards sem movimentação (atividade, nota ou mudança de etapa) por vários dias recebem uma etiqueta visual de estagnação.
+
+**Regras**:
+- **Parado 3d+**: card com atividade pendente vencida / sem atividade recente há **3 ou mais dias** (`is_stuck_3d`).
+- **Parado 7d+**: há **7 ou mais dias** (`is_stuck_7d`) — exibido em vermelho mais escuro.
+- Calculado a partir de `updated_at` e da última atividade do card, em `card_service.py` (Vendas) e `service_board_service.py` (Serviço).
+
+---
+
+### RN-145: Quantidade de Produto no Card de Serviço (automática)
+
+**Descrição**: No card de Serviço, a quantidade de cada produto é automática, não editável.
+
+**Regras**:
+- O campo **Quantidade** do produto é **somente leitura** e igual ao **nº de aparelhos** adicionados (`quantity = aparelhos.length`), sincronizado ao "Salvar aparelhos".
+- O usuário não edita a quantidade manualmente.
+- Cada aparelho exige Nº de Série + Data de próxima recalibragem; o Modelo já vem pré-preenchido com o produto escolhido; Módulo de álcool é opcional.
+
+---
+
+**Versão**: v1.7.35 — Junho/2026
+**Data**: 29 de Junho 2026
 **Status**: Completo
 

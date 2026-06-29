@@ -1,14 +1,16 @@
 # 01 - VISÃO GERAL E ESCOPO DO PROJETO
 
+> **Atualização Junho/2026 (v1.7.35):** Este documento é o **registro original de escopo** (Dez/2025) e foi preservado como referência histórica. O sistema evoluiu bastante desde então e hoje está **em produção**. Módulos atualmente em produção que não estão descritos abaixo: **Módulo de Serviços** (2 boards — Funil + Cobrança — com dashboards próprias e role "Serviço"), **Ligações/VoIP** (integração API4COM) + **Avaliação de Ligações com IA**, **Integração Microsoft 365** (Outlook/Teams/e-mail/transcrições), **Cadências de atividades**, **Automações** (editor visual + rodízio), **Gamificação**, **Transferências**, **Relatórios customizados** e **dashboards de SDR/Vendedor/Serviço/Cobrança**. Roles atuais: **Administrador, Gerente, Vendedor, SDR, Visualizador e Serviço**.
+
 ## 1. IDENTIFICAÇÃO DO PROJETO
 
 | Atributo | Descrição |
 |----------|-----------|
 | **Nome do Projeto** | HSGrowth CRM - Sistema de Gerenciamento de Relacionamento com Clientes |
 | **Sigla** | HSGrowth |
-| **Versão** | 1.0 |
+| **Versão** | 1.0 (registro original Dez/2025) — sistema hoje em **v1.7.35** |
 | **Data de Criação** | Dezembro 2025 |
-| **Status** | Pré-Desenvolvimento |
+| **Status** | Em produção — v1.7.35 (Junho/2026) |
 | **Gerente de Projeto** | [A Definir] |
 
 ---

@@ -1,5 +1,7 @@
 # 04 - CASOS DE USO E HISTÓRIAS DE USUÁRIO
 
+> **Atualização Junho/2026 (v1.7.35):** Este documento é o **registro original de casos de uso** (Dez/2025) e foi preservado como referência histórica. O sistema está hoje **em produção (v1.7.35)** e evoluiu bastante. Funcionalidades hoje em produção não descritas abaixo: **Módulo de Serviços** (2 boards — Funil + Cobrança — com dashboards próprias e role "Serviço"), **Ligações/VoIP** (integração API4COM) + **Avaliação de Ligações com IA**, **Integração Microsoft 365** (Outlook/Teams/e-mail/transcrições), **Cadências de atividades**, **Automações** (editor visual + rodízio), **Gamificação**, **Relatórios customizados** e **dashboards de SDR/Vendedor/Serviço/Cobrança**. Roles atuais: **Administrador, Gerente, Vendedor, SDR, Visualizador e Serviço**. **Nota de escopo:** as referências a *comissão / distribuição de comissão em cadeia* nos casos de uso abaixo (ex.: CU-018 e CU-019) foram **descontinuadas** — ver RF-162 do doc 02 ("Comissão em Cadeia" REMOVIDO do escopo: o sistema **não** calcula comissões ou bônus financeiros).
+
 ## 1. INTRODUÇÃO
 
 Este documento descreve os principais casos de uso e histórias de usuário do sistema HSGrowth CRM. Os casos de uso representam interações entre atores (usuários) e o sistema, enquanto as histórias de usuário descrevem funcionalidades do ponto de vista do usuário.
@@ -704,7 +706,7 @@ Este documento descreve os principais casos de uso e histórias de usuário do s
 - Histórico imutável foi registrado
 - Pontos foram atribuídos
 - Notificações foram enviadas
-- Vendedor original mantém vínculo (para comissão futura)
+- Vendedor original mantém vínculo no histórico (rastreabilidade) — ~~para comissão futura~~ *(comissão em cadeia foi REMOVIDA do escopo — ver RF-162; o sistema não calcula comissões)*
 
 **Prioridade**: ALTA
 
@@ -737,17 +739,19 @@ Este documento descreve os principais casos de uso e histórias de usuário do s
    - Tempo com cada vendedor
 5. Timeline destaca vendedor original e atual
 
-**Fluxo Alternativo (Rastrear Comissão)**:
-- Em 3: Se cartão foi convertido em venda
-- Sistema mostra distribuição de comissão:
-  - Maria (original): 10%
-  - João (intermediário): 5%
-  - Pedro (fechou): 15%
+> **DESCONTINUADO / FORA DE ESCOPO (Jun/2026):** O fluxo alternativo abaixo (distribuição de comissão em cadeia) **não faz parte do sistema** — a funcionalidade "Comissão em Cadeia" foi **REMOVIDA do escopo** (ver **RF-162** no doc 02). O sistema **não** calcula comissões ou bônus financeiros; ele fornece apenas **gamificação simbólica** (pontos/rankings/badges) e exportação de dados para que RH/Folha calcule bonificações externamente. O histórico de transferências permanece **apenas para rastreabilidade**, sem percentuais de comissão.
+
+~~**Fluxo Alternativo (Rastrear Comissão)**:~~ *(descontinuado — mantido apenas como registro histórico)*
+- ~~Em 3: Se cartão foi convertido em venda~~
+- ~~Sistema mostra distribuição de comissão:~~
+  - ~~Maria (original): 10%~~
+  - ~~João (intermediário): 5%~~
+  - ~~Pedro (fechou): 15%~~
 
 **Pós-condições**:
 - Histórico completo é exibido
 - Timeline é visual e fácil de entender
-- Comissões são transparentes
+- ~~Comissões são transparentes~~ *(comissão em cadeia removida do escopo — ver RF-162)*
 
 **Prioridade**: MÉDIA
 
@@ -1035,7 +1039,7 @@ Este documento descreve os principais casos de uso e histórias de usuário do s
 - Vendedor original ganha 25 pontos
 - Novo responsável ganha 25 pontos
 - Ambos recebem notificações
-- Se cartão virar venda, vendedor original recebe comissão parcial
+- ~~Se cartão virar venda, vendedor original recebe comissão parcial~~ *(DESCONTINUADO — comissão em cadeia removida do escopo; ver RF-162)*
 
 **Prioridade**: ALTA
 
@@ -1073,7 +1077,7 @@ Este documento descreve os principais casos de uso e histórias de usuário do s
 - Para cada transferência: de quem, para quem, data, motivo, notas
 - Mostra tempo que cartão ficou com cada vendedor
 - Destaca vendedor original e atual
-- Se cartão foi vendido, mostra distribuição de comissão
+- ~~Se cartão foi vendido, mostra distribuição de comissão~~ *(DESCONTINUADO — comissão em cadeia removida do escopo; ver RF-162)*
 
 **Prioridade**: MÉDIA
 
