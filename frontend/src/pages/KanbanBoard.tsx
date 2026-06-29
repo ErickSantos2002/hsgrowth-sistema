@@ -945,6 +945,7 @@ const KanbanBoard: React.FC = () => {
           case "future":   if (card.pending_tasks_status !== "future")   return false; break;
           case "no_task":  if ((card.pending_tasks_count ?? 0) > 0)      return false; break;
           case "parado":   if (!isStuck)                                 return false; break;
+          case "parado7":  if (!card.is_stuck_7d)                        return false; break;
           case "nutricao": if (!card.automacao01)                        return false; break;
         }
       }
@@ -1350,6 +1351,7 @@ const KanbanBoard: React.FC = () => {
                   { value: "future", label: "🟣 Atividade Futura" },
                   { value: "no_task", label: "⚪ Sem Atividade" },
                   { value: "parado", label: "🔴 Parado 3d+" },
+                  { value: "parado7", label: "🟥 Parado 7d+" },
                   { value: "nutricao", label: "🟠 Em Nutrição" },
                 ]}
                 onChange={setCardTagFilter}

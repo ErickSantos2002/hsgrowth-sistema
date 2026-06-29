@@ -343,7 +343,9 @@ class CardService:
 
             # Cards parados há mais de 3 dias (sem atividade, anotação ou mudança de etapa no período)
             three_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=3)
+            seven_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
             stuck_card_ids: set = set()
+            stuck_7d_card_ids: set = set()
             if card_ids:
                 # IDs de cards que tiveram alguma tarefa criada ou concluída nos últimos 3 dias
                 active_by_task = {
@@ -392,6 +394,34 @@ class CardService:
                 # Parado 3d+: teve atividade deliberada (task/nota) mas não se movimentou nos últimos 3 dias
                 # Cards sem nenhuma task ou nota (leads novos sem contato) ficam fora da contagem
                 stuck_card_ids = {cid for cid in card_ids if cid in has_history and cid not in active_ids}
+
+                # Parado 7d+: mesma regra, janela de 7 dias (subconjunto de 3d+).
+                active_by_task_7d = {
+                    row.card_id
+                    for row in self.db.query(CardTask.card_id).filter(
+                        CardTask.card_id.in_(card_ids),
+                        sa_or_(
+                            CardTask.created_at > seven_days_ago,
+                            CardTask.completed_at > seven_days_ago,
+                        ),
+                    ).distinct().all()
+                }
+                active_by_note_7d = {
+                    row.card_id
+                    for row in self.db.query(CardNote.card_id).filter(
+                        CardNote.card_id.in_(card_ids),
+                        CardNote.created_at > seven_days_ago,
+                    ).distinct().all()
+                }
+                active_by_stage_7d = {
+                    row.card_id
+                    for row in self.db.query(CardListHistory.card_id).filter(
+                        CardListHistory.card_id.in_(card_ids),
+                        CardListHistory.entered_at > seven_days_ago,
+                    ).distinct().all()
+                }
+                active_ids_7d = active_by_task_7d | active_by_note_7d | active_by_stage_7d
+                stuck_7d_card_ids = {cid for cid in card_ids if cid in has_history and cid not in active_ids_7d}
 
             if card_ids:
                 # Busca todas as tasks pendentes com suas datas
@@ -487,6 +517,7 @@ class CardService:
                         contact_info=card.contact_info,
                         updated_at=card.updated_at,
                         is_stuck_3d=card.id in stuck_card_ids,
+                        is_stuck_7d=card.id in stuck_7d_card_ids,
                     )
                 )
 

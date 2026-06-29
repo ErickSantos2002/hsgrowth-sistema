@@ -407,7 +407,8 @@ const CollaboratorStack: React.FC<{ people: { id: number; name: string }[] }> = 
 
 const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail }) => {
   const status = card.pending_status || "none";
-  const stuck = card.is_stuck_3d;
+  const stuck7d = !!card.is_stuck_7d;
+  const stuck = !!card.is_stuck_3d && !stuck7d; // 7d+ tem prioridade (vermelho mais escuro)
   const pendingCount = card.pending_count || 0;
 
   const topBadgeCls =
@@ -425,7 +426,9 @@ const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail }) =>
       data-service-card
       onClick={onOpenDetail}
       className={`relative cursor-pointer rounded-lg border p-3.5 shadow-sm transition-all hover:shadow-md ${
-        stuck ? "border-red-500/40 bg-white dark:border-red-500/30 dark:bg-red-950/20" : "border-gray-200 bg-white dark:border-slate-700/30 dark:bg-white/5"
+        stuck7d ? "border-red-700/50 bg-white dark:border-red-600/40 dark:bg-red-950/40"
+        : stuck ? "border-red-500/40 bg-white dark:border-red-500/30 dark:bg-red-950/20"
+        : "border-gray-200 bg-white dark:border-slate-700/30 dark:bg-white/5"
       }`}
     >
       {/* Indicador de atividades pendentes (canto superior direito) */}
@@ -447,7 +450,8 @@ const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail }) =>
 
       {/* Badges de atividade / parado */}
       <div className="mb-2 flex flex-wrap gap-1.5">
-        {stuck && <CardBadge cls="bg-red-500/15 text-red-500 dark:text-red-400" icon={<AlarmClock size={11} />} label="Parado 3d+" title="Card sem movimentação há mais de 3 dias" />}
+        {stuck7d && <CardBadge cls="bg-red-800 text-red-100" icon={<AlarmClock size={11} />} label="Parado 7d+" title="Card sem movimentação há mais de 7 dias" />}
+        {stuck && <CardBadge cls="bg-red-500/10 text-red-400 dark:text-red-300" icon={<AlarmClock size={11} />} label="Parado 3d+" title="Card sem movimentação há mais de 3 dias" />}
         {status === "overdue" && <CardBadge cls="bg-red-500/15 text-red-500 dark:text-red-400" icon={<CheckSquare size={11} />} label="Atrasada" />}
         {status === "today" && <CardBadge cls="bg-green-500/15 text-green-600 dark:text-green-400" icon={<CheckSquare size={11} />} label="Para Hoje" />}
         {status === "future" && <CardBadge cls="bg-purple-500/15 text-purple-600 dark:text-purple-400" icon={<CheckSquare size={11} />} label="Futura" />}
@@ -884,6 +888,7 @@ const ServiceKanban: React.FC = () => {
       if (fTag === "futura" && c.pending_status !== "future") return false;
       if (fTag === "sem" && (c.pending_count || 0) !== 0) return false;
       if (fTag === "parado" && !c.is_stuck_3d) return false;
+      if (fTag === "parado7" && !c.is_stuck_7d) return false;
     }
     // Criação (created_at)
     if (fCriacao === "custom") {
@@ -1054,6 +1059,7 @@ const ServiceKanban: React.FC = () => {
                 { value: "futura", label: "🟣 Atividade Futura" },
                 { value: "sem", label: "⚪ Sem Atividade" },
                 { value: "parado", label: "🔴 Parado 3d+" },
+                { value: "parado7", label: "🟥 Parado 7d+" },
               ]} />
             </div>
             <div className="min-w-[160px]">

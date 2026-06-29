@@ -225,6 +225,11 @@ class ServiceBoardService:
         recent_activity = {cid for (cid,) in db.query(ServiceCardActivity.service_card_id)
                            .filter(ServiceCardActivity.service_card_id.in_(card_ids),
                                    ServiceCardActivity.created_at >= threshold).distinct().all()}
+        # Parado 7d+: nenhuma atividade nos últimos 7 dias (janela maior = subconjunto de 3d+)
+        threshold_7d = now - timedelta(days=7)
+        recent_activity_7d = {cid for (cid,) in db.query(ServiceCardActivity.service_card_id)
+                              .filter(ServiceCardActivity.service_card_id.in_(card_ids),
+                                      ServiceCardActivity.created_at >= threshold_7d).distinct().all()}
 
         # Colaboradores: quem agiu em cada card (modelo colaborativo — sem dono único)
         collab_rows = (
@@ -251,6 +256,7 @@ class ServiceBoardService:
                 "pending_count": p["count"] if p else 0,
                 "has_activity": cid in has_activity,
                 "recent_activity": cid in recent_activity,
+                "recent_activity_7d": cid in recent_activity_7d,
                 "collaborators": [{"id": uid, "name": nm} for uid, nm in (collab_map.get(cid) or {}).items()],
             }
         return result
@@ -263,12 +269,14 @@ class ServiceBoardService:
         total_pages = max(1, (total + page_size - 1) // page_size)
 
         threshold = datetime.utcnow() - timedelta(days=3)
+        threshold_7d = datetime.utcnow() - timedelta(days=7)
         agg = self._cards_aggregates([c.id for c in cards])
 
         items = []
         for c in cards:
             a = agg.get(c.id, {})
             is_stuck = bool(a.get("has_activity") and not a.get("recent_activity") and c.updated_at and c.updated_at < threshold)
+            is_stuck_7d = bool(a.get("has_activity") and not a.get("recent_activity_7d") and c.updated_at and c.updated_at < threshold_7d)
             items.append(ServiceCardResponse(
                 id=c.id,
                 list_id=c.list_id,
@@ -292,6 +300,7 @@ class ServiceBoardService:
                 pending_status=a.get("pending_status", "none"),
                 pending_count=a.get("pending_count", 0),
                 is_stuck_3d=is_stuck,
+                is_stuck_7d=is_stuck_7d,
                 collaborators=a.get("collaborators", []),
             ))
 

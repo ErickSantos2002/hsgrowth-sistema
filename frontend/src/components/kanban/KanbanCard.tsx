@@ -51,15 +51,18 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
     return "Aberto";
   };
 
-  // "Parado 3d+" — calculado no backend com a mesma lógica do dashboard
-  const isStuck = !!card.is_stuck_3d;
+  // "Parado" — calculado no backend. 7d+ tem prioridade sobre 3d+ (vermelho mais escuro).
+  const isStuck7d = !!card.is_stuck_7d;
+  const isStuck = !!card.is_stuck_3d && !isStuck7d;
 
   return (
     <div
       data-kanban-card
       onClick={onClick}
       className={`group relative cursor-pointer rounded-lg border p-3.5 shadow-sm transition-all hover:shadow-md ${
-        isStuck
+        isStuck7d
+          ? "border-red-700/60 bg-white hover:border-red-700/80 hover:bg-red-100/40 dark:border-red-600/50 dark:bg-red-950/45 dark:hover:border-red-600/70 dark:hover:bg-red-950/55"
+          : isStuck
           ? "border-red-500/40 bg-white hover:border-red-500/60 hover:bg-red-50/20 dark:border-red-500/30 dark:bg-red-950/20 dark:hover:border-red-500/45 dark:hover:bg-red-950/30"
           : card.automacao01
           ? "border-orange-500/40 bg-white hover:border-orange-500/60 hover:bg-orange-50/30 dark:border-orange-500/25 dark:bg-orange-950/20 dark:hover:border-orange-500/40 dark:hover:bg-orange-950/30"
@@ -125,10 +128,21 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
           </span>
         )}
 
-        {/* Badge parado 3d+ */}
+        {/* Badge parado 7d+ (vermelho mais escuro) */}
+        {isStuck7d && (
+          <span
+            className="flex items-center gap-0.5 rounded bg-red-800 px-1.5 py-0.5 text-[10px] font-medium text-red-100"
+            title="Card sem movimentação há mais de 7 dias"
+          >
+            <AlarmClock size={9} />
+            Parado 7d+
+          </span>
+        )}
+
+        {/* Badge parado 3d+ (vermelho mais claro) */}
         {isStuck && (
           <span
-            className="flex items-center gap-0.5 rounded bg-red-500/15 px-1.5 py-0.5 text-[10px] font-medium text-red-500 dark:text-red-400"
+            className="flex items-center gap-0.5 rounded bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-400 dark:text-red-300"
             title="Card sem movimentação há mais de 3 dias"
           >
             <AlarmClock size={9} />

@@ -141,6 +141,7 @@ class ServiceCardResponse(ServiceCardBase):
     pending_status: Optional[str] = None   # overdue | today | future | none
     pending_count: Optional[int] = None
     is_stuck_3d: Optional[bool] = None
+    is_stuck_7d: Optional[bool] = None  # parado 7d+ (subconjunto de is_stuck_3d)
     collaborators: Optional[List[dict]] = None  # [{id, name}] — quem agiu no card
 
     model_config = {"from_attributes": True}

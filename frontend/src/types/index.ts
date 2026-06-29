@@ -98,6 +98,7 @@ export interface Card {
   position: number;
   value: number | null;
   is_stuck_3d: boolean;
+  is_stuck_7d?: boolean;
   due_date: string | null;
   contact_info: Record<string, any> | null;
   payment_info: {
