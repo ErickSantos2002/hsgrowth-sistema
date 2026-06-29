@@ -1223,28 +1223,6 @@ class CardService:
         if source_index is None or target_index is None:
             return  # Não conseguiu mapear, deixa passar
 
-        # ── Board 6 (Prospecção): etapas identificadas por NOME ─────────────────
-        # As regras do board 6 são baseadas no NOME da etapa (não na posição), para
-        # que reordenar as listas no board NÃO quebre o pipeline/validações.
-        def _p6_key(name: str):
-            n = (name or "").strip().lower()
-            if "lead" in n:
-                return "lead_novo"
-            if "prospec" in n:
-                return "prospeccao"
-            if "conectado" in n:
-                return "conectado"
-            if "reagend" in n:
-                return "reagendamento"
-            if "agendado" in n:
-                return "agendado"
-            return None
-
-        src_key = _p6_key(source_list.name) if source_list.board_id == 6 else None
-        tgt_key = _p6_key(target_list.name) if source_list.board_id == 6 else None
-        # Nível no pipeline (para validações cumulativas). Reagendamento/Perdido ficam de fora.
-        P6_LEVEL = {"lead_novo": 0, "prospeccao": 1, "conectado": 2, "agendado": 3}
-
         # ── Validação de transição ──────────────────────────────────────────────
         #
         # Board 6: mapa explícito de transições (source_index → [target_indices])
@@ -1253,24 +1231,23 @@ class CardService:
         # Board outros: regra genérica — só pode avançar para a próxima posição.
         # ───────────────────────────────────────────────────────────────────────
         if source_list.board_id == 6:
-            # Mapa de transições permitidas por NOME de etapa no board 6.
-            # "Reagendamento" não recebe cards pelo pipeline normal — é populado
-            # exclusivamente pelo botão No Show no board de Aquisição.
-            # Retorno de uma etapa também é permitido. (Negócio Perdido é terminal e
-            # nem chega aqui — tratado fora desta validação.)
+            # Mapa de transições permitidas por índice de origem no board 6.
+            # "Reagendamento" (índice 3) não recebe cards pelo pipeline normal —
+            # é populado exclusivamente pelo botão No Show no board de Aquisição.
+            # Retorno de uma etapa também é permitido (exceto pular Reagendamento ao voltar).
             allowed_transitions = {
-                "lead_novo":     {"prospeccao"},                 # Lead Novo     → Prospecção (só avança)
-                "prospeccao":    {"lead_novo", "conectado"},     # Prospecção    → Lead Novo (volta) ou Conectado (avança)
-                "conectado":     {"prospeccao", "agendado"},     # Conectado     → Prospecção (volta) ou Agendado (avança)
-                "reagendamento": {"agendado"},                   # Reagendamento → Agendado (após No Show)
-                "agendado":      {"conectado"},                  # Agendado      → Conectado (volta)
+                0: [1],       # Lead Novo      → Prospecção (só avança)
+                1: [0, 2],    # Prospecção     → Lead Novo (volta) ou Conectado (avança)
+                2: [1, 4],    # Conectado      → Prospecção (volta) ou Agendado (avança)
+                3: [4],       # Reagendamento  → Agendado (SDR reagendando após No Show)
+                4: [2],       # Agendado       → Conectado (volta, pula Reagendamento pois não é etapa normal)
             }
-            allowed = allowed_transitions.get(src_key, set())
+            allowed = allowed_transitions.get(source_index, [])
 
-            if tgt_key not in allowed:
-                # Indica qual é o destino correto para a etapa de origem (por nome)
+            if target_index not in allowed:
+                # Indica qual é o destino correto para a etapa de origem
                 correct_targets = ", ".join(
-                    f"'{l.name}'" for l in board_lists if _p6_key(l.name) in allowed
+                    f"'{board_lists[i].name}'" for i in allowed if i < len(board_lists)
                 )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -1312,8 +1289,7 @@ class CardService:
         # Isso garante que campos obrigatórios permaneçam preenchidos mesmo após
         # o avanço inicial. Produto só é exigido a partir da etapa 2.
         #
-        if (source_list.board_id == 6 and src_key in ("lead_novo", "prospeccao", "conectado")
-                and tgt_key is not None and P6_LEVEL.get(tgt_key, -1) > P6_LEVEL[src_key]):
+        if source_list.board_id == 6 and source_index in (0, 1, 2) and target_index > source_index:
             missing = []
             MIN_NOTE_LENGTH = 20
 
@@ -1334,7 +1310,7 @@ class CardService:
             # ── Etapa 1: Prospecção → Conectado (e etapas seguintes) ──────────
             # Empresa vinculada (+ nome/tipo de relacionamento/segmento) e
             # evidência de contato efetivo (ligação, whats, e-mail ou nota).
-            if P6_LEVEL[src_key] >= 1:
+            if source_index >= 1:
                 # Empresa: vínculo + nome + tipo de relacionamento + segmento
                 if not card.client_id:
                     missing.append("empresa vinculada ao negócio")
@@ -1383,7 +1359,7 @@ class CardService:
             # ── Etapa 2: Conectado → Agendado (e etapas seguintes) ────────────
             # Produto, vendedor, dados do contato, implementação, pessoas para manusear,
             # colaboradores, status do cliente e reunião se aparelho Phoebus
-            if P6_LEVEL[src_key] >= 2:
+            if source_index >= 2:
                 # Dados detalhados do contato (exigidos aqui, não em Lead Novo)
                 if card.person_id:
                     person = self.db.query(Person).filter(Person.id == card.person_id).first()
@@ -1477,7 +1453,7 @@ class CardService:
         # o No Show marca a reunião anterior como concluída, então o card chega aqui
         # sem nenhuma task de reunião pendente. O SDR precisa criar uma nova.
         # Condição: task de reunião com is_completed = False (nova reunião agendada)
-        elif source_list.board_id == 6 and src_key == "reagendamento":
+        elif source_list.board_id == 6 and source_index == 3:
             has_pending_meeting_task = (
                 self.db.query(CardTask)
                 .filter(

@@ -40,10 +40,6 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "improvement",
         text: "Prospecção — Empresa: a obrigatoriedade de vincular a empresa (nome, tipo de relacionamento e segmento) passou da etapa 'Lead Novo → Prospecção' para 'Prospecção → Conectado'.",
       },
-      {
-        type: "improvement",
-        text: "Listas dos boards — Reordenação: as regras de avanço do board de Prospecção passam a se basear no nome da etapa (não na posição). Isso permite reordenar as listas do board sem quebrar o funil.",
-      },
     ],
   },
   {

@@ -15,7 +15,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Melhorado
 - **Prospecção — Empresa:** a obrigatoriedade de vincular a empresa (nome, tipo de relacionamento e segmento) passou de "Lead Novo → Prospecção" para "Prospecção → Conectado".
-- **Listas dos boards — Reordenação:** as regras de avanço do board de Prospecção passam a se basear no nome da etapa (não na posição), permitindo reordenar as listas sem quebrar o funil.
 
 ---
 
