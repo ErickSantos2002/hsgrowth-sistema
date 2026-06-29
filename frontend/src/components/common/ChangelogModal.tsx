@@ -25,6 +25,28 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.7.36",
+    date: "26/06/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Etiqueta 'Parado 7d+': cards parados há 7 dias ou mais ganham uma etiqueta e destaque em vermelho mais escuro, separando-os dos 'Parado 3d+'. Há também um novo filtro de etiqueta 'Parado 7d+' nos boards de Vendas e Serviço.",
+      },
+      {
+        type: "fix",
+        text: "Prospecção — Reunião: a exigência de agendar uma reunião para avançar de 'Conectado' para 'Agendado' passou a valer apenas quando o aparelho Phoebus está vinculado. Acessórios (bocais, impressoras, suportes, etc.) não disparam mais essa regra.",
+      },
+      {
+        type: "improvement",
+        text: "Prospecção — Empresa: a obrigatoriedade de vincular a empresa (nome, tipo de relacionamento e segmento) passou da etapa 'Lead Novo → Prospecção' para 'Prospecção → Conectado'.",
+      },
+      {
+        type: "improvement",
+        text: "Listas dos boards — Reordenação: as regras de avanço do board de Prospecção passam a se basear no nome da etapa (não na posição). Isso permite reordenar as listas do board sem quebrar o funil.",
+      },
+    ],
+  },
+  {
     version: "1.7.35",
     date: "18/06/2026",
     entries: [

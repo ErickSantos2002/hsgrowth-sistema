@@ -5,6 +5,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.7.36] — 26/06/2026
+
+### Adicionado
+- **Etiqueta "Parado 7d+":** cards parados há 7 dias ou mais ganham uma etiqueta e destaque em vermelho mais escuro, separando-os dos "Parado 3d+". Novo filtro de etiqueta "Parado 7d+" nos boards de Vendas e Serviço.
+
+### Corrigido
+- **Prospecção — Reunião:** a exigência de agendar reunião para avançar de "Conectado" para "Agendado" passou a valer apenas quando o aparelho Phoebus está vinculado; acessórios (bocais, impressoras, suportes) não disparam mais a regra.
+
+### Melhorado
+- **Prospecção — Empresa:** a obrigatoriedade de vincular a empresa (nome, tipo de relacionamento e segmento) passou de "Lead Novo → Prospecção" para "Prospecção → Conectado".
+- **Listas dos boards — Reordenação:** as regras de avanço do board de Prospecção passam a se basear no nome da etapa (não na posição), permitindo reordenar as listas sem quebrar o funil.
+
+---
+
 ## [1.7.35] — 18/06/2026
 
 ### Adicionado
