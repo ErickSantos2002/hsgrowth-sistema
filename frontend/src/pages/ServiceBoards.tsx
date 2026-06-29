@@ -306,6 +306,8 @@ const ServiceBoardCard: React.FC<ServiceBoardCardProps> = ({
     new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 
   const boardColor = board.color || "#8B5CF6";
+  // Ícone escolhido no board (cai em Chave/Wrench se não houver correspondência).
+  const BoardIcon = iconOptions.find((o) => o.value === board.icon)?.icon || Wrench;
 
   return (
     <div
@@ -329,7 +331,7 @@ const ServiceBoardCard: React.FC<ServiceBoardCardProps> = ({
         {/* Título */}
         <div className="flex items-center gap-3 pr-20">
           <div className="rounded-lg p-2" style={{ backgroundColor: `${boardColor}20` }}>
-            <Wrench size={24} style={{ color: boardColor }} />
+            <BoardIcon size={24} style={{ color: boardColor }} />
           </div>
           <h3
             className="flex-1 cursor-pointer text-xl font-bold text-slate-900 transition-colors group-hover:text-violet-400 dark:text-white"
