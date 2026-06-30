@@ -197,6 +197,18 @@ class ServiceBoardService:
         )
         value_by_card = {cid: float(v or 0) for cid, v in value_rows}
 
+        # Produtos por card (id + nome) — para o filtro de produto no Kanban
+        from app.models.product import Product
+        prod_rows = (
+            db.query(ServiceCardProduct.service_card_id, Product.id, Product.name)
+            .join(Product, ServiceCardProduct.product_id == Product.id)
+            .filter(ServiceCardProduct.service_card_id.in_(card_ids))
+            .all()
+        )
+        products_by_card: dict = {}
+        for cid, pid, pname in prod_rows:
+            products_by_card.setdefault(cid, []).append({"id": pid, "name": pname or ""})
+
         # Atividades pendentes (category=atividade, não concluída)
         pending_rows = (
             db.query(ServiceCardActivity.service_card_id, ServiceCardActivity.due_date)
@@ -257,6 +269,7 @@ class ServiceBoardService:
                 "has_activity": cid in has_activity,
                 "recent_activity": cid in recent_activity,
                 "recent_activity_7d": cid in recent_activity_7d,
+                "products": products_by_card.get(cid, []),
                 "collaborators": [{"id": uid, "name": nm} for uid, nm in (collab_map.get(cid) or {}).items()],
             }
         return result
@@ -302,6 +315,7 @@ class ServiceBoardService:
                 is_stuck_3d=is_stuck,
                 is_stuck_7d=is_stuck_7d,
                 collaborators=a.get("collaborators", []),
+                products=a.get("products", []),
             ))
 
         return ServiceCardListResponse(

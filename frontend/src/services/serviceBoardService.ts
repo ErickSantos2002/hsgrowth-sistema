@@ -75,6 +75,7 @@ export interface ServiceCard {
   is_stuck_3d?: boolean;
   is_stuck_7d?: boolean;
   collaborators?: { id: number; name: string }[];
+  products?: { id: number; name: string }[];
   position: number;
   is_deleted: boolean;
   created_at: string;

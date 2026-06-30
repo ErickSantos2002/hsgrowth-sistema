@@ -640,6 +640,7 @@ const ServiceKanban: React.FC = () => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [fStatus, setFStatus] = useState("abertos"); // abertos | todos | ganhos | perdidos
   const [fAssignee, setFAssignee] = useState("");
+  const [fProduct, setFProduct] = useState("");
   const [fValue, setFValue] = useState("");
   const [fTag, setFTag] = useState("");
   const [fCriacao, setFCriacao] = useState("");
@@ -651,11 +652,11 @@ const ServiceKanban: React.FC = () => {
   const [filtersReady, setFiltersReady] = useState(false);
 
   const clearFilters = () => {
-    setFStatus("abertos"); setFAssignee(""); setFValue(""); setFTag("");
+    setFStatus("abertos"); setFAssignee(""); setFProduct(""); setFValue(""); setFTag("");
     setFCriacao(""); setFCriacaoStart(""); setFCriacaoEnd("");
     setFFechamento(""); setFFechamentoStart(""); setFFechamentoEnd("");
   };
-  const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
+  const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fProduct || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
 
   const numId = Number(boardId);
 
@@ -703,6 +704,7 @@ const ServiceKanban: React.FC = () => {
         const s = JSON.parse(raw);
         setFStatus(s.fStatus ?? "abertos");
         setFAssignee(s.fAssignee ?? "");
+        setFProduct(s.fProduct ?? "");
         setFValue(s.fValue ?? "");
         setFTag(s.fTag ?? "");
         setFCriacao(s.fCriacao ?? "");
@@ -719,9 +721,9 @@ const ServiceKanban: React.FC = () => {
   // Salva filtros quando mudam
   useEffect(() => {
     if (!numId || !filtersReady) return;
-    const s = { fStatus, fAssignee, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
+    const s = { fStatus, fAssignee, fProduct, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
     try { localStorage.setItem(`service_kanban_filters_${numId}`, JSON.stringify(s)); } catch { /* ignora */ }
-  }, [numId, filtersReady, fStatus, fAssignee, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
+  }, [numId, filtersReady, fStatus, fAssignee, fProduct, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
 
   // Scroll drag
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -873,6 +875,8 @@ const ServiceKanban: React.FC = () => {
     if (fStatus === "perdidos" && !isLostCard(c)) return false;
     // Pós Vendas (colaborador que agiu no card)
     if (fAssignee && !(c.collaborators || []).some((p) => String(p.id) === fAssignee)) return false;
+    // Produto (card precisa ter o produto selecionado vinculado)
+    if (fProduct && !(c.products || []).some((p) => String(p.id) === fProduct)) return false;
     // Valor
     if (fValue) {
       const v = c.value || 0;
@@ -909,6 +913,14 @@ const ServiceKanban: React.FC = () => {
     }
     return true;
   });
+
+  // Responsável: só usuários com role "serviço" (Pós Vendas)
+  const serviceUsers = users.filter((u) => u.role === "service");
+
+  // Produtos para o filtro: distintos, montados a partir dos produtos dos cards do board
+  const productOptions = Array.from(
+    new Map(cards.flatMap((c) => c.products || []).map((p) => [p.id, p])).values()
+  ).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -1039,7 +1051,13 @@ const ServiceKanban: React.FC = () => {
             <div className="min-w-[170px]">
               <SelectMenu size="sm" value={fAssignee} onChange={setFAssignee} options={[
                 { value: "", label: "Todos os Pós Vendas" },
-                ...users.map((u) => ({ value: String(u.id), label: u.name })),
+                ...serviceUsers.map((u) => ({ value: String(u.id), label: u.name })),
+              ]} />
+            </div>
+            <div className="min-w-[170px]">
+              <SelectMenu size="sm" value={fProduct} onChange={setFProduct} options={[
+                { value: "", label: "Qualquer produto" },
+                ...productOptions.map((p) => ({ value: String(p.id), label: p.name })),
               ]} />
             </div>
             <div className="min-w-[150px]">
