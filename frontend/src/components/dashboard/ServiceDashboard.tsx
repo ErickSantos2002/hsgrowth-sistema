@@ -137,14 +137,14 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
 
       {/* ── KPIs (5 em cima · 4 embaixo, cada linha de canto a canto) ── */}
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <KpiCard icon={<Briefcase size={18} className="text-violet-400" />} iconBg="bg-violet-500/20" label="Negócios ativos" value={data.active_count} sub="Em aberto no pipeline" highlight="purple" />
           <KpiCard icon={<DollarSign size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Pipeline (em aberto)" value={data.pipeline_value} format="currency" sub="Valor em aberto no período" highlight="green" />
           <KpiCard icon={<CheckCircle2 size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Ganhos no período" value={data.won_count} sub={`${fmtMoney(data.won_value)} em receita`} highlight="green" />
           <KpiCard icon={<XCircle size={18} className="text-red-400" />} iconBg="bg-red-500/20" label="Perdidos no período" value={data.lost_count} sub="Negócios perdidos no período" highlight="red" />
           <KpiCard icon={<ActivityIcon size={18} className="text-blue-400" />} iconBg="bg-blue-500/20" label="Atividades no período" value={data.activities_count} sub="Registradas no período" highlight="blue" />
         </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard icon={<AlarmClock size={18} className="text-amber-400" />} iconBg="bg-amber-500/20" label="Atrasados 3d+" value={data.stuck_count} sub="Atividade vencida há 3+ dias" highlight="orange" />
           <KpiCard icon={<TrendingUp size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Taxa de ganho" value={data.win_rate} format="percent" sub="Ganhos sobre fechados" highlight="green" />
           <KpiCard icon={<DollarSign size={18} className="text-sky-400" />} iconBg="bg-sky-500/20" label="Ticket médio" value={data.avg_ticket} format="currency" sub="Valor médio por negócio ganho" highlight="blue" />
