@@ -44,6 +44,8 @@ export interface ServiceBusinessInfo {
   acquisition_channel_detail?: string; // Detalhamento
   modality?: "venda" | "locacao" | ""; // É venda ou locação
   should_invoice?: boolean | null; // Deve ser faturado? (aluguel)
+  // Cobrança (board 2): tipo de cobrança — aparelhos já atrasados ou a vencer
+  collection_type?: "a_vencer" | "atrasados" | "";
   // Triagem (etapa Oportunidade Existente)
   service_type?: "recalibracao" | "manutencao" | "ambos" | ""; // Recalibração e/ou Manutenção
   device_received?: boolean | null; // Aparelho recebido pela expedição?

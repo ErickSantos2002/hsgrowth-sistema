@@ -450,6 +450,8 @@ const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail }) =>
 
       {/* Badges de atividade / parado */}
       <div className="mb-2 flex flex-wrap gap-1.5">
+        {card.business_info?.collection_type === "a_vencer" && <CardBadge cls="bg-blue-500/15 text-blue-600 dark:text-blue-300" icon={<Calendar size={11} />} label="A vencer" title="Cobrança de aparelhos a vencer" />}
+        {card.business_info?.collection_type === "atrasados" && <CardBadge cls="bg-orange-500/15 text-orange-600 dark:text-orange-300" icon={<AlarmClock size={11} />} label="Atrasados" title="Cobrança de aparelhos atrasados" />}
         {stuck7d && <CardBadge cls="bg-red-800 text-red-100" icon={<AlarmClock size={11} />} label="Parado 7d+" title="Card sem movimentação há mais de 7 dias" />}
         {stuck && <CardBadge cls="bg-red-500/10 text-red-400 dark:text-red-300" icon={<AlarmClock size={11} />} label="Parado 3d+" title="Card sem movimentação há mais de 3 dias" />}
         {status === "overdue" && <CardBadge cls="bg-red-500/15 text-red-500 dark:text-red-400" icon={<CheckSquare size={11} />} label="Atrasada" />}
@@ -641,6 +643,7 @@ const ServiceKanban: React.FC = () => {
   const [fStatus, setFStatus] = useState("abertos"); // abertos | todos | ganhos | perdidos
   const [fAssignee, setFAssignee] = useState("");
   const [fProduct, setFProduct] = useState("");
+  const [fCollection, setFCollection] = useState(""); // tipo de cobrança (só board 2)
   const [fValue, setFValue] = useState("");
   const [fTag, setFTag] = useState("");
   const [fCriacao, setFCriacao] = useState("");
@@ -652,11 +655,11 @@ const ServiceKanban: React.FC = () => {
   const [filtersReady, setFiltersReady] = useState(false);
 
   const clearFilters = () => {
-    setFStatus("abertos"); setFAssignee(""); setFProduct(""); setFValue(""); setFTag("");
+    setFStatus("abertos"); setFAssignee(""); setFProduct(""); setFCollection(""); setFValue(""); setFTag("");
     setFCriacao(""); setFCriacaoStart(""); setFCriacaoEnd("");
     setFFechamento(""); setFFechamentoStart(""); setFFechamentoEnd("");
   };
-  const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fProduct || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
+  const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fProduct || !!fCollection || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
 
   const numId = Number(boardId);
 
@@ -705,6 +708,7 @@ const ServiceKanban: React.FC = () => {
         setFStatus(s.fStatus ?? "abertos");
         setFAssignee(s.fAssignee ?? "");
         setFProduct(s.fProduct ?? "");
+        setFCollection(s.fCollection ?? "");
         setFValue(s.fValue ?? "");
         setFTag(s.fTag ?? "");
         setFCriacao(s.fCriacao ?? "");
@@ -721,9 +725,9 @@ const ServiceKanban: React.FC = () => {
   // Salva filtros quando mudam
   useEffect(() => {
     if (!numId || !filtersReady) return;
-    const s = { fStatus, fAssignee, fProduct, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
+    const s = { fStatus, fAssignee, fProduct, fCollection, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
     try { localStorage.setItem(`service_kanban_filters_${numId}`, JSON.stringify(s)); } catch { /* ignora */ }
-  }, [numId, filtersReady, fStatus, fAssignee, fProduct, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
+  }, [numId, filtersReady, fStatus, fAssignee, fProduct, fCollection, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
 
   // Scroll drag
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -877,6 +881,11 @@ const ServiceKanban: React.FC = () => {
     if (fAssignee && !(c.collaborators || []).some((p) => String(p.id) === fAssignee)) return false;
     // Produto (card precisa ter o produto selecionado vinculado)
     if (fProduct && !(c.products || []).some((p) => String(p.id) === fProduct)) return false;
+    // Tipo de cobrança (só board 2)
+    if (fCollection) {
+      const ct = c.business_info?.collection_type || "";
+      if (fCollection === "sem" ? !!ct : ct !== fCollection) return false;
+    }
     // Valor
     if (fValue) {
       const v = c.value || 0;
@@ -1060,6 +1069,16 @@ const ServiceKanban: React.FC = () => {
                 ...productOptions.map((p) => ({ value: String(p.id), label: p.name })),
               ]} />
             </div>
+            {numId === 2 && (
+              <div className="min-w-[200px]">
+                <SelectMenu size="sm" value={fCollection} onChange={setFCollection} options={[
+                  { value: "", label: "Todos os tipos de cobrança" },
+                  { value: "a_vencer", label: "🔵 Aparelhos a vencer" },
+                  { value: "atrasados", label: "🟠 Aparelhos atrasados" },
+                  { value: "sem", label: "Sem tipo de cobrança" },
+                ]} />
+              </div>
+            )}
             <div className="min-w-[150px]">
               <SelectMenu size="sm" value={fValue} onChange={setFValue} options={[
                 { value: "", label: "Qualquer valor" },

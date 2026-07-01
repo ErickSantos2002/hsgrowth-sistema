@@ -125,6 +125,8 @@ const ServiceSummarySection: React.FC<{
     setBiz((prev) => ({ ...prev, [k]: v }));
   const serviceTypeLabel = (v?: string) => (v === "recalibracao" ? "Recalibração" : v === "manutencao" ? "Manutenção" : v === "ambos" ? "Ambos" : "Não definido");
   const closingLabel = (v?: string) => (v === "faturamento_direto" ? "Faturamento direto" : v === "pedido" ? "Pedido" : "Não definido");
+  const collectionLabel = (v?: string) => (v === "a_vencer" ? "Aparelhos a vencer" : v === "atrasados" ? "Aparelhos atrasados" : "Não definido");
+  const isCobranca = boardId === 2; // Tipo de cobrança só existe no board de Cobrança
 
   // Anexos do Resumo (slots nomeados: proposta | os | oc)
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
@@ -284,6 +286,14 @@ const ServiceSummarySection: React.FC<{
               <div className="space-y-1">
                 <p className="text-[11px] uppercase tracking-wide text-slate-400">Triagem</p>
               </div>
+              {isCobranca && (
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-400">Tipo de cobrança</label>
+                  <SelectMenu size="sm" value={biz.collection_type || ""} placeholder="Não definido"
+                    options={[{ value: "", label: "Não definido" }, { value: "a_vencer", label: "Aparelhos a vencer" }, { value: "atrasados", label: "Aparelhos atrasados" }]}
+                    onChange={(v) => setBizField("collection_type", v)} />
+                </div>
+              )}
               <div className="space-y-1">
                 <label className="text-xs text-slate-400">Recalibração e/ou Manutenção</label>
                 <SelectMenu size="sm" value={biz.service_type || ""} placeholder="Não definido"
@@ -316,6 +326,7 @@ const ServiceSummarySection: React.FC<{
           ) : (
             <div className="space-y-2">
               {[
+                ...(isCobranca ? [{ label: "Tipo de cobrança", value: collectionLabel(biz.collection_type) }] : []),
                 { label: "Recalibração/Manutenção", value: serviceTypeLabel(biz.service_type) },
                 { label: "Formulário enviado", value: biz.form_answered ? "Sim" : "Não" },
                 { label: "Forma de fechamento", value: closingLabel(biz.closing_type) },
