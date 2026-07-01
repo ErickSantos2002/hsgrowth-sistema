@@ -482,6 +482,8 @@ class ServiceBoardService:
                     miss.append("Empresa (Cliente) vinculada")
                 if not card.person_id:
                     miss.append("Pessoa (Contato de informação) vinculada")
+                if not biz.get("collection_type"):
+                    miss.append("Tipo de cobrança (Aparelhos a vencer ou atrasados, no Resumo)")
             elif "tentativa de contato" in old_name:
                 # Tentativa de Contato → Proposta
                 if not has_completed_activity():

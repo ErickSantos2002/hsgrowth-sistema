@@ -388,7 +388,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 | # | Transição | O que exige para avançar |
 |---|---|---|
-| 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada |
+| 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Tipo de cobrança** (`collection_type`) selecionado |
 | 2 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) + **Recalibração/Manutenção** (`service_type`) preenchido |
 | 3 | Proposta → Operações | **Proposta anexada** + **Formulário enviado** (checkbox `form_answered`) |
 | 4 | Operações → **Negócio Ganho** | botão Ganho acende em **Operações** · **sem regra por enquanto** (a definir depois) |
@@ -398,6 +398,13 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 - **Não pode pular etapas** (uma por vez); voltar é livre.
 - **Criar card só na lista inicial** (Oportunidade Existente).
 - **Ganho/Perdido** só pelos botões; ao marcar, conclui atividades pendentes **exceto follow-up**.
+
+### 8.3.1. Tipo de cobrança *(exclusivo do board de Cobrança — adicionado 01/07/2026)*
+Campo no **Resumo → Informações de Negócio** (`business_info.collection_type`), só aparece no board de Cobrança:
+- **Aparelhos a vencer** (`a_vencer`) → tag **azul** "A vencer" no card.
+- **Aparelhos atrasados** (`atrasados`) → tag **laranja** "Atrasados" no card.
+
+É **obrigatório** para avançar de **Oportunidade Existente → Tentativa de Contato** (ver matriz 8.2, regra 1). Há também um **filtro** no board de Cobrança (Todos / A vencer / Atrasados / Sem tipo de cobrança).
 
 ### 8.4. Dashboard "Cobrança" *(implementada — 25/06/2026)*
 - ✅ Usa o **mesmo componente** da dashboard de Serviço (`ServiceDashboard.tsx`), filtrando o **board 2** (`board=2`). Conteúdo e layout idênticos aos descritos na [seção 7.1](#71-o-que-a-dashboard-mostra-hoje-implementado).
