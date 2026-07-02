@@ -48,3 +48,22 @@ def test_service_marker_reflects_won_card(db, test_lists, test_salesperson_user)
     svc = ProposalService(db)
     resp = svc.create(ProposalCreate(service_card_id=card.id, items=[]))
     assert resp.marker == "aprovada"
+
+
+def test_endpoint_create_and_list_requires_service_access(client, admin_headers):
+    # admin tem acesso ao módulo de Serviço
+    payload = {"items": [{"description": "Calibração", "quantity": 1, "unit_price": 395}], "shipping": 200}
+    r = client.post("/api/v1/proposals", json=payload, headers=admin_headers)
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["number"] == 1
+    assert body["total"] == 595.0
+
+    r2 = client.get("/api/v1/proposals", headers=admin_headers)
+    assert r2.status_code == 200
+    assert r2.json()["total"] == 1
+
+
+def test_endpoint_blocks_salesperson(client, salesperson_headers):
+    r = client.get("/api/v1/proposals", headers=salesperson_headers)
+    assert r.status_code == 403
