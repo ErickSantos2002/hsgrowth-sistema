@@ -8,6 +8,7 @@ import ProposalModal from "../components/proposals/ProposalModal";
 import { showError } from "../utils/toast";
 import { useFilter, filterHelpers, usePagination } from "../hooks";
 import { markerBadge } from "../utils/proposalMarker";
+import { viewProposalPdf, downloadProposalPdf } from "../utils/proposalPdf";
 
 const Proposals: React.FC = () => {
   const navigate = useNavigate();
@@ -272,8 +273,8 @@ const Proposals: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={(e) => { e.stopPropagation(); handleEdit(p); }}
-                            title="Visualizar"
+                            onClick={(e) => { e.stopPropagation(); viewProposalPdf(p.id); }}
+                            title="Visualizar PDF"
                             className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-blue-500 dark:hover:bg-slate-700/50"
                           >
                             <Eye size={16} />
@@ -286,9 +287,9 @@ const Proposals: React.FC = () => {
                             <Pencil size={16} />
                           </button>
                           <button
-                            disabled
-                            title="Baixar PDF (em breve — fase 2)"
-                            className="cursor-not-allowed rounded p-1.5 text-slate-300 dark:text-slate-600"
+                            onClick={(e) => { e.stopPropagation(); downloadProposalPdf(p.id, p.number); }}
+                            title="Baixar PDF"
+                            className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-700 dark:hover:bg-slate-700/50 dark:hover:text-white"
                           >
                             <Download size={16} />
                           </button>

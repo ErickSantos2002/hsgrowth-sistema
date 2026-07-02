@@ -6,6 +6,7 @@ import serviceBoardService from "../../services/serviceBoardService";
 import ProposalModal from "../proposals/ProposalModal";
 import { markerBadge } from "../../utils/proposalMarker";
 import { buildDefaultOtherItems } from "../../utils/proposalDefaults";
+import { viewProposalPdf, downloadProposalPdf } from "../../utils/proposalPdf";
 import { showError, showSuccess } from "../../utils/toast";
 
 interface ServiceProposalsSectionProps {
@@ -174,8 +175,8 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
                     </div>
                     <div className="mt-2 flex items-center justify-end gap-1">
                       <button
-                        onClick={() => handleOpenEdit(p)}
-                        title="Visualizar"
+                        onClick={() => viewProposalPdf(p.id)}
+                        title="Visualizar PDF"
                         className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-blue-500 dark:hover:bg-slate-700/50"
                       >
                         <Eye size={15} />
@@ -188,9 +189,9 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
                         <Pencil size={15} />
                       </button>
                       <button
-                        disabled
-                        title="Baixar PDF (em breve — fase 2)"
-                        className="cursor-not-allowed rounded p-1.5 text-slate-300 dark:text-slate-600"
+                        onClick={() => downloadProposalPdf(p.id, p.number)}
+                        title="Baixar PDF"
+                        className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-700 dark:hover:bg-slate-700/50 dark:hover:text-white"
                       >
                         <Download size={15} />
                       </button>

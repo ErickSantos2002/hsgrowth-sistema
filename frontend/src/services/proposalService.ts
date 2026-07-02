@@ -102,6 +102,13 @@ class ProposalService {
   async listByCard(serviceCardId: number): Promise<Proposal[]> {
     return (await api.get<Proposal[]>(`${BASE}/by-card/${serviceCardId}`)).data;
   }
+  async getPdf(id: number, download = false): Promise<Blob> {
+    const r = await api.get(`${BASE}/${id}/pdf`, {
+      params: download ? { download: 1 } : {},
+      responseType: "blob",
+    });
+    return r.data as Blob;
+  }
 }
 
 export default new ProposalService();
