@@ -19,7 +19,7 @@ from app.models import (
     Role, User, Board, List, FieldDefinition, Card, CardFieldValue,
     Activity, AuditLog, GamificationPoint, GamificationBadge, UserBadge,
     GamificationRanking, Automation, AutomationExecution, CardTransfer,
-    TransferApproval, Notification
+    TransferApproval, Notification, Proposal, ProposalItem
 )
 
 # this is the Alembic Config object, which provides
