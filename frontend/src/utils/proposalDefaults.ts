@@ -1,5 +1,15 @@
 // Conteúdo padrão de novas propostas (módulo Serviço / Propostas).
 
+// Escapa valores dinâmicos antes de interpolar no HTML do template (evita XSS/injeção;
+// modelo/aparelhos vêm de dados digitados pelo laboratório).
+const esc = (s: string): string =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 export const DEFAULT_NOTES =
   "Caso, durante o processo de calibração, seja identificado que o aparelho necessita de manutenção, a presente proposta será atualizada para incluir os serviços adicionais necessários, bem como os respectivos valores.";
 
@@ -10,7 +20,7 @@ export const DEFAULT_NOTES =
  */
 export function buildDefaultOtherItems(modelo = "", aparelhos = ""): string {
   return `<p><strong>Serviços de Calibração e Manutenção</strong></p>
-<p><strong>Modelo:</strong> ${modelo}<br><strong>Aparelhos:</strong> ${aparelhos}</p>
+<p><strong>Modelo:</strong> ${esc(modelo)}<br><strong>Aparelhos:</strong> ${esc(aparelhos)}</p>
 <p><strong>Serviço Realizado:</strong></p>
 <ul><li>Calibração</li></ul>
 <p><strong>Valor Unitário da Calibração:</strong></p>
