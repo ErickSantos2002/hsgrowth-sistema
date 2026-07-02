@@ -61,6 +61,8 @@ const EMPTY_FORM = (): ProposalCreate => ({
   validity_days: undefined,
   delivery_date: "",
   delivery_desc: "",
+  different_delivery_address: false,
+  delivery_address: "",
   notes: "",
   signature: "",
   internal_status: "rascunho",
@@ -176,6 +178,8 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
             validity_days: p.validity_days ?? undefined,
             delivery_date: p.delivery_date ?? "",
             delivery_desc: p.delivery_desc ?? "",
+            different_delivery_address: p.different_delivery_address ?? false,
+            delivery_address: p.delivery_address ?? "",
             notes: p.notes ?? "",
             signature: p.signature ?? "",
             internal_status: p.internal_status ?? "rascunho",
@@ -498,10 +502,12 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                 {selectedPerson ? (
                   <div className="flex items-start justify-between gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-slate-900 dark:text-white">{selectedPerson.name}</p>
-                      {selectedPerson.position && (
-                        <p className="mt-0.5 text-xs text-slate-400">{selectedPerson.position}</p>
-                      )}
+                      <p className="truncate font-medium text-slate-900 dark:text-white">
+                        {selectedPerson.email || selectedPerson.email_commercial || selectedPerson.email_personal || selectedPerson.name}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-slate-400">
+                        {selectedPerson.name}{selectedPerson.position ? ` · ${selectedPerson.position}` : ""}
+                      </p>
                     </div>
                     <button type="button" onClick={handleRemovePerson}
                       className="shrink-0 rounded p-1 text-slate-400 transition-colors hover:text-red-400" title="Remover contato">
@@ -551,6 +557,31 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                   </div>
                 )}
               </FormField>
+
+              {/* Endereço de entrega diferente (usado na impressão/visualização — fase 2) */}
+              <label className="flex cursor-pointer items-start gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  checked={!!form.different_delivery_address}
+                  onChange={(e) => setField("different_delivery_address", e.target.checked)}
+                  disabled={saving}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500"
+                />
+                <span className="text-sm text-slate-700 dark:text-slate-200">
+                  O endereço de entrega do cliente é diferente do endereço de cobrança
+                </span>
+              </label>
+              {form.different_delivery_address && (
+                <FormField label="Endereço de entrega">
+                  <Textarea
+                    value={form.delivery_address ?? ""}
+                    onChange={(e) => setField("delivery_address", e.target.value)}
+                    placeholder="Rua, número, bairro, CEP, cidade - UF"
+                    rows={3}
+                    disabled={saving}
+                  />
+                </FormField>
+              )}
 
             </div>
           </section>
@@ -968,11 +999,11 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
               </FormField>
 
               <FormField label="Assinatura / Responsável">
-                <Input
-                  type="text"
+                <Textarea
                   value={form.signature ?? ""}
                   onChange={(e) => setField("signature", e.target.value)}
-                  placeholder="Nome do responsável pela proposta"
+                  placeholder="Atenciosamente,&#10;Nome do responsável"
+                  rows={2}
                   disabled={saving}
                 />
               </FormField>

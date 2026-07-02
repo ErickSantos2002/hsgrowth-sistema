@@ -1,7 +1,7 @@
 """
 Modelos de Proposta Comercial (Propostas) — exclusivo do módulo de Serviço.
 """
-from sqlalchemy import Column, Integer, String, Text, Numeric, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Numeric, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -41,6 +41,9 @@ class Proposal(Base, TimestampMixin, SoftDeleteMixin):
     validity_days = Column(Integer, nullable=True)         # validade (dias)
     delivery_date = Column(Date, nullable=True)            # data prevista de entrega
     delivery_desc = Column(String(500), nullable=True)     # descrição do prazo
+    # Endereço de entrega diferente do de cobrança (usado na impressão/visualização — fase 2)
+    different_delivery_address = Column(Boolean, nullable=False, default=False)
+    delivery_address = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)                    # observações
     signature = Column(String(255), nullable=True)         # assinatura
 

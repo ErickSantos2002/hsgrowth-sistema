@@ -33,6 +33,8 @@ export interface Proposal {
   validity_days?: number | null;
   delivery_date?: string | null;
   delivery_desc?: string | null;
+  different_delivery_address?: boolean;
+  delivery_address?: string | null;
   notes?: string | null;
   signature?: string | null;
   internal_status: string;
