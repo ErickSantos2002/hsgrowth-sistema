@@ -1,11 +1,16 @@
 """Repositório de Propostas."""
 from typing import Optional, List, Tuple
 from sqlalchemy import func, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.proposal import Proposal, ProposalItem
 from app.models.client import Client
+from app.models.service_card import ServiceCard
 from app.schemas.proposal import ProposalCreate, ProposalUpdate
+
+# Campos não-nulos no modelo: nunca sobrescrever com None num PUT parcial
+NON_NULLABLE = {"discount", "shipping", "internal_status"}
 
 
 class ProposalRepository:
@@ -27,17 +32,27 @@ class ProposalRepository:
 
     def create(self, data: ProposalCreate) -> Proposal:
         payload = data.model_dump(exclude={"items"})
-        proposal = Proposal(number=self.next_number(), **payload)
-        self._apply_items(proposal, data.items or [])
-        self.db.add(proposal)
-        self.db.commit()
-        self.db.refresh(proposal)
-        return proposal
+        last_exc = None
+        for _ in range(5):
+            proposal = Proposal(number=self.next_number(), **payload)
+            self._apply_items(proposal, data.items or [])
+            self.db.add(proposal)
+            try:
+                self.db.commit()
+                self.db.refresh(proposal)
+                return proposal
+            except IntegrityError as exc:
+                last_exc = exc
+                self.db.rollback()
+        raise last_exc  # esgotou tentativas
 
     def get_by_id(self, proposal_id: int) -> Optional[Proposal]:
         return (
             self.db.query(Proposal)
-            .options(joinedload(Proposal.client), joinedload(Proposal.service_card))
+            .options(
+                joinedload(Proposal.client),
+                joinedload(Proposal.service_card).joinedload(ServiceCard.list),
+            )
             .filter(Proposal.id == proposal_id, Proposal.is_deleted == False)  # noqa: E712
             .first()
         )
@@ -45,6 +60,8 @@ class ProposalRepository:
     def update(self, proposal: Proposal, data: ProposalUpdate) -> Proposal:
         payload = data.model_dump(exclude_unset=True, exclude={"items"})
         for k, v in payload.items():
+            if v is None and k in NON_NULLABLE:
+                continue
             setattr(proposal, k, v)
         if data.items is not None:
             self._apply_items(proposal, data.items)
@@ -60,7 +77,10 @@ class ProposalRepository:
              ) -> Tuple[List[Proposal], int]:
         q = (
             self.db.query(Proposal)
-            .options(joinedload(Proposal.client), joinedload(Proposal.service_card))
+            .options(
+                joinedload(Proposal.client),
+                joinedload(Proposal.service_card).joinedload(ServiceCard.list),
+            )
             .filter(Proposal.is_deleted == False)  # noqa: E712
         )
         if search:
@@ -76,14 +96,11 @@ class ProposalRepository:
     def list_by_card(self, service_card_id: int) -> List[Proposal]:
         return (
             self.db.query(Proposal)
+            .options(
+                joinedload(Proposal.client),
+                joinedload(Proposal.service_card).joinedload(ServiceCard.list),
+            )
             .filter(Proposal.service_card_id == service_card_id, Proposal.is_deleted == False)  # noqa: E712
             .order_by(Proposal.number.desc())
             .all()
-        )
-
-    def count_by_card(self, service_card_id: int) -> int:
-        return (
-            self.db.query(func.count(Proposal.id))
-            .filter(Proposal.service_card_id == service_card_id, Proposal.is_deleted == False)  # noqa: E712
-            .scalar()
         )

@@ -17,7 +17,7 @@ api_router.include_router(card_tasks.router, prefix="/card-tasks", tags=["Card T
 api_router.include_router(card_notes.router, prefix="/card-notes", tags=["Card Notes"])
 api_router.include_router(fields.router, prefix="/fields", tags=["Custom Fields"])
 api_router.include_router(products.router, prefix="/products", tags=["Products"])
-api_router.include_router(proposals.router, prefix="/proposals", tags=["Proposals"])
+api_router.include_router(proposals.router, prefix="/proposals", tags=["Proposals"], dependencies=[Depends(require_service_access())])
 api_router.include_router(clients.router, prefix="/clients", tags=["Clients"])
 api_router.include_router(persons.router, prefix="/persons", tags=["Persons"])
 api_router.include_router(gamification.router, prefix="/gamification", tags=["Gamification"])

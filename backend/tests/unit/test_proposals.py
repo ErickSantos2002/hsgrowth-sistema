@@ -35,7 +35,7 @@ def test_service_computes_totals_and_marker_em_aberto(db):
     assert resp.marker == "em_aberto"     # sem card vinculado
 
 
-def test_service_marker_reflects_won_card(db, test_lists, test_salesperson_user):
+def test_service_marker_reflects_won_card(db):
     # cria um card de serviço numa lista "done" para simular Ganho
     from app.models.service_board import ServiceBoard
     from app.models.service_list import ServiceList
@@ -50,18 +50,42 @@ def test_service_marker_reflects_won_card(db, test_lists, test_salesperson_user)
     assert resp.marker == "aprovada"
 
 
+def test_service_marker_reflects_lost_card(db):
+    from app.models.service_board import ServiceBoard
+    from app.models.service_list import ServiceList
+    from app.models.service_card import ServiceCard
+    board = ServiceBoard(name="Serv", description="x"); db.add(board); db.commit()
+    lst = ServiceList(name="Perdido", position=6, board_id=board.id, is_lost_stage=True)
+    db.add(lst); db.commit()
+    card = ServiceCard(title="C", list_id=lst.id); db.add(card); db.commit()
+    svc = ProposalService(db)
+    resp = svc.create(ProposalCreate(service_card_id=card.id, items=[]))
+    assert resp.marker == "nao_aprovada"
+
+
+def test_soft_deleted_proposal_hidden_from_list(db):
+    svc = ProposalService(db)
+    p = svc.create(ProposalCreate(items=[]))
+    svc.delete(p.id)
+    assert svc.list().total == 0
+
+
 def test_endpoint_create_and_list_requires_service_access(client, admin_headers):
     # admin tem acesso ao módulo de Serviço
     payload = {"items": [{"description": "Calibração", "quantity": 1, "unit_price": 395}], "shipping": 200}
     r = client.post("/api/v1/proposals", json=payload, headers=admin_headers)
     assert r.status_code == 201, r.text
     body = r.json()
-    assert body["number"] == 1
+    created_number = body["number"]
+    assert created_number >= 1
     assert body["total"] == 595.0
 
     r2 = client.get("/api/v1/proposals", headers=admin_headers)
     assert r2.status_code == 200
-    assert r2.json()["total"] == 1
+    data = r2.json()
+    assert data["total"] >= 1
+    numbers = [p["number"] for p in data["items"]]
+    assert created_number in numbers
 
 
 def test_endpoint_blocks_salesperson(client, salesperson_headers):

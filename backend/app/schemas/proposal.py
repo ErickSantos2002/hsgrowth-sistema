@@ -1,6 +1,6 @@
 """Schemas de Proposta Comercial."""
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Literal, Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -47,7 +47,7 @@ class ProposalBase(BaseModel):
     delivery_desc: Optional[str] = None
     notes: Optional[str] = None
     signature: Optional[str] = None
-    internal_status: str = "rascunho"
+    internal_status: Literal["rascunho", "enviada"] = "rascunho"
 
 
 class ProposalCreate(ProposalBase):
@@ -75,7 +75,7 @@ class ProposalUpdate(BaseModel):
     delivery_desc: Optional[str] = None
     notes: Optional[str] = None
     signature: Optional[str] = None
-    internal_status: Optional[str] = None
+    internal_status: Optional[Literal["rascunho", "enviada"]] = None
     items: Optional[List[ProposalItemCreate]] = None
 
 

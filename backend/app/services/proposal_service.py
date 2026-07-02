@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app.repositories.proposal_repository import ProposalRepository
 from app.models.proposal import Proposal
 from app.models.service_card import ServiceCard
-from app.models.service_list import ServiceList
 from app.models.service_card_product import ServiceCardProduct
 from app.models.product import Product
 from app.schemas.proposal import (
@@ -15,34 +14,29 @@ from app.schemas.proposal import (
     ProposalItemResponse, ProposalItemCreate,
 )
 
+DEFAULT_ITEM_UNIT = "Unid"
+
 
 class ProposalService:
     def __init__(self, db: Session):
         self.db = db
         self.repo = ProposalRepository(db)
 
-    # ---- Marcador derivado do card vinculado ----
-    def _marker(self, proposal: Proposal) -> str:
-        if not proposal.service_card_id:
-            return "em_aberto"
-        card = self.db.query(ServiceCard).filter(ServiceCard.id == proposal.service_card_id).first()
+    # ---- Marcador e board_id derivados do card vinculado (single derivation) ----
+    def _derive_card_fields(self, proposal: Proposal):
+        """Retorna (marker, board_id) usando o relacionamento já carregado do card."""
+        card = proposal.service_card if proposal.service_card_id else None
         if not card:
-            return "em_aberto"
-        lst = self.db.query(ServiceList).filter(ServiceList.id == card.list_id).first()
+            return "em_aberto", None
+        # ServiceCard.list é um relacionamento eager-loaded pelo repositório
+        lst = card.list
         if lst and lst.is_done_stage:
-            return "aprovada"
-        if lst and lst.is_lost_stage:
-            return "nao_aprovada"
-        return "em_aberto"
-
-    def _board_id(self, proposal: Proposal) -> Optional[int]:
-        if not proposal.service_card_id:
-            return None
-        card = self.db.query(ServiceCard).filter(ServiceCard.id == proposal.service_card_id).first()
-        if not card:
-            return None
-        lst = self.db.query(ServiceList).filter(ServiceList.id == card.list_id).first()
-        return lst.board_id if lst else None
+            marker = "aprovada"
+        elif lst and lst.is_lost_stage:
+            marker = "nao_aprovada"
+        else:
+            marker = "em_aberto"
+        return marker, (lst.board_id if lst else None)
 
     def _to_response(self, proposal: Proposal) -> ProposalResponse:
         total_items = sum(float(i.total) for i in proposal.items)
@@ -50,8 +44,9 @@ class ProposalService:
         resp = ProposalResponse.model_validate(proposal)
         resp.total_items = round(total_items, 2)
         resp.total = round(total, 2)
-        resp.marker = self._marker(proposal)
-        resp.board_id = self._board_id(proposal)
+        marker, board_id = self._derive_card_fields(proposal)
+        resp.marker = marker
+        resp.board_id = board_id
         resp.client_name = proposal.client.display_name if proposal.client else None
         resp.client_document = proposal.client.document if proposal.client else None
         resp.items = [ProposalItemResponse.model_validate(i) for i in proposal.items]
@@ -106,7 +101,7 @@ class ProposalService:
         items = [
             ProposalItemCreate(
                 product_id=p.id, description=p.name or "", sku=p.sku,
-                quantity=float(scp.quantity or 1), unit="Unid",
+                quantity=float(scp.quantity or 1), unit=DEFAULT_ITEM_UNIT,
                 unit_price=float(scp.unit_price or 0),
             )
             for scp, p in rows
