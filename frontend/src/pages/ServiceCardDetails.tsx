@@ -129,7 +129,7 @@ const ServiceSummarySection: React.FC<{
   const collectionLabel = (v?: string) => (v === "a_vencer" ? "Aparelhos a vencer" : v === "atrasados" ? "Aparelhos atrasados" : "Não definido");
   const isCobranca = boardId === 2; // Tipo de cobrança só existe no board de Cobrança
 
-  // Anexos do Resumo (slots nomeados: proposta | os | oc)
+  // Anexos do Resumo (slots nomeados: os | oc)
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const fileForSlot = (slot: string) =>
     activities
@@ -347,7 +347,6 @@ const ServiceSummarySection: React.FC<{
         <div className="space-y-3 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
           <h4 className="text-sm font-semibold text-slate-400">Documentos</h4>
           {[
-            { slot: "proposta", label: "Proposta Comercial" },
             { slot: "os", label: "OS (Ordem de Serviço)" },
             { slot: "oc", label: "OC (Ordem de Compra)" },
           ].map(({ slot, label }) => {
