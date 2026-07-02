@@ -410,8 +410,8 @@ class ServiceBoardService:
                 if src_name == "proposta":
                     if biz.get("closing_type") != "faturamento_direto":
                         miss.append("selecionar 'Faturamento direto' na Forma de fechamento (Resumo) — se for 'Pedido', avance para 'Aguardando Pedido'")
-                    if not has_slot("proposta"):
-                        miss.append("Proposta anexada no Resumo")
+                    if not self._has_linked_proposal(card.id):
+                        miss.append("Proposta vinculada ao card (aba Propostas)")
                 else:
                     if not has_slot("oc"):
                         miss.append("OC (Ordem de Compra) anexada no Resumo")
@@ -468,8 +468,8 @@ class ServiceBoardService:
                 # Proposta → Aguardando Pedido (caminho Pedido)
                 if biz.get("closing_type") != "pedido":
                     miss.append("selecionar 'Pedido' na Forma de fechamento (Resumo) — se for 'Faturamento direto', use o botão Ganho")
-                if not has_slot("proposta"):
-                    miss.append("Proposta anexada no Resumo")
+                if not self._has_linked_proposal(card.id):
+                    miss.append("Proposta vinculada ao card (aba Propostas)")
 
         elif board_id == 2:
             # ── Cobrança (Serviços - Atrasados) ──
@@ -492,8 +492,8 @@ class ServiceBoardService:
                     miss.append("Recalibração e/ou Manutenção (no Resumo)")
             elif old_name == "proposta":
                 # Proposta → Operações
-                if not has_slot("proposta"):
-                    miss.append("Proposta anexada no Resumo")
+                if not self._has_linked_proposal(card.id):
+                    miss.append("Proposta vinculada ao card (aba Propostas)")
                 if not biz.get("form_answered"):
                     miss.append("Formulário de Coleta de Dados enviado (marque o checkbox no Resumo)")
 
@@ -502,6 +502,14 @@ class ServiceBoardService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Para avançar de '{old_list.name}', preencha: " + "; ".join(miss) + ".",
             )
+
+    def _has_linked_proposal(self, card_id: int) -> bool:
+        """True se existe ao menos uma proposta vinculada ao card (não deletada)."""
+        from app.models.proposal import Proposal
+        return self.db.query(Proposal.id).filter(
+            Proposal.service_card_id == card_id,
+            Proposal.is_deleted == False,  # noqa: E712
+        ).first() is not None
 
     def move_card(self, card_id: int, new_list_id: int, new_position: Optional[float], user: User) -> ServiceCard:
         card = self.get_card(card_id)

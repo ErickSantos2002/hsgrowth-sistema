@@ -91,3 +91,38 @@ def test_endpoint_create_and_list_requires_service_access(client, admin_headers)
 def test_endpoint_blocks_salesperson(client, salesperson_headers):
     r = client.get("/api/v1/proposals", headers=salesperson_headers)
     assert r.status_code == 403
+
+
+# ── Regra de avanço: proposta vinculada ao card ────────────────────────────────
+
+def test_has_linked_proposal_helper(db):
+    """_has_linked_proposal retorna False sem proposta e True com proposta vinculada."""
+    from app.services.service_board_service import ServiceBoardService
+    from app.models.service_board import ServiceBoard
+    from app.models.service_list import ServiceList
+    from app.models.service_card import ServiceCard
+    from app.models.proposal import Proposal
+
+    board = ServiceBoard(name="Serv", description="x")
+    db.add(board)
+    db.commit()
+
+    lst = ServiceList(name="Proposta", position=3, board_id=board.id)
+    db.add(lst)
+    db.commit()
+
+    card = ServiceCard(title="C", list_id=lst.id)
+    db.add(card)
+    db.commit()
+
+    svc = ServiceBoardService(db)
+
+    # Sem proposta vinculada → False
+    assert svc._has_linked_proposal(card.id) is False
+
+    # Adiciona proposta vinculada (number obrigatório)
+    db.add(Proposal(number=9901, service_card_id=card.id))
+    db.commit()
+
+    # Com proposta vinculada → True
+    assert svc._has_linked_proposal(card.id) is True
