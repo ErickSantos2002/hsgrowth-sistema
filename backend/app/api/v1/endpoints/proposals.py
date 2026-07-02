@@ -1,6 +1,6 @@
 """Endpoints de Propostas Comerciais (módulo de Serviço)."""
 from typing import Optional
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -42,6 +42,18 @@ def proposals_by_card(
     db: Session = Depends(get_db),
 ):
     return ProposalService(db).list_by_card(service_card_id)
+
+
+@router.get("/{proposal_id}/pdf", summary="PDF da proposta")
+def proposal_pdf(proposal_id: int, download: int = 0, db: Session = Depends(get_db)):
+    from app.services.proposal_pdf_service import generate_proposal_pdf
+    pdf = generate_proposal_pdf(db, proposal_id)
+    disp = "attachment" if download else "inline"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'{disp}; filename="proposta-{proposal_id}.pdf"'},
+    )
 
 
 @router.get("/{proposal_id}", response_model=ProposalResponse, summary="Buscar proposta")

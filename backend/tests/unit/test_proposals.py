@@ -126,3 +126,13 @@ def test_has_linked_proposal_helper(db):
 
     # Com proposta vinculada → True
     assert svc._has_linked_proposal(card.id) is True
+
+
+def test_endpoint_proposal_pdf(client, admin_headers):
+    payload = {"items": [{"description": "Calibração", "quantity": 1, "unit_price": 395}], "shipping": 200}
+    r = client.post("/api/v1/proposals", json=payload, headers=admin_headers)
+    pid = r.json()["id"]
+    r2 = client.get(f"/api/v1/proposals/{pid}/pdf", headers=admin_headers)
+    assert r2.status_code == 200, r2.text
+    assert r2.headers["content-type"] == "application/pdf"
+    assert r2.content[:5] == b"%PDF-"
