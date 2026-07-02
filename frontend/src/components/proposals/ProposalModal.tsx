@@ -10,6 +10,37 @@ import clientService, { Client } from "../../services/clientService";
 import personService, { Person } from "../../services/personService";
 import productService, { Product } from "../../services/productService";
 import { showError, showSuccess } from "../../utils/toast";
+import { useAuth } from "../../hooks/useAuth";
+
+// ─── Conteúdo padrão (novas propostas) ──────────────────────────────────────
+const DEFAULT_OTHER_ITEMS = `<p><strong>Serviços de Calibração e Manutenção</strong></p>
+<p><strong>Modelo:</strong> IBLOW 10<br><strong>Aparelhos:</strong> WAP5N0048</p>
+<p><strong>Serviço Realizado:</strong></p>
+<ul><li>Calibração</li></ul>
+<p><strong>Valor Unitário da Calibração:</strong></p>
+<ul><li>R$ 395,00</li></ul>
+<p><strong>Método de Envio:</strong></p>
+<ul><li>SEDEX</li></ul>
+<p><strong>Frete para entrega fixo:</strong></p>
+<p>Região Norte: R$ 200,00<br>Região Nordeste: R$ 150,00<br>Região Sul: R$ 250,00<br>Região Sudeste: R$ 200,00<br>Região Centro-Oeste: R$ 200,00</p>
+<p><strong>Prazo de Entrega</strong></p>
+<p>Norte: 15 a 22 dias úteis<br>Nordeste: 7 a 15 dias úteis<br>Sul: 7 dias úteis<br>Centro-Oeste: 7 a 15 dias úteis<br>Sudeste: 7 dias úteis</p>
+<p><strong>Códigos de Serviço – CNAEs Relacionados:</strong></p>
+<p>33.12-102 – Manutenção e reparação de aparelhos e instrumentos de medida, teste e controle</p>
+<p>14.01 – Lubrificação, limpeza, lubrificação, revisão, carga e recarga, conserto, restauração, blindagem, manutenção e conservação de máquinas, veículos, aparelhos, equipamentos, motores, elevadores ou de qualquer objeto (exceto peças e partes empregadas, que ficam sujeitas ao ICMS)</p>
+<p><strong>Endereço para o envio dos Aparelhos:</strong><br>Rua Viscondessa do Livramento, nº 54<br>Bairro: Derby<br>CEP: 52010-065<br>Recife – PE</p>
+<p><strong>Contato – Setor de Calibração</strong><br>Telefone: (81) 3052-3350</p>`;
+
+const DEFAULT_NOTES =
+  "Caso, durante o processo de calibração, seja identificado que o aparelho necessita de manutenção, a presente proposta será atualizada para incluir os serviços adicionais necessários, bem como os respectivos valores.";
+
+// Data local de hoje em YYYY-MM-DD (sem shift de fuso)
+const todayISO = (): string => {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+};
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -67,6 +98,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   initial,
 }) => {
   const isEditing = !!proposalId;
+  const { user } = useAuth();
 
   // ─── Form state ──────────────────────────────────────────────────────────
   const [form, setForm] = useState<ProposalCreate>(EMPTY_FORM());
@@ -109,14 +141,25 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
     setForm((prev) => ({ ...prev, [key]: value }));
   }, []);
 
+  // Busca cliente/pessoa pelo id e preenche os seletores (nome visível)
+  const hydratePickers = (clientId?: number | null, personId?: number | null) => {
+    if (clientId) {
+      clientService.getById(clientId)
+        .then((c) => { setSelectedClient(c); setClientSearch(c.company_name || c.name); })
+        .catch(() => {});
+    }
+    if (personId) {
+      personService.getById(personId)
+        .then((p) => { setSelectedPerson(p); setPersonSearch(p.name); })
+        .catch(() => {});
+    }
+  };
+
   // ─── Reset on open ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
 
-    const base = initial ?? EMPTY_FORM();
-    setForm({ ...EMPTY_FORM(), ...base, items: [] });
-    setItems(base.items ?? []);
-    setProposalNumber(null);
+    // reset seletores/UI
     setSelectedClient(null);
     setClientSearch("");
     setClientResults([]);
@@ -130,6 +173,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
     setSaving(false);
 
     if (isEditing && proposalId) {
+      setProposalNumber(null);
       setLoading(true);
       proposalService
         .get(proposalId)
@@ -159,10 +203,23 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
           });
           setItems(p.items ?? []);
           setProposalNumber(p.number);
-          if (p.client_name) setClientSearch(p.client_name);
+          hydratePickers(p.client_id, p.person_id);
         })
         .catch(() => showError("Erro ao carregar proposta"))
         .finally(() => setLoading(false));
+    } else {
+      // Criação (avulsa ou a partir do card): aplica prefill do card + conteúdo padrão
+      const base = initial ?? EMPTY_FORM();
+      const defaults = {
+        date: base.date || todayISO(),
+        signature: base.signature || `Atenciosamente,\n${user?.name || ""}`,
+        other_items: base.other_items || DEFAULT_OTHER_ITEMS,
+        notes: base.notes || DEFAULT_NOTES,
+      };
+      setForm({ ...EMPTY_FORM(), ...base, ...defaults, items: [] });
+      setItems(base.items ?? []);
+      setProposalNumber(null);
+      hydratePickers(base.client_id ?? null, base.person_id ?? null);
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 

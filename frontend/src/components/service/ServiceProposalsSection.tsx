@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Plus, Link2, Search, X } from "lucide-react";
+import { FileText, Plus, Link2, Search, X, Eye, Pencil, Download } from "lucide-react";
 import ExpandableSection from "../cardDetails/ExpandableSection";
 import proposalService, { Proposal, ProposalCreate } from "../../services/proposalService";
 import ProposalModal from "../proposals/ProposalModal";
@@ -133,10 +133,9 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
               {proposals.map((p) => {
                 const badge = markerBadge(p.marker);
                 return (
-                  <button
+                  <div
                     key={p.id}
-                    onClick={() => handleOpenEdit(p)}
-                    className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3 text-left transition-colors hover:bg-gray-100/50 dark:hover:bg-slate-700/50"
+                    className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-3"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
@@ -154,7 +153,30 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
                         </span>
                       </div>
                     </div>
-                  </button>
+                    <div className="mt-2 flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => handleOpenEdit(p)}
+                        title="Visualizar"
+                        className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-blue-500 dark:hover:bg-slate-700/50"
+                      >
+                        <Eye size={15} />
+                      </button>
+                      <button
+                        onClick={() => handleOpenEdit(p)}
+                        title="Editar"
+                        className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-emerald-500 dark:hover:bg-slate-700/50"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        disabled
+                        title="Baixar PDF (em breve — fase 2)"
+                        className="cursor-not-allowed rounded p-1.5 text-slate-300 dark:text-slate-600"
+                      >
+                        <Download size={15} />
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
