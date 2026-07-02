@@ -60,13 +60,22 @@ def _esc(text: Optional[str]) -> str:
 
 def _sanitize_html(html: Optional[str]) -> str:
     """
-    Remove blocos <script> e <style> do HTML do Quill (defense-in-depth
-    para o sink de PDF — Quill já sanitiza na entrada).
+    Sanitização defensiva do HTML do Quill antes de renderizar no PDF (WeasyPrint).
+    Remove scripts/estilos, elementos que carregam recursos externos
+    (img/iframe/object/embed/link/source/base) e handlers de evento on*=.
+    Junto com o url_fetcher seguro no render, fecha SSRF / leitura de arquivo
+    local via recursos referenciados. (Quill já sanitiza na entrada; isto é
+    defense-in-depth no sink.)
     """
     if not html:
         return ""
-    html = re.sub(r"<script[\s\S]*?</script>", "", html, flags=re.IGNORECASE | re.DOTALL)
-    html = re.sub(r"<style[\s\S]*?</style>", "", html, flags=re.IGNORECASE | re.DOTALL)
+    # Blocos com conteúdo
+    for tag in ("script", "style", "iframe", "object"):
+        html = re.sub(rf"<{tag}[\s\S]*?</{tag}>", "", html, flags=re.IGNORECASE)
+    # Elementos "void" que carregam/apontam recursos externos
+    html = re.sub(r"<(?:img|link|embed|source|base)\b[^>]*>", "", html, flags=re.IGNORECASE)
+    # Handlers de evento inline (onerror, onload, ...)
+    html = re.sub(r"""\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)""", "", html, flags=re.IGNORECASE)
     return html
 
 
@@ -551,8 +560,17 @@ def generate_proposal_pdf(db: Session, proposal_id: int) -> bytes:
 
     html = _build_html(proposal)
 
-    import weasyprint  # import tardio — só carrega quando necessário
-    pdf_bytes = weasyprint.HTML(string=html).write_pdf()
+    from weasyprint import HTML, default_url_fetcher  # import tardio
+
+    # Segurança: bloqueia QUALQUER recurso externo (file://, http(s)://, etc.).
+    # O template não usa recursos remotos, então só `data:` é permitido.
+    # Isso neutraliza SSRF / leitura de arquivo local via recursos do HTML.
+    def _safe_fetcher(url: str):
+        if url.startswith("data:"):
+            return default_url_fetcher(url)
+        raise ValueError(f"Recurso externo bloqueado na geração do PDF: {url}")
+
+    pdf_bytes = HTML(string=html, base_url=None, url_fetcher=_safe_fetcher).write_pdf()
     return pdf_bytes
 
 
