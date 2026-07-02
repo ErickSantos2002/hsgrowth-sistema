@@ -39,6 +39,7 @@ const menuItems = [
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/propostas", icon: FileText, label: "Propostas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/ligacoes", icon: Phone, label: "Ligações", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/gamification", icon: Trophy, label: "Gamificação", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/transfers", icon: Repeat, label: "Transferências", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
@@ -170,10 +171,10 @@ export default function MainLayout() {
                                     return null;
                                 }
 
-                                // "Boards (Serviços)": exclusivo do time de serviço + gestão
+                                // "Boards (Serviços)" e "Propostas": exclusivos do time de serviço + gestão
                                 // (admin, gerente e role "service"). Demais roles não veem.
                                 if (
-                                    item.path === "/servicos" &&
+                                    ["/servicos", "/propostas"].includes(item.path) &&
                                     !["admin", "manager", "service"].includes(user?.role ?? "")
                                 ) {
                                     return null;
@@ -181,11 +182,11 @@ export default function MainLayout() {
 
                                 // Role "service": só vê o módulo de serviços + cadastros básicos
                                 // (Dashboard, Atividades, Boards Serviços, Clientes, Pessoas,
-                                //  Produtos e Configurações — esta com abas limitadas).
+                                //  Produtos, Propostas e Configurações — esta com abas limitadas).
                                 if (user?.role === "service") {
                                     const allowedForService = [
                                         "/", "/activities", "/servicos",
-                                        "/clients", "/persons", "/products", "/settings",
+                                        "/clients", "/persons", "/products", "/propostas", "/settings",
                                     ];
                                     if (!allowedForService.includes(item.path)) {
                                         return null;
