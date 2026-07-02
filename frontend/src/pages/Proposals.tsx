@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Plus, RefreshCw, FileText, ChevronDown } from "lucide-react";
+import { Plus, RefreshCw, FileText, ChevronDown, Eye, Pencil, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import proposalService, { Proposal } from "../services/proposalService";
 import { Button, SearchInput, Pagination } from "../components/common";
@@ -205,6 +205,9 @@ const Proposals: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Card Vinculado
                   </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    Ação
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-slate-700/50">
@@ -263,6 +266,33 @@ const Proposals: React.FC = () => {
                         ) : (
                           <span className="text-slate-400">—</span>
                         )}
+                      </td>
+
+                      {/* Ação */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEdit(p); }}
+                            title="Visualizar"
+                            className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-blue-500 dark:hover:bg-slate-700/50"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEdit(p); }}
+                            title="Editar"
+                            className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-emerald-500 dark:hover:bg-slate-700/50"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            disabled
+                            title="Baixar PDF (em breve — fase 2)"
+                            className="cursor-not-allowed rounded p-1.5 text-slate-300 dark:text-slate-600"
+                          >
+                            <Download size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

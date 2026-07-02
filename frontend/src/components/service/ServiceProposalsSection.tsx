@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { FileText, Plus, Link2, Search, X, Eye, Pencil, Download } from "lucide-react";
 import ExpandableSection from "../cardDetails/ExpandableSection";
 import proposalService, { Proposal, ProposalCreate } from "../../services/proposalService";
+import serviceBoardService from "../../services/serviceBoardService";
 import ProposalModal from "../proposals/ProposalModal";
 import { markerBadge } from "../../utils/proposalMarker";
+import { buildDefaultOtherItems } from "../../utils/proposalDefaults";
 import { showError, showSuccess } from "../../utils/toast";
 
 interface ServiceProposalsSectionProps {
@@ -20,7 +22,7 @@ const formatDate = (dateStr?: string | null): string => {
   return `${day}/${month}/${year}`;
 };
 
-const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ boardId: _boardId, cardId }) => {
+const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ boardId, cardId }) => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -51,6 +53,23 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
     try {
       setLoading(true);
       const prefill = await proposalService.prefillFromCard(cardId);
+      // Modelo/Aparelhos dinâmicos no texto padrão (a partir dos aparelhos do card)
+      let modelo = "";
+      let aparelhos = "";
+      try {
+        const summary = await serviceBoardService.getCardProducts(boardId, cardId);
+        const items = summary.items || [];
+        const aparelhosList = items.flatMap((it) => it.aparelhos || []);
+        let models = Array.from(new Set(aparelhosList.map((a) => a.model).filter(Boolean) as string[]));
+        if (models.length === 0) {
+          models = Array.from(new Set(items.map((it) => it.product_name).filter(Boolean) as string[]));
+        }
+        modelo = models.join(", ");
+        aparelhos = Array.from(new Set(aparelhosList.map((a) => a.serial_number).filter(Boolean) as string[])).join(", ");
+      } catch {
+        /* sem produtos/aparelhos — mantém em branco */
+      }
+      prefill.other_items = buildDefaultOtherItems(modelo, aparelhos);
       setInitial(prefill);
       setEditingId(null);
       setModalOpen(true);

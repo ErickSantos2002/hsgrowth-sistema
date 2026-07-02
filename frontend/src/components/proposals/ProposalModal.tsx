@@ -11,28 +11,7 @@ import personService, { Person } from "../../services/personService";
 import productService, { Product } from "../../services/productService";
 import { showError, showSuccess } from "../../utils/toast";
 import { useAuth } from "../../hooks/useAuth";
-
-// ─── Conteúdo padrão (novas propostas) ──────────────────────────────────────
-const DEFAULT_OTHER_ITEMS = `<p><strong>Serviços de Calibração e Manutenção</strong></p>
-<p><strong>Modelo:</strong> IBLOW 10<br><strong>Aparelhos:</strong> WAP5N0048</p>
-<p><strong>Serviço Realizado:</strong></p>
-<ul><li>Calibração</li></ul>
-<p><strong>Valor Unitário da Calibração:</strong></p>
-<ul><li>R$ 395,00</li></ul>
-<p><strong>Método de Envio:</strong></p>
-<ul><li>SEDEX</li></ul>
-<p><strong>Frete para entrega fixo:</strong></p>
-<p>Região Norte: R$ 200,00<br>Região Nordeste: R$ 150,00<br>Região Sul: R$ 250,00<br>Região Sudeste: R$ 200,00<br>Região Centro-Oeste: R$ 200,00</p>
-<p><strong>Prazo de Entrega</strong></p>
-<p>Norte: 15 a 22 dias úteis<br>Nordeste: 7 a 15 dias úteis<br>Sul: 7 dias úteis<br>Centro-Oeste: 7 a 15 dias úteis<br>Sudeste: 7 dias úteis</p>
-<p><strong>Códigos de Serviço – CNAEs Relacionados:</strong></p>
-<p>33.12-102 – Manutenção e reparação de aparelhos e instrumentos de medida, teste e controle</p>
-<p>14.01 – Lubrificação, limpeza, lubrificação, revisão, carga e recarga, conserto, restauração, blindagem, manutenção e conservação de máquinas, veículos, aparelhos, equipamentos, motores, elevadores ou de qualquer objeto (exceto peças e partes empregadas, que ficam sujeitas ao ICMS)</p>
-<p><strong>Endereço para o envio dos Aparelhos:</strong><br>Rua Viscondessa do Livramento, nº 54<br>Bairro: Derby<br>CEP: 52010-065<br>Recife – PE</p>
-<p><strong>Contato – Setor de Calibração</strong><br>Telefone: (81) 3052-3350</p>`;
-
-const DEFAULT_NOTES =
-  "Caso, durante o processo de calibração, seja identificado que o aparelho necessita de manutenção, a presente proposta será atualizada para incluir os serviços adicionais necessários, bem como os respectivos valores.";
+import { buildDefaultOtherItems, DEFAULT_NOTES } from "../../utils/proposalDefaults";
 
 // Data local de hoje em YYYY-MM-DD (sem shift de fuso)
 const todayISO = (): string => {
@@ -104,6 +83,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   const [form, setForm] = useState<ProposalCreate>(EMPTY_FORM());
   const [items, setItems] = useState<ProposalItem[]>([]);
   const [proposalNumber, setProposalNumber] = useState<number | null>(null);
+  const [editorKey, setEditorKey] = useState(0); // força remount do react-quill ao abrir
 
   // ─── UI state ────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -204,6 +184,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
           setItems(p.items ?? []);
           setProposalNumber(p.number);
           hydratePickers(p.client_id, p.person_id);
+          setEditorKey((k) => k + 1);
         })
         .catch(() => showError("Erro ao carregar proposta"))
         .finally(() => setLoading(false));
@@ -213,13 +194,14 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
       const defaults = {
         date: base.date || todayISO(),
         signature: base.signature || `Atenciosamente,\n${user?.name || ""}`,
-        other_items: base.other_items || DEFAULT_OTHER_ITEMS,
+        other_items: base.other_items || buildDefaultOtherItems(),
         notes: base.notes || DEFAULT_NOTES,
       };
       setForm({ ...EMPTY_FORM(), ...base, ...defaults, items: [] });
       setItems(base.items ?? []);
       setProposalNumber(null);
       hydratePickers(base.client_id ?? null, base.person_id ?? null);
+      setEditorKey((k) => k + 1);
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -830,6 +812,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
           <section>
             <SectionHeading label="Outros Itens ou Serviços" />
             <RichTextEditor
+              key={editorKey}
               value={form.other_items ?? ""}
               onChange={(v) => setField("other_items", v)}
               placeholder="Descreva outros itens, serviços ou condições especiais..."
