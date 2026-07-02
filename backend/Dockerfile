@@ -41,14 +41,26 @@ ARG ENVIRONMENT=production
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
-    ENVIRONMENT=${ENVIRONMENT}
+    ENVIRONMENT=${ENVIRONMENT} \
+    XDG_CACHE_HOME=/tmp/.cache
+    # XDG_CACHE_HOME: diretório de cache gravável p/ fontconfig (WeasyPrint roda como não-root)
 
 # Instala apenas dependências runtime necessárias
+# (inclui libs de sistema do WeasyPrint: pango/cairo/gdk-pixbuf + fontes — para geração de PDF)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     postgresql-client \
     curl \
     redis-tools \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libpangoft2-1.0-0 \
+    libharfbuzz0b \
+    libgdk-pixbuf-2.0-0 \
+    libcairo2 \
+    libffi8 \
+    shared-mime-info \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Cria usuário não-root para segurança

@@ -65,3 +65,7 @@ ruff==0.1.11
 
 # Development
 ipython==8.20.0
+
+# Geração de PDF (propostas)
+weasyprint==62.3
+pydyf==0.10.0  # pin: pydyf 0.11+ removeu Stream.transform (incompat. weasyprint 62.3)
