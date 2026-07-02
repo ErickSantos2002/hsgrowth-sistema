@@ -1,6 +1,6 @@
 # 16 - FLUXO E REGRAS DO BOARD DE SERVIÇOS
 
-> **Documento vivo.** Última atualização: **19/06/2026**
+> **Documento vivo.** Última atualização: **02/07/2026**
 > Relacionado: [15 - MÓDULO DE SERVIÇOS.md](15%20-%20MÓDULO%20DE%20SERVIÇOS.md)
 > 📌 **Fontes da verdade (atuais):** estrutura → **seção 2**; regras de avanço → **seção 6**.
 >
@@ -62,7 +62,6 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 | **Triagem** | Recalibração e/ou Manutenção (`service_type`) | Serviço | ✅ p/ sair de Dados Preenchidos |
 | **Proposta** | Formulário de Coleta de Dados enviado (`form_answered`, checkbox) | Serviço | ❌ (informativo) |
 | **Proposta** | **Forma de fechamento** (`closing_type`: Faturamento direto / Pedido) | Serviço | ✅ na etapa Proposta |
-| **Documentos** | Proposta Comercial (anexo) | Serviço | ✅ a partir da Proposta |
 | **Documentos** | OS – Ordem de Serviço (anexo) | Serviço | ✅ p/ sair de Liberados do Laboratório |
 | **Documentos** | OC – Ordem de Compra (anexo) | Serviço | ✅ p/ Ganho via Aguardando Pedido |
 | **Informações Gerais** | Criado em / Tempo no funil / ID | auto | — |
@@ -70,6 +69,23 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 **Cliente (Organização)** e **Pessoa (Contato)** ficam nas suas seções próprias e são exigidos para sair de **Dados Preenchidos**.
 
 > 🔓 **Índice de reajuste**: ainda **não implementado** — ponto em aberto (fica no Resumo ou no Produto/aparelho?).
+
+### 3.1.1. Módulo de Propostas Comerciais *(atualizado 02/07/2026)*
+
+**Propostas Comerciais** é um módulo exclusivo do módulo de Serviço, composto por:
+- **Página na sidebar** ("Propostas"): lista todas as propostas do sistema.
+- **Seção "Propostas" no card de Serviço** (abaixo de Produtos): permite criar, listar e vincular propostas ao card.
+
+**Marcador automático da proposta** — deriva do status do card ao qual está vinculada:
+- Card marcado como **Ganho** → proposta fica **Aprovada**.
+- Card marcado como **Perdido** → proposta fica **Não aprovada**.
+- Sem card vinculado ou card ainda ativo → proposta fica **Em aberto**.
+
+**Impacto nas regras de avanço:**
+- O antigo anexo "Proposta Comercial" foi **removido da seção Documentos do Resumo** (permanecem lá apenas OS e OC).
+- A regra de avanço nas etapas **Proposta** (board de Serviço, transições 4 e 5) e **Proposta → Operações** (board de Cobrança) passa a exigir **≥1 proposta vinculada ao card** (aba Propostas do card), em vez de um documento anexado.
+
+> ⚠️ **Geração de PDF** da proposta é **fase 2** — ainda não implementada.
 
 ### 3.2. Campos de PRODUTO (por aparelho)
 
@@ -177,9 +193,9 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
   - Montar Proposta
   - Enviar ao Decisor: Proposta + Formulário de Coleta de Dados
     - ℹ️ O **Formulário de Coleta de Dados** é apenas **enviado ao cliente** — **não** exige anexo no card.
-- **Obrigatoriedade** (1 documento anexado no **Resumo**):
-  1. **Proposta anexada**
-- **Avanço → Proposta**: Proposta anexada.
+- **Obrigatoriedade**:
+  1. **≥1 proposta vinculada** ao card (aba Propostas do card)
+- **Avanço → Proposta**: ≥1 proposta vinculada ao card.
 - **Perdido**: igual ao padrão (ver 4.X).
   - **Gatilho**: Não conseguiu contato com o decisor até o fim da cadência.
   - **Automação (futuro)**: criação do próximo serviço em 90 dias + cadência de resgate.
@@ -193,8 +209,8 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
   - Coletar OS (Ordem de Serviço)
 - **Obrigatoriedades** (confirmadas):
   1. Fazer **1 atividade de follow-up** (verificar a proposta enviada + o Formulário de Coleta de Dados)
-  2. **Proposta anexada**
-- **Avanço → Operações**: feita a atividade de follow-up **E** proposta anexada.
+  2. **≥1 proposta vinculada** ao card (aba Propostas do card)
+- **Avanço → Operações**: feita a atividade de follow-up **E** ≥1 proposta vinculada ao card.
 - 🔓 **Em aberto (decidir na implementação)**: a imagem indica também *"Formulário de Coleta de Dados respondido"* e *"OS anexada"* como obrigatórios. Como a OS já pode ter sido anexada na etapa 4.3 (se o aparelho foi recebido) e o Formulário respondido depende do retorno do cliente, **deixar para validar na implementação** se entram ou não como trava aqui.
 - **Perdido**:
   - **Gatilho**: Cliente não aceitou a proposta.
@@ -284,13 +300,13 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
   - **Liberados do Laboratório →**: **OS (Ordem de Serviço) anexada**.
   - **Dados Preenchidos →**: **≥1 produto** + **Cliente** vinculado + **Pessoa** vinculada + **Recalibração/Manutenção** (`service_type`) preenchido.
   - **Tentativa de Contato →**: **≥1 atividade concluída nesta etapa** (qualquer tipo).
-  - **Proposta → Aguardando Pedido**: **Forma de fechamento = Pedido** (`closing_type`) + **Proposta anexada**.
-  - **Proposta → Ganho (direto)**: **Forma de fechamento = Faturamento direto** + **Proposta anexada**.
+  - **Proposta → Aguardando Pedido**: **Forma de fechamento = Pedido** (`closing_type`) + **Proposta vinculada** (na aba Propostas do card).
+  - **Proposta → Ganho (direto)**: **Forma de fechamento = Faturamento direto** + **Proposta vinculada** (na aba Propostas do card).
   - **Aguardando Pedido → Ganho**: **OC anexada**.
   - **Negócio Ganho / Perdido**: só pelos **botões** (stepper não move para terminais). Ao marcar, as **atividades pendentes são concluídas automaticamente — exceto follow-up**.
   - Voltar etapa é livre. **Regras só valem no funil oficial** (`SERVICE_FUNNEL_BOARD_IDS = {1}`); boards duplicados são kanban livre.
   - ⚙️ "Atividade concluída nesta etapa" = `category=atividade`, `is_completed`, concluída **após** o card entrar na etapa atual.
-- [x] **Botão Ganho**: habilitado em **"Aguardando Pedido"** (caminho Pedido → exige OC) **ou** em **"Proposta"** com **Forma de fechamento = Faturamento direto** (→ exige Proposta anexada); opaco/desabilitado nas demais. ✅ **Atualizado** (19/06/2026) — `handleWin` (`ServiceCardDetails.tsx`).
+- [x] **Botão Ganho**: habilitado em **"Aguardando Pedido"** (caminho Pedido → exige OC) **ou** em **"Proposta"** com **Forma de fechamento = Faturamento direto** (→ exige **Proposta vinculada** na aba Propostas do card); opaco/desabilitado nas demais. ✅ **Atualizado** (19/06/2026) — `handleWin` (`ServiceCardDetails.tsx`).
 - [x] **Esconder cards Ganhos e Perdidos** por padrão no board. ✅ **Já implementado** — filtro padrão "Apenas Abertos" (`fStatus="abertos"`) exclui done/lost; aparecem só via filtro (Todos/Ganhos/Perdidos).
 - [x] **Motivos de Perda**: lista do board de Serviços substituída pelos 10 motivos oficiais. ✅ **Feito** (15/06/2026) — `LOSS_REASONS` em `ServiceCardDetails.tsx`.
 
@@ -314,14 +330,14 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 | 1 | Liberados do Laboratório → Dados Preenchidos | **OS (Ordem de Serviço) anexada** no Resumo | ✅ | ☐ |
 | 2 | Dados Preenchidos → Tentativa de Contato | **≥1 produto** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Recalibração/Manutenção** preenchido | ✅ | ☐ |
 | 3 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) | ✅ | ☐ |
-| 4 | Proposta → Aguardando Pedido | **Forma de fechamento = "Pedido"** + **Proposta anexada** | ✅ | ☐ |
-| 5 | Proposta → **Negócio Ganho** *(direto)* | **Forma de fechamento = "Faturamento direto"** + **Proposta anexada** · botão Ganho acende na Proposta só nesse caso | ✅ | ☐ |
+| 4 | Proposta → Aguardando Pedido | **Forma de fechamento = "Pedido"** + **Proposta vinculada** (na aba Propostas do card) | ✅ | ☐ |
+| 5 | Proposta → **Negócio Ganho** *(direto)* | **Forma de fechamento = "Faturamento direto"** + **Proposta vinculada** (na aba Propostas do card) · botão Ganho acende na Proposta só nesse caso | ✅ | ☐ |
 | 6 | Aguardando Pedido → **Negócio Ganho** | **só pelo botão Ganho** · **OC (Ordem de Compra) anexada** | ✅ | ☐ |
 | 7 | Qualquer etapa → **Negócio Perdido** | **só pelo botão Perdido** · exige **Motivo da perda** (modal) | ✅ | ☐ |
 
-> **Forma de fechamento** (campo novo no Resumo): define o caminho na etapa Proposta —
-> **Faturamento direto** libera o botão Ganho ali mesmo (exige Proposta anexada);
-> **Pedido** obriga avançar para "Aguardando Pedido" (exige Proposta anexada) e depois o Ganho exige a OC.
+> **Forma de fechamento** (campo no Resumo): define o caminho na etapa Proposta —
+> **Faturamento direto** libera o botão Ganho ali mesmo (exige **Proposta vinculada** na aba Propostas do card);
+> **Pedido** obriga avançar para "Aguardando Pedido" (exige **Proposta vinculada** na aba Propostas do card) e depois o Ganho exige a OC.
 
 ### Regras gerais (valem para o funil oficial)
 - **Não pode pular etapas**: o avanço é **uma etapa por vez** (o destino tem que ser a próxima etapa imediata). Tentar pular → bloqueia com a próxima etapa indicada.
@@ -390,7 +406,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 |---|---|---|
 | 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Tipo de cobrança** (`collection_type`) selecionado |
 | 2 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) + **Recalibração/Manutenção** (`service_type`) preenchido |
-| 3 | Proposta → Operações | **Proposta anexada** + **Formulário enviado** (checkbox `form_answered`) |
+| 3 | Proposta → Operações | **Proposta vinculada** (na aba Propostas do card) + **Formulário enviado** (checkbox `form_answered`) |
 | 4 | Operações → **Negócio Ganho** | botão Ganho acende em **Operações** · **sem regra por enquanto** (a definir depois) |
 | 5 | → **Negócio Perdido** | só pelo botão Perdido · **Motivo da perda** (modal) |
 
