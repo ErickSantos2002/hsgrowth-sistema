@@ -94,6 +94,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   const personSearchRef = useRef<HTMLDivElement>(null);
 
   // ─── Product search (per row) ─────────────────────────────────────────────
+  const productTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [productSearch, setProductSearch] = useState<string[]>([]);
   const [productResults, setProductResults] = useState<Product[][]>([]);
   const [showProductDropdown, setShowProductDropdown] = useState<boolean[]>([]);
@@ -136,6 +137,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
           setForm({
             client_id: p.client_id ?? null,
             person_id: p.person_id ?? null,
+            service_card_id: p.service_card_id ?? null,
             seller_name: p.seller_name ?? "",
             date: p.date ?? "",
             next_contact_date: p.next_contact_date ?? "",
@@ -289,12 +291,12 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   const handleProductSearchChange = (rowIdx: number, val: string) => {
     setProductSearch((prev) => { const n = [...prev]; n[rowIdx] = val; return n; });
     setShowProductDropdown((prev) => { const n = [...prev]; n[rowIdx] = true; return n; });
-    const timer = setTimeout(() => searchProductsForRow(rowIdx, val), 400);
-    // Note: each call creates a new timer; acceptable for inline search
-    return timer;
+    clearTimeout(productTimers.current[rowIdx]);
+    productTimers.current[rowIdx] = setTimeout(() => searchProductsForRow(rowIdx, val), 400);
   };
 
   const handleSelectProduct = (rowIdx: number, product: Product) => {
+    updateItem(rowIdx, "product_id", product.id);
     updateItem(rowIdx, "description", product.name);
     updateItem(rowIdx, "sku", product.sku ?? "");
     updateItem(rowIdx, "unit_price", product.unit_price);
@@ -576,9 +578,6 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                   options={[
                     { value: "rascunho", label: "Rascunho" },
                     { value: "enviada", label: "Enviada" },
-                    { value: "em_negociacao", label: "Em negociação" },
-                    { value: "aprovada", label: "Aprovada" },
-                    { value: "cancelada", label: "Cancelada" },
                   ]}
                   disabled={saving}
                 />

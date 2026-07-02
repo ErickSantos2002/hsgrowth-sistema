@@ -61,8 +61,8 @@ const Proposals: React.FC = () => {
   const formatDate = (date?: string | null): string => {
     if (!date) return "—";
     try {
-      const d = new Date(date);
-      return d.toLocaleDateString("pt-BR");
+      const [y, m, d] = date.split("T")[0].split("-");
+      return `${d}/${m}/${y}`;
     } catch {
       return "—";
     }
