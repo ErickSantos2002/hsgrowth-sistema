@@ -54,6 +54,12 @@ class ProposalService:
 
     def create(self, data: ProposalCreate, user=None) -> ProposalResponse:
         proposal = self.repo.create(data)
+        if proposal.service_card_id:
+            try:
+                from app.services.proposal_pdf_service import attach_proposal_pdf_to_card
+                attach_proposal_pdf_to_card(self.db, proposal)
+            except Exception as e:
+                print(f"[PROPOSAL-PDF] erro ao anexar PDF ao card (create): {e}")
         return self._to_response(proposal)
 
     def get(self, proposal_id: int) -> ProposalResponse:
@@ -67,6 +73,12 @@ class ProposalService:
         if not proposal:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proposta não encontrada")
         proposal = self.repo.update(proposal, data)
+        if proposal.service_card_id:
+            try:
+                from app.services.proposal_pdf_service import attach_proposal_pdf_to_card
+                attach_proposal_pdf_to_card(self.db, proposal)
+            except Exception as e:
+                print(f"[PROPOSAL-PDF] erro ao anexar PDF ao card (update): {e}")
         return self._to_response(proposal)
 
     def delete(self, proposal_id: int, user=None) -> dict:

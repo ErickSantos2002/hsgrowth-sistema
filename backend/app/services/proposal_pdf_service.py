@@ -4,12 +4,16 @@ Usa WeasyPrint (HTML → PDF) com template inline.
 """
 import re
 from decimal import Decimal
+from pathlib import Path
 from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.proposal import Proposal
+
+# Mesmo UPLOAD_DIR usado por service_board_service.upload_file
+UPLOAD_DIR = Path("/app/uploads")
 
 
 # ---------------------------------------------------------------------------
@@ -550,3 +554,81 @@ def generate_proposal_pdf(db: Session, proposal_id: int) -> bytes:
     import weasyprint  # import tardio — só carrega quando necessário
     pdf_bytes = weasyprint.HTML(string=html).write_pdf()
     return pdf_bytes
+
+
+def attach_proposal_pdf_to_card(db: Session, proposal: Proposal) -> None:
+    """
+    Gera o PDF da proposta e o anexa como arquivo ao card de serviço vinculado.
+
+    - Se a proposta não tiver service_card_id, não faz nada.
+    - Substitui qualquer PDF auto-anexado anterior para a mesma proposta
+      (identificado via activity_metadata.proposal_pdf_id).
+    - Erros de geração de PDF NÃO são propagados (apenas logados).
+    - O arquivo criado aparece na aba "Arquivos" do card e pode ser deletado
+      normalmente, exatamente como qualquer outro arquivo enviado via upload_file.
+    """
+    if not proposal.service_card_id:
+        return
+
+    from app.models.service_card_activity import ServiceCardActivity
+
+    card_id = proposal.service_card_id
+    number = proposal.number or proposal.id
+
+    # Gera o PDF
+    pdf = generate_proposal_pdf(db, proposal.id)
+
+    # Garante que o diretório existe (igual a upload_file)
+    card_dir = UPLOAD_DIR / "service_cards" / str(card_id)
+    card_dir.mkdir(parents=True, exist_ok=True)
+
+    # Nome de arquivo estável (substituível) para esta proposta
+    filename = f"proposta-{number}.pdf"
+    file_path_relative = f"service_cards/{card_id}/{filename}"
+
+    # Remove registro e arquivo anteriores do PDF automático desta proposta
+    try:
+        old_activities = (
+            db.query(ServiceCardActivity)
+            .filter(
+                ServiceCardActivity.service_card_id == card_id,
+                ServiceCardActivity.category == "arquivo",
+            )
+            .all()
+        )
+        for act in old_activities:
+            meta = act.activity_metadata or {}
+            if meta.get("proposal_pdf_id") == proposal.id:
+                # Remove o arquivo físico (best-effort)
+                try:
+                    fp = UPLOAD_DIR / act.file_path
+                    if fp.exists():
+                        fp.unlink()
+                except Exception as e:
+                    print(f"[PROPOSAL-PDF] erro ao remover arquivo antigo: {e}")
+                db.delete(act)
+        db.commit()
+    except Exception as e:
+        print(f"[PROPOSAL-PDF] erro ao limpar PDF anterior da proposta {proposal.id}: {e}")
+        db.rollback()
+
+    # Grava o PDF no disco
+    with open(card_dir / filename, "wb") as f:
+        f.write(pdf)
+
+    # Cria a atividade de arquivo — campos idênticos ao upload_file
+    activity = ServiceCardActivity(
+        service_card_id=card_id,
+        user_id=None,                                   # sistema (automático)
+        category="arquivo",
+        activity_type="file_attached",
+        title=f"Proposta {number}.pdf",
+        file_name=f"Proposta {number}.pdf",
+        file_path=file_path_relative,
+        file_size=len(pdf),
+        mime_type="application/pdf",
+        description=f"Proposta #{number} (PDF) — anexada automaticamente",
+        activity_metadata={"proposal_pdf_id": proposal.id, "doc_slot": None},
+    )
+    db.add(activity)
+    db.commit()

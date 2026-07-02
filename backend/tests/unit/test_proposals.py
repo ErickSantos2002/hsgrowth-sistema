@@ -136,3 +136,20 @@ def test_endpoint_proposal_pdf(client, admin_headers):
     assert r2.status_code == 200, r2.text
     assert r2.headers["content-type"] == "application/pdf"
     assert r2.content[:5] == b"%PDF-"
+
+
+def test_auto_attach_pdf_on_create_linked(db):
+    from app.models.service_board import ServiceBoard
+    from app.models.service_list import ServiceList
+    from app.models.service_card import ServiceCard
+    from app.models.service_card_activity import ServiceCardActivity
+    from app.services.proposal_service import ProposalService
+    from app.schemas.proposal import ProposalCreate, ProposalItemCreate
+    board = ServiceBoard(name="Serv", description="x"); db.add(board); db.commit()
+    lst = ServiceList(name="Proposta", position=3, board_id=board.id); db.add(lst); db.commit()
+    card = ServiceCard(title="C", list_id=lst.id); db.add(card); db.commit()
+    svc = ProposalService(db)
+    svc.create(ProposalCreate(service_card_id=card.id, items=[ProposalItemCreate(description="Calibração", quantity=1, unit_price=395)]))
+    files = db.query(ServiceCardActivity).filter(ServiceCardActivity.service_card_id == card.id, ServiceCardActivity.category == "arquivo").all()
+    assert len(files) == 1
+    assert (files[0].activity_metadata or {}).get("proposal_pdf_id") is not None
