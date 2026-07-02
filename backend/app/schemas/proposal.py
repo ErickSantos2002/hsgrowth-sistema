@@ -46,7 +46,7 @@ class ProposalBase(BaseModel):
     delivery_date: Optional[date] = None
     delivery_desc: Optional[str] = None
     different_delivery_address: bool = False
-    delivery_address: Optional[str] = None
+    delivery_address: Optional[dict] = None
     notes: Optional[str] = None
     signature: Optional[str] = None
     internal_status: Literal["rascunho", "enviada"] = "rascunho"
@@ -76,7 +76,7 @@ class ProposalUpdate(BaseModel):
     delivery_date: Optional[date] = None
     delivery_desc: Optional[str] = None
     different_delivery_address: Optional[bool] = None
-    delivery_address: Optional[str] = None
+    delivery_address: Optional[dict] = None
     notes: Optional[str] = None
     signature: Optional[str] = None
     internal_status: Optional[Literal["rascunho", "enviada"]] = None

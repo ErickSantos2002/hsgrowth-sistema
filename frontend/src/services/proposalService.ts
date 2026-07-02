@@ -13,6 +13,22 @@ export interface ProposalItem {
 
 export type ProposalMarker = "aprovada" | "nao_aprovada" | "em_aberto";
 
+// Endereço de entrega estruturado (usado na impressão/visualização — fase 2)
+export interface DeliveryAddress {
+  cep?: string;
+  city?: string;
+  state?: string;          // UF
+  street?: string;         // Endereço (logradouro)
+  district?: string;       // Bairro
+  number?: string;         // Número
+  complement?: string;     // Complemento
+  state_registration?: string; // Inscrição estadual
+  recipient?: string;      // Destinatário
+  person_type?: "fisica" | "juridica";
+  document?: string;       // CPF/CNPJ
+  phone?: string;          // Fone
+}
+
 export interface Proposal {
   id: number;
   number: number;
@@ -34,7 +50,7 @@ export interface Proposal {
   delivery_date?: string | null;
   delivery_desc?: string | null;
   different_delivery_address?: boolean;
-  delivery_address?: string | null;
+  delivery_address?: DeliveryAddress | null;
   notes?: string | null;
   signature?: string | null;
   internal_status: string;

@@ -5,6 +5,7 @@ import RichTextEditor from "../common/RichTextEditor";
 import proposalService, {
   ProposalCreate,
   ProposalItem,
+  DeliveryAddress,
 } from "../../services/proposalService";
 import clientService, { Client } from "../../services/clientService";
 import personService, { Person } from "../../services/personService";
@@ -36,6 +37,11 @@ export interface ProposalModalProps {
 const formatCurrency = (value: number) =>
   value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const UF_OPTIONS = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
+  "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+];
+
 const EMPTY_ITEM = (): ProposalItem => ({
   description: "",
   sku: "",
@@ -62,7 +68,7 @@ const EMPTY_FORM = (): ProposalCreate => ({
   delivery_date: "",
   delivery_desc: "",
   different_delivery_address: false,
-  delivery_address: "",
+  delivery_address: null,
   notes: "",
   signature: "",
   internal_status: "rascunho",
@@ -90,6 +96,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   // ─── UI state ────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
 
   // ─── Client picker ───────────────────────────────────────────────────────
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -122,6 +129,38 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   const setField = useCallback(<K extends keyof ProposalCreate>(key: K, value: ProposalCreate[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   }, []);
+
+  // ─── Endereço de entrega (JSON) ──────────────────────────────────────────
+  const setDelivery = (key: keyof DeliveryAddress, value: string) =>
+    setForm((prev) => ({ ...prev, delivery_address: { ...(prev.delivery_address ?? {}), [key]: value } }));
+
+  const lookupCep = async () => {
+    const cep = (form.delivery_address?.cep || "").replace(/\D/g, "");
+    if (cep.length !== 8) { showError("CEP inválido (informe 8 dígitos)"); return; }
+    setCepLoading(true);
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const d = await r.json();
+      if (d.erro) { showError("CEP não encontrado"); return; }
+      setForm((prev) => ({
+        ...prev,
+        delivery_address: {
+          ...(prev.delivery_address ?? {}),
+          city: d.localidade || "",
+          state: d.uf || "",
+          street: d.logradouro || "",
+          district: d.bairro || "",
+          complement: d.complemento || (prev.delivery_address?.complement ?? ""),
+        },
+      }));
+    } catch {
+      showError("Erro ao buscar o CEP");
+    } finally {
+      setCepLoading(false);
+    }
+  };
+
+  const da: DeliveryAddress = form.delivery_address ?? {};
 
   // Busca cliente/pessoa pelo id e preenche os seletores (nome visível)
   const hydratePickers = (clientId?: number | null, personId?: number | null) => {
@@ -179,7 +218,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
             delivery_date: p.delivery_date ?? "",
             delivery_desc: p.delivery_desc ?? "",
             different_delivery_address: p.different_delivery_address ?? false,
-            delivery_address: p.delivery_address ?? "",
+            delivery_address: p.delivery_address ?? null,
             notes: p.notes ?? "",
             signature: p.signature ?? "",
             internal_status: p.internal_status ?? "rascunho",
@@ -572,15 +611,58 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                 </span>
               </label>
               {form.different_delivery_address && (
-                <FormField label="Endereço de entrega">
-                  <Textarea
-                    value={form.delivery_address ?? ""}
-                    onChange={(e) => setField("delivery_address", e.target.value)}
-                    placeholder="Rua, número, bairro, CEP, cidade - UF"
-                    rows={3}
-                    disabled={saving}
-                  />
-                </FormField>
+                <div className="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-slate-700">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Endereço de entrega
+                  </p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
+                    <FormField label="CEP" className="sm:col-span-2">
+                      <div className="relative">
+                        <Input type="text" value={da.cep ?? ""} onChange={(e) => setDelivery("cep", e.target.value)} placeholder="00000-000" disabled={saving} />
+                        <button
+                          type="button"
+                          onClick={lookupCep}
+                          disabled={saving || cepLoading}
+                          title="Buscar endereço pelo CEP"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 transition-colors hover:text-emerald-500 disabled:opacity-50"
+                        >
+                          <Search size={16} />
+                        </button>
+                      </div>
+                    </FormField>
+                    <FormField label="Cidade" className="sm:col-span-3">
+                      <Input type="text" value={da.city ?? ""} onChange={(e) => setDelivery("city", e.target.value)} disabled={saving} />
+                    </FormField>
+                    <FormField label="UF" className="sm:col-span-1">
+                      <SelectMenu
+                        value={da.state ?? ""}
+                        onChange={(v) => setDelivery("state", v)}
+                        options={[{ value: "", label: "—" }, ...UF_OPTIONS.map((uf) => ({ value: uf, label: uf }))]}
+                      />
+                    </FormField>
+                  </div>
+                  <FormField label="Endereço">
+                    <Input type="text" value={da.street ?? ""} onChange={(e) => setDelivery("street", e.target.value)} placeholder="Logradouro" disabled={saving} />
+                  </FormField>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                    <FormField label="Bairro"><Input type="text" value={da.district ?? ""} onChange={(e) => setDelivery("district", e.target.value)} disabled={saving} /></FormField>
+                    <FormField label="Número"><Input type="text" value={da.number ?? ""} onChange={(e) => setDelivery("number", e.target.value)} disabled={saving} /></FormField>
+                    <FormField label="Complemento"><Input type="text" value={da.complement ?? ""} onChange={(e) => setDelivery("complement", e.target.value)} disabled={saving} /></FormField>
+                    <FormField label="Insc. estadual"><Input type="text" value={da.state_registration ?? ""} onChange={(e) => setDelivery("state_registration", e.target.value)} disabled={saving} /></FormField>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                    <FormField label="Destinatário"><Input type="text" value={da.recipient ?? ""} onChange={(e) => setDelivery("recipient", e.target.value)} disabled={saving} /></FormField>
+                    <FormField label="Tipo de Pessoa">
+                      <SelectMenu
+                        value={da.person_type ?? "fisica"}
+                        onChange={(v) => setDelivery("person_type", v)}
+                        options={[{ value: "fisica", label: "Física" }, { value: "juridica", label: "Jurídica" }]}
+                      />
+                    </FormField>
+                    <FormField label="CPF / CNPJ"><Input type="text" value={da.document ?? ""} onChange={(e) => setDelivery("document", e.target.value)} disabled={saving} /></FormField>
+                    <FormField label="Fone"><Input type="text" value={da.phone ?? ""} onChange={(e) => setDelivery("phone", e.target.value)} disabled={saving} /></FormField>
+                  </div>
+                </div>
               )}
 
             </div>
