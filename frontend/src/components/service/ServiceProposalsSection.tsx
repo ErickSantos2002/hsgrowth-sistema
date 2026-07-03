@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Plus, Link2, Search, X, Eye, Pencil, Download } from "lucide-react";
+import { FileText, Plus, Link2, Search, X, Eye, Pencil, Download, Trash2 } from "lucide-react";
 import ExpandableSection from "../cardDetails/ExpandableSection";
 import proposalService, { Proposal, ProposalCreate } from "../../services/proposalService";
 import serviceBoardService from "../../services/serviceBoardService";
@@ -8,6 +8,7 @@ import { markerBadge } from "../../utils/proposalMarker";
 import { buildDefaultOtherItems } from "../../utils/proposalDefaults";
 import { viewProposalPdf, downloadProposalPdf } from "../../utils/proposalPdf";
 import { showError, showSuccess } from "../../utils/toast";
+import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface ServiceProposalsSectionProps {
   boardId: number;
@@ -36,6 +37,7 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
   const [linkSearch, setLinkSearch] = useState("");
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkingId, setLinkingId] = useState<number | null>(null);
+  const { confirm } = useConfirm();
 
   const loadProposals = async () => {
     try {
@@ -85,6 +87,23 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
     setInitial(undefined);
     setEditingId(p.id);
     setModalOpen(true);
+  };
+
+  const handleDelete = async (p: Proposal) => {
+    const ok = await confirm({
+      title: "Excluir proposta",
+      message: `Excluir a proposta #${p.number}? Esta ação não pode ser desfeita.`,
+      confirmText: "Excluir",
+      isDanger: true,
+    });
+    if (!ok) return;
+    try {
+      await proposalService.remove(p.id);
+      showSuccess(`Proposta #${p.number} excluída`);
+      loadProposals();
+    } catch {
+      showError("Erro ao excluir a proposta");
+    }
   };
 
   const handleSaved = () => {
@@ -194,6 +213,13 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
                         className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-700 dark:hover:bg-slate-700/50 dark:hover:text-white"
                       >
                         <Download size={15} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p)}
+                        title="Excluir"
+                        className="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
+                      >
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
