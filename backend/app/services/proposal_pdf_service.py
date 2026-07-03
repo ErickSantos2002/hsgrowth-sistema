@@ -58,6 +58,18 @@ def _esc(text: Optional[str]) -> str:
     )
 
 
+def _fmt_document(doc: Optional[str]) -> str:
+    """Formata CPF (11 díg.) ou CNPJ (14 díg.); mantém original se não bater."""
+    if not doc:
+        return ""
+    digits = re.sub(r"\D", "", str(doc))
+    if len(digits) == 14:
+        return f"{digits[:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:]}"
+    if len(digits) == 11:
+        return f"{digits[:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:]}"
+    return _esc(doc)
+
+
 def _sanitize_html(html: Optional[str]) -> str:
     """
     Sanitização defensiva do HTML do Quill antes de renderizar no PDF (WeasyPrint).
@@ -202,10 +214,29 @@ table.itens th.right {
 }
 
 .itens-rodape {
-    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-top: none;
+    padding: 6px 8px;
     font-size: 10px;
     color: #333;
     text-align: right;
+}
+
+/* ── Tabela de 2 colunas (Condições gerais) ── */
+table.cond2 {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+    font-size: 10px;
+}
+table.cond2 td {
+    border: 1px solid #ccc;
+    padding: 5px 8px;
+    vertical-align: top;
+}
+table.cond2 td:first-child {
+    background: #f7f7f7;
+    width: 42%;
 }
 
 /* ── Tabela de totais (fechamento) ── */
@@ -271,7 +302,7 @@ def _build_html(proposal: Proposal) -> str:
 
     if client:
         client_display = _esc(client.company_name or client.name or "—")
-        client_document = _esc(client.document or "")
+        client_document = _fmt_document(client.document)
         client_address = _esc(client.address or "")
         city = client.city or ""
         state = client.state or ""
@@ -397,24 +428,16 @@ def _build_html(proposal: Proposal) -> str:
   <div class="box">{delivery_lines}</div>
 </div>"""
 
-    # ── Condições comerciais (pagamento) ──
-    cond_comerciais_html = ""
-    if proposal.payment_terms:
-        cond_comerciais_html = f"Condição de pagamento: {_esc(proposal.payment_terms)}"
-
-    # ── Condições gerais (envio, validade, prazo) ──
-    cond_gerais_parts = []
-    if proposal.shipping_method:
-        cond_gerais_parts.append(f"Forma de envio: {_esc(proposal.shipping_method)}")
-    if proposal.freight_type:
-        cond_gerais_parts.append(f"Forma de frete: {_esc(proposal.freight_type)}")
-    if proposal.validity_days:
-        cond_gerais_parts.append(f"Validade da proposta: {proposal.validity_days} dias")
-    if proposal.delivery_date:
-        cond_gerais_parts.append(f"Data prevista de entrega: {_fmt_date(proposal.delivery_date)}")
-    if proposal.delivery_desc:
-        cond_gerais_parts.append(f"Prazo de entrega: {_esc(proposal.delivery_desc)}")
-    cond_gerais_html = "<br>".join(cond_gerais_parts) if cond_gerais_parts else ""
+    # ── Condições gerais (linhas da tabela label | valor) ──
+    def _cg_row(label, value):
+        return f"<tr><td><strong>{label}</strong></td><td>{value}</td></tr>" if value else ""
+    cond_gerais_rows = (
+        _cg_row("Forma de envio", _esc(proposal.shipping_method or ""))
+        + _cg_row("Forma de frete", _esc(proposal.freight_type or ""))
+        + _cg_row("Validade da proposta", f"{proposal.validity_days} dias" if proposal.validity_days else "")
+        + _cg_row("Data prevista de entrega", _fmt_date(proposal.delivery_date) if proposal.delivery_date else "")
+        + _cg_row("Prazo de entrega", _esc(proposal.delivery_desc or ""))
+    )
 
     # ── Assinatura ──
     signature_html = ""
@@ -454,22 +477,25 @@ def _build_html(proposal: Proposal) -> str:
   <div class="box"><div class="outros-itens-conteudo">{outros_itens_html}</div></div>
 </div>"""
 
-    # ── Condições comerciais block ──
+    # ── Condições comerciais block (Dias | Valor | Obs) ──
     cond_comerciais_block = ""
-    if cond_comerciais_html:
+    if proposal.payment_terms:
         cond_comerciais_block = f"""
 <div class="secao">
   <div class="secao-titulo">Condições comerciais</div>
-  <p>{cond_comerciais_html}</p>
+  <table class="totais">
+    <thead><tr><th style="width:100px">Dias</th><th class="right" style="width:130px">Valor</th><th>Obs.</th></tr></thead>
+    <tbody><tr><td>{_esc(proposal.payment_terms)}</td><td class="right">{_fmt_currency(total_proposta)}</td><td></td></tr></tbody>
+  </table>
 </div>"""
 
-    # ── Condições gerais block ──
+    # ── Condições gerais block (tabela label | valor) ──
     cond_gerais_block = ""
-    if cond_gerais_html:
+    if cond_gerais_rows:
         cond_gerais_block = f"""
 <div class="secao">
   <div class="secao-titulo">Condições gerais</div>
-  <p>{cond_gerais_html}</p>
+  <table class="cond2"><tbody>{cond_gerais_rows}</tbody></table>
 </div>"""
 
     # ── Observações ──
@@ -478,7 +504,7 @@ def _build_html(proposal: Proposal) -> str:
         obs_block = f"""
 <div class="secao">
   <div class="secao-titulo">Observações</div>
-  <p>{_esc(proposal.notes).replace(chr(10), '<br>')}</p>
+  <div class="box">{_esc(proposal.notes).replace(chr(10), '<br>')}</div>
 </div>"""
 
     # ── Tabela de totais (fechamento) ──
@@ -505,6 +531,7 @@ def _build_html(proposal: Proposal) -> str:
       </tr>
     </tbody>
   </table>
+  <!-- (mantém Desconto como coluna extra; modelo externo embute desconto no preço) -->
 </div>"""
 
     # ── Monta o HTML completo ──
