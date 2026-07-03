@@ -214,6 +214,31 @@ db.close()
 | Lote 16 | 01/07/2026 | 159 | Karolaine (80), Miguel (79) | 8263–8421 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
+**Fim da planilha "Novos SDR":** 2189/2189 (100%) importados no Lote 16. Novos lotes usam outra fonte (ver abaixo).
+
+---
+
+## Fonte 2 — Transportadoras / Operadores Logísticos (Prospecção SSMA)
+
+Planilha original: `Planilha_Nova_030726.xlsx` (aba CONSOLIDADO, 4.056 empresas, todas ATIVA).
+Padronizada para o layout CRM via `padronizar_transportadoras.py` → **`Planilha_Transportadoras_Prospeccao_fixed.xlsx`** (mesmo formato de 51 colunas; `Status_Importacao` controla o que já subiu).
+
+**Diferenças desta fonte:**
+- Sem contato dedicado → `Nome_Contato1` fica em branco (telefone/e-mail vão para Fone1/Email1_Empresa). Cards criados sem pessoa vinculada (SDR preenche depois).
+- `Nº FUNC.` e `FATURAMENTO` vêm como número e são convertidos para as faixas-texto do CRM. Func. = 0 → faixa em branco.
+- CNAE vem como descrição (sem código) → campo `cnae` fica null (esperado).
+
+**Gerar lote:** use `fix_transportadoras_lote1.py` como base (ajuste `SDRS`, `CARDS_PER_SDR` e `OUTPUT_LOTE`), aponta para o `_fixed` desta fonte. Import roda com o mesmo `import_from_planilha.py`.
+
+| Lote | Data | Cards | SDRs | IDs no banco | Status |
+|---|---|---|---|---|---|
+| Transp. Lote 1 | 03/07/2026 | 300 | Claudia (100), Karolaine (100), Miguel (100) | 8452–8751 | ✅ Importado |
+| ... | — | ... | ... | ... | ... |
+
+**Total Transportadoras importado:** 300 | **Disponíveis:** 3.756 de 4.056.
+
+---
+
 **Obs. Lote 3:** 299 importados pelo script + 1 manual (EFITRANS TRANSPORTES LTDA, id=5750, Ãhwaryoné). Karolaine Martins (id=9) incluída pela primeira vez.
 
 **Obs. Lote 5:** A partir deste lote, `import_from_planilha.py` preenche automaticamente: `deal_type="Nova Venda"` (Card), `relationship_type="Lead"` e `commercial_activity="Ativo"` (Client). SDRs não precisam mais preencher esses campos manualmente.
