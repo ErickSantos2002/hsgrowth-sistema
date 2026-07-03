@@ -391,11 +391,17 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   const handleSubmit = async () => {
     setSaving(true);
     try {
+      const cleanDate = (d?: string | null) => (d && String(d).trim() ? d : null);
       const payload: ProposalCreate = {
         ...form,
+        date: cleanDate(form.date),
+        next_contact_date: cleanDate(form.next_contact_date),
+        delivery_date: cleanDate(form.delivery_date),
         discount: Number(form.discount) || 0,
         shipping: Number(form.shipping) || 0,
         validity_days: form.validity_days ? Number(form.validity_days) : undefined,
+        // só envia o endereço de entrega quando o checkbox está marcado
+        delivery_address: form.different_delivery_address ? (form.delivery_address ?? null) : null,
         items: items.map((it) => ({
           ...it,
           quantity: Number(it.quantity) || 0,
@@ -413,11 +419,21 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
       onSaved();
       onClose();
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { detail?: string } }; message?: string };
-      const msg =
-        axiosErr?.response?.data?.detail ||
-        axiosErr?.message ||
-        "Erro ao salvar proposta";
+      const axiosErr = err as { response?: { data?: { detail?: unknown } }; message?: string };
+      const detail = axiosErr?.response?.data?.detail;
+      let msg = "Erro ao salvar a proposta";
+      if (typeof detail === "string") {
+        msg = detail;
+      } else if (Array.isArray(detail)) {
+        // 422 do FastAPI: lista de { loc, msg, ... } — nunca renderizar o objeto cru
+        msg =
+          detail
+            .map((e) => (e && typeof e === "object" && "msg" in e ? String((e as { msg: unknown }).msg) : ""))
+            .filter(Boolean)
+            .join("; ") || msg;
+      } else if (axiosErr?.message) {
+        msg = axiosErr.message;
+      }
       showError(msg);
     } finally {
       setSaving(false);

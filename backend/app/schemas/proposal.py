@@ -1,5 +1,5 @@
 """Schemas de Proposta Comercial."""
-from datetime import date, datetime
+from datetime import date as date_type, datetime  # alias: o campo `date` sombrearia o tipo `date`
 from typing import Literal, Optional, List
 from pydantic import BaseModel, Field
 
@@ -32,8 +32,8 @@ class ProposalBase(BaseModel):
     person_id: Optional[int] = None
     service_card_id: Optional[int] = None
     seller_name: Optional[str] = None
-    date: Optional[date] = None
-    next_contact_date: Optional[date] = None
+    date: Optional[date_type] = None
+    next_contact_date: Optional[date_type] = None
     intro: Optional[str] = None
     other_items: Optional[str] = None
     discount: float = 0
@@ -43,7 +43,7 @@ class ProposalBase(BaseModel):
     carrier_name: Optional[str] = None
     payment_terms: Optional[str] = None
     validity_days: Optional[int] = None
-    delivery_date: Optional[date] = None
+    delivery_date: Optional[date_type] = None
     delivery_desc: Optional[str] = None
     different_delivery_address: bool = False
     delivery_address: Optional[dict] = None
@@ -62,8 +62,8 @@ class ProposalUpdate(BaseModel):
     person_id: Optional[int] = None
     service_card_id: Optional[int] = None
     seller_name: Optional[str] = None
-    date: Optional[date] = None
-    next_contact_date: Optional[date] = None
+    date: Optional[date_type] = None
+    next_contact_date: Optional[date_type] = None
     intro: Optional[str] = None
     other_items: Optional[str] = None
     discount: Optional[float] = None
@@ -73,7 +73,7 @@ class ProposalUpdate(BaseModel):
     carrier_name: Optional[str] = None
     payment_terms: Optional[str] = None
     validity_days: Optional[int] = None
-    delivery_date: Optional[date] = None
+    delivery_date: Optional[date_type] = None
     delivery_desc: Optional[str] = None
     different_delivery_address: Optional[bool] = None
     delivery_address: Optional[dict] = None
