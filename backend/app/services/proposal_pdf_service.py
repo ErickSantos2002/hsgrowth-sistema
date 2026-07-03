@@ -95,115 +95,105 @@ _CSS = """
 
 body {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 11px;
-    color: #1a1a1a;
+    font-size: 10.5px;
+    color: #222;
     margin: 0;
     padding: 0;
     line-height: 1.5;
 }
 
-/* Cabeçalho */
+/* ── Cabeçalho ── */
 .header {
     display: table;
     width: 100%;
-    margin-bottom: 16px;
-    border-bottom: 2px solid #1a1a1a;
-    padding-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #333;
+    margin-bottom: 12px;
 }
 
 .header-logo-area {
     display: table-cell;
-    width: 40%;
+    width: 38%;
     vertical-align: top;
-    /* Logo pode ser adicionada aqui futuramente (ex: <img src="...logo.png">) */
-    color: #666;
-    font-size: 10px;
-    font-style: italic;
 }
 
 .header-company {
     display: table-cell;
-    width: 60%;
+    width: 62%;
     text-align: right;
     vertical-align: top;
 }
 
 .header-company .company-name {
-    font-size: 12px;
+    font-size: 10.5px;
     font-weight: bold;
     margin-bottom: 2px;
 }
 
 .header-company .company-line {
-    font-size: 10px;
-    color: #444;
-    line-height: 1.4;
+    font-size: 9.5px;
+    color: #333;
+    line-height: 1.45;
 }
 
-/* Título */
+/* ── Título ── */
 .titulo {
     text-align: center;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: bold;
-    margin: 12px 0 16px 0;
-    letter-spacing: 0.5px;
+    margin: 10px 0 14px 0;
 }
 
-/* Seção genérica */
+/* ── Linha Para / Aos cuidados de ── */
+.para-linha {
+    font-size: 10.5px;
+    margin: 0 0 10px 0;
+}
+
+/* ── Seção genérica ── */
 .secao {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .secao-titulo {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: bold;
-    border-bottom: 1px solid #555;
-    padding-bottom: 2px;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 3px;
+    margin-top: 14px;
+    margin-bottom: 4px;
+    /* sentence case — sem text-transform */
 }
 
-/* Caixa com borda */
+/* ── Caixa com borda ── */
 .box {
-    border: 1px solid #aaa;
-    padding: 7px 10px;
-    border-radius: 2px;
-    margin-bottom: 6px;
-    font-size: 10.5px;
+    border: 1px solid #999;
+    padding: 8px 10px;
+    margin-top: 4px;
+    font-size: 10px;
     line-height: 1.6;
 }
 
-/* Linha para/aos-cuidados */
-.para-linha {
-    font-size: 11px;
-    margin-bottom: 4px;
-}
-
-/* Tabela de itens */
+/* ── Tabela de itens ── */
 table.itens {
     width: 100%;
     border-collapse: collapse;
     margin-top: 4px;
-    font-size: 10.5px;
+    font-size: 10px;
 }
 
 table.itens th {
-    background: #f0f0f0;
-    border: 1px solid #bbb;
+    background: #f2f2f2;
+    border: 1px solid #ccc;
     padding: 5px 7px;
     text-align: left;
     font-weight: bold;
 }
 
 table.itens td {
-    border: 1px solid #bbb;
-    padding: 4px 7px;
+    border: 1px solid #ccc;
+    padding: 5px 7px;
     vertical-align: top;
-}
-
-table.itens tr:nth-child(even) td {
-    background: #fafafa;
 }
 
 table.itens td.right,
@@ -213,44 +203,41 @@ table.itens th.right {
 
 .itens-rodape {
     margin-top: 5px;
-    font-size: 10.5px;
+    font-size: 10px;
     color: #333;
+    text-align: right;
 }
 
-/* Totais */
-.totais-table {
+/* ── Tabela de totais (fechamento) ── */
+table.totais {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11px;
+    margin-top: 4px;
+    font-size: 10px;
 }
 
-.totais-table td {
-    padding: 3px 6px;
-}
-
-.totais-table td.label {
-    text-align: right;
-    color: #555;
-    width: 70%;
-}
-
-.totais-table td.valor {
-    text-align: right;
+table.totais th {
+    background: #f2f2f2;
+    border: 1px solid #ccc;
+    padding: 5px 7px;
+    text-align: left;
     font-weight: bold;
-    width: 30%;
 }
 
-.totais-table tr.total-final td {
-    font-size: 12px;
-    font-weight: bold;
-    border-top: 2px solid #333;
-    padding-top: 5px;
-    color: #000;
+table.totais td {
+    border: 1px solid #ccc;
+    padding: 5px 7px;
+    vertical-align: top;
 }
 
-/* Outros itens (HTML do Quill) */
+table.totais td.right,
+table.totais th.right {
+    text-align: right;
+}
+
+/* ── Outros itens (HTML do Quill) ── */
 .outros-itens-conteudo {
-    font-size: 10.5px;
+    font-size: 10px;
     line-height: 1.6;
 }
 
@@ -260,10 +247,10 @@ table.itens th.right {
     padding: 0;
 }
 
-/* Assinatura */
+/* ── Assinatura ── */
 .assinatura {
-    margin-top: 20px;
-    font-size: 11px;
+    margin-top: 18px;
+    font-size: 10.5px;
     line-height: 1.8;
 }
 """
@@ -274,7 +261,7 @@ def _build_html(proposal: Proposal) -> str:
     person = proposal.person
     items = proposal.items or []
 
-    # --- Dados do cliente ---
+    # ── Dados do cliente ──
     client_display = "—"
     client_document = ""
     client_address = ""
@@ -297,7 +284,7 @@ def _build_html(proposal: Proposal) -> str:
         client_email = _esc(client.email or "")
         client_phone = _esc(client.phone or "")
 
-    # --- Dados da pessoa ---
+    # ── Dados da pessoa ──
     person_name = ""
     person_email = ""
     person_phone = ""
@@ -324,99 +311,203 @@ def _build_html(proposal: Proposal) -> str:
         fone_email_parts.append(f"Fone: {combined_phone}")
     if combined_email:
         fone_email_parts.append(f"E-mail: {combined_email}")
-    fone_email_line = " &nbsp;|&nbsp; ".join(fone_email_parts) if fone_email_parts else ""
+    fone_email_line = " &nbsp;&middot;&nbsp; ".join(fone_email_parts) if fone_email_parts else ""
 
-    # --- Itens ---
+    # ── Itens ──
     total_itens = Decimal("0")
+    soma_qtds = Decimal("0")
     rows_html = ""
     for i, item in enumerate(items, 1):
-        qty = float(item.quantity or 0)
+        qty = Decimal(str(item.quantity or 0))
         unit_price = float(item.unit_price or 0)
         total_item = float(item.total or 0)
         total_itens += Decimal(str(total_item))
+        soma_qtds += qty
+
+        # Formata quantidade: 4 decimais, separadores pt-BR
+        qty_str = f"{float(qty):,.4f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
         rows_html += f"""
         <tr>
           <td>{i}</td>
           <td>{_esc(item.description)}</td>
           <td>{_esc(item.sku or "")}</td>
-          <td class="right">{qty:g}</td>
+          <td class="right">{qty_str}</td>
           <td>{_esc(item.unit or "")}</td>
           <td class="right">{_fmt_currency(unit_price)}</td>
           <td class="right">{_fmt_currency(total_item)}</td>
         </tr>"""
 
     n_itens = len(items)
+    soma_qtds_str = f"{float(soma_qtds):,.4f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-    # --- Financeiro ---
+    # ── Financeiro ──
     discount = Decimal(str(proposal.discount or 0))
     shipping = Decimal(str(proposal.shipping or 0))
     total_proposta = total_itens + shipping - discount
 
-    # --- Outros itens (HTML sanitizado) ---
+    # ── Outros itens (HTML sanitizado) ──
     outros_itens_html = _sanitize_html(proposal.other_items or "")
 
-    # --- Número da proposta ---
+    # ── Número da proposta ──
     number_str = str(proposal.number) if proposal.number else "—"
 
-    # --- Endereço de entrega (diferente) ---
+    # ── Data da proposta ──
+    data_proposta = _fmt_date(proposal.date)
+
+    # ── Endereço de entrega (diferente) ──
     delivery_block = ""
     if proposal.different_delivery_address and proposal.delivery_address:
         da = proposal.delivery_address
+
         def da_get(key):
             return _esc(str(da.get(key, "") or ""))
 
+        street_line = da_get('street')
+        if da.get('number'):
+            street_line += f", {da_get('number')}"
+        if da.get('complement'):
+            street_line += f" {da_get('complement')}"
+
+        city_state_cep = da_get('city')
+        if da.get('state'):
+            city_state_cep += f"/{da_get('state')}"
+        if da.get('cep'):
+            city_state_cep += f" — CEP: {da_get('cep')}"
+
+        delivery_lines = ""
+        if da_get('recipient'):
+            delivery_lines += f"{da_get('recipient')}<br>"
+        if street_line:
+            delivery_lines += f"{street_line}<br>"
+        if da_get('district'):
+            delivery_lines += f"Bairro: {da_get('district')}<br>"
+        if city_state_cep:
+            delivery_lines += f"{city_state_cep}<br>"
+        if da.get('state_registration'):
+            delivery_lines += f"Insc. estadual: {da_get('state_registration')}<br>"
+        if da.get('document'):
+            delivery_lines += f"CPF/CNPJ: {da_get('document')}<br>"
+        if da.get('phone'):
+            delivery_lines += f"Fone: {da_get('phone')}<br>"
+
         delivery_block = f"""
-        <div class="secao">
-          <div class="secao-titulo">Endereço de Entrega</div>
-          <div class="box">
-            <strong>Destinatário:</strong> {da_get('recipient')}<br>
-            {da_get('street')}{', ' + da_get('number') if da.get('number') else ''}{', ' + da_get('complement') if da.get('complement') else ''}<br>
-            <strong>Bairro:</strong> {da_get('district')}<br>
-            {da_get('city')}{('/' + da_get('state')) if da.get('state') else ''}{(' — CEP ' + da_get('cep')) if da.get('cep') else ''}<br>
-            {'<strong>CPF/CNPJ:</strong> ' + da_get('document') + '<br>' if da.get('document') else ''}
-            {'<strong>Fone:</strong> ' + da_get('phone') + '<br>' if da.get('phone') else ''}
-            {'<strong>Insc. estadual:</strong> ' + da_get('state_registration') + '<br>' if da.get('state_registration') else ''}
-          </div>
-        </div>"""
+<div class="secao">
+  <div class="secao-titulo">Endereço de entrega</div>
+  <div class="box">{delivery_lines}</div>
+</div>"""
 
-    # --- Condições comerciais ---
-    condicoes_parts = []
+    # ── Condições comerciais (pagamento) ──
+    cond_comerciais_html = ""
     if proposal.payment_terms:
-        condicoes_parts.append(f"<strong>Pagamento:</strong> {_esc(proposal.payment_terms)}")
-    if proposal.validity_days:
-        condicoes_parts.append(f"<strong>Validade:</strong> {proposal.validity_days} dias")
-    if proposal.delivery_date:
-        condicoes_parts.append(f"<strong>Data prevista de entrega:</strong> {_fmt_date(proposal.delivery_date)}")
-    if proposal.delivery_desc:
-        condicoes_parts.append(f"<strong>Prazo:</strong> {_esc(proposal.delivery_desc)}")
+        cond_comerciais_html = f"Condição de pagamento: {_esc(proposal.payment_terms)}"
+
+    # ── Condições gerais (envio, validade, prazo) ──
+    cond_gerais_parts = []
     if proposal.shipping_method:
-        condicoes_parts.append(f"<strong>Forma de envio:</strong> {_esc(proposal.shipping_method)}")
+        cond_gerais_parts.append(f"Forma de envio: {_esc(proposal.shipping_method)}")
     if proposal.freight_type:
-        condicoes_parts.append(f"<strong>Frete:</strong> {_esc(proposal.freight_type)}")
-    if proposal.carrier_name:
-        condicoes_parts.append(f"<strong>Transportador:</strong> {_esc(proposal.carrier_name)}")
-    condicoes_html = "<br>".join(condicoes_parts) if condicoes_parts else ""
+        cond_gerais_parts.append(f"Forma de frete: {_esc(proposal.freight_type)}")
+    if proposal.validity_days:
+        cond_gerais_parts.append(f"Validade da proposta: {proposal.validity_days} dias")
+    if proposal.delivery_date:
+        cond_gerais_parts.append(f"Data prevista de entrega: {_fmt_date(proposal.delivery_date)}")
+    if proposal.delivery_desc:
+        cond_gerais_parts.append(f"Prazo de entrega: {_esc(proposal.delivery_desc)}")
+    cond_gerais_html = "<br>".join(cond_gerais_parts) if cond_gerais_parts else ""
 
-    # --- Data da proposta ---
-    data_proposta = _fmt_date(proposal.date)
-
-    # --- Seller ---
-    seller = _esc(proposal.seller_name or "")
-
-    # --- Assinatura ---
+    # ── Assinatura ──
     signature_html = ""
     if proposal.signature:
         sig = _esc(proposal.signature).replace("\n", "<br>")
         signature_html = f"""
-        <div class="secao assinatura">
-          <div class="secao-titulo">Assinatura</div>
-          <div>{sig}</div>
-        </div>"""
+<div class="assinatura">{sig}</div>"""
 
-    # -----------------------------------------------------------------------
-    # Monta o HTML completo
-    # -----------------------------------------------------------------------
+    # ── Box do endereço do cliente ──
+    addr_lines = ""
+    if client_document:
+        addr_lines += f"{client_document}<br>"
+    if client_address:
+        addr_lines += f"{client_address}<br>"
+    if client_city_state:
+        addr_lines += f"{client_city_state}<br>"
+    if fone_email_line:
+        addr_lines += fone_email_line
+    if not addr_lines:
+        addr_lines = "—"
+
+    # ── Introdução ──
+    intro_block = ""
+    if proposal.intro:
+        intro_block = f"""
+<div class="secao">
+  <div class="secao-titulo">Introdução</div>
+  <p>{_esc(proposal.intro)}</p>
+</div>"""
+
+    # ── Outros itens ──
+    outros_block = ""
+    if outros_itens_html.strip():
+        outros_block = f"""
+<div class="secao">
+  <div class="secao-titulo">Outros itens ou serviços</div>
+  <div class="box"><div class="outros-itens-conteudo">{outros_itens_html}</div></div>
+</div>"""
+
+    # ── Condições comerciais block ──
+    cond_comerciais_block = ""
+    if cond_comerciais_html:
+        cond_comerciais_block = f"""
+<div class="secao">
+  <div class="secao-titulo">Condições comerciais</div>
+  <p>{cond_comerciais_html}</p>
+</div>"""
+
+    # ── Condições gerais block ──
+    cond_gerais_block = ""
+    if cond_gerais_html:
+        cond_gerais_block = f"""
+<div class="secao">
+  <div class="secao-titulo">Condições gerais</div>
+  <p>{cond_gerais_html}</p>
+</div>"""
+
+    # ── Observações ──
+    obs_block = ""
+    if proposal.notes:
+        obs_block = f"""
+<div class="secao">
+  <div class="secao-titulo">Observações</div>
+  <p>{_esc(proposal.notes).replace(chr(10), '<br>')}</p>
+</div>"""
+
+    # ── Tabela de totais (fechamento) ──
+    totais_block = f"""
+<div class="secao">
+  <div class="secao-titulo">Totais</div>
+  <table class="totais">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th class="right">Total dos itens</th>
+        <th class="right">Desconto</th>
+        <th class="right">Frete</th>
+        <th class="right">Total da proposta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{data_proposta}</td>
+        <td class="right">{_fmt_currency(total_itens)}</td>
+        <td class="right">{_fmt_currency(discount)}</td>
+        <td class="right">{_fmt_currency(shipping)}</td>
+        <td class="right"><strong>{_fmt_currency(total_proposta)}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>"""
+
+    # ── Monta o HTML completo ──
     html = f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -429,15 +520,14 @@ def _build_html(proposal: Proposal) -> str:
 <!-- ══ Cabeçalho ══ -->
 <div class="header">
   <div class="header-logo-area">
-    <!-- Logo pode ser adicionada aqui futuramente, ex:
-         <img src="data:image/png;base64,..." alt="Logo" style="max-height:60px"> -->
+    <!-- logo H&S (a adicionar) -->
   </div>
   <div class="header-company">
     <div class="company-name">HEALTH &amp; SAFETY DISTRIBUICAO IMPORTACAO E EXPORTACAO DE INST</div>
     <div class="company-line">08.857.492/0001-48</div>
     <div class="company-line">www.healthsafety.com.br</div>
     <div class="company-line">(81) 3052-3350</div>
-    <div class="company-line">R VISCONDESSA DO LIVRAMENTO, 54, SALA G — DERBY, Recife - PE — 52.010-065</div>
+    <div class="company-line">R VISCONDESSA DO LIVRAMENTO, 54, SALA G &mdash; DERBY, Recife - PE &mdash; 52.010-065</div>
   </div>
 </div>
 
@@ -445,44 +535,33 @@ def _build_html(proposal: Proposal) -> str:
 <div class="titulo">Proposta Comercial N&ordm; {_esc(number_str)}</div>
 
 <!-- ══ Para / Aos cuidados de ══ -->
-<div class="secao">
-  <p class="para-linha">
-    <strong>Para:</strong> {client_display}
-    &nbsp;&nbsp;&middot;&nbsp;&nbsp;
-    <strong>Aos cuidados de:</strong> {_esc(aos_cuidados)}
-    {'&nbsp;&nbsp;&middot;&nbsp;&nbsp;<strong>Data:</strong> ' + data_proposta if data_proposta != '—' else ''}
-    {'&nbsp;&nbsp;&middot;&nbsp;&nbsp;<strong>Vendedor:</strong> ' + seller if seller else ''}
-  </p>
-</div>
+<p class="para-linha">
+  <strong>Para:</strong> {client_display}
+  &nbsp;&nbsp;&middot;&nbsp;&nbsp;
+  <strong>Aos cuidados de:</strong> {_esc(aos_cuidados)}
+</p>
 
 <!-- ══ Endereço do cliente ══ -->
 <div class="secao">
-  <div class="secao-titulo">Dados do Cliente</div>
-  <div class="box">
-    {'<strong>CNPJ/CPF:</strong> ' + client_document + '<br>' if client_document else ''}
-    {client_address + '<br>' if client_address else ''}
-    {client_city_state + '<br>' if client_city_state else ''}
-    {fone_email_line if fone_email_line else ''}
-    {'<br>' if not any([client_document, client_address, client_city_state, fone_email_line]) else ''}
-    {'—' if not any([client_document, client_address, client_city_state, fone_email_line]) else ''}
-  </div>
+  <div class="secao-titulo">Endereço do Cliente</div>
+  <div class="box">{addr_lines}</div>
 </div>
 
-{'<!-- ══ Introdução ══ --><div class="secao"><div class="secao-titulo">Introdução</div><div class="box">' + _esc(proposal.intro) + '</div></div>' if proposal.intro else ''}
+{intro_block}
 
 <!-- ══ Itens ══ -->
 <div class="secao">
-  <div class="secao-titulo">Itens de Produto ou Serviço</div>
+  <div class="secao-titulo">Itens de produto ou serviço</div>
   <table class="itens">
     <thead>
       <tr>
-        <th style="width:28px">N&ordm;</th>
+        <th style="width:26px">N&ordm;</th>
         <th>Item</th>
-        <th style="width:90px">SKU</th>
-        <th class="right" style="width:50px">Qtd</th>
-        <th style="width:40px">Un</th>
-        <th class="right" style="width:85px">Preço un</th>
-        <th class="right" style="width:85px">Total</th>
+        <th style="width:88px">SKU / NCM</th>
+        <th class="right" style="width:52px">Qtd</th>
+        <th style="width:38px">Un</th>
+        <th class="right" style="width:82px">Preço un</th>
+        <th class="right" style="width:82px">Total</th>
       </tr>
     </thead>
     <tbody>
@@ -490,42 +569,25 @@ def _build_html(proposal: Proposal) -> str:
     </tbody>
   </table>
   <div class="itens-rodape">
-    Número de itens: <strong>{n_itens}</strong>
-    &nbsp;&nbsp;|&nbsp;&nbsp;
+    Número de itens: {n_itens}
+    &nbsp;&nbsp;&middot;&nbsp;&nbsp;
+    Soma das quantidades: {soma_qtds_str}
+    &nbsp;&nbsp;&middot;&nbsp;&nbsp;
     Total dos itens: <strong>{_fmt_currency(total_itens)}</strong>
   </div>
 </div>
 
-{'<!-- ══ Outros itens ══ --><div class="secao"><div class="secao-titulo">Outros Itens ou Serviços</div><div class="box"><div class="outros-itens-conteudo">' + outros_itens_html + '</div></div></div>' if outros_itens_html.strip() else ''}
+{outros_block}
 
-<!-- ══ Totais ══ -->
-<div class="secao">
-  <div class="secao-titulo">Resumo Financeiro</div>
-  <table class="totais-table">
-    <tr>
-      <td class="label">Total dos itens:</td>
-      <td class="valor">{_fmt_currency(total_itens)}</td>
-    </tr>
-    <tr>
-      <td class="label">Desconto:</td>
-      <td class="valor">({_fmt_currency(discount)})</td>
-    </tr>
-    <tr>
-      <td class="label">Frete:</td>
-      <td class="valor">{_fmt_currency(shipping)}</td>
-    </tr>
-    <tr class="total-final">
-      <td class="label">Total da proposta:</td>
-      <td class="valor">{_fmt_currency(total_proposta)}</td>
-    </tr>
-  </table>
-</div>
+{totais_block}
+
+{cond_comerciais_block}
+
+{cond_gerais_block}
 
 {delivery_block}
 
-{'<!-- ══ Condições comerciais ══ --><div class="secao"><div class="secao-titulo">Condições Comerciais</div><div class="box">' + condicoes_html + '</div></div>' if condicoes_html else ''}
-
-{'<!-- ══ Observações ══ --><div class="secao"><div class="secao-titulo">Observações</div><div class="box">' + _esc(proposal.notes).replace(chr(10), '<br>') + '</div></div>' if proposal.notes else ''}
+{obs_block}
 
 {signature_html}
 
