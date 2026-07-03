@@ -506,8 +506,11 @@ class ServiceBoardService:
     def _has_linked_proposal(self, card_id: int) -> bool:
         """True se existe ao menos uma proposta vinculada ao card (não deletada)."""
         from app.models.proposal import Proposal
-        return self.db.query(Proposal.id).filter(
-            Proposal.service_card_id == card_id,
+        from app.models.proposal_service_card import ProposalServiceCard
+        return self.db.query(ProposalServiceCard.id).join(
+            Proposal, ProposalServiceCard.proposal_id == Proposal.id
+        ).filter(
+            ProposalServiceCard.service_card_id == card_id,
             Proposal.is_deleted == False,  # noqa: E712
         ).first() is not None
 
