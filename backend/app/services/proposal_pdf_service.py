@@ -186,6 +186,21 @@ body {
     line-height: 1.6;
 }
 
+/* ── Endereço em 2 colunas (Cliente | Entrega) ── */
+.endereco-2col {
+    display: table;
+    width: 100%;
+    margin-top: 4px;
+}
+.endereco-col {
+    display: table-cell;
+    width: 50%;
+    vertical-align: top;
+}
+.endereco-col:first-child { padding-right: 6px; }
+.endereco-col:last-child { padding-left: 6px; }
+.endereco-col .secao-titulo { margin-top: 0; }
+
 /* ── Tabela de itens ── */
 table.itens {
     width: 100%;
@@ -386,8 +401,8 @@ def _build_html(proposal: Proposal) -> str:
     # ── Data da proposta ──
     data_proposta = _fmt_date(proposal.date)
 
-    # ── Endereço de entrega (diferente) ──
-    delivery_block = ""
+    # ── Endereço de entrega (diferente) — linhas p/ o bloco de 2 colunas ──
+    delivery_lines = ""
     if proposal.different_delivery_address and proposal.delivery_address:
         da = proposal.delivery_address
 
@@ -406,7 +421,6 @@ def _build_html(proposal: Proposal) -> str:
         if da.get('cep'):
             city_state_cep += f" — CEP: {da_get('cep')}"
 
-        delivery_lines = ""
         if da_get('recipient'):
             delivery_lines += f"{da_get('recipient')}<br>"
         if street_line:
@@ -421,12 +435,6 @@ def _build_html(proposal: Proposal) -> str:
             delivery_lines += f"CPF/CNPJ: {da_get('document')}<br>"
         if da.get('phone'):
             delivery_lines += f"Fone: {da_get('phone')}<br>"
-
-        delivery_block = f"""
-<div class="secao">
-  <div class="secao-titulo">Endereço de entrega</div>
-  <div class="box">{delivery_lines}</div>
-</div>"""
 
     # ── Condições gerais (linhas da tabela label | valor) ──
     def _cg_row(label, value):
@@ -458,6 +466,26 @@ def _build_html(proposal: Proposal) -> str:
         addr_lines += fone_email_line
     if not addr_lines:
         addr_lines = "—"
+
+    # ── Bloco de endereço: 2 colunas (Cliente | Entrega) quando há entrega diferente ──
+    if proposal.different_delivery_address and delivery_lines:
+        endereco_block = f"""
+<div class="endereco-2col">
+  <div class="endereco-col">
+    <div class="secao-titulo">Endereço do Cliente</div>
+    <div class="box">{addr_lines}</div>
+  </div>
+  <div class="endereco-col">
+    <div class="secao-titulo">Endereço de Entrega</div>
+    <div class="box">{delivery_lines}</div>
+  </div>
+</div>"""
+    else:
+        endereco_block = f"""
+<div class="secao">
+  <div class="secao-titulo">Endereço do Cliente</div>
+  <div class="box">{addr_lines}</div>
+</div>"""
 
     # ── Introdução ──
     intro_block = ""
@@ -568,11 +596,8 @@ def _build_html(proposal: Proposal) -> str:
   <strong>Aos cuidados de:</strong> {_esc(aos_cuidados)}
 </p>
 
-<!-- ══ Endereço do cliente ══ -->
-<div class="secao">
-  <div class="secao-titulo">Endereço do Cliente</div>
-  <div class="box">{addr_lines}</div>
-</div>
+<!-- ══ Endereço do cliente (+ entrega, se diferente) ══ -->
+{endereco_block}
 
 {intro_block}
 
@@ -611,8 +636,6 @@ def _build_html(proposal: Proposal) -> str:
 {cond_comerciais_block}
 
 {cond_gerais_block}
-
-{delivery_block}
 
 {obs_block}
 

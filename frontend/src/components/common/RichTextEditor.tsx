@@ -20,7 +20,15 @@ const MODULES = {
 export default function RichTextEditor({ value, onChange, placeholder }: Props) {
   return (
     <div className="rich-text-editor">
-      <ReactQuill theme="snow" value={value} onChange={onChange} modules={MODULES} placeholder={placeholder} />
+      <ReactQuill
+        theme="snow"
+        value={value}
+        // Só propaga alterações do usuário — evita que o onChange disparado na
+        // inicialização (source "api"/"silent") sobrescreva o conteúdo padrão com vazio.
+        onChange={(content, _delta, source) => { if (source === "user") onChange(content); }}
+        modules={MODULES}
+        placeholder={placeholder}
+      />
     </div>
   );
 }
