@@ -13,6 +13,24 @@ export interface ProposalItem {
 
 export type ProposalMarker = "aprovada" | "nao_aprovada" | "em_aberto";
 
+// Card vinculado a uma proposta (relação N:N)
+export interface LinkedCard {
+  card_id: number;
+  board_id?: number | null;
+  status: "ganho" | "perdido" | "ativo";
+  title?: string | null;
+}
+
+// Versão arquivada de uma proposta (histórico)
+export interface ProposalVersion {
+  id: number;
+  version_number: number;
+  changed_by?: string | null;
+  created_at?: string | null;
+  has_pdf: boolean;
+  snapshot?: Record<string, unknown> | null;
+}
+
 // Endereço de entrega estruturado (usado na impressão/visualização — fase 2)
 export interface DeliveryAddress {
   cep?: string;
@@ -34,7 +52,6 @@ export interface Proposal {
   number: number;
   client_id?: number | null;
   person_id?: number | null;
-  service_card_id?: number | null;
   seller_name?: string | null;
   date?: string | null;
   next_contact_date?: string | null;
@@ -60,7 +77,7 @@ export interface Proposal {
   marker: ProposalMarker;
   client_name?: string | null;
   client_document?: string | null;
-  board_id?: number | null;
+  linked_cards: LinkedCard[];
   created_at?: string;
   updated_at?: string;
 }
@@ -73,8 +90,12 @@ export interface ProposalListResponse {
   total_pages: number;
 }
 
-export type ProposalCreate = Partial<Omit<Proposal, "id" | "number" | "items" | "total" | "total_items" | "marker">> & {
+export type ProposalCreate = Partial<
+  Omit<Proposal, "id" | "number" | "items" | "total" | "total_items" | "marker" | "linked_cards">
+> & {
   items: ProposalItem[];
+  // Vínculo inicial opcional (usado no prefill / criação a partir de um card)
+  service_card_id?: number | null;
 };
 
 const BASE = "/api/v1/proposals";
@@ -104,6 +125,22 @@ class ProposalService {
   }
   async getPdf(id: number, download = false): Promise<Blob> {
     const r = await api.get(`${BASE}/${id}/pdf`, {
+      params: download ? { download: 1 } : {},
+      responseType: "blob",
+    });
+    return r.data as Blob;
+  }
+  async linkCard(id: number, cardId: number): Promise<Proposal> {
+    return (await api.post<Proposal>(`${BASE}/${id}/cards`, { service_card_id: cardId })).data;
+  }
+  async unlinkCard(id: number, cardId: number): Promise<Proposal> {
+    return (await api.delete<Proposal>(`${BASE}/${id}/cards/${cardId}`)).data;
+  }
+  async listVersions(id: number): Promise<ProposalVersion[]> {
+    return (await api.get<ProposalVersion[]>(`${BASE}/${id}/versions`)).data;
+  }
+  async getVersionPdf(id: number, versionId: number, download = false): Promise<Blob> {
+    const r = await api.get(`${BASE}/${id}/versions/${versionId}/pdf`, {
       params: download ? { download: 1 } : {},
       responseType: "blob",
     });

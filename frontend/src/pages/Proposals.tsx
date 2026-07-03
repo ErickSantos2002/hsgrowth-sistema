@@ -1,23 +1,27 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Plus, RefreshCw, FileText, ChevronDown, Eye, Pencil, Download } from "lucide-react";
+import { Plus, RefreshCw, FileText, ChevronDown, Eye, Pencil, Download, History, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import proposalService, { Proposal } from "../services/proposalService";
 import { Button, SearchInput, Pagination } from "../components/common";
 import { PageHeader } from "../components/layout";
 import ProposalModal from "../components/proposals/ProposalModal";
-import { showError } from "../utils/toast";
+import ProposalHistoryModal from "../components/proposals/ProposalHistoryModal";
+import { showError, showSuccess } from "../utils/toast";
 import { useFilter, filterHelpers, usePagination } from "../hooks";
 import { markerBadge } from "../utils/proposalMarker";
 import { viewProposalPdf, downloadProposalPdf } from "../utils/proposalPdf";
+import { useConfirm } from "../contexts/ConfirmContext";
 
 const Proposals: React.FC = () => {
   const navigate = useNavigate();
+  const { confirm } = useConfirm();
 
   // Estado local
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [historyId, setHistoryId] = useState<number | null>(null);
 
   // Carrega propostas
   const loadProposals = async () => {
@@ -100,6 +104,24 @@ const Proposals: React.FC = () => {
   const handleClose = () => {
     setShowModal(false);
     setEditingId(null);
+  };
+
+  // Exclui a proposta permanentemente (removida de todos os cards)
+  const handleDelete = async (p: Proposal) => {
+    const ok = await confirm({
+      title: "Excluir proposta",
+      message: `Excluir a proposta #${p.number} permanentemente? Ela será removida de todos os cards.`,
+      confirmText: "Excluir",
+      isDanger: true,
+    });
+    if (!ok) return;
+    try {
+      await proposalService.remove(p.id);
+      showSuccess(`Proposta #${p.number} excluída`);
+      loadProposals();
+    } catch {
+      showError("Erro ao excluir a proposta");
+    }
   };
 
   const markerFilter = customFilters.marker || "all";
@@ -254,16 +276,21 @@ const Proposals: React.FC = () => {
 
                       {/* Card Vinculado */}
                       <td className="px-6 py-4">
-                        {p.service_card_id && p.board_id ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/servicos/${p.board_id}/cards/${p.service_card_id}`);
-                            }}
-                            className="text-blue-500 hover:underline"
-                          >
-                            #{p.service_card_id}
-                          </button>
+                        {p.linked_cards && p.linked_cards.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {p.linked_cards.map((lc) => (
+                              <button
+                                key={lc.card_id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/servicos/${lc.board_id}/cards/${lc.card_id}`);
+                                }}
+                                className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
+                              >
+                                #{lc.card_id}
+                              </button>
+                            ))}
+                          </div>
                         ) : (
                           <span className="text-slate-400">—</span>
                         )}
@@ -293,6 +320,20 @@ const Proposals: React.FC = () => {
                           >
                             <Download size={16} />
                           </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setHistoryId(p.id); }}
+                            title="Histórico"
+                            className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-purple-500 dark:hover:bg-slate-700/50"
+                          >
+                            <History size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(p); }}
+                            title="Excluir"
+                            className="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -316,6 +357,13 @@ const Proposals: React.FC = () => {
         onClose={handleClose}
         onSaved={handleSaved}
         proposalId={editingId ?? undefined}
+      />
+
+      {/* Modal de Histórico de Versões */}
+      <ProposalHistoryModal
+        isOpen={historyId !== null}
+        proposalId={historyId ?? 0}
+        onClose={() => setHistoryId(null)}
       />
     </div>
   );

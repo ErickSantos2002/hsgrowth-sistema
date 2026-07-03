@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Plus, Link2, Search, X, Eye, Pencil, Download, Trash2 } from "lucide-react";
+import { FileText, Plus, Link2, Search, X, Eye, Pencil, Download, Trash2, History } from "lucide-react";
 import ExpandableSection from "../cardDetails/ExpandableSection";
 import proposalService, { Proposal, ProposalCreate } from "../../services/proposalService";
 import serviceBoardService from "../../services/serviceBoardService";
 import ProposalModal from "../proposals/ProposalModal";
+import ProposalHistoryModal from "../proposals/ProposalHistoryModal";
 import { markerBadge } from "../../utils/proposalMarker";
 import { buildDefaultOtherItems } from "../../utils/proposalDefaults";
 import { viewProposalPdf, downloadProposalPdf } from "../../utils/proposalPdf";
@@ -37,6 +38,7 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
   const [linkSearch, setLinkSearch] = useState("");
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkingId, setLinkingId] = useState<number | null>(null);
+  const [historyId, setHistoryId] = useState<number | null>(null);
   const { confirm } = useConfirm();
 
   const loadProposals = async () => {
@@ -91,18 +93,18 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
 
   const handleDelete = async (p: Proposal) => {
     const ok = await confirm({
-      title: "Excluir proposta",
-      message: `Excluir a proposta #${p.number}? Esta ação não pode ser desfeita.`,
-      confirmText: "Excluir",
+      title: "Desvincular proposta",
+      message: `Desvincular a proposta #${p.number} deste card?`,
+      confirmText: "Desvincular",
       isDanger: true,
     });
     if (!ok) return;
     try {
-      await proposalService.remove(p.id);
-      showSuccess(`Proposta #${p.number} excluída`);
+      await proposalService.unlinkCard(p.id, cardId);
+      showSuccess(`Proposta #${p.number} desvinculada`);
       loadProposals();
     } catch {
-      showError("Erro ao excluir a proposta");
+      showError("Erro ao desvincular a proposta");
     }
   };
 
@@ -124,7 +126,9 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
     setLinkLoading(true);
     try {
       const data = await proposalService.list(1, 500);
-      setAvailable(data.items.filter((p) => !p.service_card_id));
+      setAvailable(
+        data.items.filter((p) => !p.linked_cards?.some((lc) => lc.card_id === cardId)),
+      );
     } catch {
       showError("Erro ao carregar propostas disponíveis");
     } finally {
@@ -136,7 +140,7 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
   const handleLink = async (p: Proposal) => {
     setLinkingId(p.id);
     try {
-      await proposalService.update(p.id, { service_card_id: cardId });
+      await proposalService.linkCard(p.id, cardId);
       showSuccess(`Proposta #${p.number} vinculada ao card`);
       setLinkOpen(false);
       loadProposals();
@@ -215,8 +219,15 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
                         <Download size={15} />
                       </button>
                       <button
+                        onClick={() => setHistoryId(p.id)}
+                        title="Histórico"
+                        className="rounded p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-purple-500 dark:hover:bg-slate-700/50"
+                      >
+                        <History size={15} />
+                      </button>
+                      <button
                         onClick={() => handleDelete(p)}
-                        title="Excluir"
+                        title="Desvincular deste card"
                         className="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
                       >
                         <Trash2 size={15} />
@@ -302,6 +313,12 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
         onSaved={handleSaved}
         proposalId={editingId ?? undefined}
         initial={initial}
+      />
+
+      <ProposalHistoryModal
+        isOpen={historyId !== null}
+        proposalId={historyId ?? 0}
+        onClose={() => setHistoryId(null)}
       />
     </>
   );

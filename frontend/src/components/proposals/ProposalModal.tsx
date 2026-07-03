@@ -202,7 +202,6 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
           setForm({
             client_id: p.client_id ?? null,
             person_id: p.person_id ?? null,
-            service_card_id: p.service_card_id ?? null,
             seller_name: p.seller_name ?? "",
             date: p.date ?? "",
             next_contact_date: p.next_contact_date ?? "",
