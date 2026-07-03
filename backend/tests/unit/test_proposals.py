@@ -63,6 +63,75 @@ def test_service_marker_reflects_lost_card(db):
     assert resp.marker == "nao_aprovada"
 
 
+def test_marker_perdido_beats_ganho_multi_card(db):
+    """Proposta em 2 cards (um Ganho, um Perdido) → nao_aprovada (Perdido > Ativo > Ganho)."""
+    from app.models.service_board import ServiceBoard
+    from app.models.service_list import ServiceList
+    from app.models.service_card import ServiceCard
+    board = ServiceBoard(name="Serv", description="x"); db.add(board); db.commit()
+    won = ServiceList(name="Ganho", position=5, board_id=board.id, is_done_stage=True)
+    lost = ServiceList(name="Perdido", position=6, board_id=board.id, is_lost_stage=True)
+    db.add_all([won, lost]); db.commit()
+    card_won = ServiceCard(title="W", list_id=won.id)
+    card_lost = ServiceCard(title="L", list_id=lost.id)
+    db.add_all([card_won, card_lost]); db.commit()
+
+    svc = ProposalService(db)
+    resp = svc.create(ProposalCreate(service_card_id=card_won.id, items=[]))
+    assert resp.marker == "aprovada"                       # só o Ganho
+    resp = svc.link(resp.id, card_lost.id)                 # adiciona o Perdido
+    assert resp.marker == "nao_aprovada"                   # Perdido domina
+    assert {lc.card_id for lc in resp.linked_cards} == {card_won.id, card_lost.id}
+
+
+def test_marker_ganho_plus_active_is_em_aberto(db):
+    """Ganho + card ativo → em_aberto (Ativo domina Ganho)."""
+    from app.models.service_board import ServiceBoard
+    from app.models.service_list import ServiceList
+    from app.models.service_card import ServiceCard
+    board = ServiceBoard(name="Serv", description="x"); db.add(board); db.commit()
+    won = ServiceList(name="Ganho", position=5, board_id=board.id, is_done_stage=True)
+    active = ServiceList(name="Proposta", position=3, board_id=board.id)
+    db.add_all([won, active]); db.commit()
+    card_won = ServiceCard(title="W", list_id=won.id)
+    card_active = ServiceCard(title="A", list_id=active.id)
+    db.add_all([card_won, card_active]); db.commit()
+
+    svc = ProposalService(db)
+    resp = svc.create(ProposalCreate(service_card_id=card_won.id, items=[]))
+    resp = svc.link(resp.id, card_active.id)
+    assert resp.marker == "em_aberto"
+
+
+def test_update_creates_version(db):
+    """Editar uma proposta arquiva o estado anterior como versão."""
+    svc = ProposalService(db)
+    from app.schemas.proposal import ProposalUpdate
+    resp = svc.create(ProposalCreate(shipping=100, items=[
+        ProposalItemCreate(description="Calibração", quantity=1, unit_price=395),
+    ]))
+    assert svc.list_versions(resp.id) == []                # sem versões após criação
+    svc.update(resp.id, ProposalUpdate(shipping=200))
+    versions = svc.list_versions(resp.id)
+    assert len(versions) == 1
+    assert versions[0].version_number == 1
+    assert versions[0].snapshot["shipping"] == 100.0       # snapshot guardou o valor ANTERIOR
+
+
+def test_unlink_removes_card_link(db):
+    from app.models.service_board import ServiceBoard
+    from app.models.service_list import ServiceList
+    from app.models.service_card import ServiceCard
+    board = ServiceBoard(name="Serv", description="x"); db.add(board); db.commit()
+    lst = ServiceList(name="Proposta", position=3, board_id=board.id); db.add(lst); db.commit()
+    card = ServiceCard(title="C", list_id=lst.id); db.add(card); db.commit()
+    svc = ProposalService(db)
+    resp = svc.create(ProposalCreate(service_card_id=card.id, items=[]))
+    assert len(resp.linked_cards) == 1
+    resp = svc.unlink(resp.id, card.id)
+    assert resp.linked_cards == []
+
+
 def test_soft_deleted_proposal_hidden_from_list(db):
     svc = ProposalService(db)
     p = svc.create(ProposalCreate(items=[]))
@@ -115,13 +184,18 @@ def test_has_linked_proposal_helper(db):
     db.add(card)
     db.commit()
 
+    from app.models.proposal_service_card import ProposalServiceCard
+
     svc = ServiceBoardService(db)
 
     # Sem proposta vinculada → False
     assert svc._has_linked_proposal(card.id) is False
 
-    # Adiciona proposta vinculada (number obrigatório)
-    db.add(Proposal(number=9901, service_card_id=card.id))
+    # Adiciona proposta vinculada via tabela de vínculo N:N
+    prop = Proposal(number=9901)
+    db.add(prop)
+    db.commit()
+    db.add(ProposalServiceCard(proposal_id=prop.id, service_card_id=card.id))
     db.commit()
 
     # Com proposta vinculada → True
