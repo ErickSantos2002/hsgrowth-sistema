@@ -700,39 +700,12 @@ def generate_proposal_pdf(db: Session, proposal_id: int) -> bytes:
     return pdf_bytes
 
 
-def attach_proposal_pdf_to_card(db: Session, proposal: Proposal) -> None:
-    """
-    Gera o PDF da proposta e o anexa como arquivo ao card de serviço vinculado.
-
-    - Se a proposta não tiver service_card_id, não faz nada.
-    - Substitui qualquer PDF auto-anexado anterior para a mesma proposta
-      (identificado via activity_metadata.proposal_pdf_id).
-    - Erros de geração de PDF NÃO são propagados (apenas logados).
-    - O arquivo criado aparece na aba "Arquivos" do card e pode ser deletado
-      normalmente, exatamente como qualquer outro arquivo enviado via upload_file.
-    """
-    if not proposal.service_card_id:
-        return
-
+def remove_proposal_pdf_from_card(db: Session, proposal: Proposal, card_id: int) -> None:
+    """Remove o PDF auto-anexado desta proposta de UM card específico (best-effort)."""
     from app.models.service_card_activity import ServiceCardActivity
 
-    card_id = proposal.service_card_id
-    number = proposal.number or proposal.id
-
-    # Gera o PDF
-    pdf = generate_proposal_pdf(db, proposal.id)
-
-    # Garante que o diretório existe (igual a upload_file)
-    card_dir = UPLOAD_DIR / "service_cards" / str(card_id)
-    card_dir.mkdir(parents=True, exist_ok=True)
-
-    # Nome de arquivo estável (substituível) para esta proposta
-    filename = f"proposta-{number}.pdf"
-    file_path_relative = f"service_cards/{card_id}/{filename}"
-
-    # Remove registro e arquivo anteriores do PDF automático desta proposta
     try:
-        old_activities = (
+        activities = (
             db.query(ServiceCardActivity)
             .filter(
                 ServiceCardActivity.service_card_id == card_id,
@@ -740,10 +713,9 @@ def attach_proposal_pdf_to_card(db: Session, proposal: Proposal) -> None:
             )
             .all()
         )
-        for act in old_activities:
+        for act in activities:
             meta = act.activity_metadata or {}
             if meta.get("proposal_pdf_id") == proposal.id:
-                # Remove o arquivo físico (best-effort)
                 try:
                     fp = UPLOAD_DIR / act.file_path
                     if fp.exists():
@@ -753,8 +725,40 @@ def attach_proposal_pdf_to_card(db: Session, proposal: Proposal) -> None:
                 db.delete(act)
         db.commit()
     except Exception as e:
-        print(f"[PROPOSAL-PDF] erro ao limpar PDF anterior da proposta {proposal.id}: {e}")
+        print(f"[PROPOSAL-PDF] erro ao limpar PDF da proposta {proposal.id} no card {card_id}: {e}")
         db.rollback()
+
+
+def attach_proposal_pdf_to_card(db: Session, proposal: Proposal, card_id: int) -> None:
+    """
+    Gera o PDF da proposta e o anexa como arquivo a UM card de serviço.
+
+    - Substitui qualquer PDF auto-anexado anterior desta proposta NESTE card
+      (identificado via activity_metadata.proposal_pdf_id).
+    - Erros de geração de PDF NÃO são propagados (apenas logados).
+    - O arquivo criado aparece na aba "Arquivos" do card e pode ser deletado
+      normalmente, exatamente como qualquer outro arquivo enviado via upload_file.
+    """
+    if not card_id:
+        return
+
+    from app.models.service_card_activity import ServiceCardActivity
+
+    number = proposal.number or proposal.id
+
+    # Gera o PDF
+    pdf = generate_proposal_pdf(db, proposal.id)
+
+    # Garante que o diretório existe (igual a upload_file)
+    card_dir = UPLOAD_DIR / "service_cards" / str(card_id)
+    card_dir.mkdir(parents=True, exist_ok=True)
+
+    # Nome de arquivo estável (substituível) para esta proposta neste card
+    filename = f"proposta-{number}.pdf"
+    file_path_relative = f"service_cards/{card_id}/{filename}"
+
+    # Remove registro e arquivo anteriores do PDF automático desta proposta neste card
+    remove_proposal_pdf_from_card(db, proposal, card_id)
 
     # Grava o PDF no disco
     with open(card_dir / filename, "wb") as f:
@@ -776,3 +780,35 @@ def attach_proposal_pdf_to_card(db: Session, proposal: Proposal) -> None:
     )
     db.add(activity)
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Histórico de versões (PDF arquivado por versão)
+# ---------------------------------------------------------------------------
+
+def archive_version_pdf(db: Session, proposal: Proposal, version_number: int) -> Optional[str]:
+    """
+    Gera o PDF do estado ATUAL da proposta (pré-edição) e o arquiva em
+    uploads/proposals/{id}/v{n}.pdf. Retorna o caminho relativo ou None se falhar.
+    """
+    try:
+        pdf = generate_proposal_pdf(db, proposal.id)
+        prop_dir = UPLOAD_DIR / "proposals" / str(proposal.id)
+        prop_dir.mkdir(parents=True, exist_ok=True)
+        rel_path = f"proposals/{proposal.id}/v{version_number}.pdf"
+        with open(UPLOAD_DIR / rel_path, "wb") as f:
+            f.write(pdf)
+        return rel_path
+    except Exception as e:
+        print(f"[PROPOSAL-PDF] erro ao arquivar PDF da versao {version_number} (proposta {proposal.id}): {e}")
+        return None
+
+
+def read_version_pdf(pdf_path: Optional[str]) -> bytes:
+    """Lê o PDF arquivado de uma versão. 404 se não existir."""
+    if not pdf_path:
+        raise HTTPException(status_code=404, detail="PDF desta versão não disponível")
+    fp = UPLOAD_DIR / pdf_path
+    if not fp.exists():
+        raise HTTPException(status_code=404, detail="Arquivo de PDF da versão não encontrado")
+    return fp.read_bytes()
