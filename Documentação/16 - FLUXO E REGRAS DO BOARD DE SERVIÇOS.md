@@ -70,22 +70,31 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 > 🔓 **Índice de reajuste**: ainda **não implementado** — ponto em aberto (fica no Resumo ou no Produto/aparelho?).
 
-### 3.1.1. Módulo de Propostas Comerciais *(atualizado 02/07/2026)*
+### 3.1.1. Módulo de Propostas Comerciais *(atualizado 03/07/2026)*
 
 **Propostas Comerciais** é um módulo exclusivo do módulo de Serviço, composto por:
 - **Página na sidebar** ("Propostas"): lista todas as propostas do sistema.
-- **Seção "Propostas" no card de Serviço** (abaixo de Produtos): permite criar, listar e vincular propostas ao card.
+- **Seção "Propostas" no card de Serviço** (abaixo de Produtos): permite criar, listar, vincular e desvincular propostas ao card.
 
-**Marcador automático da proposta** — deriva do status do card ao qual está vinculada:
-- Card marcado como **Ganho** → proposta fica **Aprovada**.
-- Card marcado como **Perdido** → proposta fica **Não aprovada**.
-- Sem card vinculado ou card ainda ativo → proposta fica **Em aberto**.
+**Proposta compartilhada entre vários cards (N:N)** — uma mesma proposta pode estar vinculada a **vários cards ao mesmo tempo** (ex.: criada no board de Cobrança e reaproveitada no board de Serviço). Editar/regerar a proposta reflete em todos os cards. Na página da sidebar, a coluna **Card Vinculado** mostra **todos** os cards vinculados (chips clicáveis). Implementação: tabela de vínculo `proposal_service_cards`.
+
+**Marcador automático da proposta** — deriva do **conjunto** de cards vinculados, pela prioridade **Perdido > Ativo > Ganho**:
+- Algum card vinculado em **Perdido** → **Não aprovada**.
+- Senão, algum card ainda **ativo** → **Em aberto**.
+- Senão (todos os cards em **Ganho**) → **Aprovada**.
+- Sem card vinculado → **Em aberto**.
+
+**Histórico de versões** — a cada **edição salva**, o estado anterior da proposta é arquivado (dados + PDF daquele momento) na tabela `proposal_versions`. Um ícone de **histórico** (na página da sidebar e na seção do card) abre um modal listando as versões (data da alteração + infos), com botões **Ver** e **Baixar** o PDF de cada versão anterior.
+
+**Excluir × Desvincular:**
+- **Lixeira na seção Propostas do card** → apenas **desvincula** a proposta daquele card (a proposta continua existindo e vinculada aos demais cards).
+- **Excluir permanente** → botão na página `/propostas`; remove a proposta de vez e a desvincula de todos os cards.
 
 **Impacto nas regras de avanço:**
 - O antigo anexo "Proposta Comercial" foi **removido da seção Documentos do Resumo** (permanecem lá apenas OS e OC).
 - A regra de avanço nas etapas **Proposta** (board de Serviço, transições 4 e 5) e **Proposta → Operações** (board de Cobrança) passa a exigir **≥1 proposta vinculada ao card** (aba Propostas do card), em vez de um documento anexado.
 
-> ⚠️ **Geração de PDF** da proposta é **fase 2** — ainda não implementada.
+> ✅ **Geração de PDF** (WeasyPrint, marca H&S) implementada — o PDF é anexado automaticamente a cada card vinculado e pode ser visto/baixado pela seção Propostas e pela página da sidebar.
 
 ### 3.2. Campos de PRODUTO (por aparelho)
 
