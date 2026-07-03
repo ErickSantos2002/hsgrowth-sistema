@@ -69,7 +69,8 @@ class ProposalRepository:
         )
 
     def update(self, proposal: Proposal, data: ProposalUpdate) -> Proposal:
-        payload = data.model_dump(exclude_unset=True, exclude={"items"})
+        # seller_name (Vendedor) é imutável: sempre o do criador, nunca é sobrescrito.
+        payload = data.model_dump(exclude_unset=True, exclude={"items", "seller_name"})
         for k, v in payload.items():
             if v is None and k in NON_NULLABLE:
                 continue

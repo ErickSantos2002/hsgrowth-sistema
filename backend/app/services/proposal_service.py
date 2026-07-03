@@ -114,6 +114,9 @@ class ProposalService:
         }
 
     def create(self, data: ProposalCreate, user=None) -> ProposalResponse:
+        # Vendedor = quem criou a proposta (imutável depois — ver repo.update).
+        if user is not None and getattr(user, "name", None):
+            data.seller_name = user.name
         proposal = self.repo.create(data)
         if proposal.card_links:
             self._attach_to_all_cards(proposal)

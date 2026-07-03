@@ -118,6 +118,25 @@ def test_update_creates_version(db):
     assert versions[0].snapshot["shipping"] == 100.0       # snapshot guardou o valor ANTERIOR
 
 
+def test_seller_name_is_creator_and_immutable(db):
+    """Vendedor = criador; editar por outro usuário não muda; histórico registra quem alterou."""
+    from types import SimpleNamespace
+    from app.schemas.proposal import ProposalUpdate
+    creator = SimpleNamespace(name="Ana Criadora")
+    editor = SimpleNamespace(name="Bruno Editor")
+    svc = ProposalService(db)
+
+    resp = svc.create(ProposalCreate(seller_name="ignorado", items=[]), user=creator)
+    assert resp.seller_name == "Ana Criadora"          # veio do usuário, não do payload
+
+    # Outro usuário edita tentando trocar o vendedor
+    resp = svc.update(resp.id, ProposalUpdate(seller_name="Bruno Editor", shipping=50), user=editor)
+    assert resp.seller_name == "Ana Criadora"          # imutável
+
+    versions = svc.list_versions(resp.id)
+    assert versions[0].changed_by == "Bruno Editor"    # histórico mostra quem alterou
+
+
 def test_unlink_removes_card_link(db):
     from app.models.service_board import ServiceBoard
     from app.models.service_list import ServiceList

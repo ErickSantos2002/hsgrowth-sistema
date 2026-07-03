@@ -235,6 +235,8 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
       const base = initial ?? EMPTY_FORM();
       const defaults = {
         date: base.date || todayISO(),
+        // Vendedor = usuário logado (o criador). Fica imutável no backend.
+        seller_name: base.seller_name || user?.name || "",
         signature: base.signature || `Atenciosamente,\n${user?.name || ""}`,
         other_items: base.other_items || buildDefaultOtherItems(),
         notes: base.notes || DEFAULT_NOTES,
@@ -711,12 +713,11 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
               </FormField>
 
               <FormField label="Vendedor">
-                <Input
-                  type="text"
-                  value={form.seller_name ?? ""}
-                  onChange={(e) => setField("seller_name", e.target.value)}
-                  placeholder="Nome do vendedor responsável"
-                  disabled={saving}
+                <input
+                  readOnly
+                  value={form.seller_name || "(automático)"}
+                  title="Vendedor responsável — definido automaticamente pelo criador da proposta e não pode ser alterado"
+                  className="w-full cursor-default rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
                 />
               </FormField>
 

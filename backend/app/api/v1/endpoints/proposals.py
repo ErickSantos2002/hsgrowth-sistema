@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.api.deps import get_current_active_user
+from app.models.user import User
 from app.services.proposal_service import ProposalService
 from app.schemas.proposal import (
     ProposalCreate, ProposalUpdate, ProposalResponse, ProposalListResponse,
@@ -30,8 +32,9 @@ def list_proposals(
 def create_proposal(
     data: ProposalCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
-    return ProposalService(db).create(data)
+    return ProposalService(db).create(data, user=current_user)
 
 
 @router.get("/prefill/{service_card_id}", response_model=ProposalCreate, summary="Pré-preencher a partir do card")
@@ -100,8 +103,9 @@ def get_proposal(
 def update_proposal(
     proposal_id: int, data: ProposalUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
-    return ProposalService(db).update(proposal_id, data)
+    return ProposalService(db).update(proposal_id, data, user=current_user)
 
 
 @router.delete("/{proposal_id}", status_code=status.HTTP_200_OK, summary="Remover proposta")
