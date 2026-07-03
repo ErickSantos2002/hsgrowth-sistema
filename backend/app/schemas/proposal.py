@@ -30,7 +30,6 @@ class ProposalItemResponse(ProposalItemBase):
 class ProposalBase(BaseModel):
     client_id: Optional[int] = None
     person_id: Optional[int] = None
-    service_card_id: Optional[int] = None
     seller_name: Optional[str] = None
     date: Optional[date_type] = None
     next_contact_date: Optional[date_type] = None
@@ -53,14 +52,16 @@ class ProposalBase(BaseModel):
 
 
 class ProposalCreate(ProposalBase):
+    # Campo transiente: se informado, cria o vínculo N:N com o card na criação.
+    service_card_id: Optional[int] = None
     items: List[ProposalItemCreate] = Field(default_factory=list)
 
 
 class ProposalUpdate(BaseModel):
-    # todos opcionais; se `items` vier, substitui a lista inteira
+    # todos opcionais; se `items` vier, substitui a lista inteira.
+    # Vínculo com cards é feito via endpoints dedicados (POST/DELETE /{id}/cards).
     client_id: Optional[int] = None
     person_id: Optional[int] = None
-    service_card_id: Optional[int] = None
     seller_name: Optional[str] = None
     date: Optional[date_type] = None
     next_contact_date: Optional[date_type] = None
@@ -83,6 +84,27 @@ class ProposalUpdate(BaseModel):
     items: Optional[List[ProposalItemCreate]] = None
 
 
+class LinkedCard(BaseModel):
+    """Card de Serviço vinculado a uma proposta (N:N)."""
+    card_id: int
+    board_id: Optional[int] = None
+    status: Literal["ganho", "perdido", "ativo"] = "ativo"
+    title: Optional[str] = None
+
+
+class ProposalVersionResponse(BaseModel):
+    """Entrada do histórico: estado anterior arquivado de uma proposta."""
+    id: int
+    version_number: int
+    changed_by: Optional[str] = None
+    created_at: Optional[datetime] = None
+    has_pdf: bool = False
+    snapshot: Optional[dict] = None
+
+    class Config:
+        from_attributes = True
+
+
 class ProposalResponse(ProposalBase):
     id: int
     number: int
@@ -93,7 +115,7 @@ class ProposalResponse(ProposalBase):
     marker: str = "em_aberto"     # aprovada | nao_aprovada | em_aberto
     client_name: Optional[str] = None
     client_document: Optional[str] = None  # CNPJ/CPF
-    board_id: Optional[int] = None         # board do card vinculado (para link no front)
+    linked_cards: List[LinkedCard] = Field(default_factory=list)  # cards vinculados (N:N)
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
