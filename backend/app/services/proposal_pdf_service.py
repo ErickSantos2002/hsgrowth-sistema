@@ -186,20 +186,30 @@ body {
     line-height: 1.6;
 }
 
-/* ── Endereço em 2 colunas (Cliente | Entrega) ── */
-.endereco-2col {
-    display: table;
+/* ── Endereço em 1 caixa dividida ao meio (Cliente | Entrega) ── */
+table.endereco-tbl {
     width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #999;
     margin-top: 4px;
+    table-layout: fixed;      /* largura fixa 50/50 */
+    font-size: 10px;
+    line-height: 1.6;
 }
-.endereco-col {
-    display: table-cell;
+table.endereco-tbl td.ec-cell {
     width: 50%;
     vertical-align: top;
+    padding: 8px 10px;
+    border-left: 1px solid #999;   /* linha divisória no meio */
+    word-wrap: break-word;
 }
-.endereco-col:first-child { padding-right: 6px; }
-.endereco-col:last-child { padding-left: 6px; }
-.endereco-col .secao-titulo { margin-top: 0; }
+table.endereco-tbl td.ec-cell:first-child {
+    border-left: none;
+}
+.ec-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
 
 /* ── Tabela de itens ── */
 table.itens {
@@ -467,18 +477,22 @@ def _build_html(proposal: Proposal) -> str:
     if not addr_lines:
         addr_lines = "—"
 
-    # ── Bloco de endereço: 2 colunas (Cliente | Entrega) quando há entrega diferente ──
+    # ── Bloco de endereço: 1 caixa dividida ao meio (Cliente | Entrega) quando há entrega diferente ──
     if proposal.different_delivery_address and delivery_lines:
         endereco_block = f"""
-<div class="endereco-2col">
-  <div class="endereco-col">
-    <div class="secao-titulo">Endereço do Cliente</div>
-    <div class="box">{addr_lines}</div>
-  </div>
-  <div class="endereco-col">
-    <div class="secao-titulo">Endereço de Entrega</div>
-    <div class="box">{delivery_lines}</div>
-  </div>
+<div class="secao">
+  <table class="endereco-tbl">
+    <tr>
+      <td class="ec-cell">
+        <div class="ec-title">Endereço do Cliente</div>
+        {addr_lines}
+      </td>
+      <td class="ec-cell">
+        <div class="ec-title">Endereço de Entrega</div>
+        {delivery_lines}
+      </td>
+    </tr>
+  </table>
 </div>"""
     else:
         endereco_block = f"""
