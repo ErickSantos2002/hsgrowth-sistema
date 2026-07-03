@@ -18,7 +18,7 @@ class Proposal(Base, TimestampMixin, SoftDeleteMixin):
     # Vínculos
     client_id = Column(Integer, ForeignKey("clients.id", ondelete="SET NULL"), nullable=True, index=True)
     person_id = Column(Integer, ForeignKey("persons.id", ondelete="SET NULL"), nullable=True)
-    service_card_id = Column(Integer, ForeignKey("service_cards.id", ondelete="SET NULL"), nullable=True, index=True)
+    # Vínculo com cards de Serviço é N:N via proposal_service_cards (ver card_links)
 
     # Cabeçalho
     seller_name = Column(String(255), nullable=True)
@@ -53,11 +53,19 @@ class Proposal(Base, TimestampMixin, SoftDeleteMixin):
 
     client = relationship("Client")
     person = relationship("Person")
-    service_card = relationship("ServiceCard")
     items = relationship("ProposalItem", back_populates="proposal", cascade="all, delete-orphan", lazy="selectin")
+    card_links = relationship(
+        "ProposalServiceCard", back_populates="proposal",
+        cascade="all, delete-orphan", lazy="selectin",
+    )
+    versions = relationship(
+        "ProposalVersion", back_populates="proposal",
+        cascade="all, delete-orphan", lazy="selectin",
+        order_by="ProposalVersion.version_number",
+    )
 
     def __repr__(self):
-        return f"<Proposal(id={self.id}, number={self.number}, card={self.service_card_id})>"
+        return f"<Proposal(id={self.id}, number={self.number})>"
 
 
 class ProposalItem(Base, TimestampMixin):

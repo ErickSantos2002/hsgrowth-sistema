@@ -80,6 +80,8 @@ from app.models.service_card_activity import ServiceCardActivity
 
 # Modelos de Propostas Comerciais (módulo de Serviço)
 from app.models.proposal import Proposal, ProposalItem  # noqa
+from app.models.proposal_service_card import ProposalServiceCard  # noqa
+from app.models.proposal_version import ProposalVersion  # noqa
 
 # Lista de todos os modelos (útil para imports)
 __all__ = [
@@ -129,4 +131,6 @@ __all__ = [
     "ServiceCardActivity",
     "Proposal",
     "ProposalItem",
+    "ProposalServiceCard",
+    "ProposalVersion",
 ]
