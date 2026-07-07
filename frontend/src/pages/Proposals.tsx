@@ -239,8 +239,7 @@ const Proposals: React.FC = () => {
                   return (
                     <tr
                       key={p.id}
-                      onClick={() => handleEdit(p)}
-                      className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/30"
+                      className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/30"
                     >
                       {/* Número */}
                       <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
