@@ -47,6 +47,7 @@ import personService, { Person } from "../services/personService";
 import ExpandableSection from "../components/cardDetails/ExpandableSection";
 import ActionButton from "../components/cardDetails/ActionButton";
 import ServiceProductSection from "../components/service/ServiceProductSection";
+import ServiceServicesSection from "../components/service/ServiceServicesSection";
 import ServiceProposalsSection from "../components/service/ServiceProposalsSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ClientModal from "../components/clients/ClientModal";
@@ -1207,6 +1208,11 @@ const ServiceCardDetails: React.FC = () => {
             cardId={numCardId}
             paymentInfo={card.payment_info}
             onSavePaymentInfo={async (pi) => { await updateCard({ payment_info: pi }); showSuccess("Card atualizado!"); }}
+            onChange={reloadActivities}
+          />
+          <ServiceServicesSection
+            boardId={numBoardId}
+            cardId={numCardId}
             onChange={reloadActivities}
           />
           <ServiceProposalsSection boardId={numBoardId} cardId={numCardId} />

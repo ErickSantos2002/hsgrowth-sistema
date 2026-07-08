@@ -134,6 +134,48 @@ export interface UpdateServiceCardProductRequest {
   aparelhos?: ServiceAparelho[];
 }
 
+// ─── Serviço vinculado ao card (catálogo de Serviços) ──────────────────────────
+
+export interface ServiceCardService {
+  id: number;
+  service_card_id: number;
+  service_id: number;
+  quantity: number;
+  unit_price: number;
+  discount: number;
+  notes?: string;
+  subtotal: number;
+  total: number;
+  created_at: string;
+  updated_at?: string;
+  service_name?: string;
+  service_sku?: string;
+  service_category?: string;
+}
+
+export interface ServiceCardServiceSummary {
+  items: ServiceCardService[];
+  total_items: number;
+  subtotal: number;
+  total_discount: number;
+  total: number;
+}
+
+export interface CreateServiceCardServiceRequest {
+  service_id: number;
+  quantity: number;
+  unit_price: number;
+  discount?: number;
+  notes?: string;
+}
+
+export interface UpdateServiceCardServiceRequest {
+  quantity?: number;
+  unit_price?: number;
+  discount?: number;
+  notes?: string;
+}
+
 export interface ServiceCardListResponse {
   cards: ServiceCard[];
   total: number;
@@ -316,6 +358,26 @@ class ServiceBoardService {
 
   async removeCardProduct(boardId: number, cardId: number, itemId: number): Promise<void> {
     await api.delete(`${BASE}/${boardId}/cards/${cardId}/products/${itemId}`);
+  }
+
+  // Card Services (catálogo de Serviços)
+  async getCardServices(boardId: number, cardId: number): Promise<ServiceCardServiceSummary> {
+    const r = await api.get<ServiceCardServiceSummary>(`${BASE}/${boardId}/cards/${cardId}/services`);
+    return r.data;
+  }
+
+  async addCardService(boardId: number, cardId: number, data: CreateServiceCardServiceRequest): Promise<ServiceCardService> {
+    const r = await api.post<ServiceCardService>(`${BASE}/${boardId}/cards/${cardId}/services`, data);
+    return r.data;
+  }
+
+  async updateCardService(boardId: number, cardId: number, itemId: number, data: UpdateServiceCardServiceRequest): Promise<ServiceCardService> {
+    const r = await api.put<ServiceCardService>(`${BASE}/${boardId}/cards/${cardId}/services/${itemId}`, data);
+    return r.data;
+  }
+
+  async removeCardService(boardId: number, cardId: number, itemId: number): Promise<void> {
+    await api.delete(`${BASE}/${boardId}/cards/${cardId}/services/${itemId}`);
   }
 }
 

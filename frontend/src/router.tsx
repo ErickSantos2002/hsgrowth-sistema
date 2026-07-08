@@ -17,6 +17,7 @@ import CardDetails from './pages/CardDetails';
 import Clients from './pages/Clients';
 import Persons from './pages/Persons';
 import Products from './pages/Products';
+import Servicos from './pages/Servicos';
 import Gamification from './pages/Gamification';
 import Transfers from './pages/Transfers';
 import Reports from './pages/Reports';
@@ -135,6 +136,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/clients" element={<Clients />} />
       <Route path="/persons" element={<Persons />} />
       <Route path="/products" element={<Products />} />
+      <Route path="/service-catalog" element={<ServiceTeamGuard><Servicos /></ServiceTeamGuard>} />
       {/* Rotas bloqueadas para viewer (→ /boards) e service (→ /) */}
       <Route path="/gamification" element={<ViewerGuard><ServiceGuard><Gamification /></ServiceGuard></ViewerGuard>} />
       <Route path="/transfers" element={<ViewerGuard><ServiceGuard><Transfers /></ServiceGuard></ViewerGuard>} />
