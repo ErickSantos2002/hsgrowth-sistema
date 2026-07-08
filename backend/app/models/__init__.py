@@ -78,6 +78,10 @@ from app.models.service_card import ServiceCard
 from app.models.service_card_product import ServiceCardProduct
 from app.models.service_card_activity import ServiceCardActivity
 
+# Catálogo de Serviços (tipos de serviço) + vínculo com o card
+from app.models.service import Service  # noqa
+from app.models.service_card_service import ServiceCardService  # noqa
+
 # Modelos de Propostas Comerciais (módulo de Serviço)
 from app.models.proposal import Proposal, ProposalItem  # noqa
 from app.models.proposal_service_card import ProposalServiceCard  # noqa
@@ -129,6 +133,8 @@ __all__ = [
     "ServiceCard",
     "ServiceCardProduct",
     "ServiceCardActivity",
+    "Service",
+    "ServiceCardService",
     "Proposal",
     "ProposalItem",
     "ProposalServiceCard",
