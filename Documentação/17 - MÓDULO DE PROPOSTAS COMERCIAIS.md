@@ -25,7 +25,7 @@ O sistema **pré-preenche** a partir do card:
 |---|---|
 | **Cliente** | `client_id` do card |
 | **Pessoa / Aos cuidados de** | `person_id` do card |
-| **Itens de produto/serviço** | produtos do card (`service_card_products`): descrição, SKU, quantidade, preço unitário; unidade = `Unid` |
+| **Itens de produto/serviço** | **serviços** do card (`service_card_services`): nome do serviço → descrição, SKU, quantidade, preço unitário; unidade = `Unid`. *(desde 08/07/2026 — antes vinha dos produtos)* |
 | **Outros itens ou serviços** | template padrão de calibração, com **Modelo** e **Aparelhos** preenchidos dinamicamente a partir dos aparelhos do card |
 
 ### 2.2. Sempre (criando de qualquer forma)

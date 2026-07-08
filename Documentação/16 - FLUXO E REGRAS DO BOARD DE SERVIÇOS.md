@@ -96,6 +96,16 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 > ✅ **Geração de PDF** (WeasyPrint, marca H&S) implementada — o PDF é anexado automaticamente a cada card vinculado e pode ser visto/baixado pela seção Propostas e pela página da sidebar.
 
+### 3.1.2. Catálogo de Serviços *(adicionado 08/07/2026)*
+
+Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de serviço, ex.: Calibração 1–4), a partir de um **catálogo próprio**:
+- **Página na sidebar** ("Serviço", rota `/service-catalog`), exclusiva do time de Serviço — cadastro igual ao de Produtos (Nome, Descrição, Código/SKU, Preço, Categoria, Ativo).
+- **Seção "Serviços" no card** (abaixo de Produtos): escolher serviço + quantidade + preço (do catálogo, editável) + desconto. Sem aparelhos.
+- **Regra de avanço:** as etapas que exigiam "≥1 produto" agora exigem **≥1 produto E ≥1 serviço** (board 1 "Dados Preenchidos→"; board 2 "Oportunidade Existente→").
+- **Valor do card:** o valor exibido no Kanban e na dashboard passou a ser calculado pelos **serviços** vinculados (soma `qtd × preço − desconto`). O papel dos produtos no valor será ajustado numa fase posterior.
+- **Proposta:** o prefill dos itens da proposta passa a vir dos **serviços** do card (produtos seguem em "Outros itens" como Modelo/Aparelhos).
+- Tabelas: `services` (catálogo) e `service_card_services` (vínculo). Detalhes no doc 17.
+
 ### 3.2. Campos de PRODUTO (por aparelho)
 
 > **Modelagem (implementada):** o **produto escolhido = o modelo**. Dentro de cada produto há uma **sub-lista de aparelhos** (1 negócio pode ter vários aparelhos do mesmo modelo, cada um com seu próprio Nº de Série). Cada aparelho guarda os campos abaixo.
@@ -307,7 +317,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 - [x] **Trava de avanço** por etapa. ✅ **Feito** (15/06/2026) — `_validate_advance` no `move_card` (backend) bloqueia avanço sem as obrigatoriedades; frontend `handleMove` mostra a mensagem. Regras:
   > ⚠️ **Atualizado em 19/06/2026** para o funil de 7 etapas (ver matriz na seção 6). Regras vigentes:
   - **Liberados do Laboratório →**: **OS (Ordem de Serviço) anexada**.
-  - **Dados Preenchidos →**: **≥1 produto** + **Cliente** vinculado + **Pessoa** vinculada + **Recalibração/Manutenção** (`service_type`) preenchido.
+  - **Dados Preenchidos →**: **≥1 produto** + **≥1 serviço** + **Cliente** vinculado + **Pessoa** vinculada + **Recalibração/Manutenção** (`service_type`) preenchido.
   - **Tentativa de Contato →**: **≥1 atividade concluída nesta etapa** (qualquer tipo).
   - **Proposta → Aguardando Pedido**: **Forma de fechamento = Pedido** (`closing_type`) + **Proposta vinculada** (na aba Propostas do card).
   - **Proposta → Ganho (direto)**: **Forma de fechamento = Faturamento direto** + **Proposta vinculada** (na aba Propostas do card).
@@ -337,7 +347,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 | # | Transição | O que exige para avançar | Implementado | Testado |
 |---|---|---|---|---|
 | 1 | Liberados do Laboratório → Dados Preenchidos | **OS (Ordem de Serviço) anexada** no Resumo | ✅ | ☐ |
-| 2 | Dados Preenchidos → Tentativa de Contato | **≥1 produto** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Recalibração/Manutenção** preenchido | ✅ | ☐ |
+| 2 | Dados Preenchidos → Tentativa de Contato | **≥1 produto** + **≥1 serviço** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Recalibração/Manutenção** preenchido | ✅ | ☐ |
 | 3 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) | ✅ | ☐ |
 | 4 | Proposta → Aguardando Pedido | **Forma de fechamento = "Pedido"** + **Proposta vinculada** (na aba Propostas do card) | ✅ | ☐ |
 | 5 | Proposta → **Negócio Ganho** *(direto)* | **Forma de fechamento = "Faturamento direto"** + **Proposta vinculada** (na aba Propostas do card) · botão Ganho acende na Proposta só nesse caso | ✅ | ☐ |
@@ -413,7 +423,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 | # | Transição | O que exige para avançar |
 |---|---|---|
-| 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Tipo de cobrança** (`collection_type`) selecionado |
+| 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** + **≥1 serviço** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Tipo de cobrança** (`collection_type`) selecionado |
 | 2 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) + **Recalibração/Manutenção** (`service_type`) preenchido |
 | 3 | Proposta → Operações | **Proposta vinculada** (na aba Propostas do card) + **Formulário enviado** (checkbox `form_answered`) |
 | 4 | Operações → **Negócio Ganho** | botão Ganho acende em **Operações** · **sem regra por enquanto** (a definir depois) |
