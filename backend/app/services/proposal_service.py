@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from app.repositories.proposal_repository import ProposalRepository
 from app.models.proposal import Proposal
 from app.models.service_card import ServiceCard
-from app.models.service_card_product import ServiceCardProduct
-from app.models.product import Product
+from app.models.service_card_service import ServiceCardService
+from app.models.service import Service
 from app.schemas.proposal import (
     ProposalCreate, ProposalUpdate, ProposalResponse, ProposalListResponse,
     ProposalItemResponse, ProposalItemCreate, LinkedCard, ProposalVersionResponse,
@@ -230,18 +230,18 @@ class ProposalService:
         if not card:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card não encontrado")
         rows = (
-            self.db.query(ServiceCardProduct, Product)
-            .join(Product, ServiceCardProduct.product_id == Product.id)
-            .filter(ServiceCardProduct.service_card_id == service_card_id)
+            self.db.query(ServiceCardService, Service)
+            .join(Service, ServiceCardService.service_id == Service.id)
+            .filter(ServiceCardService.service_card_id == service_card_id)
             .all()
         )
         items = [
             ProposalItemCreate(
-                product_id=p.id, description=p.name or "", sku=p.sku,
-                quantity=float(scp.quantity or 1), unit=DEFAULT_ITEM_UNIT,
-                unit_price=float(scp.unit_price or 0),
+                product_id=None, description=s.name or "", sku=s.sku,
+                quantity=float(scs.quantity or 1), unit=DEFAULT_ITEM_UNIT,
+                unit_price=float(scs.unit_price or 0),
             )
-            for scp, p in rows
+            for scs, s in rows
         ]
         return ProposalCreate(
             service_card_id=card.id,
