@@ -2,6 +2,7 @@
 Serviço de geração de PDF para Propostas Comerciais.
 Usa WeasyPrint (HTML → PDF) com template inline.
 """
+import base64
 import re
 from decimal import Decimal
 from pathlib import Path
@@ -14,6 +15,24 @@ from app.models.proposal import Proposal
 
 # Mesmo UPLOAD_DIR usado por service_board_service.upload_file
 UPLOAD_DIR = Path("/app/uploads")
+
+# Logo H&S embutida no cabeçalho do PDF (base64). Para trocar a logo,
+# basta substituir o arquivo abaixo — nenhuma alteração de código é necessária.
+_LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "hs_logo.png"
+_logo_cache: Optional[str] = None
+
+
+def _logo_img_tag() -> str:
+    """<img> com a logo H&S embutida (data URI). Retorna '' se o arquivo não existir."""
+    global _logo_cache
+    if _logo_cache is None:
+        try:
+            b64 = base64.b64encode(_LOGO_PATH.read_bytes()).decode("ascii")
+            _logo_cache = f'<img class="header-logo" src="data:image/png;base64,{b64}" alt="H&amp;S" />'
+        except Exception as e:  # arquivo ausente/ilegível → cabeçalho sem logo
+            print(f"[PROPOSAL-PDF] logo nao carregada ({_LOGO_PATH}): {e}")
+            _logo_cache = ""
+    return _logo_cache
 
 
 # ---------------------------------------------------------------------------
@@ -126,7 +145,13 @@ body {
 .header-logo-area {
     display: table-cell;
     width: 38%;
-    vertical-align: top;
+    vertical-align: middle;
+}
+
+.header-logo {
+    max-height: 52px;
+    max-width: 100%;
+    height: auto;
 }
 
 .header-company {
@@ -589,7 +614,7 @@ def _build_html(proposal: Proposal) -> str:
 <!-- ══ Cabeçalho ══ -->
 <div class="header">
   <div class="header-logo-area">
-    <!-- logo H&S (a adicionar) -->
+    {_logo_img_tag()}
   </div>
   <div class="header-company">
     <div class="company-name">HEALTH &amp; SAFETY DISTRIBUICAO IMPORTACAO E EXPORTACAO DE INST</div>
