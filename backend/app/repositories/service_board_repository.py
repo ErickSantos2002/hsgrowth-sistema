@@ -8,6 +8,7 @@ from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
 from app.models.service_card_product import ServiceCardProduct
+from app.models.service_card_service import ServiceCardService
 from app.models.service_card_activity import ServiceCardActivity
 from app.schemas.service_board import (
     ServiceBoardCreate, ServiceBoardUpdate,
@@ -15,6 +16,7 @@ from app.schemas.service_board import (
     ServiceCardCreate, ServiceCardUpdate,
     ServiceCardProductCreate, ServiceCardProductUpdate,
 )
+from app.schemas.service import ServiceCardServiceCreate, ServiceCardServiceUpdate
 
 
 class ServiceBoardRepository:
@@ -303,6 +305,63 @@ class ServiceBoardRepository:
 
     def remove_card_product(self, item_id: int) -> bool:
         item = self.get_card_product_by_id(item_id)
+        if not item:
+            return False
+        self.db.delete(item)
+        self.db.commit()
+        return True
+
+    # ─── Card Services (mirror de Card Products, sem aparelhos) ──────────────────
+    def list_card_services(self, card_id: int) -> List[ServiceCardService]:
+        return (
+            self.db.query(ServiceCardService)
+            .options(joinedload(ServiceCardService.service))
+            .filter(ServiceCardService.service_card_id == card_id)
+            .order_by(ServiceCardService.id)
+            .all()
+        )
+
+    def get_card_service_by_id(self, item_id: int) -> Optional[ServiceCardService]:
+        return (
+            self.db.query(ServiceCardService)
+            .options(joinedload(ServiceCardService.service))
+            .filter(ServiceCardService.id == item_id)
+            .first()
+        )
+
+    def get_card_service_by_card_and_service(
+        self, card_id: int, service_id: int
+    ) -> Optional[ServiceCardService]:
+        return (
+            self.db.query(ServiceCardService)
+            .filter(
+                ServiceCardService.service_card_id == card_id,
+                ServiceCardService.service_id == service_id,
+            )
+            .first()
+        )
+
+    def add_card_service(self, card_id: int, data: "ServiceCardServiceCreate") -> ServiceCardService:
+        item = ServiceCardService(service_card_id=card_id, **data.model_dump())
+        self.db.add(item)
+        self.db.commit()
+        self.db.refresh(item)
+        return self.get_card_service_by_id(item.id)
+
+    def update_card_service(
+        self, item_id: int, data: "ServiceCardServiceUpdate"
+    ) -> Optional[ServiceCardService]:
+        item = self.get_card_service_by_id(item_id)
+        if not item:
+            return None
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(item, field, value)
+        self.db.commit()
+        self.db.refresh(item)
+        return item
+
+    def remove_card_service(self, item_id: int) -> bool:
+        item = self.get_card_service_by_id(item_id)
         if not item:
             return False
         self.db.delete(item)

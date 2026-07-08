@@ -20,6 +20,10 @@ from app.schemas.service_board import (
     ServiceCardActivityCreate, ServiceCardActivityUpdate,
     ServiceCardActivityResponse, ServiceCardActivityComplete,
 )
+from app.schemas.service import (
+    ServiceCardServiceCreate, ServiceCardServiceUpdate,
+    ServiceCardServiceResponse, ServiceCardServiceSummary,
+)
 from app.models.user import User
 
 router = APIRouter()
@@ -449,6 +453,56 @@ async def remove_service_card_product(
 ) -> Any:
     svc = ServiceBoardService(db)
     return svc.remove_card_product(item_id, current_user)
+
+
+# ─── Card Services (mirror de Card Products, sem aparelhos) ───────────────────────
+
+@router.get("/{board_id}/cards/{card_id}/services", response_model=ServiceCardServiceSummary)
+async def list_service_card_services(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.get_card_services(card_id)
+
+
+@router.post("/{board_id}/cards/{card_id}/services", response_model=ServiceCardServiceResponse)
+async def add_service_card_service(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    data: ServiceCardServiceCreate = ...,
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.add_card_service(card_id, data, current_user)
+
+
+@router.put("/{board_id}/cards/{card_id}/services/{item_id}", response_model=ServiceCardServiceResponse)
+async def update_service_card_service(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    item_id: int = Path(...),
+    data: ServiceCardServiceUpdate = ...,
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.update_card_service(item_id, data, current_user)
+
+
+@router.delete("/{board_id}/cards/{card_id}/services/{item_id}")
+async def remove_service_card_service(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    item_id: int = Path(...),
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    svc = ServiceBoardService(db)
+    return svc.remove_card_service(item_id, current_user)
 
 
 # ─── Card Activities (Atividade / Anotação / Arquivo / Alteração) ────────────────

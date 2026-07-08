@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.repositories.service_board_repository import ServiceBoardRepository
 from app.repositories.product_repository import ProductRepository
+from app.repositories.service_repository import ServiceRepository
 from app.schemas.service_board import (
     ServiceBoardCreate, ServiceBoardUpdate, ServiceBoardResponse, ServiceBoardListResponse,
     ServiceListCreate, ServiceListUpdate, ServiceListResponse,
@@ -20,10 +21,15 @@ from app.schemas.service_board import (
     ServiceCardProductResponse, ServiceCardProductSummary,
     ServiceCardActivityCreate, ServiceCardActivityUpdate, ServiceCardActivityResponse,
 )
+from app.schemas.service import (
+    ServiceCardServiceCreate, ServiceCardServiceUpdate,
+    ServiceCardServiceResponse, ServiceCardServiceSummary,
+)
 from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
 from app.models.service_card_product import ServiceCardProduct
+from app.models.service_card_service import ServiceCardService
 from app.models.service_card_activity import ServiceCardActivity
 from app.models.user import User
 
@@ -654,6 +660,90 @@ class ServiceBoardService:
         self.log_event(card_id, user, "product_removed", f"Produto removido: {product_name}",
                        {"product_id": item.product_id})
         return {"message": "Produto removido do card com sucesso"}
+
+    # ─── Card Services (mirror de Card Products, sem aparelhos) ──────────────────
+
+    def _build_card_service_response(self, item: ServiceCardService) -> ServiceCardServiceResponse:
+        return ServiceCardServiceResponse(
+            id=item.id,
+            service_card_id=item.service_card_id,
+            service_id=item.service_id,
+            quantity=item.quantity,
+            unit_price=float(item.unit_price),
+            discount=float(item.discount),
+            notes=item.notes,
+            subtotal=item.subtotal,
+            total=item.total,
+            created_at=item.created_at,
+            updated_at=item.updated_at,
+            service_name=item.service.name if item.service else None,
+            service_sku=item.service.sku if item.service else None,
+            service_category=item.service.category if item.service else None,
+        )
+
+    def get_card_services(self, card_id: int) -> ServiceCardServiceSummary:
+        self.get_card(card_id)
+        items = self.repo.list_card_services(card_id)
+        subtotal = sum(i.subtotal for i in items)
+        total_discount = sum(float(i.discount) for i in items)
+        total = sum(i.total for i in items)
+        return ServiceCardServiceSummary(
+            items=[self._build_card_service_response(i) for i in items],
+            total_items=len(items),
+            subtotal=subtotal,
+            total_discount=total_discount,
+            total=total,
+        )
+
+    def add_card_service(
+        self, card_id: int, data: ServiceCardServiceCreate, user: User
+    ) -> ServiceCardServiceResponse:
+        self.get_card(card_id)
+
+        service = ServiceRepository(self.db).get_service_by_id(data.service_id)
+        if not service:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Serviço {data.service_id} não encontrado",
+            )
+
+        existing = self.repo.get_card_service_by_card_and_service(card_id, data.service_id)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"O serviço '{service.name}' já está adicionado neste card",
+            )
+
+        item = self.repo.add_card_service(card_id, data)
+        self.log_event(card_id, user, "service_added", f"Serviço adicionado: {service.name}",
+                       {"service_id": service.id})
+        return self._build_card_service_response(item)
+
+    def update_card_service(
+        self, item_id: int, data: ServiceCardServiceUpdate, user: User
+    ) -> ServiceCardServiceResponse:
+        item = self.repo.get_card_service_by_id(item_id)
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Serviço do card {item_id} não encontrado",
+            )
+        updated = self.repo.update_card_service(item_id, data)
+        return self._build_card_service_response(updated)
+
+    def remove_card_service(self, item_id: int, user: User) -> dict:
+        item = self.repo.get_card_service_by_id(item_id)
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Serviço do card {item_id} não encontrado",
+            )
+        service_name = item.service.name if item.service else "Serviço"
+        card_id = item.service_card_id
+        self.repo.remove_card_service(item_id)
+        self.log_event(card_id, user, "service_removed", f"Serviço removido: {service_name}",
+                       {"service_id": item.service_id})
+        return {"message": "Serviço removido do card com sucesso"}
 
     # ─── Card Activities (Atividade / Anotação / Arquivo / Alteração) ─────────
 
