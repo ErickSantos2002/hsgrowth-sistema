@@ -13,6 +13,7 @@ from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
 from app.models.service_card_product import ServiceCardProduct
+from app.models.service_card_service import ServiceCardService
 from app.models.service_card_activity import ServiceCardActivity
 from app.models.user import User
 from app.services.service_board_service import SERVICE_FUNNEL_BOARD_IDS
@@ -62,16 +63,16 @@ class ServiceDashboardService:
         card_ids = [c.id for c in cards]
         active_cards = [c for c in cards if c.list_id not in done_ids and c.list_id not in lost_ids]
 
-        # ── Valor por card (produtos) ────────────────────────────────────────
+        # ── Valor por card (serviços) ────────────────────────────────────────
         value_by_card: dict = {}
         if card_ids:
             rows = (
                 db.query(
-                    ServiceCardProduct.service_card_id,
-                    func.coalesce(func.sum(ServiceCardProduct.quantity * ServiceCardProduct.unit_price - ServiceCardProduct.discount), 0),
+                    ServiceCardService.service_card_id,
+                    func.coalesce(func.sum(ServiceCardService.quantity * ServiceCardService.unit_price - ServiceCardService.discount), 0),
                 )
-                .filter(ServiceCardProduct.service_card_id.in_(card_ids))
-                .group_by(ServiceCardProduct.service_card_id)
+                .filter(ServiceCardService.service_card_id.in_(card_ids))
+                .group_by(ServiceCardService.service_card_id)
                 .all()
             )
             value_by_card = {cid: float(v or 0) for cid, v in rows}
