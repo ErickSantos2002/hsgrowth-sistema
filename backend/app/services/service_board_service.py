@@ -191,14 +191,14 @@ class ServiceBoardService:
         today_start = datetime(now.year, now.month, now.day)
         today_end = today_start + timedelta(days=1)
 
-        # Valor por card (soma de quantidade*preço - desconto dos produtos)
+        # Valor por card (soma de quantidade*preço - desconto dos SERVIÇOS)
         value_rows = (
             db.query(
-                ServiceCardProduct.service_card_id,
-                func.coalesce(func.sum(ServiceCardProduct.quantity * ServiceCardProduct.unit_price - ServiceCardProduct.discount), 0),
+                ServiceCardService.service_card_id,
+                func.coalesce(func.sum(ServiceCardService.quantity * ServiceCardService.unit_price - ServiceCardService.discount), 0),
             )
-            .filter(ServiceCardProduct.service_card_id.in_(card_ids))
-            .group_by(ServiceCardProduct.service_card_id)
+            .filter(ServiceCardService.service_card_id.in_(card_ids))
+            .group_by(ServiceCardService.service_card_id)
             .all()
         )
         value_by_card = {cid: float(v or 0) for cid, v in value_rows}
@@ -460,6 +460,9 @@ class ServiceBoardService:
                 products = self.repo.list_card_products(card.id)
                 if not products:
                     miss.append("ao menos 1 produto no card")
+                services = self.repo.list_card_services(card.id)
+                if not services:
+                    miss.append("ao menos 1 serviço no card")
                 if not card.client_id:
                     miss.append("Empresa (Cliente) vinculada")
                 if not card.person_id:
@@ -484,6 +487,9 @@ class ServiceBoardService:
                 products = self.repo.list_card_products(card.id)
                 if not products:
                     miss.append("ao menos 1 produto no card")
+                services = self.repo.list_card_services(card.id)
+                if not services:
+                    miss.append("ao menos 1 serviço no card")
                 if not card.client_id:
                     miss.append("Empresa (Cliente) vinculada")
                 if not card.person_id:
