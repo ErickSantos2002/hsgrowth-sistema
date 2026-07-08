@@ -75,7 +75,7 @@ def test_card_value_from_services(db):
     s = cat.create_service(ServiceCreate(name="Calibração 2", unit_price=300), _fake_user())
     board_svc = ServiceBoardService(db)
     board_svc.add_card_service(card.id, ServiceCardServiceCreate(service_id=s.id, quantity=1, unit_price=300, discount=0), _fake_user())
-    meta = board_svc._compute_card_meta([card.id])
+    meta = board_svc._cards_aggregates([card.id])
     assert meta[card.id]["value"] == 300.0
 
 
