@@ -24,9 +24,10 @@ def upgrade():
         sa.Column('unit_price', sa.Numeric(12, 2), nullable=False),
         sa.Column('category', sa.String(length=100), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.true()),
+        sa.Column('deleted_at', sa.DateTime(), nullable=True),
         sa.Column('is_deleted', sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
         sa.PrimaryKeyConstraint('id'),
     )
     op.create_index(op.f('ix_services_id'), 'services', ['id'])
@@ -44,8 +45,8 @@ def upgrade():
         sa.Column('unit_price', sa.Numeric(12, 2), nullable=False),
         sa.Column('discount', sa.Numeric(12, 2), nullable=False, server_default='0'),
         sa.Column('notes', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
         sa.ForeignKeyConstraint(['service_card_id'], ['service_cards.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['service_id'], ['services.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
