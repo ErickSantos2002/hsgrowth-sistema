@@ -233,9 +233,12 @@ Padronizada para o layout CRM via `padronizar_transportadoras.py` → **`Planilh
 | Lote | Data | Cards | SDRs | IDs no banco | Status |
 |---|---|---|---|---|---|
 | Transp. Lote 1 | 03/07/2026 | 300 | Claudia (100), Karolaine (100), Miguel (100) | 8452–8751 | ✅ Importado |
+| Transp. Lote 2 | 09/07/2026 | 200 | Karolaine (100), Miguel (100) | 8804–9006 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
-**Total Transportadoras importado:** 300 | **Disponíveis:** 3.756 de 4.056.
+**Obs. Transp. Lote 2:** o range 8804–9006 inclui 1 card orgânico de Karolaine (Lista fria) criado por SDR na janela; o lote em si é 100/100 (200 linhas, 0 erros).
+
+**Total Transportadoras importado:** 500 | **Disponíveis:** 3.556 de 4.056.
 
 ---
 
