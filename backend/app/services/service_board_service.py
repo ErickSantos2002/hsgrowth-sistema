@@ -45,6 +45,50 @@ SERVICE_RULE_BOARD_IDS = {1, 2}
 
 # Diretório base de uploads (mesmo volume usado pelos anexos de vendas)
 UPLOAD_DIR = Path("/app/uploads")
+
+
+def deal_value_by_card(db: Session, card_ids: List[int]) -> dict:
+    """Valor do negócio por card = soma dos totais das propostas vinculadas (N:N).
+
+    Total de cada proposta = soma dos itens + frete − desconto. Propostas
+    soft-deletadas são ignoradas. Retorna {card_id: valor}.
+    """
+    if not card_ids:
+        return {}
+    from app.models.proposal import Proposal, ProposalItem
+    from app.models.proposal_service_card import ProposalServiceCard
+
+    # Total dos itens por proposta
+    items_subq = (
+        db.query(
+            ProposalItem.proposal_id.label("pid"),
+            func.coalesce(func.sum(ProposalItem.total), 0).label("items_total"),
+        )
+        .group_by(ProposalItem.proposal_id)
+        .subquery()
+    )
+    rows = (
+        db.query(
+            ProposalServiceCard.service_card_id,
+            func.coalesce(
+                func.sum(
+                    func.coalesce(items_subq.c.items_total, 0)
+                    + func.coalesce(Proposal.shipping, 0)
+                    - func.coalesce(Proposal.discount, 0)
+                ),
+                0,
+            ),
+        )
+        .join(Proposal, ProposalServiceCard.proposal_id == Proposal.id)
+        .outerjoin(items_subq, items_subq.c.pid == Proposal.id)
+        .filter(
+            ProposalServiceCard.service_card_id.in_(card_ids),
+            Proposal.is_deleted == False,  # noqa: E712
+        )
+        .group_by(ProposalServiceCard.service_card_id)
+        .all()
+    )
+    return {cid: float(v or 0) for cid, v in rows}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
@@ -191,17 +235,8 @@ class ServiceBoardService:
         today_start = datetime(now.year, now.month, now.day)
         today_end = today_start + timedelta(days=1)
 
-        # Valor por card (soma de quantidade*preço - desconto dos SERVIÇOS)
-        value_rows = (
-            db.query(
-                ServiceCardService.service_card_id,
-                func.coalesce(func.sum(ServiceCardService.quantity * ServiceCardService.unit_price - ServiceCardService.discount), 0),
-            )
-            .filter(ServiceCardService.service_card_id.in_(card_ids))
-            .group_by(ServiceCardService.service_card_id)
-            .all()
-        )
-        value_by_card = {cid: float(v or 0) for cid, v in value_rows}
+        # Valor do negócio por card = soma dos totais das propostas vinculadas
+        value_by_card = deal_value_by_card(db, card_ids)
 
         # Produtos por card (id + nome) — para o filtro de produto no Kanban
         from app.models.product import Product

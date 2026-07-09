@@ -63,19 +63,9 @@ class ServiceDashboardService:
         card_ids = [c.id for c in cards]
         active_cards = [c for c in cards if c.list_id not in done_ids and c.list_id not in lost_ids]
 
-        # ── Valor por card (serviços) ────────────────────────────────────────
-        value_by_card: dict = {}
-        if card_ids:
-            rows = (
-                db.query(
-                    ServiceCardService.service_card_id,
-                    func.coalesce(func.sum(ServiceCardService.quantity * ServiceCardService.unit_price - ServiceCardService.discount), 0),
-                )
-                .filter(ServiceCardService.service_card_id.in_(card_ids))
-                .group_by(ServiceCardService.service_card_id)
-                .all()
-            )
-            value_by_card = {cid: float(v or 0) for cid, v in rows}
+        # ── Valor por card (propostas vinculadas) ────────────────────────────
+        from app.services.service_board_service import deal_value_by_card
+        value_by_card = deal_value_by_card(db, card_ids) if card_ids else {}
 
         pipeline_value = sum(value_by_card.get(c.id, 0.0) for c in active_cards)
 

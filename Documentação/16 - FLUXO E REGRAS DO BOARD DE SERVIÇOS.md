@@ -102,7 +102,7 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 - **Página na sidebar** ("Serviço", rota `/service-catalog`), exclusiva do time de Serviço — cadastro igual ao de Produtos (Nome, Descrição, Código/SKU, Preço, Categoria, Ativo).
 - **Seção "Serviços" no card** (abaixo de Produtos): escolher serviço + quantidade + preço (do catálogo, editável) + desconto. Sem aparelhos.
 - **Regra de avanço:** as etapas que exigiam "≥1 produto" agora exigem **≥1 produto E ≥1 serviço** (board 1 "Dados Preenchidos→"; board 2 "Oportunidade Existente→").
-- **Valor do card:** o valor exibido no Kanban e na dashboard passou a ser calculado pelos **serviços** vinculados (soma `qtd × preço − desconto`). O papel dos produtos no valor será ajustado numa fase posterior.
+- **Valor do card (Valor do negócio):** exibido no Resumo, no Kanban e na dashboard, é a **soma dos totais das propostas vinculadas** ao card (cada proposta = itens + frete − desconto; propostas soft-deletadas ignoradas). Uma proposta pode estar vinculada a vários cards (N:N) e um card pode ter várias propostas → soma. *(atualizado 09/07/2026; antes vinha dos serviços/produtos)*
 - **Proposta:** o prefill dos itens da proposta passa a vir dos **serviços** do card (produtos seguem em "Outros itens" como Modelo/Aparelhos).
 - Tabelas: `services` (catálogo) e `service_card_services` (vínculo). Detalhes no doc 17.
 

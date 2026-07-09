@@ -69,14 +69,31 @@ def test_add_service_to_card_and_summary(db):
     assert summary.total == 150.0         # 200 - 50
 
 
-def test_card_value_from_services(db):
+def test_card_value_from_linked_proposals(db):
+    """Valor do negócio = soma dos totais das propostas vinculadas (N:N)."""
+    from app.services.service_board_service import deal_value_by_card
+    from app.services.proposal_service import ProposalService
+    from app.schemas.proposal import ProposalCreate, ProposalItemCreate
+
     _, _, card = _make_board_card(db)
-    cat = ServiceCatalogService(db)
-    s = cat.create_service(ServiceCreate(name="Calibração 2", unit_price=300), _fake_user())
     board_svc = ServiceBoardService(db)
-    board_svc.add_card_service(card.id, ServiceCardServiceCreate(service_id=s.id, quantity=1, unit_price=300, discount=0), _fake_user())
-    meta = board_svc._cards_aggregates([card.id])
-    assert meta[card.id]["value"] == 300.0
+
+    # Sem proposta vinculada → 0
+    assert deal_value_by_card(db, [card.id]).get(card.id, 0.0) == 0.0
+
+    psvc = ProposalService(db)
+    # Proposta 1: itens 395 + frete 200 - desconto 0 = 595
+    psvc.create(ProposalCreate(service_card_id=card.id, shipping=200, items=[
+        ProposalItemCreate(description="Calibração", quantity=1, unit_price=395),
+    ]))
+    # Proposta 2: itens 100 = 100
+    psvc.create(ProposalCreate(service_card_id=card.id, items=[
+        ProposalItemCreate(description="Extra", quantity=1, unit_price=100),
+    ]))
+
+    # Valor do card = 595 + 100 = 695 (soma das 2 propostas)
+    assert deal_value_by_card(db, [card.id]).get(card.id, 0.0) == 695.0
+    assert board_svc._cards_aggregates([card.id])[card.id]["value"] == 695.0
 
 
 def test_proposal_prefill_uses_services(db):
