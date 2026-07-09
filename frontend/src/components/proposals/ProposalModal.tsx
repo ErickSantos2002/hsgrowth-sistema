@@ -11,6 +11,7 @@ import clientService, { Client } from "../../services/clientService";
 import personService, { Person } from "../../services/personService";
 import productService, { Product } from "../../services/productService";
 import { showError, showSuccess } from "../../utils/toast";
+import { maskCEP, maskDocument, maskPhone } from "../../utils/formatters";
 import { useAuth } from "../../hooks/useAuth";
 import { buildDefaultOtherItems, DEFAULT_NOTES } from "../../utils/proposalDefaults";
 
@@ -36,6 +37,11 @@ export interface ProposalModalProps {
 
 const formatCurrency = (value: number) =>
   value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Entrada monetária no padrão pt-BR (aceita apenas dígitos e vírgula decimal)
+const sanitizeDecimal = (v: string) => v.replace(/[^0-9,]/g, "").replace(/(,.*),/g, "$1");
+const parseDecimal = (v: string) => parseFloat(v.replace(",", ".")) || 0;
+const numToInput = (n?: number | null) => (n ? String(n).replace(".", ",") : "");
 
 const UF_OPTIONS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
@@ -90,6 +96,9 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   // ─── Form state ──────────────────────────────────────────────────────────
   const [form, setForm] = useState<ProposalCreate>(EMPTY_FORM());
   const [items, setItems] = useState<ProposalItem[]>([]);
+  // Espelho em string dos campos monetários (entrada pt-BR com vírgula)
+  const [discountStr, setDiscountStr] = useState("");
+  const [shippingStr, setShippingStr] = useState("");
   const [proposalNumber, setProposalNumber] = useState<number | null>(null);
   const [editorKey, setEditorKey] = useState(0); // força remount do react-quill ao abrir
 
@@ -224,6 +233,8 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
             items: [],
           });
           setItems(p.items ?? []);
+          setDiscountStr(numToInput(p.discount));
+          setShippingStr(numToInput(p.shipping));
           setProposalNumber(p.number);
           hydratePickers(p.client_id, p.person_id);
           setEditorKey((k) => k + 1);
@@ -243,6 +254,8 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
       };
       setForm({ ...EMPTY_FORM(), ...base, ...defaults, items: [] });
       setItems(base.items ?? []);
+      setDiscountStr(numToInput(base.discount));
+      setShippingStr(numToInput(base.shipping));
       setProposalNumber(null);
       hydratePickers(base.client_id ?? null, base.person_id ?? null);
       setEditorKey((k) => k + 1);
@@ -635,7 +648,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
                     <FormField label="CEP" className="sm:col-span-2">
                       <div className="relative">
-                        <Input type="text" value={da.cep ?? ""} onChange={(e) => setDelivery("cep", e.target.value)} placeholder="00000-000" disabled={saving} />
+                        <Input type="text" value={da.cep ?? ""} onChange={(e) => setDelivery("cep", maskCEP(e.target.value))} placeholder="00000-000" maxLength={9} disabled={saving} />
                         <button
                           type="button"
                           onClick={lookupCep}
@@ -648,7 +661,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                       </div>
                     </FormField>
                     <FormField label="Cidade" className="sm:col-span-3">
-                      <Input type="text" value={da.city ?? ""} onChange={(e) => setDelivery("city", e.target.value)} disabled={saving} />
+                      <Input type="text" value={da.city ?? ""} onChange={(e) => setDelivery("city", e.target.value)} maxLength={100} disabled={saving} />
                     </FormField>
                     <FormField label="UF" className="sm:col-span-1">
                       <SelectMenu
@@ -659,16 +672,16 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                     </FormField>
                   </div>
                   <FormField label="Endereço">
-                    <Input type="text" value={da.street ?? ""} onChange={(e) => setDelivery("street", e.target.value)} placeholder="Logradouro" disabled={saving} />
+                    <Input type="text" value={da.street ?? ""} onChange={(e) => setDelivery("street", e.target.value)} placeholder="Logradouro" maxLength={150} disabled={saving} />
                   </FormField>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-                    <FormField label="Bairro"><Input type="text" value={da.district ?? ""} onChange={(e) => setDelivery("district", e.target.value)} disabled={saving} /></FormField>
-                    <FormField label="Número"><Input type="text" value={da.number ?? ""} onChange={(e) => setDelivery("number", e.target.value)} disabled={saving} /></FormField>
-                    <FormField label="Complemento"><Input type="text" value={da.complement ?? ""} onChange={(e) => setDelivery("complement", e.target.value)} disabled={saving} /></FormField>
-                    <FormField label="Insc. estadual"><Input type="text" value={da.state_registration ?? ""} onChange={(e) => setDelivery("state_registration", e.target.value)} disabled={saving} /></FormField>
+                    <FormField label="Bairro"><Input type="text" value={da.district ?? ""} onChange={(e) => setDelivery("district", e.target.value)} maxLength={100} disabled={saving} /></FormField>
+                    <FormField label="Número"><Input type="text" value={da.number ?? ""} onChange={(e) => setDelivery("number", e.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={10} disabled={saving} /></FormField>
+                    <FormField label="Complemento"><Input type="text" value={da.complement ?? ""} onChange={(e) => setDelivery("complement", e.target.value)} maxLength={100} disabled={saving} /></FormField>
+                    <FormField label="Insc. estadual"><Input type="text" value={da.state_registration ?? ""} onChange={(e) => setDelivery("state_registration", e.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={14} disabled={saving} /></FormField>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-                    <FormField label="Destinatário"><Input type="text" value={da.recipient ?? ""} onChange={(e) => setDelivery("recipient", e.target.value)} disabled={saving} /></FormField>
+                    <FormField label="Destinatário"><Input type="text" value={da.recipient ?? ""} onChange={(e) => setDelivery("recipient", e.target.value)} maxLength={100} disabled={saving} /></FormField>
                     <FormField label="Tipo de Pessoa">
                       <SelectMenu
                         value={da.person_type ?? "fisica"}
@@ -676,8 +689,8 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                         options={[{ value: "fisica", label: "Física" }, { value: "juridica", label: "Jurídica" }]}
                       />
                     </FormField>
-                    <FormField label="CPF / CNPJ"><Input type="text" value={da.document ?? ""} onChange={(e) => setDelivery("document", e.target.value)} disabled={saving} /></FormField>
-                    <FormField label="Fone"><Input type="text" value={da.phone ?? ""} onChange={(e) => setDelivery("phone", e.target.value)} disabled={saving} /></FormField>
+                    <FormField label="CPF / CNPJ"><Input type="text" value={da.document ?? ""} onChange={(e) => setDelivery("document", maskDocument(e.target.value))} placeholder="000.000.000-00" maxLength={18} disabled={saving} /></FormField>
+                    <FormField label="Fone"><Input type="text" value={da.phone ?? ""} onChange={(e) => setDelivery("phone", maskPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} disabled={saving} /></FormField>
                   </div>
                 </div>
               )}
@@ -961,21 +974,29 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField label="Desconto (R$)">
                   <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={form.discount ?? 0}
-                    onChange={(e) => setField("discount", Number(e.target.value))}
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={discountStr}
+                    onChange={(e) => {
+                      const s = sanitizeDecimal(e.target.value);
+                      setDiscountStr(s);
+                      setField("discount", parseDecimal(s));
+                    }}
                     disabled={saving}
                   />
                 </FormField>
                 <FormField label="Frete (R$)">
                   <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={form.shipping ?? 0}
-                    onChange={(e) => setField("shipping", Number(e.target.value))}
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={shippingStr}
+                    onChange={(e) => {
+                      const s = sanitizeDecimal(e.target.value);
+                      setShippingStr(s);
+                      setField("shipping", parseDecimal(s));
+                    }}
                     disabled={saving}
                   />
                 </FormField>
@@ -1052,8 +1073,13 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                 <Input
                   type="number"
                   min={0}
+                  max={3650}
+                  step={1}
                   value={form.validity_days ?? ""}
-                  onChange={(e) => setField("validity_days", e.target.value ? Number(e.target.value) : undefined)}
+                  onChange={(e) => {
+                    const n = e.target.value ? Math.min(3650, Math.max(0, Math.floor(Number(e.target.value)))) : undefined;
+                    setField("validity_days", n);
+                  }}
                   placeholder="Ex: 30"
                   disabled={saving}
                 />
