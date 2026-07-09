@@ -22,7 +22,6 @@ interface ProductFormData {
   description: string;
   sku: string;
   unit_price: string; // String para facilitar input, converte depois
-  calibration_price: string; // Valor da calibração (board de serviços)
   currency: string;
   category: string;
   is_active: boolean;
@@ -55,7 +54,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
     description: "",
     sku: "",
     unit_price: "",
-    calibration_price: "",
     currency: "BRL",
     category: "",
     is_active: true,
@@ -74,7 +72,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
         description: product.description || "",
         sku: product.sku || "",
         unit_price: product.unit_price.toString(),
-        calibration_price: product.calibration_price != null ? product.calibration_price.toString() : "",
         currency: product.currency || "BRL",
         category: product.category || "",
         is_active: product.is_active,
@@ -86,7 +83,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
         description: "",
         sku: "",
         unit_price: "",
-        calibration_price: "",
         currency: "BRL",
         category: "",
         is_active: true,
@@ -134,7 +130,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
         description: formData.description.trim() || undefined,
         sku: formData.sku.trim() || undefined,
         unit_price: parseFloat(formData.unit_price),
-        calibration_price: formData.calibration_price.trim() ? parseFloat(formData.calibration_price) : 0,
         currency: formData.currency,
         category: formData.category.trim() || undefined,
         is_active: formData.is_active,
@@ -176,15 +171,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
     // Substitui vírgula por ponto
     const normalized = cleaned.replace(",", ".");
     handleChange("unit_price", normalized);
-  };
-
-  /**
-   * Formata o input do valor da calibração (mesma regra do preço)
-   */
-  const handleCalibrationPriceChange = (value: string) => {
-    const cleaned = value.replace(/[^\d.,]/g, "");
-    const normalized = cleaned.replace(",", ".");
-    handleChange("calibration_price", normalized);
   };
 
   return (
@@ -310,24 +296,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
                 type="text"
                 value={formData.unit_price}
                 onChange={(e) => handlePriceChange(e.target.value)}
-                placeholder="0.00"
-              />
-            </FormField>
-
-            {/* Valor da Calibração */}
-            <FormField
-              label={
-                <span className="flex items-center gap-1">
-                  <DollarSign size={14} />
-                  Valor da Calibração
-                </span>
-              }
-              hint="Valor usado no board de serviços"
-            >
-              <Input
-                type="text"
-                value={formData.calibration_price}
-                onChange={(e) => handleCalibrationPriceChange(e.target.value)}
                 placeholder="0.00"
               />
             </FormField>

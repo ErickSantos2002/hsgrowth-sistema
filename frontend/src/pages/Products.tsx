@@ -240,9 +240,6 @@ const Products: React.FC = () => {
                     Preço
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                    Calibração
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
@@ -283,13 +280,6 @@ const Products: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="font-medium text-slate-900 dark:text-white">
                         {formatPrice(product.unit_price, product.currency)}
-                      </div>
-                    </td>
-
-                    {/* Valor da calibração (serviços) */}
-                    <td className="px-6 py-4">
-                      <div className={`font-medium ${product.calibration_price ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
-                        {product.calibration_price ? formatPrice(product.calibration_price, product.currency) : "-"}
                       </div>
                     </td>
 

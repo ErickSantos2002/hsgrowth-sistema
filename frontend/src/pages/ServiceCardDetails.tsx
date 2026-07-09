@@ -1206,8 +1206,6 @@ const ServiceCardDetails: React.FC = () => {
           <ServiceProductSection
             boardId={numBoardId}
             cardId={numCardId}
-            paymentInfo={card.payment_info}
-            onSavePaymentInfo={async (pi) => { await updateCard({ payment_info: pi }); showSuccess("Card atualizado!"); }}
             onChange={reloadActivities}
           />
           <ServiceServicesSection
