@@ -14,6 +14,8 @@ import { useConfirm } from "../../contexts/ConfirmContext";
 interface ServiceProposalsSectionProps {
   boardId: number;
   cardId: number;
+  /** Avisa o pai quando as propostas mudam (para recalcular o Valor do negócio do card). */
+  onChange?: () => void;
 }
 
 const formatCurrency = (value: number) =>
@@ -25,7 +27,7 @@ const formatDate = (dateStr?: string | null): string => {
   return `${day}/${month}/${year}`;
 };
 
-const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ boardId, cardId }) => {
+const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ boardId, cardId, onChange }) => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -103,6 +105,7 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
       await proposalService.unlinkCard(p.id, cardId);
       showSuccess(`Proposta #${p.number} desvinculada`);
       loadProposals();
+      onChange?.();
     } catch {
       showError("Erro ao desvincular a proposta");
     }
@@ -111,6 +114,7 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
   const handleSaved = () => {
     setModalOpen(false);
     loadProposals();
+    onChange?.();
   };
 
   const handleClose = () => {
@@ -144,6 +148,7 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
       showSuccess(`Proposta #${p.number} vinculada ao card`);
       setLinkOpen(false);
       loadProposals();
+      onChange?.();
     } catch {
       showError("Erro ao vincular proposta");
     } finally {

@@ -1213,7 +1213,7 @@ const ServiceCardDetails: React.FC = () => {
             cardId={numCardId}
             onChange={reloadActivities}
           />
-          <ServiceProposalsSection boardId={numBoardId} cardId={numCardId} />
+          <ServiceProposalsSection boardId={numBoardId} cardId={numCardId} onChange={loadCard} />
         </div>
 
         {/* Coluna direita — 70% */}
