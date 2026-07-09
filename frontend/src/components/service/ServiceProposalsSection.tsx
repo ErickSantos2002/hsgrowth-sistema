@@ -318,6 +318,8 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
         onSaved={handleSaved}
         proposalId={editingId ?? undefined}
         initial={initial}
+        sourceCardId={cardId}
+        sourceBoardId={boardId}
       />
 
       <ProposalHistoryModal

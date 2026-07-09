@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, Trash2, Search, X, Building2, User as UserIcon } from "lucide-react";
+import { Plus, Trash2, Search, X, Building2, User as UserIcon, RefreshCw } from "lucide-react";
 import { BaseModal, FormField, Input, Textarea, Button, SelectMenu } from "../common";
 import RichTextEditor from "../common/RichTextEditor";
 import proposalService, {
   ProposalCreate,
   ProposalItem,
   DeliveryAddress,
+  LinkedCard,
 } from "../../services/proposalService";
+import serviceBoardService from "../../services/serviceBoardService";
 import clientService, { Client } from "../../services/clientService";
 import personService, { Person } from "../../services/personService";
 import productService, { Product } from "../../services/productService";
 import { showError, showSuccess } from "../../utils/toast";
 import { maskCEP, maskDocument, maskPhone } from "../../utils/formatters";
 import { useAuth } from "../../hooks/useAuth";
+import { useConfirm } from "../../contexts/ConfirmContext";
 import { buildDefaultOtherItems, DEFAULT_NOTES } from "../../utils/proposalDefaults";
 
 // Data local de hoje em YYYY-MM-DD (sem shift de fuso)
@@ -31,6 +34,9 @@ export interface ProposalModalProps {
   onSaved: () => void;
   proposalId?: number | null;
   initial?: ProposalCreate;
+  /** Card de origem (quando aberto pela seção Propostas de um card) — habilita "Atualizar dados". */
+  sourceCardId?: number;
+  sourceBoardId?: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -89,9 +95,12 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   onSaved,
   proposalId,
   initial,
+  sourceCardId,
+  sourceBoardId,
 }) => {
   const isEditing = !!proposalId;
   const { user } = useAuth();
+  const { confirm } = useConfirm();
 
   // ─── Form state ──────────────────────────────────────────────────────────
   const [form, setForm] = useState<ProposalCreate>(EMPTY_FORM());
@@ -100,6 +109,8 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   const [discountStr, setDiscountStr] = useState("");
   const [shippingStr, setShippingStr] = useState("");
   const [proposalNumber, setProposalNumber] = useState<number | null>(null);
+  const [linkedCards, setLinkedCards] = useState<LinkedCard[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const [editorKey, setEditorKey] = useState(0); // força remount do react-quill ao abrir
 
   // ─── UI state ────────────────────────────────────────────────────────────
@@ -185,6 +196,61 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
     }
   };
 
+  // Card de origem para "Atualizar dados": o card que abriu o modal, ou o único vinculado.
+  const refreshCard: { cardId: number; boardId?: number } | null =
+    sourceCardId != null
+      ? { cardId: sourceCardId, boardId: sourceBoardId }
+      : linkedCards.length === 1
+        ? { cardId: linkedCards[0].card_id, boardId: linkedCards[0].board_id ?? undefined }
+        : null;
+
+  // Repuxa Cliente/Pessoa/Itens do card (e opcionalmente Modelo/Aparelhos) — NÃO salva.
+  const handleAtualizarDados = async () => {
+    if (!refreshCard) return;
+    setRefreshing(true);
+    try {
+      const prefill = await proposalService.prefillFromCard(refreshCard.cardId);
+      let modelo = "";
+      let aparelhos = "";
+      if (refreshCard.boardId != null) {
+        try {
+          const summary = await serviceBoardService.getCardProducts(refreshCard.boardId, refreshCard.cardId);
+          const prods = summary.items || [];
+          const aparelhosList = prods.flatMap((it) => it.aparelhos || []);
+          let models = Array.from(new Set(aparelhosList.map((a) => a.model).filter(Boolean) as string[]));
+          if (models.length === 0) {
+            models = Array.from(new Set(prods.map((it) => it.product_name).filter(Boolean) as string[]));
+          }
+          modelo = models.join(", ");
+          aparelhos = Array.from(new Set(aparelhosList.map((a) => a.serial_number).filter(Boolean) as string[])).join(", ");
+        } catch {
+          /* sem produtos/aparelhos — mantém em branco */
+        }
+      }
+      const rebuild = await confirm({
+        title: "Atualizar 'Outros itens ou serviços'?",
+        message:
+          "Deseja também reconstruir o texto 'Outros itens ou serviços' (Modelo/Aparelhos) com os dados atuais do card? Isso substitui edições manuais feitas nesse texto.",
+        confirmText: "Reconstruir",
+        cancelText: "Manter texto",
+      });
+      setForm((prev) => ({
+        ...prev,
+        client_id: prefill.client_id ?? prev.client_id,
+        person_id: prefill.person_id ?? prev.person_id,
+        ...(rebuild ? { other_items: buildDefaultOtherItems(modelo, aparelhos) } : {}),
+      }));
+      setItems(prefill.items ?? []);
+      hydratePickers(prefill.client_id, prefill.person_id);
+      if (rebuild) setEditorKey((k) => k + 1);
+      showSuccess("Dados atualizados a partir do card — revise e clique em Salvar Alterações");
+    } catch {
+      showError("Erro ao atualizar dados do card");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   // ─── Reset on open ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
@@ -235,6 +301,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
           setItems(p.items ?? []);
           setDiscountStr(numToInput(p.discount));
           setShippingStr(numToInput(p.shipping));
+          setLinkedCards(p.linked_cards ?? []);
           setProposalNumber(p.number);
           hydratePickers(p.client_id, p.person_id);
           setEditorKey((k) => k + 1);
@@ -256,6 +323,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
       setItems(base.items ?? []);
       setDiscountStr(numToInput(base.discount));
       setShippingStr(numToInput(base.shipping));
+      setLinkedCards([]);
       setProposalNumber(null);
       hydratePickers(base.client_id ?? null, base.person_id ?? null);
       setEditorKey((k) => k + 1);
@@ -470,6 +538,20 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
       subtitle={isEditing ? "Edite os dados da proposta comercial" : "Preencha os dados para criar uma nova proposta comercial"}
       size="2xl"
       closeOnOverlayClick={false}
+      headerActions={
+        isEditing && refreshCard ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<RefreshCw size={16} />}
+            onClick={handleAtualizarDados}
+            loading={refreshing}
+            disabled={saving || loading}
+          >
+            Atualizar dados
+          </Button>
+        ) : undefined
+      }
       footer={
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose} disabled={saving || loading}>

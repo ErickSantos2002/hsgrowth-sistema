@@ -18,6 +18,8 @@ interface BaseModalProps {
   size?: ModalSize;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Ações extras no cabeçalho (renderizadas antes do botão de fechar). */
+  headerActions?: React.ReactNode;
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   className?: string;
@@ -57,6 +59,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
   size = "lg",
   children,
   footer,
+  headerActions,
   showCloseButton = true,
   closeOnOverlayClick = true,
   className = "",
@@ -85,15 +88,18 @@ const BaseModal: React.FC<BaseModalProps> = ({
             <h2 className={`text-2xl font-bold text-slate-900 dark:text-white ${titleClassName}`}>{title}</h2>
             {subtitle && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
           </div>
-          {showCloseButton && (
-            <button
-              onClick={onClose}
-              className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
-              type="button"
-            >
-              <X size={24} />
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {headerActions}
+            {showCloseButton && (
+              <button
+                onClick={onClose}
+                className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
+                type="button"
+              >
+                <X size={24} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Conteúdo scrollável */}
