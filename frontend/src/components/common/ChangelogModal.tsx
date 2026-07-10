@@ -25,6 +25,84 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.0",
+    date: "09/07/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Módulo de Serviços em produção: o módulo completo — boards, propostas comerciais e catálogo de serviços — foi liberado para o time de Serviço (administrador, gerente e perfil 'serviço').",
+      },
+      {
+        type: "feature",
+        text: "Boards de Serviço: dois boards com funil e regras próprias — 'Serviço' (funil oficial, 7 etapas) e 'Cobrança' (Serviços - Atrasados, 6 etapas). Cada etapa tem obrigatoriedades para avançar, e Ganho/Perdido só pelos botões (com motivo da perda).",
+      },
+      {
+        type: "feature",
+        text: "Dashboard de Serviço: indicadores próprios (pipeline, ganhos, perdidos, ticket médio, taxa de ganho, atividades), recalibrações vencidas e a vencer (30/50/90 dias), funil, ranking de colaboradores e motivos de perda. É possível alternar entre as visões 'Serviço' e 'Cobrança'.",
+      },
+      {
+        type: "feature",
+        text: "Propostas Comerciais: novo módulo com a página 'Propostas' na barra lateral e uma seção 'Propostas' dentro do card. Permite criar, editar, visualizar e excluir propostas, com numeração automática própria.",
+      },
+      {
+        type: "feature",
+        text: "PDF da proposta: gerado com a identidade da H&S e anexado automaticamente ao card sempre que a proposta é criada, editada ou vinculada. Pode ser visualizado e baixado pela seção do card e pela página de Propostas.",
+      },
+      {
+        type: "feature",
+        text: "Proposta a partir do card: ao criar pelo card, a proposta já vem com Cliente, Pessoa e os itens preenchidos, além do texto padrão de calibração com Modelo e Aparelhos.",
+      },
+      {
+        type: "feature",
+        text: "Endereço de entrega: é possível informar um endereço de entrega diferente do de cobrança, com busca automática pelo CEP. No PDF, os dois endereços aparecem lado a lado.",
+      },
+      {
+        type: "feature",
+        text: "Proposta compartilhada entre cards: a mesma proposta pode ser vinculada a vários cards e boards (ex.: criada na Cobrança e reaproveitada no Serviço). A listagem mostra todos os cards vinculados.",
+      },
+      {
+        type: "feature",
+        text: "Marcador da proposta: classificação automática em 'aprovada', 'não aprovada' ou 'em aberto', derivada da situação dos cards vinculados.",
+      },
+      {
+        type: "feature",
+        text: "Histórico de versões da proposta: a cada edição salva, a versão anterior é arquivada. Um novo ícone de histórico mostra a data, quem alterou e permite visualizar e baixar o PDF de cada versão anterior.",
+      },
+      {
+        type: "feature",
+        text: "Botão 'Atualizar dados' na proposta: ao editar, repuxa do card as informações atuais de Cliente, Pessoa e itens (serviços), perguntando se deve reconstruir também o texto de Modelo/Aparelhos. As mudanças só valem após salvar — e ficam registradas no histórico.",
+      },
+      {
+        type: "feature",
+        text: "Catálogo de Serviços: nova aba 'Serviço' na barra lateral, para cadastrar os tipos de serviço (ex.: calibração) com nome, código, preço e categoria. No card, os serviços são vinculados com quantidade, preço e desconto.",
+      },
+      {
+        type: "improvement",
+        text: "Valor do negócio: passa a ser a soma dos totais das propostas vinculadas ao card, refletido no Resumo, no card do board e na dashboard.",
+      },
+      {
+        type: "improvement",
+        text: "Produtos no card de Serviço: deixam de trabalhar com valores. Agora registram apenas a quantidade de produtos e de aparelhos (com os dados do laboratório por aparelho). Preço, desconto e condições de pagamento saíram da seção — o valor fica nas propostas.",
+      },
+      {
+        type: "improvement",
+        text: "Catálogo de Produtos: removido o campo 'Valor da Calibração', que agora é atribuição do catálogo de Serviços.",
+      },
+      {
+        type: "improvement",
+        text: "Regras de avanço: as etapas que exigiam produto passam a exigir produto e serviço vinculados. As etapas de Proposta passam a exigir uma proposta vinculada ao card, em vez de um documento anexado no Resumo.",
+      },
+      {
+        type: "improvement",
+        text: "Vendedor da proposta: preenchido automaticamente com quem criou a proposta e não muda quando outra pessoa edita.",
+      },
+      {
+        type: "improvement",
+        text: "Campos da proposta: máscaras de CEP, CPF/CNPJ e telefone; Desconto e Frete aceitam vírgula (padrão brasileiro); limites de tamanho nos demais campos.",
+      },
+    ],
+  },
+  {
     version: "1.7.36",
     date: "26/06/2026",
     entries: [
