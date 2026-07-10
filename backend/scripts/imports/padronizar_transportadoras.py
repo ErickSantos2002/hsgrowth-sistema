@@ -10,11 +10,20 @@ Saída   : Planilha_Transportadoras_Prospeccao_fixed.xlsx  (aba "Importação_CR
 Regras de conversão:
   - Nº FUNC. (número) -> Faixa de Funcionários (texto). 0/vazio => em branco.
   - FATURAMENTO (R$)  -> Faixa de Faturamento (texto). 0/vazio => em branco.
-  - Site "🔍 Buscar site"/vazio => em branco.
-  - Nome_Contato1 fica em branco (planilha nova não tem contato dedicado — o SDR
-    preenche depois; o telefone/e-mail da empresa vão para Fone1/Email1_Empresa).
+  - Site: usa o hyperlink real da coluna WEBSITE. "🔍 Buscar site" (busca Google) => em branco.
+  - LinkedIn da empresa: hyperlink da coluna "LinkedIn Empresa" -> nova coluna
+    "Linkedin_Empresa" (col 52), lida pelo importer em client.linkedin_url.
+    URLs genéricas (.../company/ sem nome) => em branco.
+  - SSMA no LinkedIn: hyperlink (busca no Google) -> nova coluna "Notes_Cliente"
+    (col 53), lida pelo importer em client.notes ("Observações" do cliente).
+    Fica visível na seção "Cliente (Organização)" do detalhe do card.
+  - Nome_Contato1 fica em branco (planilha nova não tem contato dedicado).
   - SDR_Responsavel / Canal_Aquisicao / Status_Importacao ficam em branco
     (preenchidos pelos scripts de lote).
+
+IDEMPOTÊNCIA: se o arquivo de saída já existir, o controle de importação
+(SDR/Canal/Status por CNPJ) é preservado — assim regerar NÃO re-importa lotes
+já subidos (evita duplicatas).
 """
 
 import os
@@ -26,7 +35,6 @@ TEMPLATE_STD = os.path.join(SCRIPT_DIR, "Planilha_Importacao_CRM_Novos_SDR_fixed
 OUT_FILE     = os.path.join(SCRIPT_DIR, "Planilha_Transportadoras_Prospeccao_fixed.xlsx")
 
 SRC_SHEET    = "CONSOLIDADO"
-SRC_HEADER   = 3
 SRC_DATA     = 4
 STD_SHEET    = "Importação_CRM"
 STD_HEADER   = 3      # 3 linhas de cabeçalho no padrão
@@ -35,13 +43,16 @@ STD_COLS     = 51
 # Índices (1-based) das colunas na planilha NOVA (aba CONSOLIDADO)
 N_LOTE, N_CNPJ, N_RAZAO, N_FANTASIA, N_CIDADE, N_UF = 1, 2, 3, 4, 5, 6
 N_PORTE, N_FUNC, N_FATUR, N_CNAE, N_TEL, N_EMAIL1, N_EMAIL2 = 7, 8, 9, 10, 11, 12, 13
-N_WEBSITE = 14
+N_WEBSITE, N_SSMA, N_LINKEDIN = 14, 16, 17
 
 # Índices (1-based) das colunas no PADRÃO (aba Importação_CRM)
 P_CNPJ, P_RAZAO, P_FANTASIA, P_SITE, P_UF, P_CIDADE, P_ENDERECO = 1, 2, 3, 4, 5, 6, 7
 P_CNAE, P_FX_FUNC, P_FX_FATUR = 8, 9, 10
 P_FONE1, P_EMAIL1, P_EMAIL2 = 11, 14, 15
+P_SDR, P_CANAL, P_DETALHE = 34, 35, 36
 P_STATUS = 51
+P_LINKEDIN_EMP = 52   # NOVA coluna: LinkedIn da empresa -> client.linkedin_url
+P_NOTES_CLI = 53      # NOVA coluna: Observações do cliente -> client.notes (link SSMA)
 
 
 def faixa_funcionarios(val):
@@ -91,19 +102,70 @@ def clean(v):
     return s if s else None
 
 
-def clean_site(v):
-    s = clean(v)
-    if not s or "buscar" in s.lower():
+def cell_link(ws, r, c):
+    cell = ws.cell(r, c)
+    return cell.hyperlink.target if cell.hyperlink else None
+
+
+def site_url(ws, r):
+    """URL real do site; None quando é placeholder de busca."""
+    val = clean(ws.cell(r, N_WEBSITE).value)
+    if not val or "buscar" in val.lower():
         return None
-    return s
+    return cell_link(ws, r, N_WEBSITE) or val
+
+
+def linkedin_empresa(ws, r):
+    """LinkedIn da empresa; descarta stub genérico .../company/ sem nome."""
+    link = cell_link(ws, r, N_LINKEDIN)
+    if not link:
+        return None
+    if "/company/" in link:
+        slug = link.split("/company/", 1)[1].strip("/ ").strip()
+        if not slug:
+            return None
+    return link
+
+
+def ssma_obs(ws, r):
+    """Texto de observação com o link de busca do SSMA no LinkedIn."""
+    link = cell_link(ws, r, N_SSMA)
+    if not link:
+        return None
+    return f"🔍 Buscar SSMA no LinkedIn: {link}"
+
+
+def load_prior_control():
+    """Carrega SDR/Canal/Detalhe/Status do arquivo de saída anterior (por CNPJ)."""
+    prior = {}
+    if not os.path.exists(OUT_FILE):
+        return prior
+    wb = openpyxl.load_workbook(OUT_FILE, read_only=True)
+    ws = wb[STD_SHEET]
+    for i, row in enumerate(ws.iter_rows(values_only=True), start=1):
+        if i <= STD_HEADER:
+            continue
+        cnpj = row[P_CNPJ - 1]
+        if not cnpj:
+            continue
+        prior[str(cnpj).strip()] = (
+            row[P_SDR - 1], row[P_CANAL - 1], row[P_DETALHE - 1], row[P_STATUS - 1]
+        )
+    wb.close()
+    return prior
 
 
 def main():
     print("=" * 60)
-    print("PADRONIZAÇÃO — Planilha_Nova_030726 -> layout CRM")
+    print("PADRONIZAÇÃO — Planilha_Nova_030726 -> layout CRM (+ Site/LinkedIn/SSMA)")
     print("=" * 60)
 
-    # 1) Copia as 3 linhas de cabeçalho do template padrão
+    prior = load_prior_control()
+    if prior:
+        n_imp = sum(1 for v in prior.values() if v[3] == "Importado")
+        print(f"Controle anterior carregado: {len(prior)} CNPJs ({n_imp} já 'Importado' preservados).")
+
+    # 1) Copia as 3 linhas de cabeçalho do template padrão + coluna nova
     wb_std = openpyxl.load_workbook(TEMPLATE_STD, read_only=True)
     ws_std = wb_std[STD_SHEET]
     header_rows = []
@@ -117,52 +179,100 @@ def main():
     for r, rowvals in enumerate(header_rows, start=1):
         for c, v in enumerate(rowvals, start=1):
             ws_out.cell(r, c).value = v
+    # Cabeçalho das colunas novas
+    ws_out.cell(2, P_LINKEDIN_EMP).value = "DADOS EXTRAS DO CLIENTE"
+    ws_out.cell(STD_HEADER, P_LINKEDIN_EMP).value = "Linkedin_Empresa"
+    ws_out.cell(STD_HEADER, P_NOTES_CLI).value = "Notes_Cliente"
 
-    # 2) Lê a planilha nova em streaming e escreve no padrão
-    wb_src = openpyxl.load_workbook(SRC_FILE, read_only=True)
+    # 2) Lê a planilha nova (NÃO read_only, para acessar hyperlinks)
+    wb_src = openpyxl.load_workbook(SRC_FILE)
     ws_src = wb_src[SRC_SHEET]
 
-    dest = STD_HEADER + 1  # começa na row 4
-    total = 0
-    com_func = 0
-    com_fatur = 0
-    for i, row in enumerate(ws_src.iter_rows(values_only=True), start=1):
-        if i < SRC_DATA:
-            continue
-        cnpj = clean(row[N_CNPJ - 1])
-        razao = clean(row[N_RAZAO - 1])
+    records = []
+    total = com_func = com_fatur = com_site = com_linkedin = com_ssma = preservados = 0
+    for orig, r in enumerate(range(SRC_DATA, ws_src.max_row + 1)):
+        cnpj = clean(ws_src.cell(r, N_CNPJ).value)
+        razao = clean(ws_src.cell(r, N_RAZAO).value)
         if not cnpj and not razao:
             continue
 
-        fx_func = faixa_funcionarios(row[N_FUNC - 1])
-        fx_fatur = faixa_faturamento(row[N_FATUR - 1])
-        if fx_func:
-            com_func += 1
-        if fx_fatur:
-            com_fatur += 1
+        fx_func  = faixa_funcionarios(ws_src.cell(r, N_FUNC).value)
+        fx_fatur = faixa_faturamento(ws_src.cell(r, N_FATUR).value)
+        site     = site_url(ws_src, r)
+        linkedin = linkedin_empresa(ws_src, r)
+        ssma     = ssma_obs(ws_src, r)
+        ctrl     = prior.get(cnpj)
 
-        ws_out.cell(dest, P_CNPJ).value     = cnpj
-        ws_out.cell(dest, P_RAZAO).value    = razao
-        ws_out.cell(dest, P_FANTASIA).value = clean(row[N_FANTASIA - 1])
-        ws_out.cell(dest, P_SITE).value     = clean_site(row[N_WEBSITE - 1])
-        ws_out.cell(dest, P_UF).value       = clean(row[N_UF - 1])
-        ws_out.cell(dest, P_CIDADE).value   = clean(row[N_CIDADE - 1])
-        ws_out.cell(dest, P_CNAE).value     = clean(row[N_CNAE - 1])
-        ws_out.cell(dest, P_FX_FUNC).value  = fx_func
-        ws_out.cell(dest, P_FX_FATUR).value = fx_fatur
-        ws_out.cell(dest, P_FONE1).value    = clean(row[N_TEL - 1])
-        ws_out.cell(dest, P_EMAIL1).value   = clean(row[N_EMAIL1 - 1])
-        ws_out.cell(dest, P_EMAIL2).value   = clean(row[N_EMAIL2 - 1])
-        # Nome_Contato1, SDR, Canal, Status: em branco
-        dest += 1
+        com_func     += 1 if fx_func else 0
+        com_fatur    += 1 if fx_fatur else 0
+        com_site     += 1 if site else 0
+        com_linkedin += 1 if linkedin else 0
+        com_ssma      += 1 if ssma else 0
+        if ctrl and ctrl[3] == "Importado":
+            preservados += 1
         total += 1
 
+        records.append({
+            "orig": orig, "cnpj": cnpj, "razao": razao,
+            "fantasia": clean(ws_src.cell(r, N_FANTASIA).value),
+            "site": site, "uf": clean(ws_src.cell(r, N_UF).value),
+            "cidade": clean(ws_src.cell(r, N_CIDADE).value),
+            "cnae": clean(ws_src.cell(r, N_CNAE).value),
+            "fx_func": fx_func, "fx_fatur": fx_fatur,
+            "fone1": clean(ws_src.cell(r, N_TEL).value),
+            "email1": clean(ws_src.cell(r, N_EMAIL1).value),
+            "email2": clean(ws_src.cell(r, N_EMAIL2).value),
+            "ssma": ssma, "linkedin": linkedin, "ctrl": ctrl,
+        })
+
     wb_src.close()
+
+    # ORDENAÇÃO: bloco já 'Importado' primeiro (ordem original), depois os PENDENTES
+    # com site (ordem original) e por último os pendentes sem site. Assim os próximos
+    # lotes priorizam automaticamente quem tem Website.
+    def sort_key(rec):
+        imported = rec["ctrl"] and rec["ctrl"][3] == "Importado"
+        if imported:
+            return (0, 0, rec["orig"])
+        return (1, 0 if rec["site"] else 1, rec["orig"])
+
+    records.sort(key=sort_key)
+
+    dest = STD_HEADER + 1  # começa na row 4
+    for rec in records:
+        ws_out.cell(dest, P_CNPJ).value      = rec["cnpj"]
+        ws_out.cell(dest, P_RAZAO).value     = rec["razao"]
+        ws_out.cell(dest, P_FANTASIA).value  = rec["fantasia"]
+        ws_out.cell(dest, P_SITE).value      = rec["site"]
+        ws_out.cell(dest, P_UF).value        = rec["uf"]
+        ws_out.cell(dest, P_CIDADE).value    = rec["cidade"]
+        ws_out.cell(dest, P_CNAE).value      = rec["cnae"]
+        ws_out.cell(dest, P_FX_FUNC).value   = rec["fx_func"]
+        ws_out.cell(dest, P_FX_FATUR).value  = rec["fx_fatur"]
+        ws_out.cell(dest, P_FONE1).value     = rec["fone1"]
+        ws_out.cell(dest, P_EMAIL1).value    = rec["email1"]
+        ws_out.cell(dest, P_EMAIL2).value    = rec["email2"]
+        ws_out.cell(dest, P_LINKEDIN_EMP).value = rec["linkedin"]
+        ws_out.cell(dest, P_NOTES_CLI).value    = rec["ssma"]
+
+        ctrl = rec["ctrl"]
+        if ctrl:
+            ws_out.cell(dest, P_SDR).value     = ctrl[0]
+            ws_out.cell(dest, P_CANAL).value   = ctrl[1]
+            ws_out.cell(dest, P_DETALHE).value = ctrl[2]
+            ws_out.cell(dest, P_STATUS).value  = ctrl[3]
+
+        dest += 1
+
     wb_out.save(OUT_FILE)
 
     print(f"Linhas padronizadas : {total}")
-    print(f"Com Faixa Funcionários preenchida : {com_func}")
-    print(f"Com Faixa Faturamento preenchida  : {com_fatur}")
+    print(f"  Faixa Funcionários : {com_func}")
+    print(f"  Faixa Faturamento  : {com_fatur}")
+    print(f"  Site (URL)         : {com_site}")
+    print(f"  LinkedIn empresa   : {com_linkedin}")
+    print(f"  SSMA (notes cliente): {com_ssma}")
+    print(f"  'Importado' preservados : {preservados}")
     print(f"Arquivo gerado: {os.path.basename(OUT_FILE)}")
     print("=" * 60)
 

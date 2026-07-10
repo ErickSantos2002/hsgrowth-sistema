@@ -18,6 +18,38 @@ interface ClientSectionProps {
 }
 
 /**
+ * Sanitiza URLs vindas do cadastro do cliente antes de usá-las em href.
+ * Aceita apenas http/https. Domínios sem esquema recebem https://.
+ * Qualquer outro esquema (javascript:, data:, vbscript:...) retorna null,
+ * evitando XSS por href — o valor é exibido como texto puro.
+ */
+const safeHttpUrl = (raw?: string | null): string | null => {
+  if (!raw) return null;
+  const url = raw.trim();
+  if (/^https?:\/\//i.test(url)) return url;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(url)) return null; // esquema explícito não permitido
+  return `https://${url}`;
+};
+
+/** Renderiza o texto das observações transformando URLs em links clicáveis. */
+const linkifyNotes = (text: string): React.ReactNode[] =>
+  text.split(/(https?:\/\/\S+)/g).map((part, i) =>
+    /^https?:\/\//.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-400 hover:underline"
+      >
+        {part}
+      </a>
+    ) : (
+      <React.Fragment key={i}>{part}</React.Fragment>
+    )
+  );
+
+/**
  * Seção "Cliente (Organização)" - Informações do cliente vinculado ao card
  * Permite vincular tanto pessoas físicas (CPF) quanto jurídicas (CNPJ)
  * Segunda seção da coluna esquerda, expandida por padrão
@@ -360,6 +392,9 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
   }
 
   // Se há cliente vinculado - exibir apenas read-only
+  const websiteHref = safeHttpUrl(client?.website);
+  const linkedinHref = safeHttpUrl(client?.linkedin_url);
+
   return (
     <>
       <ExpandableSection
@@ -434,15 +469,52 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
           <div className="space-y-1">
             <div className="text-sm font-medium text-slate-600 dark:text-slate-300">Website</div>
             <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
-              {client?.website ? (
+              {websiteHref ? (
                 <a
-                  href={client.website}
+                  href={websiteHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-400 hover:underline"
+                  className="break-all text-sm text-blue-400 hover:underline"
                 >
-                  {client.website}
+                  {client!.website}
                 </a>
+              ) : client?.website ? (
+                <p className="break-all text-sm text-slate-700 dark:text-slate-200">{client.website}</p>
+              ) : (
+                <p className="text-sm italic text-slate-400 dark:text-slate-500">Não informado</p>
+              )}
+            </div>
+          </div>
+
+          {/* LinkedIn da Empresa */}
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-slate-600 dark:text-slate-300">LinkedIn</div>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
+              {linkedinHref ? (
+                <a
+                  href={linkedinHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="break-all text-sm text-blue-400 hover:underline"
+                >
+                  {client!.linkedin_url}
+                </a>
+              ) : client?.linkedin_url ? (
+                <p className="break-all text-sm text-slate-700 dark:text-slate-200">{client.linkedin_url}</p>
+              ) : (
+                <p className="text-sm italic text-slate-400 dark:text-slate-500">Não informado</p>
+              )}
+            </div>
+          </div>
+
+          {/* Observações */}
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-slate-600 dark:text-slate-300">Observações</div>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
+              {client?.notes ? (
+                <p className="whitespace-pre-wrap break-all text-sm text-slate-700 dark:text-slate-200">
+                  {linkifyNotes(client.notes)}
+                </p>
               ) : (
                 <p className="text-sm italic text-slate-400 dark:text-slate-500">Não informado</p>
               )}

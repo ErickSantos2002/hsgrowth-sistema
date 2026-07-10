@@ -228,6 +228,22 @@ Padronizada para o layout CRM via `padronizar_transportadoras.py` → **`Planilh
 - `Nº FUNC.` e `FATURAMENTO` vêm como número e são convertidos para as faixas-texto do CRM. Func. = 0 → faixa em branco.
 - CNAE vem como descrição (sem código) → campo `cnae` fica null (esperado).
 
+**Site / LinkedIn / SSMA (a partir de 09/07/2026, só nos lotes novos):** o `padronizar_transportadoras.py` extrai os hyperlinks reais da planilha e preenche. **Os três aparecem na seção "Cliente (Organização)" do detalhe do card:**
+
+| Planilha | Coluna no `_fixed` | Campo no banco | Onde aparece no CRM |
+|---|---|---|---|
+| WEBSITE | `Site` (col 4) | `client.website` | Cliente (Organização) → **Website** |
+| LinkedIn Empresa | `Linkedin_Empresa` (col 52, nova) | `client.linkedin_url` | Cliente (Organização) → **LinkedIn** |
+| SSMA no LinkedIn | `Notes_Cliente` (col 53, nova) | `client.notes` | Cliente (Organização) → **Observações** |
+
+- Placeholder "Buscar site" → Site em branco. Stubs `.../company/` sem nome → LinkedIn em branco.
+- `import_from_planilha.py` foi atualizado para ler `Linkedin_Empresa` e `Notes_Cliente` (colunas opcionais — planilhas antigas sem elas continuam funcionando).
+- `ClientSection.tsx` foi atualizado para renderizar **LinkedIn** e **Observações** (com URLs clicáveis) abaixo do Website.
+- ⚠️ Esses campos só são gravados em **clientes novos**. Se o CNPJ já existir no CRM, o importer reaproveita o cliente e não sobrescreve.
+- O script preserva o controle (`Status_Importacao`/SDR/Canal) por CNPJ, então pode ser re-rodado sem re-importar lotes já subidos. Os 500 já importados (Transp. Lote 1+2) **não** foram retroativamente preenchidos.
+
+**Priorização por Website (a partir de 09/07/2026):** o `padronizar_transportadoras.py` ordena as linhas pendentes **com site primeiro** (bloco já importado fica no topo, depois pendentes com Website em ordem original, por último os sem Website). Como os geradores de lote pegam as pendentes na ordem do arquivo, os próximos lotes sobem automaticamente quem tem site até esgotar, depois os demais. Situação em 09/07/2026: **2.014 pendentes com site** (rows 504–2517) e **1.542 sem site** (rows 2518+).
+
 **Gerar lote:** use `fix_transportadoras_lote1.py` como base (ajuste `SDRS`, `CARDS_PER_SDR` e `OUTPUT_LOTE`), aponta para o `_fixed` desta fonte. Import roda com o mesmo `import_from_planilha.py`.
 
 | Lote | Data | Cards | SDRs | IDs no banco | Status |

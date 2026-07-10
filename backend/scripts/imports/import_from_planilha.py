@@ -336,6 +336,8 @@ def get_or_create_client(db, reader: RowReader, row: int) -> int | None:
         company_name=clean_str(reader.get(row, "Nome Fantasia")) or razao_social,
         document=cnpj_digits,  # Salva CNPJ como 14 dígitos sem formatação
         website=clean_str(reader.get(row, "Site")),
+        linkedin_url=clean_str(reader.get(row, "Linkedin_Empresa")),  # LinkedIn da empresa (coluna opcional)
+        notes=clean_str(reader.get(row, "Notes_Cliente")),  # Observações do cliente (coluna opcional)
         state=normalize_uf(reader.get(row, "Estado (UF)")),
         city=clean_str(reader.get(row, "Cidade")),
         address=clean_str(reader.get(row, "Endereço Completo")),
