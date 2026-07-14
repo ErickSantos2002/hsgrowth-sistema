@@ -308,8 +308,22 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
     );
   }, [historyEvents, activeTab, searchTerm]);
 
-  // Contagens para badges das abas (usando eventos brutos)
-  const activityCount = historyEvents.filter((e) => TASK_EVENT_TYPES.has(e.type)).length;
+  // Atividades: os eventos de tarefa são AGRUPADOS por tarefa na lista (1 linha por
+  // tarefa, os demais eventos ficam no "N registro anterior"). Por isso o badge conta
+  // LINHAS (tarefas) — contar eventos brutos faria o número não bater com a lista.
+  const taskEvents = historyEvents.filter((e) => TASK_EVENT_TYPES.has(e.type));
+  const activityEventCount = taskEvents.length; // eventos brutos (criada, concluída, editada...)
+  const activityCount = (() => {
+    const taskIds = new Set<number>();
+    let loose = 0;
+    for (const e of taskEvents) {
+      const taskId = e.metadata?.task_id;
+      if (taskId) taskIds.add(taskId);
+      else loose++;
+    }
+    return taskIds.size + loose;
+  })(); // linhas exibidas (tarefas)
+
   const noteCount = historyEvents.filter((e) => e.type === "note_added").length;
   const fileCount = historyEvents.filter(
     (e) => e.type === "file_attached" || e.type === "file_deleted"
@@ -378,6 +392,11 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             <button
               key={key}
               onClick={() => setActiveTab(key)}
+              title={
+                key === "activities"
+                  ? `${activityCount} ${activityCount === 1 ? "tarefa" : "tarefas"} · ${activityEventCount} ${activityEventCount === 1 ? "evento" : "eventos"} (criada, concluída, editada...)`
+                  : undefined
+              }
               className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-1 pb-2 text-sm transition-colors ${
                 activeTab === key
                   ? "border-blue-500 font-medium text-blue-400"
@@ -499,8 +518,17 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
           )}
           <p className="text-xs text-slate-400 dark:text-slate-500">
             Mostrando {Math.min(visibleCount, groupedEvents.length)} de {groupedEvents.length}{" "}
-            {groupedEvents.length === 1 ? "item" : "itens"}
+            {activeTab === "activities"
+              ? `${groupedEvents.length === 1 ? "tarefa" : "tarefas"} · ${activityEventCount} ${activityEventCount === 1 ? "evento" : "eventos"}`
+              : groupedEvents.length === 1
+                ? "item"
+                : "itens"}
           </p>
+          {activeTab === "activities" && activityEventCount > groupedEvents.length && (
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              Os eventos de uma mesma tarefa ficam agrupados — abra a tarefa para ver os anteriores.
+            </p>
+          )}
         </div>
       )}
     </div>
