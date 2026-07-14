@@ -653,7 +653,7 @@ class CardExpandedResponse(CardResponse):
     pending_tasks_count: Optional[int] = Field(None, description="Quantidade de tarefas pendentes")
     products: Optional[list] = Field(None, description="Produtos associados ao card")
     products_total: Optional[float] = Field(None, description="Valor total dos produtos")
-    recent_activities: Optional[list] = Field(None, description="Atividades recentes (últimas 10)")
+    recent_activities: Optional[list] = Field(None, description="Histórico do card (até 200 eventos mais recentes)")
     notes: Optional[list] = Field(None, description="Anotações do card")
 
     model_config = {"from_attributes": True}

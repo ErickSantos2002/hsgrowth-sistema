@@ -2406,8 +2406,9 @@ class CardService:
         card_products = product_repo.list_card_products(card_id)
         products_totals = product_repo.get_card_products_total(card_id)
 
-        # Atividades recentes do histórico (últimas 30)
-        activities_list = self.activity_repository.get_by_card(card_id, limit=30)
+        # Histórico do card. O frontend pagina a exibição ("Mostrar mais"), então
+        # enviamos uma janela ampla para que os eventos antigos fiquem acessíveis.
+        activities_list = self.activity_repository.get_by_card(card_id, limit=200)
         recent_activities = [
             {
                 "id": act.id,

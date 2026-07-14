@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   CheckCircle2,
   Clock,
@@ -82,10 +82,20 @@ const TASK_EVENT_TYPES = new Set<EventType>([
   "activity_deleted",
 ]);
 
+/** Quantidade de eventos exibidos por vez no histórico (botão "Mostrar mais"). */
+const PAGE_SIZE = 10;
+
 const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] }) => {
   const [activeTab, setActiveTab] = useState<HistoryTab>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  // Quantos eventos exibir (botão "Mostrar mais" revela de PAGE_SIZE em PAGE_SIZE)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Ao trocar de aba ou buscar, volta a exibir a primeira página
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [activeTab, searchTerm]);
 
   const toggleGroup = (key: string) => {
     setExpandedGroups((prev) => {
@@ -409,7 +419,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
             </p>
           </div>
         ) : (
-          groupedEvents.map((group) => {
+          groupedEvents.slice(0, visibleCount).map((group) => {
             const isExpanded = expandedGroups.has(group.key);
             const hasSubEvents = group.subEvents.length > 0;
             const subCount = group.subEvents.length;
@@ -468,9 +478,28 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
       </div>
 
       {groupedEvents.length > 0 && (
-        <div className="mt-4 text-center">
+        <div className="mt-4 space-y-2 text-center">
+          {groupedEvents.length > visibleCount && (
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                className="rounded-lg border border-gray-200 bg-gray-100/50 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-gray-200/50 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-700/50"
+              >
+                Mostrar mais ({groupedEvents.length - visibleCount} restantes)
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisibleCount(groupedEvents.length)}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-blue-500 transition-colors hover:bg-blue-500/10"
+              >
+                Mostrar todos
+              </button>
+            </div>
+          )}
           <p className="text-xs text-slate-400 dark:text-slate-500">
-            Mostrando {groupedEvents.length} {groupedEvents.length === 1 ? "item" : "itens"}
+            Mostrando {Math.min(visibleCount, groupedEvents.length)} de {groupedEvents.length}{" "}
+            {groupedEvents.length === 1 ? "item" : "itens"}
           </p>
         </div>
       )}
