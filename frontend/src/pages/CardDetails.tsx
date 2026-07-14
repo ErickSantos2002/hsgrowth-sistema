@@ -250,9 +250,11 @@ const CardDetails: React.FC = () => {
       try {
         await cardService.markAsWon(card.id);
         await loadCardData();
-      } catch (error) {
+      } catch (error: any) {
         console.error("Erro ao marcar como ganho:", error);
-        showError("Erro ao marcar negócio como ganho");
+        // Mostra o motivo vindo do backend (ex.: "Preencha o campo 'É venda ou locação'...")
+        const detail = error?.response?.data?.detail;
+        showError(typeof detail === "string" ? detail : "Erro ao marcar negócio como ganho");
       }
     }
   };
@@ -324,9 +326,10 @@ const CardDetails: React.FC = () => {
       await cardService.markAsLost(card.id, reason);
       setShowLossReasonModal(false);
       await loadCardData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao marcar como perdido:", error);
-      showError("Erro ao marcar negócio como perdido");
+      const detail = error?.response?.data?.detail;
+      showError(typeof detail === "string" ? detail : "Erro ao marcar negócio como perdido");
     }
   };
 
@@ -346,9 +349,10 @@ const CardDetails: React.FC = () => {
       showSuccess(`Negócio reaberto com sucesso! Redirecionando para o novo card...`);
       // Navega para o novo card criado
       navigate(`/cards/${result.new_card_id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao reabrir negócio:", error);
-      showError("Erro ao reabrir negócio. Tente novamente.");
+      const detail = error?.response?.data?.detail;
+      showError(typeof detail === "string" ? detail : "Erro ao reabrir negócio. Tente novamente.");
     } finally {
       setIsReopening(false);
     }

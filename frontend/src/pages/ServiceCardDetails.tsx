@@ -1049,8 +1049,9 @@ const ServiceCardDetails: React.FC = () => {
       reloadActivities();
       setShowLossModal(false);
       showSuccess("Card marcado como perdido!");
-    } catch {
-      showError("Erro ao marcar como perdido");
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail;
+      showError(typeof detail === "string" ? detail : "Erro ao marcar como perdido");
     }
   };
 
