@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.1] — 14/07/2026
+
+### Corrigido
+- **Mensagem ao marcar Ganho/Perdido:** ao tentar marcar um negócio como Ganho (ou Perdido, ou ao reabrir), o sistema mostrava apenas um erro genérico. Agora exibe o **motivo real** — por exemplo, *"Preencha o campo 'É venda ou locação' no Resumo antes de marcar o negócio como Ganho"* — deixando claro o que falta preencher.
+- **Histórico do card:** o histórico trazia apenas os eventos mais recentes e não havia como acessar os antigos. Agora o card carrega um histórico bem maior e a lista ganhou um botão **"Mostrar mais"** (e "Mostrar todos"), exibindo 10 eventos por vez com o total à vista.
+
+---
+
 ## [1.8.0] — 09/07/2026
 
 > **Módulo de Serviços em produção.** Esta versão libera o módulo de Serviço completo — boards, propostas comerciais e catálogo de serviços — para o time de Serviço (acesso para administrador, gerente e perfil "serviço").

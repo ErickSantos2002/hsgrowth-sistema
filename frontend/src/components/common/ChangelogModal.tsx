@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.1",
+    date: "14/07/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Mensagem ao marcar Ganho/Perdido: ao tentar marcar um negócio como Ganho (ou Perdido, ou ao reabrir), o sistema mostrava apenas um erro genérico. Agora exibe o motivo real — por exemplo, \"Preencha o campo 'É venda ou locação' no Resumo antes de marcar o negócio como Ganho\" — deixando claro o que falta preencher.",
+      },
+      {
+        type: "fix",
+        text: "Histórico do card: o histórico trazia apenas os eventos mais recentes e não havia como acessar os antigos. Agora o card carrega um histórico bem maior e a lista ganhou um botão 'Mostrar mais' (e 'Mostrar todos'), exibindo 10 eventos por vez com o total à vista.",
+      },
+    ],
+  },
+  {
     version: "1.8.0",
     date: "09/07/2026",
     entries: [
