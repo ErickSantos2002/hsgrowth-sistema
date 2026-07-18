@@ -276,7 +276,7 @@ async def create_service_card(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    card = svc.create_card(data, current_user)
+    card = svc.create_card(data, current_user, board_id=board_id)
     return ServiceCardResponse(
         id=card.id,
         list_id=card.list_id,

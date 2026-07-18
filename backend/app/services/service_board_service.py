@@ -369,8 +369,13 @@ class ServiceBoardService:
             total_pages=total_pages,
         )
 
-    def create_card(self, data: ServiceCardCreate, user: User) -> ServiceCard:
-        self.get_list(data.list_id)
+    def create_card(self, data: ServiceCardCreate, user: User, board_id: Optional[int] = None) -> ServiceCard:
+        lst = self.get_list(data.list_id)
+        if board_id is not None and lst.board_id != board_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A lista informada não pertence a este board de serviços.",
+            )
         card = self.repo.create_card(data)
         self.log_event(card.id, user, "card_created", "Card criado")
         return card

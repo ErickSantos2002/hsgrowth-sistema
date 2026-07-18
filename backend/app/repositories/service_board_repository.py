@@ -222,13 +222,7 @@ class ServiceBoardRepository:
         return float((ultimo.position or 0) + 1) if ultimo else 0.0
 
     def create_card(self, data: ServiceCardCreate) -> ServiceCard:
-        max_pos_row = (
-            self.db.query(ServiceCard)
-            .filter(ServiceCard.list_id == data.list_id)
-            .order_by(ServiceCard.position.desc())
-            .first()
-        )
-        next_position = float((max_pos_row.position or 0) + 1) if max_pos_row else 0.0
+        next_position = self.next_position(data.list_id)
         card = ServiceCard(
             list_id=data.list_id,
             title=data.title,
@@ -236,6 +230,8 @@ class ServiceBoardRepository:
             assigned_to_id=data.assigned_to_id,
             due_date=data.due_date,
             contact_info=data.contact_info,
+            payment_info=data.payment_info,
+            business_info=data.business_info,
             client_id=data.client_id,
             person_id=data.person_id,
             position=next_position,
