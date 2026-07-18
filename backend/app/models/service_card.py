@@ -2,7 +2,7 @@
 Modelo de ServiceCard (Card de Serviços).
 Tabela separada e independente dos cards de vendas.
 """
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, DateTime, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -46,6 +46,16 @@ class ServiceCard(Base, TimestampMixin, SoftDeleteMixin):
 
     # Data prevista de conclusão
     due_date = Column(DateTime, nullable=True)
+
+    # Identidade da entidade de origem, quando o card veio de um sistema externo.
+    # Ex: ("gestorhs.os", "1234") ou ("gestorhs.calibracao", "500:2027-03-14").
+    # Ambas NULL em cards criados por humanos.
+    external_source = Column(String(50), nullable=True, index=True)
+    external_id = Column(String(100), nullable=True, index=True)
+
+    __table_args__ = (
+        UniqueConstraint("external_source", "external_id", name="unique_service_card_external_ref"),
+    )
 
     # Relacionamentos
     list = relationship("ServiceList", back_populates="cards")
