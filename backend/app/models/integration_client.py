@@ -24,7 +24,7 @@ class IntegrationClient(Base):
     client_secret_hash = Column(String(255), nullable=False)  # Hash do secret (nunca armazenar plain text)
 
     # Chave de API estática (não expira). SHA-256 hex — ver app/core/security.hash_api_key.
-    api_key_hash = Column(String(255), nullable=True, index=True)
+    api_key_hash = Column(String(255), nullable=True, unique=True, index=True)
     # Escopos permitidos, ex: ["service_cards:create"]. Vazio = a chave não pode nada.
     scopes = Column(JSON, nullable=True, default=list)
 
