@@ -1,10 +1,11 @@
 """O provisionamento tem que ser idempotente e nunca reemitir a chave em silêncio."""
 import pytest
 
+from app.core.security import hash_api_key
 from app.models.integration_client import IntegrationClient
 from app.models.role import Role
 from app.models.user import User
-from scripts.provisionar_integracao_gestorhs import provisionar
+from scripts.provisionar_integracao_gestorhs import provisionar, rotacionar
 
 
 @pytest.fixture(autouse=True)
@@ -41,3 +42,43 @@ def test_a_chave_em_claro_nao_fica_no_banco(db):
     client = db.query(IntegrationClient).first()
     assert client.api_key_hash != chave
     assert len(client.api_key_hash) == 64
+
+
+def test_rotacionar_emite_chave_nova_e_atualiza_o_hash(db):
+    _, chave_antiga = provisionar(db)
+    hash_antigo = db.query(IntegrationClient).first().api_key_hash
+
+    client, chave_nova = rotacionar(db)
+
+    assert chave_nova is not None and chave_nova.startswith("hsg_live_")
+    assert chave_nova != chave_antiga
+    assert client.api_key_hash != hash_antigo
+    assert client.api_key_hash == hash_api_key(chave_nova)
+    # a chave em claro nunca é persistida — só o hash muda no banco
+    assert client.api_key_hash != chave_nova
+
+
+def test_rotacionar_invalida_a_chave_antiga_e_valida_a_nova(db):
+    _, chave_antiga = provisionar(db)
+
+    client, chave_nova = rotacionar(db)
+
+    assert client.api_key_hash != hash_api_key(chave_antiga)
+    assert client.api_key_hash == hash_api_key(chave_nova)
+
+
+def test_rotacionar_reativa_client_desativado(db):
+    provisionar(db)
+    client = db.query(IntegrationClient).first()
+    client.is_active = False
+    db.add(client)
+    db.commit()
+
+    client, _ = rotacionar(db)
+
+    assert client.is_active is True
+
+
+def test_rotacionar_sem_provisionamento_previo_leva_erro(db):
+    with pytest.raises(RuntimeError):
+        rotacionar(db)

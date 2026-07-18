@@ -94,10 +94,29 @@ X-API-Key: <a chave>
 - Chave ausente, inválida ou de client inativo → `401`. Chave válida mas sem o
   escopo `service_cards:create` → `403`. Não existe fallback: sem chave configurada e
   correta, nenhum card é criado.
-- **Rotacionar:** desativar o `IntegrationClient` atual (tela de admin do hsgrowth) e
-  rodar o script de novo — ele cria um novo `client_id` fixo (`hsg_gestorhs`) só se
-  não houver um ativo; para trocar a chave mantendo o mesmo client, use a tela de
-  admin.
+- **Rotacionar** (trocar a chave mantendo o mesmo `client_id`): no backend do
+  hsgrowth, rode
+
+  ```bash
+  cd backend && python -m scripts.provisionar_integracao_gestorhs --rotate
+  ```
+
+  Isso gera uma chave nova, grava o hash dela no `IntegrationClient` existente
+  (`client_id=hsg_gestorhs`) e reativa o client caso estivesse desativado. A saída
+  imprime a chave nova em texto puro — copie na hora, ela não é exibida de novo.
+
+  **A chave antiga para de autenticar no mesmo instante** — não há período de
+  coexistência entre as duas. Isso significa que a troca precisa ser **coordenada**:
+  rode a rotação e atualize a env `HSGROWTH_API_KEY` do GestorHS o quanto antes depois
+  disso, porque qualquer requisição do GestorHS feita com a chave antiga nesse
+  intervalo recebe `401`.
+- **Revogar sem substituir** (parar a integração sem emitir chave nova): chame
+  `POST /integration-clients/{id}/deactivate` (só admin; `{id}` é o id numérico do
+  `IntegrationClient`, não o `client_id` de texto `hsg_gestorhs` — confira em
+  `GET /integration-clients`) ou marque `is_active = False` direto no banco. Toda
+  requisição com a chave atual passa a receber `401`, e a integração fica parada até
+  alguém rodar `--rotate` (que também reativa o client) ou reativar manualmente via
+  `POST /integration-clients/{id}/activate`.
 
 ---
 
@@ -160,7 +179,7 @@ card existente sem alterar nada** (ver destaque no topo do documento).
 | Campo | Tipo | Descrição |
 |---|---|---|
 | `id` | int | Id do card no hsgrowth. |
-| `list_id` | int | Etapa de entrada onde o card foi colocado. |
+| `list_id` | int | Etapa (lista) atual do card. No `201` (criação), é a etapa de entrada do board. No `200` (`created: false`), é a etapa **atual** do card já existente — pode não ser mais a de entrada, se o vendedor já tiver movido o card. |
 | `title` | string | |
 | `external_source` | string \| null | Eco de `source`. |
 | `external_id` | string \| null | Eco de `external_id`. |
@@ -461,8 +480,9 @@ da primeira.
      -d '{"is_entry_stage": true}'
    ```
    (Esta chamada usa o **token de usuário normal** do hsgrowth — login JWT — não a
-   `X-API-Key` da integração; é uma operação de configuração de board, feita por um
-   humano com permissão de admin/manager, não pela integração.)
+   `X-API-Key` da integração; é uma operação de configuração de board, restrita a
+   quem tem acesso ao módulo de Serviços — roles `admin`, `manager` ou `service`
+   [`require_service_access()`] — não pela integração.)
 3. **Anotar os dois `board_id`** — o do board de Serviços e o do board de Cobrança.
    São valores diferentes; confirme qual é qual antes de configurar o GestorHS.
 4. **Configurar as envs no GestorHS:**
