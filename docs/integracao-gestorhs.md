@@ -25,21 +25,25 @@ documento vai parecer familiar de propósito — mesma estrutura, mesmo tom. Mas
 > descrição, nem lista, nem cliente.
 >
 > Consequência prática: **o GestorHS deve chamar este endpoint UMA vez, no gatilho**
-> (abertura da OS; calibração cruzando o limiar de 50 dias) — **não a cada atualização
-> da OS**, como faz com o TaskHS. Chamar de novo é inofensivo (é idempotente), mas é
-> desperdício de request: não faz nada além de devolver o card que já existe.
+> (saída do laboratório; calibração cruzando o limiar de 50 dias; carga de vencidos) —
+> **não a cada atualização da OS**, como faz com o TaskHS. Chamar de novo é inofensivo
+> (é idempotente), mas é desperdício de request: não faz nada além de devolver o card
+> que já existe.
 
 ---
 
 ## 1. Visão geral e direção do fluxo
 
-- **Direção:** `GestorHS → hsgrowth`. O GestorHS é quem sabe que uma OS abriu ou que
-  uma calibração está próxima do vencimento; ele **empurra** essa informação como um
-  card novo no funil comercial/cobrança do hsgrowth.
-- **Gatilhos (só dois):**
-  1. Uma **OS é aberta** → cria (ou recupera) um card no board de **Serviços**.
+- **Direção:** `GestorHS → hsgrowth`. O GestorHS é quem sabe que um aparelho saiu do
+  laboratório ou que uma calibração está vencendo; ele **empurra** essa informação como
+  um card novo no funil comercial/cobrança do hsgrowth.
+- **Gatilhos (três):**
+  1. Um **aparelho sai do laboratório** (avanço de fase 5 → 6, Pós-Vendas) → cria (ou
+     recupera) um card no board de **Serviços**.
   2. A **calibração de um aparelho está a 50 dias de vencer** → cria (ou recupera) um
      card no board de **Cobrança**.
+  3. **Carga única e manual de calibrações já vencidas** → cria um card por cliente no
+     board de **Cobrança**, agrupando os aparelhos vencidos dele em `devices[]`.
 - **O hsgrowth nunca chama de volta nesta fase.** Não há callback nem webhook do
   hsgrowth para o GestorHS. (Isso está planejado para uma fase 2 — ver "Fora de
   escopo" no fim deste documento.)
@@ -140,7 +144,7 @@ card existente sem alterar nada** (ver destaque no topo do documento).
 
 | Campo | Tipo | Obrigatório | Descrição |
 |---|---|:---:|---|
-| `source` | string, um de `"gestorhs.os"` \| `"gestorhs.calibracao"` | ✅ | Qual gatilho originou o card (ver seção 4). |
+| `source` | string, um de `"gestorhs.os"` \| `"gestorhs.calibracao"` \| `"gestorhs.atrasados"` | ✅ | Qual gatilho originou o card (ver seção 4). Valor fora desta lista → `422`. |
 | `external_id` | string (1–100 caracteres) | ✅ | Id da entidade no GestorHS. Junto com `source`, forma a chave de idempotência. |
 | `board_id` | int | ✅ | Board do hsgrowth onde o card deve nascer. O card sempre entra na etapa marcada como `is_entry_stage=true` desse board — **não há como escolher a lista diretamente**. Se o board não existir ou não tiver etapa de entrada configurada → `404`. |
 | `title` | string (1–500 caracteres) | ✅ | Título do card. |
@@ -196,7 +200,7 @@ card existente sem alterar nada** (ver destaque no topo do documento).
 
 ### 3.1 Exemplo — board de Serviços (`gestorhs.os`)
 
-Disparado quando a OS é aberta.
+Disparado quando o aparelho **sai do laboratório** (avanço de fase 5 → 6, Pós-Vendas).
 
 ```bash
 curl -X POST "$HSGROWTH_BASE_URL/api/v1/integration/service-cards" \
@@ -290,18 +294,85 @@ curl -X POST "$HSGROWTH_BASE_URL/api/v1/integration/service-cards" \
 `board_id` aqui é o board de **Cobrança** — um id diferente do exemplo anterior (ver
 checklist, seção 9).
 
+### 3.3 Exemplo — carga de vencidos (`gestorhs.atrasados`)
+
+Disparo **manual e pontual**, não automático. Um card por cliente, agrupando todos os
+aparelhos dele com calibração **já vencida** em `devices[]` — o vendedor faz uma ligação
+só para tratar de todos.
+
+```bash
+curl -X POST "$HSGROWTH_BASE_URL/api/v1/integration/service-cards" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $HSGROWTH_API_KEY" \
+  -d '{
+    "source": "gestorhs.atrasados",
+    "external_id": "512:2026-07-18",
+    "board_id": 2,
+    "title": "Calibrações vencidas · Auto Posto Bela Vista · 3 aparelhos",
+    "description": "Carga de passivo em 18/07/2026. Aparelhos com calibração vencida há mais de 30 dias.",
+    "client": {
+      "external_id": "512",
+      "name": "Auto Posto Bela Vista Ltda",
+      "document": "12345678000199",
+      "email": "financeiro@belavista.com.br",
+      "phone": "11987654321",
+      "city": "São Paulo",
+      "state": "SP"
+    },
+    "contact": {
+      "name": "Marcos Oliveira",
+      "email": "marcos@belavista.com.br",
+      "phone": "11987654321"
+    },
+    "devices": [
+      {"serial_number": "SN-4471", "model": "Alcotest 7110", "next_recalibration_date": "2026-01-10"},
+      {"serial_number": "SN-4472", "model": "Alcotest 7110", "next_recalibration_date": "2026-03-22"},
+      {"serial_number": "SN-8890", "model": "Alcovisor Mercury", "next_recalibration_date": "2025-11-05"}
+    ],
+    "business_info": {
+      "carga": "atrasados-2026-07-18",
+      "aparelhos_vencidos": 3
+    }
+  }'
+```
+
+Note que `external_id` é `"<cliente_id>:<data_da_carga>"` — **id do cliente**, não do
+aparelho, porque aqui o card representa o cliente inteiro. Leia o aviso da seção 4 sobre
+repetir a carga antes de rodá-la duas vezes.
+
 Os dois `curl` acima foram validados diretamente contra
 `app.schemas.integration.IntegrationServiceCardCreate` (ver seção "Verificação" no
 relatório da task) — nenhum dos dois deve devolver `422`.
 
 ---
 
-## 4. Os dois `source` e a formação do `external_id`
+## 4. Os três `source` e a formação do `external_id`
 
-| Gatilho | Board | `source` | `external_id` |
-|---|---|---|---|
-| OS aberta | Serviços | `gestorhs.os` | `str(ordem.id)` |
-| Calibração vencendo em 50 dias | Cobrança | `gestorhs.calibracao` | `f"{equipamento_cliente.id}:{prox_calibragem:%Y-%m-%d}"` |
+| Gatilho | Board | Origem | `source` | `external_id` |
+|---|---|---|---|---|
+| Aparelho sai do laboratório (fase 5 → 6) | Serviços | Ordem de Serviço | `gestorhs.os` | `str(ordem.id)` |
+| Calibração vencendo em 50 dias | Cobrança | EquipamentoCliente | `gestorhs.calibracao` | `f"{equipamento_cliente.id}:{prox_calibragem:%Y-%m-%d}"` |
+| Carga única de calibrações **já vencidas** | Cobrança | Cliente | `gestorhs.atrasados` | `f"{cliente.id}:{data_da_carga:%Y-%m-%d}"` |
+
+O `source` funciona como **namespace** do `external_id`. É o que permite que a OS 500,
+o equipamento 500 e o cliente 500 sejam três cards distintos em vez de colidirem num só.
+
+### `gestorhs.atrasados` — a carga de vencidos
+
+Diferente dos outros dois, este é um disparo **manual e pontual**, não um gatilho
+automático: uma varredura única dos aparelhos cuja calibração **já venceu**, para o time
+começar a cobrar o passivo acumulado.
+
+O agrupamento também é diferente: é **um card por cliente**, não por aparelho. Todos os
+aparelhos vencidos daquele cliente vão juntos em `devices[]`, porque o vendedor vai
+fazer uma ligação só para tratar de todos.
+
+> **Cuidado ao rodar a carga mais de uma vez.** A data no `external_id` identifica a
+> *carga*, não um ciclo. Rodar a carga hoje e de novo amanhã gera `external_id`
+> diferentes para o mesmo cliente — e portanto **dois cards**. Se a carga precisar ser
+> repetida (script interrompido no meio, dúvida se completou), reutilize a **data da
+> primeira execução**, não a data de hoje: aí o create-or-return devolve os cards já
+> criados e completa só os que faltaram.
 
 ### Por que a cobrança leva a data na chave
 
@@ -374,18 +445,24 @@ dias antes do vencimento não duplica o card, porque `external_id` não muda enq
 
 ## 7. Onde plugar no GestorHS
 
-### 7.1 Abertura da OS → board de Serviços
+### 7.1 Saída do laboratório → board de Serviços
 
-Gatilho síncrono, dentro da rota que abre a OS. Siga exatamente o padrão que já existe
-para o TaskHS em `app/api/espelhamento.py` e é usado em `app/api/ordens.py` (função
-`abrir`, hoje já chama `_agendar_espelhamento(...)` depois do commit da OS):
+Gatilho síncrono, no **avanço de fase 5 → 6** (Laboratório → Pós-Vendas), dentro da rota
+`POST /ordens/{id}/avancar`. Não é na abertura da OS: o card só faz sentido quando o
+aparelho já saiu do laboratório e está pronto para o time comercial trabalhar.
 
-- **Depois do commit** da OS (nunca antes — não quer criar card para uma OS que acabou
-  não sendo persistida).
+Siga exatamente o padrão que já existe para o TaskHS em `app/api/espelhamento.py` e é
+usado em `app/api/ordens.py` (que hoje já chama `_agendar_espelhamento(...)` depois do
+commit do avanço):
+
+- **Depois do commit** do avanço (nunca antes — não quer criar card para uma transição
+  que acabou não sendo persistida).
+- **Só na transição 5 → 6**, não em qualquer avanço. Como a criação é idempotente, um
+  disparo repetido é inofensivo, mas disparar na fase errada cria o card cedo demais.
 - Via **`BackgroundTasks`** (o mesmo parâmetro que a rota já recebe para o TaskHS) —
-  não bloqueia a resposta HTTP da abertura da OS.
+  não bloqueia a resposta HTTP do avanço.
 - **Best-effort**: se a chamada falhar (rede, `5xx`, hsgrowth fora do ar), **logar e
-  seguir** — nunca travar ou reverter a abertura da OS por causa disso. Siga o mesmo
+  seguir** — nunca travar ou reverter o avanço da OS por causa disso. Siga o mesmo
   molde de `taskhs_client.enviar_card`:
   ```python
   def enviar_card_hsgrowth(payload: dict) -> None:
@@ -535,13 +612,16 @@ da primeira.
    - `HSGROWTH_API_KEY` — a chave do passo 1.
    - Os dois `board_id` do passo 3, guardados em config (constantes ou env, como
      `FASE_PARA_LIST_ID` é guardado hoje para o TaskHS).
-5. **Testar com `curl`** os dois exemplos da seção 3 contra o hsgrowth de
+5. **Testar com `curl`** os três exemplos da seção 3 contra o hsgrowth de
    desenvolvimento antes de ligar no fluxo real — confirme `201` na primeira chamada e
    `200`/`created: false` ao repetir a mesma chamada.
 6. **Ligar no fluxo real:**
-   - Plugar a chamada de `gestorhs.os` na abertura da OS (seção 7.1).
+   - Plugar a chamada de `gestorhs.os` no avanço de fase 5 → 6 (seção 7.1).
    - Montar e agendar o job diário de `gestorhs.calibracao` (seção 7.2) — lembrando
      que isto exige infraestrutura de agendamento que ainda não existe no GestorHS.
+   - A carga de `gestorhs.atrasados` é manual e roda **uma vez** — deixe-a por último,
+     depois que os dois gatilhos automáticos estiverem validados, e anote a data usada
+     no `external_id` caso precise repetir (ver aviso na seção 4).
 
 ---
 

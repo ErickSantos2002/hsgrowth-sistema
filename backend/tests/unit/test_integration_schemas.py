@@ -30,6 +30,28 @@ def test_source_desconhecido_e_rejeitado():
         IntegrationServiceCardCreate(**payload_valido(source="outro.sistema"))
 
 
+@pytest.mark.parametrize(
+    "source", ["gestorhs.os", "gestorhs.calibracao", "gestorhs.atrasados"]
+)
+def test_os_tres_sources_conhecidos_sao_aceitos(source):
+    """Os três gatilhos do GestorHS. Um valor fora desta lista tem que dar 422."""
+    assert IntegrationServiceCardCreate(**payload_valido(source=source)).source == source
+
+
+def test_carga_de_atrasados_agrupa_varios_aparelhos_do_mesmo_cliente():
+    """gestorhs.atrasados manda 1 card por cliente, com todos os vencidos em devices[]."""
+    data = IntegrationServiceCardCreate(**payload_valido(
+        source="gestorhs.atrasados",
+        external_id="512:2026-07-18",
+        devices=[
+            {"serial_number": "AB123", "next_recalibration_date": "2026-01-10"},
+            {"serial_number": "CD456", "next_recalibration_date": "2026-03-22"},
+        ],
+    ))
+    assert data.source == "gestorhs.atrasados"
+    assert len(data.devices) == 2
+
+
 def test_external_id_vazio_e_rejeitado():
     with pytest.raises(ValidationError):
         IntegrationServiceCardCreate(**payload_valido(external_id=""))

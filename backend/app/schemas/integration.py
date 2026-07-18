@@ -37,9 +37,20 @@ class IntegrationCardDevice(BaseModel):
 
 
 class IntegrationServiceCardCreate(BaseModel):
-    # gestorhs.os        → board de Serviços, origem = Ordem de Serviço
+    # Os três gatilhos do GestorHS. O `source` namespaceia o `external_id`, então
+    # a OS 500, o equipamento 500 e o cliente 500 nunca colidem no mesmo card.
+    #
+    # gestorhs.os         → board de Serviços, origem = Ordem de Serviço
+    #                       external_id = "<ordem_id>"            ex.: "1234"
     # gestorhs.calibracao → board de Cobrança, origem = EquipamentoCliente
-    source: Literal["gestorhs.os", "gestorhs.calibracao"]
+    #                       external_id = "<equip_id>:<prox_calibragem>"  ex.: "500:2027-03-14"
+    #                       (a data é o ciclo: calibração se repete todo ano e cada
+    #                        ciclo é um card próprio)
+    # gestorhs.atrasados  → board de Cobrança, origem = Cliente (carga de vencidos)
+    #                       external_id = "<cliente_id>:<data_da_carga>"  ex.: "512:2026-07-18"
+    #                       (1 card por cliente, agrupando os aparelhos vencidos dele
+    #                        em devices[]; a data identifica a carga, não um ciclo)
+    source: Literal["gestorhs.os", "gestorhs.calibracao", "gestorhs.atrasados"]
     external_id: str = Field(..., min_length=1, max_length=100)
     board_id: int
     title: str = Field(..., min_length=1, max_length=500)
