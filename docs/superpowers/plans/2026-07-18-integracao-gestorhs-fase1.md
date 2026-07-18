@@ -52,61 +52,61 @@ from app.models.service_card import ServiceCard
 
 
 @pytest.fixture
-def board_servicos(db_session):
+def board_servicos(db):
     board = ServiceBoard(name="Serviços")
-    db_session.add(board)
-    db_session.commit()
-    db_session.refresh(board)
+    db.add(board)
+    db.commit()
+    db.refresh(board)
     return board
 
 
 @pytest.fixture
-def lista_entrada(db_session, board_servicos):
+def lista_entrada(db, board_servicos):
     lista = ServiceList(board_id=board_servicos.id, name="Dados Preenchidos", position=0)
-    db_session.add(lista)
-    db_session.commit()
-    db_session.refresh(lista)
+    db.add(lista)
+    db.commit()
+    db.refresh(lista)
     return lista
 
 
-def test_sources_diferentes_com_mesmo_external_id_coexistem(db_session, lista_entrada):
+def test_sources_diferentes_com_mesmo_external_id_coexistem(db, lista_entrada):
     """OS 500 e calibração 500 são cards distintos — o source namespaceia o id."""
-    db_session.add(ServiceCard(
+    db.add(ServiceCard(
         list_id=lista_entrada.id, title="OS 500",
         external_source="gestorhs.os", external_id="500",
     ))
-    db_session.add(ServiceCard(
+    db.add(ServiceCard(
         list_id=lista_entrada.id, title="Calibração 500",
         external_source="gestorhs.calibracao", external_id="500",
     ))
-    db_session.commit()
+    db.commit()
 
-    assert db_session.query(ServiceCard).count() == 2
+    assert db.query(ServiceCard).count() == 2
 
 
-def test_mesmo_par_source_external_id_e_rejeitado(db_session, lista_entrada):
-    db_session.add(ServiceCard(
+def test_mesmo_par_source_external_id_e_rejeitado(db, lista_entrada):
+    db.add(ServiceCard(
         list_id=lista_entrada.id, title="OS 500",
         external_source="gestorhs.os", external_id="500",
     ))
-    db_session.commit()
+    db.commit()
 
-    db_session.add(ServiceCard(
+    db.add(ServiceCard(
         list_id=lista_entrada.id, title="OS 500 duplicada",
         external_source="gestorhs.os", external_id="500",
     ))
     with pytest.raises(IntegrityError):
-        db_session.commit()
-    db_session.rollback()
+        db.commit()
+    db.rollback()
 
 
-def test_cards_humanos_sem_identidade_externa_nao_colidem(db_session, lista_entrada):
+def test_cards_humanos_sem_identidade_externa_nao_colidem(db, lista_entrada):
     """Vários cards com as duas colunas NULL têm que conviver."""
     for i in range(3):
-        db_session.add(ServiceCard(list_id=lista_entrada.id, title=f"Card manual {i}"))
-    db_session.commit()
+        db.add(ServiceCard(list_id=lista_entrada.id, title=f"Card manual {i}"))
+    db.commit()
 
-    assert db_session.query(ServiceCard).filter(ServiceCard.external_id.is_(None)).count() == 3
+    assert db.query(ServiceCard).filter(ServiceCard.external_id.is_(None)).count() == 3
 ```
 
 - [ ] **Step 2: Rodar o teste e confirmar que falha**
@@ -216,55 +216,55 @@ Adicionar ao fim de `backend/tests/unit/test_integration_gestorhs.py`:
 from app.repositories.service_board_repository import ServiceBoardRepository
 
 
-def test_find_entry_list_retorna_a_lista_marcada(db_session, board_servicos):
-    db_session.add(ServiceList(board_id=board_servicos.id, name="Triagem", position=0))
+def test_find_entry_list_retorna_a_lista_marcada(db, board_servicos):
+    db.add(ServiceList(board_id=board_servicos.id, name="Triagem", position=0))
     entrada = ServiceList(
         board_id=board_servicos.id, name="Dados Preenchidos", position=1, is_entry_stage=True
     )
-    db_session.add(entrada)
-    db_session.commit()
+    db.add(entrada)
+    db.commit()
 
-    achada = ServiceBoardRepository(db_session).find_entry_list(board_servicos.id)
+    achada = ServiceBoardRepository(db).find_entry_list(board_servicos.id)
 
     assert achada is not None
     assert achada.name == "Dados Preenchidos"
 
 
-def test_find_entry_list_retorna_none_sem_etapa_marcada(db_session, board_servicos):
-    db_session.add(ServiceList(board_id=board_servicos.id, name="Triagem", position=0))
-    db_session.commit()
+def test_find_entry_list_retorna_none_sem_etapa_marcada(db, board_servicos):
+    db.add(ServiceList(board_id=board_servicos.id, name="Triagem", position=0))
+    db.commit()
 
-    assert ServiceBoardRepository(db_session).find_entry_list(board_servicos.id) is None
+    assert ServiceBoardRepository(db).find_entry_list(board_servicos.id) is None
 
 
-def test_list_lists_expoe_is_entry_stage(db_session, board_servicos):
+def test_list_lists_expoe_is_entry_stage(db, board_servicos):
     """Sem isso não há como configurar a etapa de entrada a não ser por SQL na mão."""
     from app.services.service_board_service import ServiceBoardService
 
-    db_session.add(ServiceList(
+    db.add(ServiceList(
         board_id=board_servicos.id, name="Entrada", position=0, is_entry_stage=True
     ))
-    db_session.commit()
+    db.commit()
 
-    listas = ServiceBoardService(db_session).list_lists(board_servicos.id)
+    listas = ServiceBoardService(db).list_lists(board_servicos.id)
 
     assert listas[0].is_entry_stage is True
 
 
-def test_duplicar_board_preserva_a_etapa_de_entrada(db_session, board_servicos):
+def test_duplicar_board_preserva_a_etapa_de_entrada(db, board_servicos):
     """Duplicar board não pode perder a flag em silêncio."""
     from app.services.service_board_service import ServiceBoardService
 
-    db_session.add(ServiceList(
+    db.add(ServiceList(
         board_id=board_servicos.id, name="Entrada", position=0, is_entry_stage=True
     ))
-    db_session.commit()
+    db.commit()
 
-    novo = ServiceBoardService(db_session).duplicate_board(
+    novo = ServiceBoardService(db).duplicate_board(
         board_servicos.id, "Serviços (cópia)", copy_lists=True, user=None
     )
 
-    entrada = ServiceBoardRepository(db_session).find_entry_list(novo.id)
+    entrada = ServiceBoardRepository(db).find_entry_list(novo.id)
     assert entrada is not None
     assert entrada.name == "Entrada"
 ```
@@ -436,18 +436,18 @@ from app.schemas.service_board import ServiceCardCreate
 
 
 @pytest.fixture
-def lista(db_session):
+def lista(db):
     board = ServiceBoard(name="Serviços")
-    db_session.add(board)
-    db_session.commit()
+    db.add(board)
+    db.commit()
     lista = ServiceList(board_id=board.id, name="Entrada", position=0)
-    db_session.add(lista)
-    db_session.commit()
-    db_session.refresh(lista)
+    db.add(lista)
+    db.commit()
+    db.refresh(lista)
     return lista
 
 
-def test_create_card_persiste_business_info_e_payment_info(db_session, lista):
+def test_create_card_persiste_business_info_e_payment_info(db, lista):
     data = ServiceCardCreate(
         list_id=lista.id,
         title="Card com dados",
@@ -455,36 +455,36 @@ def test_create_card_persiste_business_info_e_payment_info(db_session, lista):
         payment_info={"payment_method": "PIX", "installments": 1},
     )
 
-    card = ServiceBoardRepository(db_session).create_card(data)
+    card = ServiceBoardRepository(db).create_card(data)
 
     assert card.business_info == {"seller_name": "Sandra", "service_type": "Calibração"}
     assert card.payment_info == {"payment_method": "PIX", "installments": 1}
 
 
-def test_create_card_rejeita_lista_de_outro_board(db_session, lista):
+def test_create_card_rejeita_lista_de_outro_board(db, lista):
     """Sem isso, um card pode nascer no meio do funil de outro board."""
     from fastapi import HTTPException
     from app.models.service_board import ServiceBoard
     from app.services.service_board_service import ServiceBoardService
 
     outro_board = ServiceBoard(name="Cobrança")
-    db_session.add(outro_board)
-    db_session.commit()
+    db.add(outro_board)
+    db.commit()
 
     data = ServiceCardCreate(list_id=lista.id, title="Card no board errado")
 
     with pytest.raises(HTTPException) as exc:
-        ServiceBoardService(db_session).create_card(data, user=None, board_id=outro_board.id)
+        ServiceBoardService(db).create_card(data, user=None, board_id=outro_board.id)
 
     assert exc.value.status_code == 400
 
 
-def test_create_card_aceita_lista_do_proprio_board(db_session, lista):
+def test_create_card_aceita_lista_do_proprio_board(db, lista):
     from app.services.service_board_service import ServiceBoardService
 
     data = ServiceCardCreate(list_id=lista.id, title="Card certo")
 
-    card = ServiceBoardService(db_session).create_card(data, user=None, board_id=lista.board_id)
+    card = ServiceBoardService(db).create_card(data, user=None, board_id=lista.board_id)
 
     assert card.list_id == lista.id
 ```
@@ -727,34 +727,34 @@ from app.models.user import User
 
 
 @pytest.fixture
-def usuario_integracao(db_session):
+def usuario_integracao(db):
     role = Role(name="service", display_name="Serviço", permissions=[])
-    db_session.add(role)
-    db_session.commit()
+    db.add(role)
+    db.commit()
     user = User(
         role_id=role.id, email="gestorhs@integracao.local", name="GestorHS (Integração)",
         password_hash=hash_password("nao-usado"), is_active=True,
     )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     return user
 
 
 @pytest.fixture
-def chave_valida(db_session, usuario_integracao):
+def chave_valida(db, usuario_integracao):
     chave = generate_api_key()
-    db_session.add(IntegrationClient(
+    db.add(IntegrationClient(
         name="GestorHS", client_id="hsg_teste", client_secret_hash="x",
         api_key_hash=hash_api_key(chave), scopes=["service_cards:create"],
         impersonate_user_id=usuario_integracao.id, is_active=True,
     ))
-    db_session.commit()
+    db.commit()
     return chave
 
 
 @pytest.fixture
-def app_protegido(db_session):
+def app_protegido(db):
     """App mínimo com uma rota protegida pelo escopo, para exercitar a dependency."""
     app = FastAPI()
 
@@ -762,7 +762,7 @@ def app_protegido(db_session):
     def protegido(user: User = Depends(require_api_scope("service_cards:create"))):
         return {"user_id": user.id}
 
-    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[get_db] = lambda: db
     return TestClient(app, raise_server_exceptions=False)
 
 
@@ -781,36 +781,36 @@ def test_chave_valida_retorna_o_usuario_impersonado(app_protegido, chave_valida,
     assert r.json()["user_id"] == usuario_integracao.id
 
 
-def test_chave_sem_o_escopo_retorna_403(app_protegido, db_session, usuario_integracao):
+def test_chave_sem_o_escopo_retorna_403(app_protegido, db, usuario_integracao):
     chave = generate_api_key()
-    db_session.add(IntegrationClient(
+    db.add(IntegrationClient(
         name="Outra", client_id="hsg_outra", client_secret_hash="x",
         api_key_hash=hash_api_key(chave), scopes=["outro:escopo"],
         impersonate_user_id=usuario_integracao.id, is_active=True,
     ))
-    db_session.commit()
+    db.commit()
 
     r = app_protegido.get("/protegido", headers={"X-API-Key": chave})
     assert r.status_code == 403
 
 
-def test_client_inativo_retorna_401(app_protegido, db_session, usuario_integracao):
+def test_client_inativo_retorna_401(app_protegido, db, usuario_integracao):
     chave = generate_api_key()
-    db_session.add(IntegrationClient(
+    db.add(IntegrationClient(
         name="Desativada", client_id="hsg_off", client_secret_hash="x",
         api_key_hash=hash_api_key(chave), scopes=["service_cards:create"],
         impersonate_user_id=usuario_integracao.id, is_active=False,
     ))
-    db_session.commit()
+    db.commit()
 
     r = app_protegido.get("/protegido", headers={"X-API-Key": chave})
     assert r.status_code == 401
 
 
-def test_uso_da_chave_registra_last_used_at(app_protegido, db_session, chave_valida):
+def test_uso_da_chave_registra_last_used_at(app_protegido, db, chave_valida):
     app_protegido.get("/protegido", headers={"X-API-Key": chave_valida})
 
-    client = db_session.query(IntegrationClient).filter_by(client_id="hsg_teste").first()
+    client = db.query(IntegrationClient).filter_by(client_id="hsg_teste").first()
     assert client.last_used_at is not None
 ```
 
@@ -932,18 +932,18 @@ from app.models.client import Client
 from app.models.external_client_ref import ExternalClientRef
 
 
-def test_vinculo_externo_e_unico_por_source_e_external_id(db_session):
+def test_vinculo_externo_e_unico_por_source_e_external_id(db):
     cliente = Client(name="Transportadora X")
-    db_session.add(cliente)
-    db_session.commit()
+    db.add(cliente)
+    db.commit()
 
-    db_session.add(ExternalClientRef(source="gestorhs", external_id="789", client_id=cliente.id))
-    db_session.commit()
+    db.add(ExternalClientRef(source="gestorhs", external_id="789", client_id=cliente.id))
+    db.commit()
 
-    db_session.add(ExternalClientRef(source="gestorhs", external_id="789", client_id=cliente.id))
+    db.add(ExternalClientRef(source="gestorhs", external_id="789", client_id=cliente.id))
     with pytest.raises(IntegrityError):
-        db_session.commit()
-    db_session.rollback()
+        db.commit()
+    db.rollback()
 ```
 
 - [ ] **Step 2: Rodar o teste e confirmar que falha**
@@ -1259,42 +1259,42 @@ from app.services.integration_card_service import IntegrationCardService
 
 
 @pytest.fixture
-def usuario(db_session):
+def usuario(db):
     role = Role(name="service", display_name="Serviço", permissions=[])
-    db_session.add(role)
-    db_session.commit()
+    db.add(role)
+    db.commit()
     user = User(
         role_id=role.id, email="gestorhs@integracao.local", name="GestorHS (Integração)",
         password_hash=hash_password("x"), is_active=True,
     )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     return user
 
 
 @pytest.fixture
-def board_com_entrada(db_session):
+def board_com_entrada(db):
     board = ServiceBoard(name="Serviços")
-    db_session.add(board)
-    db_session.commit()
-    db_session.add(ServiceList(board_id=board.id, name="Triagem", position=0))
-    db_session.add(ServiceList(
+    db.add(board)
+    db.commit()
+    db.add(ServiceList(board_id=board.id, name="Triagem", position=0))
+    db.add(ServiceList(
         board_id=board.id, name="Dados Preenchidos", position=1, is_entry_stage=True
     ))
-    db_session.commit()
-    db_session.refresh(board)
+    db.commit()
+    db.refresh(board)
     return board
 
 
 @pytest.fixture
-def board_sem_entrada(db_session):
+def board_sem_entrada(db):
     board = ServiceBoard(name="Cobrança")
-    db_session.add(board)
-    db_session.commit()
-    db_session.add(ServiceList(board_id=board.id, name="Oportunidade", position=0))
-    db_session.commit()
-    db_session.refresh(board)
+    db.add(board)
+    db.commit()
+    db.add(ServiceList(board_id=board.id, name="Oportunidade", position=0))
+    db.commit()
+    db.refresh(board)
     return board
 
 
@@ -1313,8 +1313,8 @@ def payload(board_id, **overrides):
     return IntegrationServiceCardCreate(**base)
 
 
-def test_cria_o_card_na_etapa_de_entrada(db_session, usuario, board_com_entrada):
-    card, created = IntegrationCardService(db_session).create_or_return(
+def test_cria_o_card_na_etapa_de_entrada(db, usuario, board_com_entrada):
+    card, created = IntegrationCardService(db).create_or_return(
         payload(board_com_entrada.id), usuario
     )
 
@@ -1324,17 +1324,17 @@ def test_cria_o_card_na_etapa_de_entrada(db_session, usuario, board_com_entrada)
     assert card.list.name == "Dados Preenchidos"
 
 
-def test_reenvio_devolve_o_mesmo_card_sem_alterar(db_session, usuario, board_com_entrada):
-    svc = IntegrationCardService(db_session)
+def test_reenvio_devolve_o_mesmo_card_sem_alterar(db, usuario, board_com_entrada):
+    svc = IntegrationCardService(db)
     primeiro, _ = svc.create_or_return(payload(board_com_entrada.id), usuario)
 
     # o vendedor move e renomeia o card
     outra_lista = ServiceList(board_id=board_com_entrada.id, name="Em negociação", position=9)
-    db_session.add(outra_lista)
-    db_session.commit()
+    db.add(outra_lista)
+    db.commit()
     primeiro.list_id = outra_lista.id
     primeiro.title = "Título que o vendedor editou"
-    db_session.commit()
+    db.commit()
 
     segundo, created = svc.create_or_return(
         payload(board_com_entrada.id, title="Título original de novo"), usuario
@@ -1344,79 +1344,79 @@ def test_reenvio_devolve_o_mesmo_card_sem_alterar(db_session, usuario, board_com
     assert segundo.id == primeiro.id
     assert segundo.title == "Título que o vendedor editou"
     assert segundo.list_id == outra_lista.id
-    assert db_session.query(ServiceCard).count() == 1
+    assert db.query(ServiceCard).count() == 1
 
 
-def test_board_sem_etapa_de_entrada_falha_alto(db_session, usuario, board_sem_entrada):
+def test_board_sem_etapa_de_entrada_falha_alto(db, usuario, board_sem_entrada):
     with pytest.raises(HTTPException) as exc:
-        IntegrationCardService(db_session).create_or_return(payload(board_sem_entrada.id), usuario)
+        IntegrationCardService(db).create_or_return(payload(board_sem_entrada.id), usuario)
 
     assert exc.value.status_code == 404
-    assert db_session.query(ServiceCard).count() == 0
+    assert db.query(ServiceCard).count() == 0
 
 
-def test_board_inexistente_falha_alto(db_session, usuario):
+def test_board_inexistente_falha_alto(db, usuario):
     with pytest.raises(HTTPException) as exc:
-        IntegrationCardService(db_session).create_or_return(payload(99999), usuario)
+        IntegrationCardService(db).create_or_return(payload(99999), usuario)
 
     assert exc.value.status_code == 404
 
 
-def test_cria_o_cliente_e_o_vinculo_na_primeira_vez(db_session, usuario, board_com_entrada):
-    card, _ = IntegrationCardService(db_session).create_or_return(
+def test_cria_o_cliente_e_o_vinculo_na_primeira_vez(db, usuario, board_com_entrada):
+    card, _ = IntegrationCardService(db).create_or_return(
         payload(board_com_entrada.id), usuario
     )
 
-    ref = db_session.query(ExternalClientRef).filter_by(source="gestorhs", external_id="789").first()
+    ref = db.query(ExternalClientRef).filter_by(source="gestorhs", external_id="789").first()
     assert ref is not None
     assert card.client_id == ref.client_id
-    cliente = db_session.query(Client).filter_by(id=ref.client_id).first()
+    cliente = db.query(Client).filter_by(id=ref.client_id).first()
     assert cliente.company_name == "Transportadora X LTDA"
     assert cliente.document == "12345678000199"
 
 
-def test_reaproveita_o_cliente_ja_vinculado(db_session, usuario, board_com_entrada):
-    svc = IntegrationCardService(db_session)
+def test_reaproveita_o_cliente_ja_vinculado(db, usuario, board_com_entrada):
+    svc = IntegrationCardService(db)
     primeiro, _ = svc.create_or_return(payload(board_com_entrada.id), usuario)
     segundo, _ = svc.create_or_return(
         payload(board_com_entrada.id, external_id="5678"), usuario
     )
 
     assert primeiro.client_id == segundo.client_id
-    assert db_session.query(Client).count() == 1
+    assert db.query(Client).count() == 1
 
 
 def test_documento_repetido_de_outro_cliente_nao_derruba_a_criacao(
-    db_session, usuario, board_com_entrada
+    db, usuario, board_com_entrada
 ):
     """O legado do GestorHS tem documentos repetidos; isso não pode travar o card."""
-    db_session.add(Client(name="Já existia", document="12345678000199"))
-    db_session.commit()
+    db.add(Client(name="Já existia", document="12345678000199"))
+    db.commit()
 
-    card, created = IntegrationCardService(db_session).create_or_return(
+    card, created = IntegrationCardService(db).create_or_return(
         payload(board_com_entrada.id), usuario
     )
 
     assert created is True
     assert card.client_id is not None
-    assert db_session.query(Client).count() == 2
+    assert db.query(Client).count() == 2
 
 
-def test_cria_a_pessoa_de_contato_vinculada_ao_cliente(db_session, usuario, board_com_entrada):
-    card, _ = IntegrationCardService(db_session).create_or_return(
+def test_cria_a_pessoa_de_contato_vinculada_ao_cliente(db, usuario, board_com_entrada):
+    card, _ = IntegrationCardService(db).create_or_return(
         payload(board_com_entrada.id, contact={
             "name": "João Silva", "email": "joao@x.com", "phone": "11999998888",
         }),
         usuario,
     )
 
-    pessoa = db_session.query(Person).filter_by(id=card.person_id).first()
+    pessoa = db.query(Person).filter_by(id=card.person_id).first()
     assert pessoa.name == "João Silva"
     assert pessoa.organization_id == card.client_id
 
 
-def test_aparelhos_vao_para_business_info(db_session, usuario, board_com_entrada):
-    card, _ = IntegrationCardService(db_session).create_or_return(
+def test_aparelhos_vao_para_business_info(db, usuario, board_com_entrada):
+    card, _ = IntegrationCardService(db).create_or_return(
         payload(board_com_entrada.id, devices=[
             {"serial_number": "AB123", "model": "Alcotest 6820",
              "alcohol_module": "Sim", "next_recalibration_date": "2026-08-10"},
@@ -1430,9 +1430,9 @@ def test_aparelhos_vao_para_business_info(db_session, usuario, board_com_entrada
 
 
 def test_business_info_do_payload_e_preservado_junto_dos_aparelhos(
-    db_session, usuario, board_com_entrada
+    db, usuario, board_com_entrada
 ):
-    card, _ = IntegrationCardService(db_session).create_or_return(
+    card, _ = IntegrationCardService(db).create_or_return(
         payload(
             board_com_entrada.id,
             business_info={"seller_name": "Sandra"},
@@ -1446,16 +1446,16 @@ def test_business_info_do_payload_e_preservado_junto_dos_aparelhos(
 
 
 def test_o_card_registra_o_evento_de_criacao_com_o_usuario_da_integracao(
-    db_session, usuario, board_com_entrada
+    db, usuario, board_com_entrada
 ):
     from app.models.service_card_activity import ServiceCardActivity
 
-    card, _ = IntegrationCardService(db_session).create_or_return(
+    card, _ = IntegrationCardService(db).create_or_return(
         payload(board_com_entrada.id), usuario
     )
 
     evento = (
-        db_session.query(ServiceCardActivity)
+        db.query(ServiceCardActivity)
         .filter_by(service_card_id=card.id, activity_type="card_created")
         .first()
     )
@@ -1686,37 +1686,37 @@ URL = "/api/v1/integration/service-cards"
 
 
 @pytest.fixture
-def chave(db_session):
+def chave(db):
     role = Role(name="service", display_name="Serviço", permissions=[])
-    db_session.add(role)
-    db_session.commit()
+    db.add(role)
+    db.commit()
     user = User(
         role_id=role.id, email="gestorhs@integracao.local", name="GestorHS (Integração)",
         password_hash=hash_password("x"), is_active=True,
     )
-    db_session.add(user)
-    db_session.commit()
+    db.add(user)
+    db.commit()
 
     k = generate_api_key()
-    db_session.add(IntegrationClient(
+    db.add(IntegrationClient(
         name="GestorHS", client_id="hsg_gestorhs", client_secret_hash="x",
         api_key_hash=hash_api_key(k), scopes=["service_cards:create"],
         impersonate_user_id=user.id, is_active=True,
     ))
-    db_session.commit()
+    db.commit()
     return k
 
 
 @pytest.fixture
-def board(db_session):
+def board(db):
     b = ServiceBoard(name="Serviços")
-    db_session.add(b)
-    db_session.commit()
-    db_session.add(ServiceList(
+    db.add(b)
+    db.commit()
+    db.add(ServiceList(
         board_id=b.id, name="Dados Preenchidos", position=0, is_entry_stage=True
     ))
-    db_session.commit()
-    db_session.refresh(b)
+    db.commit()
+    db.refresh(b)
     return b
 
 
@@ -1753,12 +1753,12 @@ def test_sem_chave_responde_401(client, board):
     assert client.post(URL, json=corpo(board.id)).status_code == 401
 
 
-def test_board_sem_etapa_de_entrada_responde_404(client, chave, db_session):
+def test_board_sem_etapa_de_entrada_responde_404(client, chave, db):
     b = ServiceBoard(name="Cobrança")
-    db_session.add(b)
-    db_session.commit()
-    db_session.add(ServiceList(board_id=b.id, name="Oportunidade", position=0))
-    db_session.commit()
+    db.add(b)
+    db.commit()
+    db.add(ServiceList(board_id=b.id, name="Oportunidade", position=0))
+    db.commit()
 
     r = client.post(URL, json=corpo(b.id), headers={"X-API-Key": chave})
     assert r.status_code == 404
@@ -1913,29 +1913,29 @@ from app.models.user import User
 from scripts.provisionar_integracao_gestorhs import provisionar
 
 
-def test_primeira_execucao_cria_usuario_client_e_devolve_a_chave(db_session):
-    client, chave = provisionar(db_session)
+def test_primeira_execucao_cria_usuario_client_e_devolve_a_chave(db):
+    client, chave = provisionar(db)
 
     assert chave is not None and chave.startswith("hsg_live_")
     assert client.scopes == ["service_cards:create"]
-    user = db_session.query(User).filter_by(id=client.impersonate_user_id).first()
+    user = db.query(User).filter_by(id=client.impersonate_user_id).first()
     assert user.name == "GestorHS (Integração)"
     assert user.role.name == "service"
 
 
-def test_segunda_execucao_nao_duplica_nem_reemite(db_session):
-    provisionar(db_session)
-    client, chave = provisionar(db_session)
+def test_segunda_execucao_nao_duplica_nem_reemite(db):
+    provisionar(db)
+    client, chave = provisionar(db)
 
     assert chave is None
-    assert db_session.query(IntegrationClient).count() == 1
-    assert db_session.query(User).filter_by(email="gestorhs@integracao.local").count() == 1
+    assert db.query(IntegrationClient).count() == 1
+    assert db.query(User).filter_by(email="gestorhs@integracao.local").count() == 1
 
 
-def test_a_chave_em_claro_nao_fica_no_banco(db_session):
-    _, chave = provisionar(db_session)
+def test_a_chave_em_claro_nao_fica_no_banco(db):
+    _, chave = provisionar(db)
 
-    client = db_session.query(IntegrationClient).first()
+    client = db.query(IntegrationClient).first()
     assert client.api_key_hash != chave
     assert len(client.api_key_hash) == 64
 ```
