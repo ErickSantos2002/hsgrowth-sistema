@@ -54,6 +54,19 @@ export interface ServiceBusinessInfo {
   // Fechamento (etapa Proposta): define se vai por Faturamento direto (dá Ganho)
   // ou por Pedido (avança para Aguardando Pedido).
   closing_type?: "faturamento_direto" | "pedido" | ""; // Forma de fechamento
+  // Aparelhos do cliente vindos do sistema externo GestorHS (somente leitura).
+  // Ver ServiceDevicesSection — não confundir com `aparelhos` de ServiceCardProduct,
+  // que é preenchido pelo laboratório por produto vendido.
+  equipamentos?: ServiceBusinessInfoEquipamento[] | null;
+}
+
+// 1 aparelho do cliente informado pelo GestorHS via business_info.equipamentos.
+// Todos os campos são opcionais e podem vir null — a qualidade de dados da origem é ruim.
+export interface ServiceBusinessInfoEquipamento {
+  serial_number?: string | null;
+  model?: string | null;
+  alcohol_module?: string | null;
+  next_recalibration_date?: string | null;
 }
 
 export interface ServiceCard {

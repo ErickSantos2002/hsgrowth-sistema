@@ -1,6 +1,7 @@
 import React from "react";
 import { Smartphone } from "lucide-react";
 import ExpandableSection from "../cardDetails/ExpandableSection";
+import { ServiceBusinessInfo } from "../../services/serviceBoardService";
 
 /**
  * Aparelhos informados pelo sistema de origem (GestorHS), somente leitura.
@@ -10,19 +11,12 @@ import ExpandableSection from "../cardDetails/ExpandableSection";
  * catálogos dos dois sistemas não são mapeáveis automaticamente. O vendedor consulta
  * esta lista para montar o produto correspondente na seção "Produto".
  */
-interface Device {
-  serial_number?: string | null;
-  model?: string | null;
-  alcohol_module?: string | null;
-  next_recalibration_date?: string | null;
-}
-
 interface ServiceDevicesSectionProps {
-  businessInfo?: Record<string, unknown> | null;
+  businessInfo?: ServiceBusinessInfo | null;
 }
 
 const ServiceDevicesSection: React.FC<ServiceDevicesSectionProps> = ({ businessInfo }) => {
-  const devices = (businessInfo?.equipamentos as Device[] | undefined) ?? [];
+  const devices = businessInfo?.equipamentos ?? [];
 
   // Card criado por um humano não tem `equipamentos` — não renderiza seção fantasma.
   if (devices.length === 0) return null;
