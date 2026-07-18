@@ -4,7 +4,7 @@ Agrega todos os endpoints da versão 1 da API.
 """
 from fastapi import APIRouter, Depends
 from app.api.deps import require_service_access
-from app.api.v1.endpoints import auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products, integration_clients, api4com, audit_logs, attachments, user_avatar, custom_reports, ai, call_evaluations, cadencias, email_templates, cadences, service_boards, service_dashboard, service_activities, proposals, services
+from app.api.v1.endpoints import auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products, integration_clients, api4com, audit_logs, attachments, user_avatar, custom_reports, ai, call_evaluations, cadencias, email_templates, cadences, service_boards, service_dashboard, service_activities, proposals, services, integration
 
 api_router = APIRouter()
 
@@ -42,6 +42,10 @@ api_router.include_router(email_templates.router, prefix="/email-templates", tag
 api_router.include_router(service_boards.router, prefix="/service-boards", tags=["Service Boards"], dependencies=[Depends(require_service_access())])
 api_router.include_router(service_dashboard.router, prefix="/service-dashboard", tags=["Service Dashboard"], dependencies=[Depends(require_service_access())])
 api_router.include_router(service_activities.router, prefix="/service-activities", tags=["Service Activities"], dependencies=[Depends(require_service_access())])
+
+# Integração externa: autenticada por X-API-Key, NÃO por require_service_access
+# (aquela dependency exige JWT de usuário e barraria a chave).
+api_router.include_router(integration.router, prefix="/integration", tags=["Integração Externa"])
 
 # Futuramente adicionar outros routers:
 # (Todos os principais já foram adicionados!)
