@@ -171,12 +171,25 @@ class IntegrationCardService:
         Regra de dedup, para não fundir homônimos por engano nem descartar dados
         do payload em silêncio:
         1. Se o payload trouxer email, procura primeiro por esse email dentro do
-           cliente. Achou -> é a mesma pessoa, reaproveita.
+           cliente. Achou -> é a mesma pessoa, reaproveita (o email manda, mesmo
+           que o nome venha grafado diferente de uma chamada para outra).
         2. Senão (ou sem email no payload), procura por nome dentro do cliente, mas
            só entre pessoas SEM email cadastrado — um homônimo que já tem email
            próprio não deve ser fundido com um contato de email diferente.
         3. Ao reaproveitar, preenche os campos vazios (email/telefone) da pessoa
            existente com os valores do payload, sem sobrescrever o que já havia.
+        4. Se nada casar nos passos 1-2, cria uma pessoa nova.
+
+        Trade-off aceito conscientemente no passo 2: pode reaproveitar a pessoa
+        errada quando existe um homônimo sem email e chega um contato diferente
+        com email (ver testes `test_homonimo_sem_email_e_reaproveitado_por_decisao_de_design`
+        e `test_payload_sem_email_com_homonimo_com_email_cria_pessoa_nova`). No
+        sistema de origem (GestorHS) só existe UM contato por cliente, e é esta
+        integração que cria essas pessoas — então reaproveitar-e-preencher acerta
+        na esmagadora maioria dos casos. A alternativa (tratar como pessoas
+        distintas) geraria contatos duplicados no CRM, incômodo mais frequente e
+        mais visível do que o risco raro de homônimo. Não "conserte" isto sem
+        entender o motivo.
         """
         existente = None
         if payload.email:

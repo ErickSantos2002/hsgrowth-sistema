@@ -386,3 +386,123 @@ def test_reaproveitar_pessoa_sem_telefone_preenche_o_telefone_do_payload(
     db.refresh(pessoa)
     assert pessoa.phone == "11988887777"
     assert db.query(Person).count() == 1
+
+
+def test_mesmo_email_reaproveita_a_pessoa_mesmo_com_nome_grafado_diferente(
+    db, usuario, board_com_entrada
+):
+    """
+    Passo 1 é a regra principal: email tem precedência sobre nome. Duas chamadas
+    para o mesmo cliente com o MESMO email de contato devem reaproveitar a mesma
+    Person, mesmo que o nome venha escrito diferente da segunda vez (erro de
+    digitação/variação do sistema de origem). Ao final só pode existir uma Person
+    para aquele cliente.
+    """
+    svc = IntegrationCardService(db)
+
+    primeiro, _ = svc.create_or_return(
+        payload(
+            board_com_entrada.id,
+            contact={"name": "João Silva", "email": "joao@x.com", "phone": None},
+        ),
+        usuario,
+    )
+    segundo, _ = svc.create_or_return(
+        payload(
+            board_com_entrada.id,
+            external_id="5678",
+            contact={"name": "Joao da Silva", "email": "joao@x.com", "phone": "11900000009"},
+        ),
+        usuario,
+    )
+
+    assert segundo.person_id == primeiro.person_id
+    assert db.query(Person).count() == 1
+    pessoa = db.query(Person).filter_by(id=primeiro.person_id).first()
+    # reaproveitar não reescreve o nome já cadastrado
+    assert pessoa.name == "João Silva"
+    assert pessoa.phone == "11900000009"
+
+
+def test_homonimo_sem_email_e_reaproveitado_por_decisao_de_design(
+    db, usuario, board_com_entrada
+):
+    """
+    Documenta o trade-off aceito no passo 2 do dedup (ver docstring de
+    `_resolve_person`): quando o cliente já tem uma Person homônima SEM email
+    cadastrado e chega um novo contato com o MESMO nome e um email, a pessoa
+    existente é reaproveitada e ganha o email — mesmo que, na realidade, sejam
+    duas pessoas diferentes que coincidentemente têm o mesmo nome.
+
+    Isso NÃO é um bug: é uma decisão deliberada. No GestorHS só existe um
+    contato por cliente, e é esta integração que cria as Person — então o risco
+    de fundir homônimos foi aceito conscientemente para evitar o problema mais
+    frequente e mais visível, que é gerar contatos duplicados no CRM. Se esta
+    asserção falhar porque a lógica mudou para não reaproveitar mais, quem
+    mexeu precisa revisar a decisão com o time antes de seguir.
+    """
+    pessoa_existente = Person(name="João Silva", organization_id=None, email=None)
+    # organization_id precisa ser o do cliente que a integração vai resolver;
+    # criamos o card primeiro sem contato para obter o client_id e só então
+    # a Person homônima.
+    svc = IntegrationCardService(db)
+    primeiro, _ = svc.create_or_return(payload(board_com_entrada.id), usuario)
+    pessoa_existente.organization_id = primeiro.client_id
+    db.add(pessoa_existente)
+    db.commit()
+    db.refresh(pessoa_existente)
+
+    segundo, _ = svc.create_or_return(
+        payload(
+            board_com_entrada.id,
+            external_id="5678",
+            contact={"name": "João Silva", "email": "joao@x.com", "phone": None},
+        ),
+        usuario,
+    )
+
+    # reaproveitou a pessoa existente em vez de criar uma nova
+    assert segundo.person_id == pessoa_existente.id
+    db.refresh(pessoa_existente)
+    assert pessoa_existente.email == "joao@x.com"
+    assert db.query(Person).filter_by(organization_id=primeiro.client_id).count() == 1
+
+
+def test_payload_sem_email_com_homonimo_com_email_cria_pessoa_nova(
+    db, usuario, board_com_entrada
+):
+    """
+    Documenta o comportamento atual do outro lado do passo 2: quando o cliente já
+    tem uma Person homônima que TEM email cadastrado, e chega um novo contato com
+    o mesmo nome mas SEM email no payload, o filtro do passo 2 (`Person.email.is_(None)`)
+    exclui essa homônima — então nada casa e uma pessoa NOVA é criada, duplicando
+    o nome dentro do mesmo cliente.
+
+    Este teste apenas registra o comportamento atual; não é uma correção. Ver o
+    relatório da tarefa para a análise de se este caso deveria reaproveitar em vez
+    de duplicar.
+    """
+    svc = IntegrationCardService(db)
+    primeiro, _ = svc.create_or_return(
+        payload(
+            board_com_entrada.id,
+            contact={"name": "João Silva", "email": "joao@x.com", "phone": None},
+        ),
+        usuario,
+    )
+
+    segundo, _ = svc.create_or_return(
+        payload(
+            board_com_entrada.id,
+            external_id="5678",
+            contact={"name": "João Silva", "email": None, "phone": "11900000009"},
+        ),
+        usuario,
+    )
+
+    assert segundo.person_id != primeiro.person_id
+    assert db.query(Person).filter_by(organization_id=primeiro.client_id).count() == 2
+    pessoa_nova = db.query(Person).filter_by(id=segundo.person_id).first()
+    assert pessoa_nova.name == "João Silva"
+    assert pessoa_nova.email is None
+    assert pessoa_nova.phone == "11900000009"
