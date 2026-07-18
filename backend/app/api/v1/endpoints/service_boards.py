@@ -171,6 +171,7 @@ async def create_service_list(
         position=data.position,
         is_done_stage=data.is_done_stage,
         is_lost_stage=data.is_lost_stage,
+        is_entry_stage=data.is_entry_stage,
     )
     lst = svc.create_list(list_data, current_user)
     return ServiceListResponse(
@@ -181,6 +182,7 @@ async def create_service_list(
         position=lst.position,
         is_done_stage=lst.is_done_stage,
         is_lost_stage=lst.is_lost_stage,
+        is_entry_stage=lst.is_entry_stage,
         created_at=lst.created_at,
         updated_at=lst.updated_at,
     )
@@ -204,6 +206,7 @@ async def update_service_list(
         position=lst.position,
         is_done_stage=lst.is_done_stage,
         is_lost_stage=lst.is_lost_stage,
+        is_entry_stage=lst.is_entry_stage,
         created_at=lst.created_at,
         updated_at=lst.updated_at,
     )
@@ -239,6 +242,7 @@ async def move_service_list(
         position=lst.position,
         is_done_stage=lst.is_done_stage,
         is_lost_stage=lst.is_lost_stage,
+        is_entry_stage=lst.is_entry_stage,
         created_at=lst.created_at,
         updated_at=lst.updated_at,
     )

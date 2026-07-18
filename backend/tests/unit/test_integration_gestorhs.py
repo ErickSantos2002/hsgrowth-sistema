@@ -6,6 +6,7 @@ from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
 from app.repositories.service_board_repository import ServiceBoardRepository
+from app.services.service_board_service import ServiceBoardService
 
 
 @pytest.fixture
@@ -89,8 +90,6 @@ def test_find_entry_list_retorna_none_sem_etapa_marcada(db, board_servicos):
 
 def test_list_lists_expoe_is_entry_stage(db, board_servicos):
     """Sem isso não há como configurar a etapa de entrada a não ser por SQL na mão."""
-    from app.services.service_board_service import ServiceBoardService
-
     db.add(ServiceList(
         board_id=board_servicos.id, name="Entrada", position=0, is_entry_stage=True
     ))
@@ -103,8 +102,6 @@ def test_list_lists_expoe_is_entry_stage(db, board_servicos):
 
 def test_duplicar_board_preserva_a_etapa_de_entrada(db, board_servicos):
     """Duplicar board não pode perder a flag em silêncio."""
-    from app.services.service_board_service import ServiceBoardService
-
     db.add(ServiceList(
         board_id=board_servicos.id, name="Entrada", position=0, is_entry_stage=True
     ))
@@ -117,3 +114,43 @@ def test_duplicar_board_preserva_a_etapa_de_entrada(db, board_servicos):
     entrada = ServiceBoardRepository(db).find_entry_list(novo.id)
     assert entrada is not None
     assert entrada.name == "Entrada"
+
+
+def test_post_lista_com_is_entry_stage_persiste_o_valor(client, admin_headers, db, board_servicos):
+    """POST /service-boards/{id}/lists com is_entry_stage=true não pode virar False em silêncio.
+
+    O endpoint remonta o ServiceListCreate campo a campo antes de chamar o service;
+    se esquecer de copiar is_entry_stage, o Pydantic aplica o default (False) e o
+    valor enviado pelo cliente é descartado sem erro nenhum.
+    """
+    resp = client.post(
+        f"/api/v1/service-boards/{board_servicos.id}/lists",
+        json={"board_id": board_servicos.id, "name": "Entrada API", "is_entry_stage": True},
+        headers=admin_headers,
+    )
+
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert body["is_entry_stage"] is True
+
+    lst = db.query(ServiceList).filter(ServiceList.id == body["id"]).one()
+    assert lst.is_entry_stage is True
+
+
+def test_put_lista_resposta_expoe_is_entry_stage(client, admin_headers, db, board_servicos):
+    """PUT /service-boards/{id}/lists/{id} persiste is_entry_stage corretamente, mas a
+    resposta remontada à mão precisa devolver o valor também — senão o cliente da API
+    acha que a alteração não colou mesmo o banco estando certo."""
+    lista = ServiceList(board_id=board_servicos.id, name="Triagem", position=0)
+    db.add(lista)
+    db.commit()
+    db.refresh(lista)
+
+    resp = client.put(
+        f"/api/v1/service-boards/{board_servicos.id}/lists/{lista.id}",
+        json={"is_entry_stage": True},
+        headers=admin_headers,
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["is_entry_stage"] is True
