@@ -5,6 +5,8 @@ from sqlalchemy.exc import IntegrityError
 from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
+from app.models.client import Client
+from app.models.external_client_ref import ExternalClientRef
 from app.repositories.service_board_repository import ServiceBoardRepository
 from app.services.service_board_service import ServiceBoardService
 
@@ -154,3 +156,17 @@ def test_put_lista_resposta_expoe_is_entry_stage(client, admin_headers, db, boar
 
     assert resp.status_code == 200, resp.text
     assert resp.json()["is_entry_stage"] is True
+
+
+def test_vinculo_externo_e_unico_por_source_e_external_id(db):
+    cliente = Client(name="Transportadora X")
+    db.add(cliente)
+    db.commit()
+
+    db.add(ExternalClientRef(source="gestorhs", external_id="789", client_id=cliente.id))
+    db.commit()
+
+    db.add(ExternalClientRef(source="gestorhs", external_id="789", client_id=cliente.id))
+    with pytest.raises(IntegrityError):
+        db.commit()
+    db.rollback()
