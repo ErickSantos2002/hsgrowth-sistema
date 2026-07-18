@@ -384,16 +384,31 @@ def require_api_scope(required_scope: str):
         user = (
             db.query(User)
             .options(joinedload(User.role))
-            .filter(User.id == client.impersonate_user_id, User.is_active.is_(True))
+            .filter(
+                User.id == client.impersonate_user_id,
+                User.is_active.is_(True),
+                User.is_deleted.is_(False),
+            )
             .first()
         )
         if not user:
+            # 403, não 401: nesse ponto a chave já foi provada válida, ativa e
+            # com o escopo correto — a falha é de configuração do integration
+            # client (usuário de impersonação ausente/inativo/excluído), não de
+            # autenticação do chamador. Diverge de propósito do 401 usado no
+            # fluxo de impersonação por JWT logo acima neste arquivo.
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Usuário de integração inválido ou inativo.",
             )
 
         client.last_used_at = datetime.now(timezone.utc)
+        # Commita a sessão inteira (não só last_used_at) porque last_used_at é
+        # trilha de auditoria de uso da chave e precisa persistir mesmo que o
+        # corpo da rota levante exceção depois. Por isso não usar flush() aqui.
+        # Efeito colateral: esse commit fecha a transação do request neste ponto.
+        # Não componha esta dependency com outras que empilhem writes antes dela
+        # esperando que só sejam persistidos no fim do request.
         db.commit()
 
         return user

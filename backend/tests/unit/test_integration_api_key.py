@@ -151,3 +151,41 @@ def test_uso_da_chave_registra_last_used_at(app_protegido, db, chave_valida):
 
     client = db.query(IntegrationClient).filter_by(client_id="hsg_teste").first()
     assert client.last_used_at is not None
+
+
+def test_client_sem_impersonate_user_id_retorna_403(app_protegido, db):
+    chave = generate_api_key()
+    db.add(IntegrationClient(
+        name="Sem impersonação", client_id="hsg_sem_user", client_secret_hash="x",
+        api_key_hash=hash_api_key(chave), scopes=["service_cards:create"],
+        impersonate_user_id=None, is_active=True,
+    ))
+    db.commit()
+
+    r = app_protegido.get("/protegido", headers={"X-API-Key": chave})
+    assert r.status_code == 403
+
+
+def test_usuario_impersonado_inexistente_ou_inativo_retorna_403(app_protegido, db):
+    chave = generate_api_key()
+    db.add(IntegrationClient(
+        name="Usuário fantasma", client_id="hsg_fantasma", client_secret_hash="x",
+        api_key_hash=hash_api_key(chave), scopes=["service_cards:create"],
+        impersonate_user_id=999999, is_active=True,
+    ))
+    db.commit()
+
+    r = app_protegido.get("/protegido", headers={"X-API-Key": chave})
+    assert r.status_code == 403
+
+
+def test_usuario_impersonado_deletado_retorna_403(app_protegido, db, usuario_integracao, chave_valida):
+    """Regressão do achado de review: is_active e is_deleted são colunas
+    independentes. Sem o filtro is_deleted na query da dependency, um usuário
+    soft-deleted mas ainda com is_active=True continuaria sendo aceito."""
+    usuario_integracao.is_deleted = True
+    db.add(usuario_integracao)
+    db.commit()
+
+    r = app_protegido.get("/protegido", headers={"X-API-Key": chave_valida})
+    assert r.status_code == 403
