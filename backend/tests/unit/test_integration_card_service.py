@@ -1,4 +1,6 @@
 """Testes do create-or-return da integração."""
+from unittest.mock import patch
+
 import pytest
 from fastapi import HTTPException
 
@@ -8,6 +10,7 @@ from app.models.person import Person
 from app.models.role import Role
 from app.models.service_board import ServiceBoard
 from app.models.service_card import ServiceCard
+from app.models.service_card_activity import ServiceCardActivity
 from app.models.service_list import ServiceList
 from app.models.user import User
 from app.core.security import hash_password
@@ -205,8 +208,6 @@ def test_business_info_do_payload_e_preservado_junto_dos_aparelhos(
 def test_o_card_registra_o_evento_de_criacao_com_o_usuario_da_integracao(
     db, usuario, board_com_entrada
 ):
-    from app.models.service_card_activity import ServiceCardActivity
-
     card, _ = IntegrationCardService(db).create_or_return(
         payload(board_com_entrada.id), usuario
     )
@@ -218,3 +219,170 @@ def test_o_card_registra_o_evento_de_criacao_com_o_usuario_da_integracao(
     )
     assert evento is not None
     assert evento.user_id == usuario.id
+
+
+def test_devices_sobrescreve_equipamentos_de_business_info(db, usuario, board_com_entrada):
+    """`devices` é a fonte canônica: se o payload trouxer os dois, `devices` vence."""
+    card, _ = IntegrationCardService(db).create_or_return(
+        payload(
+            board_com_entrada.id,
+            business_info={"equipamentos": ["valor antigo que deve ser descartado"]},
+            devices=[{"serial_number": "AB123"}],
+        ),
+        usuario,
+    )
+
+    equipamentos = card.business_info["equipamentos"]
+    assert len(equipamentos) == 1
+    assert equipamentos[0]["serial_number"] == "AB123"
+
+
+# ── corrida na criação do vínculo de cliente (achado 1) ─────────────────────────
+
+
+def test_corrida_na_criacao_do_vinculo_de_cliente_devolve_o_cliente_vencedor(
+    db, usuario, board_com_entrada
+):
+    """
+    Simula duas requisições concorrentes para o MESMO cliente de origem: o job diário
+    de cobrança pode disparar vários cards do mesmo cliente, e uma OS e uma calibração
+    do mesmo cliente podem chegar juntas.
+
+    A consulta de existência do vínculo (`_find_client_ref`) não vê o vínculo ainda
+    (ele nasce depois, "por baixo", simulando o outro request que ganhou a corrida).
+    Quando o nosso flush tenta inserir o mesmo par (source, external_id), o UNIQUE
+    constraint estoura IntegrityError — que o service precisa capturar e resolver
+    devolvendo o cliente vencedor, sem propagar erro 500 nem perder o card em criação.
+    """
+    svc = IntegrationCardService(db)
+
+    vencedor = Client(name="Concorrente vencedor", company_name="Concorrente vencedor")
+    db.add(vencedor)
+    db.flush()
+    ref_vencedor = ExternalClientRef(
+        source="gestorhs", external_id="789", client_id=vencedor.id
+    )
+    db.add(ref_vencedor)
+    db.flush()
+
+    # A consulta de existência devolve None na primeira chamada (como se tivesse
+    # rodado um instante antes do commit concorrente) e o valor real dali em diante.
+    with patch.object(
+        IntegrationCardService, "_find_client_ref", side_effect=[None, ref_vencedor]
+    ):
+        card, created = svc.create_or_return(payload(board_com_entrada.id), usuario)
+
+    assert created is True
+    assert card.client_id == vencedor.id
+    assert db.query(Client).count() == 2  # o vencedor + o órfão que perdeu a corrida
+    assert db.query(ExternalClientRef).count() == 1
+
+
+# ── corrida na criação do card (achado 2) ────────────────────────────────────────
+
+
+def test_corrida_na_criacao_do_card_devolve_o_card_vencedor(db, usuario, board_com_entrada):
+    """
+    Mecanismo central da idempotência sob corrida: dois requests com o mesmo
+    (source, external_id) passam ambos pela consulta de existência sem achar nada
+    (ainda não existia), mas o segundo perde a corrida no commit porque o primeiro
+    já inseriu o card. O `except IntegrityError` precisa reconsultar e devolver o
+    card vencedor com created=False, em vez de propagar o erro como 500.
+
+    Sem threads: forçamos `_find_by_external_ref` a devolver None na primeira
+    chamada (a consulta de existência, que "não viu" o concorrente) e o card real
+    da segunda chamada em diante (a reconsulta pós-IntegrityError). O card do
+    "vencedor" é inserido diretamente pelo model, simulando o commit concorrente
+    que já aconteceu.
+    """
+    svc = IntegrationCardService(db)
+
+    entry_list = board_com_entrada.lists[1]
+    client = Client(name="Cliente", company_name="Cliente")
+    db.add(client)
+    db.flush()
+    vencedor = ServiceCard(
+        list_id=entry_list.id,
+        title="Card que venceu a corrida",
+        client_id=client.id,
+        external_source="gestorhs.os",
+        external_id="1234",
+        position=0,
+    )
+    db.add(vencedor)
+    db.commit()
+    db.refresh(vencedor)
+
+    with patch.object(
+        IntegrationCardService, "_find_by_external_ref", side_effect=[None, vencedor]
+    ):
+        card, created = svc.create_or_return(payload(board_com_entrada.id), usuario)
+
+    assert created is False
+    assert card.id == vencedor.id
+    assert db.query(ServiceCard).count() == 1
+
+
+# ── dedup de contato (achado 3) ───────────────────────────────────────────────────
+
+
+def test_homonimos_com_emails_diferentes_viram_duas_pessoas(db, usuario, board_com_entrada):
+    """
+    Dois contatos com o mesmo nome, mas emails diferentes, no mesmo cliente, não podem
+    ser fundidos: são pessoas diferentes que por acaso têm o mesmo nome.
+    """
+    svc = IntegrationCardService(db)
+
+    primeiro, _ = svc.create_or_return(
+        payload(
+            board_com_entrada.id,
+            contact={"name": "João Silva", "email": "joao1@x.com", "phone": "11900000001"},
+        ),
+        usuario,
+    )
+    segundo, _ = svc.create_or_return(
+        payload(
+            board_com_entrada.id,
+            external_id="5678",
+            contact={"name": "João Silva", "email": "joao2@x.com", "phone": "11900000002"},
+        ),
+        usuario,
+    )
+
+    assert primeiro.person_id != segundo.person_id
+    assert db.query(Person).count() == 2
+    pessoa1 = db.query(Person).filter_by(id=primeiro.person_id).first()
+    pessoa2 = db.query(Person).filter_by(id=segundo.person_id).first()
+    assert pessoa1.email == "joao1@x.com"
+    assert pessoa2.email == "joao2@x.com"
+
+
+def test_reaproveitar_pessoa_sem_telefone_preenche_o_telefone_do_payload(
+    db, usuario, board_com_entrada
+):
+    """Ao reaproveitar uma pessoa existente, campos vazios são preenchidos, não descartados."""
+    svc = IntegrationCardService(db)
+
+    primeiro, _ = svc.create_or_return(
+        payload(
+            board_com_entrada.id,
+            contact={"name": "Maria Souza", "email": None, "phone": None},
+        ),
+        usuario,
+    )
+    pessoa = db.query(Person).filter_by(id=primeiro.person_id).first()
+    assert pessoa.phone is None
+
+    segundo, _ = svc.create_or_return(
+        payload(
+            board_com_entrada.id,
+            external_id="5678",
+            contact={"name": "Maria Souza", "email": None, "phone": "11988887777"},
+        ),
+        usuario,
+    )
+
+    assert segundo.person_id == primeiro.person_id
+    db.refresh(pessoa)
+    assert pessoa.phone == "11988887777"
+    assert db.query(Person).count() == 1

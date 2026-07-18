@@ -102,16 +102,19 @@ class IntegrationCardService:
             .first()
         )
 
-    def _resolve_client(self, payload: IntegrationCardClient) -> Client:
-        """Dedup pelo id do sistema de origem, nunca por documento (ver docstring do model)."""
-        ref = (
+    def _find_client_ref(self, external_id: str) -> Optional[ExternalClientRef]:
+        return (
             self.db.query(ExternalClientRef)
             .filter(
                 ExternalClientRef.source == CLIENT_REF_SOURCE,
-                ExternalClientRef.external_id == payload.external_id,
+                ExternalClientRef.external_id == external_id,
             )
             .first()
         )
+
+    def _resolve_client(self, payload: IntegrationCardClient) -> Client:
+        """Dedup pelo id do sistema de origem, nunca por documento (ver docstring do model)."""
+        ref = self._find_client_ref(payload.external_id)
         if ref:
             client = self.db.query(Client).filter(Client.id == ref.client_id).first()
             if client:
@@ -134,24 +137,71 @@ class IntegrationCardService:
         self.db.add(client)
         self.db.flush()
 
-        self.db.add(
-            ExternalClientRef(
-                source=CLIENT_REF_SOURCE,
-                external_id=payload.external_id,
-                client_id=client.id,
-            )
-        )
-        self.db.flush()
+        # SAVEPOINT (begin_nested) em vez de deixar o IntegrityError estourar até o
+        # commit externo: assim, se a inserção do vínculo colidir, só desfazemos essa
+        # tentativa isolada — o cliente recém-criado (e qualquer outro trabalho já
+        # feito nesta transação) continua de pé para o rollback do savepoint não afetar.
+        try:
+            with self.db.begin_nested():
+                self.db.add(
+                    ExternalClientRef(
+                        source=CLIENT_REF_SOURCE,
+                        external_id=payload.external_id,
+                        client_id=client.id,
+                    )
+                )
+                self.db.flush()
+        except IntegrityError:
+            # Corrida: outro request criou o mesmo vínculo (source, external_id) entre
+            # a consulta e o flush. A unicidade fez o trabalho dela — devolve o cliente
+            # vencedor. O cliente que criamos aqui fica órfão na sessão (sem vínculo),
+            # mas isso é inofensivo: ele nunca é referenciado por nada.
+            ref = self._find_client_ref(payload.external_id)
+            if ref:
+                vencedor = self.db.query(Client).filter(Client.id == ref.client_id).first()
+                if vencedor:
+                    return vencedor
+            raise
         return client
 
     def _resolve_person(self, payload: IntegrationCardContact, client: Client) -> Person:
-        """Reaproveita a pessoa pelo nome dentro do mesmo cliente; cria se não houver."""
-        existente = (
-            self.db.query(Person)
-            .filter(Person.organization_id == client.id, Person.name == payload.name)
-            .first()
-        )
+        """
+        Reaproveita uma pessoa existente do mesmo cliente, ou cria uma nova.
+
+        Regra de dedup, para não fundir homônimos por engano nem descartar dados
+        do payload em silêncio:
+        1. Se o payload trouxer email, procura primeiro por esse email dentro do
+           cliente. Achou -> é a mesma pessoa, reaproveita.
+        2. Senão (ou sem email no payload), procura por nome dentro do cliente, mas
+           só entre pessoas SEM email cadastrado — um homônimo que já tem email
+           próprio não deve ser fundido com um contato de email diferente.
+        3. Ao reaproveitar, preenche os campos vazios (email/telefone) da pessoa
+           existente com os valores do payload, sem sobrescrever o que já havia.
+        """
+        existente = None
+        if payload.email:
+            existente = (
+                self.db.query(Person)
+                .filter(Person.organization_id == client.id, Person.email == payload.email)
+                .first()
+            )
+        if not existente:
+            existente = (
+                self.db.query(Person)
+                .filter(
+                    Person.organization_id == client.id,
+                    Person.name == payload.name,
+                    Person.email.is_(None),
+                )
+                .first()
+            )
+
         if existente:
+            if not existente.email and payload.email:
+                existente.email = payload.email
+            if not existente.phone and payload.phone:
+                existente.phone = payload.phone
+            self.db.flush()
             return existente
 
         person = Person(
