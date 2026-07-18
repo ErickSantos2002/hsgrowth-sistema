@@ -46,6 +46,7 @@ import clientService, { Client } from "../services/clientService";
 import personService, { Person } from "../services/personService";
 import ExpandableSection from "../components/cardDetails/ExpandableSection";
 import ActionButton from "../components/cardDetails/ActionButton";
+import ServiceDevicesSection from "../components/service/ServiceDevicesSection";
 import ServiceProductSection from "../components/service/ServiceProductSection";
 import ServiceServicesSection from "../components/service/ServiceServicesSection";
 import ServiceProposalsSection from "../components/service/ServiceProposalsSection";
@@ -1204,6 +1205,7 @@ const ServiceCardDetails: React.FC = () => {
           <ServiceSummarySection card={card} onUpdate={async (d) => { await updateCard(d); showSuccess("Card atualizado!"); }} boardId={numBoardId} cardId={numCardId} activities={activities} onFilesChanged={reloadActivities} />
           <ServiceClientSection card={card} onLink={async (id) => { await updateCard({ client_id: id }); showSuccess(id ? "Cliente vinculado!" : "Cliente desvinculado!"); }} />
           <ServiceContactSection card={card} onLink={async (id) => { await updateCard({ person_id: id }); showSuccess(id ? "Pessoa vinculada!" : "Pessoa desvinculada!"); }} />
+          <ServiceDevicesSection businessInfo={card?.business_info} />
           <ServiceProductSection
             boardId={numBoardId}
             cardId={numCardId}
