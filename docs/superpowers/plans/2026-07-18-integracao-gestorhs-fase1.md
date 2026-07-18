@@ -20,6 +20,7 @@
 - **Escopo da chave:** a string exata é `service_cards:create`.
 - **`source` válidos:** exatamente `gestorhs.os` e `gestorhs.calibracao`. O vínculo de cliente usa `gestorhs` (sem sufixo) — o mesmo cliente é compartilhado pelos dois boards.
 - **Rodar os testes:** `cd backend && pytest <caminho> -v`
+- **Imports em arquivos de teste:** várias tasks acrescentam testes ao mesmo arquivo. Os blocos de código deste plano mostram os imports junto do teste que os usa, só para ficarem legíveis fora de contexto — ao aplicar, **consolide todos os imports no topo do arquivo**, sem duplicar. Import no meio do arquivo é defeito de estilo, não instrução do plano.
 
 ---
 
@@ -298,6 +299,17 @@ Em `backend/app/repositories/service_board_repository.py`, adicionar o método l
             .order_by(ServiceList.position)
             .first()
         )
+
+    def next_position(self, list_id: int) -> float:
+        """Posição do fim da coluna. Extraído de create_card para ser reusado
+        pelo caminho de integração (ver IntegrationCardService)."""
+        ultimo = (
+            self.db.query(ServiceCard)
+            .filter(ServiceCard.list_id == list_id)
+            .order_by(ServiceCard.position.desc())
+            .first()
+        )
+        return float((ultimo.position or 0) + 1) if ultimo else 0.0
 ```
 
 - [ ] **Step 4: Expor o campo nos schemas**
@@ -484,7 +496,14 @@ Expected: FAIL — o primeiro com `assert None == {'seller_name': 'Sandra', ...}
 
 - [ ] **Step 3: Corrigir o repositório**
 
-Em `backend/app/repositories/service_board_repository.py`, substituir a construção do `ServiceCard` em `create_card` (linhas 208-218) por:
+Em `backend/app/repositories/service_board_repository.py`, em `create_card`, substituir o cálculo inline de posição (linhas 201-207) por uma chamada ao método extraído na Task 2 — assim a lógica de posição existe num lugar só:
+
+```python
+    def create_card(self, data: ServiceCardCreate) -> ServiceCard:
+        next_position = self.next_position(data.list_id)
+```
+
+E substituir a construção do `ServiceCard` (linhas 208-218) por:
 
 ```python
         card = ServiceCard(
@@ -1525,7 +1544,7 @@ class IntegrationCardService:
             business_info=business_info or None,
             external_source=data.source,
             external_id=data.external_id,
-            position=self._next_position(entry_list.id),
+            position=self.repo.next_position(entry_list.id),
         )
         self.db.add(card)
 
@@ -1557,15 +1576,6 @@ class IntegrationCardService:
             )
             .first()
         )
-
-    def _next_position(self, list_id: int) -> float:
-        ultimo = (
-            self.db.query(ServiceCard)
-            .filter(ServiceCard.list_id == list_id)
-            .order_by(ServiceCard.position.desc())
-            .first()
-        )
-        return float((ultimo.position or 0) + 1) if ultimo else 0.0
 
     def _resolve_client(self, payload: IntegrationCardClient) -> Client:
         """Dedup pelo id do sistema de origem, nunca por documento (ver docstring do model)."""
