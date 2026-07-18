@@ -2,13 +2,14 @@
 Dependencies do FastAPI.
 Funções reutilizáveis como dependencies em rotas.
 """
+from datetime import datetime, timezone
 from typing import Generator, Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import SessionLocal
-from app.core.security import decode_token, verify_token_type
+from app.core.security import decode_token, verify_token_type, hash_api_key
 from app.core.redis_sessions import session_manager
 from app.models.user import User
 from app.models.role import Role
@@ -333,3 +334,68 @@ def require_permission(required_permission: str):
         return current_user
 
     return permission_checker
+
+
+def require_api_scope(required_scope: str):
+    """
+    Dependency de autenticação por chave de API estática (header X-API-Key).
+
+    Caminho separado do JWT de usuário: não passa por blacklist, sessão nem role.
+    O controle de raio de dano é o escopo — a chave não expira, então ele não é opcional.
+
+    Retorna o User de impersonate_user_id, que vira o autor dos eventos gerados.
+    """
+    async def checker(
+        x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+        db: Session = Depends(get_db),
+    ) -> User:
+        if not x_api_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Chave de API ausente (header X-API-Key).",
+            )
+
+        client = (
+            db.query(IntegrationClient)
+            .filter(
+                IntegrationClient.api_key_hash == hash_api_key(x_api_key),
+                IntegrationClient.is_active.is_(True),
+            )
+            .first()
+        )
+        if not client:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Chave de API inválida ou inativa.",
+            )
+
+        if required_scope not in (client.scopes or []):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Chave de API sem o escopo necessário: {required_scope}",
+            )
+
+        if not client.impersonate_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Client de integração sem usuário associado.",
+            )
+
+        user = (
+            db.query(User)
+            .options(joinedload(User.role))
+            .filter(User.id == client.impersonate_user_id, User.is_active.is_(True))
+            .first()
+        )
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Usuário de integração inválido ou inativo.",
+            )
+
+        client.last_used_at = datetime.now(timezone.utc)
+        db.commit()
+
+        return user
+
+    return checker
