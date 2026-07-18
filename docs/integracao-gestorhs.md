@@ -496,9 +496,19 @@ da primeira.
    novo sem ter desativado o client anterior só confirma "já provisionado", sem
    reemitir.
 2. **Marcar a etapa de entrada de cada board** (Serviços e Cobrança) no hsgrowth, uma
-   lista por board — e tem que ser **exatamente esta lista**, não qualquer uma:
-   - No board de **Serviços** (board 1): a etapa **"Dados Preenchidos"**.
-   - No board de **Cobrança** (board 2): a etapa **"Oportunidade Existente"**.
+   lista por board. Marque a **primeira coluna do funil**, para o card entrar no começo
+   e passar pelas travas de avanço no caminho — nunca uma coluna do meio:
+   - No board de **Serviços** (board 1): **"Liberados do Laboratório"** (`list_id=1`,
+     `position=0`). Marcar "Dados Preenchidos" faria o card pular a primeira coluna.
+   - No board de **Cobrança** (board 2): **"Oportunidade Existente"** (`list_id=14`,
+     `position=3` — é a primeira lista existente desse board).
+
+   > **Já configurado em produção** em 18/07/2026. Estes `list_id` valem para o banco
+   > atual; confira com `GET /api/v1/service-boards/{board_id}/lists` se estiver
+   > configurando outro ambiente.
+
+   Se mais de uma lista do mesmo board ficar marcada, a integração responde `500` com
+   os nomes das listas em conflito, em vez de escolher uma calada.
    ```bash
    curl -X PUT "$HSGROWTH_BASE_URL/api/v1/service-boards/{board_id}/lists/{list_id}" \
      -H "Content-Type: application/json" \
