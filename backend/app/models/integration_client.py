@@ -3,7 +3,7 @@ Modelo de Client de Integração
 Representa clients externos que podem autenticar via client_credentials
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON
 from sqlalchemy.sql import func
 from app.db.base import Base
 
@@ -22,6 +22,11 @@ class IntegrationClient(Base):
     # Credenciais
     client_id = Column(String(100), unique=True, nullable=False, index=True)  # ID público
     client_secret_hash = Column(String(255), nullable=False)  # Hash do secret (nunca armazenar plain text)
+
+    # Chave de API estática (não expira). SHA-256 hex — ver app/core/security.hash_api_key.
+    api_key_hash = Column(String(255), nullable=True, index=True)
+    # Escopos permitidos, ex: ["service_cards:create"]. Vazio = a chave não pode nada.
+    scopes = Column(JSON, nullable=True, default=list)
 
     # Permissões e comportamento
     # Quando um client cria algo (ex: card), qual user_id será usado como criador

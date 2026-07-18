@@ -4,6 +4,8 @@ Centraliza funções de autenticação e criptografia.
 """
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
+import hashlib
+import secrets
 import jwt
 from passlib.context import CryptContext
 
@@ -194,3 +196,17 @@ def verify_password_reset_token(token: str) -> Optional[str]:
         return email
     except jwt.PyJWTError:
         return None
+
+
+API_KEY_PREFIX = "hsg_live_"
+
+
+def generate_api_key() -> str:
+    """Gera uma chave de API estática. O prefixo permite secret-scanning reconhecer vazamentos."""
+    return f"{API_KEY_PREFIX}{secrets.token_urlsafe(48)}"
+
+
+def hash_api_key(api_key: str) -> str:
+    """SHA-256 hex da chave. Não é bcrypt de propósito: a chave é aleatória de alta
+    entropia e precisa de lookup direto por hash a cada request."""
+    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
