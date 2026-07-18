@@ -111,6 +111,7 @@ class ServiceBoardRepository:
             position=data.position if data.position is not None else next_position,
             is_done_stage=data.is_done_stage or False,
             is_lost_stage=data.is_lost_stage or False,
+            is_entry_stage=data.is_entry_stage or False,
         )
         self.db.add(lst)
         self.db.commit()
@@ -196,6 +197,29 @@ class ServiceBoardRepository:
         if is_deleted is not None:
             q = q.filter(ServiceCard.is_deleted == is_deleted)
         return q.order_by(ServiceCard.position).all()
+
+    def find_entry_list(self, board_id: int) -> Optional[ServiceList]:
+        """Lista de entrada do board (para cards vindos de integração). None se não configurada."""
+        return (
+            self.db.query(ServiceList)
+            .filter(
+                ServiceList.board_id == board_id,
+                ServiceList.is_entry_stage.is_(True),
+            )
+            .order_by(ServiceList.position)
+            .first()
+        )
+
+    def next_position(self, list_id: int) -> float:
+        """Posição do fim da coluna. Extraído de create_card para ser reusado
+        pelo caminho de integração (ver IntegrationCardService)."""
+        ultimo = (
+            self.db.query(ServiceCard)
+            .filter(ServiceCard.list_id == list_id)
+            .order_by(ServiceCard.position.desc())
+            .first()
+        )
+        return float((ultimo.position or 0) + 1) if ultimo else 0.0
 
     def create_card(self, data: ServiceCardCreate) -> ServiceCard:
         max_pos_row = (

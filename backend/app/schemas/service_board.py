@@ -60,6 +60,8 @@ class ServiceListBase(BaseModel):
     position: Optional[int] = Field(None)
     is_done_stage: Optional[bool] = Field(False)
     is_lost_stage: Optional[bool] = Field(False)
+    # Etapa por onde entram os cards de integração externa (ver integração GestorHS).
+    is_entry_stage: Optional[bool] = Field(False)
 
 
 class ServiceListCreate(ServiceListBase):
@@ -72,6 +74,7 @@ class ServiceListUpdate(BaseModel):
     position: Optional[int] = None
     is_done_stage: Optional[bool] = None
     is_lost_stage: Optional[bool] = None
+    is_entry_stage: Optional[bool] = None
 
 
 class ServiceListMoveRequest(BaseModel):

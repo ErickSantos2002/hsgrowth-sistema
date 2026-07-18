@@ -164,6 +164,7 @@ class ServiceBoardService:
                     position=lst.position,
                     is_done_stage=lst.is_done_stage,
                     is_lost_stage=lst.is_lost_stage,
+                    is_entry_stage=lst.is_entry_stage,
                 ))
         return new_board
 
@@ -187,6 +188,7 @@ class ServiceBoardService:
                 position=l.position,
                 is_done_stage=l.is_done_stage,
                 is_lost_stage=l.is_lost_stage,
+                is_entry_stage=l.is_entry_stage,
                 created_at=l.created_at,
                 updated_at=l.updated_at,
             )

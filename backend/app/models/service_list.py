@@ -19,6 +19,9 @@ class ServiceList(Base, TimestampMixin):
     position = Column(Integer, default=0, nullable=False)
     is_done_stage = Column(Boolean, default=False, nullable=False)
     is_lost_stage = Column(Boolean, default=False, nullable=False)
+    # Etapa por onde entram os cards criados por integração externa.
+    # Board sem nenhuma lista marcada rejeita a criação via integração (404).
+    is_entry_stage = Column(Boolean, default=False, nullable=False)
 
     board = relationship("ServiceBoard", back_populates="lists")
     cards = relationship(
