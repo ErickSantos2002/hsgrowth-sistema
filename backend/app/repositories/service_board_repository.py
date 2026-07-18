@@ -2,6 +2,7 @@
 Repository para ServiceBoard, ServiceList e ServiceCard.
 """
 from typing import Optional, List
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.service_board import ServiceBoard
@@ -199,16 +200,37 @@ class ServiceBoardRepository:
         return q.order_by(ServiceCard.position).all()
 
     def find_entry_list(self, board_id: int) -> Optional[ServiceList]:
-        """Lista de entrada do board (para cards vindos de integração). None se não configurada."""
-        return (
+        """Lista de entrada do board (para cards vindos de integração).
+
+        Devolve `None` se nenhuma lista do board estiver marcada como entrada — o
+        chamador (`IntegrationCardService.create_or_return`) traduz isso em `404`,
+        comportamento preservado aqui de propósito.
+
+        Se **mais de uma** lista estiver marcada, isso é erro de configuração do board
+        (só devia haver uma etapa de entrada) — em vez de escolher uma calado pela
+        `position`, levanta `HTTPException(500)` para o operador corrigir a configuração
+        em vez do sistema adivinhar qual lista é a "certa".
+        """
+        entradas = (
             self.db.query(ServiceList)
             .filter(
                 ServiceList.board_id == board_id,
                 ServiceList.is_entry_stage.is_(True),
             )
             .order_by(ServiceList.position)
-            .first()
+            .all()
         )
+        if len(entradas) > 1:
+            nomes = ", ".join(f"'{l.name}'" for l in entradas)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=(
+                    f"Board {board_id} tem mais de uma lista marcada como etapa de "
+                    f"entrada ({nomes}) — desmarque todas menos uma antes de usar a "
+                    f"integração."
+                ),
+            )
+        return entradas[0] if entradas else None
 
     def next_position(self, list_id: int) -> float:
         """Posição do fim da coluna. Extraído de create_card para ser reusado

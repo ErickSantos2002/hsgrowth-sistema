@@ -1,5 +1,6 @@
 """Testes da integração GestorHS → hsgrowth (fase 1)."""
 import pytest
+from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
 from app.models.service_board import ServiceBoard
@@ -88,6 +89,27 @@ def test_find_entry_list_retorna_none_sem_etapa_marcada(db, board_servicos):
     db.commit()
 
     assert ServiceBoardRepository(db).find_entry_list(board_servicos.id) is None
+
+
+def test_find_entry_list_com_duas_listas_marcadas_levanta_erro(db, board_servicos):
+    """Duas listas com is_entry_stage=True no mesmo board é erro de configuração —
+    não pode ser resolvido em silêncio escolhendo uma pela posição."""
+    db.add(ServiceList(
+        board_id=board_servicos.id, name="Dados Preenchidos", position=0, is_entry_stage=True
+    ))
+    db.add(ServiceList(
+        board_id=board_servicos.id, name="Triagem", position=1, is_entry_stage=True
+    ))
+    db.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        ServiceBoardRepository(db).find_entry_list(board_servicos.id)
+
+    assert exc_info.value.status_code == 500
+    detail = exc_info.value.detail
+    assert str(board_servicos.id) in detail
+    assert "Dados Preenchidos" in detail
+    assert "Triagem" in detail
 
 
 def test_list_lists_expoe_is_entry_stage(db, board_servicos):

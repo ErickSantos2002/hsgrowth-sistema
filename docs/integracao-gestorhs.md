@@ -55,12 +55,19 @@ documento vai parecer familiar de propósito — mesma estrutura, mesmo tom. Mas
 
 ### Base URL
 
-- **Local/dev:** `http://localhost:8000/api/v1`
-- **Produção:** `https://<dominio-do-backend-hsgrowth>/api/v1`
+`HSGROWTH_BASE_URL` é a **raiz do backend**, **sem** `/api/v1` no final:
 
-Todos os caminhos abaixo são relativos a essa base (ex.:
-`POST {BASE}/integration/service-cards`). **HTTPS obrigatório em produção** — a chave
-viaja no header.
+- **Local/dev:** `http://localhost:8000`
+- **Produção:** `https://<dominio-do-backend-hsgrowth>`
+
+Todo caminho deste documento é montado como `$HSGROWTH_BASE_URL/api/v1/...` — o
+`/api/v1` **não** faz parte da env, aparece explícito em cada exemplo de `curl` (ex.:
+`POST $HSGROWTH_BASE_URL/api/v1/integration/service-cards`). É a mesma convenção que o
+GestorHS já usaria para qualquer outro endpoint do hsgrowth: uma env com a raiz, e o
+path completo (incluindo `/api/v1`) visível em cada chamada. **Não** configure
+`HSGROWTH_BASE_URL` já terminando em `/api/v1` — os exemplos deste documento
+duplicariam o prefixo (`/api/v1/api/v1/...`) e todo `curl` bateria em `404`. **HTTPS
+obrigatório em produção** — a chave viaja no header.
 
 ### Autenticação — API key
 
@@ -444,10 +451,27 @@ da primeira.
     direta com produto do hsgrowth.
 
   **Consequência que a equipe precisa internalizar:** todo card criado por esta
-  integração **fica travado na etapa de entrada do board até um vendedor escolher
-  manualmente o produto e o serviço**. Isso é intencional — decidir qual produto/serviço
-  vender é uma decisão comercial (inclusive de preço) que pertence ao vendedor, não uma
-  inferência automática que o sistema deveria adivinhar a partir de dados do GestorHS.
+  integração **fica travado na etapa de entrada do board** até que o vendedor preencha,
+  à mão, tudo que a etapa de entrada exige para avançar (`_validate_advance` em
+  `service_board_service.py`, seção "Marcar a etapa de entrada" do checklist §9) —
+  produto e serviço são só parte da trava, não a trava inteira:
+  - **Board de Serviços** (etapa "Dados Preenchidos"): ao menos 1 produto, ao menos 1
+    serviço, `client_id` vinculado, `person_id` vinculado, e `business_info.service_type`
+    preenchido (Recalibração e/ou Manutenção).
+  - **Board de Cobrança** (etapa "Oportunidade Existente"): os mesmos quatro primeiros
+    itens, mais `business_info.collection_type` preenchido (Tipo de cobrança — Aparelhos
+    a vencer ou atrasados) no lugar de `service_type`.
+
+  Produto/serviço são sempre manuais (ver acima). `client_id` sempre vem preenchido,
+  porque `client` é obrigatório no payload (seção 3). Mas **`person_id` só vem
+  preenchido se o GestorHS mandar o objeto `contact`** — se ele for omitido, o card nasce
+  sem contato vinculado, e essa é mais uma trava que o vendedor precisa destravar na mão
+  antes de avançar. **Recomendação: o GestorHS deve sempre mandar `contact` quando tiver
+  o dado**, para não adicionar um bloqueio evitável ao que já é intencional.
+
+  Tudo isso é proposital — decidir qual produto/serviço vender é uma decisão comercial
+  (inclusive de preço) que pertence ao vendedor, não uma inferência automática que o
+  sistema deveria adivinhar a partir de dados do GestorHS.
 - **Não atualiza cards já criados.** Depois do `201` inicial, nenhuma chamada
   subsequente muda título, descrição, `due_date`, cliente, contato ou aparelhos do
   card. Ver o destaque no topo do documento.
@@ -472,7 +496,9 @@ da primeira.
    novo sem ter desativado o client anterior só confirma "já provisionado", sem
    reemitir.
 2. **Marcar a etapa de entrada de cada board** (Serviços e Cobrança) no hsgrowth, uma
-   lista por board:
+   lista por board — e tem que ser **exatamente esta lista**, não qualquer uma:
+   - No board de **Serviços** (board 1): a etapa **"Dados Preenchidos"**.
+   - No board de **Cobrança** (board 2): a etapa **"Oportunidade Existente"**.
    ```bash
    curl -X PUT "$HSGROWTH_BASE_URL/api/v1/service-boards/{board_id}/lists/{list_id}" \
      -H "Content-Type: application/json" \
@@ -483,6 +509,15 @@ da primeira.
    `X-API-Key` da integração; é uma operação de configuração de board, restrita a
    quem tem acesso ao módulo de Serviços — roles `admin`, `manager` ou `service`
    [`require_service_access()`] — não pela integração.)
+
+   **Por que o nome importa:** as regras de avanço (`_validate_advance` em
+   `service_board_service.py`) reconhecem a etapa de origem **pelo nome** — "dados
+   preenchidos" no board 1, "oportunidade existente" no board 2 — e é só a partir
+   dessa etapa que as travas de produto/serviço/cliente/contato entram em vigor (ver
+   seção 8). Marcar `is_entry_stage` numa lista **posterior** a essas (ou num board
+   fora de `{1, 2}`, que não tem regras de avanço) faz o card de integração nascer
+   **depois** das travas, sem nenhum erro — ele simplesmente pula a etapa em que
+   ficaria parado esperando o vendedor preencher os dados.
 3. **Anotar os dois `board_id`** — o do board de Serviços e o do board de Cobrança.
    São valores diferentes; confirme qual é qual antes de configurar o GestorHS.
 4. **Configurar as envs no GestorHS:**
