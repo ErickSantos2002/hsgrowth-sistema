@@ -5,6 +5,7 @@ Semântica: create-or-return, NÃO upsert. Depois que o card nasce, quem manda �
 vendedor no hsgrowth — reenviar o mesmo (source, external_id) devolve o card
 existente sem alterar nada. Ver seção 4 do spec.
 """
+import logging
 from typing import Optional, Tuple
 
 from fastapi import HTTPException, status
@@ -22,7 +23,10 @@ from app.schemas.integration import (
     IntegrationCardContact,
     IntegrationServiceCardCreate,
 )
+from app.services.gestorhs_product_resolver import aplicar_aparelhos_ao_card
 from app.services.service_board_service import ServiceBoardService
+
+logger = logging.getLogger(__name__)
 
 # O vínculo de cliente não leva sufixo de entidade: o mesmo cliente do GestorHS é
 # compartilhado pelos boards de Serviços e de Cobrança.
@@ -85,9 +89,39 @@ class IntegrationCardService:
             raise
 
         self.db.refresh(card)
-        ServiceBoardService(self.db).log_event(
+
+        svc = ServiceBoardService(self.db)
+        svc.log_event(
             card.id, user, "card_created", f"Card criado pela integração ({data.source})"
         )
+
+        # Aparelhos viram produto do catálogo de Serviços, com os dados já no lugar
+        # certo (ServiceCardProduct.aparelhos) — sem o vendedor redigitar série,
+        # modelo e data. Ver gestorhs_product_resolver para o porquê do catálogo
+        # próprio. `business_info["equipamentos"]` continua gravado como registro
+        # do que a origem mandou.
+        if data.devices:
+            devices = [d.model_dump() for d in data.devices]
+            try:
+                itens = aplicar_aparelhos_ao_card(self.db, card, devices)
+                self.db.commit()
+                for item in itens:
+                    svc.log_event(
+                        card.id, user, "product_added",
+                        f"Produto vinculado pela integração: {item.product.name} "
+                        f"({item.quantity} aparelho(s))",
+                        {"product_id": item.product_id},
+                    )
+            except Exception:
+                # Best-effort: o card já está gravado e é o que importa. Se o
+                # vínculo de produto falhar, o dado continua em business_info e o
+                # script retroativo reconcilia depois.
+                self.db.rollback()
+                logger.exception(
+                    "falha ao vincular aparelhos ao card %s (%s:%s) — card criado mesmo assim",
+                    card.id, data.source, data.external_id,
+                )
+
         return card, True
 
     # ── internos ──────────────────────────────────────────────────────────────

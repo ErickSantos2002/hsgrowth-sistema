@@ -4,26 +4,36 @@ import ExpandableSection from "../cardDetails/ExpandableSection";
 import { ServiceBusinessInfo } from "../../services/serviceBoardService";
 
 /**
- * Aparelhos informados pelo sistema de origem (GestorHS), somente leitura.
+ * Aparelhos informados pelo sistema de origem (GestorHS) — exibição de fallback.
  *
- * Vivem em business_info.equipamentos e não no campo `aparelhos` do produto porque
- * ServiceCardProduct exige product_id, e a escolha do produto é do vendedor — os
- * catálogos dos dois sistemas não são mapeáveis automaticamente. O vendedor consulta
- * esta lista para montar o produto correspondente na seção "Produto".
+ * O lugar normal desses dados é a seção "Equipamento", dentro do próprio item do
+ * catálogo (`ServiceCardProduct.aparelhos`), onde a integração os coloca desde
+ * julho/2026. Esta seção só aparece quando o card **ainda não tem** nenhum item
+ * vinculado — ou seja, quando algo impediu a conversão automática.
+ *
+ * Mostrar as duas ao mesmo tempo seria a mesma informação duas vezes na tela, com
+ * o agravante de que só uma delas é editável.
  */
 interface ServiceDevicesSectionProps {
   businessInfo?: ServiceBusinessInfo | null;
+  /** Itens de catálogo do card. `null` = ainda carregando; 1+ esconde esta seção. */
+  productCount?: number | null;
 }
 
-const ServiceDevicesSection: React.FC<ServiceDevicesSectionProps> = ({ businessInfo }) => {
+const ServiceDevicesSection: React.FC<ServiceDevicesSectionProps> = ({
+  businessInfo,
+  productCount = null,
+}) => {
   const devices = businessInfo?.equipamentos ?? [];
 
   // Card criado por um humano não tem `equipamentos` — não renderiza seção fantasma.
-  if (devices.length === 0) return null;
+  // `null` = a contagem ainda não chegou; espera, para a seção não piscar na tela.
+  // Card já convertido mostra os aparelhos dentro do equipamento, não aqui.
+  if (devices.length === 0 || productCount === null || productCount > 0) return null;
 
   return (
     <ExpandableSection
-      title="Aparelhos"
+      title="Aparelhos (não convertidos)"
       defaultExpanded={false}
       icon={<Smartphone size={18} />}
       badge={devices.length}

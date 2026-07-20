@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { Package, Plus, Trash2, Search, Check, X } from "lucide-react";
 import ExpandableSection from "../cardDetails/ExpandableSection";
-import productService from "../../services/productService";
+import serviceProductService from "../../services/serviceProductService";
 import serviceBoardService, { ServiceCardProduct, ServiceAparelho } from "../../services/serviceBoardService";
 import { showError, showWarning } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
@@ -12,6 +12,8 @@ interface ServiceProductSectionProps {
   cardId: number;
   /** Avisa o pai quando produtos mudam (para atualizar o histórico de atividades). */
   onChange?: () => void;
+  /** Informa quantos itens o card tem, para o pai decidir o fallback de aparelhos. */
+  onCountChange?: (n: number) => void;
 }
 
 /**
@@ -135,6 +137,7 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
   boardId,
   cardId,
   onChange,
+  onCountChange,
 }) => {
   const { confirm } = useConfirm();
 
@@ -149,6 +152,7 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
     try {
       const summary = await serviceBoardService.getCardProducts(boardId, cardId);
       setProducts(summary.items);
+      onCountChange?.(summary.items.length);
     } catch {
       showError("Erro ao carregar produtos do card");
     }
@@ -165,10 +169,11 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
   const loadAvailableProducts = async () => {
     try {
       setLoading(true);
-      const response = await productService.list({ page_size: 10000, is_active: true });
-      setAvailableProducts(response.products);
+      // Catálogo de Serviços (equipamentos), não o de Vendas.
+      const equipamentos = await serviceProductService.list({ is_active: true, limit: 1000 });
+      setAvailableProducts(equipamentos);
     } catch {
-      showError("Erro ao carregar lista de produtos");
+      showError("Erro ao carregar lista de equipamentos");
     } finally {
       setLoading(false);
     }

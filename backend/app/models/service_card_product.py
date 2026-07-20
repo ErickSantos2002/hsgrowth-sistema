@@ -26,10 +26,12 @@ class ServiceCardProduct(Base, TimestampMixin):
         index=True,
     )
 
-    # Relacionamento com Product (catálogo compartilhado com vendas)
+    # Relacionamento com ServiceProduct — catálogo de EQUIPAMENTOS do módulo de
+    # Serviços, separado do catálogo de Vendas (`products`). Ver service_product.py
+    # para o porquê da separação.
     product_id = Column(
         Integer,
-        ForeignKey("products.id", ondelete="CASCADE"),
+        ForeignKey("service_products.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -51,8 +53,8 @@ class ServiceCardProduct(Base, TimestampMixin):
         UniqueConstraint("service_card_id", "product_id", name="unique_service_card_product"),
     )
 
-    # Relacionamento unidirecional com o catálogo de produtos
-    product = relationship("Product")
+    # Relacionamento unidirecional com o catálogo de equipamentos de Serviços
+    product = relationship("ServiceProduct")
 
     def __repr__(self):
         return f"<ServiceCardProduct(service_card_id={self.service_card_id}, product_id={self.product_id}, qty={self.quantity})>"

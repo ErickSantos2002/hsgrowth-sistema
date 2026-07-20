@@ -89,6 +89,7 @@ from app.models.proposal_version import ProposalVersion  # noqa
 
 # Modelos de integração com sistemas externos
 from app.models.external_client_ref import ExternalClientRef  # noqa
+from app.models.service_product import ServiceProduct  # noqa
 
 # Lista de todos os modelos (útil para imports)
 __all__ = [
@@ -143,4 +144,5 @@ __all__ = [
     "ProposalServiceCard",
     "ProposalVersion",
     "ExternalClientRef",
+    "ServiceProduct",
 ]

@@ -4,7 +4,7 @@ Agrega todos os endpoints da versão 1 da API.
 """
 from fastapi import APIRouter, Depends
 from app.api.deps import require_service_access
-from app.api.v1.endpoints import auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products, integration_clients, api4com, audit_logs, attachments, user_avatar, custom_reports, ai, call_evaluations, cadencias, email_templates, cadences, service_boards, service_dashboard, service_activities, proposals, services, integration
+from app.api.v1.endpoints import auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products, integration_clients, api4com, audit_logs, attachments, user_avatar, custom_reports, ai, call_evaluations, cadencias, email_templates, cadences, service_boards, service_dashboard, service_activities, proposals, services, integration, service_products
 
 api_router = APIRouter()
 
@@ -46,6 +46,7 @@ api_router.include_router(service_activities.router, prefix="/service-activities
 # Integração externa: autenticada por X-API-Key, NÃO por require_service_access
 # (aquela dependency exige JWT de usuário e barraria a chave).
 api_router.include_router(integration.router, prefix="/integration", tags=["Integração Externa"])
+api_router.include_router(service_products.router, prefix="/service-products", tags=["Catálogo de Equipamentos (Serviços)"], dependencies=[Depends(require_service_access())])
 
 # Futuramente adicionar outros routers:
 # (Todos os principais já foram adicionados!)

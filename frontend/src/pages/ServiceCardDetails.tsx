@@ -852,6 +852,8 @@ const ServiceCardDetails: React.FC = () => {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const [isMoving, setIsMoving] = useState(false);
+  // null = ainda não carregou; usado para o fallback de aparelhos não convertidos
+  const [productCount, setProductCount] = useState<number | null>(null);
   const [activities, setActivities] = useState<ServiceCardActivity[]>([]);
   const [contactPerson, setContactPerson] = useState<Person | null>(null);
   const [isQuickCalling, setIsQuickCalling] = useState(false);
@@ -1205,11 +1207,15 @@ const ServiceCardDetails: React.FC = () => {
           <ServiceSummarySection card={card} onUpdate={async (d) => { await updateCard(d); showSuccess("Card atualizado!"); }} boardId={numBoardId} cardId={numCardId} activities={activities} onFilesChanged={reloadActivities} />
           <ServiceClientSection card={card} onLink={async (id) => { await updateCard({ client_id: id }); showSuccess(id ? "Cliente vinculado!" : "Cliente desvinculado!"); }} />
           <ServiceContactSection card={card} onLink={async (id) => { await updateCard({ person_id: id }); showSuccess(id ? "Pessoa vinculada!" : "Pessoa desvinculada!"); }} />
-          <ServiceDevicesSection businessInfo={card?.business_info} />
+          <ServiceDevicesSection
+            businessInfo={card?.business_info}
+            productCount={productCount}
+          />
           <ServiceProductSection
             boardId={numBoardId}
             cardId={numCardId}
             onChange={reloadActivities}
+            onCountChange={setProductCount}
           />
           <ServiceServicesSection
             boardId={numBoardId}

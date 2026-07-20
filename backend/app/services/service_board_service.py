@@ -240,11 +240,12 @@ class ServiceBoardService:
         # Valor do negócio por card = soma dos totais das propostas vinculadas
         value_by_card = deal_value_by_card(db, card_ids)
 
-        # Produtos por card (id + nome) — para o filtro de produto no Kanban
-        from app.models.product import Product
+        # Equipamentos por card (id + nome) — para o filtro no Kanban.
+        # Catálogo de Serviços (service_products), não o de Vendas.
+        from app.models.service_product import ServiceProduct
         prod_rows = (
-            db.query(ServiceCardProduct.service_card_id, Product.id, Product.name)
-            .join(Product, ServiceCardProduct.product_id == Product.id)
+            db.query(ServiceCardProduct.service_card_id, ServiceProduct.id, ServiceProduct.name)
+            .join(ServiceProduct, ServiceCardProduct.product_id == ServiceProduct.id)
             .filter(ServiceCardProduct.service_card_id.in_(card_ids))
             .all()
         )
@@ -664,11 +665,20 @@ class ServiceBoardService:
     ) -> ServiceCardProductResponse:
         self.get_card(card_id)
 
-        product = ProductRepository(self.db).get_product_by_id(data.product_id)
+        # Catálogo de Serviços (service_products), não o de Vendas.
+        from app.models.service_product import ServiceProduct
+        product = (
+            self.db.query(ServiceProduct)
+            .filter(
+                ServiceProduct.id == data.product_id,
+                ServiceProduct.is_deleted.is_(False),
+            )
+            .first()
+        )
         if not product:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Produto {data.product_id} não encontrado",
+                detail=f"Equipamento {data.product_id} não encontrado no catálogo de Serviços",
             )
 
         existing = self.repo.get_card_product_by_card_and_product(card_id, data.product_id)
