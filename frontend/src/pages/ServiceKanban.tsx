@@ -823,6 +823,19 @@ const ServiceKanban: React.FC = () => {
     }
   };
 
+  // Anos presentes nas datas de recalibração dos aparelhos (para o filtro de
+  // vencimento). Só anos válidos (4 dígitos) — descarta lixo tipo "1-01-01".
+  // Precisa ficar ANTES de qualquer return condicional (loading/board): hooks
+  // não podem ser chamados condicionalmente.
+  const anosVencimento = useMemo(() => {
+    const set = new Set<string>();
+    cards.forEach((c) => (c.business_info?.equipamentos || []).forEach((d) => {
+      const nd = d?.next_recalibration_date || "";
+      if (/^\d{4}-\d{2}/.test(nd)) set.add(nd.slice(0, 4));
+    }));
+    return Array.from(set).sort();
+  }, [cards]);
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -870,17 +883,6 @@ const ServiceKanban: React.FC = () => {
       default: return true;
     }
   };
-
-  // Anos que aparecem nas datas de recalibração dos aparelhos (para o filtro de
-  // vencimento). Só anos válidos (4 dígitos) — descarta lixo tipo "1-01-01".
-  const anosVencimento = useMemo(() => {
-    const set = new Set<string>();
-    cards.forEach((c) => (c.business_info?.equipamentos || []).forEach((d) => {
-      const nd = d?.next_recalibration_date || "";
-      if (/^\d{4}-\d{2}/.test(nd)) set.add(nd.slice(0, 4));
-    }));
-    return Array.from(set).sort();
-  }, [cards]);
 
   const filteredCards = cards.filter((c) => {
     // Busca
