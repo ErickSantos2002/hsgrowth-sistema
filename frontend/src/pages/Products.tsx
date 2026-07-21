@@ -1,9 +1,10 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
-import { Plus, Filter, Edit, Trash2, RefreshCw, Package, ChevronDown } from "lucide-react";
+import { Plus, Filter, Edit, Trash2, RefreshCw, Package, ChevronDown, Wrench } from "lucide-react";
 import productService, { Product } from "../services/productService";
 import { Button, Alert, SearchInput, Pagination } from "../components/common";
 import { PageHeader } from "../components/layout";
 import ProductModal from "../components/products/ProductModal";
+import ServiceProductsTab from "../components/products/ServiceProductsTab";
 import { showError, showSuccess } from "../utils/toast";
 import { usePagination, useFilter, filterHelpers, useCRUD } from "../hooks";
 import { useAuth } from "../hooks/useAuth";
@@ -13,6 +14,9 @@ const Products: React.FC = () => {
 
   // Visualizadores têm acesso somente leitura
   const isViewer = user?.role === "viewer";
+
+  // Aba ativa: catálogo de Vendas (atual) ou de Serviço (equipamentos, leitura).
+  const [activeTab, setActiveTab] = useState<"vendas" | "servico">("vendas");
 
   // Estados locais
   const [showFilters, setShowFilters] = useState(false);
@@ -106,33 +110,69 @@ const Products: React.FC = () => {
       {/* Header */}
       <PageHeader
         title="Produtos"
-        description="Gerencie seu catálogo de produtos"
+        description="Gerencie seu catálogo de produtos e o de equipamentos de serviço"
         icon={Package}
-        actions={
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<RefreshCw size={16} />}
-              onClick={loadProducts}
-              disabled={loading}
-            >
-              Atualizar
-            </Button>
-            {/* Botão de criar oculto para visualizadores */}
-            {!isViewer && (
-              <Button
-                variant="primary"
-                size="sm"
-                icon={<Plus size={16} />}
-                onClick={handleCreate}
-              >
-                Novo Produto
-              </Button>
-            )}
-          </>
-        }
       />
+
+      {/* Abas */}
+      <div className="mb-6 flex gap-2 border-b border-gray-200 dark:border-slate-700">
+        <button
+          onClick={() => setActiveTab("vendas")}
+          className={`border-b-2 px-4 py-2 font-medium transition-colors ${
+            activeTab === "vendas"
+              ? "border-emerald-400 text-emerald-400"
+              : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Package size={16} />
+            Produtos
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab("servico")}
+          className={`border-b-2 px-4 py-2 font-medium transition-colors ${
+            activeTab === "servico"
+              ? "border-emerald-400 text-emerald-400"
+              : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Wrench size={16} />
+            Produtos de Serviço
+          </div>
+        </button>
+      </div>
+
+      {/* ─── Aba: Produtos de Serviço (equipamentos, somente leitura) ─── */}
+      {activeTab === "servico" && <ServiceProductsTab />}
+
+      {/* ─── Aba: Produtos (catálogo de Vendas) ─── */}
+      {activeTab === "vendas" && (
+      <>
+      {/* Ações da aba de Vendas */}
+      <div className="mb-4 flex justify-end gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<RefreshCw size={16} />}
+          onClick={loadProducts}
+          disabled={loading}
+        >
+          Atualizar
+        </Button>
+        {/* Botão de criar oculto para visualizadores */}
+        {!isViewer && (
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Plus size={16} />}
+            onClick={handleCreate}
+          >
+            Novo Produto
+          </Button>
+        )}
+      </div>
 
       {/* Aviso de backend não implementado */}
       {backendError && (
@@ -343,6 +383,8 @@ const Products: React.FC = () => {
         onSave={handleSaveSuccess}
         product={editingProduct}
       />
+      </>
+      )}
     </div>
   );
 };
