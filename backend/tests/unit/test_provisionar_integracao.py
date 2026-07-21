@@ -1,11 +1,24 @@
 """O provisionamento tem que ser idempotente e nunca reemitir a chave em silêncio."""
 import pytest
+from pydantic import EmailStr, TypeAdapter
 
 from app.core.security import hash_api_key
 from app.models.integration_client import IntegrationClient
 from app.models.role import Role
 from app.models.user import User
-from scripts.provisionar_integracao_gestorhs import provisionar, rotacionar
+from scripts.provisionar_integracao_gestorhs import EMAIL, provisionar, rotacionar
+
+
+def test_email_da_conta_passa_na_validacao_de_email():
+    """O email da conta de integração precisa ser um EmailStr válido.
+
+    /api/v1/users/active serializa TODOS os usuários ativos como UserResponse, que
+    valida `email` com EmailStr. Um único email inválido derruba a listagem inteira
+    com 500 — foi o que aconteceu com "gestorhs@integracao.local" (domínio .local é
+    reservado por RFC e rejeitado pelo validador), esvaziando todos os filtros que
+    dependem dessa lista.
+    """
+    TypeAdapter(EmailStr).validate_python(EMAIL)
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +46,7 @@ def test_segunda_execucao_nao_duplica_nem_reemite(db):
 
     assert chave is None
     assert db.query(IntegrationClient).count() == 1
-    assert db.query(User).filter_by(email="gestorhs@integracao.local").count() == 1
+    assert db.query(User).filter_by(email="gestorhs.integracao@healthsafetytech.com").count() == 1
 
 
 def test_a_chave_em_claro_nao_fica_no_banco(db):

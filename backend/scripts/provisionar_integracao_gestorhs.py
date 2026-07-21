@@ -19,7 +19,12 @@ from app.models.integration_client import IntegrationClient
 from app.models.role import Role
 from app.models.user import User
 
-EMAIL = "gestorhs@integracao.local"
+# Domínio real e válido de propósito: /api/v1/users/active serializa todo usuário
+# ativo como UserResponse (email é EmailStr). Um domínio reservado como ".local" é
+# rejeitado pelo validador e derruba a listagem inteira com 500 — nunca use aqui.
+# A conta nunca faz login por formulário nem recebe email; o endereço só precisa
+# ser sintaticamente válido e único.
+EMAIL = "gestorhs.integracao@healthsafetytech.com"
 NOME_USUARIO = "GestorHS (Integração)"
 CLIENT_ID = "hsg_gestorhs"
 ESCOPOS = ["service_cards:create"]

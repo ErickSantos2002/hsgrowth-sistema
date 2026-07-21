@@ -24,7 +24,7 @@ def usuario(db):
     db.add(role)
     db.commit()
     user = User(
-        role_id=role.id, email="gestorhs@integracao.local", name="GestorHS (Integração)",
+        role_id=role.id, email="gestorhs.integracao@healthsafetytech.com", name="GestorHS (Integração)",
         password_hash=hash_password("x"), is_active=True,
     )
     db.add(user)
