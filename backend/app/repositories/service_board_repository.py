@@ -174,6 +174,15 @@ class ServiceBoardRepository:
         q = self.db.query(ServiceCard).filter(ServiceCard.list_id.in_(list_ids))
         if is_deleted is not None:
             q = q.filter(ServiceCard.is_deleted == is_deleted)
+        # Eager load: list_cards lê c.client.name, c.person.name e c.assigned_to.name
+        # de cada card. Sem isto, cada acesso dispara uma query lazy (N+1) — com o
+        # banco remoto (~1s por ida), 970 cards viravam ~130s. Com os joins, é uma
+        # query só.
+        q = q.options(
+            joinedload(ServiceCard.client),
+            joinedload(ServiceCard.person),
+            joinedload(ServiceCard.assigned_to),
+        )
         return q.order_by(ServiceCard.position).offset(skip).limit(limit).all()
 
     def count_cards_by_board(self, board_id: int, is_deleted: Optional[bool] = False) -> int:

@@ -318,12 +318,26 @@ class ServiceBoardService {
     return r.data;
   }
 
-  // Cards
-  async getCards(boardId: number, page = 1, pageSize = 200): Promise<ServiceCardListResponse> {
-    const r = await api.get<ServiceCardListResponse>(`${BASE}/${boardId}/cards`, {
-      params: { page, page_size: pageSize },
+  // Cards — busca TODAS as páginas, para o kanban mostrar o board inteiro.
+  // Pagina de 500 em 500 (o máximo do backend) e concatena, em vez de assumir um
+  // teto fixo: assim funciona mesmo com milhares de cards, e nenhum some da tela
+  // silenciosamente. Cada página é uma requisição leve; com o eager load do
+  // backend, buscar ~1.400 cards leva poucos segundos.
+  async getCards(boardId: number): Promise<ServiceCardListResponse> {
+    const pageSize = 500;
+    const primeira = await api.get<ServiceCardListResponse>(`${BASE}/${boardId}/cards`, {
+      params: { page: 1, page_size: pageSize },
     });
-    return r.data;
+    const todos = [...primeira.data.cards];
+
+    for (let page = 2; page <= primeira.data.total_pages; page++) {
+      const r = await api.get<ServiceCardListResponse>(`${BASE}/${boardId}/cards`, {
+        params: { page, page_size: pageSize },
+      });
+      todos.push(...r.data.cards);
+    }
+
+    return { ...primeira.data, cards: todos };
   }
 
   async getCard(boardId: number, cardId: number): Promise<ServiceCard> {
