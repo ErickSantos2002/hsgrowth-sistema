@@ -506,3 +506,42 @@ def test_payload_sem_email_com_homonimo_com_email_cria_pessoa_nova(
     assert pessoa_nova.name == "João Silva"
     assert pessoa_nova.email is None
     assert pessoa_nova.phone == "11900000009"
+
+
+# ─── tipo de cobrança (collection_type) ───────────────────────────────────────
+
+def test_calibracao_nasce_como_a_vencer(db, usuario, board_com_entrada):
+    card, _ = IntegrationCardService(db).create_or_return(
+        payload(board_com_entrada.id, source="gestorhs.calibracao", external_id="7310:2026-09-08"),
+        usuario,
+    )
+    assert card.business_info["collection_type"] == "a_vencer"
+
+
+def test_atrasados_nasce_como_atrasados(db, usuario, board_com_entrada):
+    card, _ = IntegrationCardService(db).create_or_return(
+        payload(board_com_entrada.id, source="gestorhs.atrasados", external_id="512:2026-07-18"),
+        usuario,
+    )
+    assert card.business_info["collection_type"] == "atrasados"
+
+
+def test_os_nao_recebe_tipo_de_cobranca(db, usuario, board_com_entrada):
+    """Board de Serviços não tem tipo de cobrança — não deve inventar um."""
+    card, _ = IntegrationCardService(db).create_or_return(
+        payload(board_com_entrada.id, source="gestorhs.os", external_id="1234"),
+        usuario,
+    )
+    assert (card.business_info or {}).get("collection_type") is None
+
+
+def test_collection_type_explicito_do_payload_e_respeitado(db, usuario, board_com_entrada):
+    """Se o GestorHS mandar collection_type, o derivado do source não sobrescreve."""
+    card, _ = IntegrationCardService(db).create_or_return(
+        payload(
+            board_com_entrada.id, source="gestorhs.calibracao", external_id="7310:2026-09-08",
+            business_info={"collection_type": "atrasados"},
+        ),
+        usuario,
+    )
+    assert card.business_info["collection_type"] == "atrasados"

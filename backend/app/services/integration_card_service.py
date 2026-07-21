@@ -32,6 +32,13 @@ logger = logging.getLogger(__name__)
 # compartilhado pelos boards de Serviços e de Cobrança.
 CLIENT_REF_SOURCE = "gestorhs"
 
+# Tipo de cobrança (business_info.collection_type) derivado do gatilho de origem.
+# gestorhs.os não entra: board de Serviços não tem tipo de cobrança.
+COLLECTION_TYPE_POR_SOURCE = {
+    "gestorhs.calibracao": "a_vencer",   # vencendo em 50 dias
+    "gestorhs.atrasados": "atrasados",   # carga de vencidos
+}
+
 
 class IntegrationCardService:
     def __init__(self, db: Session):
@@ -62,6 +69,13 @@ class IntegrationCardService:
         business_info = dict(data.business_info or {})
         if data.devices:
             business_info["equipamentos"] = [d.model_dump() for d in data.devices]
+        # Tipo de cobrança derivado do gatilho — o board de Cobrança exige esse campo
+        # para o card avançar. calibracao (vencendo em 50d) = "a vencer"; atrasados
+        # (carga de vencidos) = "atrasados". setdefault: se o GestorHS mandar um
+        # collection_type explícito, ele manda.
+        ct = COLLECTION_TYPE_POR_SOURCE.get(data.source)
+        if ct:
+            business_info.setdefault("collection_type", ct)
 
         card = ServiceCard(
             list_id=entry_list.id,
