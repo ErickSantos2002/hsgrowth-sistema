@@ -803,9 +803,16 @@ const Settings: React.FC = () => {
       const data = await api4comService.listExtensions();
       setApi4comExtensions(data);
 
-      // Carrega vendedores e SDRs para o formulário de vincular ramais
+      // Carrega vendedores, SDRs e equipe de serviço para vincular ramais
+      // (todos precisam de ramal para fazer ligações pelo sistema).
+      // Exclui a conta de máquina da integração GestorHS (tem role "service" mas
+      // não é uma pessoa — não faz ligações).
+      const CONTA_INTEGRACAO_EMAIL = "gestorhs.integracao@healthsafetytech.com";
       const users = await userService.listActive();
-      setSalespeople(users.filter(u => u.role === "salesperson" || u.role === "sdr"));
+      setSalespeople(users.filter(u =>
+        (u.role === "salesperson" || u.role === "sdr" || u.role === "service") &&
+        u.email !== CONTA_INTEGRACAO_EMAIL
+      ));
     } catch (error) {
       showError('Erro ao carregar ramais');
     } finally {
@@ -2607,7 +2614,7 @@ const Settings: React.FC = () => {
                         <thead className="bg-gray-50 dark:bg-slate-800">
                           <tr>
                             <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                              Vendedor
+                              Usuário
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               Email
@@ -2680,9 +2687,9 @@ const Settings: React.FC = () => {
                   </h4>
                   <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
                     <li>• Configure as credenciais da sua conta API4COM para obter o token de autenticação</li>
-                    <li>• Vincule cada vendedor ou SDR ao seu ramal físico existente no sistema VOIP</li>
+                    <li>• Vincule cada vendedor, SDR ou membro do serviço ao seu ramal físico existente no sistema VOIP</li>
                     <li>• O token é renovado automaticamente quando próximo da expiração</li>
-                    <li>• Vendedores e SDRs poderão fazer ligações diretamente do sistema (Fase 2)</li>
+                    <li>• Vendedores, SDRs e equipe de serviço poderão fazer ligações diretamente do sistema (Fase 2)</li>
                   </ul>
                 </div>
               </div>
