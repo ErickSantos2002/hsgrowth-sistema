@@ -317,6 +317,16 @@ const ServiceSummarySection: React.FC<{
                   options={[{ value: "", label: "Não definido" }, { value: "faturamento_direto", label: "Faturamento direto" }, { value: "pedido", label: "Pedido" }]}
                   onChange={(v) => setBizField("closing_type", v)} />
               </div>
+              {isCobranca && (
+                <div className="space-y-1 border-t border-gray-200/40 dark:border-slate-700/40 pt-3">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">Operações</p>
+                  <label className="text-xs text-slate-400">Confirmação de envio</label>
+                  <SelectMenu size="sm" value={biz.shipping_confirmed || ""} placeholder="Não definido"
+                    options={[{ value: "", label: "Não definido" }, { value: "sim", label: "Sim" }, { value: "nao", label: "Não" }]}
+                    onChange={(v) => setBizField("shipping_confirmed", v)} />
+                  <p className="text-[11px] text-slate-400">Obrigatório marcar "Sim" para dar Ganho na etapa Operações.</p>
+                </div>
+              )}
               <div className="flex items-center gap-2 pt-1">
                 <button onClick={handleSaveBiz} className="flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30">
                   <Check size={14} /> Salvar
@@ -333,6 +343,7 @@ const ServiceSummarySection: React.FC<{
                 { label: "Recalibração/Manutenção", value: serviceTypeLabel(biz.service_type) },
                 { label: "Formulário enviado", value: biz.form_answered ? "Sim" : "Não" },
                 { label: "Forma de fechamento", value: closingLabel(biz.closing_type) },
+                ...(isCobranca ? [{ label: "Confirmação de envio", value: biz.shipping_confirmed === "sim" ? "Sim" : biz.shipping_confirmed === "nao" ? "Não" : "" }] : []),
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between gap-3">
                   <span className="text-sm text-slate-400">{row.label}:</span>
@@ -1016,8 +1027,18 @@ const ServiceCardDetails: React.FC = () => {
         showError("O Ganho só é liberado em 'Aguardando Pedido' (Pedido) ou em 'Proposta' com Forma de fechamento = Faturamento direto.");
         return;
       }
+    } else if (numBoardId === 2) {
+      // Cobrança: Ganho na última etapa ativa (Operações) + Confirmação de envio = Sim.
+      if (!isAwaiting) {
+        showError(`O Ganho só é liberado na etapa "${winStage?.name || "última etapa ativa"}".`);
+        return;
+      }
+      if (card?.business_info?.shipping_confirmed !== "sim") {
+        showError("Marque 'Confirmação de envio' como Sim no Resumo antes de marcar como Ganho.");
+        return;
+      }
     } else {
-      // Demais boards com regra (ex: Cobrança): Ganho na última etapa ativa, sem trava.
+      // Demais boards com regra: Ganho na última etapa ativa, sem trava.
       if (!isAwaiting) {
         showError(`O Ganho só é liberado na etapa "${winStage?.name || "última etapa ativa"}".`);
         return;

@@ -426,7 +426,7 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 | 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** + **≥1 serviço** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Tipo de cobrança** (`collection_type`) selecionado |
 | 2 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) + **Recalibração/Manutenção** (`service_type`) preenchido |
 | 3 | Proposta → Operações | **Proposta vinculada** (na aba Propostas do card) + **Formulário enviado** (checkbox `form_answered`) |
-| 4 | Operações → **Negócio Ganho** | botão Ganho acende em **Operações** · **sem regra por enquanto** (a definir depois) |
+| 4 | Operações → **Negócio Ganho** | botão Ganho acende em **Operações** · **Confirmação de envio = "Sim"** (`business_info.shipping_confirmed`, no Resumo → Informações de Negócio) |
 | 5 | → **Negócio Perdido** | só pelo botão Perdido · **Motivo da perda** (modal) |
 
 ### 8.3. Regras gerais
@@ -441,9 +441,14 @@ Campo no **Resumo → Informações de Negócio** (`business_info.collection_typ
 
 É **obrigatório** para avançar de **Oportunidade Existente → Tentativa de Contato** (ver matriz 8.2, regra 1). Há também um **filtro** no board de Cobrança (Todos / A vencer / Atrasados / Sem tipo de cobrança).
 
+### 8.3.2. Confirmação de envio *(exclusivo do board de Cobrança — adicionado 21/07/2026)*
+Campo no **Resumo → Informações de Negócio** (`business_info.shipping_confirmed`), só aparece no board de Cobrança, na seção **Operações**: **Sim** (`sim`) / **Não** (`nao`) / Não definido.
+
+É **obrigatório** estar como **"Sim"** para marcar o negócio como **Ganho** na etapa **Operações** (ver matriz 8.2, regra 4). A trava é aplicada no backend (`_validate_advance`) e há uma pré-checagem no frontend (`handleWin`) que avisa antes de tentar.
+
 ### 8.4. Dashboard "Cobrança" *(implementada — 25/06/2026)*
 - ✅ Usa o **mesmo componente** da dashboard de Serviço (`ServiceDashboard.tsx`), filtrando o **board 2** (`board=2`). Conteúdo e layout idênticos aos descritos na [seção 7.1](#71-o-que-a-dashboard-mostra-hoje-implementado).
 - ✅ Acessível pelo **select** de dashboard (opção "Cobrança") para admin/gerente e role "serviço".
 
 ### 8.5. Pendências
-- [ ] Regra de avanço **Operações → Ganho** (a definir).
+- [x] Regra de avanço **Operações → Ganho** — exige **Confirmação de envio = "Sim"** (`business_info.shipping_confirmed`), editável no Resumo → Informações de Negócio (só no board de Cobrança). *(implementado 21/07/2026; validação em `_validate_advance` + pré-checagem no `handleWin`.)*

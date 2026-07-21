@@ -54,6 +54,8 @@ export interface ServiceBusinessInfo {
   // Fechamento (etapa Proposta): define se vai por Faturamento direto (dá Ganho)
   // ou por Pedido (avança para Aguardando Pedido).
   closing_type?: "faturamento_direto" | "pedido" | ""; // Forma de fechamento
+  // Confirmação de envio (Cobrança/Operações): trava para dar Ganho em Operações → Ganho.
+  shipping_confirmed?: "sim" | "nao" | "";
   // Aparelhos do cliente vindos do sistema externo GestorHS (somente leitura).
   // Ver ServiceDevicesSection — não confundir com `aparelhos` de ServiceCardProduct,
   // que é preenchido pelo laboratório por produto vendido.

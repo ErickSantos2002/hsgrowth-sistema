@@ -464,7 +464,10 @@ class ServiceBoardService:
                 else:
                     if not has_slot("oc"):
                         miss.append("OC (Ordem de Compra) anexada no Resumo")
-            # board 2 (Cobrança): Operações → Ganho sem regra (por enquanto).
+            elif board_id == 2:
+                # Cobrança: Operações → Ganho exige Confirmação de envio = Sim.
+                if biz.get("shipping_confirmed") != "sim":
+                    miss.append("Confirmação de envio marcada como 'Sim' (no Resumo)")
             if miss:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                     detail="Para marcar como Ganho, é preciso: " + "; ".join(miss) + ".")
