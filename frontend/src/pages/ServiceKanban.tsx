@@ -644,6 +644,7 @@ const ServiceKanban: React.FC = () => {
   const [fAssignee, setFAssignee] = useState("");
   const [fProduct, setFProduct] = useState("");
   const [fCollection, setFCollection] = useState(""); // tipo de cobrança (só board 2)
+  const [fVencimento, setFVencimento] = useState(""); // mês/ano de vencimento do aparelho, YYYY-MM (só board 2)
   const [fValue, setFValue] = useState("");
   const [fTag, setFTag] = useState("");
   const [fCriacao, setFCriacao] = useState("");
@@ -655,11 +656,11 @@ const ServiceKanban: React.FC = () => {
   const [filtersReady, setFiltersReady] = useState(false);
 
   const clearFilters = () => {
-    setFStatus("abertos"); setFAssignee(""); setFProduct(""); setFCollection(""); setFValue(""); setFTag("");
+    setFStatus("abertos"); setFAssignee(""); setFProduct(""); setFCollection(""); setFVencimento(""); setFValue(""); setFTag("");
     setFCriacao(""); setFCriacaoStart(""); setFCriacaoEnd("");
     setFFechamento(""); setFFechamentoStart(""); setFFechamentoEnd("");
   };
-  const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fProduct || !!fCollection || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
+  const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fProduct || !!fCollection || !!fVencimento || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
 
   const numId = Number(boardId);
 
@@ -709,6 +710,7 @@ const ServiceKanban: React.FC = () => {
         setFAssignee(s.fAssignee ?? "");
         setFProduct(s.fProduct ?? "");
         setFCollection(s.fCollection ?? "");
+        setFVencimento(s.fVencimento ?? "");
         setFValue(s.fValue ?? "");
         setFTag(s.fTag ?? "");
         setFCriacao(s.fCriacao ?? "");
@@ -725,9 +727,9 @@ const ServiceKanban: React.FC = () => {
   // Salva filtros quando mudam
   useEffect(() => {
     if (!numId || !filtersReady) return;
-    const s = { fStatus, fAssignee, fProduct, fCollection, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
+    const s = { fStatus, fAssignee, fProduct, fCollection, fVencimento, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
     try { localStorage.setItem(`service_kanban_filters_${numId}`, JSON.stringify(s)); } catch { /* ignora */ }
-  }, [numId, filtersReady, fStatus, fAssignee, fProduct, fCollection, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
+  }, [numId, filtersReady, fStatus, fAssignee, fProduct, fCollection, fVencimento, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
 
   // Scroll drag
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -885,6 +887,13 @@ const ServiceKanban: React.FC = () => {
     if (fCollection) {
       const ct = c.business_info?.collection_type || "";
       if (fCollection === "sem" ? !!ct : ct !== fCollection) return false;
+    }
+    // Vencimento de aparelho (mês/ano YYYY-MM): card aparece se ALGUM aparelho
+    // dele vence nesse mês. next_recalibration_date vem como "YYYY-MM-DD".
+    if (fVencimento) {
+      const eq = c.business_info?.equipamentos || [];
+      const algum = eq.some((d) => (d?.next_recalibration_date || "").startsWith(fVencimento));
+      if (!algum) return false;
     }
     // Valor
     if (fValue) {
@@ -1077,6 +1086,17 @@ const ServiceKanban: React.FC = () => {
                   { value: "atrasados", label: "🟠 Aparelhos atrasados" },
                   { value: "sem", label: "Sem tipo de cobrança" },
                 ]} />
+              </div>
+            )}
+            {numId === 2 && (
+              <div className="min-w-[150px]">
+                <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">Vence em (mês)</label>
+                <input
+                  type="month"
+                  value={fVencimento}
+                  onChange={(e) => setFVencimento(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                />
               </div>
             )}
             <div className="min-w-[150px]">
