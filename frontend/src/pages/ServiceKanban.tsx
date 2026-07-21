@@ -888,7 +888,18 @@ const ServiceKanban: React.FC = () => {
     // Busca
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
-      if (!(c.title.toLowerCase().includes(q) || (c.client_name || "").toLowerCase().includes(q) || (c.person_name || "").toLowerCase().includes(q))) return false;
+      // Também busca no nº de série e no nº do módulo dos aparelhos do card.
+      const eq = c.business_info?.equipamentos || [];
+      const emAparelhos = eq.some((d) =>
+        (d?.serial_number || "").toLowerCase().includes(q) ||
+        (d?.alcohol_module || "").toLowerCase().includes(q)
+      );
+      if (!(
+        c.title.toLowerCase().includes(q) ||
+        (c.client_name || "").toLowerCase().includes(q) ||
+        (c.person_name || "").toLowerCase().includes(q) ||
+        emAparelhos
+      )) return false;
     }
     // Status
     if (fStatus === "abertos" && (isDoneCard(c) || isLostCard(c))) return false;
@@ -994,7 +1005,7 @@ const ServiceKanban: React.FC = () => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar cards..."
+                  placeholder="Buscar por nome, série ou módulo..."
                   autoFocus
                   className="min-w-0 flex-1 bg-transparent text-slate-900 placeholder-slate-400 outline-none dark:text-white sm:w-64"
                   onBlur={() => { if (!searchTerm) setShowSearch(false); }}
