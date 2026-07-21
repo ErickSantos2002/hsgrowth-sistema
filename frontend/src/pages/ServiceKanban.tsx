@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Plus, Search, MoreVertical, Edit, Trash2,
@@ -644,7 +644,8 @@ const ServiceKanban: React.FC = () => {
   const [fAssignee, setFAssignee] = useState("");
   const [fProduct, setFProduct] = useState("");
   const [fCollection, setFCollection] = useState(""); // tipo de cobrança (só board 2)
-  const [fVencimento, setFVencimento] = useState(""); // mês/ano de vencimento do aparelho, YYYY-MM (só board 2)
+  const [fVencMes, setFVencMes] = useState(""); // mês de vencimento "01".."12" (só board 2)
+  const [fVencAno, setFVencAno] = useState(""); // ano de vencimento "2026" (só board 2)
   const [fValue, setFValue] = useState("");
   const [fTag, setFTag] = useState("");
   const [fCriacao, setFCriacao] = useState("");
@@ -656,11 +657,11 @@ const ServiceKanban: React.FC = () => {
   const [filtersReady, setFiltersReady] = useState(false);
 
   const clearFilters = () => {
-    setFStatus("abertos"); setFAssignee(""); setFProduct(""); setFCollection(""); setFVencimento(""); setFValue(""); setFTag("");
+    setFStatus("abertos"); setFAssignee(""); setFProduct(""); setFCollection(""); setFVencMes(""); setFVencAno(""); setFValue(""); setFTag("");
     setFCriacao(""); setFCriacaoStart(""); setFCriacaoEnd("");
     setFFechamento(""); setFFechamentoStart(""); setFFechamentoEnd("");
   };
-  const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fProduct || !!fCollection || !!fVencimento || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
+  const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fProduct || !!fCollection || (!!fVencMes && !!fVencAno) || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
 
   const numId = Number(boardId);
 
@@ -710,7 +711,8 @@ const ServiceKanban: React.FC = () => {
         setFAssignee(s.fAssignee ?? "");
         setFProduct(s.fProduct ?? "");
         setFCollection(s.fCollection ?? "");
-        setFVencimento(s.fVencimento ?? "");
+        setFVencMes(s.fVencMes ?? "");
+        setFVencAno(s.fVencAno ?? "");
         setFValue(s.fValue ?? "");
         setFTag(s.fTag ?? "");
         setFCriacao(s.fCriacao ?? "");
@@ -727,9 +729,9 @@ const ServiceKanban: React.FC = () => {
   // Salva filtros quando mudam
   useEffect(() => {
     if (!numId || !filtersReady) return;
-    const s = { fStatus, fAssignee, fProduct, fCollection, fVencimento, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
+    const s = { fStatus, fAssignee, fProduct, fCollection, fVencMes, fVencAno, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
     try { localStorage.setItem(`service_kanban_filters_${numId}`, JSON.stringify(s)); } catch { /* ignora */ }
-  }, [numId, filtersReady, fStatus, fAssignee, fProduct, fCollection, fVencimento, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
+  }, [numId, filtersReady, fStatus, fAssignee, fProduct, fCollection, fVencMes, fVencAno, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
 
   // Scroll drag
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -869,6 +871,17 @@ const ServiceKanban: React.FC = () => {
     }
   };
 
+  // Anos que aparecem nas datas de recalibração dos aparelhos (para o filtro de
+  // vencimento). Só anos válidos (4 dígitos) — descarta lixo tipo "1-01-01".
+  const anosVencimento = useMemo(() => {
+    const set = new Set<string>();
+    cards.forEach((c) => (c.business_info?.equipamentos || []).forEach((d) => {
+      const nd = d?.next_recalibration_date || "";
+      if (/^\d{4}-\d{2}/.test(nd)) set.add(nd.slice(0, 4));
+    }));
+    return Array.from(set).sort();
+  }, [cards]);
+
   const filteredCards = cards.filter((c) => {
     // Busca
     if (searchTerm.trim()) {
@@ -888,11 +901,13 @@ const ServiceKanban: React.FC = () => {
       const ct = c.business_info?.collection_type || "";
       if (fCollection === "sem" ? !!ct : ct !== fCollection) return false;
     }
-    // Vencimento de aparelho (mês/ano YYYY-MM): card aparece se ALGUM aparelho
-    // dele vence nesse mês. next_recalibration_date vem como "YYYY-MM-DD".
-    if (fVencimento) {
+    // Vencimento de aparelho (mês + ano): card aparece se ALGUM aparelho dele vence
+    // nesse mês/ano. next_recalibration_date vem como "YYYY-MM-DD". Só filtra quando
+    // mês E ano estão escolhidos.
+    if (fVencMes && fVencAno) {
+      const prefixo = `${fVencAno}-${fVencMes}`;
       const eq = c.business_info?.equipamentos || [];
-      const algum = eq.some((d) => (d?.next_recalibration_date || "").startsWith(fVencimento));
+      const algum = eq.some((d) => (d?.next_recalibration_date || "").startsWith(prefixo));
       if (!algum) return false;
     }
     // Valor
@@ -1090,13 +1105,29 @@ const ServiceKanban: React.FC = () => {
             )}
             {numId === 2 && (
               <div className="min-w-[150px]">
-                <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">Vence em (mês)</label>
-                <input
-                  type="month"
-                  value={fVencimento}
-                  onChange={(e) => setFVencimento(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                />
+                <SelectMenu size="sm" value={fVencMes} onChange={setFVencMes} options={[
+                  { value: "", label: "Vence no mês" },
+                  { value: "01", label: "Janeiro" },
+                  { value: "02", label: "Fevereiro" },
+                  { value: "03", label: "Março" },
+                  { value: "04", label: "Abril" },
+                  { value: "05", label: "Maio" },
+                  { value: "06", label: "Junho" },
+                  { value: "07", label: "Julho" },
+                  { value: "08", label: "Agosto" },
+                  { value: "09", label: "Setembro" },
+                  { value: "10", label: "Outubro" },
+                  { value: "11", label: "Novembro" },
+                  { value: "12", label: "Dezembro" },
+                ]} />
+              </div>
+            )}
+            {numId === 2 && (
+              <div className="min-w-[110px]">
+                <SelectMenu size="sm" value={fVencAno} onChange={setFVencAno} options={[
+                  { value: "", label: "Ano" },
+                  ...anosVencimento.map((a) => ({ value: a, label: a })),
+                ]} />
               </div>
             )}
             <div className="min-w-[150px]">
