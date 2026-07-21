@@ -9,7 +9,9 @@
  */
 import api from "./api";
 
-const BASE = "/service-products";
+// baseURL do axios é a raiz do backend; o prefixo /api/v1 vai aqui, como nos
+// outros serviços (ex.: productService usa "/api/v1/products").
+const BASE = "/api/v1/service-products";
 
 export interface ServiceProduct {
   id: number;
