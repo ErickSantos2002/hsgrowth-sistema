@@ -5,6 +5,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.2] — 22/07/2026
+
+### Adicionado
+- **Cobrança — Confirmação de envio:** novo campo no Resumo (Informações de Negócio) do board de Cobrança. Para marcar o negócio como **Ganho** na etapa **Operações**, é obrigatório que a Confirmação de envio esteja como **"Sim"**.
+- **Proposta — editar dados do cliente:** botões de edição ao lado de **"Empresa / Cliente"** e **"Aos cuidados de"** permitem ajustar, **apenas naquela proposta**, os dados exibidos (nome, CNPJ, endereço, cidade/UF, e-mail, telefone e nome/e-mail da pessoa). Os dados valem no display e no PDF; **o cadastro do Cliente não é alterado**. Há um botão para restaurar os dados do cadastro.
+
+### Melhorado
+- **Serviço — filtro de produto:** o filtro de produto no board de Serviço/Cobrança agora permite selecionar **vários produtos** (múltipla seleção com caixas de seleção), mostrando os cards de qualquer um dos produtos marcados.
+- **Serviço — OS não é mais exigida:** avançar de **Liberados do Laboratório → Dados Preenchidos** deixou de exigir a OS anexada, e o campo de anexar OS foi removido do Resumo (a OC continua disponível).
+
+### Corrigido
+- **Histórico do card — contagem de Atividades:** o número na aba "Atividades" agora reflete as **tarefas** exibidas na lista (antes contava cada evento — criada, concluída, editada — dando a impressão de que faltavam itens). O total de eventos aparece no detalhe.
+- **Proposta — PDF em produção:** corrigida a geração/visualização e download do PDF da proposta que retornava erro no ambiente de produção.
+
+---
+
 ## [1.8.1] — 14/07/2026
 
 ### Corrigido
