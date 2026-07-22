@@ -497,11 +497,8 @@ class ServiceBoardService:
 
         if board_id == 1:
             # ── Funil oficial ──
-            if "liberados do laboratório" in old_name or "liberados do laboratorio" in old_name:
-                # Liberados do Laboratório → Dados Preenchidos
-                if not has_slot("os"):
-                    miss.append("OS (Ordem de Serviço) anexada no Resumo")
-            elif "dados preenchidos" in old_name:
+            # Liberados do Laboratório → Dados Preenchidos: sem regra (OS não é mais exigida).
+            if "dados preenchidos" in old_name:
                 # Dados Preenchidos → Tentativa de Contato
                 products = self.repo.list_card_products(card.id)
                 if not products:

@@ -360,7 +360,6 @@ const ServiceSummarySection: React.FC<{
         <div className="space-y-3 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
           <h4 className="text-sm font-semibold text-slate-400">Documentos</h4>
           {[
-            { slot: "os", label: "OS (Ordem de Serviço)" },
             { slot: "oc", label: "OC (Ordem de Compra)" },
           ].map(({ slot, label }) => {
             const f = fileForSlot(slot);

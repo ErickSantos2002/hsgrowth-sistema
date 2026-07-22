@@ -303,7 +303,7 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 
 ### 5.2. Pontos em aberto (decidir antes/durante a implementação)
 - [ ] **Índice de reajuste**: fica no Resumo ou no Produto?
-- [x] **OS / Forma de fechamento**: ✅ (atualizado 19/06/2026) — **OS anexada** passou a ser obrigatória para sair de **Liberados do Laboratório**. Na **Proposta**, o avanço depende da **Forma de fechamento** (`closing_type`): *Faturamento direto* libera o Ganho ali; *Pedido* avança para Aguardando Pedido. *(O antigo checkbox `form_answered` deixou de ser trava — virou informativo.)*
+- [x] **OS / Forma de fechamento**: ✅ (atualizado 19/06/2026) — ~~**OS anexada** passou a ser obrigatória para sair de **Liberados do Laboratório**~~ **(revertido em 22/07/2026: a OS deixou de ser exigida e o campo de anexar OS foi removido do Resumo)**. Na **Proposta**, o avanço depende da **Forma de fechamento** (`closing_type`): *Faturamento direto* libera o Ganho ali; *Pedido* avança para Aguardando Pedido. *(O antigo checkbox `form_answered` deixou de ser trava — virou informativo.)*
 - [x] **Esconder por padrão**: ✅ decidido — esconde **Ganhos E Perdidos** por padrão (15/06/2026). Já implementado (ver 5.4).
 - [x] **Dependência em Vendas**: campo "É venda ou locação" criado no board de Vendas, com trava de Ganho. ✅ **Feito** (15/06/2026).
 
@@ -316,7 +316,7 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 ### 5.4. Implementação — Regras (travas)
 - [x] **Trava de avanço** por etapa. ✅ **Feito** (15/06/2026) — `_validate_advance` no `move_card` (backend) bloqueia avanço sem as obrigatoriedades; frontend `handleMove` mostra a mensagem. Regras:
   > ⚠️ **Atualizado em 19/06/2026** para o funil de 7 etapas (ver matriz na seção 6). Regras vigentes:
-  - **Liberados do Laboratório →**: **OS (Ordem de Serviço) anexada**.
+  - **Liberados do Laboratório →**: **sem regra** — avança livre. *(A OS deixou de ser exigida e o campo de anexar OS foi removido do Resumo — 22/07/2026.)*
   - **Dados Preenchidos →**: **≥1 produto** + **≥1 serviço** + **Cliente** vinculado + **Pessoa** vinculada + **Recalibração/Manutenção** (`service_type`) preenchido.
   - **Tentativa de Contato →**: **≥1 atividade concluída nesta etapa** (qualquer tipo).
   - **Proposta → Aguardando Pedido**: **Forma de fechamento = Pedido** (`closing_type`) + **Proposta vinculada** (na aba Propostas do card).
@@ -346,7 +346,7 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 
 | # | Transição | O que exige para avançar | Implementado | Testado |
 |---|---|---|---|---|
-| 1 | Liberados do Laboratório → Dados Preenchidos | **OS (Ordem de Serviço) anexada** no Resumo | ✅ | ☐ |
+| 1 | Liberados do Laboratório → Dados Preenchidos | **sem regra** — avança livre *(OS não é mais exigida; campo de anexar OS removido do Resumo — 22/07/2026)* | ✅ | ☐ |
 | 2 | Dados Preenchidos → Tentativa de Contato | **≥1 produto** + **≥1 serviço** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Recalibração/Manutenção** preenchido | ✅ | ☐ |
 | 3 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) | ✅ | ☐ |
 | 4 | Proposta → Aguardando Pedido | **Forma de fechamento = "Pedido"** + **Proposta vinculada** (na aba Propostas do card) | ✅ | ☐ |
