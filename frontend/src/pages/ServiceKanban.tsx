@@ -51,6 +51,88 @@ const COLOR_PRESETS = [
   COLORS.board.amber,  COLORS.board.red,  COLORS.board.pink, COLORS.board.gray,
 ];
 
+// ─── Filtro de produtos (múltipla seleção com checkbox) ─────────────────────────
+function ProductMultiSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+  options: { id: number | string; name: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const toggle = (id: string) =>
+    onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
+
+  const label =
+    value.length === 0
+      ? "Qualquer produto"
+      : value.length === 1
+        ? options.find((o) => String(o.id) === value[0])?.name || "1 produto"
+        : `${value.length} produtos`;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm text-slate-900 transition-colors focus:outline-none focus:ring-2 border-gray-300 focus:ring-emerald-500/20 bg-white hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+      >
+        <span className={`truncate ${value.length ? "" : "text-slate-500 dark:text-slate-400"}`}>{label}</span>
+        <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 max-h-60 w-full min-w-[220px] overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex items-center justify-between px-3 py-1">
+            <span className="text-[11px] uppercase tracking-wide text-slate-400">
+              {value.length} selecionado(s)
+            </span>
+            {value.length > 0 && (
+              <button type="button" onClick={() => onChange([])} className="text-[11px] text-blue-500 hover:underline">
+                Limpar
+              </button>
+            )}
+          </div>
+          {options.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-slate-400">Nenhum produto</p>
+          ) : (
+            options.map((o) => {
+              const id = String(o.id);
+              return (
+                <label
+                  key={id}
+                  className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  <input
+                    type="checkbox"
+                    checked={value.includes(id)}
+                    onChange={() => toggle(id)}
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span className="truncate">{o.name}</span>
+                </label>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Modal de edição do board ─────────────────────────────────────────────────
 
 interface BoardEditModalProps {
@@ -642,7 +724,7 @@ const ServiceKanban: React.FC = () => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [fStatus, setFStatus] = useState("abertos"); // abertos | todos | ganhos | perdidos
   const [fAssignee, setFAssignee] = useState("");
-  const [fProduct, setFProduct] = useState("");
+  const [fProduct, setFProduct] = useState<string[]>([]);
   const [fCollection, setFCollection] = useState(""); // tipo de cobrança (só board 2)
   const [fVencMes, setFVencMes] = useState(""); // mês de vencimento "01".."12" (só board 2)
   const [fVencAno, setFVencAno] = useState(""); // ano de vencimento "2026" (só board 2)
@@ -657,11 +739,11 @@ const ServiceKanban: React.FC = () => {
   const [filtersReady, setFiltersReady] = useState(false);
 
   const clearFilters = () => {
-    setFStatus("abertos"); setFAssignee(""); setFProduct(""); setFCollection(""); setFVencMes(""); setFVencAno(""); setFValue(""); setFTag("");
+    setFStatus("abertos"); setFAssignee(""); setFProduct([]); setFCollection(""); setFVencMes(""); setFVencAno(""); setFValue(""); setFTag("");
     setFCriacao(""); setFCriacaoStart(""); setFCriacaoEnd("");
     setFFechamento(""); setFFechamentoStart(""); setFFechamentoEnd("");
   };
-  const filtersActive = fStatus !== "abertos" || !!fAssignee || !!fProduct || !!fCollection || (!!fVencMes && !!fVencAno) || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
+  const filtersActive = fStatus !== "abertos" || !!fAssignee || fProduct.length > 0 || !!fCollection || (!!fVencMes && !!fVencAno) || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
 
   const numId = Number(boardId);
 
@@ -709,7 +791,7 @@ const ServiceKanban: React.FC = () => {
         const s = JSON.parse(raw);
         setFStatus(s.fStatus ?? "abertos");
         setFAssignee(s.fAssignee ?? "");
-        setFProduct(s.fProduct ?? "");
+        setFProduct(Array.isArray(s.fProduct) ? s.fProduct : (s.fProduct ? [String(s.fProduct)] : []));
         setFCollection(s.fCollection ?? "");
         setFVencMes(s.fVencMes ?? "");
         setFVencAno(s.fVencAno ?? "");
@@ -908,7 +990,7 @@ const ServiceKanban: React.FC = () => {
     // Pós Vendas (colaborador que agiu no card)
     if (fAssignee && !(c.collaborators || []).some((p) => String(p.id) === fAssignee)) return false;
     // Produto (card precisa ter o produto selecionado vinculado)
-    if (fProduct && !(c.products || []).some((p) => String(p.id) === fProduct)) return false;
+    if (fProduct.length && !(c.products || []).some((p) => fProduct.includes(String(p.id)))) return false;
     // Tipo de cobrança (só board 2)
     if (fCollection) {
       const ct = c.business_info?.collection_type || "";
@@ -1101,10 +1183,7 @@ const ServiceKanban: React.FC = () => {
               ]} />
             </div>
             <div className="min-w-[170px]">
-              <SelectMenu size="sm" value={fProduct} onChange={setFProduct} options={[
-                { value: "", label: "Qualquer produto" },
-                ...productOptions.map((p) => ({ value: String(p.id), label: p.name })),
-              ]} />
+              <ProductMultiSelect value={fProduct} onChange={setFProduct} options={productOptions} />
             </div>
             {numId === 2 && (
               <div className="min-w-[200px]">
