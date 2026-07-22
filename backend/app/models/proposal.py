@@ -46,6 +46,11 @@ class Proposal(Base, TimestampMixin, SoftDeleteMixin):
     #   complement, state_registration, recipient, person_type, document, phone }
     different_delivery_address = Column(Boolean, nullable=False, default=False)
     delivery_address = Column(JSON, nullable=True)
+    # Override editável dos dados do cliente/pessoa SÓ nesta proposta (não altera o cadastro).
+    # client_override (JSON): { name, document, address, city, state, email, phone,
+    #   person_name, person_email }. Campos preenchidos substituem os do Cliente/Pessoa
+    #   no display e no PDF; se null/vazio, usa o cadastro normalmente.
+    client_override = Column(JSON, nullable=True)
     notes = Column(Text, nullable=True)                    # observações
     signature = Column(String(255), nullable=True)         # assinatura
 

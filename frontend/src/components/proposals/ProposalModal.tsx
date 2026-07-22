@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, Trash2, Search, X, Building2, User as UserIcon, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Search, X, Building2, User as UserIcon, RefreshCw, Pencil } from "lucide-react";
 import { BaseModal, FormField, Input, Textarea, Button, SelectMenu } from "../common";
 import RichTextEditor from "../common/RichTextEditor";
 import proposalService, {
   ProposalCreate,
   ProposalItem,
   DeliveryAddress,
+  ClientOverride,
   LinkedCard,
 } from "../../services/proposalService";
 import serviceBoardService from "../../services/serviceBoardService";
@@ -134,6 +135,10 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   const [showPersonDropdown, setShowPersonDropdown] = useState(false);
   const personSearchRef = useRef<HTMLDivElement>(null);
 
+  // ─── Override de dados do cliente/pessoa (só nesta proposta) ───────────────
+  const [showOverrideForm, setShowOverrideForm] = useState(false);
+  const [overrideDraft, setOverrideDraft] = useState<ClientOverride>({});
+
   // ─── Product search (per row) ─────────────────────────────────────────────
   const productTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [productSearch, setProductSearch] = useState<string[]>([]);
@@ -149,6 +154,49 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   const setField = useCallback(<K extends keyof ProposalCreate>(key: K, value: ProposalCreate[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   }, []);
+
+  // ─── Override do cliente/pessoa (só nesta proposta) ──────────────────────
+  const overrideHasData = (o?: ClientOverride | null) =>
+    !!o && Object.values(o).some((v) => v != null && String(v).trim() !== "");
+  const hasOverride = overrideHasData(form.client_override);
+
+  const setDraft = (key: keyof ClientOverride, value: string) =>
+    setOverrideDraft((prev) => ({ ...prev, [key]: value }));
+
+  const openOverrideForm = () => {
+    const cur = form.client_override;
+    if (overrideHasData(cur)) {
+      setOverrideDraft({ ...cur });
+    } else {
+      setOverrideDraft({
+        name: selectedClient?.company_name || selectedClient?.name || "",
+        document: selectedClient?.document || "",
+        address: selectedClient?.address || "",
+        city: selectedClient?.city || "",
+        state: selectedClient?.state || "",
+        email: selectedClient?.email || "",
+        phone: selectedClient?.phone || "",
+        person_name: selectedPerson?.name || "",
+        person_email: selectedPerson?.email_commercial || selectedPerson?.email || "",
+      });
+    }
+    setShowOverrideForm(true);
+  };
+
+  const saveOverride = () => {
+    const cleaned: ClientOverride = {};
+    (Object.keys(overrideDraft) as (keyof ClientOverride)[]).forEach((k) => {
+      const v = overrideDraft[k];
+      if (v != null && String(v).trim() !== "") cleaned[k] = String(v).trim();
+    });
+    setField("client_override", Object.keys(cleaned).length ? cleaned : null);
+    setShowOverrideForm(false);
+  };
+
+  const restoreOverride = () => {
+    setField("client_override", null);
+    setShowOverrideForm(false);
+  };
 
   // ─── Endereço de entrega (JSON) ──────────────────────────────────────────
   const setDelivery = (key: keyof DeliveryAddress, value: string) =>
@@ -207,6 +255,24 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   // Repuxa Cliente/Pessoa/Itens do card (e opcionalmente Modelo/Aparelhos) — NÃO salva.
   const handleAtualizarDados = async () => {
     if (!refreshCard) return;
+
+    // Se o cliente/pessoa foi editado só nesta proposta, pergunta antes de repuxar.
+    let keepOverride = false;
+    if (hasOverride) {
+      const repuxar = await confirm({
+        title: "Dados do cliente editados",
+        message:
+          "Você editou os dados do cliente/pessoa nesta proposta. Deseja manter esses dados editados ou repuxar do cadastro do cliente?",
+        confirmText: "Repuxar do cadastro",
+        cancelText: "Manter editados",
+      });
+      if (repuxar) {
+        setField("client_override", null);
+      } else {
+        keepOverride = true;
+      }
+    }
+
     setRefreshing(true);
     try {
       const prefill = await proposalService.prefillFromCard(refreshCard.cardId);
@@ -236,12 +302,14 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
       });
       setForm((prev) => ({
         ...prev,
-        client_id: prefill.client_id ?? prev.client_id,
-        person_id: prefill.person_id ?? prev.person_id,
+        // Se "Manter editados", não repuxa cliente/pessoa (mantém override e vínculos atuais).
+        ...(keepOverride
+          ? {}
+          : { client_id: prefill.client_id ?? prev.client_id, person_id: prefill.person_id ?? prev.person_id }),
         ...(rebuild ? { other_items: buildDefaultOtherItems(modelo, aparelhos) } : {}),
       }));
       setItems(prefill.items ?? []);
-      hydratePickers(prefill.client_id, prefill.person_id);
+      if (!keepOverride) hydratePickers(prefill.client_id, prefill.person_id);
       if (rebuild) setEditorKey((k) => k + 1);
       showSuccess("Dados atualizados a partir do card — revise e clique em Salvar Alterações");
     } catch {
@@ -266,6 +334,8 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
     setProductResults([]);
     setShowProductDropdown([]);
     setIsSearchingProduct([]);
+    setShowOverrideForm(false);
+    setOverrideDraft({});
     setSaving(false);
 
     if (isEditing && proposalId) {
@@ -293,6 +363,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
             delivery_desc: p.delivery_desc ?? "",
             different_delivery_address: p.different_delivery_address ?? false,
             delivery_address: p.delivery_address ?? null,
+            client_override: p.client_override ?? null,
             notes: p.notes ?? "",
             signature: p.signature ?? "",
             internal_status: p.internal_status ?? "rascunho",
@@ -484,6 +555,8 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
         validity_days: form.validity_days ? Number(form.validity_days) : undefined,
         // só envia o endereço de entrega quando o checkbox está marcado
         delivery_address: form.different_delivery_address ? (form.delivery_address ?? null) : null,
+        // override do cliente/pessoa (null = usar o cadastro normalmente)
+        client_override: form.client_override ?? null,
         items: items.map((it) => ({
           ...it,
           quantity: Number(it.quantity) || 0,
@@ -576,7 +649,26 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
             <div className="space-y-4">
 
               {/* Cliente picker */}
-              <FormField label="Empresa / Cliente">
+              <FormField
+                label={
+                  <span className="flex flex-wrap items-center gap-2">
+                    Empresa / Cliente
+                    <button
+                      type="button"
+                      onClick={openOverrideForm}
+                      title="Editar dados do cliente/pessoa nesta proposta"
+                      className="rounded p-0.5 text-slate-400 transition-colors hover:text-emerald-500"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    {hasOverride && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                        ✏️ editado nesta proposta
+                      </span>
+                    )}
+                  </span>
+                }
+              >
                 {selectedClient ? (
                   <div className="flex items-start justify-between gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3">
                     <div className="min-w-0 flex-1">
@@ -649,7 +741,21 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
               )}
 
               {/* Contato (person picker) */}
-              <FormField label="Aos cuidados de">
+              <FormField
+                label={
+                  <span className="flex flex-wrap items-center gap-2">
+                    Aos cuidados de
+                    <button
+                      type="button"
+                      onClick={openOverrideForm}
+                      title="Editar dados do cliente/pessoa nesta proposta"
+                      className="rounded p-0.5 text-slate-400 transition-colors hover:text-emerald-500"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  </span>
+                }
+              >
                 {selectedPerson ? (
                   <div className="flex items-start justify-between gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3">
                     <div className="min-w-0 flex-1">
@@ -708,6 +814,90 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                   </div>
                 )}
               </FormField>
+
+              {/* Painel de edição do override (Cliente + Pessoa) — só nesta proposta */}
+              {showOverrideForm && (
+                <div className="space-y-4 rounded-lg border border-amber-500/40 bg-amber-500/5 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                      Editar dados nesta proposta
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowOverrideForm(false)}
+                      className="rounded p-1 text-slate-400 transition-colors hover:text-red-400"
+                      title="Fechar"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Estes dados valem apenas para esta proposta e não alteram o cadastro do cliente/pessoa.
+                    Campos em branco usam os dados do cadastro.
+                  </p>
+
+                  {/* Dados do cliente */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Cliente</p>
+                    <FormField label="Razão social / Nome">
+                      <Input type="text" value={overrideDraft.name ?? ""} onChange={(e) => setDraft("name", e.target.value)} maxLength={200} disabled={saving} />
+                    </FormField>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <FormField label="CNPJ / Documento">
+                        <Input type="text" value={overrideDraft.document ?? ""} onChange={(e) => setDraft("document", maskDocument(e.target.value))} placeholder="000.000.000-00" maxLength={18} disabled={saving} />
+                      </FormField>
+                      <FormField label="Telefone">
+                        <Input type="text" value={overrideDraft.phone ?? ""} onChange={(e) => setDraft("phone", maskPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} disabled={saving} />
+                      </FormField>
+                    </div>
+                    <FormField label="Endereço">
+                      <Input type="text" value={overrideDraft.address ?? ""} onChange={(e) => setDraft("address", e.target.value)} maxLength={200} disabled={saving} />
+                    </FormField>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
+                      <FormField label="Cidade" className="sm:col-span-3">
+                        <Input type="text" value={overrideDraft.city ?? ""} onChange={(e) => setDraft("city", e.target.value)} maxLength={100} disabled={saving} />
+                      </FormField>
+                      <FormField label="UF" className="sm:col-span-1">
+                        <SelectMenu
+                          value={overrideDraft.state ?? ""}
+                          onChange={(v) => setDraft("state", v)}
+                          options={[{ value: "", label: "—" }, ...UF_OPTIONS.map((uf) => ({ value: uf, label: uf }))]}
+                        />
+                      </FormField>
+                      <FormField label="E-mail" className="sm:col-span-2">
+                        <Input type="email" value={overrideDraft.email ?? ""} onChange={(e) => setDraft("email", e.target.value)} maxLength={150} disabled={saving} />
+                      </FormField>
+                    </div>
+                  </div>
+
+                  {/* Dados da pessoa (Aos cuidados de) */}
+                  <div className="space-y-3 border-t border-amber-500/20 pt-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Aos cuidados de (pessoa)</p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <FormField label="Nome">
+                        <Input type="text" value={overrideDraft.person_name ?? ""} onChange={(e) => setDraft("person_name", e.target.value)} maxLength={150} disabled={saving} />
+                      </FormField>
+                      <FormField label="E-mail">
+                        <Input type="email" value={overrideDraft.person_email ?? ""} onChange={(e) => setDraft("person_email", e.target.value)} maxLength={150} disabled={saving} />
+                      </FormField>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-amber-500/20 pt-3">
+                    <Button type="button" variant="ghost" size="sm" onClick={restoreOverride} disabled={saving}>
+                      Restaurar do cadastro
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setShowOverrideForm(false)} disabled={saving}>
+                        Cancelar
+                      </Button>
+                      <Button type="button" variant="primary" size="sm" onClick={saveOverride} disabled={saving}>
+                        Aplicar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Endereço de entrega diferente (usado na impressão/visualização — fase 2) */}
               <label className="flex cursor-pointer items-start gap-2 pt-1">

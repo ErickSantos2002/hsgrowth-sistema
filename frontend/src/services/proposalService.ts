@@ -31,6 +31,20 @@ export interface ProposalVersion {
   snapshot?: Record<string, unknown> | null;
 }
 
+// Override dos dados do cliente/pessoa — vale APENAS para esta proposta
+// (não altera o cadastro do Cliente/Pessoa). Campo vazio/ausente → cai no cadastro.
+export interface ClientOverride {
+  name?: string;
+  document?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  email?: string;
+  phone?: string;
+  person_name?: string;
+  person_email?: string;
+}
+
 // Endereço de entrega estruturado (usado na impressão/visualização — fase 2)
 export interface DeliveryAddress {
   cep?: string;
@@ -68,6 +82,7 @@ export interface Proposal {
   delivery_desc?: string | null;
   different_delivery_address?: boolean;
   delivery_address?: DeliveryAddress | null;
+  client_override?: ClientOverride | null;
   notes?: string | null;
   signature?: string | null;
   internal_status: string;
@@ -96,6 +111,8 @@ export type ProposalCreate = Partial<
   items: ProposalItem[];
   // Vínculo inicial opcional (usado no prefill / criação a partir de um card)
   service_card_id?: number | null;
+  // Override dos dados do cliente/pessoa (apenas nesta proposta)
+  client_override?: ClientOverride | null;
 };
 
 const BASE = "/api/v1/proposals";

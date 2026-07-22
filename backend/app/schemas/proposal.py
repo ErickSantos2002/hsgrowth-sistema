@@ -46,6 +46,8 @@ class ProposalBase(BaseModel):
     delivery_desc: Optional[str] = None
     different_delivery_address: bool = False
     delivery_address: Optional[dict] = None
+    # Override editável dos dados do cliente/pessoa só nesta proposta (não altera o cadastro).
+    client_override: Optional[dict] = None
     notes: Optional[str] = None
     signature: Optional[str] = None
     internal_status: Literal["rascunho", "enviada"] = "rascunho"
@@ -78,6 +80,7 @@ class ProposalUpdate(BaseModel):
     delivery_desc: Optional[str] = None
     different_delivery_address: Optional[bool] = None
     delivery_address: Optional[dict] = None
+    client_override: Optional[dict] = None
     notes: Optional[str] = None
     signature: Optional[str] = None
     internal_status: Optional[Literal["rascunho", "enviada"]] = None

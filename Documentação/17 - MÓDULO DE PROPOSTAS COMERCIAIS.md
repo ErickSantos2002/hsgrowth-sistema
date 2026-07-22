@@ -40,6 +40,10 @@ O sistema **pré-preenche** a partir do card:
 | **Observações** | texto padrão | ✅ sim |
 | **Aos cuidados de** (no PDF) | **e-mail** da pessoa vinculada | — |
 
+### 2.3. Editar dados do cliente só na proposta (override) *(adicionado 22/07/2026)*
+
+No modal de editar proposta, os rótulos **"Empresa / Cliente"** e **"Aos cuidados de"** têm um botão de **lápis** que abre um painel para editar, **apenas nesta proposta**, os dados exibidos: **Razão social/Nome, CNPJ/Documento, Endereço, Cidade, UF, E-mail, Telefone** (cliente) e **Nome, E-mail** (pessoa). Esses valores são guardados em `proposals.client_override` (JSON) e têm prioridade sobre o cadastro no **display** e no **PDF**; campos vazios caem no cadastro. **O cadastro do Cliente/Pessoa nunca é alterado.** Um botão **"Restaurar do cadastro"** limpa o override. Ao usar **"Atualizar dados"** com um override ativo, o sistema **pergunta** se mantém os dados editados ou repuxa do cadastro.
+
 ---
 
 ## 3. Regras de negócio

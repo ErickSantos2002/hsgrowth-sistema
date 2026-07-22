@@ -381,6 +381,28 @@ def _build_html(proposal: Proposal) -> str:
             person.phone_commercial or person.phone_whatsapp or person.phone or ""
         )
 
+    # ── Override editável (dados editados só nesta proposta) ──
+    # Campos preenchidos substituem os do cadastro; os vazios mantêm o do Cliente/Pessoa.
+    ov = proposal.client_override or {}
+    if ov.get("name"):
+        client_display = _esc(ov["name"])
+    if ov.get("document"):
+        client_document = _fmt_document(ov["document"])
+    if ov.get("address"):
+        client_address = _esc(ov["address"])
+    if ov.get("city") or ov.get("state"):
+        _c = ov.get("city") or ""
+        _s = ov.get("state") or ""
+        client_city_state = _esc(f"{_c} - {_s}" if _c and _s else (_c or _s))
+    if ov.get("email"):
+        client_email = _esc(ov["email"])
+    if ov.get("phone"):
+        client_phone = _esc(ov["phone"])
+    if ov.get("person_name"):
+        person_name = _esc(ov["person_name"])
+    if ov.get("person_email"):
+        person_email = _esc(ov["person_email"])
+
     # Linha "Aos cuidados de" — email da pessoa, fallback nome
     aos_cuidados = person_email or person_name or "—"
 

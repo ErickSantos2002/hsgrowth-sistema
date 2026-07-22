@@ -74,8 +74,10 @@ class ProposalService:
         marker, linked = self._derive_linked_cards(proposal)
         resp.marker = marker
         resp.linked_cards = linked
-        resp.client_name = proposal.client.display_name if proposal.client else None
-        resp.client_document = proposal.client.document if proposal.client else None
+        # Override editável na proposta tem prioridade sobre o cadastro do Cliente.
+        ov = proposal.client_override or {}
+        resp.client_name = (ov.get("name") or None) or (proposal.client.display_name if proposal.client else None)
+        resp.client_document = (ov.get("document") or None) or (proposal.client.document if proposal.client else None)
         resp.items = [ProposalItemResponse.model_validate(i) for i in proposal.items]
         return resp
 
