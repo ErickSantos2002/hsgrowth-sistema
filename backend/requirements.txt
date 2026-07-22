@@ -67,5 +67,6 @@ ruff==0.1.11
 ipython==8.20.0
 
 # Geração de PDF (propostas)
+# rebuild 2026-07-22: força reinstalação do venv em produção (weasyprint faltava — build multi-stage estava com cache antigo)
 weasyprint==62.3
 pydyf==0.10.0  # pin: pydyf 0.11+ removeu Stream.transform (incompat. weasyprint 62.3)
