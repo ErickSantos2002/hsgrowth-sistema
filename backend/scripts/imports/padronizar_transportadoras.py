@@ -22,8 +22,14 @@ Regras de conversão:
     (preenchidos pelos scripts de lote).
 
 IDEMPOTÊNCIA: se o arquivo de saída já existir, o controle de importação
-(SDR/Canal/Status por CNPJ) é preservado — assim regerar NÃO re-importa lotes
-já subidos (evita duplicatas).
+('Importado' + SDR/Canal por CNPJ) é preservado — assim regerar NÃO re-importa
+lotes já subidos (evita duplicatas).
+
+ANTI-DUPLICATA (CNPJ já no CRM): a cada execução consulta os CNPJs já cadastrados
+no CRM. As linhas pendentes cujo CNPJ já existe são jogadas para o FINAL e marcadas
+Status_Importacao = "CNPJ_no_CRM" — os geradores de lote pulam qualquer linha com
+Status preenchido, então elas não sobem (ficam para revisão futura). Rode a partir
+da pasta backend/ (precisa do .env para conectar no banco).
 """
 
 import os
@@ -53,6 +59,34 @@ P_SDR, P_CANAL, P_DETALHE = 34, 35, 36
 P_STATUS = 51
 P_LINKEDIN_EMP = 52   # NOVA coluna: LinkedIn da empresa -> client.linkedin_url
 P_NOTES_CLI = 53      # NOVA coluna: Observações do cliente -> client.notes (link SSMA)
+
+STATUS_IMPORTED = "Importado"
+STATUS_DUP_CRM  = "CNPJ_no_CRM"   # marca linhas cujo CNPJ já está cadastrado no CRM
+
+
+def cnpj14(v):
+    """Normaliza qualquer CNPJ (formatado ou não) para 14 dígitos, ou None."""
+    if v is None:
+        return None
+    d = "".join(c for c in str(v) if c.isdigit())
+    return d.zfill(14) if d else None
+
+
+def load_crm_cnpjs():
+    """Consulta o CRM e retorna o conjunto de CNPJs (14 dígitos) já cadastrados."""
+    import sys
+    backend_dir = os.path.dirname(os.path.dirname(SCRIPT_DIR))  # .../backend
+    if backend_dir not in sys.path:
+        sys.path.insert(0, backend_dir)
+    from app.db.session import SessionLocal
+    from app.models.client import Client
+
+    db = SessionLocal()
+    try:
+        docs = db.query(Client.document).filter(Client.is_deleted == False).all()
+    finally:
+        db.close()
+    return {c for (doc,) in docs if (c := cnpj14(doc))}
 
 
 def faixa_funcionarios(val):
@@ -162,8 +196,11 @@ def main():
 
     prior = load_prior_control()
     if prior:
-        n_imp = sum(1 for v in prior.values() if v[3] == "Importado")
+        n_imp = sum(1 for v in prior.values() if v[3] == STATUS_IMPORTED)
         print(f"Controle anterior carregado: {len(prior)} CNPJs ({n_imp} já 'Importado' preservados).")
+
+    crm_cnpjs = load_crm_cnpjs()
+    print(f"CNPJs já cadastrados no CRM: {len(crm_cnpjs)}")
 
     # 1) Copia as 3 linhas de cabeçalho do template padrão + coluna nova
     wb_std = openpyxl.load_workbook(TEMPLATE_STD, read_only=True)
@@ -189,7 +226,7 @@ def main():
     ws_src = wb_src[SRC_SHEET]
 
     records = []
-    total = com_func = com_fatur = com_site = com_linkedin = com_ssma = preservados = 0
+    total = com_func = com_fatur = com_site = com_linkedin = com_ssma = preservados = dup_crm = 0
     for orig, r in enumerate(range(SRC_DATA, ws_src.max_row + 1)):
         cnpj = clean(ws_src.cell(r, N_CNPJ).value)
         razao = clean(ws_src.cell(r, N_RAZAO).value)
@@ -208,7 +245,7 @@ def main():
         com_site     += 1 if site else 0
         com_linkedin += 1 if linkedin else 0
         com_ssma      += 1 if ssma else 0
-        if ctrl and ctrl[3] == "Importado":
+        if ctrl and ctrl[3] == STATUS_IMPORTED:
             preservados += 1
         total += 1
 
@@ -223,17 +260,22 @@ def main():
             "email1": clean(ws_src.cell(r, N_EMAIL1).value),
             "email2": clean(ws_src.cell(r, N_EMAIL2).value),
             "ssma": ssma, "linkedin": linkedin, "ctrl": ctrl,
+            "in_crm": cnpj14(cnpj) in crm_cnpjs,
         })
 
     wb_src.close()
 
-    # ORDENAÇÃO: bloco já 'Importado' primeiro (ordem original), depois os PENDENTES
-    # com site (ordem original) e por último os pendentes sem site. Assim os próximos
-    # lotes priorizam automaticamente quem tem Website.
+    # ORDENAÇÃO das linhas (define quais os próximos lotes pegam primeiro):
+    #   0) bloco já 'Importado' (ordem original) — pulado pelos lotes
+    #   1) PENDENTES novos (CNPJ não está no CRM): com site primeiro, depois sem site
+    #   2) PENDENTES cujo CNPJ JÁ está no CRM — jogados para o FINAL e marcados
+    #      'CNPJ_no_CRM' (não sobem; ficam para revisão futura)
     def sort_key(rec):
-        imported = rec["ctrl"] and rec["ctrl"][3] == "Importado"
+        imported = rec["ctrl"] and rec["ctrl"][3] == STATUS_IMPORTED
         if imported:
             return (0, 0, rec["orig"])
+        if rec["in_crm"]:
+            return (2, 0, rec["orig"])
         return (1, 0 if rec["site"] else 1, rec["orig"])
 
     records.sort(key=sort_key)
@@ -256,23 +298,33 @@ def main():
         ws_out.cell(dest, P_NOTES_CLI).value    = rec["ssma"]
 
         ctrl = rec["ctrl"]
-        if ctrl:
+        imported = ctrl and ctrl[3] == STATUS_IMPORTED
+        if imported:
+            # linha já subida em lote anterior — preserva o controle
             ws_out.cell(dest, P_SDR).value     = ctrl[0]
             ws_out.cell(dest, P_CANAL).value   = ctrl[1]
             ws_out.cell(dest, P_DETALHE).value = ctrl[2]
-            ws_out.cell(dest, P_STATUS).value  = ctrl[3]
+            ws_out.cell(dest, P_STATUS).value  = STATUS_IMPORTED
+        elif rec["in_crm"]:
+            # CNPJ já cadastrado no CRM (nunca subido por nós) — marca e joga p/ o final
+            ws_out.cell(dest, P_STATUS).value  = STATUS_DUP_CRM
+            dup_crm += 1
+        # else: pendente novo — Status vazio
 
         dest += 1
 
     wb_out.save(OUT_FILE)
 
+    pend_novos = total - preservados - dup_crm
     print(f"Linhas padronizadas : {total}")
     print(f"  Faixa Funcionários : {com_func}")
     print(f"  Faixa Faturamento  : {com_fatur}")
     print(f"  Site (URL)         : {com_site}")
     print(f"  LinkedIn empresa   : {com_linkedin}")
     print(f"  SSMA (notes cliente): {com_ssma}")
-    print(f"  'Importado' preservados : {preservados}")
+    print(f"  'Importado' preservados      : {preservados}")
+    print(f"  'CNPJ_no_CRM' (dupes ao final): {dup_crm}")
+    print(f"  Pendentes NOVOS (para subir) : {pend_novos}")
     print(f"Arquivo gerado: {os.path.basename(OUT_FILE)}")
     print("=" * 60)
 

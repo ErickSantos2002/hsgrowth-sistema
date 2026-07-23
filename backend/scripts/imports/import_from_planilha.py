@@ -307,6 +307,19 @@ class RowReader:
 # FUNÇÕES DE CRIAÇÃO NO BANCO
 # ============================================================
 
+def find_existing_client_id(db, cnpj_digits: str | None) -> int | None:
+    """Retorna o id de um cliente existente com o mesmo CNPJ (14 dígitos), ou None."""
+    if not cnpj_digits:
+        return None
+    existing_clients = db.query(Client).filter(Client.is_deleted == False).all()
+    for c in existing_clients:
+        if c.document:
+            doc_digits = "".join(ch for ch in c.document if ch.isdigit()).zfill(14)
+            if doc_digits == cnpj_digits:
+                return c.id
+    return None
+
+
 def get_or_create_client(db, reader: RowReader, row: int) -> int | None:
     """
     Busca cliente pelo CNPJ (somente dígitos) ou cria um novo.
@@ -322,13 +335,10 @@ def get_or_create_client(db, reader: RowReader, row: int) -> int | None:
 
     # Tenta localizar cliente existente pelo CNPJ (sempre compara 14 dígitos)
     if cnpj_digits:
-        existing_clients = db.query(Client).filter(Client.is_deleted == False).all()
-        for c in existing_clients:
-            if c.document:
-                doc_digits = "".join(ch for ch in c.document if ch.isdigit()).zfill(14)
-                if doc_digits == cnpj_digits:
-                    print(f"    Cliente ja existe (CNPJ ...{cnpj_digits[-4:]}): {c.name}")
-                    return c.id
+        existing_id = find_existing_client_id(db, cnpj_digits)
+        if existing_id:
+            print(f"    Cliente ja existe (CNPJ ...{cnpj_digits[-4:]}): id={existing_id}")
+            return existing_id
 
     # Cria novo cliente com os dados da planilha
     new_client = Client(
@@ -597,6 +607,7 @@ def import_from_sheet(filename: str | None = None):
         "clients_created": 0,
         "persons_created": 0,
         "activities_created": 0,
+        "skipped_existing_cnpj": 0,
         "warnings": [],
     }
 
@@ -622,6 +633,13 @@ def import_from_sheet(filename: str | None = None):
             print(f"\n[{stats['total']}] Linha {row_num}: {razao_social}")
 
             try:
+                # --- Guardrail anti-duplicata: pula se o CNPJ já existe no CRM ---
+                cnpj_digits = clean_cnpj(reader.get(row_num, "CNPJ *"))
+                if find_existing_client_id(db, cnpj_digits):
+                    print(f"    PULADO  : CNPJ ...{cnpj_digits[-4:]} já cadastrado no CRM — negócio não criado")
+                    stats["skipped_existing_cnpj"] += 1
+                    continue
+
                 # --- SDR ---
                 sdr_name = clean_str(reader.get(row_num, "SDR_Responsavel *"))
                 sdr_id = find_sdr_user(db, sdr_name) if sdr_name else None
@@ -704,6 +722,7 @@ def import_from_sheet(filename: str | None = None):
     print(f"  Clientes criados      : {stats['clients_created']}")
     print(f"  Pessoas criadas       : {stats['persons_created']}")
     print(f"  Atividades criadas    : {stats['activities_created']}")
+    print(f"  Pulados (CNPJ no CRM) : {stats['skipped_existing_cnpj']}")
     print(f"  Erros                 : {stats['errors']}")
     if stats["warnings"]:
         print(f"\n  Avisos ({len(stats['warnings'])}):")

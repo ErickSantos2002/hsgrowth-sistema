@@ -252,6 +252,7 @@ Padronizada para o layout CRM via `padronizar_transportadoras.py` → **`Planilh
 | Transp. Lote 2 | 09/07/2026 | 200 | Karolaine (100), Miguel (100) | 8804–9006 | ✅ Importado |
 | Transp. Lote 3 | 10/07/2026 | 100 | Miguel | 9026–9125 | ✅ Importado |
 | Transp. Lote 4 | 14/07/2026 | 100 | Karolaine (50), Claudia (50) | 9140–9240 | ✅ Importado |
+| Transp. Lote 5 | 23/07/2026 | 100 | Miguel (50), Karolaine (50) | 9341–9440 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
 **Obs. Transp. Lote 2:** o range 8804–9006 inclui 1 card orgânico de Karolaine (Lista fria) criado por SDR na janela; o lote em si é 100/100 (200 linhas, 0 erros).
@@ -260,7 +261,11 @@ Padronizada para o layout CRM via `padronizar_transportadoras.py` → **`Planilh
 
 **Obs. Transp. Lote 4:** 100/100 com site. 79 clientes novos (com `website` + `linkedin_url` + `notes`) e 21 reaproveitados por CNPJ.
 
-**Total Transportadoras importado:** 700 | **Disponíveis:** 3.356 de 4.056 (sendo **1.814 com site** e 1.542 sem).
+**Anti-duplicata (a partir de 23/07/2026):** o `padronizar_transportadoras.py` agora consulta os CNPJs já cadastrados no CRM e joga as linhas pendentes com CNPJ duplicado para o **final**, marcadas `Status_Importacao = "CNPJ_no_CRM"`. Os geradores de lote pulam **qualquer** linha com Status preenchido, então essas não sobem (ficam para revisão futura). O `import_from_planilha.py` também ganhou um guardrail: pula qualquer linha cujo CNPJ já exista no CRM (reportado como "Pulados (CNPJ no CRM)"). Na 1ª execução: **169 CNPJs** já existiam no CRM → separados; **3.187 pendentes novos**.
+
+**Obs. Transp. Lote 5:** primeiro lote pós anti-duplicata. **100 clientes novos (100/100)** — nenhum reaproveitado, 0 pulados. website 100, notes 100, linkedin 98.
+
+**Total Transportadoras importado:** 800 | **Pendentes novos:** 3.087 de 4.056 | **Separados (CNPJ já no CRM):** 169.
 
 ---
 
