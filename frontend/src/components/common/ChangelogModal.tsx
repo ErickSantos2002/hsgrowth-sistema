@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.4",
+    date: "23/07/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Exportar Cards — Motivo de perda: a coluna 'Motivo de perda' da planilha exportada vinha vazia. Agora o motivo é preenchido corretamente ao exportar os cards (inclusive os perdidos).",
+      },
+      {
+        type: "fix",
+        text: "Kanban — etiqueta 'Parado': as etiquetas 'Parado 3d+' e 'Parado 7d+' deixaram de aparecer em cards de Negócio Ganho e Negócio Perdido — como são etapas finais, o card sempre ficaria 'parado' e a etiqueta não fazia sentido ali.",
+      },
+    ],
+  },
+  {
     version: "1.8.3",
     date: "23/07/2026",
     entries: [
