@@ -69,31 +69,37 @@ def test_add_service_to_card_and_summary(db):
     assert summary.total == 150.0         # 200 - 50
 
 
-def test_card_value_from_linked_proposals(db):
-    """Valor do negócio = soma dos totais das propostas vinculadas (N:N)."""
+def test_card_value_from_services(db):
+    """Valor do negócio = soma dos serviços do card − desconto global + frete."""
     from app.services.service_board_service import deal_value_by_card
-    from app.services.proposal_service import ProposalService
-    from app.schemas.proposal import ProposalCreate, ProposalItemCreate
 
     _, _, card = _make_board_card(db)
     board_svc = ServiceBoardService(db)
+    cat = ServiceCatalogService(db)
 
-    # Sem proposta vinculada → 0
+    # Sem serviço → 0
     assert deal_value_by_card(db, [card.id]).get(card.id, 0.0) == 0.0
 
-    psvc = ProposalService(db)
-    # Proposta 1: itens 395 + frete 200 - desconto 0 = 595
-    psvc.create(ProposalCreate(service_card_id=card.id, shipping=200, items=[
-        ProposalItemCreate(description="Calibração", quantity=1, unit_price=395),
-    ]))
-    # Proposta 2: itens 100 = 100
-    psvc.create(ProposalCreate(service_card_id=card.id, items=[
-        ProposalItemCreate(description="Extra", quantity=1, unit_price=100),
-    ]))
+    s1 = cat.create_service(ServiceCreate(name="Calibração A", unit_price=395), _fake_user())
+    s2 = cat.create_service(ServiceCreate(name="Calibração B", unit_price=100), _fake_user())
+    # 2×395 − 90 = 700 ; 1×100 = 100 → total dos serviços = 800
+    board_svc.add_card_service(card.id, ServiceCardServiceCreate(service_id=s1.id, quantity=2, unit_price=395, discount=90), _fake_user())
+    board_svc.add_card_service(card.id, ServiceCardServiceCreate(service_id=s2.id, quantity=1, unit_price=100), _fake_user())
+    assert deal_value_by_card(db, [card.id]).get(card.id, 0.0) == 800.0
 
-    # Valor do card = 595 + 100 = 695 (soma das 2 propostas)
-    assert deal_value_by_card(db, [card.id]).get(card.id, 0.0) == 695.0
-    assert board_svc._cards_aggregates([card.id])[card.id]["value"] == 695.0
+    # Desconto global R$ 50 + frete R$ 30 → 800 − 50 + 30 = 780
+    card.global_discount = 50
+    card.global_discount_type = "value"
+    card.shipping = 30
+    db.commit()
+    assert deal_value_by_card(db, [card.id]).get(card.id, 0.0) == 780.0
+
+    # Desconto global 10% + frete 30 → 800 − 80 + 30 = 750
+    card.global_discount = 10
+    card.global_discount_type = "percent"
+    db.commit()
+    assert deal_value_by_card(db, [card.id]).get(card.id, 0.0) == 750.0
+    assert board_svc._cards_aggregates([card.id])[card.id]["value"] == 750.0
 
 
 def test_proposal_prefill_uses_services(db):

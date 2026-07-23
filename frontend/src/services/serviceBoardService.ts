@@ -81,6 +81,10 @@ export interface ServiceCard {
   contact_info?: Record<string, any>;
   payment_info?: Record<string, any>;
   business_info?: ServiceBusinessInfo;
+  // Desconto global + frete sobre o total dos serviços do card
+  global_discount?: number;
+  global_discount_type?: "value" | "percent";
+  shipping?: number;
   client_id?: number;
   person_id?: number;
   client_name?: string;
@@ -251,6 +255,9 @@ export interface UpdateServiceCardRequest {
   contact_info?: Record<string, any>;
   payment_info?: Record<string, any> | null;
   business_info?: ServiceBusinessInfo | null;
+  global_discount?: number;
+  global_discount_type?: "value" | "percent";
+  shipping?: number;
   client_id?: number | null;
   person_id?: number | null;
   position?: number;

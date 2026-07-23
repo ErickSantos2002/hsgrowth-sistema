@@ -1,8 +1,16 @@
 # 16 - FLUXO E REGRAS DO BOARD DE SERVIÇOS
 
-> **Documento vivo.** Última atualização: **02/07/2026**
+> **Documento vivo.** Última atualização: **23/07/2026**
 > Relacionado: [15 - MÓDULO DE SERVIÇOS.md](15%20-%20MÓDULO%20DE%20SERVIÇOS.md)
 > 📌 **Fontes da verdade (atuais):** estrutura → **seção 2**; regras de avanço → **seção 6**.
+>
+> 🔄 **Mudança em 23/07/2026 — Propostas descontinuadas no CRM** (migradas p/ sistema externo):
+> - Onde antes se exigia a proposta **vinculada** ao card (aba Propostas), agora é a **Proposta anexada**
+>   — um **documento** na seção **Documentos** do Resumo (slot `proposta`, com **excluir**),
+>   igual à OC. A página "Propostas" da sidebar foi removida. Ver [17](17%20-%20MÓDULO%20DE%20PROPOSTAS%20COMERCIAIS.md).
+> - **Valor do card (Valor do negócio)** vem dos **Serviços do card** (qtd × preço − desconto),
+>   com **desconto global** (R$/%) e **frete**, editáveis na seção Serviços. Fórmula:
+>   `Σ serviços − desconto global + frete`. (Antes vinha da soma das propostas.)
 >
 > ⚠️ **Funil reestruturado em 19/06/2026.** O time simplificou o funil de **9 → 7 etapas**
 > (removidas: Negócio Fechado, Oportunidade Existente, Operações; renomeadas as de laboratório).
@@ -58,7 +66,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 | Seção | Campo | Origem | Obrigatório |
 |---|---|---|---|
-| **Valores** | Valor do negócio (auto pelos produtos) | auto | — |
+| **Valores** | Valor do negócio (auto: serviços − desc. global + frete) | auto | — |
 | **Triagem** | Recalibração e/ou Manutenção (`service_type`) | Serviço | ✅ p/ sair de Dados Preenchidos |
 | **Proposta** | Formulário de Coleta de Dados enviado (`form_answered`, checkbox) | Serviço | ❌ (informativo) |
 | **Proposta** | **Forma de fechamento** (`closing_type`: Faturamento direto / Pedido) | Serviço | ✅ na etapa Proposta |
@@ -70,9 +78,13 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 > 🔓 **Índice de reajuste**: ainda **não implementado** — ponto em aberto (fica no Resumo ou no Produto/aparelho?).
 
-### 3.1.1. Módulo de Propostas Comerciais *(atualizado 03/07/2026)*
+### 3.1.1. Módulo de Propostas Comerciais *(⛔ descontinuado 23/07/2026 — histórico)*
 
-**Propostas Comerciais** é um módulo exclusivo do módulo de Serviço, composto por:
+> ⛔ **Descontinuado.** Propostas migradas para sistema externo; ver banner no topo e
+> [doc 17](17%20-%20MÓDULO%20DE%20PROPOSTAS%20COMERCIAIS.md). Hoje a proposta é só um **documento anexado**
+> (slot `proposta`, seção Documentos). O texto abaixo é **referência histórica** do módulo antigo.
+
+**Propostas Comerciais** era um módulo exclusivo do módulo de Serviço, composto por:
 - **Página na sidebar** ("Propostas"): lista todas as propostas do sistema.
 - **Seção "Propostas" no card de Serviço** (abaixo de Produtos): permite criar, listar, vincular e desvincular propostas ao card.
 
@@ -92,7 +104,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 
 **Impacto nas regras de avanço:**
 - O antigo anexo "Proposta Comercial" foi **removido da seção Documentos do Resumo** (permanecem lá apenas OS e OC).
-- A regra de avanço nas etapas **Proposta** (board de Serviço, transições 4 e 5) e **Proposta → Operações** (board de Cobrança) passa a exigir **≥1 proposta vinculada ao card** (aba Propostas do card), em vez de um documento anexado.
+- A regra de avanço nas etapas **Proposta** (board de Serviço, transições 4 e 5) e **Proposta → Operações** (board de Cobrança) exige a **Proposta anexada** (documento no Resumo → Documentos, slot `proposta`).
 
 > ✅ **Geração de PDF** (WeasyPrint, marca H&S) implementada — o PDF é anexado automaticamente a cada card vinculado e pode ser visto/baixado pela seção Propostas e pela página da sidebar.
 
@@ -102,7 +114,7 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 - **Página na sidebar** ("Serviço", rota `/service-catalog`), exclusiva do time de Serviço — cadastro igual ao de Produtos (Nome, Descrição, Código/SKU, Preço, Categoria, Ativo).
 - **Seção "Serviços" no card** (abaixo de Produtos): escolher serviço + quantidade + preço (do catálogo, editável) + desconto. Sem aparelhos.
 - **Regra de avanço:** as etapas que exigiam "≥1 produto" agora exigem **≥1 produto E ≥1 serviço** (board 1 "Dados Preenchidos→"; board 2 "Oportunidade Existente→").
-- **Valor do card (Valor do negócio):** exibido no Resumo, no Kanban e na dashboard, é a **soma dos totais das propostas vinculadas** ao card (cada proposta = itens + frete − desconto; propostas soft-deletadas ignoradas). Uma proposta pode estar vinculada a vários cards (N:N) e um card pode ter várias propostas → soma. *(atualizado 09/07/2026; antes vinha dos serviços/produtos)*
+- **Valor do card (Valor do negócio):** exibido no Resumo, no Kanban e na dashboard, é a **soma dos serviços do card** (qtd × preço − desconto por serviço), com **desconto global** (R$/%) e **frete** aplicados sobre o total: `Σ serviços − desconto global + frete`. Desconto global e frete são colunas do card (`global_discount`, `global_discount_type`, `shipping`), editáveis na seção Serviços. *(atualizado 23/07/2026; antes vinha das propostas vinculadas)*
 - **Proposta:** o prefill dos itens da proposta passa a vir dos **serviços** do card (produtos seguem em "Outros itens" como Modelo/Aparelhos).
 - Tabelas: `services` (catálogo) e `service_card_services` (vínculo). Detalhes no doc 17.
 
@@ -213,8 +225,8 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
   - Enviar ao Decisor: Proposta + Formulário de Coleta de Dados
     - ℹ️ O **Formulário de Coleta de Dados** é apenas **enviado ao cliente** — **não** exige anexo no card.
 - **Obrigatoriedade**:
-  1. **≥1 proposta vinculada** ao card (aba Propostas do card)
-- **Avanço → Proposta**: ≥1 proposta vinculada ao card.
+  1. **Proposta anexada** (documento no Resumo → Documentos)
+- **Avanço → Proposta**: Proposta anexada (documento no Resumo).
 - **Perdido**: igual ao padrão (ver 4.X).
   - **Gatilho**: Não conseguiu contato com o decisor até o fim da cadência.
   - **Automação (futuro)**: criação do próximo serviço em 90 dias + cadência de resgate.
@@ -228,8 +240,8 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
   - Coletar OS (Ordem de Serviço)
 - **Obrigatoriedades** (confirmadas):
   1. Fazer **1 atividade de follow-up** (verificar a proposta enviada + o Formulário de Coleta de Dados)
-  2. **≥1 proposta vinculada** ao card (aba Propostas do card)
-- **Avanço → Operações**: feita a atividade de follow-up **E** ≥1 proposta vinculada ao card.
+  2. **Proposta anexada** (documento no Resumo → Documentos)
+- **Avanço → Operações**: feita a atividade de follow-up **E** Proposta anexada (documento no Resumo).
 - 🔓 **Em aberto (decidir na implementação)**: a imagem indica também *"Formulário de Coleta de Dados respondido"* e *"OS anexada"* como obrigatórios. Como a OS já pode ter sido anexada na etapa 4.3 (se o aparelho foi recebido) e o Formulário respondido depende do retorno do cliente, **deixar para validar na implementação** se entram ou não como trava aqui.
 - **Perdido**:
   - **Gatilho**: Cliente não aceitou a proposta.
@@ -319,13 +331,13 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
   - **Liberados do Laboratório →**: **sem regra** — avança livre. *(A OS deixou de ser exigida e o campo de anexar OS foi removido do Resumo — 22/07/2026.)*
   - **Dados Preenchidos →**: **≥1 produto** + **≥1 serviço** + **Cliente** vinculado + **Pessoa** vinculada + **Recalibração/Manutenção** (`service_type`) preenchido.
   - **Tentativa de Contato →**: **≥1 atividade concluída nesta etapa** (qualquer tipo).
-  - **Proposta → Aguardando Pedido**: **Forma de fechamento = Pedido** (`closing_type`) + **Proposta vinculada** (na aba Propostas do card).
-  - **Proposta → Ganho (direto)**: **Forma de fechamento = Faturamento direto** + **Proposta vinculada** (na aba Propostas do card).
+  - **Proposta → Aguardando Pedido**: **Forma de fechamento = Pedido** (`closing_type`) + **Proposta anexada** (documento no Resumo → Documentos).
+  - **Proposta → Ganho (direto)**: **Forma de fechamento = Faturamento direto** + **Proposta anexada** (documento no Resumo → Documentos).
   - **Aguardando Pedido → Ganho**: **OC anexada**.
   - **Negócio Ganho / Perdido**: só pelos **botões** (stepper não move para terminais). Ao marcar, as **atividades pendentes são concluídas automaticamente — exceto follow-up**.
   - Voltar etapa é livre. **Regras só valem no funil oficial** (`SERVICE_FUNNEL_BOARD_IDS = {1}`); boards duplicados são kanban livre.
   - ⚙️ "Atividade concluída nesta etapa" = `category=atividade`, `is_completed`, concluída **após** o card entrar na etapa atual.
-- [x] **Botão Ganho**: habilitado em **"Aguardando Pedido"** (caminho Pedido → exige OC) **ou** em **"Proposta"** com **Forma de fechamento = Faturamento direto** (→ exige **Proposta vinculada** na aba Propostas do card); opaco/desabilitado nas demais. ✅ **Atualizado** (19/06/2026) — `handleWin` (`ServiceCardDetails.tsx`).
+- [x] **Botão Ganho**: habilitado em **"Aguardando Pedido"** (caminho Pedido → exige OC) **ou** em **"Proposta"** com **Forma de fechamento = Faturamento direto** (→ exige **Proposta anexada** (documento no Resumo)); opaco/desabilitado nas demais. ✅ **Atualizado** (19/06/2026) — `handleWin` (`ServiceCardDetails.tsx`).
 - [x] **Esconder cards Ganhos e Perdidos** por padrão no board. ✅ **Já implementado** — filtro padrão "Apenas Abertos" (`fStatus="abertos"`) exclui done/lost; aparecem só via filtro (Todos/Ganhos/Perdidos).
 - [x] **Motivos de Perda**: lista do board de Serviços substituída pelos 10 motivos oficiais. ✅ **Feito** (15/06/2026) — `LOSS_REASONS` em `ServiceCardDetails.tsx`.
 
@@ -349,14 +361,14 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 | 1 | Liberados do Laboratório → Dados Preenchidos | **sem regra** — avança livre *(OS não é mais exigida; campo de anexar OS removido do Resumo — 22/07/2026)* | ✅ | ☐ |
 | 2 | Dados Preenchidos → Tentativa de Contato | **≥1 produto** + **≥1 serviço** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Recalibração/Manutenção** preenchido | ✅ | ☐ |
 | 3 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) | ✅ | ☐ |
-| 4 | Proposta → Aguardando Pedido | **Forma de fechamento = "Pedido"** + **Proposta vinculada** (na aba Propostas do card) | ✅ | ☐ |
-| 5 | Proposta → **Negócio Ganho** *(direto)* | **Forma de fechamento = "Faturamento direto"** + **Proposta vinculada** (na aba Propostas do card) · botão Ganho acende na Proposta só nesse caso | ✅ | ☐ |
+| 4 | Proposta → Aguardando Pedido | **Forma de fechamento = "Pedido"** + **Proposta anexada** (documento no Resumo → Documentos) | ✅ | ☐ |
+| 5 | Proposta → **Negócio Ganho** *(direto)* | **Forma de fechamento = "Faturamento direto"** + **Proposta anexada** (documento no Resumo → Documentos) · botão Ganho acende na Proposta só nesse caso | ✅ | ☐ |
 | 6 | Aguardando Pedido → **Negócio Ganho** | **só pelo botão Ganho** · **OC (Ordem de Compra) anexada** | ✅ | ☐ |
 | 7 | Qualquer etapa → **Negócio Perdido** | **só pelo botão Perdido** · exige **Motivo da perda** (modal) | ✅ | ☐ |
 
 > **Forma de fechamento** (campo no Resumo): define o caminho na etapa Proposta —
-> **Faturamento direto** libera o botão Ganho ali mesmo (exige **Proposta vinculada** na aba Propostas do card);
-> **Pedido** obriga avançar para "Aguardando Pedido" (exige **Proposta vinculada** na aba Propostas do card) e depois o Ganho exige a OC.
+> **Faturamento direto** libera o botão Ganho ali mesmo (exige **Proposta anexada** (documento no Resumo));
+> **Pedido** obriga avançar para "Aguardando Pedido" (exige **Proposta anexada** (documento no Resumo)) e depois o Ganho exige a OC.
 
 ### Regras gerais (valem para o funil oficial)
 - **Não pode pular etapas**: o avanço é **uma etapa por vez** (o destino tem que ser a próxima etapa imediata). Tentar pular → bloqueia com a próxima etapa indicada.
@@ -425,7 +437,7 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 |---|---|---|
 | 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** + **≥1 serviço** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Tipo de cobrança** (`collection_type`) selecionado |
 | 2 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) + **Recalibração/Manutenção** (`service_type`) preenchido |
-| 3 | Proposta → Operações | **Proposta vinculada** (na aba Propostas do card) + **Formulário enviado** (checkbox `form_answered`) |
+| 3 | Proposta → Operações | **Proposta anexada** (documento no Resumo → Documentos) + **Formulário enviado** (checkbox `form_answered`) |
 | 4 | Operações → **Negócio Ganho** | botão Ganho acende em **Operações** · **Confirmação de envio = "Sim"** (`business_info.shipping_confirmed`, no Resumo → Informações de Negócio) |
 | 5 | → **Negócio Perdido** | só pelo botão Perdido · **Motivo da perda** (modal) |
 

@@ -1,6 +1,21 @@
 # 17 — Módulo de Propostas Comerciais
 
-> **Escopo:** exclusivo do módulo de **Serviço** (acesso: admin, gerente e role `service`).
+> ⛔ **DESCONTINUADO em 23/07/2026.** O gerenciamento de propostas foi migrado para um
+> **sistema externo** (fora do HSGrowth). No CRM:
+> - A **página "Propostas" da sidebar** foi **removida** (rota `/propostas` desativada).
+> - No card, a seção "Propostas" (criar/vincular) virou um **anexo de documento** simples:
+>   **Proposta** entra na seção **Documentos** do Resumo (anexar / trocar / **excluir**),
+>   junto com a OC. Slot `proposta` — mesmo mecanismo de OS/OC.
+> - As **regras de avanço** voltaram a exigir a **Proposta anexada** (documento), não mais
+>   "proposta vinculada".
+> - O **Valor do negócio** não vem mais das propostas — vem dos **Serviços do card**
+>   (qtd × preço − desconto) com **desconto global** e **frete** (ver doc 16, §"Valor do card").
+>
+> **Dados preservados:** as tabelas (`proposals`, `proposal_items`, `proposal_versions`,
+> `proposal_service_cards`) e os endpoints da API **continuam no banco/repo, dormentes** —
+> nada foi apagado. O texto abaixo descreve o módulo antigo e fica como **referência histórica**.
+>
+> **Escopo (histórico):** exclusivo do módulo de **Serviço** (acesso: admin, gerente e role `service`).
 > **Última atualização:** 03/07/2026.
 > Complementa o doc [16 - Fluxo e Regras do Board de Serviços](16%20-%20FLUXO%20E%20REGRAS%20DO%20BOARD%20DE%20SERVI%C3%87OS.md) (§3.1.1).
 

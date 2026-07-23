@@ -32,10 +32,16 @@ class ServiceCard(Base, TimestampMixin, SoftDeleteMixin):
     # Dados de contato/cliente (JSON livre para customização futura)
     contact_info = Column(JSON, nullable=True)
 
-    # Condições de pagamento e desconto global dos produtos (JSON)
-    # Ex: { "global_discount": 100, "global_discount_type": "value",
-    #       "payment_method": "PIX", "installments": 1, "notes": "..." }
+    # Condições de pagamento (JSON) — legado dos produtos, hoje dormente.
+    # Ex: { "payment_method": "PIX", "installments": 1, "notes": "..." }
     payment_info = Column(JSON, nullable=True)
+
+    # Desconto global e frete sobre o total dos SERVIÇOS do card.
+    # O Valor do negócio = soma dos serviços − desconto global + frete
+    # (ver deal_value_by_card). global_discount_type: "value" (R$) | "percent" (%).
+    global_discount = Column(Numeric(12, 2), nullable=False, default=0, server_default="0")
+    global_discount_type = Column(String(10), nullable=False, default="value", server_default="value")
+    shipping = Column(Numeric(12, 2), nullable=False, default=0, server_default="0")
 
     # Informações de negócio do Resumo (JSON livre) — herdadas de Vendas e
     # específicas de Serviço. Ex:

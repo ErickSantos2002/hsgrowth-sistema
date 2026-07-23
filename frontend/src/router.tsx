@@ -33,7 +33,8 @@ import ServiceActivities from './pages/ServiceActivities';
 import CallEvaluationsPage from './pages/CallEvaluationsPage';
 import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
-import Proposals from './pages/Proposals';
+// Módulo de Propostas descontinuado (migrado p/ sistema externo). Página e API
+// preservadas no repo (dormentes); rota removida da navegação.
 
 /**
  * Componente que protege rotas não permitidas para o role 'viewer'.
@@ -130,7 +131,6 @@ const AppRoutes: React.FC = () => (
       <Route path="/servicos/calendario" element={<ServiceTeamGuard><ServiceCalendar /></ServiceTeamGuard>} />
       <Route path="/servicos/:boardId" element={<ServiceTeamGuard><ServiceKanban /></ServiceTeamGuard>} />
       <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceTeamGuard><ServiceCardDetails /></ServiceTeamGuard>} />
-      <Route path="/propostas" element={<ServiceTeamGuard><Proposals /></ServiceTeamGuard>} />
       <Route path="/cards/:cardId" element={<ServiceGuard><CardDetails /></ServiceGuard>} />
       <Route path="/activities" element={<ActivitiesPage />} />
       <Route path="/clients" element={<Clients />} />

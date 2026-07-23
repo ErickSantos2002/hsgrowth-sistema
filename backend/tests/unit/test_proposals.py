@@ -181,44 +181,22 @@ def test_endpoint_blocks_salesperson(client, salesperson_headers):
     assert r.status_code == 403
 
 
-# ── Regra de avanço: proposta vinculada ao card ────────────────────────────────
+# NOTA: a regra de avanço "proposta vinculada ao card" foi substituída por
+# "proposta anexada no Resumo (documento, slot 'proposta')" — o módulo de
+# Propostas ficou dormente (dados preservados, sem UI). Ver test_advance_proposta_slot.
 
-def test_has_linked_proposal_helper(db):
-    """_has_linked_proposal retorna False sem proposta e True com proposta vinculada."""
-    from app.services.service_board_service import ServiceBoardService
-    from app.models.service_board import ServiceBoard
-    from app.models.service_list import ServiceList
-    from app.models.service_card import ServiceCard
-    from app.models.proposal import Proposal
 
-    board = ServiceBoard(name="Serv", description="x")
-    db.add(board)
-    db.commit()
+def test_advance_proposta_slot_required(db):
+    """Proposta → Operações (board 2) e Proposta → Ganho (board 1) exigem a
+    Proposta anexada como documento (slot 'proposta'), não mais vínculo N:N."""
+    import inspect
+    from app.services import service_board_service as mod
 
-    lst = ServiceList(name="Proposta", position=3, board_id=board.id)
-    db.add(lst)
-    db.commit()
-
-    card = ServiceCard(title="C", list_id=lst.id)
-    db.add(card)
-    db.commit()
-
-    from app.models.proposal_service_card import ProposalServiceCard
-
-    svc = ServiceBoardService(db)
-
-    # Sem proposta vinculada → False
-    assert svc._has_linked_proposal(card.id) is False
-
-    # Adiciona proposta vinculada via tabela de vínculo N:N
-    prop = Proposal(number=9901)
-    db.add(prop)
-    db.commit()
-    db.add(ProposalServiceCard(proposal_id=prop.id, service_card_id=card.id))
-    db.commit()
-
-    # Com proposta vinculada → True
-    assert svc._has_linked_proposal(card.id) is True
+    src = inspect.getsource(mod.ServiceBoardService._validate_advance)
+    # A regra passou a depender de has_slot("proposta") e não do helper removido.
+    assert 'has_slot("proposta")' in src
+    assert "_has_linked_proposal" not in src
+    assert not hasattr(mod.ServiceBoardService, "_has_linked_proposal")
 
 
 def test_endpoint_proposal_pdf(client, admin_headers):

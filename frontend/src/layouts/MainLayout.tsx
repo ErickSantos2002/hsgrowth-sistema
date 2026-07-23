@@ -11,7 +11,6 @@ import {
     LogOut,
     Trophy,
     FileText,
-    ClipboardList,
     Repeat,
     Workflow,
     Package,
@@ -42,7 +41,6 @@ const menuItems = [
     { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/service-catalog", icon: Cog, label: "Serviço", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
-    { path: "/propostas", icon: ClipboardList, label: "Propostas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/ligacoes", icon: Phone, label: "Ligações", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/gamification", icon: Trophy, label: "Gamificação", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/transfers", icon: Repeat, label: "Transferências", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
@@ -174,10 +172,10 @@ export default function MainLayout() {
                                     return null;
                                 }
 
-                                // "Boards (Serviços)" e "Propostas": exclusivos do time de serviço + gestão
+                                // "Boards (Serviços)" e "Serviço": exclusivos do time de serviço + gestão
                                 // (admin, gerente e role "service"). Demais roles não veem.
                                 if (
-                                    ["/servicos", "/service-catalog", "/propostas"].includes(item.path) &&
+                                    ["/servicos", "/service-catalog"].includes(item.path) &&
                                     !["admin", "manager", "service"].includes(user?.role ?? "")
                                 ) {
                                     return null;
@@ -189,7 +187,7 @@ export default function MainLayout() {
                                 if (user?.role === "service") {
                                     const allowedForService = [
                                         "/", "/activities", "/servicos",
-                                        "/clients", "/persons", "/products", "/service-catalog", "/propostas", "/settings",
+                                        "/clients", "/persons", "/products", "/service-catalog", "/settings",
                                     ];
                                     if (!allowedForService.includes(item.path)) {
                                         return null;

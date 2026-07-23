@@ -8,9 +8,9 @@ diferentes:
                   Tem preço, entra em proposta de venda.
   - `service_products` = o **aparelho do cliente** que está em serviço
                   (bafômetro, módulo de calibração). Não tem preço: em Serviços o
-                  valor do negócio vem da soma das propostas vinculadas — ver
-                  `deal_value_by_card` — e o produto é só o registro de qual
-                  aparelho está em jogo, contado por quantidade.
+                  valor do negócio vem dos SERVIÇOS do card (qtd × preço − desconto),
+                  com desconto global e frete — ver `deal_value_by_card` — e o produto
+                  é só o registro de qual aparelho está em jogo, contado por quantidade.
 
 Manter os dois na mesma tabela faria o catálogo de Vendas exibir equipamento de
 cliente (o endpoint `GET /products` não filtra por origem), que é exatamente o

@@ -16,9 +16,10 @@ o catálogo de Vendas exibir equipamento de cliente. Ver `app/models/service_pro
 O registro criado nasce marcado com `(external_source, external_ref)`, par único, então
 o mesmo modelo reencontra o mesmo registro em vez de duplicar a cada card.
 
-`service_products` **não tem preço** de propósito: em Serviços o valor do negócio vem da
-soma das propostas vinculadas (ver `deal_value_by_card`), e o equipamento é só o registro
-de qual aparelho está em jogo, contado por quantidade.
+`service_products` **não tem preço** de propósito: em Serviços o valor do negócio vem dos
+SERVIÇOS do card (qtd × preço − desconto), com desconto global e frete (ver
+`deal_value_by_card`), e o equipamento é só o registro de qual aparelho está em jogo,
+contado por quantidade.
 
 Usado por dois caminhos, que precisam se comportar igual:
   - `IntegrationCardService`, na criação de cards novos;

@@ -103,6 +103,10 @@ class ServiceCardBase(BaseModel):
     business_info: Optional[dict] = None
     client_id: Optional[int] = None
     person_id: Optional[int] = None
+    # Desconto global + frete sobre o total dos serviços do card
+    global_discount: Optional[float] = None
+    global_discount_type: Optional[str] = None  # "value" | "percent"
+    shipping: Optional[float] = None
 
 
 class ServiceCardCreate(ServiceCardBase):
@@ -122,6 +126,9 @@ class ServiceCardUpdate(BaseModel):
     person_id: Optional[int] = None
     position: Optional[float] = None
     is_deleted: Optional[bool] = None
+    global_discount: Optional[float] = None
+    global_discount_type: Optional[str] = None
+    shipping: Optional[float] = None
 
 
 class ServiceCardMoveRequest(BaseModel):

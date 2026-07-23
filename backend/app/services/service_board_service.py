@@ -48,47 +48,55 @@ UPLOAD_DIR = Path("/app/uploads")
 
 
 def deal_value_by_card(db: Session, card_ids: List[int]) -> dict:
-    """Valor do negócio por card = soma dos totais das propostas vinculadas (N:N).
+    """Valor do negócio por card = soma dos SERVIÇOS do card − desconto global + frete.
 
-    Total de cada proposta = soma dos itens + frete − desconto. Propostas
-    soft-deletadas são ignoradas. Retorna {card_id: valor}.
+    Total dos serviços = Σ (quantidade × preço − desconto por serviço). Sobre
+    esse total incide o desconto global do card (R$ ou %) e soma-se o frete.
+    Nunca fica negativo. Retorna {card_id: valor}.
     """
     if not card_ids:
         return {}
-    from app.models.proposal import Proposal, ProposalItem
-    from app.models.proposal_service_card import ProposalServiceCard
+    from app.models.service_card_service import ServiceCardService
 
-    # Total dos itens por proposta
-    items_subq = (
-        db.query(
-            ProposalItem.proposal_id.label("pid"),
-            func.coalesce(func.sum(ProposalItem.total), 0).label("items_total"),
-        )
-        .group_by(ProposalItem.proposal_id)
-        .subquery()
-    )
+    # Total dos serviços por card
     rows = (
         db.query(
-            ProposalServiceCard.service_card_id,
+            ServiceCardService.service_card_id,
             func.coalesce(
                 func.sum(
-                    func.coalesce(items_subq.c.items_total, 0)
-                    + func.coalesce(Proposal.shipping, 0)
-                    - func.coalesce(Proposal.discount, 0)
+                    ServiceCardService.quantity * ServiceCardService.unit_price
+                    - ServiceCardService.discount
                 ),
                 0,
             ),
         )
-        .join(Proposal, ProposalServiceCard.proposal_id == Proposal.id)
-        .outerjoin(items_subq, items_subq.c.pid == Proposal.id)
-        .filter(
-            ProposalServiceCard.service_card_id.in_(card_ids),
-            Proposal.is_deleted == False,  # noqa: E712
-        )
-        .group_by(ProposalServiceCard.service_card_id)
+        .filter(ServiceCardService.service_card_id.in_(card_ids))
+        .group_by(ServiceCardService.service_card_id)
         .all()
     )
-    return {cid: float(v or 0) for cid, v in rows}
+    services_total = {cid: float(v or 0) for cid, v in rows}
+
+    # Desconto global + frete de cada card
+    meta = {
+        c.id: c
+        for c in db.query(
+            ServiceCard.id,
+            ServiceCard.global_discount,
+            ServiceCard.global_discount_type,
+            ServiceCard.shipping,
+        ).filter(ServiceCard.id.in_(card_ids)).all()
+    }
+
+    result: dict = {}
+    for cid in card_ids:
+        base = services_total.get(cid, 0.0)
+        c = meta.get(cid)
+        gd = float(c.global_discount or 0) if c else 0.0
+        gd_type = (c.global_discount_type or "value") if c else "value"
+        ship = float(c.shipping or 0) if c else 0.0
+        disc = base * gd / 100 if gd_type == "percent" else gd
+        result[cid] = max(0.0, base - disc + ship)
+    return result
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
@@ -459,8 +467,8 @@ class ServiceBoardService:
                 if src_name == "proposta":
                     if biz.get("closing_type") != "faturamento_direto":
                         miss.append("selecionar 'Faturamento direto' na Forma de fechamento (Resumo) — se for 'Pedido', avance para 'Aguardando Pedido'")
-                    if not self._has_linked_proposal(card.id):
-                        miss.append("Proposta vinculada ao card (aba Propostas)")
+                    if not has_slot("proposta"):
+                        miss.append("Proposta anexada no Resumo (Documentos)")
                 else:
                     if not has_slot("oc"):
                         miss.append("OC (Ordem de Compra) anexada no Resumo")
@@ -520,8 +528,8 @@ class ServiceBoardService:
                 # Proposta → Aguardando Pedido (caminho Pedido)
                 if biz.get("closing_type") != "pedido":
                     miss.append("selecionar 'Pedido' na Forma de fechamento (Resumo) — se for 'Faturamento direto', use o botão Ganho")
-                if not self._has_linked_proposal(card.id):
-                    miss.append("Proposta vinculada ao card (aba Propostas)")
+                if not has_slot("proposta"):
+                    miss.append("Proposta anexada no Resumo (Documentos)")
 
         elif board_id == 2:
             # ── Cobrança (Serviços - Atrasados) ──
@@ -547,8 +555,8 @@ class ServiceBoardService:
                     miss.append("Recalibração e/ou Manutenção (no Resumo)")
             elif old_name == "proposta":
                 # Proposta → Operações
-                if not self._has_linked_proposal(card.id):
-                    miss.append("Proposta vinculada ao card (aba Propostas)")
+                if not has_slot("proposta"):
+                    miss.append("Proposta anexada no Resumo (Documentos)")
                 if not biz.get("form_answered"):
                     miss.append("Formulário de Coleta de Dados enviado (marque o checkbox no Resumo)")
 
@@ -557,17 +565,6 @@ class ServiceBoardService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Para avançar de '{old_list.name}', preencha: " + "; ".join(miss) + ".",
             )
-
-    def _has_linked_proposal(self, card_id: int) -> bool:
-        """True se existe ao menos uma proposta vinculada ao card (não deletada)."""
-        from app.models.proposal import Proposal
-        from app.models.proposal_service_card import ProposalServiceCard
-        return self.db.query(ProposalServiceCard.id).join(
-            Proposal, ProposalServiceCard.proposal_id == Proposal.id
-        ).filter(
-            ProposalServiceCard.service_card_id == card_id,
-            Proposal.is_deleted == False,  # noqa: E712
-        ).first() is not None
 
     def move_card(self, card_id: int, new_list_id: int, new_position: Optional[float], user: User) -> ServiceCard:
         card = self.get_card(card_id)

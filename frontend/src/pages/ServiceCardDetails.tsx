@@ -49,7 +49,6 @@ import ActionButton from "../components/cardDetails/ActionButton";
 import ServiceDevicesSection from "../components/service/ServiceDevicesSection";
 import ServiceProductSection from "../components/service/ServiceProductSection";
 import ServiceServicesSection from "../components/service/ServiceServicesSection";
-import ServiceProposalsSection from "../components/service/ServiceProposalsSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ClientModal from "../components/clients/ClientModal";
 import PersonModal from "../components/persons/PersonModal";
@@ -107,6 +106,7 @@ const ServiceSummarySection: React.FC<{
   activities: ServiceCardActivity[];
   onFilesChanged: () => void;
 }> = ({ card, onUpdate, boardId, cardId, activities, onFilesChanged }) => {
+  const { confirm } = useConfirm();
   const [editingDue, setEditingDue] = useState(false);
   const [dueValue, setDueValue] = useState(card.due_date ? card.due_date.split("T")[0] : "");
   const [editingDesc, setEditingDesc] = useState(false);
@@ -142,6 +142,24 @@ const ServiceSummarySection: React.FC<{
     try {
       await serviceActivityService.uploadFile(boardId, cardId, file, slot);
       onFilesChanged();
+    } finally {
+      setUploadingSlot(null);
+    }
+  };
+  const handleRemoveSlot = async (slot: string, activityId: number, label: string) => {
+    const ok = await confirm({
+      title: "Excluir documento",
+      message: `Tem certeza que deseja excluir o documento "${label}"? Esta ação não pode ser desfeita.`,
+      confirmText: "Excluir",
+      isDanger: true,
+    });
+    if (!ok) return;
+    setUploadingSlot(slot);
+    try {
+      await serviceActivityService.remove(boardId, cardId, activityId);
+      onFilesChanged();
+    } catch {
+      showError("Erro ao excluir o documento");
     } finally {
       setUploadingSlot(null);
     }
@@ -360,6 +378,7 @@ const ServiceSummarySection: React.FC<{
         <div className="space-y-3 border-t border-gray-200/50 dark:border-slate-700/50 pt-4">
           <h4 className="text-sm font-semibold text-slate-400">Documentos</h4>
           {[
+            { slot: "proposta", label: "Proposta" },
             { slot: "oc", label: "OC (Ordem de Compra)" },
           ].map(({ slot, label }) => {
             const f = fileForSlot(slot);
@@ -377,11 +396,18 @@ const ServiceSummarySection: React.FC<{
                       <Paperclip size={14} className="flex-shrink-0" />
                       <span className="truncate">{f.file_name}</span>
                     </button>
-                    <label className="flex-shrink-0 cursor-pointer text-xs text-slate-400 hover:text-blue-400">
-                      {busy ? "Enviando..." : "Trocar"}
-                      <input type="file" className="hidden" disabled={busy}
-                        onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUploadSlot(slot, file); e.currentTarget.value = ""; }} />
-                    </label>
+                    <div className="flex flex-shrink-0 items-center gap-2">
+                      <label className="cursor-pointer text-xs text-slate-400 hover:text-blue-400">
+                        {busy ? "..." : "Trocar"}
+                        <input type="file" className="hidden" disabled={busy}
+                          onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUploadSlot(slot, file); e.currentTarget.value = ""; }} />
+                      </label>
+                      <button type="button" disabled={busy} title="Excluir documento"
+                        onClick={() => handleRemoveSlot(slot, f.id, label)}
+                        className="rounded p-1 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300 disabled:opacity-50">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 dark:border-slate-700 bg-white/30 dark:bg-slate-900/30 px-3 py-2 text-sm text-slate-400 hover:border-blue-400 hover:text-blue-400">
@@ -1240,9 +1266,10 @@ const ServiceCardDetails: React.FC = () => {
           <ServiceServicesSection
             boardId={numBoardId}
             cardId={numCardId}
+            card={card}
             onChange={reloadActivities}
+            onCardChange={loadCard}
           />
-          <ServiceProposalsSection boardId={numBoardId} cardId={numCardId} onChange={loadCard} />
         </div>
 
         {/* Coluna direita — 70% */}
