@@ -5,6 +5,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.3] — 23/07/2026
+
+### Adicionado
+- **Proposta — modelo de texto em "Outros itens":** novo seletor para escolher o modelo do texto padrão entre **Demais aparelhos** (padrão) e **Aparelho Phoebus** — cada um com seu conteúdo próprio (títulos, valores e códigos).
+- **Proposta — Aparelho Phoebus automático:** ao criar a proposta por um card que tem um aparelho **Phoebus**, o modelo de texto já abre como **Aparelho Phoebus**, com o **Serial do Aparelho** (nº de série) e o **Número do Módulo** (campo "Módulo de álcool" do aparelho) já preenchidos a partir do card.
+
+### Melhorado
+- **Proposta — itens buscam Serviços:** na tabela "Itens de produto ou serviço", ao digitar na descrição o sistema passa a sugerir os **Serviços do catálogo** (antes sugeria produtos). Ao escolher, preenche descrição, código e preço do serviço.
+
+### Corrigido
+- **Proposta — PDF em produção:** concluída a correção que impedia a geração/visualização e o download do PDF da proposta no ambiente de produção.
+
+---
+
 ## [1.8.2] — 22/07/2026
 
 ### Adicionado
