@@ -52,8 +52,10 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
   };
 
   // "Parado" — calculado no backend. 7d+ tem prioridade sobre 3d+ (vermelho mais escuro).
-  const isStuck7d = !!card.is_stuck_7d;
-  const isStuck = !!card.is_stuck_3d && !isStuck7d;
+  // Não faz sentido em cards Ganhos/Perdidos (etapas finais, sempre "parados") — oculta.
+  const isClosed = !!card.is_won || !!card.is_lost;
+  const isStuck7d = !isClosed && !!card.is_stuck_7d;
+  const isStuck = !isClosed && !!card.is_stuck_3d && !isStuck7d;
 
   return (
     <div
