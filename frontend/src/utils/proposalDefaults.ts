@@ -36,3 +36,25 @@ export function buildDefaultOtherItems(modelo = "", aparelhos = ""): string {
 <p><br></p>
 <p><strong>Contato – Setor de Calibração</strong><br>Telefone: (81) 3052-3350</p>`;
 }
+
+/**
+ * Template do campo "Outros itens ou serviços" para o aparelho **Phoebus**
+ * (Calibração Anual + Anuidade da Plataforma). Texto padrão com campos a preencher
+ * manualmente (número do módulo, serial e valores).
+ */
+export function buildPhoebusOtherItems(serial = "", modulo = ""): string {
+  const HR = "<p><br></p><p>──────────────────────────────</p><p><br></p>";
+  const moduloTxt = modulo.trim() ? esc(modulo.trim()) : "[Inserir número]";
+  const serialTxt = serial.trim() ? esc(serial.trim()) : "[Inserir número]";
+  return `<p><strong>Calibração Anual e Anuidade da Plataforma do Aparelho Phoebus</strong></p>${HR}<p><strong>1. Informações do Aparelho</strong></p>
+<ul><li><strong>Número do Módulo:</strong> ${moduloTxt}</li><li><strong>Serial do Aparelho:</strong> ${serialTxt}</li></ul>${HR}<p><strong>2. Periodicidade dos Serviços</strong></p>
+<ul><li><strong>Calibração:</strong> realizada a cada 12 meses.</li><li><strong>Anuidade da Plataforma:</strong> renovação a cada 12 meses.</li></ul>${HR}<p><strong>3. Valores Referentes</strong></p>
+<ul><li><strong>Calibração:</strong> R$ ____ (por unidade) + IPCA anual</li><li><strong>Anuidade Plataforma Web 2025:</strong> R$ ____ (por unidade) + IPCA anual</li></ul>${HR}<p><strong>4. Método de Envio</strong></p>
+<ul><li><strong>Sedex</strong> – frete já incluso no valor da calibração.</li></ul>${HR}<p><strong>5. Código dos Serviços</strong></p>
+<p><strong>Plataforma:</strong></p>
+<ul><li><strong>Código:</strong> 01.05 – Licenciamento ou cessão de direito de uso de programas de computação</li><li><strong>CNAE:</strong> 6203-1/00 – Desenvolvimento e licenciamento de programas de computador não-customizáveis</li></ul>
+<p><strong>Calibração:</strong></p>
+<ul><li><strong>Código:</strong> 14.01 – Lubrificação, limpeza, lustração, revisão, carga e recarga, conserto, restauração, blindagem, manutenção e conservação de máquinas, veículos, aparelhos, equipamentos, motores, elevadores ou de qualquer objeto (exceto peças e partes empregadas, sujeitas ao ICMS)</li><li><strong>Serviço:</strong> Calibração – Manutenção e reparação de aparelhos e instrumentos de medida, teste e controle</li></ul>${HR}<p><strong>Prazo de Entrega</strong></p>
+<p>Norte: 15 a 22 dias úteis<br>Nordeste: 7 a 15 dias úteis<br>Sul: 7 dias úteis<br>Centro-Oeste: 7 a 15 dias úteis<br>Sudeste: 7 dias úteis</p>${HR}<p><strong>Códigos de Serviço – CNAEs Relacionados:</strong></p>
+<ul><li><strong>33.12-102</strong> – Manutenção e reparação de aparelhos e instrumentos de medida, teste e controle</li><li><strong>14.01</strong> – Lubrificação, limpeza, lubrificação, revisão, carga e recarga, conserto, restauração, blindagem, manutenção e conservação de máquinas, veículos, aparelhos, equipamentos, motores, elevadores ou de qualquer objeto (exceto peças e partes empregadas, que ficam sujeitas ao ICMS)</li></ul>${HR}<p><strong>Endereço para Devolução dos Aparelhos:</strong><br>Rua Viscondessa do Livramento, nº 54<br>Bairro: Derby<br>CEP: 52010-065<br>Recife – PE</p>${HR}<p><strong>6. Endereço para Envio do Material</strong><br>Rua Viscondessa do Livramento, 54 – Sala G<br>Bairro: Derby<br>CEP: 52010-065<br>Recife – PE</p>`;
+}

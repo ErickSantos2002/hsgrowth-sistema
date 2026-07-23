@@ -6,7 +6,7 @@ import serviceBoardService from "../../services/serviceBoardService";
 import ProposalModal from "../proposals/ProposalModal";
 import ProposalHistoryModal from "../proposals/ProposalHistoryModal";
 import { markerBadge } from "../../utils/proposalMarker";
-import { buildDefaultOtherItems } from "../../utils/proposalDefaults";
+import { buildDefaultOtherItems, buildPhoebusOtherItems } from "../../utils/proposalDefaults";
 import { viewProposalPdf, downloadProposalPdf } from "../../utils/proposalPdf";
 import { showError, showSuccess } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
@@ -33,6 +33,13 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [initial, setInitial] = useState<ProposalCreate | undefined>(undefined);
+  // Modelo/Aparelhos do card — passados ao modal p/ o template "Demais aparelhos" de Outros itens.
+  const [newModelo, setNewModelo] = useState("");
+  const [newAparelhos, setNewAparelhos] = useState("");
+  // Detecção de aparelho Phoebus → modal já abre com o template Phoebus + serial/módulo preenchidos.
+  const [newIsPhoebus, setNewIsPhoebus] = useState(false);
+  const [newSerial, setNewSerial] = useState("");
+  const [newModulo, setNewModulo] = useState("");
 
   // Vincular proposta existente (sem card)
   const [linkOpen, setLinkOpen] = useState(false);
@@ -63,6 +70,8 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
       // Modelo/Aparelhos dinâmicos no texto padrão (a partir dos aparelhos do card)
       let modelo = "";
       let aparelhos = "";
+      let modulo = "";
+      let isPhoebus = false;
       try {
         const summary = await serviceBoardService.getCardProducts(boardId, cardId);
         const items = summary.items || [];
@@ -73,10 +82,24 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
         }
         modelo = models.join(", ");
         aparelhos = Array.from(new Set(aparelhosList.map((a) => a.serial_number).filter(Boolean) as string[])).join(", ");
+        // "Número do Módulo" (template Phoebus) = campo "Módulo de álcool" do aparelho.
+        modulo = Array.from(new Set(aparelhosList.map((a) => a.alcohol_module).filter(Boolean) as string[])).join(", ");
+        // Detecta aparelho Phoebus pelo nome do produto ou pelo modelo do aparelho.
+        isPhoebus =
+          items.some((it) => /phoebus/i.test(it.product_name || "")) ||
+          aparelhosList.some((a) => /phoebus/i.test(a.model || ""));
       } catch {
         /* sem produtos/aparelhos — mantém em branco */
       }
-      prefill.other_items = buildDefaultOtherItems(modelo, aparelhos);
+      // Phoebus → template do Phoebus (com serial/módulo preenchidos); senão → template padrão.
+      prefill.other_items = isPhoebus
+        ? buildPhoebusOtherItems(aparelhos, modulo)
+        : buildDefaultOtherItems(modelo, aparelhos);
+      setNewModelo(modelo);
+      setNewAparelhos(aparelhos);
+      setNewIsPhoebus(isPhoebus);
+      setNewSerial(aparelhos);
+      setNewModulo(modulo);
       setInitial(prefill);
       setEditingId(null);
       setModalOpen(true);
@@ -89,6 +112,11 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
 
   const handleOpenEdit = (p: Proposal) => {
     setInitial(undefined);
+    setNewModelo("");
+    setNewAparelhos("");
+    setNewIsPhoebus(false);
+    setNewSerial("");
+    setNewModulo("");
     setEditingId(p.id);
     setModalOpen(true);
   };
@@ -320,6 +348,11 @@ const ServiceProposalsSection: React.FC<ServiceProposalsSectionProps> = ({ board
         initial={initial}
         sourceCardId={cardId}
         sourceBoardId={boardId}
+        defaultModelo={newModelo}
+        defaultAparelhos={newAparelhos}
+        defaultIsPhoebus={newIsPhoebus}
+        defaultSerial={newSerial}
+        defaultModulo={newModulo}
       />
 
       <ProposalHistoryModal

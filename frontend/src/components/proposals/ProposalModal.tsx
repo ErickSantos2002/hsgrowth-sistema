@@ -12,12 +12,12 @@ import proposalService, {
 import serviceBoardService from "../../services/serviceBoardService";
 import clientService, { Client } from "../../services/clientService";
 import personService, { Person } from "../../services/personService";
-import productService, { Product } from "../../services/productService";
+import serviceCatalogService, { Service as CatalogService } from "../../services/serviceCatalogService";
 import { showError, showSuccess } from "../../utils/toast";
 import { maskCEP, maskDocument, maskPhone } from "../../utils/formatters";
 import { useAuth } from "../../hooks/useAuth";
 import { useConfirm } from "../../contexts/ConfirmContext";
-import { buildDefaultOtherItems, DEFAULT_NOTES } from "../../utils/proposalDefaults";
+import { buildDefaultOtherItems, buildPhoebusOtherItems, DEFAULT_NOTES } from "../../utils/proposalDefaults";
 
 // Data local de hoje em YYYY-MM-DD (sem shift de fuso)
 const todayISO = (): string => {
@@ -38,6 +38,13 @@ export interface ProposalModalProps {
   /** Card de origem (quando aberto pela seção Propostas de um card) — habilita "Atualizar dados". */
   sourceCardId?: number;
   sourceBoardId?: number;
+  /** Modelo/Aparelhos do card (para o template "Demais aparelhos" de "Outros itens"). */
+  defaultModelo?: string;
+  defaultAparelhos?: string;
+  /** Aparelho Phoebus detectado no card → template Phoebus + serial/módulo preenchidos. */
+  defaultIsPhoebus?: boolean;
+  defaultSerial?: string;
+  defaultModulo?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -98,6 +105,11 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   initial,
   sourceCardId,
   sourceBoardId,
+  defaultModelo,
+  defaultAparelhos,
+  defaultIsPhoebus,
+  defaultSerial,
+  defaultModulo,
 }) => {
   const isEditing = !!proposalId;
   const { user } = useAuth();
@@ -113,6 +125,14 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   const [linkedCards, setLinkedCards] = useState<LinkedCard[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [editorKey, setEditorKey] = useState(0); // força remount do react-quill ao abrir
+  // Template de "Outros itens ou serviços": "demais" (padrão) ou "phoebus".
+  const [otherTemplate, setOtherTemplate] = useState<"demais" | "phoebus">("demais");
+  // Modelo/Aparelhos do card (usados ao (re)montar o template "Demais aparelhos").
+  const [cardModelo, setCardModelo] = useState("");
+  const [cardAparelhos, setCardAparelhos] = useState("");
+  // Serial/Módulo do aparelho (usados ao (re)montar o template "Aparelho Phoebus").
+  const [cardSerial, setCardSerial] = useState("");
+  const [cardModulo, setCardModulo] = useState("");
 
   // ─── UI state ────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -142,7 +162,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
   // ─── Product search (per row) ─────────────────────────────────────────────
   const productTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [productSearch, setProductSearch] = useState<string[]>([]);
-  const [productResults, setProductResults] = useState<Product[][]>([]);
+  const [productResults, setProductResults] = useState<CatalogService[][]>([]);
   const [showProductDropdown, setShowProductDropdown] = useState<boolean[]>([]);
   const [isSearchingProduct, setIsSearchingProduct] = useState<boolean[]>([]);
 
@@ -252,6 +272,18 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
         ? { cardId: linkedCards[0].card_id, boardId: linkedCards[0].board_id ?? undefined }
         : null;
 
+  // Troca o template de "Outros itens ou serviços" (substitui o texto atual).
+  const applyOtherTemplate = (t: "demais" | "phoebus") => {
+    setOtherTemplate(t);
+    setField(
+      "other_items",
+      t === "phoebus"
+        ? buildPhoebusOtherItems(cardSerial, cardModulo)
+        : buildDefaultOtherItems(cardModelo, cardAparelhos),
+    );
+    setEditorKey((k) => k + 1);
+  };
+
   // Repuxa Cliente/Pessoa/Itens do card (e opcionalmente Modelo/Aparelhos) — NÃO salva.
   const handleAtualizarDados = async () => {
     if (!refreshCard) return;
@@ -278,6 +310,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
       const prefill = await proposalService.prefillFromCard(refreshCard.cardId);
       let modelo = "";
       let aparelhos = "";
+      let modulo = "";
       if (refreshCard.boardId != null) {
         try {
           const summary = await serviceBoardService.getCardProducts(refreshCard.boardId, refreshCard.cardId);
@@ -289,10 +322,17 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
           }
           modelo = models.join(", ");
           aparelhos = Array.from(new Set(aparelhosList.map((a) => a.serial_number).filter(Boolean) as string[])).join(", ");
+          // "Número do Módulo" (Phoebus) = campo "Módulo de álcool" do aparelho.
+          modulo = Array.from(new Set(aparelhosList.map((a) => a.alcohol_module).filter(Boolean) as string[])).join(", ");
         } catch {
           /* sem produtos/aparelhos — mantém em branco */
         }
       }
+      // Guarda para o seletor de template reusar depois (Demais e Phoebus).
+      setCardModelo(modelo);
+      setCardAparelhos(aparelhos);
+      setCardSerial(aparelhos); // serial(s) do(s) aparelho(s) = mesma lista de nº de série
+      setCardModulo(modulo);
       const rebuild = await confirm({
         title: "Atualizar 'Outros itens ou serviços'?",
         message:
@@ -306,7 +346,9 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
         ...(keepOverride
           ? {}
           : { client_id: prefill.client_id ?? prev.client_id, person_id: prefill.person_id ?? prev.person_id }),
-        ...(rebuild ? { other_items: buildDefaultOtherItems(modelo, aparelhos) } : {}),
+        ...(rebuild
+          ? { other_items: otherTemplate === "phoebus" ? buildPhoebusOtherItems(aparelhos, modulo) : buildDefaultOtherItems(modelo, aparelhos) }
+          : {}),
       }));
       setItems(prefill.items ?? []);
       if (!keepOverride) hydratePickers(prefill.client_id, prefill.person_id);
@@ -337,6 +379,12 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
     setShowOverrideForm(false);
     setOverrideDraft({});
     setSaving(false);
+    // Template de "Outros itens": Phoebus se o card tiver aparelho Phoebus; senão Demais.
+    setOtherTemplate(defaultIsPhoebus ? "phoebus" : "demais");
+    setCardModelo(defaultModelo ?? "");
+    setCardAparelhos(defaultAparelhos ?? "");
+    setCardSerial(defaultSerial ?? "");
+    setCardModulo(defaultModulo ?? "");
 
     if (isEditing && proposalId) {
       setProposalNumber(null);
@@ -508,7 +556,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
     setItems((prev) => prev.map((item, i) => i === idx ? { ...item, [key]: value } : item));
   };
 
-  // ─── Product search per row ───────────────────────────────────────────────
+  // ─── Busca de SERVIÇOS por linha (itens da proposta vêm do catálogo de Serviços) ──
   const searchProductsForRow = useCallback(async (rowIdx: number, query: string) => {
     if (!query.trim()) {
       setProductResults((prev) => { const n = [...prev]; n[rowIdx] = []; return n; });
@@ -516,8 +564,8 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
     }
     setIsSearchingProduct((prev) => { const n = [...prev]; n[rowIdx] = true; return n; });
     try {
-      const res = await productService.list({ search: query.trim(), page_size: 20, is_active: true });
-      setProductResults((prev) => { const n = [...prev]; n[rowIdx] = res.products; return n; });
+      const res = await serviceCatalogService.list({ search: query.trim(), page_size: 20, is_active: true });
+      setProductResults((prev) => { const n = [...prev]; n[rowIdx] = res.services; return n; });
     } catch { /* silencioso */ } finally {
       setIsSearchingProduct((prev) => { const n = [...prev]; n[rowIdx] = false; return n; });
     }
@@ -530,12 +578,12 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
     productTimers.current[rowIdx] = setTimeout(() => searchProductsForRow(rowIdx, val), 400);
   };
 
-  const handleSelectProduct = (rowIdx: number, product: Product) => {
-    updateItem(rowIdx, "product_id", product.id);
-    updateItem(rowIdx, "description", product.name);
-    updateItem(rowIdx, "sku", product.sku ?? "");
-    updateItem(rowIdx, "unit_price", product.unit_price);
-    setProductSearch((prev) => { const n = [...prev]; n[rowIdx] = product.name; return n; });
+  const handleSelectProduct = (rowIdx: number, service: CatalogService) => {
+    updateItem(rowIdx, "product_id", null);
+    updateItem(rowIdx, "description", service.name);
+    updateItem(rowIdx, "sku", service.sku ?? "");
+    updateItem(rowIdx, "unit_price", service.unit_price);
+    setProductSearch((prev) => { const n = [...prev]; n[rowIdx] = service.name; return n; });
     setShowProductDropdown((prev) => { const n = [...prev]; n[rowIdx] = false; return n; });
     setProductResults((prev) => { const n = [...prev]; n[rowIdx] = []; return n; });
   };
@@ -1095,7 +1143,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                                       autoFocus
                                       value={productSearch[idx] ?? ""}
                                       onChange={(e) => handleProductSearchChange(idx, e.target.value)}
-                                      placeholder="Buscar produto..."
+                                      placeholder="Buscar serviço..."
                                       className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
                                     />
                                   </div>
@@ -1103,7 +1151,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
                                     {isSearchingProduct[idx] ? (
                                       <p className="px-3 py-2 text-xs text-slate-400">Buscando...</p>
                                     ) : productResults[idx]?.length === 0 ? (
-                                      <p className="px-3 py-2 text-xs text-slate-400">Nenhum produto encontrado</p>
+                                      <p className="px-3 py-2 text-xs text-slate-400">Nenhum serviço encontrado</p>
                                     ) : (
                                       (productResults[idx] ?? []).map((prod) => (
                                         <button
@@ -1225,6 +1273,23 @@ const ProposalModal: React.FC<ProposalModalProps> = ({
           {/* ── 5. Outros itens ou serviços ── */}
           <section>
             <SectionHeading label="Outros Itens ou Serviços" />
+            <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-slate-500 dark:text-slate-400">Modelo do texto:</label>
+                <div className="w-56">
+                  <SelectMenu
+                    size="sm"
+                    value={otherTemplate}
+                    onChange={(v) => applyOtherTemplate(v as "demais" | "phoebus")}
+                    options={[
+                      { value: "demais", label: "Demais aparelhos" },
+                      { value: "phoebus", label: "Aparelho Phoebus" },
+                    ]}
+                  />
+                </div>
+              </div>
+              <span className="text-[11px] text-slate-400">Trocar o modelo substitui o texto abaixo.</span>
+            </div>
             <RichTextEditor
               key={editorKey}
               value={form.other_items ?? ""}
