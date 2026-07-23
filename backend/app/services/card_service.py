@@ -655,6 +655,7 @@ class CardService:
                     is_lost=card.is_lost,
                     won_at=card.won_at,
                     lost_at=card.lost_at,
+                    loss_reason=card.loss_reason,  # necessário p/ a coluna "Motivo de perda" na exportação
                     position=card.position,
                     created_at=card.created_at,
                     updated_at=card.updated_at,
