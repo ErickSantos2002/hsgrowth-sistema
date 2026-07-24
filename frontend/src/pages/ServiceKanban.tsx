@@ -456,6 +456,8 @@ const ServiceListModal: React.FC<ServiceListModalProps> = ({ list, boardId, onCl
 interface KanbanCardProps {
   card: ServiceCard;
   onOpenDetail: () => void;
+  /** URL do card — habilita abrir em nova guia (clique do meio ou Ctrl/Cmd+clique). */
+  href?: string;
 }
 
 const CardBadge: React.FC<{ cls: string; icon: React.ReactNode; label: string; title?: string }> = ({ cls, icon, label, title }) => (
@@ -487,7 +489,10 @@ const CollaboratorStack: React.FC<{ people: { id: number; name: string }[] }> = 
   );
 };
 
-const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail }) => {
+const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail, href }) => {
+  const openInNewTab = () => {
+    if (href) window.open(href, "_blank", "noopener,noreferrer");
+  };
   const status = card.pending_status || "none";
   const stuck7d = !!card.is_stuck_7d;
   const stuck = !!card.is_stuck_3d && !stuck7d; // 7d+ tem prioridade (vermelho mais escuro)
@@ -506,7 +511,16 @@ const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail }) =>
   return (
     <div
       data-service-card
-      onClick={onOpenDetail}
+      onClick={(e) => {
+        if (href && (e.ctrlKey || e.metaKey)) { e.preventDefault(); openInNewTab(); return; }
+        onOpenDetail();
+      }}
+      onAuxClick={(e) => {
+        if (href && e.button === 1) { e.preventDefault(); openInNewTab(); }
+      }}
+      onMouseDown={(e) => {
+        if (href && e.button === 1) e.preventDefault();
+      }}
       className={`relative cursor-pointer rounded-lg border p-3.5 shadow-sm transition-all hover:shadow-md ${
         stuck7d ? "border-red-700/50 bg-white dark:border-red-600/40 dark:bg-red-950/40"
         : stuck ? "border-red-500/40 bg-white dark:border-red-500/30 dark:bg-red-950/20"
@@ -573,12 +587,13 @@ interface KanbanColumnProps {
   onMoveLeft: () => void;
   onMoveRight: () => void;
   onOpenCard: (card: ServiceCard) => void;
+  getCardHref?: (card: ServiceCard) => string;
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
   list, cards, allLists, canManage, isFirst, isLast,
   onAddCard, onEditList, onDeleteList, onMoveLeft, onMoveRight,
-  onOpenCard,
+  onOpenCard, getCardHref,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -648,6 +663,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
               key={card.id}
               card={card}
               onOpenDetail={() => onOpenCard(card)}
+              href={getCardHref?.(card)}
             />
           ))
         ) : (
@@ -1320,6 +1336,7 @@ const ServiceKanban: React.FC = () => {
                   onMoveLeft={() => handleMoveListLeft(list)}
                   onMoveRight={() => handleMoveListRight(list)}
                   onOpenCard={handleOpenDetail}
+                  getCardHref={(card) => `/servicos/${numId}/cards/${card.id}`}
                 />
               );
             })

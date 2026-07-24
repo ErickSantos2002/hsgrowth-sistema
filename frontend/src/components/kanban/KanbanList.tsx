@@ -13,6 +13,8 @@ interface KanbanListProps {
   onArchiveList?: () => void;
   onDeleteList?: () => void;
   onCardClick?: (card: Card) => void;
+  /** Constrói a URL do card (habilita abrir em nova guia com clique do meio/Ctrl+clique). */
+  getCardHref?: (card: Card) => string;
   onMoveLeft?: () => void; // Nova prop para mover lista para esquerda
   onMoveRight?: () => void; // Nova prop para mover lista para direita
   isFirstList?: boolean; // Se é a primeira lista (não pode ir mais para esquerda)
@@ -28,6 +30,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
   onArchiveList,
   onDeleteList,
   onCardClick,
+  getCardHref,
   onMoveLeft,
   onMoveRight,
   isFirstList = false,
@@ -160,6 +163,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
               key={card.id}
               card={card}
               onClick={() => onCardClick?.(card)}
+              href={getCardHref?.(card)}
             />
           ))
         ) : (

@@ -7,10 +7,17 @@ import CardActivitiesModal from "./CardActivitiesModal";
 interface KanbanCardProps {
   card: Card;
   onClick?: () => void;
+  /** URL do card — habilita abrir em nova guia (clique do meio ou Ctrl/Cmd+clique). */
+  href?: string;
 }
 
-const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
+const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick, href }) => {
   const [showActivitiesModal, setShowActivitiesModal] = useState(false);
+
+  /** Abre o card em uma nova guia do navegador. */
+  const openInNewTab = () => {
+    if (href) window.open(href, "_blank", "noopener,noreferrer");
+  };
 
   /**
    * Formata a data de vencimento
@@ -60,7 +67,26 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
   return (
     <div
       data-kanban-card
-      onClick={onClick}
+      onClick={(e) => {
+        // Ctrl/Cmd + clique abre em nova guia (padrão do navegador)
+        if (href && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          openInNewTab();
+          return;
+        }
+        onClick?.();
+      }}
+      onAuxClick={(e) => {
+        // Clique do meio (botão 1) abre em nova guia
+        if (href && e.button === 1) {
+          e.preventDefault();
+          openInNewTab();
+        }
+      }}
+      onMouseDown={(e) => {
+        // Evita o auto-scroll do clique do meio
+        if (href && e.button === 1) e.preventDefault();
+      }}
       className={`group relative cursor-pointer rounded-lg border p-3.5 shadow-sm transition-all hover:shadow-md ${
         isStuck7d
           ? "border-red-700/60 bg-white hover:border-red-700/80 hover:bg-red-100/40 dark:border-red-600/50 dark:bg-red-950/45 dark:hover:border-red-600/70 dark:hover:bg-red-950/55"

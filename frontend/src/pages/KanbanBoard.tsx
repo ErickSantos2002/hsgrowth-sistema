@@ -1548,6 +1548,7 @@ const KanbanBoard: React.FC = () => {
                   onArchiveList={canCreateList ? () => handleArchiveList(list) : undefined}
                   onDeleteList={canCreateList ? () => handleDeleteListClick(list) : undefined}
                   onCardClick={(card) => handleViewCard(card)}
+                  getCardHref={(card) => `/cards/${card.id}`}
                   onMoveLeft={isViewer ? undefined : () => handleMoveListLeft(list)}
                   onMoveRight={isViewer ? undefined : () => handleMoveListRight(list)}
                   isFirstList={isFirstList}
