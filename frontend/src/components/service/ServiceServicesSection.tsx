@@ -14,8 +14,8 @@ interface ServiceServicesSectionProps {
   card: ServiceCard;
   /** Avisa o pai quando serviços mudam (para atualizar o histórico de atividades). */
   onChange?: () => void;
-  /** Avisa o pai quando desconto global/frete mudam (para recarregar o card/valor). */
-  onCardChange?: () => void;
+  /** Recebe o card já atualizado após salvar desconto global/frete (sem recarregar a página). */
+  onCardSaved?: (card: ServiceCard) => void;
 }
 
 type DiscountType = "value" | "percent";
@@ -31,7 +31,7 @@ const ServiceServicesSection: React.FC<ServiceServicesSectionProps> = ({
   cardId,
   card,
   onChange,
-  onCardChange,
+  onCardSaved,
 }) => {
   const { confirm } = useConfirm();
 
@@ -127,15 +127,28 @@ const ServiceServicesSection: React.FC<ServiceServicesSectionProps> = ({
   const shippingNum = parseDecimalInput(shippingInput);
   const dealValue = Math.max(0, servicesTotal - globalDiscountAmount + shippingNum);
 
-  const saveMoney = async (patch: {
-    global_discount?: number;
-    global_discount_type?: DiscountType;
-    shipping?: number;
-  }) => {
+  // Valores salvos no card + se há alteração pendente (dirty)
+  const savedGd = card.global_discount ?? 0;
+  const savedGdType: DiscountType = card.global_discount_type === "percent" ? "percent" : "value";
+  const savedShip = card.shipping ?? 0;
+  const moneyDirty =
+    globalDiscountNum !== savedGd ||
+    globalDiscountType !== savedGdType ||
+    shippingNum !== savedShip;
+
+  const handleSaveMoney = async () => {
+    if (globalDiscountNum < 0) { showWarning("Desconto não pode ser negativo"); return; }
+    if (globalDiscountType === "percent" && globalDiscountNum > 100) { showWarning("Percentual não pode ultrapassar 100%"); return; }
+    if (globalDiscountAmount > servicesTotal) { showWarning("Desconto global não pode ser maior que o total dos serviços"); return; }
+    if (shippingNum < 0) { showWarning("Frete não pode ser negativo"); return; }
     setSavingMoney(true);
     try {
-      await serviceBoardService.updateCard(boardId, cardId, patch);
-      onCardChange?.();
+      const updated = await serviceBoardService.updateCard(boardId, cardId, {
+        global_discount: globalDiscountNum,
+        global_discount_type: globalDiscountType,
+        shipping: shippingNum,
+      });
+      onCardSaved?.(updated);
     } catch {
       showError("Erro ao salvar desconto global / frete");
     } finally {
@@ -143,28 +156,10 @@ const ServiceServicesSection: React.FC<ServiceServicesSectionProps> = ({
     }
   };
 
-  const handleChangeGlobalDiscountType = (t: DiscountType) => {
-    setGlobalDiscountType(t);
-    const num = parseDecimalInput(globalDiscountInput);
-    if (t === "percent" && num > 100) { showWarning("Percentual não pode ultrapassar 100%"); return; }
-    saveMoney({ global_discount: num, global_discount_type: t });
-  };
-
-  const handleSaveGlobalDiscount = () => {
-    const num = parseDecimalInput(globalDiscountInput);
-    if (num < 0) { showWarning("Desconto não pode ser negativo"); return; }
-    if (globalDiscountType === "percent" && num > 100) { showWarning("Percentual não pode ultrapassar 100%"); return; }
-    const amount = globalDiscountType === "percent" ? servicesTotal * num / 100 : num;
-    if (amount > servicesTotal) { showWarning("Desconto global não pode ser maior que o total dos serviços"); return; }
-    if ((card.global_discount ?? 0) === num && (card.global_discount_type ?? "value") === globalDiscountType) return;
-    saveMoney({ global_discount: num, global_discount_type: globalDiscountType });
-  };
-
-  const handleSaveShipping = () => {
-    const num = parseDecimalInput(shippingInput);
-    if (num < 0) { showWarning("Frete não pode ser negativo"); return; }
-    if ((card.shipping ?? 0) === num) return;
-    saveMoney({ shipping: num });
+  const handleCancelMoney = () => {
+    setGlobalDiscountType(savedGdType);
+    setGlobalDiscountInput(savedGd > 0 ? String(savedGd).replace(".", ",") : "");
+    setShippingInput(savedShip > 0 ? savedShip.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "");
   };
 
   const handleAddService = async (serviceId: number) => {
@@ -398,10 +393,9 @@ const ServiceServicesSection: React.FC<ServiceServicesSectionProps> = ({
                 <div className="flex items-center gap-1">
                   <input type="text" inputMode="decimal" value={globalDiscountInput} disabled={savingMoney}
                     onChange={(e) => setGlobalDiscountInput(sanitizeDecimalInput(e.target.value))}
-                    onBlur={handleSaveGlobalDiscount}
                     placeholder="0"
                     className="w-24 rounded border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800 px-2 py-1 text-right text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" />
-                  <DiscountTypeToggle value={globalDiscountType} onChange={handleChangeGlobalDiscountType} />
+                  <DiscountTypeToggle value={globalDiscountType} onChange={setGlobalDiscountType} />
                 </div>
               </div>
               {globalDiscountAmount > 0 && (
@@ -416,10 +410,23 @@ const ServiceServicesSection: React.FC<ServiceServicesSectionProps> = ({
                 <span className="text-slate-400">Frete:</span>
                 <input type="text" inputMode="decimal" value={shippingInput} disabled={savingMoney}
                   onChange={(e) => setShippingInput(sanitizeDecimalInput(e.target.value))}
-                  onBlur={handleSaveShipping}
                   placeholder="0,00"
                   className="w-28 rounded border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800 px-2 py-1 text-right text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" />
               </div>
+
+              {/* Salvar/Cancelar do desconto global + frete — só aparece com alteração pendente */}
+              {moneyDirty && (
+                <div className="flex gap-2 pt-1">
+                  <button onClick={handleSaveMoney} disabled={savingMoney}
+                    className="flex flex-1 items-center justify-center gap-2 rounded border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50">
+                    <Check size={16} />{savingMoney ? "Salvando..." : "Salvar"}
+                  </button>
+                  <button onClick={handleCancelMoney} disabled={savingMoney}
+                    className="flex flex-1 items-center justify-center gap-2 rounded border border-gray-300 dark:border-slate-600 bg-gray-200/50 dark:bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 transition-colors hover:bg-gray-200 dark:hover:bg-slate-700 disabled:opacity-50">
+                    <X size={16} />Cancelar
+                  </button>
+                </div>
+              )}
 
               <div className="flex justify-between items-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2.5 mt-1">
                 <span className="font-semibold text-slate-900 dark:text-white">Valor do negócio:</span>

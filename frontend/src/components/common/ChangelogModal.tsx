@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.6",
+    date: "24/07/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Abrir card em nova guia: agora dá para abrir qualquer card em uma nova aba do navegador usando o clique do meio do mouse (a rolagem/bolinha) ou Ctrl+clique (Cmd+clique no Mac). Vale nos boards de Vendas e de Serviço. O clique normal e o arrastar continuam funcionando como antes.",
+      },
+    ],
+  },
+  {
     version: "1.8.5",
     date: "24/07/2026",
     entries: [

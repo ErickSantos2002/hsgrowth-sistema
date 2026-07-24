@@ -263,7 +263,7 @@ async def list_service_cards(
 
 
 def _card_value(db, card) -> float:
-    """Valor do negócio = soma dos totais das propostas vinculadas ao card.
+    """Valor do negócio = soma dos serviços do card − desconto global + frete.
     Mesmo cálculo usado no card do kanban (deal_value_by_card)."""
     return deal_value_by_card(db, [card.id]).get(card.id, 0.0)
 
@@ -287,6 +287,9 @@ async def create_service_card(
         contact_info=card.contact_info,
         payment_info=card.payment_info,
         business_info=card.business_info,
+        global_discount=float(card.global_discount or 0),
+        global_discount_type=card.global_discount_type or "value",
+        shipping=float(card.shipping or 0),
         value=_card_value(db, card),
         client_id=card.client_id,
         person_id=card.person_id,
@@ -318,6 +321,9 @@ async def get_service_card(
         contact_info=card.contact_info,
         payment_info=card.payment_info,
         business_info=card.business_info,
+        global_discount=float(card.global_discount or 0),
+        global_discount_type=card.global_discount_type or "value",
+        shipping=float(card.shipping or 0),
         value=_card_value(db, card),
         client_id=card.client_id,
         person_id=card.person_id,
@@ -350,6 +356,9 @@ async def update_service_card(
         contact_info=card.contact_info,
         payment_info=card.payment_info,
         business_info=card.business_info,
+        global_discount=float(card.global_discount or 0),
+        global_discount_type=card.global_discount_type or "value",
+        shipping=float(card.shipping or 0),
         value=_card_value(db, card),
         client_id=card.client_id,
         person_id=card.person_id,
@@ -394,6 +403,9 @@ async def move_service_card(
         contact_info=card.contact_info,
         payment_info=card.payment_info,
         business_info=card.business_info,
+        global_discount=float(card.global_discount or 0),
+        global_discount_type=card.global_discount_type or "value",
+        shipping=float(card.shipping or 0),
         value=_card_value(db, card),
         client_id=card.client_id,
         person_id=card.person_id,

@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.6] — 24/07/2026
+
+### Adicionado
+- **Abrir card em nova guia:** agora é possível abrir qualquer card em uma **nova aba** do navegador usando o **clique do meio do mouse** (a rolagem/bolinha) ou **Ctrl+clique** (Cmd+clique no Mac). Disponível nos boards de **Vendas** e de **Serviço**. O clique normal e o arrastar continuam funcionando como antes.
+
+---
+
 ## [1.8.5] — 24/07/2026
 
 ### Adicionado

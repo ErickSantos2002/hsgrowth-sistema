@@ -190,7 +190,7 @@ const ServiceSummarySection: React.FC<{
   return (
     <ExpandableSection title="Resumo" defaultExpanded={false} icon={<Info size={18} />}>
       <div className="space-y-5">
-        {/* Valor do negócio (soma dos totais das propostas vinculadas) */}
+        {/* Valor do negócio (soma dos serviços − desconto global + frete) */}
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
@@ -201,7 +201,7 @@ const ServiceSummarySection: React.FC<{
               {`R$ ${(card.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </span>
           </div>
-          <p className="mt-0.5 text-xs text-slate-400">Soma dos totais das propostas vinculadas ao card.</p>
+          <p className="mt-0.5 text-xs text-slate-400">Soma dos serviços do card − desconto global + frete.</p>
         </div>
 
         {/* Data de Vencimento */}
@@ -1268,7 +1268,7 @@ const ServiceCardDetails: React.FC = () => {
             cardId={numCardId}
             card={card}
             onChange={reloadActivities}
-            onCardChange={loadCard}
+            onCardSaved={setCard}
           />
         </div>
 
