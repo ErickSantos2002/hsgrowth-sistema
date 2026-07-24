@@ -253,6 +253,7 @@ Padronizada para o layout CRM via `padronizar_transportadoras.py` → **`Planilh
 | Transp. Lote 3 | 10/07/2026 | 100 | Miguel | 9026–9125 | ✅ Importado |
 | Transp. Lote 4 | 14/07/2026 | 100 | Karolaine (50), Claudia (50) | 9140–9240 | ✅ Importado |
 | Transp. Lote 5 | 23/07/2026 | 100 | Miguel (50), Karolaine (50) | 9341–9440 | ✅ Importado |
+| Transp. Lote 6 | 24/07/2026 | 100 | Claudia (50), Miguel (50) | 9449–9553 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
 **Obs. Transp. Lote 2:** o range 8804–9006 inclui 1 card orgânico de Karolaine (Lista fria) criado por SDR na janela; o lote em si é 100/100 (200 linhas, 0 erros).
@@ -265,7 +266,9 @@ Padronizada para o layout CRM via `padronizar_transportadoras.py` → **`Planilh
 
 **Obs. Transp. Lote 5:** primeiro lote pós anti-duplicata. **100 clientes novos (100/100)** — nenhum reaproveitado, 0 pulados. website 100, notes 100, linkedin 98.
 
-**Total Transportadoras importado:** 800 | **Pendentes novos:** 3.087 de 4.056 | **Separados (CNPJ já no CRM):** 169.
+**Obs. Transp. Lote 6:** 100/100 com site, **100 clientes novos**, 0 pulados. O range 9449–9553 inclui 1 card orgânico de Claudia (Lista fria) criado por SDR na janela; o lote é 50/50.
+
+**Total Transportadoras importado:** 900 | **Pendentes novos:** 2.987 de 4.056 | **Separados (CNPJ já no CRM):** 169.
 
 ---
 
