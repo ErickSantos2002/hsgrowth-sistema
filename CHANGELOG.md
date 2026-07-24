@@ -5,6 +5,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.5] — 24/07/2026
+
+### Adicionado
+- **Propostas agora no GestorHS:** as propostas comerciais passam a ser **criadas e gerenciadas pelo GestorHS**. No CRM, a página **"Propostas"** foi removida da barra lateral e, no card de Serviço, a proposta agora é **anexada como documento** na seção **Documentos** do Resumo — com opções de **anexar, trocar e excluir** (mesmo padrão da OC). *(Os dados das propostas antigas continuam guardados no sistema, apenas sem tela de acesso.)*
+
+### Melhorado
+- **Valor do negócio pelos Serviços:** o **Valor do negócio** do card de Serviço voltou a ser calculado pelos **Serviços do card** (quantidade × preço − desconto). Agora com **Desconto global** (em R$ ou %) e **Frete** aplicados sobre o total dos serviços.
+- **Regra de avanço:** nas etapas de **Proposta** (boards de Serviço e Cobrança), a exigência passou a ser a **Proposta anexada** (documento) no lugar da proposta vinculada — assim o funil acompanha as propostas feitas no **GestorHS**.
+
+---
+
 ## [1.8.4] — 23/07/2026
 
 ### Corrigido

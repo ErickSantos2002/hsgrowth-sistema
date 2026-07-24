@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.5",
+    date: "24/07/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Propostas agora no GestorHS: as propostas comerciais passam a ser criadas e gerenciadas pelo GestorHS. No CRM, a página 'Propostas' foi removida e, no card de Serviço, a proposta agora é anexada como documento na seção Documentos do Resumo — com opções de anexar, trocar e excluir (igual à OC).",
+      },
+      {
+        type: "improvement",
+        text: "Valor do negócio pelos Serviços: o Valor do negócio do card de Serviço voltou a ser calculado pelos Serviços do card (quantidade × preço − desconto). Agora com Desconto global (em R$ ou %) e Frete aplicados sobre o total.",
+      },
+      {
+        type: "improvement",
+        text: "Regra de avanço: nas etapas de Proposta (boards de Serviço e Cobrança), a exigência passou a ser a Proposta anexada (documento) no lugar da proposta vinculada — assim o funil acompanha as propostas feitas no GestorHS.",
+      },
+    ],
+  },
+  {
     version: "1.8.4",
     date: "23/07/2026",
     entries: [
