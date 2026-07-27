@@ -321,6 +321,18 @@ const ServiceSummarySection: React.FC<{
                   options={[{ value: "", label: "Não definido" }, { value: "recalibracao", label: "Recalibração" }, { value: "manutencao", label: "Manutenção" }, { value: "ambos", label: "Ambos" }]}
                   onChange={(v) => setBizField("service_type", v)} />
               </div>
+              {isCobranca && (
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-400">Canal de aquisição</label>
+                  <SelectMenu size="sm" value={biz.acquisition_channel || ""} placeholder="Não definido"
+                    options={[
+                      { value: "", label: "Não definido" },
+                      { value: "Importação (GestorHs)", label: "Importação (GestorHs)" },
+                      { value: "Solicitação do Cliente (Inbound)", label: "Solicitação do Cliente (Inbound)" },
+                    ]}
+                    onChange={(v) => setBizField("acquisition_channel", v)} />
+                </div>
+              )}
               <div className="space-y-1 border-t border-gray-200/40 dark:border-slate-700/40 pt-3">
                 <p className="text-[11px] uppercase tracking-wide text-slate-400">Proposta</p>
               </div>
@@ -329,12 +341,14 @@ const ServiceSummarySection: React.FC<{
                   className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500" />
                 <span className="text-sm text-slate-700 dark:text-slate-200">Formulário de Coleta de Dados enviado</span>
               </label>
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400">Forma de fechamento</label>
-                <SelectMenu size="sm" value={biz.closing_type || ""} placeholder="Não definido"
-                  options={[{ value: "", label: "Não definido" }, { value: "faturamento_direto", label: "Faturamento direto" }, { value: "pedido", label: "Pedido" }]}
-                  onChange={(v) => setBizField("closing_type", v)} />
-              </div>
+              {!isCobranca && (
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-400">Forma de fechamento</label>
+                  <SelectMenu size="sm" value={biz.closing_type || ""} placeholder="Não definido"
+                    options={[{ value: "", label: "Não definido" }, { value: "faturamento_direto", label: "Faturamento direto" }, { value: "pedido", label: "Pedido" }]}
+                    onChange={(v) => setBizField("closing_type", v)} />
+                </div>
+              )}
               {isCobranca && (
                 <div className="space-y-1 border-t border-gray-200/40 dark:border-slate-700/40 pt-3">
                   <p className="text-[11px] uppercase tracking-wide text-slate-400">Operações</p>
@@ -358,9 +372,10 @@ const ServiceSummarySection: React.FC<{
             <div className="space-y-2">
               {[
                 ...(isCobranca ? [{ label: "Tipo de cobrança", value: collectionLabel(biz.collection_type) }] : []),
+                ...(isCobranca ? [{ label: "Canal de aquisição", value: biz.acquisition_channel || "" }] : []),
                 { label: "Recalibração/Manutenção", value: serviceTypeLabel(biz.service_type) },
                 { label: "Formulário enviado", value: biz.form_answered ? "Sim" : "Não" },
-                { label: "Forma de fechamento", value: closingLabel(biz.closing_type) },
+                ...(isCobranca ? [] : [{ label: "Forma de fechamento", value: closingLabel(biz.closing_type) }]),
                 ...(isCobranca ? [{ label: "Confirmação de envio", value: biz.shipping_confirmed === "sim" ? "Sim" : biz.shipping_confirmed === "nao" ? "Não" : "" }] : []),
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between gap-3">

@@ -435,7 +435,7 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 
 | # | Transição | O que exige para avançar |
 |---|---|---|
-| 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** + **≥1 serviço** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Tipo de cobrança** (`collection_type`) selecionado |
+| 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** + **≥1 serviço** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Tipo de cobrança** (`collection_type`) selecionado + **Canal de aquisição** (`acquisition_channel`) selecionado |
 | 2 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) + **Recalibração/Manutenção** (`service_type`) preenchido |
 | 3 | Proposta → Operações | **Proposta anexada** (documento no Resumo → Documentos) + **Formulário enviado** (checkbox `form_answered`) |
 | 4 | Operações → **Negócio Ganho** | botão Ganho acende em **Operações** · **Confirmação de envio = "Sim"** (`business_info.shipping_confirmed`, no Resumo → Informações de Negócio) |
@@ -452,6 +452,15 @@ Campo no **Resumo → Informações de Negócio** (`business_info.collection_typ
 - **Aparelhos atrasados** (`atrasados`) → tag **laranja** "Atrasados" no card.
 
 É **obrigatório** para avançar de **Oportunidade Existente → Tentativa de Contato** (ver matriz 8.2, regra 1). Há também um **filtro** no board de Cobrança (Todos / A vencer / Atrasados / Sem tipo de cobrança).
+
+### 8.3.2. Canal de aquisição *(exclusivo do board de Cobrança — adicionado 27/07/2026)*
+Campo no **Resumo → Informações de Negócio** (`business_info.acquisition_channel`), só aparece no board de **Cobrança** (no de Serviço não existe). Opções:
+- **Importação (GestorHs)**
+- **Solicitação do Cliente (Inbound)**
+
+É **obrigatório** para avançar de **Oportunidade Existente → Tentativa de Contato** (ver matriz 8.2, regra 1).
+
+> **Forma de fechamento** (`closing_type`) foi **removida do board de Cobrança** (27/07/2026) — fica só no board de **Serviço** (board 1), onde é usada nas transições da etapa Proposta. A Cobrança não usa esse campo em nenhuma regra.
 
 ### 8.3.2. Confirmação de envio *(exclusivo do board de Cobrança — adicionado 21/07/2026)*
 Campo no **Resumo → Informações de Negócio** (`business_info.shipping_confirmed`), só aparece no board de Cobrança, na seção **Operações**: **Sim** (`sim`) / **Não** (`nao`) / Não definido.

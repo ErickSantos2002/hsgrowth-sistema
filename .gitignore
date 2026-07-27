@@ -1,3 +1,6 @@
 
 # Mockups do brainstorming (companion visual)
 .superpowers/
+
+# Backups do banco (dados de producao — nunca versionar)
+backend/backups/
