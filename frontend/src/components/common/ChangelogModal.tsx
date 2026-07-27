@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.7",
+    date: "27/07/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Movimentação em tempo real: quando alguém move um card de uma lista para outra, todos os usuários que estão com o mesmo board aberto veem a mudança na hora, sem precisar atualizar a página. Vale nos boards de Vendas e de Serviço.",
+      },
+      {
+        type: "improvement",
+        text: "Serviço/Cobrança — Admin e Gerente movem livre: usuários Administrador e Gerente agora podem arrastar os cards entre as etapas sem passar pelas travas de avanço (campos obrigatórios, proposta, etc.), igual já funciona no board de Vendas. Os demais usuários continuam seguindo as regras do funil.",
+      },
+    ],
+  },
+  {
     version: "1.8.6",
     date: "24/07/2026",
     entries: [

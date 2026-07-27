@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.7] — 27/07/2026
+
+### Adicionado
+- **Movimentação em tempo real:** quando alguém move um card de uma lista para outra, **todos os usuários com o mesmo board aberto veem a mudança na hora**, sem precisar atualizar a página (F5). Disponível nos boards de **Vendas** e de **Serviço**. *(Tecnicamente: SSE + Redis pub/sub; reconecta e re-sincroniza sozinho.)*
+
+### Melhorado
+- **Serviço/Cobrança — Admin e Gerente movem livre:** usuários **Administrador** e **Gerente** agora podem arrastar cards entre etapas **sem passar pelas travas de avanço** (campos obrigatórios, proposta anexada, etc.), igual já funcionava no board de **Vendas**. Os demais usuários continuam seguindo as regras do funil.
+
+---
+
 ## [1.8.6] — 24/07/2026
 
 ### Adicionado
