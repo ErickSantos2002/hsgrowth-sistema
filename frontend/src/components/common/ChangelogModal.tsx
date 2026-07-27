@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.8",
+    date: "27/07/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Cobrança — Canal de aquisição: novo campo no Resumo (Informações de Negócio) do board de Cobrança, com as opções 'Importação (GestorHs)' e 'Solicitação do Cliente (Inbound)'. Passa a ser obrigatório para avançar um card de 'Oportunidade Existente' para 'Tentativa de Contato'.",
+      },
+      {
+        type: "improvement",
+        text: "Cobrança — Forma de fechamento removida: o campo 'Forma de fechamento' saiu do board de Cobrança (continua no board de Serviço, onde é usado nas regras da etapa Proposta).",
+      },
+    ],
+  },
+  {
     version: "1.8.7",
     date: "27/07/2026",
     entries: [

@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.8] — 27/07/2026
+
+### Adicionado
+- **Cobrança — Canal de aquisição:** novo campo no **Resumo → Informações de Negócio** do board de **Cobrança**, com as opções **Importação (GestorHs)** e **Solicitação do Cliente (Inbound)**. Passa a ser **obrigatório** para avançar um card de **Oportunidade Existente → Tentativa de Contato**.
+
+### Melhorado
+- **Cobrança — Forma de fechamento removida:** o campo **Forma de fechamento** saiu do board de **Cobrança** (continua no board de **Serviço**, onde é usado nas regras da etapa Proposta).
+
+---
+
 ## [1.8.7] — 27/07/2026
 
 ### Adicionado
