@@ -21,6 +21,7 @@ import { COLORS } from "../constants/colors";
 import ServiceCardModal from "../components/service/ServiceCardModal";
 import userService from "../services/userService";
 import { User as UserType } from "../types";
+import { useBoardStream } from "../hooks/useBoardStream";
 
 // ─── Icon maps ────────────────────────────────────────────────────────────────
 
@@ -790,6 +791,21 @@ const ServiceKanban: React.FC = () => {
       setCards(data.cards || []);
     } catch { /* silencioso */ }
   };
+
+  // Tempo real: aplica o movimento de card vindo de outros usuarios
+  useBoardStream(
+    "service",
+    numId || undefined,
+    (evt) => {
+      if (evt?.type !== "card_moved") return;
+      setCards((prev) =>
+        prev.map((c) =>
+          c.id === evt.card_id ? { ...c, list_id: evt.list_id, position: evt.position } : c
+        )
+      );
+    },
+    () => { reloadCards(); },
+  );
 
   useEffect(() => { loadData(); }, [numId]); // eslint-disable-line react-hooks/exhaustive-deps
 

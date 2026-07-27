@@ -2,12 +2,15 @@
 Endpoints de ServiceBoards (Boards de Serviços).
 Completamente independentes dos boards de vendas.
 """
+import asyncio
+import json
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, status, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user, require_not_viewer
+from app.api.deps import get_db, get_current_active_user, require_not_viewer, require_service_access
+from app.core import realtime
 from app.services.service_board_service import ServiceBoardService, deal_value_by_card
 from app.schemas.service_board import (
     ServiceBoardCreate, ServiceBoardUpdate, ServiceBoardResponse,
@@ -25,8 +28,16 @@ from app.schemas.service import (
     ServiceCardServiceResponse, ServiceCardServiceSummary,
 )
 from app.models.user import User
+from app.models.service_board import ServiceBoard
 
 router = APIRouter()
+
+# Router SEM a dependency global require_service_access (aplicada ao `router` no
+# include_router). O stream SSE é autenticado pelo TICKET (query param), pois o
+# EventSource do navegador não envia header Authorization — uma dependency de
+# sessão daria 401. O acesso é garantido na emissão do ticket (POST /stream-ticket,
+# esse sim protegido). Ver app/api/v1/__init__.py.
+stream_router = APIRouter()
 
 
 # ─── Boards ───────────────────────────────────────────────────────────────────
@@ -64,6 +75,54 @@ async def get_service_board(
         updated_at=board.updated_at,
         lists_count=lists_count,
         cards_count=cards_count,
+    )
+
+
+@router.post("/{board_id}/stream-ticket", summary="Ticket efemero p/ o stream do board (Servicos)")
+async def service_stream_ticket(
+    board_id: int = Path(...),
+    current_user: User = Depends(require_service_access()),
+    db: Session = Depends(get_db),
+):
+    # require_service_access() garante o gate do modulo (admin/gerente/servico).
+    # O ticket so e emitido para quem tem acesso; o /stream confia no ticket
+    # (EventSource nao manda Authorization header).
+    if not db.query(ServiceBoard.id).filter(ServiceBoard.id == board_id).first():
+        raise HTTPException(status_code=404, detail="Board de servico nao encontrado")
+    return {"ticket": realtime.create_stream_ticket(current_user.email, "service", board_id)}
+
+
+@stream_router.get("/{board_id}/stream", summary="Stream SSE de movimentos de card (Servicos)")
+async def service_board_stream(
+    board_id: int = Path(...),
+    ticket: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    payload = realtime.decode_stream_ticket(ticket)
+    if not payload or payload.get("board_scope") != "service" or payload.get("board_id") != board_id:
+        raise HTTPException(status_code=401, detail="Ticket invalido")
+    if not db.query(ServiceBoard.id).filter(ServiceBoard.id == board_id).first():
+        raise HTTPException(status_code=404, detail="Board de servico nao encontrado")
+
+    key = realtime.channel_key("service", board_id)
+
+    async def gen():
+        q = realtime.subscribe(key)
+        try:
+            yield ": connected\n\n"
+            while True:
+                try:
+                    event = await asyncio.wait_for(q.get(), timeout=20)
+                    yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"
+        finally:
+            realtime.unsubscribe(key, q)
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 
@@ -393,6 +452,11 @@ async def move_service_card(
 ) -> Any:
     svc = ServiceBoardService(db)
     card = svc.move_card(card_id, data.list_id, data.position, current_user)
+
+    realtime.publish_card_moved(
+        "service", board_id, card.id, card.list_id, float(card.position or 0)
+    )
+
     return ServiceCardResponse(
         id=card.id,
         list_id=card.list_id,

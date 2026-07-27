@@ -18,6 +18,7 @@ from app.core.redis_client import (
     connect_redis_ai_rate,
     disconnect_redis_ai_rate,
 )
+from app.core import realtime
 from app.middleware.error_handler import catch_exceptions_middleware
 from app.middleware.session_middleware import session_activity_middleware
 from app.workers.scheduler import start_scheduler, stop_scheduler
@@ -48,6 +49,9 @@ async def lifespan(app: FastAPI):
     if settings.ENVIRONMENT != "testing":
         await start_scheduler()
         logger.success("Scheduler iniciado")
+
+        realtime.start_realtime_consumer()
+        logger.success("Realtime consumer iniciado")
     else:
         logger.info("Scheduler desabilitado durante testes")
 
@@ -60,6 +64,9 @@ async def lifespan(app: FastAPI):
     if settings.ENVIRONMENT != "testing":
         await stop_scheduler()
         logger.success("Scheduler finalizado")
+
+        await realtime.stop_realtime_consumer()
+        logger.success("Realtime consumer finalizado")
 
     # Fechar conexão Redis de sessões
     await disconnect_redis()

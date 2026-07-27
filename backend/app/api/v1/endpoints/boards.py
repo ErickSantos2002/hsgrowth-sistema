@@ -2,13 +2,17 @@
 Endpoints de Boards e Lists.
 Rotas para gerenciamento de quadros e listas.
 """
+import asyncio
+import json
 from typing import Any, Optional, List
 from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.board_service import BoardService
 from app.services.list_service import ListService
+from app.core import realtime
 from app.schemas.board import (
     BoardCreate,
     BoardUpdate,
@@ -833,4 +837,53 @@ async def move_list(
         position=moved_list.position,
         created_at=moved_list.created_at,
         updated_at=moved_list.updated_at
+    )
+
+
+@router.post("/{board_id}/stream-ticket", summary="Ticket efemero p/ o stream do board (Vendas)")
+async def sales_stream_ticket(
+    board_id: int = Path(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    # Acesso espelha o GET /boards/{id} (get_board): boards de Vendas nao tem
+    # membership por usuario — qualquer usuario autenticado ja pode ler o board e
+    # seus cards. O stream expoe exatamente o mesmo escopo, entao usa o mesmo gate.
+    board = db.query(Board).filter(Board.id == board_id).first()
+    if not board:
+        raise HTTPException(status_code=404, detail="Board nao encontrado")
+    return {"ticket": realtime.create_stream_ticket(current_user.email, "sales", board_id)}
+
+
+@router.get("/{board_id}/stream", summary="Stream SSE de movimentos de card (Vendas)")
+async def sales_board_stream(
+    board_id: int = Path(...),
+    ticket: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    payload = realtime.decode_stream_ticket(ticket)
+    if not payload or payload.get("board_scope") != "sales" or payload.get("board_id") != board_id:
+        raise HTTPException(status_code=401, detail="Ticket invalido")
+    if not db.query(Board.id).filter(Board.id == board_id).first():
+        raise HTTPException(status_code=404, detail="Board nao encontrado")
+
+    key = realtime.channel_key("sales", board_id)
+
+    async def gen():
+        q = realtime.subscribe(key)
+        try:
+            yield ": connected\n\n"
+            while True:
+                try:
+                    event = await asyncio.wait_for(q.get(), timeout=20)
+                    yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"
+        finally:
+            realtime.unsubscribe(key, q)
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

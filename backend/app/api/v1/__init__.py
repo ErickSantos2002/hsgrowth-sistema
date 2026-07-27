@@ -40,6 +40,9 @@ api_router.include_router(cadencias.router, prefix="/cadencias", tags=["Cadênci
 api_router.include_router(cadences.router, prefix="/cadences", tags=["Cadências por Lead"])
 api_router.include_router(email_templates.router, prefix="/email-templates", tags=["Email Templates"])
 api_router.include_router(service_boards.router, prefix="/service-boards", tags=["Service Boards"], dependencies=[Depends(require_service_access())])
+# Stream SSE (Serviço): SEM require_service_access — autenticado pelo ticket na query
+# (EventSource não manda header). O acesso é garantido no POST /stream-ticket.
+api_router.include_router(service_boards.stream_router, prefix="/service-boards", tags=["Service Boards"])
 api_router.include_router(service_dashboard.router, prefix="/service-dashboard", tags=["Service Dashboard"], dependencies=[Depends(require_service_access())])
 api_router.include_router(service_activities.router, prefix="/service-activities", tags=["Service Activities"], dependencies=[Depends(require_service_access())])
 

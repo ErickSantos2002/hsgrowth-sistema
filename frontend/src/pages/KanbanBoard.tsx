@@ -41,6 +41,7 @@ import ConfirmModal from "../components/kanban/ConfirmModal";
 import CardModal, { CardFormData } from "../components/kanban/CardModal";
 import BoardModal from "../components/kanban/BoardModal";
 import { useAuth } from "../context/AuthContext";
+import { useBoardStream } from "../hooks/useBoardStream";
 
 const KanbanBoard: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -474,6 +475,21 @@ const KanbanBoard: React.FC = () => {
       }
     }
   };
+
+  // Tempo real: aplica o movimento de card vindo de outros usuarios
+  useBoardStream(
+    "sales",
+    board?.id,
+    (evt) => {
+      if (evt?.type !== "card_moved") return;
+      setCards((prev) =>
+        prev.map((c) =>
+          c.id === evt.card_id ? { ...c, list_id: evt.list_id, position: evt.position } : c
+        )
+      );
+    },
+    () => { loadCardsOnly(); }, // resync no (re)connect
+  );
 
   /**
    * Carrega os dados do board, listas e cards

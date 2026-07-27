@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.repositories.notification_repository import NotificationRepository
 
 from app.api.deps import get_db, get_current_active_user, require_not_viewer, require_role
+from app.core import realtime
 from app.services.card_service import CardService
 from app.schemas.card import (
     CardCloneResponse,
@@ -637,6 +638,12 @@ async def move_card(
     )
     db.add(audit_log)
     db.commit()
+
+    # Tempo real: avisa quem esta com o board aberto (apos o commit)
+    if target_list is not None:
+        realtime.publish_card_moved(
+            "sales", target_list.board_id, card.id, card.list_id, float(card.position or 0)
+        )
 
     return card_to_response(card)
 
