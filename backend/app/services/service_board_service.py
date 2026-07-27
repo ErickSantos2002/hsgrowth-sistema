@@ -571,7 +571,12 @@ class ServiceBoardService:
         old_list = self.repo.find_list_by_id(card.list_id)
         new_list = self.get_list(new_list_id)
         old_list_id = card.list_id
-        if old_list_id != new_list_id:
+        # Admin e Gerente passam livremente pelas regras de avanço (igual ao board de
+        # Vendas — ver CardService.move_card / is_privileged). Demais roles seguem as
+        # travas do funil (Serviços e Cobrança).
+        role_name = user.role.name if user and user.role else ""
+        is_privileged = role_name in ("admin", "manager")
+        if old_list_id != new_list_id and not is_privileged:
             self._validate_advance(card, old_list, new_list)
         moved = self.repo.move_card(card_id, new_list_id, new_position)
         if old_list_id != new_list_id:
