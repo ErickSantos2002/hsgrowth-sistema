@@ -26,9 +26,16 @@ export interface ServiceDashboard {
   service_type: NameCount[];
 }
 
+export interface CollaboratorOption { id: number; name: string; }
+
 class ServiceDashboardService {
-  async get(start?: string, end?: string, board?: number): Promise<ServiceDashboard> {
-    const r = await api.get<ServiceDashboard>("/api/v1/service-dashboard", { params: { start, end, board } });
+  async get(start?: string, end?: string, board?: number, userId?: number): Promise<ServiceDashboard> {
+    const r = await api.get<ServiceDashboard>("/api/v1/service-dashboard", { params: { start, end, board, user_id: userId } });
+    return r.data;
+  }
+
+  async listCollaborators(board?: number): Promise<CollaboratorOption[]> {
+    const r = await api.get<CollaboratorOption[]>("/api/v1/service-dashboard/collaborators", { params: { board } });
     return r.data;
   }
 }

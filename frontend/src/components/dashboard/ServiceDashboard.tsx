@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from "react";
 import {
   Briefcase, CheckCircle2, XCircle, DollarSign, Activity as ActivityIcon,
-  AlarmClock, TrendingUp, Wrench, Trophy,
+  AlarmClock, TrendingUp, Wrench, Trophy, User as UserIcon,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, Legend,
 } from "recharts";
-import serviceDashboardService, { ServiceDashboard as ServiceDashboardData } from "../../services/serviceDashboardService";
-import { LoadingSpinner } from "../common";
+import serviceDashboardService, { ServiceDashboard as ServiceDashboardData, CollaboratorOption } from "../../services/serviceDashboardService";
+import { LoadingSpinner, SelectMenu } from "../common";
 import { getChartColors } from "../../constants/colors";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import KpiCard from "./KpiCard";
 
 interface Props {
@@ -98,15 +99,33 @@ const ChartCard: React.FC<{ icon: React.ReactNode; iconBg: string; title: string
 const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, periodLabel, board }) => {
   const { darkMode } = useTheme();
   const chartColors = getChartColors(darkMode);
+  const { user } = useAuth();
+  // Só admin/gerente escolhem o usuário no filtro. Colaborador comum fica travado
+  // na própria dash (o backend também força isso, por segurança).
+  const canChooseUser = user?.role === "admin" || user?.role === "manager";
   const [data, setData] = useState<ServiceDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<number | undefined>(undefined);
+  const [collabs, setCollabs] = useState<CollaboratorOption[]>([]);
+
+  // admin/gerente: começa em "Todos" e carrega a lista de colaboradores do board.
+  // Colaborador comum: filtro travado no próprio usuário (não carrega lista).
+  useEffect(() => {
+    if (canChooseUser) {
+      setUserId(undefined);
+      serviceDashboardService.listCollaborators(board).then(setCollabs).catch(() => setCollabs([]));
+    } else {
+      setUserId(user?.id);
+      setCollabs([]);
+    }
+  }, [board, canChooseUser, user?.id]);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
         const { start, end } = periodRange(period, customStart, customEnd);
-        setData(await serviceDashboardService.get(start, end, board));
+        setData(await serviceDashboardService.get(start, end, board, userId));
       } catch {
         setData(null);
       } finally {
@@ -114,7 +133,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
       }
     };
     load();
-  }, [period, customStart, customEnd, board]);
+  }, [period, customStart, customEnd, board, userId]);
 
   if (loading) {
     return <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>;
@@ -133,7 +152,27 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
 
   return (
     <div className="space-y-6">
-      <p className="text-xs uppercase tracking-wide text-slate-400">Visão geral · {periodLabel || "Período"}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs uppercase tracking-wide text-slate-400">Visão geral · {periodLabel || "Período"}</p>
+        {canChooseUser ? (
+          <div className="w-full sm:w-64">
+            <SelectMenu
+              size="sm"
+              value={userId ? String(userId) : ""}
+              placeholder="Todos os usuários"
+              options={[{ value: "", label: "Todos os usuários" }, ...collabs.map((c) => ({ value: String(c.id), label: c.name }))]}
+              onChange={(v) => setUserId(v ? Number(v) : undefined)}
+            />
+          </div>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 dark:border-slate-700/50 dark:bg-slate-800/50 dark:text-slate-300"
+            title="Você vê apenas os seus próprios negócios"
+          >
+            <UserIcon size={14} className="text-slate-400" /> {user?.name}
+          </span>
+        )}
+      </div>
 
       {/* ── KPIs (5 em cima · 4 embaixo, cada linha de canto a canto) ── */}
       <div className="space-y-4">

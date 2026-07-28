@@ -35,7 +35,7 @@ class ServiceDashboardService:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_dashboard(self, start: datetime, end: datetime, boards=None) -> ServiceDashboardResponse:
+    def get_dashboard(self, start: datetime, end: datetime, boards=None, user_id=None) -> ServiceDashboardResponse:
         db = self.db
         now = datetime.utcnow()
         threshold = now - timedelta(days=3)
@@ -61,7 +61,25 @@ class ServiceDashboardService:
             if list_ids else []
         )
         card_ids = [c.id for c in cards]
-        active_cards = [c for c in cards if c.list_id not in done_ids and c.list_id not in lost_ids]
+
+        # ── Filtro por usuário (opcional) ────────────────────────────────────
+        # collab_ids = cards onde o usuário tem >=1 atividade (colaborador).
+        # None = sem filtro (comportamento atual). O Ranking de colaboradores
+        # NUNCA usa esse filtro — sempre mostra todos.
+        collab_ids = None
+        if user_id is not None:
+            collab_ids = (
+                {cid for (cid,) in db.query(ServiceCardActivity.service_card_id)
+                 .filter(ServiceCardActivity.service_card_id.in_(card_ids),
+                         ServiceCardActivity.user_id == user_id).distinct().all()}
+                if card_ids else set()
+            )
+        in_scope = (lambda cid: True) if collab_ids is None else (lambda cid: cid in collab_ids)
+
+        active_cards = [
+            c for c in cards
+            if c.list_id not in done_ids and c.list_id not in lost_ids and in_scope(c.id)
+        ]
 
         # ── Valor por card (propostas vinculadas) ────────────────────────────
         from app.services.service_board_service import deal_value_by_card
@@ -70,7 +88,7 @@ class ServiceDashboardService:
         pipeline_value = sum(value_by_card.get(c.id, 0.0) for c in active_cards)
 
         # ── Funil (snapshot por etapa) ───────────────────────────────────────
-        by_list = Counter(c.list_id for c in cards)
+        by_list = Counter(c.list_id for c in cards if in_scope(c.id))
         cards_by_stage = [
             StageCount(stage_name=l.name, count=by_list.get(l.id, 0))
             for l in sorted(lists, key=lambda x: x.position)
@@ -95,11 +113,21 @@ class ServiceDashboardService:
         won_events = events("card_won")
         lost_events = events("card_lost")
 
-        # Ganhos/Perdidos no período: cards que estão em etapa final E foram
-        # marcados dentro do período (pela data de atualização). Independe do
-        # evento existir — funciona até para cards marcados antes do registro.
-        won_cards = [c for c in cards if c.list_id in done_ids and c.updated_at and start <= c.updated_at <= end]
-        lost_cards = [c for c in cards if c.list_id in lost_ids and c.updated_at and start <= c.updated_at <= end]
+        # Atribuição por usuário: cards que o próprio usuário marcou como ganho/perdido
+        # no período (quem registrou o evento). Usado quando há filtro por usuário.
+        won_ids_u = {cid for cid, uid in won_events if uid == user_id} if user_id is not None else None
+        lost_ids_u = {cid for cid, uid in lost_events if uid == user_id} if user_id is not None else None
+
+        # Ganhos/Perdidos no período:
+        #  - sem filtro: cards em etapa final marcados dentro do período (por updated_at).
+        #  - com filtro: só os cards que ESSE usuário marcou (atribuição).
+        if user_id is None:
+            won_cards = [c for c in cards if c.list_id in done_ids and c.updated_at and start <= c.updated_at <= end]
+            lost_cards = [c for c in cards if c.list_id in lost_ids and c.updated_at and start <= c.updated_at <= end]
+        else:
+            _byid = {c.id: c for c in cards}
+            won_cards = [_byid[cid] for cid in won_ids_u if cid in _byid]
+            lost_cards = [_byid[cid] for cid in lost_ids_u if cid in _byid]
         won_count = len(won_cards)
         lost_count = len(lost_cards)
         won_value = sum(value_by_card.get(c.id, 0.0) for c in won_cards)
@@ -177,8 +205,11 @@ class ServiceDashboardService:
             .all()
             if card_ids else []
         )
-        activities_count = len(act_rows)
-        type_counter = Counter((t or "other") for t, _ in act_rows)
+        # Com filtro: conta só as atividades feitas pelo próprio usuário.
+        # Sem filtro: todas. (O Ranking abaixo usa act_rows completo, sempre.)
+        act_rows_user = act_rows if user_id is None else [r for r in act_rows if r[1] == user_id]
+        activities_count = len(act_rows_user)
+        type_counter = Counter((t or "other") for t, _ in act_rows_user)
         activities_by_type = [
             NameCount(name=TYPE_LABELS.get(t, t), count=cnt)
             for t, cnt in type_counter.most_common()
@@ -216,12 +247,14 @@ class ServiceDashboardService:
         )
 
         # ── Motivos de perda (das anotações "Motivo da perda: X") ────────────
+        # Com filtro: só dos cards que o usuário marcou como perdido.
+        reason_ids = card_ids if user_id is None else list(lost_ids_u or [])
         reason_counter: Counter = Counter()
-        if card_ids:
+        if reason_ids:
             notes = (
                 db.query(ServiceCardActivity.description)
                 .filter(
-                    ServiceCardActivity.service_card_id.in_(card_ids),
+                    ServiceCardActivity.service_card_id.in_(reason_ids),
                     ServiceCardActivity.category == "anotacao",
                     ServiceCardActivity.created_at >= start,
                     ServiceCardActivity.created_at <= end,
@@ -261,28 +294,48 @@ class ServiceDashboardService:
                 mm = 12
                 yy -= 1
         months.reverse()
+        range_start = datetime(months[0][0], months[0][1], 1)
         won_by_month: Counter = Counter()
         lost_by_month: Counter = Counter()
-        for c in cards:
-            if c.updated_at:
-                key = (c.updated_at.year, c.updated_at.month)
-                if c.list_id in done_ids:
-                    won_by_month[key] += 1
-                elif c.list_id in lost_ids:
-                    lost_by_month[key] += 1
+        if user_id is None:
+            for c in cards:
+                if c.updated_at:
+                    key = (c.updated_at.year, c.updated_at.month)
+                    if c.list_id in done_ids:
+                        won_by_month[key] += 1
+                    elif c.list_id in lost_ids:
+                        lost_by_month[key] += 1
+        elif card_ids:
+            # Atribuição: card_won/card_lost registrados pelo usuário nos 6 meses.
+            evo_events = (
+                db.query(ServiceCardActivity.activity_type, ServiceCardActivity.created_at)
+                .filter(
+                    ServiceCardActivity.service_card_id.in_(card_ids),
+                    ServiceCardActivity.user_id == user_id,
+                    ServiceCardActivity.activity_type.in_(["card_won", "card_lost"]),
+                    ServiceCardActivity.created_at >= range_start,
+                ).all()
+            )
+            for atype, dt in evo_events:
+                if dt:
+                    key = (dt.year, dt.month)
+                    if atype == "card_won":
+                        won_by_month[key] += 1
+                    else:
+                        lost_by_month[key] += 1
         act_by_month: Counter = Counter()
         if card_ids:
-            range_start = datetime(months[0][0], months[0][1], 1)
-            act_dates = (
+            act_q = (
                 db.query(ServiceCardActivity.created_at)
                 .filter(
                     ServiceCardActivity.service_card_id.in_(card_ids),
                     ServiceCardActivity.category == "atividade",
                     ServiceCardActivity.created_at >= range_start,
                 )
-                .all()
             )
-            for (dt,) in act_dates:
+            if user_id is not None:
+                act_q = act_q.filter(ServiceCardActivity.user_id == user_id)
+            for (dt,) in act_q.all():
                 if dt:
                     act_by_month[(dt.year, dt.month)] += 1
         evolution = [
@@ -313,4 +366,31 @@ class ServiceDashboardService:
             recalibrations=recalibrations,
             modality=modality,
             service_type=service_type,
+        )
+
+    def list_collaborators(self, boards=None) -> list:
+        """Usuários que têm >=1 atividade em algum card (não deletado) dos boards
+        dados — para popular o filtro de usuário da dashboard. Ordenado por nome."""
+        from app.services.service_board_service import SERVICE_FUNNEL_BOARD_IDS
+        db = self.db
+        target = boards if boards is not None else SERVICE_FUNNEL_BOARD_IDS
+        board_ids = [
+            b.id for b in db.query(ServiceBoard.id)
+            .filter(ServiceBoard.is_deleted == False, ServiceBoard.id.in_(target))  # noqa: E712
+            .all()
+        ]
+        if not board_ids:
+            return []
+        rows = (
+            db.query(User.id, User.name)
+            .join(ServiceCardActivity, ServiceCardActivity.user_id == User.id)
+            .join(ServiceCard, ServiceCard.id == ServiceCardActivity.service_card_id)
+            .join(ServiceList, ServiceList.id == ServiceCard.list_id)
+            .filter(ServiceList.board_id.in_(board_ids), ServiceCard.is_deleted == False)  # noqa: E712
+            .distinct()
+            .all()
+        )
+        return sorted(
+            [{"id": uid, "name": nm} for uid, nm in rows],
+            key=lambda x: (x["name"] or "").lower(),
         )
