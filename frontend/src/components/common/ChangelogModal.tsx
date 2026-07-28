@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.10",
+    date: "28/07/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Serviços no card — valores em reais: ao editar um serviço, valores no formato brasileiro (ex.: 2.226,00 ou 2.500) eram interpretados errado e viravam centavos (2,23 / 2,50). Corrigido — agora o ponto é separador de milhar e a vírgula é o decimal, no preço, desconto, desconto global e frete.",
+      },
+    ],
+  },
+  {
     version: "1.8.9",
     date: "28/07/2026",
     entries: [

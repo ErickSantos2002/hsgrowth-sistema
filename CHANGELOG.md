@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.10] — 28/07/2026
+
+### Corrigido
+- **Serviços no card — valores em reais:** ao editar um serviço, valores no formato brasileiro (ex.: **2.226,00** ou **2.500**) eram interpretados errado e viravam centavos (2,23 / 2,50). Corrigido — o **ponto** passa a ser separador de **milhar** e a **vírgula** o **decimal**, valendo para **preço, desconto, desconto global e frete**.
+
+---
+
 ## [1.8.9] — 28/07/2026
 
 ### Adicionado
