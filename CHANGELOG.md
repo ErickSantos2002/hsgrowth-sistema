@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.9] — 28/07/2026
+
+### Adicionado
+- **Dashboard de Serviço — filtro por usuário:** filtra a dashboard de **Serviço** e de **Cobrança** por um usuário. Mostra o pipeline dos negócios que ele está trabalhando (colaborador), os ganhos/perdidos que **ele marcou**, atividades no período/por tipo, evolução e motivos de perda — tudo daquele usuário. **Admin/Gerente** escolhem qualquer usuário; o **colaborador** vê só a própria dashboard (nome fixo, travado também no backend). O **Ranking de colaboradores** sempre mostra todos.
+
+### Corrigido
+- **Tempo real — dashboard com timeout ao ter várias abas abertas:** com muitas abas de board abertas, as conexões de tempo real esgotavam o limite de conexões do navegador (HTTP/1.1) e outras telas (ex.: dashboard) davam timeout. Agora a aba em segundo plano **libera a conexão** e a **reabre + re-sincroniza** ao voltar ao primeiro plano.
+
+---
+
 ## [1.8.8] — 27/07/2026
 
 ### Adicionado

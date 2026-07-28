@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.9",
+    date: "28/07/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Dashboard de Serviço — filtro por usuário: agora dá para filtrar a dashboard de Serviço e de Cobrança por um usuário específico, vendo os negócios que ele está trabalhando, ganhos/perdidos que ele marcou, atividades e evolução. Admin e Gerente escolhem qualquer usuário; o colaborador vê apenas a própria dashboard (nome fixo). O 'Ranking de colaboradores' continua mostrando todos.",
+      },
+      {
+        type: "fix",
+        text: "Tempo real — dashboard não carregava com várias abas abertas: quando havia muitas abas de board abertas ao mesmo tempo, as conexões de tempo real esgotavam o limite do navegador e o dashboard dava timeout. Agora as abas em segundo plano liberam a conexão e a reabrem (re-sincronizando) quando voltam a ser usadas.",
+      },
+    ],
+  },
+  {
     version: "1.8.8",
     date: "27/07/2026",
     entries: [
