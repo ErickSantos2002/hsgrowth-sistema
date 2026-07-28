@@ -99,7 +99,10 @@ const ServiceServicesSection: React.FC<ServiceServicesSectionProps> = ({
     }
   };
 
-  const parseDecimalInput = (value: string): number => parseFloat(value.replace(",", ".")) || 0;
+  // Parser pt-BR: "." é separador de milhar e "," é decimal. Ex.: "2.226,00" -> 2226,
+  // "2.500" -> 2500, "2,5" -> 2.5. (O campo é pré-preenchido no formato pt-BR.)
+  const parseDecimalInput = (value: string): number =>
+    parseFloat(value.replace(/\./g, "").replace(",", ".")) || 0;
   const sanitizeDecimalInput = (value: string): string => value.replace(/[^0-9,.]/g, "");
   const formatCurrency = (value: number) =>
     `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
