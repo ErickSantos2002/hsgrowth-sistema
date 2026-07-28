@@ -17,34 +17,56 @@ export function useBoardStream(
     let backoff = 1000;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
+    const clearTimer = () => { if (timer) { clearTimeout(timer); timer = undefined; } };
+    const isHidden = () => typeof document !== "undefined" && document.visibilityState === "hidden";
+
+    function disconnect() {
+      clearTimer();
+      es?.close();
+      es = null;
+    }
+
+    function scheduleRetry() {
+      if (stopped || isHidden()) return;
+      clearTimer();
+      timer = setTimeout(connect, backoff);
+      backoff = Math.min(backoff * 2, 10000);
+    }
+
     async function connect() {
-      if (stopped) return;
+      // Só a aba visível mantém o SSE. Evita duplicar conexão.
+      if (stopped || es || isHidden()) return;
       try {
         const ticket = await getStreamTicket(scope, boardId!);
-        if (stopped) return;
+        if (stopped || isHidden()) return;
         es = new EventSource(streamUrl(scope, boardId!, ticket));
         es.onopen = () => { backoff = 1000; onOpen(); };
         es.onmessage = (m) => { try { onEvent(JSON.parse(m.data)); } catch { /* ignora */ } };
-        es.onerror = () => {
-          es?.close();
-          es = null;
-          if (!stopped) {
-            timer = setTimeout(connect, backoff);
-            backoff = Math.min(backoff * 2, 10000);
-          }
-        };
+        es.onerror = () => { es?.close(); es = null; scheduleRetry(); };
       } catch {
-        if (!stopped) {
-          timer = setTimeout(connect, backoff);
-          backoff = Math.min(backoff * 2, 10000);
-        }
+        scheduleRetry();
       }
     }
-    connect();
+
+    // Aba em segundo plano fecha o SSE (libera o limite de ~6 conexões/host do
+    // navegador — senão o dashboard/outras requisições ficam na fila). Ao voltar
+    // a ficar visível, reabre e re-sincroniza (onOpen).
+    const onVisibility = () => {
+      if (isHidden()) {
+        disconnect();
+      } else {
+        backoff = 1000;
+        connect();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    if (!isHidden()) connect();
+
     return () => {
       stopped = true;
-      es?.close();
-      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      disconnect();
     };
   }, [scope, boardId]); // eslint-disable-line react-hooks/exhaustive-deps
 }
