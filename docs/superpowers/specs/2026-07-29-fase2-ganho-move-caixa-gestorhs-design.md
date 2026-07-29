@@ -142,9 +142,11 @@ mesmo padrão dos retroativos anteriores.
 - Para cada um, chama `mover_caixa_ganho` com o `external_id`, o `proposal_number` (se o
   card tiver) e uma observação de retroação.
 - Idempotente: os que já foram movidos voltam `200 {"movida": false}`.
-- Os cards antigos que deram Ganho antes deste campo existir vão **sem** `numero_proposta`
-  — a caixa avança mesmo assim. Se quiser o número neles, o operador preenche o campo à
-  mão no card antes de rodar. Hoje são ~3 cards (1387, 1410, 1411).
+- `numero_proposta`: se o card tiver `business_info.proposal_number`, usa esse; senão
+  usa **`2`** — uma proposta interna do GestorHS usada como referência de teste para os
+  cards antigos, que deram Ganho antes do campo existir. Hoje são ~3 cards
+  (1387, 1410, 1411). O `2` é uma constante do script (`PROPOSTA_RETROATIVO_PADRAO = 2`),
+  fácil de trocar.
 - Roda síncrono (não via Celery) — é operação única e manual, com dry-run e conferência.
 
 ---
