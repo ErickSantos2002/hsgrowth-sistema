@@ -461,6 +461,15 @@ class ServiceBoardService:
         if new_list.is_done_stage or "ganho" in new_name:
             miss = []
             if board_id == 1:
+                # Número da proposta (do GestorHS) é obrigatório para dar Ganho —
+                # vai no aviso de volta ao GestorHS (fase 2).
+                pn = biz.get("proposal_number")
+                try:
+                    pn_ok = pn not in (None, "") and int(pn) > 0
+                except (TypeError, ValueError):
+                    pn_ok = False
+                if not pn_ok:
+                    miss.append("Número da proposta preenchido no Resumo")
                 # Funil oficial — dois caminhos conforme a origem:
                 #   De "Proposta" (Faturamento direto): forma=faturamento_direto + Proposta anexada
                 #   De "Aguardando Pedido" (Pedido): OC anexada
