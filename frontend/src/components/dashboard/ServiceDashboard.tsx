@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from "react";
 import {
   Briefcase, CheckCircle2, XCircle, DollarSign, Activity as ActivityIcon,
-  AlarmClock, TrendingUp, Wrench, Trophy, User as UserIcon,
+  AlarmClock, TrendingUp, Wrench, Trophy,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, Legend,
 } from "recharts";
-import serviceDashboardService, { ServiceDashboard as ServiceDashboardData, CollaboratorOption } from "../../services/serviceDashboardService";
-import { LoadingSpinner, SelectMenu } from "../common";
+import serviceDashboardService, { ServiceDashboard as ServiceDashboardData } from "../../services/serviceDashboardService";
+import { LoadingSpinner } from "../common";
 import { getChartColors } from "../../constants/colors";
 import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
 import KpiCard from "./KpiCard";
 
 interface Props {
@@ -20,6 +19,8 @@ interface Props {
   customEnd?: string;
   periodLabel?: string;
   board?: number; // 1 = funil oficial (padrão), 2 = Cobrança
+  userId?: number;         // filtro de usuário (controlado no topo, no Dashboard.tsx)
+  collectionType?: string; // [Cobrança] tipo de cobrança: "a_vencer" | "atrasados"
 }
 
 const ACTIVITY_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16", "#94a3b8"];
@@ -96,36 +97,21 @@ const ChartCard: React.FC<{ icon: React.ReactNode; iconBg: string; title: string
   </div>
 );
 
-const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, periodLabel, board }) => {
+const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, periodLabel, board, userId, collectionType }) => {
   const { darkMode } = useTheme();
   const chartColors = getChartColors(darkMode);
-  const { user } = useAuth();
-  // Só admin/gerente escolhem o usuário no filtro. Colaborador comum fica travado
-  // na própria dash (o backend também força isso, por segurança).
-  const canChooseUser = user?.role === "admin" || user?.role === "manager";
   const [data, setData] = useState<ServiceDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<number | undefined>(undefined);
-  const [collabs, setCollabs] = useState<CollaboratorOption[]>([]);
-
-  // admin/gerente: começa em "Todos" e carrega a lista de colaboradores do board.
-  // Colaborador comum: filtro travado no próprio usuário (não carrega lista).
-  useEffect(() => {
-    if (canChooseUser) {
-      setUserId(undefined);
-      serviceDashboardService.listCollaborators(board).then(setCollabs).catch(() => setCollabs([]));
-    } else {
-      setUserId(user?.id);
-      setCollabs([]);
-    }
-  }, [board, canChooseUser, user?.id]);
+  // Funil: "atual" = snapshot (o que está em cada etapa hoje) · "fluxo" = o que
+  // entrou em cada etapa no período filtrado.
+  const [funnelMode, setFunnelMode] = useState<"atual" | "fluxo">("atual");
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
         const { start, end } = periodRange(period, customStart, customEnd);
-        setData(await serviceDashboardService.get(start, end, board, userId));
+        setData(await serviceDashboardService.get(start, end, board, userId, collectionType));
       } catch {
         setData(null);
       } finally {
@@ -133,7 +119,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
       }
     };
     load();
-  }, [period, customStart, customEnd, board, userId]);
+  }, [period, customStart, customEnd, board, userId, collectionType]);
 
   if (loading) {
     return <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>;
@@ -143,6 +129,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
   }
 
   const maxCollab = Math.max(1, ...data.collaborators.map((c) => c.activities + c.recalibrations));
+  const funnelData = funnelMode === "fluxo" ? data.cards_by_stage_flow : data.cards_by_stage;
 
   const tooltipStyle = {
     contentStyle: { backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" },
@@ -152,27 +139,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs uppercase tracking-wide text-slate-400">Visão geral · {periodLabel || "Período"}</p>
-        {canChooseUser ? (
-          <div className="w-full sm:w-64">
-            <SelectMenu
-              size="sm"
-              value={userId ? String(userId) : ""}
-              placeholder="Todos os usuários"
-              options={[{ value: "", label: "Todos os usuários" }, ...collabs.map((c) => ({ value: String(c.id), label: c.name }))]}
-              onChange={(v) => setUserId(v ? Number(v) : undefined)}
-            />
-          </div>
-        ) : (
-          <span
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 dark:border-slate-700/50 dark:bg-slate-800/50 dark:text-slate-300"
-            title="Você vê apenas os seus próprios negócios"
-          >
-            <UserIcon size={14} className="text-slate-400" /> {user?.name}
-          </span>
-        )}
-      </div>
+      <p className="text-xs uppercase tracking-wide text-slate-400">Visão geral · {periodLabel || "Período"}</p>
 
       {/* ── KPIs (5 em cima · 4 embaixo, cada linha de canto a canto) ── */}
       <div className="space-y-4">
@@ -216,19 +183,45 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
           icon={<Wrench size={16} className="text-violet-400" />}
           iconBg="bg-violet-500/20"
           title="Funil de serviços"
-          right={<span className="rounded-full bg-violet-500/20 px-2.5 py-0.5 text-xs font-semibold text-violet-400">{data.cards_by_stage.reduce((s, x) => s + x.count, 0)} cards</span>}
+          right={
+            <div className="flex items-center gap-2">
+              <div className="flex overflow-hidden rounded-md border border-gray-200 text-[11px] dark:border-slate-600">
+                <button
+                  type="button"
+                  onClick={() => setFunnelMode("atual")}
+                  className={`px-2 py-0.5 transition-colors ${funnelMode === "atual" ? "bg-violet-500 text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
+                  title="O que está em cada etapa hoje"
+                >
+                  Atual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFunnelMode("fluxo")}
+                  className={`px-2 py-0.5 transition-colors ${funnelMode === "fluxo" ? "bg-violet-500 text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
+                  title="Quantos entraram em cada etapa no período"
+                >
+                  Fluxo
+                </button>
+              </div>
+              <span className="rounded-full bg-violet-500/20 px-2.5 py-0.5 text-xs font-semibold text-violet-400">
+                {funnelData.reduce((s, x) => s + x.count, 0)} cards
+              </span>
+            </div>
+          }
         >
-          {data.cards_by_stage.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-400">Sem dados</p>
+          {funnelData.length === 0 || funnelData.every((s) => s.count === 0) ? (
+            <p className="py-6 text-center text-sm text-slate-400">
+              {funnelMode === "fluxo" ? "Nenhum card entrou nas etapas no período" : "Sem dados"}
+            </p>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={data.cards_by_stage} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+              <BarChart data={funnelData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
                 <XAxis dataKey="stage_name" tick={{ fill: chartColors.content.secondary, fontSize: 9 }} angle={-35} textAnchor="end" height={70} interval={0} tickLine={false} />
                 <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "Cards"]} />
+                <Tooltip {...tooltipStyle} formatter={(v: number) => [v, funnelMode === "fluxo" ? "Entraram no período" : "Cards"]} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {data.cards_by_stage.map((s, i) => (
+                  {funnelData.map((s, i) => (
                     <Cell key={i} fill={stageColor(s.stage_name)} />
                   ))}
                 </Bar>

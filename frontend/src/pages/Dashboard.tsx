@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, RefreshCw, Download, Calendar,
-  ChevronDown, Users, Wrench,
+  ChevronDown, Users, Wrench, Filter,
 } from "lucide-react";
 import CountUp from "react-countup";
 import toast from "react-hot-toast";
@@ -14,6 +14,7 @@ import { useDashboard, PeriodType, ViewType } from "../context/DashboardContext"
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../hooks/useAuth";
 import userService from "../services/userService";
+import serviceDashboardService from "../services/serviceDashboardService";
 import { User } from "../types";
 
 import DashboardSDR      from "../components/dashboard/DashboardSDR";
@@ -46,6 +47,25 @@ const Dashboard: React.FC = () => {
   const [serviceMode, setServiceMode] = useState(isServiceRole);
   // Qual board de serviço a dashboard mostra: 1 = Serviço (funil), 2 = Cobrança.
   const [serviceBoard, setServiceBoard] = useState(1);
+
+  // Filtros da dashboard de Serviço (no topo): usuário + tipo de cobrança (board 2).
+  const [serviceUserId, setServiceUserId] = useState<number | undefined>(undefined);
+  const [serviceCollabs, setServiceCollabs] = useState<{ id: number; name: string }[]>([]);
+  const [serviceCollectionType, setServiceCollectionType] = useState<string>("");
+
+  // Ao entrar no modo Serviço / trocar de board: reseta o tipo de cobrança e ajusta
+  // o filtro de usuário — admin/gerente carregam a lista; colaborador fica em si mesmo.
+  useEffect(() => {
+    if (!serviceMode) return;
+    setServiceCollectionType("");
+    if (isAdminOrManager) {
+      setServiceUserId(undefined);
+      serviceDashboardService.listCollaborators(serviceBoard).then(setServiceCollabs).catch(() => setServiceCollabs([]));
+    } else {
+      setServiceUserId(user?.id);
+      setServiceCollabs([]);
+    }
+  }, [serviceMode, serviceBoard, isAdminOrManager, user?.id]);
 
   // Lista de usuários para o seletor (admin/manager)
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -317,6 +337,40 @@ const Dashboard: React.FC = () => {
             />
           )}
 
+          {/* Serviço — filtro de usuário: admin/gerente escolhem; colaborador vê o próprio nome fixo */}
+          {serviceMode && isAdminOrManager && (
+            <SelectMenu
+              value={serviceUserId ? String(serviceUserId) : ""}
+              options={[
+                { value: "", label: "Todos os usuários" },
+                ...serviceCollabs.map((c) => ({ value: String(c.id), label: c.name })),
+              ]}
+              onChange={(val) => setServiceUserId(val ? Number(val) : undefined)}
+              icon={<Users size={14} className="text-slate-400" />}
+              className="w-full sm:w-auto"
+            />
+          )}
+          {serviceMode && !isAdminOrManager && (
+            <span className="flex h-[38px] items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <Users size={14} className="text-slate-400" /> {user?.name}
+            </span>
+          )}
+
+          {/* Serviço-Cobrança — filtro de Tipo de cobrança (só board 2) */}
+          {serviceMode && serviceBoard === 2 && (
+            <SelectMenu
+              value={serviceCollectionType}
+              options={[
+                { value: "", label: "Todos os tipos de cobrança" },
+                { value: "a_vencer", label: "Aparelhos a vencer" },
+                { value: "atrasados", label: "Aparelhos atrasados" },
+              ]}
+              onChange={(val) => setServiceCollectionType(val)}
+              icon={<Filter size={14} className="text-slate-400" />}
+              className="w-full sm:w-auto"
+            />
+          )}
+
           {/* Período */}
           <SelectMenu
             value={period}
@@ -380,7 +434,7 @@ const Dashboard: React.FC = () => {
 
       {/* ── CONTEÚDO DA VISÃO ───────────────────────────────────────── */}
       {serviceMode ? (
-        <ServiceDashboard period={period} customStart={customStart} customEnd={customEnd} periodLabel={periodLabel[period]} board={serviceBoard} />
+        <ServiceDashboard period={period} customStart={customStart} customEnd={customEnd} periodLabel={periodLabel[period]} board={serviceBoard} userId={serviceUserId} collectionType={serviceCollectionType || undefined} />
       ) : kpis ? (
         view === "sdr" || isSdr ? (
           <DashboardSDR kpis={kpis} periodLabel={periodLabel[period]} />

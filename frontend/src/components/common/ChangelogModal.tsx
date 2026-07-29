@@ -32,6 +32,14 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "fix",
         text: "Aquisição — voltar etapa: no board de Aquisição, o vendedor não conseguia mover um negócio de volta para a etapa anterior. Corrigido — agora dá para voltar 1 etapa por vez (sem exigir nenhum campo), igual já funcionava na Prospecção. Pular mais de uma etapa continua bloqueado, e Ganho/Perdido seguem pelos botões.",
       },
+      {
+        type: "feature",
+        text: "Dashboard de Serviço — Funil 'Atual / Fluxo': novo botão no card do Funil de serviços para escolher entre ver o que está em cada etapa hoje (Atual) ou quantos cards entraram em cada etapa no período filtrado (Fluxo). O modo Fluxo mostra a conversão do funil no período.",
+      },
+      {
+        type: "improvement",
+        text: "Dashboard de Serviço — filtros no topo: o filtro de usuário passou para a mesma linha dos demais filtros (board, período, atualizar, exportar). No Serviço - Cobrança há também um novo filtro de Tipo de cobrança (Todos / Aparelhos a vencer / Aparelhos atrasados) que filtra toda a dashboard.",
+      },
     ],
   },
   {

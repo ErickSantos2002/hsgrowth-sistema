@@ -31,6 +31,7 @@ async def get_service_dashboard(
     end: Optional[str] = Query(None, description="Fim do período (ISO, ex: 2026-06-30)"),
     board: Optional[int] = Query(None, description="Board de serviço (1=Funil oficial, 2=Cobrança). Padrão: funil."),
     user_id: Optional[int] = Query(None, description="Filtra a dash pelo trabalho de um usuário (colaborador). Padrão: todos."),
+    collection_type: Optional[str] = Query(None, description="[Cobrança] Filtra por tipo de cobrança: a_vencer | atrasados. Padrão: todos."),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> Any:
@@ -46,8 +47,9 @@ async def get_service_dashboard(
     role = current_user.role.name if current_user.role else ""
     if role not in ("admin", "manager"):
         user_id = current_user.id
+    ct = collection_type if collection_type in ("a_vencer", "atrasados") else None
     svc = ServiceDashboardService(db)
-    return svc.get_dashboard(start_dt, end_dt, boards=boards, user_id=user_id)
+    return svc.get_dashboard(start_dt, end_dt, boards=boards, user_id=user_id, collection_type=ct)
 
 
 @router.get("/collaborators")

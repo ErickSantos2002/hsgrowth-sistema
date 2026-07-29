@@ -17,6 +17,7 @@ export interface ServiceDashboard {
   avg_ticket: number;
   win_rate: number;
   cards_by_stage: StageCount[];
+  cards_by_stage_flow: StageCount[];
   activities_by_type: NameCount[];
   collaborators: CollaboratorStat[];
   loss_reasons: NameCount[];
@@ -29,8 +30,8 @@ export interface ServiceDashboard {
 export interface CollaboratorOption { id: number; name: string; }
 
 class ServiceDashboardService {
-  async get(start?: string, end?: string, board?: number, userId?: number): Promise<ServiceDashboard> {
-    const r = await api.get<ServiceDashboard>("/api/v1/service-dashboard", { params: { start, end, board, user_id: userId } });
+  async get(start?: string, end?: string, board?: number, userId?: number, collectionType?: string): Promise<ServiceDashboard> {
+    const r = await api.get<ServiceDashboard>("/api/v1/service-dashboard", { params: { start, end, board, user_id: userId, collection_type: collectionType } });
     return r.data;
   }
 

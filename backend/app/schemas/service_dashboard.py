@@ -53,8 +53,10 @@ class ServiceDashboardResponse(BaseModel):
     activities_count: int
     avg_ticket: float
     win_rate: float                # %
-    # Funil
+    # Funil — snapshot (o que está em cada etapa hoje)
     cards_by_stage: List[StageCount]
+    # Funil — fluxo (quantos cards ENTRARAM em cada etapa no período)
+    cards_by_stage_flow: List[StageCount] = []
     # Atividades por tipo (período)
     activities_by_type: List[NameCount]
     # Ranking de colaboradores (período)

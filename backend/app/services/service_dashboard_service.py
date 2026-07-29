@@ -35,7 +35,7 @@ class ServiceDashboardService:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_dashboard(self, start: datetime, end: datetime, boards=None, user_id=None) -> ServiceDashboardResponse:
+    def get_dashboard(self, start: datetime, end: datetime, boards=None, user_id=None, collection_type=None) -> ServiceDashboardResponse:
         db = self.db
         now = datetime.utcnow()
         threshold = now - timedelta(days=3)
@@ -60,6 +60,10 @@ class ServiceDashboardService:
             .all()
             if list_ids else []
         )
+        # Filtro de Tipo de cobrança (só board 2): restringe TODO o dashboard aos
+        # cards com aquele collection_type (a_vencer | atrasados).
+        if collection_type:
+            cards = [c for c in cards if (c.business_info or {}).get("collection_type") == collection_type]
         card_ids = [c.id for c in cards]
 
         # ── Filtro por usuário (opcional) ────────────────────────────────────
@@ -91,6 +95,42 @@ class ServiceDashboardService:
         by_list = Counter(c.list_id for c in cards if in_scope(c.id))
         cards_by_stage = [
             StageCount(stage_name=l.name, count=by_list.get(l.id, 0))
+            for l in sorted(lists, key=lambda x: x.position)
+        ]
+
+        # ── Funil (FLUXO): cards distintos que ENTRARAM em cada etapa no período ──
+        # Todo movimento grava stage_change/card_won/card_lost com to_list_id.
+        # A etapa de entrada (menor posição) conta os cards CRIADOS no período
+        # (criação manual e por integração usam activity_type="card_created").
+        # Com filtro de usuário, conta o que ESSE usuário moveu/criou.
+        entered: dict = {lid: set() for lid in list_ids}
+        if card_ids:
+            mv = db.query(ServiceCardActivity.service_card_id, ServiceCardActivity.activity_metadata).filter(
+                ServiceCardActivity.service_card_id.in_(card_ids),
+                ServiceCardActivity.activity_type.in_(["stage_change", "card_won", "card_lost"]),
+                ServiceCardActivity.created_at >= start,
+                ServiceCardActivity.created_at <= end,
+            )
+            if user_id is not None:
+                mv = mv.filter(ServiceCardActivity.user_id == user_id)
+            for cid, meta in mv.all():
+                to_lid = (meta or {}).get("to_list_id")
+                if to_lid in entered:
+                    entered[to_lid].add(cid)
+            entry_lid = min(lists, key=lambda x: (x.position or 0)).id if lists else None
+            if entry_lid is not None:
+                cr = db.query(ServiceCardActivity.service_card_id).filter(
+                    ServiceCardActivity.service_card_id.in_(card_ids),
+                    ServiceCardActivity.activity_type == "card_created",
+                    ServiceCardActivity.created_at >= start,
+                    ServiceCardActivity.created_at <= end,
+                )
+                if user_id is not None:
+                    cr = cr.filter(ServiceCardActivity.user_id == user_id)
+                for (cid,) in cr.all():
+                    entered[entry_lid].add(cid)
+        cards_by_stage_flow = [
+            StageCount(stage_name=l.name, count=len(entered.get(l.id, set())))
             for l in sorted(lists, key=lambda x: x.position)
         ]
 
@@ -359,6 +399,7 @@ class ServiceDashboardService:
             avg_ticket=avg_ticket,
             win_rate=round(win_rate, 1),
             cards_by_stage=cards_by_stage,
+            cards_by_stage_flow=cards_by_stage_flow,
             activities_by_type=activities_by_type,
             collaborators=collaborators,
             loss_reasons=loss_reasons,
