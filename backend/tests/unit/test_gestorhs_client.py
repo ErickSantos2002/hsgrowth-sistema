@@ -27,7 +27,7 @@ def test_monta_url_header_e_body(ligada, monkeypatch):
         capturado["url"] = url
         capturado["json"] = json
         capturado["headers"] = headers
-        return httpx.Response(200, json={"movida": True})
+        return httpx.Response(200, json={"movida": True}, request=httpx.Request("POST", url))
 
     monkeypatch.setattr(httpx, "post", fake_post)
     gestorhs_client.mover_caixa_ganho("42", 123, "Ganho - card #7")
@@ -40,7 +40,7 @@ def test_monta_url_header_e_body(ligada, monkeypatch):
 def test_numero_proposta_ausente_nao_vai_no_body(ligada, monkeypatch):
     capturado = {}
     monkeypatch.setattr(httpx, "post",
-                        lambda url, json, headers, timeout: capturado.update(json=json) or httpx.Response(200))
+                        lambda url, json, headers, timeout: capturado.update(json=json) or httpx.Response(200, request=httpx.Request("POST", url)))
     gestorhs_client.mover_caixa_ganho("42", None, "obs")
     assert "numero_proposta" not in capturado["json"]
     assert capturado["json"] == {"observacao": "obs"}

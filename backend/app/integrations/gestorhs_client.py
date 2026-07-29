@@ -45,5 +45,4 @@ def mover_caixa_ganho(caixa_id: str, numero_proposta: Optional[int], observacao:
         headers={"X-API-Key": settings.GESTORHS_INBOUND_API_KEY},
         timeout=10,
     )
-    if resp.status_code >= 400:
-        resp.raise_for_status()
+    resp.raise_for_status()
