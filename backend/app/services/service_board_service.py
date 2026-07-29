@@ -47,6 +47,10 @@ SERVICE_RULE_BOARD_IDS = {1, 2}
 UPLOAD_DIR = Path("/app/uploads")
 
 
+def _brl(valor: float) -> str:
+    return f"{valor:,.2f}".replace(",", "§").replace(".", ",").replace("§", ".")
+
+
 def deal_value_by_card(db: Session, card_ids: List[int]) -> dict:
     """Valor do negócio por card = soma dos SERVIÇOS do card − desconto global + frete.
 
@@ -654,7 +658,7 @@ class ServiceBoardService:
             numero = (card.business_info or {}).get("proposal_number")
             numero = int(numero) if numero not in (None, "") else None
             quem = user.name if user else "sistema"
-            obs = f"Ganho no GrowthHS — card #{card.id} · R$ {valor:,.2f} · por {quem}"
+            obs = f"Ganho no GrowthHS — card #{card.id} · R$ {_brl(valor)} · por {quem}"
             notificar_ganho_gestorhs.delay(card.external_id, numero, obs)
         except Exception as e:  # noqa: BLE001 — best-effort, nunca quebra o Ganho
             print(f"[GANHO-GESTORHS] falha ao enfileirar aviso (card {card.id}): {e}")

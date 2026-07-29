@@ -29,6 +29,16 @@ def test_seleciona_so_gestorhs_os_em_ganho(board):
     assert ids == {em_ganho.id}
 
 
+def test_seleciona_ganho_por_nome_sem_is_done_stage(board):
+    db = board["db"]
+    lista_nome = ServiceList(board_id=board["ganho"].board_id, name="Negócio Ganho (nome)", position=2, is_done_stage=False)
+    db.add(lista_nome); db.commit(); db.refresh(lista_nome)
+    card = ServiceCard(list_id=lista_nome.id, title="E", external_source="gestorhs.os", external_id="99")
+    db.add(card); db.commit()
+    ids = {c.id for c in cards_em_ganho(db)}
+    assert card.id in ids
+
+
 def test_numero_para_envio_usa_padrao_quando_ausente():
     assert numero_para_envio({}) == PROPOSTA_RETROATIVO_PADRAO
     assert numero_para_envio({"proposal_number": 7}) == 7

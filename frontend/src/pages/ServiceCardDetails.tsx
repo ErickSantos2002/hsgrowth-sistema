@@ -350,7 +350,7 @@ const ServiceSummarySection: React.FC<{
                 </div>
               )}
               {!isCobranca && (
-                <div>
+                <div className="space-y-1">
                   <label className="text-xs text-slate-400">Número da proposta</label>
                   <input
                     type="number"

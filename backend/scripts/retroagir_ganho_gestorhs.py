@@ -16,6 +16,7 @@ cards antigos, que fecharam sem o campo). A caixa avança de qualquer forma.
 import argparse
 from typing import List, Optional
 
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
 
 from app.models.service_card import ServiceCard
@@ -26,10 +27,19 @@ from app.services.service_board_service import deal_value_by_card
 PROPOSTA_RETROATIVO_PADRAO = 2
 
 
+def _brl(valor: float) -> str:
+    return f"{valor:,.2f}".replace(",", "§").replace(".", ",").replace("§", ".")
+
+
 def cards_em_ganho(db: Session) -> List[ServiceCard]:
-    """Cards gestorhs.os, não deletados, cuja lista é de Ganho (is_done_stage)."""
+    """Cards gestorhs.os, não deletados, cuja lista é de Ganho (is_done_stage ou nome 'ganho')."""
     ganho_list_ids = [
-        l.id for l in db.query(ServiceList.id).filter(ServiceList.is_done_stage.is_(True)).all()
+        l.id for l in db.query(ServiceList.id).filter(
+            or_(
+                ServiceList.is_done_stage.is_(True),
+                func.lower(ServiceList.name).like("%ganho%"),
+            )
+        ).all()
     ]
     if not ganho_list_ids:
         return []
@@ -78,8 +88,8 @@ def main() -> None:
         for c in cards:
             numero = numero_para_envio(c.business_info)
             valor = deal_value_by_card(db, [c.id]).get(c.id, 0.0)
-            obs = f"Ganho no GrowthHS (retroativo) — card #{c.id} · R$ {valor:,.2f}"
-            print(f"  card {c.id}  caixa={c.external_id}  proposta={numero}  R$ {valor:,.2f}")
+            obs = f"Ganho no GrowthHS (retroativo) — card #{c.id} · R$ {_brl(valor)}"
+            print(f"  card {c.id}  caixa={c.external_id}  proposta={numero}  R$ {_brl(valor)}")
             if args.aplicar:
                 try:
                     gestorhs_client.mover_caixa_ganho(c.external_id, numero, obs)
