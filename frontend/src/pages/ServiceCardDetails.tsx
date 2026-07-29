@@ -124,7 +124,7 @@ const ServiceSummarySection: React.FC<{
     await onUpdate({ business_info: biz });
     setEditingBiz(false);
   };
-  const setBizField = (k: keyof ServiceBusinessInfo, v: string | boolean | null) =>
+  const setBizField = (k: keyof ServiceBusinessInfo, v: string | boolean | number | null) =>
     setBiz((prev) => ({ ...prev, [k]: v }));
   const serviceTypeLabel = (v?: string) => (v === "recalibracao" ? "Recalibração" : v === "manutencao" ? "Manutenção" : v === "ambos" ? "Ambos" : "Não definido");
   const closingLabel = (v?: string) => (v === "faturamento_direto" ? "Faturamento direto" : v === "pedido" ? "Pedido" : "Não definido");
@@ -349,6 +349,20 @@ const ServiceSummarySection: React.FC<{
                     onChange={(v) => setBizField("closing_type", v)} />
                 </div>
               )}
+              {!isCobranca && (
+                <div>
+                  <label className="text-xs text-slate-400">Número da proposta</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={biz.proposal_number ?? ""}
+                    onChange={(e) => setBizField("proposal_number",
+                      e.target.value === "" ? null : Number(e.target.value))}
+                    placeholder="Ex: 123"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                  />
+                </div>
+              )}
               {isCobranca && (
                 <div className="space-y-1 border-t border-gray-200/40 dark:border-slate-700/40 pt-3">
                   <p className="text-[11px] uppercase tracking-wide text-slate-400">Operações</p>
@@ -376,6 +390,7 @@ const ServiceSummarySection: React.FC<{
                 { label: "Recalibração/Manutenção", value: serviceTypeLabel(biz.service_type) },
                 { label: "Formulário enviado", value: biz.form_answered ? "Sim" : "Não" },
                 ...(isCobranca ? [] : [{ label: "Forma de fechamento", value: closingLabel(biz.closing_type) }]),
+                ...(isCobranca ? [] : [{ label: "Número da proposta", value: biz.proposal_number ? String(biz.proposal_number) : "" }]),
                 ...(isCobranca ? [{ label: "Confirmação de envio", value: biz.shipping_confirmed === "sim" ? "Sim" : biz.shipping_confirmed === "nao" ? "Não" : "" }] : []),
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between gap-3">
