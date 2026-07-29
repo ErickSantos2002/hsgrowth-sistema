@@ -421,3 +421,24 @@ def check_scheduled_automations_task():
 
     finally:
         db.close()
+
+
+@celery_app.task(name="notificar_ganho_gestorhs", bind=True, max_retries=3)
+def notificar_ganho_gestorhs(self, caixa_id: str, numero_proposta, observacao: str):
+    """Avisa o GestorHS que o card virou Ganho — move a caixa 6→10.
+
+    Best-effort com retry exponencial: se o GestorHS estiver fora, tenta de novo.
+    Idempotente do lado do GestorHS, então reenviar é seguro.
+    """
+    from app.integrations import gestorhs_client
+    try:
+        gestorhs_client.mover_caixa_ganho(caixa_id, numero_proposta, observacao)
+        logger.success(f"Ganho avisado ao GestorHS (caixa={caixa_id})")
+        return {"ok": True, "caixa_id": caixa_id}
+    except Exception as e:
+        logger.error(f"Falha ao avisar Ganho ao GestorHS (caixa={caixa_id}): {e}")
+        try:
+            raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
+        except self.MaxRetriesExceededError:
+            logger.error(f"Máximo de tentativas excedido ao avisar Ganho (caixa={caixa_id})")
+            return {"ok": False, "caixa_id": caixa_id}
