@@ -1485,14 +1485,17 @@ class CardService:
         #   3 → 4  Negociação             → Aguardando Pedido
         # Aguardando Pedido, Negócio Ganho e Negócio Perdido são encerrados via botões.
         elif source_list.board_id == 7:
+            # Avançar exige os campos da etapa (validados abaixo); VOLTAR 1 etapa é
+            # livre (o vendedor pode corrigir um movimento). Ganho/Perdido pelos botões.
             allowed_transitions_b7 = {
-                0: [1],  # Reunião Agendada       → Qualificação
-                1: [2],  # Qualificação           → Diagnóstico e Proposta
-                2: [3],  # Diagnóstico e Proposta → Negociação
-                3: [4],  # Negociação             → Aguardando Pedido
+                0: [1],       # Reunião Agendada       → Qualificação
+                1: [0, 2],    # Qualificação           → volta (Reunião) ou avança (Diagnóstico)
+                2: [1, 3],    # Diagnóstico e Proposta → volta (Qualificação) ou avança (Negociação)
+                3: [2, 4],    # Negociação             → volta (Diagnóstico) ou avança (Aguardando Pedido)
+                4: [3],       # Aguardando Pedido      → volta (Negociação)
             }
 
-            # Aguardando Pedido (index 4) não possui próxima etapa pelo pipeline —
+            # Etapas fora do mapa (terminais) não avançam pelo pipeline —
             # o encerramento do negócio é feito pelos botões dedicados Ganho/Perdido
             if source_index not in allowed_transitions_b7:
                 raise HTTPException(
@@ -1526,7 +1529,8 @@ class CardService:
 
             # Reunião Agendada → Qualificação:
             # nenhuma task de reunião pode estar pendente — prova que a reunião aconteceu
-            if source_index == 0:
+            # (só no AVANÇO — voltar 1 etapa não exige nada)
+            if source_index == 0 and target_index > source_index:
                 has_pending_meeting = (
                     self.db.query(CardTask)
                     .filter(
@@ -1550,7 +1554,8 @@ class CardService:
             # Diagnóstico e Proposta → Negociação:
             # 1. Proposta Comercial em PDF deve estar anexada ao card
             # 2. Deve existir ao menos uma task de follow-up pendente (não concluída)
-            elif source_index == 2:
+            # (só no AVANÇO — voltar 1 etapa não exige nada)
+            elif source_index == 2 and target_index > source_index:
                 has_proposal = (
                     self.db.query(Attachment)
                     .filter(
