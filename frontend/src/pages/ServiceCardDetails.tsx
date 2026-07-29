@@ -55,6 +55,7 @@ import PersonModal from "../components/persons/PersonModal";
 import { showSuccess, showError } from "../utils/toast";
 import { convertUTCToBrazil } from "../utils/timezone";
 import { useConfirm } from "../contexts/ConfirmContext";
+import { useAuth } from "../hooks/useAuth";
 import { LoadingSpinner, SelectMenu } from "../components/common";
 
 /**
@@ -85,6 +86,11 @@ const LOSS_REASONS = [
   "Data de Recalibração Errada",
   "Cliente Inadimplente",
 ];
+
+// Motivo exclusivo do Admin — para descartar cards criados errados (erro de
+// cadastro) sem apagar. Fica separado para o time não usar por engano e para
+// poder ser filtrado/excluído dos relatórios.
+const ADMIN_LOSS_REASON = "Descarte administrativo — erro de cadastro";
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: "atividade", label: "Atividade", icon: <Activity size={16} /> },
@@ -906,6 +912,9 @@ const ServiceCardDetails: React.FC = () => {
   const { boardId, cardId } = useParams<{ boardId: string; cardId: string }>();
   const navigate = useNavigate();
   const { confirm } = useConfirm();
+  const { user } = useAuth();
+  // Só o admin vê o motivo de descarte administrativo (erro de cadastro).
+  const lossReasons = user?.role === "admin" ? [...LOSS_REASONS, ADMIN_LOSS_REASON] : LOSS_REASONS;
 
   const numBoardId = Number(boardId);
   const numCardId = Number(cardId);
@@ -1377,7 +1386,7 @@ const ServiceCardDetails: React.FC = () => {
         onConfirm={confirmLose}
         boardId={numBoardId}
         boardName="Serviços"
-        reasons={LOSS_REASONS}
+        reasons={lossReasons}
       />
 
       {/* Modal de seleção de número para ligação rápida (2+ números) */}

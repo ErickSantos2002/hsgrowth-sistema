@@ -10,6 +10,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 ### Adicionado
 - **Dashboard de Serviço — Funil "Atual / Fluxo":** novo botão no card do **Funil de serviços** para alternar entre **Atual** (o que está em cada etapa hoje) e **Fluxo** (quantos cards **entraram** em cada etapa no período filtrado). O modo Fluxo mostra a conversão do funil no período.
 - **Dashboard de Serviço-Cobrança — filtro de Tipo de cobrança:** novo filtro no topo (**Todos os tipos de cobrança / Aparelhos a vencer / Aparelhos atrasados**), só na dashboard de Cobrança, que filtra toda a dashboard.
+- **Serviço — motivo de perda administrativo:** novo motivo **"Descarte administrativo — erro de cadastro"**, visível **apenas para o Admin**, para dar **Perdido** em cards criados incorretamente sem apagar. Como a perda fica atribuída ao Admin (quem marcou), **não interfere** nas métricas de ganhos/perdidos do time.
 
 ### Melhorado
 - **Dashboard de Serviço — filtros no topo:** o filtro de **usuário** foi movido para a **mesma linha** dos demais filtros (board, período, atualizar, exportar), nas dashes de Serviço e de Cobrança.

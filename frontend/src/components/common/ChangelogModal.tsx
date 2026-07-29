@@ -40,6 +40,10 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "improvement",
         text: "Dashboard de Serviço — filtros no topo: o filtro de usuário passou para a mesma linha dos demais filtros (board, período, atualizar, exportar). No Serviço - Cobrança há também um novo filtro de Tipo de cobrança (Todos / Aparelhos a vencer / Aparelhos atrasados) que filtra toda a dashboard.",
       },
+      {
+        type: "feature",
+        text: "Serviço — motivo de perda administrativo: novo motivo 'Descarte administrativo — erro de cadastro', visível apenas para o Admin, para dar Perdido em cards criados incorretamente sem apagar. Como a perda fica atribuída ao Admin, não interfere nas métricas de ganhos/perdidos do time.",
+      },
     ],
   },
   {
