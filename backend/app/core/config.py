@@ -87,6 +87,11 @@ class Settings(BaseSettings):
     # Integrações externas — Automação de nutrição
     AUTOMACAO01_WEBHOOK_URL: str = ""  # URL do webhook para sistema de nutrição por e-mail
 
+    # Integração outbound com o GestorHS (fase 2): avisar o Ganho para mover a caixa.
+    # Vazias = integração desligada (cliente vira no-op). Ver gestorhs_client.
+    GESTORHS_INBOUND_URL: str = ""
+    GESTORHS_INBOUND_API_KEY: str = ""
+
     # Microsoft 365 / Entra ID — SSO e Graph API
     MS_CLIENT_ID: str = ""
     MS_TENANT_ID: str = ""

@@ -47,6 +47,10 @@ SERVICE_RULE_BOARD_IDS = {1, 2}
 UPLOAD_DIR = Path("/app/uploads")
 
 
+def _brl(valor: float) -> str:
+    return f"{valor:,.2f}".replace(",", "§").replace(".", ",").replace("§", ".")
+
+
 def deal_value_by_card(db: Session, card_ids: List[int]) -> dict:
     """Valor do negócio por card = soma dos SERVIÇOS do card − desconto global + frete.
 
@@ -461,6 +465,15 @@ class ServiceBoardService:
         if new_list.is_done_stage or "ganho" in new_name:
             miss = []
             if board_id == 1:
+                # Número da proposta (do GestorHS) é obrigatório para dar Ganho —
+                # vai no aviso de volta ao GestorHS (fase 2).
+                pn = biz.get("proposal_number")
+                try:
+                    pn_ok = pn not in (None, "") and int(pn) > 0
+                except (TypeError, ValueError):
+                    pn_ok = False
+                if not pn_ok:
+                    miss.append("Número da proposta preenchido no Resumo")
                 # Funil oficial — dois caminhos conforme a origem:
                 #   De "Proposta" (Faturamento direto): forma=faturamento_direto + Proposta anexada
                 #   De "Aguardando Pedido" (Pedido): OC anexada
@@ -590,6 +603,7 @@ class ServiceBoardService:
             if is_funnel and (new_list.is_done_stage or "ganho" in new_name):
                 self.log_event(card_id, user, "card_won", f"Negócio marcado como Ganho ({new_list.name})", meta)
                 self._complete_pending_activities(card_id)
+                self._notificar_ganho_gestorhs(card, user)
             elif is_funnel and (new_list.is_lost_stage or "perdido" in new_name):
                 self.log_event(card_id, user, "card_lost", f"Negócio marcado como Perdido ({new_list.name})", meta)
                 self._complete_pending_activities(card_id)
@@ -628,6 +642,26 @@ class ServiceBoardService:
             self.db.rollback()
             print(f"[SERVICE-ACTIVITY] erro ao concluir atividades pendentes: {e}")
             return 0
+
+    def _notificar_ganho_gestorhs(self, card: ServiceCard, user: User) -> None:
+        """Enfileira o aviso de Ganho ao GestorHS — só para cards vindos de OS.
+
+        Best-effort: enfileirar nunca pode quebrar o Ganho. Se o broker estiver
+        fora, o card ainda vira Ganho e a falha fica logada.
+        """
+        if card.external_source != "gestorhs.os" or not card.external_id:
+            return
+        try:
+            from app.workers.tasks import notificar_ganho_gestorhs
+
+            valor = deal_value_by_card(self.db, [card.id]).get(card.id, 0.0)
+            numero = (card.business_info or {}).get("proposal_number")
+            numero = int(numero) if numero not in (None, "") else None
+            quem = user.name if user else "sistema"
+            obs = f"Ganho no GrowthHS — card #{card.id} · R$ {_brl(valor)} · por {quem}"
+            notificar_ganho_gestorhs.delay(card.external_id, numero, obs)
+        except Exception as e:  # noqa: BLE001 — best-effort, nunca quebra o Ganho
+            print(f"[GANHO-GESTORHS] falha ao enfileirar aviso (card {card.id}): {e}")
 
     # ─── Card Products ────────────────────────────────────────────────────────
 
