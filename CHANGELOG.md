@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.11] — 29/07/2026
+
+### Corrigido
+- **Aquisição — voltar etapa:** no board de **Aquisição**, o vendedor não conseguia mover um negócio de volta para a etapa anterior (dava "Não é permitido voltar etapas pelo pipeline"). Corrigido — agora é possível **voltar 1 etapa por vez** (sem exigir nenhum campo), igual já funcionava na **Prospecção**. Pular mais de uma etapa continua bloqueado; as travas de **avanço** (proposta, follow-up, data) e os botões **Ganho/Perdido** seguem iguais.
+
+---
+
 ## [1.8.10] — 28/07/2026
 
 ### Corrigido

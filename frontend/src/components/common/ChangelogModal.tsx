@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.11",
+    date: "29/07/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Aquisição — voltar etapa: no board de Aquisição, o vendedor não conseguia mover um negócio de volta para a etapa anterior. Corrigido — agora dá para voltar 1 etapa por vez (sem exigir nenhum campo), igual já funcionava na Prospecção. Pular mais de uma etapa continua bloqueado, e Ganho/Perdido seguem pelos botões.",
+      },
+    ],
+  },
+  {
     version: "1.8.10",
     date: "28/07/2026",
     entries: [
