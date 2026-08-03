@@ -275,7 +275,8 @@ class CardService:
                 sdr_id = current_user.id
                 # Aquisição (board 7): SDR também enxerga os perdidos SEM SDR
                 # (sdr_id nulo), para poder resgatá-los. Ver RN-036.
-                sdr_include_orphan_lost = (board_id == 7)
+                # str(...) porque o board_id pode chegar como string "7" na request.
+                sdr_include_orphan_lost = (str(board_id) == "7")
             elif current_user.role.name == "salesperson":
                 assigned_to_id = current_user.id
 
