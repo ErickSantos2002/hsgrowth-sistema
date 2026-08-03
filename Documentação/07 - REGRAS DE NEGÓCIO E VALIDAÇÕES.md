@@ -300,6 +300,22 @@ Este documento especifica as regras de negócio e validações que devem ser imp
 
 ---
 
+### RN-036: SDR — Resgatar negócio perdido na Aquisição *(adicionado 03/08/2026)*
+
+**Contexto**: o SDR trabalha na **Prospecção** (board 6); ao agendar a reunião e vincular o vendedor, o card vai para a **Aquisição** (board 7), onde o SDR fica **somente-leitura** (vê, mas não edita). Esta regra permite o SDR **resgatar** negócios **perdidos** da Aquisição de volta ao funil.
+
+**Regras**:
+- **Quem**: usuários com role **SDR**.
+- **Onde**: cards em **Negócio Perdido** do board **Aquisição (7)**. Uma **exceção** à regra de somente-leitura do SDR nesse board — só essa ação é liberada; o resto do card segue read-only.
+- **Ação ("Resgatar Negócio")**: reusa o reopen — clona o card para **Prospecção → Lead Novo** (`list_id=22`); o original **continua perdido**. No clone:
+  - **Vendedor** (`assigned_to_id`) = o vendedor **original** (o `reopen_card` restaura, pois a criação por SDR normalmente zera esse campo);
+  - **SDR** (`sdr_id`) = o **SDR que resgatou** (usuário atual).
+- **Visibilidade**: o SDR enxerga, na Aquisição, os perdidos **onde já é o SDR** (`sdr_id` = ele) **e** também os perdidos **SEM SDR** (`sdr_id IS NULL`) — estes ficam disponíveis para qualquer SDR resgatar. **Não** vê perdidos de **outro** SDR nem cards ativos sem SDR. (Implementado no filtro do repositório: `(Card.sdr_id == uid) OR (Card.sdr_id IS NULL AND is_lost)`, só no board 7.)
+- **Admin/Gerente**: mantêm o botão **"Reabrir Negócio"** (mesma clonagem), sem restrição de board — sem mudança.
+- **Relacionado**: RN-033 (Movimentação de Cartão), RN-034 (Atribuição de Cartão).
+
+---
+
 ## 6. REGRAS DE IMPORTAÇÃO DE DADOS
 
 ### RN-040: Importação do Pipedrive

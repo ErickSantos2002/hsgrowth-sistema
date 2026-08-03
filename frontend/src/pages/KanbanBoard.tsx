@@ -30,7 +30,7 @@ import cardService from "../services/cardService";
 import userService from "../services/userService";
 import { Board, List, Card, User, CardFilters } from "../types";
 import { COLORS } from "../constants/colors";
-import { ACQUISITION_CHANNELS, ACQUISITION_CHANNEL_DETAILS } from "../constants/blueprintOptions";
+import { ACQUISITION_CHANNELS, ACQUISITION_CHANNEL_DETAILS, LOSS_REASONS_BY_BOARD_ID } from "../constants/blueprintOptions";
 import KanbanList from "../components/kanban/KanbanList";
 import { showSuccess, showError, showWarning } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
@@ -90,6 +90,7 @@ const KanbanBoard: React.FC = () => {
   const [acquisitionChannelFilter, setAcquisitionChannelFilter] = useState(""); // Filtro de canal de aquisição
   const [acquisitionChannelDetailFilter, setAcquisitionChannelDetailFilter] = useState(""); // Filtro de detalhe do canal
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
+  const [lossReasonFilter, setLossReasonFilter] = useState(""); // Filtro de motivo de perda (só em "Apenas Perdidos", boards 6/7/8)
   const [cardTagFilter, setCardTagFilter] = useState(""); // Filtro por etiqueta: "" | "nutricao" | "parado"
   const [enteredPeriod, setEnteredPeriod] = useState(""); // Período de criação do card
   const [enteredCustomStart, setEnteredCustomStart] = useState("");
@@ -129,6 +130,7 @@ const KanbanBoard: React.FC = () => {
         const saved = JSON.parse(raw);
         setListFilter(saved.listFilter ?? "");
         setStatusFilter(saved.statusFilter ?? "open");
+        setLossReasonFilter(saved.lossReasonFilter ?? "");
         setValueFilter(saved.valueFilter ?? "");
         setClosingDateFilter(saved.closingDateFilter ?? "");
         setCustomDateStart(saved.customDateStart ?? "");
@@ -166,6 +168,7 @@ const KanbanBoard: React.FC = () => {
       JSON.stringify({
         listFilter,
         statusFilter,
+        lossReasonFilter,
         valueFilter,
         closingDateFilter,
         customDateStart,
@@ -188,6 +191,7 @@ const KanbanBoard: React.FC = () => {
     restoredBoardId,
     listFilter,
     statusFilter,
+    lossReasonFilter,
     valueFilter,
     closingDateFilter,
     customDateStart,
@@ -205,6 +209,12 @@ const KanbanBoard: React.FC = () => {
     enteredAtCustomEnd,
   ]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]); // Lista de usuários
+
+  // O filtro de motivo de perda só faz sentido em "Apenas Perdidos" — zera ao sair.
+  useEffect(() => {
+    if (statusFilter !== "lost" && lossReasonFilter) setLossReasonFilter("");
+  }, [statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const boardScrollRef = useRef<HTMLDivElement | null>(null);
   const [isDraggingBoard, setIsDraggingBoard] = useState(false);
   const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
@@ -748,6 +758,7 @@ const KanbanBoard: React.FC = () => {
   const clearFilters = () => {
     setListFilter("");
     setStatusFilter("open");
+    setLossReasonFilter("");
     setValueFilter("");
     setClosingDateFilter("");
     setCustomDateStart("");
@@ -772,6 +783,7 @@ const KanbanBoard: React.FC = () => {
   const hasActiveFilters =
     listFilter !== "" ||
     statusFilter !== "open" ||
+    lossReasonFilter !== "" ||
     valueFilter !== "" ||
     closingDateFilter !== "" ||
     customDateStart !== "" ||
@@ -801,6 +813,11 @@ const KanbanBoard: React.FC = () => {
 
       // Filtro por lista (já é aplicado antes, mas mantém aqui por segurança)
       if (listFilter && String(card.list_id) !== listFilter) {
+        return false;
+      }
+
+      // Filtro por motivo de perda (só aparece em "Apenas Perdidos", boards 6/7/8)
+      if (lossReasonFilter && card.loss_reason !== lossReasonFilter) {
         return false;
       }
 
@@ -1266,6 +1283,21 @@ const KanbanBoard: React.FC = () => {
                 onChange={setStatusFilter}
               />
             </div>
+
+            {/* Filtro por motivo de perda — só em "Apenas Perdidos" e nos boards com motivos (Prospecção 6, Aquisição 7, Expansão 8) */}
+            {statusFilter === "lost" && LOSS_REASONS_BY_BOARD_ID[Number(boardId)] && (
+              <div className="min-w-[180px]">
+                <SelectMenu
+                  size="sm"
+                  value={lossReasonFilter}
+                  options={[
+                    { value: "", label: "Todos os motivos" },
+                    ...LOSS_REASONS_BY_BOARD_ID[Number(boardId)].map((r) => ({ value: r, label: r })),
+                  ]}
+                  onChange={setLossReasonFilter}
+                />
+              </div>
+            )}
 
             {/* Filtro por vendedor (responsável) */}
             <div className="min-w-[160px]">

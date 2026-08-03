@@ -600,6 +600,14 @@ const CardDetails: React.FC = () => {
   // Combina as duas condições de somente leitura
   const isReadOnly = isViewer || isSdrReadOnly;
 
+  // Exceção (RN-036): o SDR pode RESGATAR um negócio perdido no board de
+  // Aquisição (7), mesmo sendo somente-leitura nele. Só essa ação é liberada.
+  const BOARD_AQUISICAO_ID = 7;
+  const canRescue =
+    currentUser?.role === "sdr" &&
+    !!card?.is_lost &&
+    card?.board_id === BOARD_AQUISICAO_ID;
+
   // Encontra o responsável atual
   const assignedUser = users.find((u) => u.id === card?.assigned_to_id);
 
@@ -1016,15 +1024,16 @@ const CardDetails: React.FC = () => {
                     <XCircle size={18} />
                     Negócio Perdido
                   </div>
-                  {/* Botão de reabertura - oculto para visualizadores */}
-                  {!isReadOnly && (
+                  {/* Botão de reabertura/resgate — oculto para visualizadores.
+                      SDR vê "Resgatar Negócio" em perdidos da Aquisição (RN-036). */}
+                  {(!isReadOnly || canRescue) && (
                     <button
                       onClick={() => setShowReopenModal(true)}
                       className="flex items-center gap-2 rounded-lg py-2 text-sm bg-gradient-to-r from-blue-600 to-blue-500 px-3 font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-blue-600"
-                      title="Cria um novo card a partir deste negócio perdido"
+                      title={canRescue ? "Resgatar este negócio perdido para a Prospecção" : "Cria um novo card a partir deste negócio perdido"}
                     >
                       <RefreshCw size={18} />
-                      Reabrir Negócio
+                      {canRescue ? "Resgatar Negócio" : "Reabrir Negócio"}
                     </button>
                   )}
                 </>

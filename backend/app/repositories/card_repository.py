@@ -54,6 +54,7 @@ class CardRepository:
         limit: int = 100,
         assigned_to_id: Optional[int] = None,
         sdr_id: Optional[int] = None,
+        sdr_include_orphan_lost: bool = False,
         person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
         is_lost: Optional[bool] = None,
@@ -94,7 +95,13 @@ class CardRepository:
             query = query.filter(Card.assigned_to_id == assigned_to_id)
 
         if sdr_id is not None:
-            query = query.filter(Card.sdr_id == sdr_id)
+            if sdr_include_orphan_lost:
+                # SDR na Aquisição: vê os próprios cards + os PERDIDOS sem SDR (p/ resgatar)
+                query = query.filter(
+                    (Card.sdr_id == sdr_id) | (Card.sdr_id.is_(None) & (Card.is_won == -1))
+                )
+            else:
+                query = query.filter(Card.sdr_id == sdr_id)
 
         if person_id is not None:
             query = query.filter(Card.person_id == person_id)
@@ -138,6 +145,7 @@ class CardRepository:
         board_id: int,
         assigned_to_id: Optional[int] = None,
         sdr_id: Optional[int] = None,
+        sdr_include_orphan_lost: bool = False,
         person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
         is_lost: Optional[bool] = None,
@@ -168,7 +176,13 @@ class CardRepository:
             query = query.filter(Card.assigned_to_id == assigned_to_id)
 
         if sdr_id is not None:
-            query = query.filter(Card.sdr_id == sdr_id)
+            if sdr_include_orphan_lost:
+                # SDR na Aquisição: vê os próprios cards + os PERDIDOS sem SDR (p/ resgatar)
+                query = query.filter(
+                    (Card.sdr_id == sdr_id) | (Card.sdr_id.is_(None) & (Card.is_won == -1))
+                )
+            else:
+                query = query.filter(Card.sdr_id == sdr_id)
 
         if person_id is not None:
             query = query.filter(Card.person_id == person_id)

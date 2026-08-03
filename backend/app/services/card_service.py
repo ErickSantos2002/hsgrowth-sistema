@@ -269,9 +269,13 @@ class CardService:
         from app.schemas.card import CardMinimalResponse, CardMinimalListResponse
 
         # SDRs e Vendedores só enxergam os próprios cards
+        sdr_include_orphan_lost = False
         if current_user and current_user.role:
             if current_user.role.name == "sdr":
                 sdr_id = current_user.id
+                # Aquisição (board 7): SDR também enxerga os perdidos SEM SDR
+                # (sdr_id nulo), para poder resgatá-los. Ver RN-036.
+                sdr_include_orphan_lost = (board_id == 7)
             elif current_user.role.name == "salesperson":
                 assigned_to_id = current_user.id
 
@@ -298,6 +302,7 @@ class CardService:
             limit=limit,
             assigned_to_id=assigned_to_id,
             sdr_id=sdr_id,
+            sdr_include_orphan_lost=sdr_include_orphan_lost,
             person_id=person_id,
             is_won=is_won,
             is_lost=is_lost,
@@ -312,6 +317,7 @@ class CardService:
             board_id=board_id,
             assigned_to_id=assigned_to_id,
             sdr_id=sdr_id,
+            sdr_include_orphan_lost=sdr_include_orphan_lost,
             person_id=person_id,
             is_won=is_won,
             is_lost=is_lost,
@@ -509,6 +515,7 @@ class CardService:
                         created_at=card.created_at,
                         is_won=card.is_won,
                         is_lost=card.is_lost,
+                        loss_reason=card.loss_reason,  # p/ o filtro "Motivo de perda" no kanban
                         closed_at=card.closed_at,
                         acquisition_channel=card.acquisition_channel,
                         acquisition_channel_detail=card.acquisition_channel_detail,
@@ -2670,6 +2677,19 @@ class CardService:
         except Exception as e:
             self.db.rollback()
             print(f"[REOPEN] Aviso: erro ao vincular client_id/person_id/contact_info: {e}")
+
+        # Vendedor do clone = SEMPRE o do original. O create_card apaga o
+        # assigned_to_id quando quem reabre é SDR (regra de criação por role);
+        # aqui restauramos. O sdr_id já fica correto: SDR reabrindo -> o próprio
+        # (resgatador); admin/gerente -> o do original (via clone_data).
+        try:
+            if original_card.assigned_to_id:
+                new_card.assigned_to_id = original_card.assigned_to_id
+                self.db.commit()
+                self.db.refresh(new_card)
+        except Exception as e:
+            self.db.rollback()
+            print(f"[REOPEN] Aviso: erro ao restaurar assigned_to_id: {e}")
 
         # Copia os campos customizados do card original para o clone
         try:
