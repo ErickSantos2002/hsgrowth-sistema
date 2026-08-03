@@ -50,7 +50,7 @@
 
 ### 2.1. Tag "Parado 3d+" / Atrasados (global)
 
-Cards com **atividade pendente vencida há 3+ dias úteis** entram na contagem **"Atrasados 3d+"** da dashboard. Usada para acompanhamento de negócios estagnados nas etapas ativas. A contagem ignora **sábado e domingo** (mesma regra dos badges de "Parado" — ver RN-144), via `business_days_ago()`.
+Cards com **atividade pendente vencida há 3+ dias** entram na contagem **"Atrasados 3d+"** da dashboard. Usada para acompanhamento de negócios estagnados nas etapas ativas. Obs.: aqui a contagem é em **dias corridos** — trata-se de um **prazo de atividade** (due date) vencido, definido pelo usuário, e não de "tempo sem movimentação" (esse último, os badges "Parado 3d+/7d+", usa dias úteis — ver RN-144).
 
 ---
 

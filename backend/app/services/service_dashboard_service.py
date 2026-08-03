@@ -9,7 +9,6 @@ from typing import Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.utils.business_days import business_days_ago
 from app.models.service_board import ServiceBoard
 from app.models.service_list import ServiceList
 from app.models.service_card import ServiceCard
@@ -39,7 +38,10 @@ class ServiceDashboardService:
     def get_dashboard(self, start: datetime, end: datetime, boards=None, user_id=None, collection_type=None) -> ServiceDashboardResponse:
         db = self.db
         now = datetime.utcnow()
-        threshold = business_days_ago(3, now)  # 3 dias úteis (ignora sáb/dom) — igual aos boards
+        # "Atrasados 3d+" é sobre ATIVIDADE com prazo (due_date) vencido há 3+ dias —
+        # é um prazo definido pelo usuário, não "tempo sem mexer no card". Por isso
+        # mantém dias corridos (um prazo vencido é vencido, com ou sem fim de semana).
+        threshold = now - timedelta(days=3)
 
         # ── Boards / listas ──────────────────────────────────────────────────
         # Por padrão, considera só o funil oficial. `boards` permite filtrar outro
