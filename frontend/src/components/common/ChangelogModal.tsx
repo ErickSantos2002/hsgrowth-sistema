@@ -29,6 +29,14 @@ const CHANGELOG: ChangelogVersion[] = [
     date: "03/08/2026",
     entries: [
       {
+        type: "feature",
+        text: "Vendas — filtro 'Motivo de perda': ao filtrar por 'Apenas Perdidos' nos boards de Vendas (Prospecção, Aquisição e Expansão), aparece um novo filtro para escolher o motivo da perda. Facilita achar os perdidos que interessam num board com muitos cards.",
+      },
+      {
+        type: "feature",
+        text: "Aquisição — SDR 'Resgatar Negócio': o SDR agora vê no board de Aquisição os negócios perdidos que estão sem SDR vinculado e ganha o botão 'Resgatar Negócio'. Ao resgatar, o negócio é clonado para a Prospecção (Lead Novo) já com o vendedor original e o SDR que resgatou vinculados; o card perdido original continua como está. Perdidos que já têm SDR seguem visíveis apenas para o próprio SDR.",
+      },
+      {
         type: "improvement",
         text: "Cards parados — contagem em dias úteis: as etiquetas 'Parado 3d+' e 'Parado 7d+' e as contagens do dashboard agora ignoram sábado e domingo. Antes, um card parado desde sexta já aparecia como 'Parado 3d+' na segunda (contava o fim de semana); agora só vira 'Parado 3d+' na quarta (seg/ter/qua = 3 dias úteis). Vale para os boards de Vendas e de Serviços e para os dashboards. Como é calculado na hora, vale para todos os cards assim que a tela recarrega.",
       },
