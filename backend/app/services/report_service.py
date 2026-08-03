@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, case
 
+from app.utils.business_days import business_days_ago
 from app.models.card import Card
 from app.models.board import Board
 from app.models.list import List as BoardList
@@ -373,9 +374,10 @@ class ReportService:
             *uf
         ).scalar() or 0
 
-        # Cards parados há mais de 3 dias (sem atividade, anotação ou mudança de etapa no período)
+        # Cards parados há mais de 3 dias ÚTEIS (sem atividade, anotação ou mudança de etapa no período)
+        # Sábado/domingo não contam — mesma regra dos badges do board (RN-144).
         # Apenas cards que já tiveram ao menos 1 task ou nota entram na contagem
-        three_days_ago = datetime.now() - timedelta(days=3)
+        three_days_ago = business_days_ago(3)
         _has_task = self.db.query(CardTask.card_id).distinct().subquery()
         _has_note = self.db.query(CardNote.card_id).distinct().subquery()
         _active_task_3d = self.db.query(CardTask.card_id).filter(
@@ -406,9 +408,10 @@ class ReportService:
             *uf
         ).scalar() or 0
 
-        # Negócios parados há mais de 7 dias (sem atividade, anotação ou mudança de etapa no período)
+        # Negócios parados há mais de 7 dias ÚTEIS (sem atividade, anotação ou mudança de etapa no período)
+        # Sábado/domingo não contam — mesma regra dos badges do board (RN-144).
         # Apenas cards que já tiveram ao menos 1 task ou nota entram na contagem
-        seven_days_ago = datetime.now() - timedelta(days=7)
+        seven_days_ago = business_days_ago(7)
         _active_task_7d = self.db.query(CardTask.card_id).filter(
             or_(
                 CardTask.created_at > seven_days_ago,

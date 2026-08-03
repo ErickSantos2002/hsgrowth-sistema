@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.config import settings
+from app.utils.business_days import business_days_ago
 
 from app.repositories.card_repository import CardRepository
 from app.repositories.list_repository import ListRepository
@@ -348,9 +349,11 @@ class CardService:
             pending_tasks_counts = {}
             pending_tasks_statuses = {}
 
-            # Cards parados há mais de 3 dias (sem atividade, anotação ou mudança de etapa no período)
-            three_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=3)
-            seven_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
+            # Cards parados há mais de 3 dias ÚTEIS (sem atividade, anotação ou
+            # mudança de etapa no período). Sábado e domingo não entram na conta,
+            # então um card parado desde sexta só vira "parado 3d+" na quarta.
+            three_days_ago = business_days_ago(3)
+            seven_days_ago = business_days_ago(7)
             stuck_card_ids: set = set()
             stuck_7d_card_ids: set = set()
             if card_ids:

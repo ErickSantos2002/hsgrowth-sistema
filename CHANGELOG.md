@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.12] — 03/08/2026
+
+### Melhorado
+- **Cards parados — contagem em dias úteis:** as etiquetas **"Parado 3d+"** e **"Parado 7d+"** e as contagens de dashboard passam a **desconsiderar sábado e domingo**. Antes, um card parado desde **sexta** já aparecia como "Parado 3d+" na **segunda** (contava o fim de semana); agora só vira "Parado 3d+" na **quarta** (segunda/terça/quarta = 3 dias úteis). Vale para os **boards de Vendas e de Serviços**, para os **KPIs "parados" do dashboard de Vendas** e para o **"Atrasados 3d+" do dashboard de Serviços**. Como é calculado na hora, vale para **todos os cards** (inclusive os antigos) assim que a tela recarrega.
+
+---
+
 ## [1.8.11] — 29/07/2026
 
 ### Adicionado

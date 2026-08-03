@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.12",
+    date: "03/08/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Cards parados — contagem em dias úteis: as etiquetas 'Parado 3d+' e 'Parado 7d+' e as contagens do dashboard agora ignoram sábado e domingo. Antes, um card parado desde sexta já aparecia como 'Parado 3d+' na segunda (contava o fim de semana); agora só vira 'Parado 3d+' na quarta (seg/ter/qua = 3 dias úteis). Vale para os boards de Vendas e de Serviços e para os dashboards. Como é calculado na hora, vale para todos os cards assim que a tela recarrega.",
+      },
+    ],
+  },
+  {
     version: "1.8.11",
     date: "29/07/2026",
     entries: [

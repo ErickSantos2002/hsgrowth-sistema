@@ -10,6 +10,7 @@ from fastapi import HTTPException, status, UploadFile
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.utils.business_days import business_days_ago
 from app.repositories.service_board_repository import ServiceBoardRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.service_repository import ServiceRepository
@@ -245,7 +246,7 @@ class ServiceBoardService:
             return {}
         db = self.db
         now = datetime.utcnow()
-        threshold = now - timedelta(days=3)
+        threshold = business_days_ago(3, now)  # 3 dias úteis (ignora sáb/dom)
         today_start = datetime(now.year, now.month, now.day)
         today_end = today_start + timedelta(days=1)
 
@@ -293,8 +294,8 @@ class ServiceBoardService:
         recent_activity = {cid for (cid,) in db.query(ServiceCardActivity.service_card_id)
                            .filter(ServiceCardActivity.service_card_id.in_(card_ids),
                                    ServiceCardActivity.created_at >= threshold).distinct().all()}
-        # Parado 7d+: nenhuma atividade nos últimos 7 dias (janela maior = subconjunto de 3d+)
-        threshold_7d = now - timedelta(days=7)
+        # Parado 7d+: nenhuma atividade nos últimos 7 dias ÚTEIS (janela maior = subconjunto de 3d+)
+        threshold_7d = business_days_ago(7, now)
         recent_activity_7d = {cid for (cid,) in db.query(ServiceCardActivity.service_card_id)
                               .filter(ServiceCardActivity.service_card_id.in_(card_ids),
                                       ServiceCardActivity.created_at >= threshold_7d).distinct().all()}
@@ -337,8 +338,8 @@ class ServiceBoardService:
         total = self.repo.count_cards_by_board(board_id)
         total_pages = max(1, (total + page_size - 1) // page_size)
 
-        threshold = datetime.utcnow() - timedelta(days=3)
-        threshold_7d = datetime.utcnow() - timedelta(days=7)
+        threshold = business_days_ago(3)     # 3 dias úteis (ignora sáb/dom)
+        threshold_7d = business_days_ago(7)  # 7 dias úteis (ignora sáb/dom)
         agg = self._cards_aggregates([c.id for c in cards])
 
         items = []

@@ -1570,8 +1570,9 @@ Ver **RN-003.1**. Apenas admin, gerente e role "serviço" acessam board/dashboar
 **Descrição**: Cards sem movimentação (atividade, nota ou mudança de etapa) por vários dias recebem uma etiqueta visual de estagnação.
 
 **Regras**:
-- **Parado 3d+**: card com atividade pendente vencida / sem atividade recente há **3 ou mais dias** (`is_stuck_3d`).
-- **Parado 7d+**: há **7 ou mais dias** (`is_stuck_7d`) — exibido em vermelho mais escuro.
+- **Parado 3d+**: card com atividade pendente vencida / sem atividade recente há **3 ou mais dias úteis** (`is_stuck_3d`).
+- **Parado 7d+**: há **7 ou mais dias úteis** (`is_stuck_7d`) — exibido em vermelho mais escuro.
+- **Contagem em dias úteis**: sábado e domingo **não entram na conta**. Ex.: um card parado desde sexta só vira "Parado 3d+" na quarta seguinte (seg/ter/qua = 3 dias úteis), não já na segunda. Calculado via helper `business_days_ago()` (`app/utils/business_days.py`).
 - Calculado a partir de `updated_at` e da última atividade do card, em `card_service.py` (Vendas) e `service_board_service.py` (Serviço).
 
 ---
