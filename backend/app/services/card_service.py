@@ -695,13 +695,15 @@ class CardService:
             total_pages=total_pages
         )
 
-    def create_card(self, card_data: CardCreate, current_user: User) -> Card:
+    def create_card(self, card_data: CardCreate, current_user: User, at_top: bool = False) -> Card:
         """
         Cria um novo card.
 
         Args:
             card_data: Dados do card
             current_user: Usuário autenticado
+            at_top: se True, o card nasce no TOPO da lista (criação manual pelo
+                board). O resgate/clone (reopen) mantém o padrão (final).
 
         Returns:
             Card criado
@@ -808,7 +810,7 @@ class CardService:
             })
 
         # Cria o card
-        card = self.card_repository.create(card_data)
+        card = self.card_repository.create(card_data, at_top=at_top)
         print(f"[AUTOMATION] Card criado ID={card.id}, Board={board.id}")
 
         # Preenche data de entrada no board automaticamente

@@ -361,7 +361,8 @@ async def create_card(
     Endpoint de criação de card.
     """
     service = CardService(db)
-    card = service.create_card(card_data, current_user)
+    # Criação manual pelo board: card nasce no topo da lista (visível na hora)
+    card = service.create_card(card_data, current_user, at_top=True)
 
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"

@@ -11,7 +11,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Vendas — filtro "Motivo de perda":** ao filtrar por **"Apenas Perdidos"** nos boards de Vendas (**Prospecção, Aquisição e Expansão**), aparece um novo filtro para escolher o **motivo da perda** (ex.: "Sem retorno", "Preço", "Descarte administrativo — erro de cadastro"). Facilita achar os perdidos que interessam num board com muitos cards.
 - **Aquisição — SDR "Resgatar Negócio":** o **SDR** agora enxerga no board de **Aquisição** os negócios **perdidos que estão sem SDR vinculado** e ganha o botão **"Resgatar Negócio"**. Ao resgatar, o negócio é **clonado para a Prospecção (Lead Novo)** já vindo com o **vendedor original** e o **SDR que resgatou** vinculados; o card perdido original continua como está. Perdidos que **já têm** um SDR vinculado seguem visíveis **apenas para o próprio SDR**.
 
+### Corrigido
+- **Serviço — card novo não aparecia ao criar:** ao criar um card manualmente no board (ex.: Cobrança), ele nascia no **fim** da lista de entrada — que tem centenas de cards — e ficava invisível lá embaixo, além do aviso "Card criado!" demorar (o board inteiro era recarregado antes). Agora o card nasce no **topo** da lista, o aviso aparece **na hora** e o card surge imediatamente.
+
 ### Melhorado
+- **Cards entram no topo da lista (Serviço e Vendas):** ao **criar** um card ou **avançar** de etapa, ele passa a entrar no **topo** da lista de destino (antes ia para o fim). Vale para os boards de **Serviços, Cobrança, Prospecção, Aquisição e Expansão**. Facilita achar o card recém-mexido em listas grandes. _(O resgate de negócio do SDR continua clonando para o fim da Lead Novo.)_
 - **Cards parados — contagem em dias úteis:** as etiquetas **"Parado 3d+"** e **"Parado 7d+"** passam a **desconsiderar sábado e domingo**. Antes, um card parado desde **sexta** já aparecia como "Parado 3d+" na **segunda** (contava o fim de semana); agora só vira "Parado 3d+" na **quarta** (segunda/terça/quarta = 3 dias úteis). Vale para os **boards de Vendas e de Serviços** e para os **KPIs "parados" do dashboard de Vendas**. Como é calculado na hora, vale para **todos os cards** (inclusive os antigos) assim que a tela recarrega. _(O "Atrasados 3d+" do dashboard de Serviços continua em dias corridos, pois é sobre prazo de atividade vencido, não tempo sem movimentação.)_
 
 ---

@@ -926,12 +926,18 @@ const ServiceKanban: React.FC = () => {
     try {
       if (editingCard) {
         await serviceBoardService.updateCard(numId, editingCard.id, data);
+        setShowCardModal(false);
+        showSuccess("Card atualizado!");
       } else {
-        await serviceBoardService.createCard(numId, data);
+        const novo = await serviceBoardService.createCard(numId, data);
+        setShowCardModal(false);
+        // Feedback imediato: o reload repagina o board inteiro (pode demorar em
+        // boards grandes), então mostramos o card na hora (otimista, no topo) e o
+        // aviso já, sem esperar o reload — que reconcilia em segundo plano.
+        setCards((prev) => [novo, ...prev]);
+        showSuccess("Card criado!");
       }
-      setShowCardModal(false);
       await reloadCards();
-      showSuccess(editingCard ? "Card atualizado!" : "Card criado!");
     } catch {
       showError("Erro ao salvar card");
     }

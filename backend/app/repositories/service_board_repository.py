@@ -252,8 +252,20 @@ class ServiceBoardRepository:
         )
         return float((ultimo.position or 0) + 1) if ultimo else 0.0
 
-    def create_card(self, data: ServiceCardCreate) -> ServiceCard:
-        next_position = self.next_position(data.list_id)
+    def top_position(self, list_id: int) -> float:
+        """Posição do TOPO da coluna (menor posição − 1). Usado na criação manual
+        para o card novo aparecer no início da lista — em listas com centenas de
+        cards (ex.: Oportunidade Existente), nascer no fim deixava o card invisível."""
+        primeiro = (
+            self.db.query(ServiceCard)
+            .filter(ServiceCard.list_id == list_id)
+            .order_by(ServiceCard.position.asc())
+            .first()
+        )
+        return float((primeiro.position or 0) - 1) if primeiro else 0.0
+
+    def create_card(self, data: ServiceCardCreate, at_top: bool = False) -> ServiceCard:
+        next_position = self.top_position(data.list_id) if at_top else self.next_position(data.list_id)
         card = ServiceCard(
             list_id=data.list_id,
             title=data.title,

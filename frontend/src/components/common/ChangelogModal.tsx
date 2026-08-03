@@ -37,6 +37,14 @@ const CHANGELOG: ChangelogVersion[] = [
         text: "Aquisição — SDR 'Resgatar Negócio': o SDR agora vê no board de Aquisição os negócios perdidos que estão sem SDR vinculado e ganha o botão 'Resgatar Negócio'. Ao resgatar, o negócio é clonado para a Prospecção (Lead Novo) já com o vendedor original e o SDR que resgatou vinculados; o card perdido original continua como está. Perdidos que já têm SDR seguem visíveis apenas para o próprio SDR.",
       },
       {
+        type: "fix",
+        text: "Serviço — card novo não aparecia ao criar: ao criar um card manualmente no board (ex.: Cobrança), ele nascia no fim da lista de entrada (com centenas de cards) e ficava invisível, e o aviso 'Card criado!' demorava. Agora o card nasce no topo, o aviso aparece na hora e o card surge imediatamente.",
+      },
+      {
+        type: "improvement",
+        text: "Cards entram no topo da lista (Serviço e Vendas): ao criar um card ou avançar de etapa, ele passa a entrar no topo da lista de destino (antes ia para o fim). Vale para Serviços, Cobrança, Prospecção, Aquisição e Expansão. Facilita achar o card recém-mexido em listas grandes.",
+      },
+      {
         type: "improvement",
         text: "Cards parados — contagem em dias úteis: as etiquetas 'Parado 3d+' e 'Parado 7d+' agora ignoram sábado e domingo. Antes, um card parado desde sexta já aparecia como 'Parado 3d+' na segunda (contava o fim de semana); agora só vira 'Parado 3d+' na quarta (seg/ter/qua = 3 dias úteis). Vale para os boards de Vendas e de Serviços e para os KPIs de 'parados' do dashboard de Vendas. Como é calculado na hora, vale para todos os cards assim que a tela recarrega.",
       },

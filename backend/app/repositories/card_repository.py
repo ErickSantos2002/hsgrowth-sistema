@@ -236,18 +236,32 @@ class CardRepository:
 
         return max_pos if max_pos is not None else -1
 
-    def create(self, card_data: CardCreate) -> Card:
+    def get_min_position(self, list_id: int) -> float:
+        """Menor posição de card em uma lista (ou 0 se não houver cards)."""
+        min_pos = self.db.query(func.min(Card.position)).filter(
+            Card.list_id == list_id
+        ).scalar()
+
+        return float(min_pos) if min_pos is not None else 0.0
+
+    def create(self, card_data: CardCreate, at_top: bool = False) -> Card:
         """
         Cria um novo card.
 
         Args:
             card_data: Dados do card
+            at_top: se True, coloca o card no TOPO da lista (menor posição − 1);
+                caso contrário, no final (comportamento padrão).
 
         Returns:
             Card criado
         """
-        # Coloca o card no final da lista
-        position = self.get_max_position(card_data.list_id) + 1
+        # Posição: topo (menor − 1) na criação manual, senão final (maior + 1)
+        position = (
+            self.get_min_position(card_data.list_id) - 1
+            if at_top
+            else self.get_max_position(card_data.list_id) + 1
+        )
 
         # Converte o schema para dict, excluindo campos não setados
         data_dict = card_data.model_dump(exclude_unset=True)

@@ -390,7 +390,9 @@ class ServiceBoardService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A lista informada não pertence a este board de serviços.",
             )
-        card = self.repo.create_card(data)
+        # Criação manual: card nasce no TOPO da lista para ficar visível na hora
+        # (a lista de entrada pode ter centenas de cards; no fim ele sumia).
+        card = self.repo.create_card(data, at_top=True)
         self.log_event(card.id, user, "card_created", "Card criado")
         return card
 
@@ -594,6 +596,11 @@ class ServiceBoardService:
         is_privileged = role_name in ("admin", "manager")
         if old_list_id != new_list_id and not is_privileged:
             self._validate_advance(card, old_list, new_list)
+        # Avanço de etapa sem posição explícita (tela de detalhes): o card entra no
+        # TOPO da lista de destino, consistente com a criação manual. Em listas
+        # grandes, entrar no fim deixava o card difícil de achar.
+        if new_position is None and old_list_id != new_list_id:
+            new_position = self.repo.top_position(new_list_id)
         moved = self.repo.move_card(card_id, new_list_id, new_position)
         if old_list_id != new_list_id:
             meta = {"from_list_id": old_list_id, "to_list_id": new_list_id}
