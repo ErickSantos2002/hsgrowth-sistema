@@ -829,8 +829,11 @@ const KanbanBoard: React.FC = () => {
         }
       }
 
-      // Filtro por SDR (sdr_id)
-      if (sdrFilter) {
+      // Filtro por SDR (sdr_id).
+      // Para o SDR, a visibilidade já é feita no backend (próprios + perdidos SEM
+      // SDR na Aquisição, p/ resgatar — RN-036). Refiltrar aqui pelo próprio id
+      // excluiria justamente os órfãos, então NÃO aplica o filtro client-side p/ SDR.
+      if (sdrFilter && user?.role !== "sdr") {
         const filterId = Number(sdrFilter);
         if ((card as any).sdr_id !== filterId) {
           return false;
