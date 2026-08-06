@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.13",
+    date: "03/08/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Modais não fecham mais ao clicar fora: todas as janelas de formulário (criar/editar card de Vendas e Serviço, Cliente, Pessoa, Proposta, Enviar E-mail, etc.) agora só fecham no botão X ou no Cancelar. Antes, um clique acidental fora da janela fechava a modal e podia perder o que estava sendo preenchido.",
+      },
+    ],
+  },
+  {
     version: "1.8.12",
     date: "03/08/2026",
     entries: [

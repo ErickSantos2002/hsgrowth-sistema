@@ -353,7 +353,6 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
         title="Enviar E-mail"
         subtitle="Enviado via Microsoft 365"
         size="lg"
-        closeOnOverlayClick={!sending}
         footer={
           <div className="flex items-center justify-end gap-3">
             <Button variant="secondary" onClick={() => { setShowModal(false); onModalClose?.(); }} disabled={sending}>

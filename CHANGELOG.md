@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.13] — 03/08/2026
+
+### Melhorado
+- **Modais não fecham mais ao clicar fora:** todas as janelas de formulário (criar/editar card de Vendas e Serviço, Cliente, Pessoa, Proposta, Enviar E-mail, etc.) agora **só fecham no botão X ou no Cancelar**. Antes, um clique acidental fora da janela fechava a modal e podia perder o que estava sendo preenchido. Aplicado de forma central, valendo para todas as modais do sistema.
+
+---
+
 ## [1.8.12] — 03/08/2026
 
 ### Adicionado

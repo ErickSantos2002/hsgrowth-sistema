@@ -21,6 +21,8 @@ interface BaseModalProps {
   /** Ações extras no cabeçalho (renderizadas antes do botão de fechar). */
   headerActions?: React.ReactNode;
   showCloseButton?: boolean;
+  /** Fechar ao clicar no fundo (fora da modal). Padrão: false — só fecha no X
+   *  ou no Cancelar, para não perder o que foi digitado por um clique acidental. */
   closeOnOverlayClick?: boolean;
   className?: string;
   titleClassName?: string;
@@ -61,7 +63,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
   footer,
   headerActions,
   showCloseButton = true,
-  closeOnOverlayClick = true,
+  closeOnOverlayClick = false,
   className = "",
   titleClassName = "",
 }) => {
