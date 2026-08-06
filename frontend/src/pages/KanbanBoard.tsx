@@ -821,22 +821,26 @@ const KanbanBoard: React.FC = () => {
         return false;
       }
 
-      // Filtro por vendedor (assigned_to_id)
+      // Filtro por vendedor (assigned_to_id). "none" = cards sem vendedor.
       if (assignedToFilter) {
-        const filterId = Number(assignedToFilter);
-        if (card.assigned_to_id !== filterId) {
-          return false;
+        if (assignedToFilter === "none") {
+          if (card.assigned_to_id != null) return false;
+        } else {
+          const filterId = Number(assignedToFilter);
+          if (card.assigned_to_id !== filterId) return false;
         }
       }
 
-      // Filtro por SDR (sdr_id).
+      // Filtro por SDR (sdr_id). "none" = cards sem SDR (p/ resgatar).
       // Para o SDR, a visibilidade já é feita no backend (próprios + perdidos SEM
       // SDR na Aquisição, p/ resgatar — RN-036). Refiltrar aqui pelo próprio id
       // excluiria justamente os órfãos, então NÃO aplica o filtro client-side p/ SDR.
       if (sdrFilter && user?.role !== "sdr") {
-        const filterId = Number(sdrFilter);
-        if ((card as any).sdr_id !== filterId) {
-          return false;
+        if (sdrFilter === "none") {
+          if ((card as any).sdr_id != null) return false;
+        } else {
+          const filterId = Number(sdrFilter);
+          if ((card as any).sdr_id !== filterId) return false;
         }
       }
 
@@ -1309,8 +1313,9 @@ const KanbanBoard: React.FC = () => {
                 value={assignedToFilter}
                 options={[
                   { value: "", label: "Todos os vendedores" },
+                  { value: "none", label: "Sem vendedor" },
                   ...availableUsers
-                    .filter((u) => u.role !== "sdr") // Exclui SDRs da lista de vendedores
+                    .filter((u) => u.role === "salesperson") // Só quem é vendedor
                     .map((u) => ({
                       value: String(u.id),
                       label: u.name,
@@ -1328,6 +1333,7 @@ const KanbanBoard: React.FC = () => {
                 value={sdrFilter}
                 options={[
                   { value: "", label: "Todos os SDRs" },
+                  { value: "none", label: "Sem SDR" },
                   ...availableUsers
                     .filter((u) => u.role === "sdr") // Apenas SDRs
                     .map((u) => ({
