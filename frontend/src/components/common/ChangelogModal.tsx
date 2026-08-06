@@ -30,6 +30,14 @@ const CHANGELOG: ChangelogVersion[] = [
     entries: [
       {
         type: "feature",
+        text: "Vendas — filtros 'Sem vendedor' e 'Sem SDR': os filtros de vendedor e SDR dos boards de Vendas ganharam a opção 'Sem vendedor' / 'Sem SDR', para achar negócios sem responsável (ex.: perdidos sem SDR, para resgate). A lista de vendedores passa a mostrar só vendedores e a de SDRs só SDRs.",
+      },
+      {
+        type: "feature",
+        text: "Atividades — filtro de Responsável no Serviço: a aba Serviço da tela de Atividades ganhou o filtro de Responsável (antes só Vendedor e SDR tinham), visível para admin, gerente e o time de serviço. Nas abas Vendedor e SDR, o filtro passou a listar apenas usuários do papel correspondente.",
+      },
+      {
+        type: "feature",
         text: "Vendas — filtro 'Motivo de perda': ao filtrar por 'Apenas Perdidos' nos boards de Vendas (Prospecção, Aquisição e Expansão), aparece um novo filtro para escolher o motivo da perda. Facilita achar os perdidos que interessam num board com muitos cards.",
       },
       {

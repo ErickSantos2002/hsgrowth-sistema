@@ -8,6 +8,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 ## [1.8.12] — 03/08/2026
 
 ### Adicionado
+- **Vendas — filtros "Sem vendedor" e "Sem SDR":** os filtros de **vendedor** e **SDR** dos boards de Vendas ganharam a opção **"Sem vendedor"** / **"Sem SDR"**, para localizar negócios sem responsável vinculado (ex.: os perdidos sem SDR, para resgate). Além disso, a lista de **vendedores** passa a mostrar **só quem é vendedor** e a de **SDRs só quem é SDR** (antes apareciam admin, gerente, etc.).
+- **Atividades — filtro de Responsável no Serviço:** a aba **Serviço** da tela de Atividades ganhou o filtro de **Responsável** (antes só Vendedor e SDR tinham). Mostra só usuários com papel de **serviço** e fica visível para **admin, gerente e o próprio time de serviço**. Nas abas **Vendedor** e **SDR**, o filtro passou a listar **apenas** usuários do papel correspondente.
 - **Vendas — filtro "Motivo de perda":** ao filtrar por **"Apenas Perdidos"** nos boards de Vendas (**Prospecção, Aquisição e Expansão**), aparece um novo filtro para escolher o **motivo da perda** (ex.: "Sem retorno", "Preço", "Descarte administrativo — erro de cadastro"). Facilita achar os perdidos que interessam num board com muitos cards.
 - **Aquisição — SDR "Resgatar Negócio":** o **SDR** agora enxerga no board de **Aquisição** os negócios **perdidos que estão sem SDR vinculado** e ganha o botão **"Resgatar Negócio"**. Ao resgatar, o negócio é **clonado para a Prospecção (Lead Novo)** já vindo com o **vendedor original** e o **SDR que resgatou** vinculados; o card perdido original continua como está. Perdidos que **já têm** um SDR vinculado seguem visíveis **apenas para o próprio SDR**.
 

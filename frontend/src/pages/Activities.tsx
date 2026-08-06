@@ -225,7 +225,12 @@ const Activities: React.FC = () => {
           ] as { key: ActivityView; label: string }[]).map((opt) => (
             <button
               key={opt.key}
-              onClick={() => { setView(opt.key); setCurrentPage(1); }}
+              onClick={() => {
+                setView(opt.key);
+                setCurrentPage(1);
+                // Zera o responsável ao trocar de aba (a lista muda por role)
+                setFilters((f) => ({ ...f, assignedToId: null }));
+              }}
               className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
                 view === opt.key
                   ? "bg-blue-500 text-white"
@@ -294,7 +299,9 @@ const Activities: React.FC = () => {
           <ActivityFilters
             filters={filters}
             onChange={handleFiltersChange}
-            users={users}
+            // Dropdown de responsável mostra só quem tem o role da aba atual
+            // (Vendedor → salesperson, SDR → sdr). O de Serviço é a página embutida.
+            users={users.filter((u) => u.role === view)}
             isAdminOrManager={isAdminOrManager}
           />
         </div>

@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CheckSquare, ExternalLink, Wrench } from "lucide-react";
 import serviceActivityService, { ServiceActivityOverviewItem } from "../services/serviceActivityService";
+import userService from "../services/userService";
+import { useAuth } from "../hooks/useAuth";
+import { User } from "../types";
 import { Pagination, EmptyState, LoadingSpinner } from "../components/common";
 import ActivityFilters, {
   ActivityFilterState,
@@ -81,16 +84,32 @@ const ServiceActivityCard: React.FC<{
 /**
  * Página de Atividades do módulo de SERVIÇO.
  * Lista as atividades (tarefas) de todos os cards de serviço, de todos os
- * usuários — não há divisão por responsável no módulo de serviço.
+ * usuários. Admin/gerente podem filtrar por responsável (mesmo filtro do Vendas).
  * Segue o mesmo padrão visual da página de Atividades de Vendas.
  */
 const ServiceActivities: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  // Filtro de responsável: admin/gerente e também quem tem role de SERVIÇO
+  // (módulo colaborativo — o time de serviço pode filtrar por colega).
+  const canFilterResponsavel =
+    user?.role === "admin" || user?.role === "manager" || user?.role === "service";
   const [items, setItems] = useState<ServiceActivityOverviewItem[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   // Abre em "Hoje", igual ao board de Vendas.
   const [filters, setFilters] = useState<ActivityFilterState>(DEFAULT_FILTERS);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Lista de usuários para o filtro de responsável. Só quem tem role de
+  // SERVIÇO aparece — é o módulo de serviço.
+  useEffect(() => {
+    if (canFilterResponsavel) {
+      userService.listActive()
+        .then((all) => setUsers(all.filter((u) => u.role === "service")))
+        .catch(console.error);
+    }
+  }, [canFilterResponsavel]);
 
   useEffect(() => {
     const load = async () => {
@@ -129,6 +148,7 @@ const ServiceActivities: React.FC<{ embedded?: boolean }> = ({ embedded = false 
       if (!inPeriod(it.due_date)) return false;
       if (filters.taskType && it.activity_type !== filters.taskType) return false;
       if (filters.priority && (it.priority || "normal") !== filters.priority) return false;
+      if (filters.assignedToId != null && it.user_id !== filters.assignedToId) return false;
       return true;
     });
   }, [items, filters]);
@@ -185,8 +205,8 @@ const ServiceActivities: React.FC<{ embedded?: boolean }> = ({ embedded = false 
           <ActivityFilters
             filters={filters}
             onChange={handleFiltersChange}
-            users={[]}
-            isAdminOrManager={false}
+            users={users}
+            isAdminOrManager={canFilterResponsavel}
           />
         </div>
 
