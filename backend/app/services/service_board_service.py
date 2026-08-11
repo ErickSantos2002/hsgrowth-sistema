@@ -477,17 +477,17 @@ class ServiceBoardService:
                     pn_ok = False
                 if not pn_ok:
                     miss.append("Número da proposta preenchido no Resumo")
-                # Funil oficial — dois caminhos conforme a origem:
-                #   De "Proposta" (Faturamento direto): forma=faturamento_direto + Proposta anexada
-                #   De "Aguardando Pedido" (Pedido): OC anexada
+                # Funil oficial — dois caminhos conforme a origem. Os anexos
+                # (Proposta / OC) são OPCIONAIS; o que trava é o número.
+                #   De "Proposta" (Faturamento direto): forma=faturamento_direto + Nº da proposta
+                #   De "Aguardando Pedido" (Pedido): Nº do pedido
                 if src_name == "proposta":
                     if biz.get("closing_type") != "faturamento_direto":
                         miss.append("selecionar 'Faturamento direto' na Forma de fechamento (Resumo) — se for 'Pedido', avance para 'Aguardando Pedido'")
-                    if not has_slot("proposta"):
-                        miss.append("Proposta anexada no Resumo (Documentos)")
                 else:
-                    if not has_slot("oc"):
-                        miss.append("OC (Ordem de Compra) anexada no Resumo")
+                    on = biz.get("order_number")
+                    if on in (None, "") or not str(on).strip():
+                        miss.append("Número do pedido preenchido no Resumo")
             elif board_id == 2:
                 # Cobrança: Operações → Ganho exige Confirmação de envio = Sim.
                 if biz.get("shipping_confirmed") != "sim":
@@ -541,11 +541,17 @@ class ServiceBoardService:
                 if not has_completed_activity():
                     miss.append("pelo menos 1 atividade concluída nesta etapa")
             elif old_name == "proposta":
-                # Proposta → Aguardando Pedido (caminho Pedido)
+                # Proposta → Aguardando Pedido (caminho Pedido). Exige Forma de
+                # fechamento 'Pedido' e Número da proposta. O anexo é OPCIONAL.
                 if biz.get("closing_type") != "pedido":
                     miss.append("selecionar 'Pedido' na Forma de fechamento (Resumo) — se for 'Faturamento direto', use o botão Ganho")
-                if not has_slot("proposta"):
-                    miss.append("Proposta anexada no Resumo (Documentos)")
+                pn = biz.get("proposal_number")
+                try:
+                    pn_ok = pn not in (None, "") and int(pn) > 0
+                except (TypeError, ValueError):
+                    pn_ok = False
+                if not pn_ok:
+                    miss.append("Número da proposta preenchido no Resumo")
 
         elif board_id == 2:
             # ── Cobrança (Serviços - Atrasados) ──

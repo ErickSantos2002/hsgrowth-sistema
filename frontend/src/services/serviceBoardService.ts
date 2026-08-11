@@ -59,6 +59,9 @@ export interface ServiceBusinessInfo {
   // Número da proposta do GestorHS (#N da tela de Propostas de lá). Obrigatório
   // para dar Ganho no board 1; vai no aviso de volta ao GestorHS (fase 2).
   proposal_number?: number | null;
+  // Número do pedido (texto livre). Obrigatório para dar Ganho vindo de
+  // "Aguardando Pedido" (caminho Pedido). O anexo da OC é opcional.
+  order_number?: string | null;
   // Aparelhos do cliente vindos do sistema externo GestorHS (somente leitura).
   // Ver ServiceDevicesSection — não confundir com `aparelhos` de ServiceCardProduct,
   // que é preenchido pelo laboratório por produto vendido.

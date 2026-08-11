@@ -70,8 +70,10 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 | **Triagem** | Recalibração e/ou Manutenção (`service_type`) | Serviço | ✅ p/ sair de Dados Preenchidos |
 | **Proposta** | Formulário de Coleta de Dados enviado (`form_answered`, checkbox) | Serviço | ❌ (informativo) |
 | **Proposta** | **Forma de fechamento** (`closing_type`: Faturamento direto / Pedido) | Serviço | ✅ na etapa Proposta |
-| **Documentos** | OS – Ordem de Serviço (anexo) | Serviço | ✅ p/ sair de Liberados do Laboratório |
-| **Documentos** | OC – Ordem de Compra (anexo) | Serviço | ✅ p/ Ganho via Aguardando Pedido |
+| **Proposta** | **Número da proposta** (`proposal_number`) | Serviço | ✅ p/ sair da Proposta (Aguardando Pedido ou Ganho direto) |
+| **Aguardando Pedido** | **Número do pedido** (`order_number`, texto livre) | Serviço | ✅ p/ Ganho via Aguardando Pedido |
+| **Documentos** | Proposta (anexo, slot `proposta`) | Serviço | ❌ opcional (11/08/2026) |
+| **Documentos** | OC – Ordem de Compra (anexo) | Serviço | ❌ opcional (11/08/2026) |
 | **Informações Gerais** | Criado em / Tempo no funil / ID | auto | — |
 
 **Cliente (Organização)** e **Pessoa (Contato)** ficam nas suas seções próprias e são exigidos para sair de **Dados Preenchidos**.
@@ -270,15 +272,14 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
   - SE houve manutenção → enviar Proposta da Manutenção
   - Coletar OC (Ordem de Compra)
   - Validar Dados para Faturamento (Ordem de Compra × Proposta)
-- **Novo campo**: anexar **OC (Ordem de Compra)** no Resumo (seção Documentos).
-- **Obrigatoriedades para dar GANHO**:
-  1. **OC (Ordem de Compra) anexada**
-  2. Realizar **1 atividade de tarefa** validando os dados para envio ao Financeiro
+- **Campos**: **Número do pedido** (`order_number`, texto livre) no Resumo → Informações de Negócio; anexar a **OC (Ordem de Compra)** no Resumo → Documentos (opcional).
+- **Obrigatoriedades para dar GANHO** *(atualizado 11/08/2026)*:
+  1. **Número do pedido preenchido** *(anexar a OC é opcional)*
 - **Perdido**:
   - **Gatilho**: Cliente não aceitou a Proposta da Manutenção.
   - Padrão (ver 4.X) + automação de 90 dias.
 
-> ⚠️ **REGRA DO BOTÃO "GANHO" (mudança de comportamento)**: o botão **Ganho só pode ser clicado quando o card está em "Aguardando Pedido"**. Nas demais etapas ele fica **desabilitado/opaco** (não clicável); ao chegar em Aguardando Pedido ele **acende**. Mesmo aceso, só conclui o Ganho se: **OC anexada** + **atividade de tarefa de validação feita**.
+> ⚠️ **REGRA DO BOTÃO "GANHO" (mudança de comportamento)**: o botão **Ganho só pode ser clicado quando o card está em "Aguardando Pedido"**. Nas demais etapas ele fica **desabilitado/opaco** (não clicável); ao chegar em Aguardando Pedido ele **acende**. Mesmo aceso, só conclui o Ganho se o **Número do pedido** estiver preenchido *(anexar a OC é opcional — 11/08/2026)*.
 
 ### 4.8. Negócio Ganho ✅ *(imagem 9 — documentado)*
 
@@ -331,13 +332,13 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
   - **Liberados do Laboratório →**: **sem regra** — avança livre. *(A OS deixou de ser exigida e o campo de anexar OS foi removido do Resumo — 22/07/2026.)*
   - **Dados Preenchidos →**: **≥1 produto** + **≥1 serviço** + **Cliente** vinculado + **Pessoa** vinculada + **Recalibração/Manutenção** (`service_type`) preenchido.
   - **Tentativa de Contato →**: **≥1 atividade concluída nesta etapa** (qualquer tipo).
-  - **Proposta → Aguardando Pedido**: **Forma de fechamento = Pedido** (`closing_type`) + **Proposta anexada** (documento no Resumo → Documentos).
-  - **Proposta → Ganho (direto)**: **Forma de fechamento = Faturamento direto** + **Proposta anexada** (documento no Resumo → Documentos).
-  - **Aguardando Pedido → Ganho**: **OC anexada**.
+  - **Proposta → Aguardando Pedido**: **Forma de fechamento = Pedido** (`closing_type`) + **Número da proposta preenchido** (`proposal_number`, no Resumo). *(Anexar a Proposta é opcional — 11/08/2026.)*
+  - **Proposta → Ganho (direto)**: **Forma de fechamento = Faturamento direto** + **Número da proposta preenchido** (`proposal_number`). *(Anexar a Proposta é opcional — 11/08/2026.)*
+  - **Aguardando Pedido → Ganho**: **Número do pedido preenchido** (`order_number`, texto livre, no Resumo). *(Anexar a OC é opcional — 11/08/2026.)*
   - **Negócio Ganho / Perdido**: só pelos **botões** (stepper não move para terminais). Ao marcar, as **atividades pendentes são concluídas automaticamente — exceto follow-up**.
   - Voltar etapa é livre. **Regras só valem no funil oficial** (`SERVICE_FUNNEL_BOARD_IDS = {1}`); boards duplicados são kanban livre.
   - ⚙️ "Atividade concluída nesta etapa" = `category=atividade`, `is_completed`, concluída **após** o card entrar na etapa atual.
-- [x] **Botão Ganho**: habilitado em **"Aguardando Pedido"** (caminho Pedido → exige OC) **ou** em **"Proposta"** com **Forma de fechamento = Faturamento direto** (→ exige **Proposta anexada** (documento no Resumo)); opaco/desabilitado nas demais. ✅ **Atualizado** (19/06/2026) — `handleWin` (`ServiceCardDetails.tsx`).
+- [x] **Botão Ganho**: habilitado em **"Aguardando Pedido"** (caminho Pedido → exige **Número do pedido**) **ou** em **"Proposta"** com **Forma de fechamento = Faturamento direto** (→ exige **Número da proposta**); opaco/desabilitado nas demais. Anexos (Proposta/OC) são opcionais. ✅ **Atualizado** (11/08/2026) — `handleWin` (`ServiceCardDetails.tsx`).
 - [x] **Esconder cards Ganhos e Perdidos** por padrão no board. ✅ **Já implementado** — filtro padrão "Apenas Abertos" (`fStatus="abertos"`) exclui done/lost; aparecem só via filtro (Todos/Ganhos/Perdidos).
 - [x] **Motivos de Perda**: lista do board de Serviços substituída pelos 10 motivos oficiais. ✅ **Feito** (15/06/2026) — `LOSS_REASONS` em `ServiceCardDetails.tsx`.
 
@@ -361,14 +362,15 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 | 1 | Liberados do Laboratório → Dados Preenchidos | **sem regra** — avança livre *(OS não é mais exigida; campo de anexar OS removido do Resumo — 22/07/2026)* | ✅ | ☐ |
 | 2 | Dados Preenchidos → Tentativa de Contato | **≥1 produto** + **≥1 serviço** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Recalibração/Manutenção** preenchido | ✅ | ☐ |
 | 3 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) | ✅ | ☐ |
-| 4 | Proposta → Aguardando Pedido | **Forma de fechamento = "Pedido"** + **Proposta anexada** (documento no Resumo → Documentos) | ✅ | ☐ |
-| 5 | Proposta → **Negócio Ganho** *(direto)* | **Forma de fechamento = "Faturamento direto"** + **Proposta anexada** (documento no Resumo → Documentos) · botão Ganho acende na Proposta só nesse caso | ✅ | ☐ |
-| 6 | Aguardando Pedido → **Negócio Ganho** | **só pelo botão Ganho** · **OC (Ordem de Compra) anexada** | ✅ | ☐ |
+| 4 | Proposta → Aguardando Pedido | **Forma de fechamento = "Pedido"** + **Número da proposta preenchido** (`proposal_number`) · anexo da Proposta **opcional** | ✅ | ☐ |
+| 5 | Proposta → **Negócio Ganho** *(direto)* | **Forma de fechamento = "Faturamento direto"** + **Número da proposta preenchido** · botão Ganho acende na Proposta só nesse caso · anexo **opcional** | ✅ | ☐ |
+| 6 | Aguardando Pedido → **Negócio Ganho** | **só pelo botão Ganho** · **Número do pedido preenchido** (`order_number`, texto livre) · anexo da OC **opcional** | ✅ | ☐ |
 | 7 | Qualquer etapa → **Negócio Perdido** | **só pelo botão Perdido** · exige **Motivo da perda** (modal) | ✅ | ☐ |
 
 > **Forma de fechamento** (campo no Resumo): define o caminho na etapa Proposta —
-> **Faturamento direto** libera o botão Ganho ali mesmo (exige **Proposta anexada** (documento no Resumo));
-> **Pedido** obriga avançar para "Aguardando Pedido" (exige **Proposta anexada** (documento no Resumo)) e depois o Ganho exige a OC.
+> **Faturamento direto** libera o botão Ganho ali mesmo (exige o **Número da proposta**);
+> **Pedido** obriga avançar para "Aguardando Pedido" (exige o **Número da proposta**) e depois o Ganho exige o **Número do pedido**.
+> Os anexos (Proposta e OC) são **opcionais** (11/08/2026) — o que trava é o número.
 
 ### Regras gerais (valem para o funil oficial)
 - **Não pode pular etapas**: o avanço é **uma etapa por vez** (o destino tem que ser a próxima etapa imediata). Tentar pular → bloqueia com a próxima etapa indicada.
