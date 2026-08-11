@@ -72,3 +72,5 @@ class ServiceDashboardResponse(BaseModel):
     # Composição dos negócios em aberto
     modality: List[NameCount] = []       # Venda × Locação
     service_type: List[NameCount] = []   # Recalibração × Manutenção × Ambos
+    # Ganhos por tipo de serviço (alternador Perda/Ganho no gráfico)
+    won_by_service_type: List[NameCount] = []

@@ -25,6 +25,7 @@ export interface ServiceDashboard {
   recalibrations: RecalibrationStats;
   modality: NameCount[];
   service_type: NameCount[];
+  won_by_service_type: NameCount[];
 }
 
 export interface CollaboratorOption { id: number; name: string; }

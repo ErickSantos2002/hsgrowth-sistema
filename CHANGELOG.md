@@ -5,6 +5,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.14] — 11/08/2026
+
+### Adicionado
+- **Dashboard de Serviço e Cobrança — KPI "Receita ganha":** novo card com o **valor total ganho** no período (antes o valor só aparecia como legenda no card de "Ganhos"). O card de "Ganhos no período" continua mostrando a **quantidade**.
+- **Dashboard de Serviço e Cobrança — alternador Perda/Ganho no gráfico:** o gráfico de "Motivos de perda" ganhou um botão **Perda / Ganho**. Em **Perda** mostra os motivos das perdas (como antes); em **Ganho** mostra os **ganhos por tipo de serviço** (Recalibração / Manutenção / Ambos) com % e quantidade.
+
+### Alterado
+- **Serviço (funil oficial) — número passa a valer mais que o anexo:** para **sair da etapa Proposta** agora basta o **Número da proposta preenchido** (novo comportamento) e, para dar **Ganho vindo de "Aguardando Pedido"**, o **Número do pedido preenchido** (campo novo, texto livre, no Resumo). Os **anexos** (Proposta e OC) passaram a ser **opcionais** — deixam de travar o avanço. *(O board de Cobrança não muda.)*
+
+---
+
 ## [1.8.13] — 03/08/2026
 
 ### Melhorado

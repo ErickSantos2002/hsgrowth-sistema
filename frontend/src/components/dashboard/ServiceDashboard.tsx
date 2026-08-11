@@ -67,7 +67,6 @@ const ServiceTypeKpi: React.FC<{ items: { name: string; count: number }[] }> = (
   );
 };
 
-const fmtMoney = (v: number) => `R$ ${(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 const periodRange = (period: string, cs?: string, ce?: string): { start?: string; end?: string } => {
   const now = new Date();
@@ -105,6 +104,8 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
   // Funil: "atual" = snapshot (o que está em cada etapa hoje) · "fluxo" = o que
   // entrou em cada etapa no período filtrado.
   const [funnelMode, setFunnelMode] = useState<"atual" | "fluxo">("atual");
+  // Gráfico Perda/Ganho: "perda" = motivos de perda · "ganho" = ganhos por tipo de serviço
+  const [lossWinView, setLossWinView] = useState<"perda" | "ganho">("perda");
 
   useEffect(() => {
     const load = async () => {
@@ -141,16 +142,17 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
     <div className="space-y-6">
       <p className="text-xs uppercase tracking-wide text-slate-400">Visão geral · {periodLabel || "Período"}</p>
 
-      {/* ── KPIs (5 em cima · 4 embaixo, cada linha de canto a canto) ── */}
+      {/* ── KPIs (5 em cima · 5 embaixo, cada linha de canto a canto) ── */}
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <KpiCard icon={<Briefcase size={18} className="text-violet-400" />} iconBg="bg-violet-500/20" label="Negócios ativos" value={data.active_count} sub="Em aberto no pipeline" highlight="purple" />
           <KpiCard icon={<DollarSign size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Pipeline (em aberto)" value={data.pipeline_value} format="currency" sub="Valor em aberto no período" highlight="green" />
-          <KpiCard icon={<CheckCircle2 size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Ganhos no período" value={data.won_count} sub={`${fmtMoney(data.won_value)} em receita`} highlight="green" />
+          <KpiCard icon={<DollarSign size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Receita ganha" value={data.won_value} format="currency" sub="Valor total ganho no período" highlight="green" />
+          <KpiCard icon={<CheckCircle2 size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Ganhos no período" value={data.won_count} sub="Negócios ganhos no período" highlight="green" />
           <KpiCard icon={<XCircle size={18} className="text-red-400" />} iconBg="bg-red-500/20" label="Perdidos no período" value={data.lost_count} sub="Negócios perdidos no período" highlight="red" />
-          <KpiCard icon={<ActivityIcon size={18} className="text-blue-400" />} iconBg="bg-blue-500/20" label="Atividades no período" value={data.activities_count} sub="Registradas no período" highlight="blue" />
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <KpiCard icon={<ActivityIcon size={18} className="text-blue-400" />} iconBg="bg-blue-500/20" label="Atividades no período" value={data.activities_count} sub="Registradas no período" highlight="blue" />
           <KpiCard icon={<AlarmClock size={18} className="text-amber-400" />} iconBg="bg-amber-500/20" label="Atrasados 3d+" value={data.stuck_count} sub="Atividade vencida há 3+ dias" highlight="orange" />
           <KpiCard icon={<TrendingUp size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Taxa de ganho" value={data.win_rate} format="percent" sub="Ganhos sobre fechados" highlight="green" />
           <KpiCard icon={<DollarSign size={18} className="text-sky-400" />} iconBg="bg-sky-500/20" label="Ticket médio" value={data.avg_ticket} format="currency" sub="Valor médio por negócio ganho" highlight="blue" />
@@ -253,8 +255,60 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
           )}
         </ChartCard>
 
-        <ChartCard icon={<XCircle size={16} className="text-red-400" />} iconBg="bg-red-500/20" title="Motivos de perda">
-          {data.loss_reasons.length === 0 ? (
+        <ChartCard
+          icon={lossWinView === "ganho" ? <CheckCircle2 size={16} className="text-green-400" /> : <XCircle size={16} className="text-red-400" />}
+          iconBg={lossWinView === "ganho" ? "bg-green-500/20" : "bg-red-500/20"}
+          title={lossWinView === "ganho" ? "Ganhos por tipo de serviço" : "Motivos de perda"}
+          right={
+            <div className="flex overflow-hidden rounded-md border border-gray-200 text-[11px] dark:border-slate-600">
+              <button
+                type="button"
+                onClick={() => setLossWinView("perda")}
+                className={`px-2 py-0.5 transition-colors ${lossWinView === "perda" ? "bg-red-500 text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
+                title="Motivos das perdas no período"
+              >
+                Perda
+              </button>
+              <button
+                type="button"
+                onClick={() => setLossWinView("ganho")}
+                className={`px-2 py-0.5 transition-colors ${lossWinView === "ganho" ? "bg-green-500 text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
+                title="Ganhos por tipo de serviço no período"
+              >
+                Ganho
+              </button>
+            </div>
+          }
+        >
+          {lossWinView === "ganho" ? (
+            (() => {
+              const total = data.won_by_service_type.reduce((s, x) => s + x.count, 0);
+              if (total === 0) return <p className="py-6 text-center text-sm text-slate-400">Nenhum ganho no período</p>;
+              return (
+                <div className="space-y-4 py-3" style={{ minHeight: 240 }}>
+                  {["Recalibração", "Manutenção", "Ambos"].map((name) => {
+                    const cnt = data.won_by_service_type.find((x) => x.name === name)?.count || 0;
+                    const pct = Math.round((cnt / total) * 100);
+                    return (
+                      <div key={name}>
+                        <div className="mb-1 flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                            <span className={`h-2 w-2 rounded-full ${ST_DOT[name]}`} /> {name}
+                          </span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {pct}% <span className="text-xs font-normal text-slate-400">({cnt})</span>
+                          </span>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-gray-100 dark:bg-slate-700/50">
+                          <div className={`h-2.5 rounded-full ${ST_DOT[name]}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()
+          ) : data.loss_reasons.length === 0 ? (
             <p className="py-6 text-center text-sm text-slate-400">Nenhuma perda no período</p>
           ) : (
             <ResponsiveContainer width="100%" height={240}>

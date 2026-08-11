@@ -327,6 +327,14 @@ class ServiceDashboardService:
         modality = [NameCount(name=k, count=v) for k, v in modality_counter.most_common()]
         service_type = [NameCount(name=k, count=v) for k, v in service_type_counter.most_common()]
 
+        # Ganhos por Tipo de serviço (alternador Perda/Ganho no gráfico) — sobre os GANHOS
+        won_st_counter: Counter = Counter()
+        for c in won_cards:
+            st = str((c.business_info or {}).get("service_type") or "").strip()
+            if st in ST_LABELS:
+                won_st_counter[ST_LABELS[st]] += 1
+        won_by_service_type = [NameCount(name=k, count=v) for k, v in won_st_counter.most_common()]
+
         # ── Evolução temporal (últimos 6 meses, independe do filtro) ─────────
         months = []
         yy, mm = now.year, now.month
@@ -410,6 +418,7 @@ class ServiceDashboardService:
             recalibrations=recalibrations,
             modality=modality,
             service_type=service_type,
+            won_by_service_type=won_by_service_type,
         )
 
     def list_collaborators(self, boards=None) -> list:

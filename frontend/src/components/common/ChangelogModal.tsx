@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.14",
+    date: "11/08/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Dashboard de Serviço e Cobrança — KPI 'Receita ganha': novo card com o valor total ganho no período (antes só aparecia como legenda no card de 'Ganhos'). O card de 'Ganhos no período' segue mostrando a quantidade.",
+      },
+      {
+        type: "feature",
+        text: "Dashboard de Serviço e Cobrança — alternador Perda/Ganho no gráfico: o gráfico de 'Motivos de perda' ganhou um botão Perda/Ganho. Em Ganho, mostra os ganhos por tipo de serviço (Recalibração/Manutenção/Ambos) com % e quantidade.",
+      },
+      {
+        type: "improvement",
+        text: "Serviço (funil oficial) — número passa a valer mais que o anexo: para sair da Proposta basta o Número da proposta, e para dar Ganho vindo de 'Aguardando Pedido' o Número do pedido (campo novo, texto livre). Os anexos (Proposta e OC) viraram opcionais — não travam mais o avanço. O board de Cobrança não muda.",
+      },
+    ],
+  },
+  {
     version: "1.8.13",
     date: "03/08/2026",
     entries: [
