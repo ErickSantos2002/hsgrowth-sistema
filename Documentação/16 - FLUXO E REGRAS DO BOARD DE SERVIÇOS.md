@@ -294,7 +294,7 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 ### 4.X. Negócio Perdido ✅ *(confirmado)*
 - **Acessível a partir de**: Oportunidade Existente, Tentativa de Contato, Proposta, Aguardando Pedido.
 - **Obrigatoriedades ao perder**: Motivo de Perda + Detalhamento da perda + Data de próxima recalibração (para ajustes, se necessário).
-- **Motivos de Perda** (lista oficial do Serviço — substituir a atual no `LossReasonModal`):
+- **Motivos de Perda** (lista oficial do Serviço — constante `SERVICE_LOSS_REASONS` em `blueprintOptions.ts`, compartilhada pelo `LossReasonModal` e pelo filtro do kanban):
   - Não chegamos no responsável pelo tema
   - Proposta fora do orçamento
   - Manutenção não aprovada
@@ -305,6 +305,9 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
   - Lead não deu mais retorno
   - Data de Recalibração Errada
   - Cliente Inadimplente
+  - Cliente em standby *(adicionado 11/08/2026)*
+  - *(Admin)* Descarte administrativo — erro de cadastro
+- **Filtro "Motivo de perda" no kanban** *(11/08/2026)*: nos boards de **Serviço e Cobrança**, ao filtrar por **"Apenas Perdidos"** aparece um filtro para escolher o motivo. Como o módulo grava o motivo como **anotação** ("Motivo da perda: X"), o valor é **derivado da anotação** no backend (`_cards_aggregates` → `loss_reason`), funcionando também para os cards já perdidos (sem migration/backfill).
 - **Automação (futuro) — "resgate em 90 dias"**: ao marcar como Perdido, agendar a **criação de um novo card após 90 dias** para retrabalhar o negócio + **cadência de resgate**. Vale para todas as etapas que têm ponto de perda.
 
 ---

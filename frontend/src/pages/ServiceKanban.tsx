@@ -16,6 +16,7 @@ import serviceBoardService, {
 import { showSuccess, showError } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
 import { BaseModal, FormField, Input, Textarea, Button, LoadingSpinner, SelectMenu } from "../components/common";
+import { SERVICE_LOSS_REASONS, SERVICE_ADMIN_LOSS_REASON } from "../constants/blueprintOptions";
 import { useAuth } from "../hooks/useAuth";
 import { COLORS } from "../constants/colors";
 import ServiceCardModal from "../components/service/ServiceCardModal";
@@ -740,6 +741,7 @@ const ServiceKanban: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [users, setUsers] = useState<UserType[]>([]);
   const [fStatus, setFStatus] = useState("abertos"); // abertos | todos | ganhos | perdidos
+  const [fLossReason, setFLossReason] = useState(""); // motivo de perda (só em "Apenas Perdidos")
   const [fAssignee, setFAssignee] = useState("");
   const [fProduct, setFProduct] = useState<string[]>([]);
   const [fCollection, setFCollection] = useState(""); // tipo de cobrança (só board 2)
@@ -756,11 +758,11 @@ const ServiceKanban: React.FC = () => {
   const [filtersReady, setFiltersReady] = useState(false);
 
   const clearFilters = () => {
-    setFStatus("abertos"); setFAssignee(""); setFProduct([]); setFCollection(""); setFVencMes(""); setFVencAno(""); setFValue(""); setFTag("");
+    setFStatus("abertos"); setFLossReason(""); setFAssignee(""); setFProduct([]); setFCollection(""); setFVencMes(""); setFVencAno(""); setFValue(""); setFTag("");
     setFCriacao(""); setFCriacaoStart(""); setFCriacaoEnd("");
     setFFechamento(""); setFFechamentoStart(""); setFFechamentoEnd("");
   };
-  const filtersActive = fStatus !== "abertos" || !!fAssignee || fProduct.length > 0 || !!fCollection || (!!fVencMes && !!fVencAno) || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
+  const filtersActive = fStatus !== "abertos" || !!fLossReason || !!fAssignee || fProduct.length > 0 || !!fCollection || (!!fVencMes && !!fVencAno) || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
 
   const numId = Number(boardId);
 
@@ -822,6 +824,7 @@ const ServiceKanban: React.FC = () => {
       if (raw) {
         const s = JSON.parse(raw);
         setFStatus(s.fStatus ?? "abertos");
+        setFLossReason(s.fLossReason ?? "");
         setFAssignee(s.fAssignee ?? "");
         setFProduct(Array.isArray(s.fProduct) ? s.fProduct : (s.fProduct ? [String(s.fProduct)] : []));
         setFCollection(s.fCollection ?? "");
@@ -843,9 +846,14 @@ const ServiceKanban: React.FC = () => {
   // Salva filtros quando mudam
   useEffect(() => {
     if (!numId || !filtersReady) return;
-    const s = { fStatus, fAssignee, fProduct, fCollection, fVencMes, fVencAno, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
+    const s = { fStatus, fLossReason, fAssignee, fProduct, fCollection, fVencMes, fVencAno, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
     try { localStorage.setItem(`service_kanban_filters_${numId}`, JSON.stringify(s)); } catch { /* ignora */ }
-  }, [numId, filtersReady, fStatus, fAssignee, fProduct, fCollection, fVencMes, fVencAno, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
+  }, [numId, filtersReady, fStatus, fLossReason, fAssignee, fProduct, fCollection, fVencMes, fVencAno, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
+
+  // O filtro de motivo só faz sentido em "Apenas Perdidos" — zera ao sair de lá.
+  useEffect(() => {
+    if (fStatus !== "perdidos" && fLossReason) setFLossReason("");
+  }, [fStatus, fLossReason]);
 
   // Scroll drag
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -1025,6 +1033,8 @@ const ServiceKanban: React.FC = () => {
     if (fStatus === "abertos" && (isDoneCard(c) || isLostCard(c))) return false;
     if (fStatus === "ganhos" && !isDoneCard(c)) return false;
     if (fStatus === "perdidos" && !isLostCard(c)) return false;
+    // Motivo de perda (só em "Apenas Perdidos")
+    if (fLossReason && c.loss_reason !== fLossReason) return false;
     // Pós Vendas (colaborador que agiu no card)
     if (fAssignee && !(c.collaborators || []).some((p) => String(p.id) === fAssignee)) return false;
     // Produto (card precisa ter o produto selecionado vinculado)
@@ -1214,6 +1224,14 @@ const ServiceKanban: React.FC = () => {
                 { value: "perdidos", label: "Apenas Perdidos" },
               ]} />
             </div>
+            {fStatus === "perdidos" && (
+              <div className="min-w-[190px]">
+                <SelectMenu size="sm" value={fLossReason} onChange={setFLossReason} options={[
+                  { value: "", label: "Todos os motivos" },
+                  ...[...SERVICE_LOSS_REASONS, SERVICE_ADMIN_LOSS_REASON].map((r) => ({ value: r, label: r })),
+                ]} />
+              </div>
+            )}
             <div className="min-w-[170px]">
               <SelectMenu size="sm" value={fAssignee} onChange={setFAssignee} options={[
                 { value: "", label: "Todos os Pós Vendas" },

@@ -103,6 +103,7 @@ export interface ServiceCard {
   is_stuck_7d?: boolean;
   collaborators?: { id: number; name: string }[];
   products?: { id: number; name: string }[];
+  loss_reason?: string | null;  // motivo da perda (derivado) — p/ filtro do kanban
   position: number;
   is_deleted: boolean;
   created_at: string;

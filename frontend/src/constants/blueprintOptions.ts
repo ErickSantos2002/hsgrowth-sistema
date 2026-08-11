@@ -189,6 +189,25 @@ export const LOSS_REASONS_BY_BOARD_ID: Record<number, string[]> = {
   8: LOSS_REASONS_EXPANSION,   // Expansão (Pós Venda)
 };
 
+// Motivos de perda do módulo de SERVIÇO (boards de Serviço e de Cobrança).
+// Usados no modal de perda (ServiceCardDetails) e no filtro do kanban (ServiceKanban).
+export const SERVICE_LOSS_REASONS = [
+  "Não chegamos no responsável pelo tema",
+  "Proposta fora do orçamento",
+  "Manutenção não aprovada",
+  "Sem budget aprovado",
+  "Solução não percebida como crítica",
+  "Aprovação interna travada",
+  "Perda para concorrência",
+  "Lead não deu mais retorno",
+  "Data de Recalibração Errada",
+  "Cliente Inadimplente",
+  "Cliente em standby",
+];
+
+// Motivo exclusivo do Admin — descarte de cards criados errados (sem apagar).
+export const SERVICE_ADMIN_LOSS_REASON = "Descarte administrativo — erro de cadastro";
+
 export const BOOLEAN_OPTIONS = [
   { value: "true", label: "Sim" },
   { value: "false", label: "Não" },

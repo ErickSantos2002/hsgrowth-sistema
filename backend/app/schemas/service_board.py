@@ -154,6 +154,7 @@ class ServiceCardResponse(ServiceCardBase):
     is_stuck_7d: Optional[bool] = None  # parado 7d+ (subconjunto de is_stuck_3d)
     collaborators: Optional[List[dict]] = None  # [{id, name}] — quem agiu no card
     products: Optional[List[dict]] = None  # [{id, name}] — produtos do card (p/ filtro)
+    loss_reason: Optional[str] = None  # motivo da perda (derivado da anotação) — p/ filtro do kanban
 
     model_config = {"from_attributes": True}
 

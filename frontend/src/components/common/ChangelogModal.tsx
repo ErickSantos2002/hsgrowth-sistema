@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.15",
+    date: "11/08/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Serviço e Cobrança — filtro 'Motivo de perda': ao filtrar por 'Apenas Perdidos' aparece um filtro para escolher o motivo da perda (igual ao dos boards de Vendas). Funciona também para os cards já perdidos — o motivo é lido do histórico de cada card.",
+      },
+      {
+        type: "feature",
+        text: "Serviço — novo motivo de perda 'Cliente em standby': disponível no modal de perda dos boards de Serviço e de Cobrança e no novo filtro.",
+      },
+    ],
+  },
+  {
     version: "1.8.14",
     date: "11/08/2026",
     entries: [

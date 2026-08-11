@@ -300,6 +300,25 @@ class ServiceBoardService:
                               .filter(ServiceCardActivity.service_card_id.in_(card_ids),
                                       ServiceCardActivity.created_at >= threshold_7d).distinct().all()}
 
+        # Motivo da perda — o módulo de Serviço grava o motivo como ANOTAÇÃO
+        # ("Motivo da perda: X"), não como coluna. Extrai a mais recente por card
+        # para o filtro "Motivo de perda" do kanban (funciona retroativo).
+        LOSS_PREFIX = "Motivo da perda:"
+        loss_rows = (
+            db.query(ServiceCardActivity.service_card_id, ServiceCardActivity.description)
+            .filter(
+                ServiceCardActivity.service_card_id.in_(card_ids),
+                ServiceCardActivity.category == "anotacao",
+                ServiceCardActivity.description.like(f"{LOSS_PREFIX}%"),
+            )
+            .order_by(ServiceCardActivity.created_at.desc())
+            .all()
+        )
+        loss_reason_by_card: dict = {}
+        for cid, desc in loss_rows:
+            if cid not in loss_reason_by_card:  # primeira = mais recente (ordem desc)
+                loss_reason_by_card[cid] = (desc or "")[len(LOSS_PREFIX):].strip()
+
         # Colaboradores: quem agiu em cada card (modelo colaborativo — sem dono único)
         collab_rows = (
             db.query(ServiceCardActivity.service_card_id, ServiceCardActivity.user_id, User.name)
@@ -327,6 +346,7 @@ class ServiceBoardService:
                 "recent_activity": cid in recent_activity,
                 "recent_activity_7d": cid in recent_activity_7d,
                 "products": products_by_card.get(cid, []),
+                "loss_reason": loss_reason_by_card.get(cid),
                 "collaborators": [{"id": uid, "name": nm} for uid, nm in (collab_map.get(cid) or {}).items()],
             }
         return result
@@ -373,6 +393,7 @@ class ServiceBoardService:
                 is_stuck_7d=is_stuck_7d,
                 collaborators=a.get("collaborators", []),
                 products=a.get("products", []),
+                loss_reason=a.get("loss_reason"),
             ))
 
         return ServiceCardListResponse(

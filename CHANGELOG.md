@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.15] — 11/08/2026
+
+### Adicionado
+- **Serviço e Cobrança — filtro "Motivo de perda":** ao filtrar por **"Apenas Perdidos"** nos boards de Serviço e de Cobrança, aparece um filtro para escolher o **motivo da perda** (igual ao dos boards de Vendas). Facilita achar os perdidos por motivo. Funciona também para os cards **já perdidos** (o motivo é lido do histórico de cada card, sem precisar reprocessar nada).
+- **Serviço — novo motivo de perda "Cliente em standby":** disponível no modal de perda dos boards de Serviço e de Cobrança e no novo filtro.
+
+---
+
 ## [1.8.14] — 11/08/2026
 
 ### Adicionado

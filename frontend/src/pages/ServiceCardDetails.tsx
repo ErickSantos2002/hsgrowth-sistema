@@ -39,6 +39,7 @@ import serviceBoardService, {
   ServiceBusinessInfo,
 } from "../services/serviceBoardService";
 import serviceActivityService, { ServiceCardActivity } from "../services/serviceActivityService";
+import { SERVICE_LOSS_REASONS, SERVICE_ADMIN_LOSS_REASON } from "../constants/blueprintOptions";
 import api4comService from "../services/api4comService";
 import { ServiceActivityTab, ServiceFilesTab } from "../components/service/ServiceActivityTab";
 import ServiceNotesSection from "../components/service/ServiceNotesSection";
@@ -73,24 +74,10 @@ type TabKey =
   | "reunioes"
   | "email";
 
-// Motivos de perda oficiais do board de Serviços (doc 16 - seção 4.X)
-const LOSS_REASONS = [
-  "Não chegamos no responsável pelo tema",
-  "Proposta fora do orçamento",
-  "Manutenção não aprovada",
-  "Sem budget aprovado",
-  "Solução não percebida como crítica",
-  "Aprovação interna travada",
-  "Perda para concorrência",
-  "Lead não deu mais retorno",
-  "Data de Recalibração Errada",
-  "Cliente Inadimplente",
-];
-
-// Motivo exclusivo do Admin — para descartar cards criados errados (erro de
-// cadastro) sem apagar. Fica separado para o time não usar por engano e para
-// poder ser filtrado/excluído dos relatórios.
-const ADMIN_LOSS_REASON = "Descarte administrativo — erro de cadastro";
+// Motivos de perda do board de Serviços — lista compartilhada com o filtro do
+// kanban (ServiceKanban) em blueprintOptions. O ADMIN_LOSS_REASON é exclusivo do Admin.
+const LOSS_REASONS = SERVICE_LOSS_REASONS;
+const ADMIN_LOSS_REASON = SERVICE_ADMIN_LOSS_REASON;
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: "atividade", label: "Atividade", icon: <Activity size={16} /> },
