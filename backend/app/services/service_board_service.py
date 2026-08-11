@@ -362,11 +362,21 @@ class ServiceBoardService:
         threshold_7d = business_days_ago(7)  # 7 dias úteis (ignora sáb/dom)
         agg = self._cards_aggregates([c.id for c in cards])
 
+        # Cards em Ganho/Perdido não mostram "Parado 3d+/7d+" (negócio fechado).
+        # Detecta por flag E por nome (a lista "Negócio Perdido" nem sempre tem
+        # is_lost_stage setado — cai no fallback por nome, como no resto do código).
+        closed_list_ids = {
+            l.id for l in self.repo.list_lists_by_board(board_id)
+            if l.is_done_stage or l.is_lost_stage
+            or "ganho" in (l.name or "").lower() or "perdido" in (l.name or "").lower()
+        }
+
         items = []
         for c in cards:
             a = agg.get(c.id, {})
-            is_stuck = bool(a.get("has_activity") and not a.get("recent_activity") and c.updated_at and c.updated_at < threshold)
-            is_stuck_7d = bool(a.get("has_activity") and not a.get("recent_activity_7d") and c.updated_at and c.updated_at < threshold_7d)
+            closed = c.list_id in closed_list_ids
+            is_stuck = bool(not closed and a.get("has_activity") and not a.get("recent_activity") and c.updated_at and c.updated_at < threshold)
+            is_stuck_7d = bool(not closed and a.get("has_activity") and not a.get("recent_activity_7d") and c.updated_at and c.updated_at < threshold_7d)
             items.append(ServiceCardResponse(
                 id=c.id,
                 list_id=c.list_id,

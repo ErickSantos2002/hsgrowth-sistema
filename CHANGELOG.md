@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.16] — 11/08/2026
+
+### Corrigido
+- **Serviço e Cobrança — "Parado 3d+/7d+" some dos ganhos/perdidos:** os cards nas listas **Negócio Ganho** e **Negócio Perdido** não mostram mais as etiquetas **"Parado 3d+"** e **"Parado 7d+"** (negócio fechado não deve contar tempo parado). Vale para os dois boards de Serviço.
+
+---
+
 ## [1.8.15] — 11/08/2026
 
 ### Adicionado

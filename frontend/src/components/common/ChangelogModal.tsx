@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.16",
+    date: "11/08/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Serviço e Cobrança — 'Parado 3d+/7d+' some dos ganhos/perdidos: os cards nas listas Negócio Ganho e Negócio Perdido não mostram mais as etiquetas 'Parado 3d+' e 'Parado 7d+' (negócio fechado não deve contar tempo parado).",
+      },
+    ],
+  },
+  {
     version: "1.8.15",
     date: "11/08/2026",
     entries: [
