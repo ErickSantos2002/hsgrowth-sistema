@@ -162,6 +162,22 @@
 > contexto** (ex.: num board de Vendas, mostrar as (Vendas); no dashboard, um grupo curado), para
 > não exibir 20 chips de uma vez. Todas usam dados que os **dashboards já calculam**.
 
+### 7.3. Links clicáveis para os cards (decidido)
+
+Toda pergunta que **lista cards específicos** (parados, minhas atividades de hoje, recalibrações
+vencendo, follow-ups atrasados, gargalos, etc.) deve trazer **cada card como link clicável** na resposta.
+
+- O chat já renderiza **markdown** (`ReactMarkdown` no `AgentMessageBubble`), então basta o backend
+  devolver os itens como `[Título do card](url)`.
+- Rotas: **Vendas** = `/cards/{cardId}` · **Serviço** = `/servicos/{boardId}/cards/{cardId}`.
+- **Ajuste na implementação:** adicionar um renderizador de link (`a`) customizado no `AgentMessageBubble`
+  para navegar via react-router (sem reload) e com estilo de link. Hoje o link puro funcionaria, mas
+  recarrega a página.
+- Exemplo de resposta:
+  > Você tem **3 cards parados 7d+**:
+  > • [TABOCA S.A — Nº 13999](/cards/123) — parado há 9 dias
+  > • [Transportes Keller](/servicos/1/cards/456) — parado há 12 dias
+
 ---
 
 *Documento de planejamento — nenhuma alteração de código feita. Referências: `frontend/src/hooks/useAgentContext.ts`, `frontend/src/services/agentService.ts`, `backend/app/services/ai_service.py`, `backend/app/api/v1/endpoints/ai.py`.*
