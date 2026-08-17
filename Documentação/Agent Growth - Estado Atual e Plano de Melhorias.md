@@ -76,34 +76,32 @@
 
 ---
 
-## 4. Gaps / limitações (por que "tem poucas perguntas")
+## 4. Gaps / limitações (retrato original — a maioria já resolvida)
 
-1. **Serviço não é tratado.** Cai no `DEFAULT`. E as 2 ações do default (`my_day_tasks`/`how_was_my_day`) leem **tarefas de Vendas** — para um usuário de serviço isso vem **vazio** (os dados dele estão em `service_cards` / atividades de serviço).
-2. **Ações de card são só de Vendas.** Num card de **serviço**, "Resumir negócio" consultaria a tabela errada (`cards` em vez de `service_cards`).
-3. **Admin/Gerente** estão no default fraco — sem visão de time.
-4. **Poucas ações no total** (11), e várias são "dicas genéricas" sem dado do CRM. A ideia é **ampliar o catálogo de perguntas prontas** por role (não é limitação de design — o formato "só chips" é intencional; ver decisão de produto no topo).
+1. ~~**Serviço não é tratado.**~~ ✅ **Resolvido (v1.8.17)** — role Serviço com ações que leem os dados certos.
+2. ~~**Ações de card são só de Vendas.**~~ ✅ **Resolvido (v1.8.17)** — ação dedicada `service_summarize_card` para o card de serviço.
+3. ~~**Admin/Gerente no default fraco.**~~ ✅ **Resolvido (v1.8.18)** — perguntas de gestão por módulo.
+4. **Poucas ações "de time" para SDR/Vendedor** — ainda dá pra ampliar os chips desses dois roles (Fase 3 restante). O formato "só chips" é intencional (decisão de produto no topo).
 
 ---
 
-## 5. Plano de melhorias (roadmap sugerido)
+## 5. Plano de melhorias (roadmap)
 
-### Fase 1 — Cobrir o Serviço (maior impacto, resolve o buraco)
-- Criar o **role Serviço** no `useAgentContext` (hoje ele cai no default).
-- Novas ações de serviço no backend, lendo os **dados certos** (`service_cards`, `service_card_activities`, recalibrações):
-  - **Minhas atividades de serviço hoje** (atividades pendentes/atrasadas do usuário)
-  - **Recalibrações vencendo** (aparelhos com `next_recalibration_date` próxima)
-  - **Resumir este card de serviço** (versão de `summarize_card` para `service_cards`)
-  - **Como foi meu dia (serviço)**
-  - No board **Cobrança**: **Aparelhos a vencer / atrasados**, **Cobranças em aberto**
+### ✅ Fase 1 — Cobrir o Serviço — **CONCLUÍDA (v1.8.17, commit 281298e)**
+- Role **Serviço** no `useAgentContext` ✅
+- Ações lendo os **dados certos** (`service_cards`/`service_card_activities`/dashboards): **Minhas atividades de serviço hoje**, **Recalibrações vencendo**, **Meus cards parados** (com link), **Como foi meu dia (serviço)**, **Resumir este card de serviço**, **Cobranças a vencer/atrasadas** ✅
+- **Links clicáveis** nos cards listados (renderizador `a` no `AgentMessageBubble`) ✅
 
-### Fase 2 — Card ciente do board
-- Fazer as ações de card (`summarize_card`, `suggest_next_steps`, e-mails) **detectarem o tipo de card** (Vendas vs Serviço) e ler a tabela certa. Assim o mesmo chip funciona nos dois módulos.
+### ✅ Fase 2 — Card de serviço com resumo próprio — **RESOLVIDA (v1.8.17)**
+- Em vez de tornar o mesmo chip "card-aware", foi criada a ação dedicada **`service_summarize_card`** (lê `service_cards`), exibida no card de serviço para o time de serviço e para admin/gerente. Os chips de card de Vendas seguem lendo Vendas — sem colisão. ✅
 
-### Fase 3 — Reforçar cada role (mais chips úteis, com dado real)
+### ✅ Gerente/Admin — **CONCLUÍDA (v1.8.18, commit 4e63070)** *(parte da Fase 3)*
+- Perguntas de **visão de time**, **separadas por módulo** (Vendas × Serviço), mês atual: **Resumo do mês**, **Ganhos do mês** (pessoa + tipo), **Perdidos do mês** (motivos), **Cards parados do time**, **Atividades atrasadas do time** ✅
+- Chips **variam pelo tipo de board** (Vendas `/boards` × Serviço `/servicos`); no dashboard, um mix ✅
+
+### ⏳ Fase 3 (restante) — Reforçar SDR e Vendedor (a fazer)
 - **SDR:** "Leads sem contato há X dias" · "Reagendados / no-shows" · "Progresso da meta de reuniões"
 - **Vendedor:** "Negócios parados" · "Follow-ups atrasados" · "Propostas em aberto"
-- **Serviço:** as da Fase 1
-- **Admin/Gerente:** "Visão do time" · "Ranking" · "Gargalos do funil" · "Negócios parados do time"
 
 > **Não haverá campo de texto livre** (decisão de produto). O crescimento do agente vem de
 > **ampliar e refinar o catálogo de perguntas prontas** por role — sempre com o dado certo por trás.
@@ -112,10 +110,10 @@
 
 ## 6. Resumo executivo
 
-- Hoje: **11 ações**, **2 roles** de fato (Vendedor e SDR), tudo lendo **Vendas**.
+- **Estado atual (v1.8.18):** **4 roles** cobertos — Vendedor, SDR, **Serviço** ✅ e **Gerente/Admin** ✅.
 - Formato: **só perguntas prontas (chips)** — e assim **continua** (sem texto livre, por decisão de produto).
-- Buraco principal: **Serviço** não tem nada próprio e as ações genéricas vêm vazias pra ele.
-- Ordem sugerida: **Serviço primeiro** (Fase 1) → **card ciente do board** (Fase 2) → **mais chips por role** (Fase 3).
+- **Concluído:** Fase 1 (Serviço, v1.8.17) · resumo de card de serviço (v1.8.17) · Gerente/Admin por módulo (v1.8.18).
+- **Restante:** ampliar chips de **SDR** e **Vendedor** (Fase 3 restante) — opcional.
 
 ---
 
