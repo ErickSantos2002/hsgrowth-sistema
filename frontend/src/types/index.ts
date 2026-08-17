@@ -1089,7 +1089,13 @@ export type AgentActionId =
   | "cold_call_tips"
   | "productivity_tips"
   | "my_day_tasks"
-  | "how_was_my_day";
+  | "how_was_my_day"
+  | "service_my_day"
+  | "service_recal_due"
+  | "service_stuck_cards"
+  | "service_how_was_my_day"
+  | "service_summarize_card"
+  | "service_collections";
 
 export interface AgentOption {
   action_id: AgentActionId;

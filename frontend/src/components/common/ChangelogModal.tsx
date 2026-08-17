@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.17",
+    date: "17/08/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Agent Growth — perguntas próprias para o time de Serviço: o assistente reconhece o papel de Serviço e traz perguntas que leem os dados certos do módulo (antes puxava dados de Vendas). Novas: Minhas atividades de serviço hoje, Meus cards parados (com link), Recalibrações vencendo, Como foi meu dia (serviço), Resumir card de serviço e Cobranças a vencer/atrasadas.",
+      },
+      {
+        type: "feature",
+        text: "Agent Growth — links clicáveis: quando o assistente lista cards (parados, atividades), cada um vira um link que abre o card direto, sem recarregar a página.",
+      },
+    ],
+  },
+  {
     version: "1.8.16",
     date: "11/08/2026",
     entries: [

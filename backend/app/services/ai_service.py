@@ -410,6 +410,24 @@ class AIService:
         elif action_id == AgentActionId.HOW_WAS_MY_DAY:
             system_p, user_p = await self._prompt_how_was_my_day(user_id=user_id, user_name=user_name)
             max_tokens = 600
+        elif action_id == AgentActionId.SERVICE_MY_DAY:
+            system_p, user_p = await self._prompt_service_my_day(user_id=user_id, user_name=user_name)
+            max_tokens = 700
+        elif action_id == AgentActionId.SERVICE_STUCK_CARDS:
+            system_p, user_p = await self._prompt_service_stuck_cards(user_id=user_id, user_name=user_name)
+            max_tokens = 600
+        elif action_id == AgentActionId.SERVICE_RECAL_DUE:
+            system_p, user_p = await self._prompt_service_recal_due(user_name=user_name)
+            max_tokens = 400
+        elif action_id == AgentActionId.SERVICE_HOW_WAS_MY_DAY:
+            system_p, user_p = await self._prompt_service_how_was_my_day(user_id=user_id, user_name=user_name)
+            max_tokens = 500
+        elif action_id == AgentActionId.SERVICE_SUMMARIZE_CARD:
+            system_p, user_p = self._prompt_service_summarize_card(card_id)
+            max_tokens = 400
+        elif action_id == AgentActionId.SERVICE_COLLECTIONS:
+            system_p, user_p = await self._prompt_service_collections(user_name=user_name)
+            max_tokens = 500
         else:  # PRODUCTIVITY_TIPS
             system_p, user_p = self._prompt_productivity_tips()
             max_tokens = 500
@@ -439,6 +457,13 @@ class AIService:
             # Ações de dicas → encaminha de volta para rotina
             AgentActionId.COLD_CALL_TIPS: ["my_day_tasks", "how_was_my_day", "productivity_tips"],
             AgentActionId.PRODUCTIVITY_TIPS: ["my_day_tasks", "how_was_my_day", "cold_call_tips"],
+            # Serviço
+            AgentActionId.SERVICE_MY_DAY: ["service_stuck_cards", "service_recal_due", "service_how_was_my_day"],
+            AgentActionId.SERVICE_STUCK_CARDS: ["service_my_day", "service_recal_due"],
+            AgentActionId.SERVICE_RECAL_DUE: ["service_my_day", "service_stuck_cards"],
+            AgentActionId.SERVICE_HOW_WAS_MY_DAY: ["service_my_day", "service_recal_due"],
+            AgentActionId.SERVICE_SUMMARIZE_CARD: ["service_my_day"],
+            AgentActionId.SERVICE_COLLECTIONS: ["service_my_day", "service_stuck_cards"],
         }
 
         return {
@@ -896,4 +921,189 @@ class AIService:
             "seja gentil mas direto. Responda em português brasileiro."
         )
         user = f"Como foi meu dia hoje? Analise minha produtividade.\n\n{context}"
+        return system, user
+
+    # -------------------------------------------------------------------------
+    # Prompts do role SERVIÇO — leem dados de service_cards / service_card_activities
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _service_card_link(board_id: int, card_id: int, label: str) -> str:
+        """Markdown link para um card de serviço."""
+        safe = (label or f"Card #{card_id}").replace("[", "(").replace("]", ")")
+        return f"[{safe}](/servicos/{board_id}/cards/{card_id})"
+
+    def _service_cards_of_user(self, user_id: int) -> set:
+        """IDs de cards de serviço em que o usuário agiu (modelo colaborativo)."""
+        from app.models.service_card_activity import ServiceCardActivity
+        rows = (
+            self.db.query(ServiceCardActivity.service_card_id)
+            .filter(ServiceCardActivity.user_id == user_id)
+            .distinct()
+            .all()
+        )
+        return {r[0] for r in rows}
+
+    async def _prompt_service_my_day(self, user_id: int, user_name: str) -> tuple[str, str]:
+        """Atividades de serviço (category=atividade) do usuário: hoje + atrasadas, com link do card."""
+        from datetime import datetime
+        from app.models.service_card_activity import ServiceCardActivity
+        from app.models.service_card import ServiceCard
+        from app.models.service_list import ServiceList
+
+        now = datetime.utcnow()
+        today_start = datetime(now.year, now.month, now.day, 0, 0, 0)
+        today_end = datetime(now.year, now.month, now.day, 23, 59, 59)
+
+        base = (
+            self.db.query(ServiceCardActivity, ServiceCard, ServiceList.board_id)
+            .join(ServiceCard, ServiceCardActivity.service_card_id == ServiceCard.id)
+            .join(ServiceList, ServiceCard.list_id == ServiceList.id)
+            .filter(
+                ServiceCardActivity.user_id == user_id,
+                ServiceCardActivity.category == "atividade",
+                ServiceCardActivity.is_completed == False,  # noqa: E712
+            )
+        )
+        hoje = base.filter(ServiceCardActivity.due_date >= today_start,
+                           ServiceCardActivity.due_date <= today_end).all()
+        atrasadas = base.filter(ServiceCardActivity.due_date < today_start).limit(15).all()
+
+        def _linha(act, card, board_id):
+            titulo = card.title or f"Card #{card.id}"
+            return f"- {act.title or 'Atividade'} · {self._service_card_link(board_id, card.id, titulo)}"
+
+        linhas_hoje = "\n".join(_linha(a, c, b) for a, c, b in hoje) or "(nenhuma)"
+        linhas_atr = "\n".join(_linha(a, c, b) for a, c, b in atrasadas) or "(nenhuma)"
+
+        system = (
+            "Você é um assistente de produtividade do time de Serviço (calibração/manutenção). "
+            "Responda em português brasileiro, curto e prático. Priorize as atrasadas. "
+            "MANTENHA os links markdown dos cards exatamente como recebidos."
+        )
+        user = (
+            f"Usuário: {user_name}. Organize o dia dele no módulo de Serviço.\n\n"
+            f"ATIVIDADES DE HOJE:\n{linhas_hoje}\n\n"
+            f"ATIVIDADES ATRASADAS:\n{linhas_atr}\n\n"
+            "Sugira por onde começar (2-4 linhas) e liste os cards com seus links."
+        )
+        return system, user
+
+    async def _prompt_service_stuck_cards(self, user_id: int, user_name: str) -> tuple[str, str]:
+        """Cards de serviço parados 3d+/7d+ em que o usuário atuou, com link."""
+        from app.services.service_board_service import ServiceBoardService, SERVICE_FUNNEL_BOARD_IDS
+        meus = self._service_cards_of_user(user_id)
+        sb = ServiceBoardService(self.db)
+        parados = []
+        for board_id in sorted(set(list(SERVICE_FUNNEL_BOARD_IDS) + [2])):
+            try:
+                resp = sb.list_cards(board_id, page=1, page_size=500)
+            except Exception:
+                continue
+            for c in resp.cards:
+                if c.id in meus and (c.is_stuck_3d or c.is_stuck_7d):
+                    tag = "7d+" if c.is_stuck_7d else "3d+"
+                    parados.append(
+                        f"- {self._service_card_link(board_id, c.id, c.title or f'Card #{c.id}')} · parado {tag}"
+                    )
+
+        linhas = "\n".join(parados) or "(nenhum card parado — bom trabalho!)"
+        system = (
+            "Você é um assistente do time de Serviço. Responda em português, curto. "
+            "MANTENHA os links markdown dos cards exatamente como recebidos."
+        )
+        user = (
+            f"Usuário: {user_name}. Estes são os cards de serviço dele que estão parados:\n\n"
+            f"{linhas}\n\n"
+            "Faça um resumo de 1-2 linhas e liste os cards com os links para ele destravar."
+        )
+        return system, user
+
+    async def _prompt_service_recal_due(self, user_name: str) -> tuple[str, str]:
+        """Recalibrações vencendo — reusa os números que o dashboard de Serviço já calcula."""
+        from datetime import datetime, timedelta
+        from app.services.service_dashboard_service import ServiceDashboardService
+        end = datetime.utcnow(); start = end - timedelta(days=365)
+        dash = ServiceDashboardService(self.db).get_dashboard(start, end, boards={1})
+        r = dash.recalibrations
+        system = (
+            "Você é um assistente do time de Serviço (calibração). Responda em português, curto e objetivo. "
+            "Chame atenção para as vencidas e as dos próximos 30 dias."
+        )
+        user = (
+            f"Usuário: {user_name}. Panorama de recalibrações dos aparelhos:\n"
+            f"- Vencidas: {r.overdue}\n- Vencem em até 30 dias: {r.due_30}\n"
+            f"- 31–50 dias: {r.due_50}\n- 51–90 dias: {r.due_90}\n"
+            f"- Total de aparelhos monitorados: {r.total_devices}\n\n"
+            "Resuma o que priorizar (2-4 linhas)."
+        )
+        return system, user
+
+    async def _prompt_service_how_was_my_day(self, user_id: int, user_name: str) -> tuple[str, str]:
+        """Como foi meu dia (serviço): atividades de serviço concluídas hoje pelo usuário."""
+        from datetime import datetime
+        from app.models.service_card_activity import ServiceCardActivity
+        now = datetime.utcnow()
+        today_start = datetime(now.year, now.month, now.day, 0, 0, 0)
+
+        concluidas = (
+            self.db.query(ServiceCardActivity)
+            .filter(
+                ServiceCardActivity.user_id == user_id,
+                ServiceCardActivity.category == "atividade",
+                ServiceCardActivity.is_completed == True,  # noqa: E712
+                ServiceCardActivity.completed_at >= today_start,
+            ).all()
+        )
+        por_tipo: dict = {}
+        for a in concluidas:
+            por_tipo[a.activity_type or "outros"] = por_tipo.get(a.activity_type or "outros", 0) + 1
+        resumo = ", ".join(f"{v} {k}" for k, v in por_tipo.items()) or "nenhuma atividade concluída"
+
+        system = "Você é um assistente do time de Serviço. Responda em português, tom motivador e curto."
+        user = (
+            f"Usuário: {user_name}. Hoje ele concluiu: {len(concluidas)} atividades ({resumo}).\n"
+            "Faça um resumo do dia dele (2-3 linhas) e uma sugestão de fechamento do dia."
+        )
+        return system, user
+
+    def _prompt_service_summarize_card(self, card_id: int) -> tuple[str, str]:
+        """Resumo executivo de um card de serviço."""
+        from app.services.service_board_service import ServiceBoardService
+        sb = ServiceBoardService(self.db)
+        card = sb.get_card(card_id)  # 404 se não existir
+        biz = card.business_info or {}
+        aparelhos = (biz.get("equipamentos") or [])
+        ctx = (
+            f"Título: {card.title}\n"
+            f"Cliente: {card.client.name if card.client else '—'}\n"
+            f"Contato: {card.person.name if card.person else '—'}\n"
+            f"Tipo de serviço: {biz.get('service_type') or '—'}\n"
+            f"Forma de fechamento: {biz.get('closing_type') or '—'}\n"
+            f"Nº proposta: {biz.get('proposal_number') or '—'} · Nº pedido: {biz.get('order_number') or '—'}\n"
+            f"Aparelhos: {len(aparelhos)}\n"
+            f"Descrição: {(card.description or '')[:500]}"
+        )
+        system = (
+            "Você é um assistente de CRM do time de Serviço (calibração/manutenção). "
+            "Gere um resumo executivo em português, curto, para retomar o contexto do card."
+        )
+        user = f"Resuma este card de serviço:\n\n{ctx}"
+        return system, user
+
+    async def _prompt_service_collections(self, user_name: str) -> tuple[str, str]:
+        """Cobranças (board 2) — reusa os números do dashboard de Cobrança."""
+        from datetime import datetime, timedelta
+        from app.services.service_dashboard_service import ServiceDashboardService
+        end = datetime.utcnow(); start = end - timedelta(days=90)
+        dash = ServiceDashboardService(self.db).get_dashboard(start, end, boards={2})
+        system = "Você é um assistente do time de Cobrança de Serviço. Responda em português, curto."
+        user = (
+            f"Usuário: {user_name}. Panorama da Cobrança no período:\n"
+            f"- Negócios ativos: {dash.active_count}\n"
+            f"- Valor em aberto: R$ {dash.pipeline_value:.2f}\n"
+            f"- Atrasados 3d+: {dash.stuck_count}\n"
+            f"- Ganhos: {dash.won_count} · Perdidos: {dash.lost_count}\n\n"
+            "Resuma prioridades de cobrança (2-4 linhas)."
+        )
         return system, user

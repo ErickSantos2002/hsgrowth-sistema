@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.17] — 17/08/2026
+
+### Adicionado
+- **Agent Growth — perguntas próprias para o time de Serviço:** o assistente agora reconhece o papel de **Serviço** e traz perguntas que leem os **dados certos** do módulo (antes o time de serviço caía num menu genérico que puxava dados de Vendas). Novas perguntas: **Minhas atividades de serviço hoje**, **Meus cards parados** (com link direto pro card), **Recalibrações vencendo**, **Como foi meu dia (serviço)**, **Resumir este card de serviço** e **Cobranças a vencer / atrasadas**.
+- **Agent Growth — links clicáveis nas respostas:** quando o assistente lista cards (parados, atividades), cada card vira um **link** que abre o card direto (sem recarregar a página).
+
+---
+
 ## [1.8.16] — 11/08/2026
 
 ### Corrigido

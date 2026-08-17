@@ -136,6 +136,13 @@ class AgentActionId(str, Enum):
     # Rotina pessoal — disponível em todos os contextos
     MY_DAY_TASKS = "my_day_tasks"
     HOW_WAS_MY_DAY = "how_was_my_day"
+    # Contexto de Serviço (role service) — leem dados de service_cards
+    SERVICE_MY_DAY = "service_my_day"
+    SERVICE_RECAL_DUE = "service_recal_due"
+    SERVICE_STUCK_CARDS = "service_stuck_cards"
+    SERVICE_HOW_WAS_MY_DAY = "service_how_was_my_day"
+    SERVICE_SUMMARIZE_CARD = "service_summarize_card"
+    SERVICE_COLLECTIONS = "service_collections"
 
 
 class AgentPageContext(str, Enum):

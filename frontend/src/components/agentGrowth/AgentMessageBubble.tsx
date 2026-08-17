@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { Link } from "react-router-dom";
 import { AgentMessage } from "../../types";
 
 interface AgentMessageBubbleProps {
@@ -53,6 +54,22 @@ export default function AgentMessageBubble({ message }: AgentMessageBubbleProps)
             ),
             // Itálico
             em: ({ children }) => <em className="italic">{children}</em>,
+            // Links — internos (cards) navegam via react-router, sem reload
+            a: ({ href, children }) => {
+              const url = href || "";
+              if (url.startsWith("/")) {
+                return (
+                  <Link to={url} className="text-blue-500 hover:underline dark:text-blue-400">
+                    {children}
+                  </Link>
+                );
+              }
+              return (
+                <a href={url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline dark:text-blue-400">
+                  {children}
+                </a>
+              );
+            },
             // Lista não ordenada
             ul: ({ children }) => (
               <ul className="my-1 ml-3 list-disc space-y-0.5">{children}</ul>

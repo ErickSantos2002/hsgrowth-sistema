@@ -18,6 +18,13 @@ export const ACTION_LABELS: Record<AgentActionId, string> = {
   productivity_tips: "Dicas de produtividade",
   my_day_tasks:      "O que tenho para fazer hoje",
   how_was_my_day:    "Como foi meu dia hoje",
+  // Serviço
+  service_my_day:         "Minhas atividades de serviço hoje",
+  service_recal_due:      "Recalibrações vencendo",
+  service_stuck_cards:    "Meus cards parados",
+  service_how_was_my_day: "Como foi meu dia (serviço)",
+  service_summarize_card: "Resumir este card de serviço",
+  service_collections:    "Cobranças a vencer / atrasadas",
 };
 
 /** Converte uma lista de action_ids em AgentOption[] usando os labels centralizados */
@@ -95,6 +102,33 @@ const SDR_OPTIONS: Record<AgentPageContext, AgentOption[]> = {
 };
 
 // ---------------------------------------------------------------------------
+// Opções por contexto × role — Serviço (calibração / manutenção / cobrança)
+// Lê dados do módulo de Serviço (não de Vendas).
+// ---------------------------------------------------------------------------
+const SERVICE_OPTIONS: Record<AgentPageContext, AgentOption[]> = {
+  card_detail: toOptions([
+    "service_summarize_card",
+    "email_followup",
+  ]),
+  board: toOptions([
+    "service_my_day",
+    "service_stuck_cards",
+    "service_recal_due",
+    "service_how_was_my_day",
+    "service_collections",
+  ]),
+  clients: toOptions([
+    "service_my_day",
+    "service_how_was_my_day",
+  ]),
+  general: toOptions([
+    "service_my_day",
+    "service_recal_due",
+    "service_how_was_my_day",
+  ]),
+};
+
+// ---------------------------------------------------------------------------
 // Fallback para roles ainda não planejados (admin/manager — fase 2)
 // ---------------------------------------------------------------------------
 const DEFAULT_OPTIONS: Record<AgentPageContext, AgentOption[]> = {
@@ -109,6 +143,7 @@ function getOptionsByRole(role: string | undefined): Record<AgentPageContext, Ag
   switch (role) {
     case "salesperson": return SALESPERSON_OPTIONS;
     case "sdr":         return SDR_OPTIONS;
+    case "service":     return SERVICE_OPTIONS;
     default:            return DEFAULT_OPTIONS;
   }
 }
