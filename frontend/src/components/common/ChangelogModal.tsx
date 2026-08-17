@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.18",
+    date: "17/08/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Agent Growth — perguntas de gestão para Gerente/Admin: visão de time separada por módulo (Vendas × Serviço), no mês atual. Perguntas: Resumo do mês, Ganhos do mês (por pessoa e tipo), Perdidos do mês (com motivos), Cards parados do time e Atividades atrasadas do time. Os chips se ajustam ao board (Vendas, Serviço ou dashboard).",
+      },
+    ],
+  },
+  {
     version: "1.8.17",
     date: "17/08/2026",
     entries: [

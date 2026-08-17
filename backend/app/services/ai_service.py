@@ -354,6 +354,21 @@ class AIService:
         # Roles com visão gerencial (enxergam toda a equipe no pipeline)
         is_manager = user_role in ("admin", "manager")
 
+        # Ações de gestão são exclusivas de admin/gerente (defesa; o frontend já
+        # só mostra esses chips para eles).
+        MGR_ACTIONS = {
+            AgentActionId.MGR_SUMMARY_VENDAS, AgentActionId.MGR_SUMMARY_SERVICO,
+            AgentActionId.MGR_OVERDUE_VENDAS, AgentActionId.MGR_OVERDUE_SERVICO,
+            AgentActionId.MGR_STUCK_VENDAS, AgentActionId.MGR_STUCK_SERVICO,
+            AgentActionId.MGR_WINS_VENDAS, AgentActionId.MGR_WINS_SERVICO,
+            AgentActionId.MGR_LOSSES_VENDAS, AgentActionId.MGR_LOSSES_SERVICO,
+        }
+        if action_id in MGR_ACTIONS and not is_manager:
+            return {
+                "message": "Essas análises de time são exclusivas para gerente/admin.",
+                "suggestions": [], "tokens_used": 0,
+            }
+
         # Mapeamento de action_id → método de prompt
         board_id = (extra_params or {}).get("board_id")
 
@@ -428,6 +443,27 @@ class AIService:
         elif action_id == AgentActionId.SERVICE_COLLECTIONS:
             system_p, user_p = await self._prompt_service_collections(user_name=user_name)
             max_tokens = 500
+        # ---- Gerente/Admin ----
+        elif action_id == AgentActionId.MGR_SUMMARY_SERVICO:
+            system_p, user_p = await self._prompt_mgr_summary_servico(user_name=user_name); max_tokens = 600
+        elif action_id == AgentActionId.MGR_OVERDUE_SERVICO:
+            system_p, user_p = await self._prompt_mgr_overdue_servico(user_name=user_name); max_tokens = 500
+        elif action_id == AgentActionId.MGR_STUCK_SERVICO:
+            system_p, user_p = await self._prompt_mgr_stuck_servico(user_name=user_name); max_tokens = 400
+        elif action_id == AgentActionId.MGR_WINS_SERVICO:
+            system_p, user_p = await self._prompt_mgr_wins_servico(user_name=user_name); max_tokens = 600
+        elif action_id == AgentActionId.MGR_LOSSES_SERVICO:
+            system_p, user_p = await self._prompt_mgr_losses_servico(user_name=user_name); max_tokens = 500
+        elif action_id == AgentActionId.MGR_SUMMARY_VENDAS:
+            system_p, user_p = await self._prompt_mgr_summary_vendas(user_id=user_id, user_name=user_name); max_tokens = 600
+        elif action_id == AgentActionId.MGR_OVERDUE_VENDAS:
+            system_p, user_p = await self._prompt_mgr_overdue_vendas(user_name=user_name); max_tokens = 500
+        elif action_id == AgentActionId.MGR_STUCK_VENDAS:
+            system_p, user_p = await self._prompt_mgr_stuck_vendas(user_id=user_id, user_name=user_name); max_tokens = 400
+        elif action_id == AgentActionId.MGR_WINS_VENDAS:
+            system_p, user_p = await self._prompt_mgr_wins_vendas(user_name=user_name); max_tokens = 600
+        elif action_id == AgentActionId.MGR_LOSSES_VENDAS:
+            system_p, user_p = await self._prompt_mgr_losses_vendas(user_name=user_name); max_tokens = 500
         else:  # PRODUCTIVITY_TIPS
             system_p, user_p = self._prompt_productivity_tips()
             max_tokens = 500
@@ -464,6 +500,18 @@ class AIService:
             AgentActionId.SERVICE_HOW_WAS_MY_DAY: ["service_my_day", "service_recal_due"],
             AgentActionId.SERVICE_SUMMARIZE_CARD: ["service_my_day"],
             AgentActionId.SERVICE_COLLECTIONS: ["service_my_day", "service_stuck_cards"],
+            # Gerente/Admin — Serviço
+            AgentActionId.MGR_SUMMARY_SERVICO: ["mgr_wins_servico", "mgr_losses_servico", "mgr_stuck_servico"],
+            AgentActionId.MGR_OVERDUE_SERVICO: ["mgr_stuck_servico", "mgr_summary_servico"],
+            AgentActionId.MGR_STUCK_SERVICO: ["mgr_overdue_servico", "mgr_summary_servico"],
+            AgentActionId.MGR_WINS_SERVICO: ["mgr_losses_servico", "mgr_summary_servico"],
+            AgentActionId.MGR_LOSSES_SERVICO: ["mgr_wins_servico", "mgr_summary_servico"],
+            # Gerente/Admin — Vendas
+            AgentActionId.MGR_SUMMARY_VENDAS: ["mgr_wins_vendas", "mgr_losses_vendas", "mgr_stuck_vendas"],
+            AgentActionId.MGR_OVERDUE_VENDAS: ["mgr_stuck_vendas", "mgr_summary_vendas"],
+            AgentActionId.MGR_STUCK_VENDAS: ["mgr_overdue_vendas", "mgr_summary_vendas"],
+            AgentActionId.MGR_WINS_VENDAS: ["mgr_losses_vendas", "mgr_summary_vendas"],
+            AgentActionId.MGR_LOSSES_VENDAS: ["mgr_wins_vendas", "mgr_summary_vendas"],
         }
 
         return {
@@ -1105,5 +1153,186 @@ class AIService:
             f"- Atrasados 3d+: {dash.stuck_count}\n"
             f"- Ganhos: {dash.won_count} · Perdidos: {dash.lost_count}\n\n"
             "Resuma prioridades de cobrança (2-4 linhas)."
+        )
+        return system, user
+
+    # -------------------------------------------------------------------------
+    # Prompts do role GERENTE/ADMIN — visão de time, separado por módulo, mês atual
+    # -------------------------------------------------------------------------
+
+    def _month_range(self):
+        from datetime import datetime
+        now = datetime.utcnow()
+        return datetime(now.year, now.month, 1), now
+
+    def _service_dash_month(self):
+        """Dashboard de Serviço (boards 1 e 2) no mês atual."""
+        from app.services.service_dashboard_service import ServiceDashboardService
+        start, end = self._month_range()
+        return ServiceDashboardService(self.db).get_dashboard(start, end, boards={1, 2})
+
+    # ---- Serviço-gestor ----
+    async def _prompt_mgr_summary_servico(self, user_name: str) -> tuple[str, str]:
+        d = self._service_dash_month()
+        system = "Você é um analista de gestão do time de Serviço. Responda em português, curto e com números."
+        user = (
+            f"Gestor: {user_name}. Resumo do mês (Serviço + Cobrança):\n"
+            f"- Ativos: {d.active_count} · Pipeline: R$ {d.pipeline_value:.0f}\n"
+            f"- Ganhos: {d.won_count} (R$ {d.won_value:.0f}) · Perdidos: {d.lost_count}\n"
+            f"- Taxa de ganho: {d.win_rate:.0f}% · Ticket médio: R$ {d.avg_ticket:.0f}\n"
+            f"- Atrasados 3d+: {d.stuck_count}\n\n"
+            "Faça um panorama executivo do mês (3-5 linhas) destacando pontos de atenção."
+        )
+        return system, user
+
+    async def _prompt_mgr_overdue_servico(self, user_name: str) -> tuple[str, str]:
+        from datetime import datetime
+        from app.models.service_card_activity import ServiceCardActivity
+        from app.models.user import User
+        from sqlalchemy import func
+        now = datetime.utcnow()
+        rows = (
+            self.db.query(User.name, func.count(ServiceCardActivity.id))
+            .join(User, ServiceCardActivity.user_id == User.id)
+            .filter(ServiceCardActivity.category == "atividade",
+                    ServiceCardActivity.is_completed == False,  # noqa: E712
+                    ServiceCardActivity.due_date < now)
+            .group_by(User.name).order_by(func.count(ServiceCardActivity.id).desc()).all()
+        )
+        total = sum(c for _, c in rows)
+        linhas = "\n".join(f"- {n}: {c}" for n, c in rows) or "(nenhuma)"
+        system = "Você é um analista de gestão do time de Serviço. Responda em português, curto."
+        user = (
+            f"Gestor: {user_name}. Atividades de serviço ATRASADAS por responsável ({total} no total):\n"
+            f"{linhas}\n\nResuma quem está mais sobrecarregado e sugira ação (2-3 linhas)."
+        )
+        return system, user
+
+    async def _prompt_mgr_stuck_servico(self, user_name: str) -> tuple[str, str]:
+        d = self._service_dash_month()
+        system = "Você é um analista de gestão do time de Serviço. Responda em português, curto."
+        user = (
+            f"Gestor: {user_name}. No módulo de Serviço, há {d.stuck_count} negócios com atividade "
+            f"atrasada 3d+ (parados). Comente o que isso indica e sugira 1-2 ações de destravamento."
+        )
+        return system, user
+
+    async def _prompt_mgr_wins_servico(self, user_name: str) -> tuple[str, str]:
+        d = self._service_dash_month()
+        por_pessoa = "\n".join(f"- {c.name}: {c.won} ganhos" for c in sorted(d.collaborators, key=lambda x: -x.won) if c.won) or "(sem ganhos)"
+        por_tipo = "\n".join(f"- {t.name}: {t.count}" for t in d.won_by_service_type) or "(sem dados)"
+        system = "Você é um analista de gestão do time de Serviço. Responda em português, curto e com números."
+        user = (
+            f"Gestor: {user_name}. Ganhos do mês (Serviço):\n\n"
+            f"POR PESSOA:\n{por_pessoa}\n\nPOR TIPO DE SERVIÇO:\n{por_tipo}\n\n"
+            "Destaque o top desempenho e a composição por tipo (2-4 linhas)."
+        )
+        return system, user
+
+    async def _prompt_mgr_losses_servico(self, user_name: str) -> tuple[str, str]:
+        d = self._service_dash_month()
+        motivos = "\n".join(f"- {m.name}: {m.count}" for m in d.loss_reasons) or "(nenhuma perda)"
+        system = "Você é um analista de gestão do time de Serviço. Responda em português, curto."
+        user = (
+            f"Gestor: {user_name}. Perdidos do mês (Serviço): {d.lost_count} no total.\n"
+            f"PRINCIPAIS MOTIVOS:\n{motivos}\n\n"
+            "Aponte o padrão das perdas e uma recomendação (2-4 linhas)."
+        )
+        return system, user
+
+    # ---- Vendas-gestor ----
+    def _vendas_kpis(self, user_id: int):
+        from app.services.report_service import ReportService
+        from app.models.user import User
+        admin = self.db.query(User).get(user_id)
+        return ReportService(self.db).get_dashboard_kpis(current_user=admin, period_key="month")
+
+    async def _prompt_mgr_summary_vendas(self, user_id: int, user_name: str) -> tuple[str, str]:
+        k = self._vendas_kpis(user_id)
+        system = "Você é um analista de gestão comercial (Vendas). Responda em português, curto e com números."
+        user = (
+            f"Gestor: {user_name}. Resumo do mês (Vendas):\n"
+            f"- Ganhos: {k.won_cards_this_month} (R$ {float(k.won_value_this_month):.0f})\n"
+            f"- Perdidos: {k.lost_cards_this_month}\n"
+            f"- Taxa de conversão: {k.conversion_rate_this_month:.0f}%\n"
+            f"- Cards parados 3d+: {k.cards_parados} · 7d+: {k.negocios_parados_7d}\n\n"
+            "Panorama executivo do mês (3-5 linhas) com pontos de atenção."
+        )
+        return system, user
+
+    async def _prompt_mgr_overdue_vendas(self, user_name: str) -> tuple[str, str]:
+        from datetime import datetime
+        from app.models.card_task import CardTask
+        from app.models.user import User
+        from sqlalchemy import func
+        now = datetime.utcnow()
+        rows = (
+            self.db.query(User.name, func.count(CardTask.id))
+            .join(User, CardTask.assigned_to_id == User.id)
+            .filter(CardTask.is_completed == False,  # noqa: E712
+                    CardTask.due_date < now)
+            .group_by(User.name).order_by(func.count(CardTask.id).desc()).all()
+        )
+        total = sum(c for _, c in rows)
+        linhas = "\n".join(f"- {n}: {c}" for n, c in rows) or "(nenhuma)"
+        system = "Você é um analista de gestão comercial. Responda em português, curto."
+        user = (
+            f"Gestor: {user_name}. Atividades de Vendas ATRASADAS por responsável ({total} no total):\n"
+            f"{linhas}\n\nResuma quem está mais sobrecarregado e sugira ação (2-3 linhas)."
+        )
+        return system, user
+
+    async def _prompt_mgr_stuck_vendas(self, user_id: int, user_name: str) -> tuple[str, str]:
+        k = self._vendas_kpis(user_id)
+        system = "Você é um analista de gestão comercial. Responda em português, curto."
+        user = (
+            f"Gestor: {user_name}. No pipeline de Vendas há {k.cards_parados} negócios parados 3d+ "
+            f"e {k.negocios_parados_7d} parados 7d+. Comente o risco e sugira 1-2 ações."
+        )
+        return system, user
+
+    async def _prompt_mgr_wins_vendas(self, user_name: str) -> tuple[str, str]:
+        from app.models.card import Card
+        from app.models.user import User
+        from sqlalchemy import func
+        month_start, _ = self._month_range()
+        por_pessoa = (
+            self.db.query(User.name, func.count(Card.id))
+            .join(Card, Card.assigned_to_id == User.id)
+            .filter(Card.is_won == 1, Card.updated_at >= month_start)
+            .group_by(User.name).order_by(func.count(Card.id).desc()).all()
+        )
+        por_tipo = (
+            self.db.query(Card.modality, func.count(Card.id))
+            .filter(Card.is_won == 1, Card.updated_at >= month_start)
+            .group_by(Card.modality).all()
+        )
+        mod_lbl = {"venda": "Venda", "locacao": "Locação"}
+        lp = "\n".join(f"- {n}: {c} ganhos" for n, c in por_pessoa) or "(sem ganhos)"
+        lt = "\n".join(f"- {mod_lbl.get(m, m or 'não informado')}: {c}" for m, c in por_tipo) or "(sem dados)"
+        system = "Você é um analista de gestão comercial. Responda em português, curto e com números."
+        user = (
+            f"Gestor: {user_name}. Ganhos do mês (Vendas):\n\n"
+            f"POR PESSOA:\n{lp}\n\nPOR TIPO (venda/locação):\n{lt}\n\n"
+            "Destaque o top desempenho e a composição (2-4 linhas)."
+        )
+        return system, user
+
+    async def _prompt_mgr_losses_vendas(self, user_name: str) -> tuple[str, str]:
+        from app.models.card import Card
+        from sqlalchemy import func
+        month_start, _ = self._month_range()
+        rows = (
+            self.db.query(Card.loss_reason, func.count(Card.id))
+            .filter(Card.is_won == -1, Card.updated_at >= month_start)
+            .group_by(Card.loss_reason).order_by(func.count(Card.id).desc()).all()
+        )
+        total = sum(c for _, c in rows)
+        motivos = "\n".join(f"- {(r or 'não informado')}: {c}" for r, c in rows) or "(nenhuma perda)"
+        system = "Você é um analista de gestão comercial. Responda em português, curto."
+        user = (
+            f"Gestor: {user_name}. Perdidos do mês (Vendas): {total} no total.\n"
+            f"PRINCIPAIS MOTIVOS:\n{motivos}\n\n"
+            "Aponte o padrão das perdas e uma recomendação (2-4 linhas)."
         )
         return system, user

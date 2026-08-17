@@ -25,6 +25,17 @@ export const ACTION_LABELS: Record<AgentActionId, string> = {
   service_how_was_my_day: "Como foi meu dia (serviço)",
   service_summarize_card: "Resumir este card de serviço",
   service_collections:    "Cobranças a vencer / atrasadas",
+  // Gerente/Admin
+  mgr_summary_vendas:  "Resumo do mês (Vendas)",
+  mgr_summary_servico: "Resumo do mês (Serviço)",
+  mgr_overdue_vendas:  "Atividades atrasadas do time (Vendas)",
+  mgr_overdue_servico: "Atividades atrasadas do time (Serviço)",
+  mgr_stuck_vendas:    "Cards parados do time (Vendas)",
+  mgr_stuck_servico:   "Cards parados do time (Serviço)",
+  mgr_wins_vendas:     "Ganhos do mês — pessoa e tipo (Vendas)",
+  mgr_wins_servico:    "Ganhos do mês — pessoa e tipo (Serviço)",
+  mgr_losses_vendas:   "Perdidos do mês — com motivos (Vendas)",
+  mgr_losses_servico:  "Perdidos do mês — com motivos (Serviço)",
 };
 
 /** Converte uma lista de action_ids em AgentOption[] usando os labels centralizados */
@@ -149,6 +160,29 @@ function getOptionsByRole(role: string | undefined): Record<AgentPageContext, Ag
 }
 
 // ---------------------------------------------------------------------------
+// Opções por contexto — Gerente/Admin (visão de time, separado por módulo)
+// Os chips mudam conforme o TIPO de board (Vendas × Serviço).
+// ---------------------------------------------------------------------------
+const MANAGER_VENDAS: AgentOption[] = toOptions([
+  "mgr_summary_vendas", "mgr_wins_vendas", "mgr_losses_vendas", "mgr_stuck_vendas", "mgr_overdue_vendas",
+]);
+const MANAGER_SERVICO: AgentOption[] = toOptions([
+  "mgr_summary_servico", "mgr_wins_servico", "mgr_losses_servico", "mgr_stuck_servico", "mgr_overdue_servico",
+]);
+const MANAGER_GENERAL: AgentOption[] = toOptions([
+  "mgr_summary_vendas", "mgr_summary_servico", "mgr_stuck_vendas", "mgr_stuck_servico", "mgr_overdue_vendas", "mgr_overdue_servico",
+]);
+
+/** Opções do admin/gerente conforme contexto e tipo de board (Vendas × Serviço). */
+function managerOptions(pageContext: AgentPageContext, isServiceBoard: boolean): AgentOption[] {
+  switch (pageContext) {
+    case "board":       return isServiceBoard ? MANAGER_SERVICO : MANAGER_VENDAS;
+    case "card_detail": return isServiceBoard ? toOptions(["service_summarize_card"]) : DEFAULT_OPTIONS.card_detail;
+    default:            return MANAGER_GENERAL; // general / clients
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 interface AgentContext {
   pageContext: AgentPageContext;
@@ -183,12 +217,19 @@ export function useAgentContext(): AgentContext {
   }
   // /boards sem :boardId (lista de boards) fica como "general" — sem board_id não há dados reais
 
-  const optionsByContext = getOptionsByRole(user?.role);
+  // Admin/gerente têm perguntas de gestão que variam pelo tipo de board
+  // (Vendas /boards/... × Serviço /servicos/...).
+  const isManager = user?.role === "admin" || user?.role === "manager";
+  const isServiceBoard = location.pathname.startsWith("/servicos");
+
+  const initialOptions = isManager
+    ? managerOptions(pageContext, isServiceBoard)
+    : getOptionsByRole(user?.role)[pageContext];
 
   return {
     pageContext,
     cardId,
     boardId,
-    initialOptions: optionsByContext[pageContext],
+    initialOptions,
   };
 }

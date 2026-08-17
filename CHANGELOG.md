@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.18] — 17/08/2026
+
+### Adicionado
+- **Agent Growth — perguntas de gestão para Gerente/Admin:** o assistente agora dá ao **admin/gerente** perguntas de **visão de time**, **separadas por módulo** (Vendas × Serviço) e no **mês atual** (antes caía no menu genérico). Perguntas: **Resumo do mês**, **Ganhos do mês** (por pessoa e por tipo), **Perdidos do mês** (com motivos), **Cards parados do time** e **Atividades atrasadas do time** — uma versão para Vendas e outra para Serviço. Os chips se ajustam ao board: num board de **Vendas** aparecem as de Vendas; num de **Serviço**, as de Serviço; no dashboard, um resumo dos dois.
+
+---
+
 ## [1.8.17] — 17/08/2026
 
 ### Adicionado

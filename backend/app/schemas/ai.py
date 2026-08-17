@@ -143,6 +143,17 @@ class AgentActionId(str, Enum):
     SERVICE_HOW_WAS_MY_DAY = "service_how_was_my_day"
     SERVICE_SUMMARIZE_CARD = "service_summarize_card"
     SERVICE_COLLECTIONS = "service_collections"
+    # Contexto Gerente/Admin — visão de time, separado por módulo (mês atual)
+    MGR_SUMMARY_VENDAS = "mgr_summary_vendas"
+    MGR_SUMMARY_SERVICO = "mgr_summary_servico"
+    MGR_OVERDUE_VENDAS = "mgr_overdue_vendas"
+    MGR_OVERDUE_SERVICO = "mgr_overdue_servico"
+    MGR_STUCK_VENDAS = "mgr_stuck_vendas"
+    MGR_STUCK_SERVICO = "mgr_stuck_servico"
+    MGR_WINS_VENDAS = "mgr_wins_vendas"
+    MGR_WINS_SERVICO = "mgr_wins_servico"
+    MGR_LOSSES_VENDAS = "mgr_losses_vendas"
+    MGR_LOSSES_SERVICO = "mgr_losses_servico"
 
 
 class AgentPageContext(str, Enum):

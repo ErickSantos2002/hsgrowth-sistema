@@ -1095,7 +1095,17 @@ export type AgentActionId =
   | "service_stuck_cards"
   | "service_how_was_my_day"
   | "service_summarize_card"
-  | "service_collections";
+  | "service_collections"
+  | "mgr_summary_vendas"
+  | "mgr_summary_servico"
+  | "mgr_overdue_vendas"
+  | "mgr_overdue_servico"
+  | "mgr_stuck_vendas"
+  | "mgr_stuck_servico"
+  | "mgr_wins_vendas"
+  | "mgr_wins_servico"
+  | "mgr_losses_vendas"
+  | "mgr_losses_servico";
 
 export interface AgentOption {
   action_id: AgentActionId;
