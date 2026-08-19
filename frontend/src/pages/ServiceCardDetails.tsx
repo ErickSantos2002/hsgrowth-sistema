@@ -1149,18 +1149,10 @@ const ServiceCardDetails: React.FC = () => {
 
   const handleClone = async () => {
     if (!card) return;
-    const ok = await confirm({ title: "Clonar card", message: "Criar uma cópia deste card na mesma lista?", confirmText: "Clonar", isDanger: false });
+    const ok = await confirm({ title: "Clonar card", message: "Criar uma cópia deste card (Resumo, Cliente, Contato, Produtos e Serviços) na mesma lista?", confirmText: "Clonar", isDanger: false });
     if (!ok) return;
     try {
-      const novo = await serviceBoardService.createCard(numBoardId, {
-        list_id: card.list_id,
-        title: `[CLONE] ${card.title}`,
-        description: card.description,
-        due_date: card.due_date,
-        client_id: card.client_id ?? null,
-        person_id: card.person_id ?? null,
-        contact_info: card.contact_info,
-      });
+      const novo = await serviceBoardService.cloneCard(numBoardId, numCardId);
       showSuccess("Card clonado!");
       navigate(`/servicos/${numBoardId}/cards/${novo.id}`);
     } catch {

@@ -361,6 +361,42 @@ async def create_service_card(
     )
 
 
+@router.post("/{board_id}/cards/{card_id}/clone", response_model=ServiceCardResponse, status_code=201)
+async def clone_service_card(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Clona um card de serviço com Resumo, Cliente, Contato, Produtos e Serviços
+    já preenchidos (sem o histórico nem a origem externa)."""
+    svc = ServiceBoardService(db)
+    card = svc.clone_card(card_id, current_user)
+    return ServiceCardResponse(
+        id=card.id,
+        list_id=card.list_id,
+        title=card.title,
+        description=card.description,
+        assigned_to_id=card.assigned_to_id,
+        due_date=card.due_date,
+        contact_info=card.contact_info,
+        payment_info=card.payment_info,
+        business_info=card.business_info,
+        global_discount=float(card.global_discount or 0),
+        global_discount_type=card.global_discount_type or "value",
+        shipping=float(card.shipping or 0),
+        value=_card_value(db, card),
+        client_id=card.client_id,
+        person_id=card.person_id,
+        client_name=card.client.name if card.client else None,
+        person_name=card.person.name if card.person else None,
+        position=float(card.position or 0),
+        is_deleted=card.is_deleted,
+        created_at=card.created_at,
+        updated_at=card.updated_at,
+    )
+
+
 @router.get("/{board_id}/cards/{card_id}", response_model=ServiceCardResponse)
 async def get_service_card(
     board_id: int = Path(...),

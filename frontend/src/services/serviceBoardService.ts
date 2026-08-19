@@ -366,6 +366,12 @@ class ServiceBoardService {
     return r.data;
   }
 
+  /** Clona um card com Resumo, Cliente, Contato, Produtos e Serviços já preenchidos. */
+  async cloneCard(boardId: number, cardId: number): Promise<ServiceCard> {
+    const r = await api.post<ServiceCard>(`${BASE}/${boardId}/cards/${cardId}/clone`, {});
+    return r.data;
+  }
+
   async updateCard(boardId: number, cardId: number, data: UpdateServiceCardRequest): Promise<ServiceCard> {
     const r = await api.put<ServiceCard>(`${BASE}/${boardId}/cards/${cardId}`, data);
     return r.data;

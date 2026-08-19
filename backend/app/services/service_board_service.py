@@ -427,6 +427,63 @@ class ServiceBoardService:
         self.log_event(card.id, user, "card_created", "Card criado")
         return card
 
+    def clone_card(self, card_id: int, user: User) -> ServiceCard:
+        """Clona um card de serviço com o pacote do 'lado esquerdo' já preenchido:
+        Resumo (business_info), Empresa (cliente), Contato (pessoa), valores
+        (desconto global + frete), PRODUTOS e SERVIÇOS. NÃO copia o histórico
+        (atividades/anotações/anexos) nem a origem externa (GestorHS). O clone
+        nasce na mesma lista, no topo, com o título prefixado por [CLONE]."""
+        import copy
+        original = self.get_card(card_id)
+
+        # 1) Card novo com Resumo + cliente/contato (deep copy dos JSON p/ não aliasar)
+        create = ServiceCardCreate(
+            list_id=original.list_id,
+            title=f"[CLONE] {original.title}",
+            description=original.description,
+            assigned_to_id=original.assigned_to_id,
+            due_date=original.due_date,
+            contact_info=copy.deepcopy(original.contact_info),
+            payment_info=copy.deepcopy(original.payment_info),
+            business_info=copy.deepcopy(original.business_info),
+            client_id=original.client_id,
+            person_id=original.person_id,
+        )
+        novo = self.repo.create_card(create, at_top=True)
+
+        # 2) Valores (o create_card não copia desconto global/frete)
+        novo.global_discount = original.global_discount
+        novo.global_discount_type = original.global_discount_type
+        novo.shipping = original.shipping
+
+        # 3) Produtos do card
+        for p in self.repo.list_card_products(card_id):
+            self.db.add(ServiceCardProduct(
+                service_card_id=novo.id,
+                product_id=p.product_id,
+                quantity=p.quantity,
+                unit_price=p.unit_price,
+                discount=p.discount,
+                notes=p.notes,
+                aparelhos=copy.deepcopy(p.aparelhos),
+            ))
+
+        # 4) Serviços do card
+        for s in self.repo.list_card_services(card_id):
+            self.db.add(ServiceCardService(
+                service_card_id=novo.id,
+                service_id=s.service_id,
+                quantity=s.quantity,
+                unit_price=s.unit_price,
+                discount=s.discount,
+                notes=s.notes,
+            ))
+
+        self.db.commit()
+        self.db.refresh(novo)
+        self.log_event(novo.id, user, "card_created", f"Card clonado do #{card_id}")
+        return novo
+
     def update_card(self, card_id: int, data: ServiceCardUpdate, user: User) -> ServiceCard:
         card = self.get_card(card_id)
         old_title, old_client, old_person = card.title, card.client_id, card.person_id
