@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.19] — 19/08/2026
+
+### Melhorado
+- **Serviço — clonar card agora copia o pacote completo:** o botão **Clonar** passa a trazer **Resumo** (tipo de serviço, forma de fechamento, nº da proposta/pedido, aparelhos…), **Empresa (Cliente)**, **Contato (Pessoa)**, **Produtos** e **Serviços** já preenchidos (antes copiava só título/descrição/cliente/contato). Não copia o histórico (atividades/anexos) nem a origem externa. Vale para os boards de Serviço e de Cobrança.
+- **Cobrança — filtros de vencimento com múltipla seleção:** os filtros **"Vence no mês"** e **"Ano"** agora permitem escolher **vários meses e/ou vários anos** (com checkbox, igual ao filtro de produtos). Se marcar só meses, mostra qualquer ano; só anos, qualquer mês; ambos, cruza os dois.
+
+---
+
 ## [1.8.18] — 17/08/2026
 
 ### Adicionado

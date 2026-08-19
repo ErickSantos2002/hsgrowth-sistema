@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.19",
+    date: "19/08/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Serviço — clonar card copia o pacote completo: o botão Clonar agora traz Resumo (tipo de serviço, forma de fechamento, nº da proposta/pedido, aparelhos), Empresa, Contato, Produtos e Serviços já preenchidos (antes só título/descrição/cliente/contato). Não copia o histórico nem a origem externa.",
+      },
+      {
+        type: "improvement",
+        text: "Cobrança — filtros de vencimento com múltipla seleção: 'Vence no mês' e 'Ano' agora permitem escolher vários meses e/ou vários anos (checkbox, igual ao filtro de produtos).",
+      },
+    ],
+  },
+  {
     version: "1.8.18",
     date: "17/08/2026",
     entries: [

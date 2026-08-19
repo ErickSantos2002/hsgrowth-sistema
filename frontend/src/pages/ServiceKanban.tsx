@@ -53,15 +53,17 @@ const COLOR_PRESETS = [
   COLORS.board.amber,  COLORS.board.red,  COLORS.board.pink, COLORS.board.gray,
 ];
 
-// ─── Filtro de produtos (múltipla seleção com checkbox) ─────────────────────────
+// ─── Filtro de múltipla seleção com checkbox (produtos, meses, anos...) ─────────
 function ProductMultiSelect({
   value,
   onChange,
   options,
+  labels = { empty: "Qualquer produto", unit: "produtos", none: "Nenhum produto" },
 }: {
   value: string[];
   onChange: (v: string[]) => void;
   options: { id: number | string; name: string }[];
+  labels?: { empty: string; unit: string; none: string };
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -79,10 +81,10 @@ function ProductMultiSelect({
 
   const label =
     value.length === 0
-      ? "Qualquer produto"
+      ? labels.empty
       : value.length === 1
-        ? options.find((o) => String(o.id) === value[0])?.name || "1 produto"
-        : `${value.length} produtos`;
+        ? options.find((o) => String(o.id) === value[0])?.name || `1 ${labels.unit}`
+        : `${value.length} ${labels.unit}`;
 
   return (
     <div ref={ref} className="relative">
@@ -109,7 +111,7 @@ function ProductMultiSelect({
             )}
           </div>
           {options.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-slate-400">Nenhum produto</p>
+            <p className="px-3 py-2 text-xs text-slate-400">{labels.none}</p>
           ) : (
             options.map((o) => {
               const id = String(o.id);
@@ -745,8 +747,8 @@ const ServiceKanban: React.FC = () => {
   const [fAssignee, setFAssignee] = useState("");
   const [fProduct, setFProduct] = useState<string[]>([]);
   const [fCollection, setFCollection] = useState(""); // tipo de cobrança (só board 2)
-  const [fVencMes, setFVencMes] = useState(""); // mês de vencimento "01".."12" (só board 2)
-  const [fVencAno, setFVencAno] = useState(""); // ano de vencimento "2026" (só board 2)
+  const [fVencMes, setFVencMes] = useState<string[]>([]); // meses de vencimento "01".."12" (só board 2)
+  const [fVencAno, setFVencAno] = useState<string[]>([]); // anos de vencimento "2026" (só board 2)
   const [fValue, setFValue] = useState("");
   const [fTag, setFTag] = useState("");
   const [fCriacao, setFCriacao] = useState("");
@@ -758,11 +760,11 @@ const ServiceKanban: React.FC = () => {
   const [filtersReady, setFiltersReady] = useState(false);
 
   const clearFilters = () => {
-    setFStatus("abertos"); setFLossReason(""); setFAssignee(""); setFProduct([]); setFCollection(""); setFVencMes(""); setFVencAno(""); setFValue(""); setFTag("");
+    setFStatus("abertos"); setFLossReason(""); setFAssignee(""); setFProduct([]); setFCollection(""); setFVencMes([]); setFVencAno([]); setFValue(""); setFTag("");
     setFCriacao(""); setFCriacaoStart(""); setFCriacaoEnd("");
     setFFechamento(""); setFFechamentoStart(""); setFFechamentoEnd("");
   };
-  const filtersActive = fStatus !== "abertos" || !!fLossReason || !!fAssignee || fProduct.length > 0 || !!fCollection || (!!fVencMes && !!fVencAno) || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
+  const filtersActive = fStatus !== "abertos" || !!fLossReason || !!fAssignee || fProduct.length > 0 || !!fCollection || fVencMes.length > 0 || fVencAno.length > 0 || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
 
   const numId = Number(boardId);
 
@@ -828,8 +830,9 @@ const ServiceKanban: React.FC = () => {
         setFAssignee(s.fAssignee ?? "");
         setFProduct(Array.isArray(s.fProduct) ? s.fProduct : (s.fProduct ? [String(s.fProduct)] : []));
         setFCollection(s.fCollection ?? "");
-        setFVencMes(s.fVencMes ?? "");
-        setFVencAno(s.fVencAno ?? "");
+        // Migra formato antigo (string única) para array
+        setFVencMes(Array.isArray(s.fVencMes) ? s.fVencMes : (s.fVencMes ? [s.fVencMes] : []));
+        setFVencAno(Array.isArray(s.fVencAno) ? s.fVencAno : (s.fVencAno ? [s.fVencAno] : []));
         setFValue(s.fValue ?? "");
         setFTag(s.fTag ?? "");
         setFCriacao(s.fCriacao ?? "");
@@ -1044,13 +1047,20 @@ const ServiceKanban: React.FC = () => {
       const ct = c.business_info?.collection_type || "";
       if (fCollection === "sem" ? !!ct : ct !== fCollection) return false;
     }
-    // Vencimento de aparelho (mês + ano): card aparece se ALGUM aparelho dele vence
-    // nesse mês/ano. next_recalibration_date vem como "YYYY-MM-DD". Só filtra quando
-    // mês E ano estão escolhidos.
-    if (fVencMes && fVencAno) {
-      const prefixo = `${fVencAno}-${fVencMes}`;
+    // Vencimento de aparelho (meses e/ou anos — múltipla seleção): o card aparece
+    // se ALGUM aparelho dele vence num ano E mês selecionados. next_recalibration_date
+    // vem como "YYYY-MM-DD". Se só meses (ou só anos) forem escolhidos, a outra
+    // dimensão é livre.
+    if (fVencMes.length > 0 || fVencAno.length > 0) {
       const eq = c.business_info?.equipamentos || [];
-      const algum = eq.some((d) => (d?.next_recalibration_date || "").startsWith(prefixo));
+      const algum = eq.some((d) => {
+        const dt = d?.next_recalibration_date || "";
+        if (!/^\d{4}-\d{2}/.test(dt)) return false;
+        const ano = dt.slice(0, 4), mes = dt.slice(5, 7);
+        const anoOk = fVencAno.length === 0 || fVencAno.includes(ano);
+        const mesOk = fVencMes.length === 0 || fVencMes.includes(mes);
+        return anoOk && mesOk;
+      });
       if (!algum) return false;
     }
     // Valor
@@ -1253,29 +1263,35 @@ const ServiceKanban: React.FC = () => {
             )}
             {numId === 2 && (
               <div className="min-w-[150px]">
-                <SelectMenu size="sm" value={fVencMes} onChange={setFVencMes} options={[
-                  { value: "", label: "Vence no mês" },
-                  { value: "01", label: "Janeiro" },
-                  { value: "02", label: "Fevereiro" },
-                  { value: "03", label: "Março" },
-                  { value: "04", label: "Abril" },
-                  { value: "05", label: "Maio" },
-                  { value: "06", label: "Junho" },
-                  { value: "07", label: "Julho" },
-                  { value: "08", label: "Agosto" },
-                  { value: "09", label: "Setembro" },
-                  { value: "10", label: "Outubro" },
-                  { value: "11", label: "Novembro" },
-                  { value: "12", label: "Dezembro" },
-                ]} />
+                <ProductMultiSelect
+                  value={fVencMes}
+                  onChange={setFVencMes}
+                  labels={{ empty: "Vence no mês", unit: "meses", none: "Sem meses" }}
+                  options={[
+                    { id: "01", name: "Janeiro" },
+                    { id: "02", name: "Fevereiro" },
+                    { id: "03", name: "Março" },
+                    { id: "04", name: "Abril" },
+                    { id: "05", name: "Maio" },
+                    { id: "06", name: "Junho" },
+                    { id: "07", name: "Julho" },
+                    { id: "08", name: "Agosto" },
+                    { id: "09", name: "Setembro" },
+                    { id: "10", name: "Outubro" },
+                    { id: "11", name: "Novembro" },
+                    { id: "12", name: "Dezembro" },
+                  ]}
+                />
               </div>
             )}
             {numId === 2 && (
               <div className="min-w-[110px]">
-                <SelectMenu size="sm" value={fVencAno} onChange={setFVencAno} options={[
-                  { value: "", label: "Ano" },
-                  ...anosVencimento.map((a) => ({ value: a, label: a })),
-                ]} />
+                <ProductMultiSelect
+                  value={fVencAno}
+                  onChange={setFVencAno}
+                  labels={{ empty: "Ano", unit: "anos", none: "Sem anos" }}
+                  options={anosVencimento.map((a) => ({ id: a, name: a }))}
+                />
               </div>
             )}
             <div className="min-w-[150px]">
