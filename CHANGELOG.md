@@ -5,6 +5,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.9.0] — 24/08/2026
+
+> 🎉 **Marco de versão** — grande atualização consolidando todas as melhorias desde a 1.8.5, pronta para produção.
+
+### Destaques desta versão
+- **Tempo real** nos boards: mover um card reflete ao vivo para quem está com o mesmo board aberto.
+- **Dashboards de Serviço e Cobrança** turbinados: filtro por usuário e por tipo de cobrança, funil **Atual/Fluxo**, KPI **"Receita ganha"** e alternador **Perda/Ganho**.
+- **Vendas:** SDR **"Resgatar Negócio"**, filtros **"Motivo de perda"** e **"Sem SDR / Sem vendedor"**.
+- **Contagem em dias úteis** nos "parados"; **cards entram no topo** da lista ao criar/avançar.
+- **Serviço:** número (proposta/pedido) obrigatório com **anexos opcionais**; **clone completo** do card (Resumo + Produtos + Serviços); filtro de **motivo de perda**; "parados" somem dos ganhos/perdidos.
+- **Modais** só fecham no **X**; filtros de **vencimento** com múltipla seleção.
+- **Agent Growth:** perguntas próprias para **Serviço** e **Gerente/Admin** (separadas por módulo), com **links clicáveis**.
+- **Dashboards:** **tooltip explicativo (ℹ️)** em todos os KPIs, explicando como cada número é calculado.
+
+---
+
 ## [1.8.20] — 24/08/2026
 
 ### Adicionado

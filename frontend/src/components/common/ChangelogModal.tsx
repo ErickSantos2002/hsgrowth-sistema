@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.9.0",
+    date: "24/08/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "🎉 Marco de versão — grande atualização consolidando as melhorias desde a 1.8.5. Destaques: tempo real nos boards; dashboards de Serviço/Cobrança turbinados (filtros, funil Atual/Fluxo, Receita ganha, Perda/Ganho); SDR 'Resgatar Negócio'; contagem em dias úteis; cards no topo; clone completo do card de serviço; Agent Growth com perguntas de Serviço e Gerente/Admin; e tooltips (ℹ️) explicando cada KPI.",
+      },
+    ],
+  },
+  {
     version: "1.8.20",
     date: "24/08/2026",
     entries: [
