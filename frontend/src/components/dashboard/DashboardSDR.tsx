@@ -1,7 +1,7 @@
 import React from "react";
 import {
   UserPlus, Users, CalendarCheck, TrendingUp, TrendingDown,
-  AlertTriangle, Clock, Activity, Trophy, Medal, Award, RotateCcw,
+  AlertTriangle, Clock, Activity, Trophy, Medal, Award, RotateCcw, Info,
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -97,6 +97,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={kpis.new_cards_this_month}
             format="number"
             highlight="blue"
+            info="Leads que entraram no funil de Prospecção no período (para esta visão de SDR)."
             sub={
               <span>
                 <span className="font-medium">{kpis.new_cards_this_week}</span> esta semana ·{" "}
@@ -112,7 +113,8 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={emProspeccao}
             format="number"
             highlight="purple"
-            sub="Cards ativos em prospecção"
+            info="Cards que entraram na etapa Prospecção no período (conta a passagem pela etapa, não quantos estão nela agora)."
+            sub="Entraram em Prospecção no período"
             className="sm:col-span-2 xl:col-span-1"
           />
           <KpiCard
@@ -121,7 +123,8 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             label="Conectados"
             value={conectados}
             format="number"
-            sub="Cards no estágio Conectado"
+            info="Cards que entraram na etapa Conectado no período (o SDR conseguiu contato)."
+            sub="Entraram em Conectado no período"
             className="sm:col-span-2 xl:col-span-1"
           />
           <KpiCard
@@ -131,7 +134,8 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={agendados}
             format="number"
             highlight="green"
-            sub="Cards no estágio Agendado"
+            info="Reuniões que o SDR agendou no período — cards que entraram na etapa Agendado. Como uma automação move o card para a Aquisição, a etapa fica vazia; por isso contamos quantos passaram por lá, não quantos estão nela agora."
+            sub="Reuniões agendadas no período"
             className="sm:col-span-2 xl:col-span-1"
           />
           <KpiCard
@@ -141,7 +145,8 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={kpis.rescheduled_meetings ?? 0}
             format="number"
             highlight="yellow"
-            sub="No-shows reagendados no período"
+            info="Reuniões marcadas como no-show no período (o cliente não compareceu e a reunião precisou ser remarcada)."
+            sub="No-shows no período"
             className="sm:col-span-2 xl:col-span-1"
           />
           <KpiCard
@@ -151,7 +156,8 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={kpis.qualified_meetings ?? 0}
             format="number"
             highlight="green"
-            sub="Realizadas sem no-show no período"
+            info="Reuniões que o vendedor qualificou: o card avançou para a etapa Qualificação (board de Aquisição) no período. É um subconjunto das agendadas."
+            sub="Avançaram para Qualificação"
             className="sm:col-span-2 xl:col-span-1"
           />
         </div>
@@ -165,6 +171,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={taxaConexao}
             format="percent"
             highlight="blue"
+            info="Conversão Prospecção → Conectado no período: dos cards que passaram por Prospecção, quantos avançaram para Conectado (o SDR conseguiu contato)."
             sub="Prospecção → Conectado"
           />
           <KpiCard
@@ -174,6 +181,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={taxaAgendamento}
             format="percent"
             highlight="orange"
+            info="Conversão Prospecção → Agendado no período: dos cards que passaram por Prospecção, quantos viraram reunião agendada."
             sub="Prospecção → Agendado"
           />
           <KpiCard
@@ -183,6 +191,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={kpis.won_cards_this_month}
             format="number"
             highlight="green"
+            info="Negócios marcados como ganho no período (o valor total ganho aparece abaixo)."
             sub={<span className="text-emerald-500">{fmt(kpis.won_value_this_month)}</span>}
           />
           <KpiCard
@@ -192,6 +201,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             value={kpis.lost_cards_this_month}
             format="number"
             highlight="red"
+            info="Negócios/leads marcados como perdidos no período."
             sub={`${kpis.lost_cards_today} hoje · ${kpis.lost_cards_this_week} esta semana`}
           />
         </div>
@@ -316,6 +326,15 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                 Ranking SDR · Reuniões Agendadas · {periodLabel}
               </h3>
+              <div className="group relative flex">
+                <Info size={13} className="cursor-help text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-200" />
+                <div
+                  role="tooltip"
+                  className="pointer-events-none absolute left-0 top-6 z-50 w-72 rounded-lg border border-gray-200 bg-white p-2.5 text-left text-[11px] leading-relaxed text-slate-600 opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                >
+                  Conta as reuniões agendadas no período <b>descontando os no-shows que ainda não foram remarcados</b>. Por isso pode ficar um pouco menor que o KPI "Reuniões Agendadas" (que conta todas, inclusive um no-show sem remarcação). Reuniões <b>remarcadas continuam contando</b>.
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               {kpis.top_sdrs_by_meetings.map((sdr, i) => {

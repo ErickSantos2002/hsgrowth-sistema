@@ -78,6 +78,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             icon={<DollarSign size={18} className="text-emerald-400" />}
             iconBg="bg-emerald-500/20"
             label="Pipeline Gerado"
+            info="Soma do valor dos negócios em aberto no funil de Vendas."
             value={kpis.pipeline_value}
             format="currency"
             highlight="green"
@@ -88,6 +89,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             icon={<TrendingUp size={18} className="text-blue-400" />}
             iconBg="bg-blue-500/20"
             label={`Receita · ${periodLabel}`}
+            info="Valor total ganho no período (soma dos deals fechados como ganho)."
             value={kpis.won_value_this_month}
             format="currency"
             highlight="blue"
@@ -98,6 +100,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             icon={<Percent size={18} className="text-purple-400" />}
             iconBg="bg-purple-500/20"
             label="Taxa de Fechamento"
+            info="% de conversão no período: ganhos ÷ (ganhos + perdidos)."
             value={kpis.conversion_rate_this_month}
             format="percent"
             highlight="purple"
@@ -108,6 +111,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             icon={<Ticket size={18} className="text-orange-400" />}
             iconBg="bg-orange-500/20"
             label="Ticket Médio"
+            info="Valor médio por deal ganho no período (receita ÷ nº de ganhos)."
             value={ticketMedio}
             format="currency"
             highlight="orange"
@@ -118,6 +122,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             icon={<Clock size={18} className="text-cyan-400" />}
             iconBg="bg-cyan-500/20"
             label="Tempo Médio p/ Fechar"
+            info="Média de dias entre a criação do card e o momento em que foi ganho."
             value={kpis.avg_time_to_win_days}
             format="days"
             sub="Dias até ganhar o deal"
@@ -133,12 +138,14 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             label="Novos Leads"
             value={kpis.new_cards_this_month}
             format="number"
+            info="Leads que entraram no funil de Vendas no período."
             sub={`${kpis.new_cards_today} hoje`}
           />
           <KpiCard
             icon={<CalendarCheck size={18} className="text-emerald-400" />}
             iconBg="bg-emerald-500/20"
             label="Reuniões Recebidas (SDR)"
+            info="Reuniões que o SDR agendou e passou para o vendedor no período (cards que entraram na etapa Agendado com SDR vinculado)."
             value={kpis.meetings_received_from_sdr}
             format="number"
             highlight="green"
@@ -148,6 +155,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             icon={<CalendarCheck size={18} className="text-blue-400" />}
             iconBg="bg-blue-500/20"
             label="Reuniões Realizadas"
+            info="Reuniões (tarefas do tipo reunião) marcadas como concluídas pelo vendedor no período."
             value={kpis.meetings_scheduled_by_seller}
             format="number"
             highlight="blue"
@@ -157,6 +165,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             icon={<Target size={18} className="text-yellow-400" />}
             iconBg="bg-yellow-500/20"
             label="Propostas Geradas"
+            info="Cards que entraram na etapa 'Diagnóstico e Proposta' no período."
             value={kpis.propostas_geradas}
             format="number"
             highlight="orange"
@@ -169,6 +178,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             value={kpis.won_cards_this_month}
             format="number"
             highlight="green"
+            info="Negócios marcados como ganho no período."
             sub={`${kpis.won_cards_today} hoje`}
           />
           <KpiCard
@@ -178,6 +188,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             value={kpis.lost_cards_this_month}
             format="number"
             highlight="red"
+            info="Negócios marcados como perdido no período."
             sub={`${kpis.lost_cards_today} hoje`}
           />
         </div>

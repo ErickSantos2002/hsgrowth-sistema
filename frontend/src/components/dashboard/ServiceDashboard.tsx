@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Briefcase, CheckCircle2, XCircle, DollarSign, Activity as ActivityIcon,
-  AlarmClock, TrendingUp, Wrench, Trophy,
+  AlarmClock, TrendingUp, Wrench, Trophy, Info,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -44,6 +44,12 @@ const ServiceTypeKpi: React.FC<{ items: { name: string; count: number }[] }> = (
       <div className="mb-3 flex items-center gap-2">
         <div className="rounded-lg bg-emerald-500/20 p-2"><Wrench size={16} className="text-emerald-400" /></div>
         <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Tipo de serviço</p>
+        <div className="group relative flex">
+          <Info size={13} className="cursor-help text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-200" />
+          <div role="tooltip" className="pointer-events-none absolute left-0 top-6 z-50 w-60 rounded-lg border border-gray-200 bg-white p-2.5 text-left text-[11px] leading-relaxed text-slate-600 opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            Composição dos negócios <b>em aberto</b> por tipo de serviço (Recalibração / Manutenção / Ambos), em %.
+          </div>
+        </div>
       </div>
       {total === 0 ? (
         <p className="text-sm text-slate-400">Sem dados</p>
@@ -145,17 +151,17 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
       {/* ── KPIs (5 em cima · 5 embaixo, cada linha de canto a canto) ── */}
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          <KpiCard icon={<Briefcase size={18} className="text-violet-400" />} iconBg="bg-violet-500/20" label="Negócios ativos" value={data.active_count} sub="Em aberto no pipeline" highlight="purple" />
-          <KpiCard icon={<DollarSign size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Pipeline (em aberto)" value={data.pipeline_value} format="currency" sub="Valor em aberto no período" highlight="green" />
-          <KpiCard icon={<DollarSign size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Receita ganha" value={data.won_value} format="currency" sub="Valor total ganho no período" highlight="green" />
-          <KpiCard icon={<CheckCircle2 size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Ganhos no período" value={data.won_count} sub="Negócios ganhos no período" highlight="green" />
-          <KpiCard icon={<XCircle size={18} className="text-red-400" />} iconBg="bg-red-500/20" label="Perdidos no período" value={data.lost_count} sub="Negócios perdidos no período" highlight="red" />
+          <KpiCard icon={<Briefcase size={18} className="text-violet-400" />} iconBg="bg-violet-500/20" label="Negócios ativos" value={data.active_count} info="Negócios em aberto no pipeline agora (nem ganho, nem perdido)." sub="Em aberto no pipeline" highlight="purple" />
+          <KpiCard icon={<DollarSign size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Pipeline (em aberto)" value={data.pipeline_value} format="currency" info="Soma do valor dos negócios em aberto no funil." sub="Valor em aberto no período" highlight="green" />
+          <KpiCard icon={<DollarSign size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Receita ganha" value={data.won_value} format="currency" info="Valor total dos negócios ganhos no período." sub="Valor total ganho no período" highlight="green" />
+          <KpiCard icon={<CheckCircle2 size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Ganhos no período" value={data.won_count} info="Quantos negócios foram marcados como ganho no período." sub="Negócios ganhos no período" highlight="green" />
+          <KpiCard icon={<XCircle size={18} className="text-red-400" />} iconBg="bg-red-500/20" label="Perdidos no período" value={data.lost_count} info="Quantos negócios foram marcados como perdido no período." sub="Negócios perdidos no período" highlight="red" />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          <KpiCard icon={<ActivityIcon size={18} className="text-blue-400" />} iconBg="bg-blue-500/20" label="Atividades no período" value={data.activities_count} sub="Registradas no período" highlight="blue" />
-          <KpiCard icon={<AlarmClock size={18} className="text-amber-400" />} iconBg="bg-amber-500/20" label="Atrasados 3d+" value={data.stuck_count} sub="Atividade vencida há 3+ dias" highlight="orange" />
-          <KpiCard icon={<TrendingUp size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Taxa de ganho" value={data.win_rate} format="percent" sub="Ganhos sobre fechados" highlight="green" />
-          <KpiCard icon={<DollarSign size={18} className="text-sky-400" />} iconBg="bg-sky-500/20" label="Ticket médio" value={data.avg_ticket} format="currency" sub="Valor médio por negócio ganho" highlight="blue" />
+          <KpiCard icon={<ActivityIcon size={18} className="text-blue-400" />} iconBg="bg-blue-500/20" label="Atividades no período" value={data.activities_count} info="Atividades registradas nos negócios de serviço no período." sub="Registradas no período" highlight="blue" />
+          <KpiCard icon={<AlarmClock size={18} className="text-amber-400" />} iconBg="bg-amber-500/20" label="Atrasados 3d+" value={data.stuck_count} info="Negócios com atividade cujo prazo venceu há 3+ dias úteis (sábado e domingo não contam)." sub="Atividade vencida há 3+ dias" highlight="orange" />
+          <KpiCard icon={<TrendingUp size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Taxa de ganho" value={data.win_rate} format="percent" info="% de conversão no período: ganhos ÷ (ganhos + perdidos)." sub="Ganhos sobre fechados" highlight="green" />
+          <KpiCard icon={<DollarSign size={18} className="text-sky-400" />} iconBg="bg-sky-500/20" label="Ticket médio" value={data.avg_ticket} format="currency" info="Valor médio por negócio ganho no período (receita ganha ÷ nº de ganhos)." sub="Valor médio por negócio ganho" highlight="blue" />
           <ServiceTypeKpi items={data.service_type} />
         </div>
       </div>

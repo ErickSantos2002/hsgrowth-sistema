@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.8.20",
+    date: "24/08/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Dashboards — explicação (ℹ️) em cada KPI: todos os indicadores dos dashboards de SDR, Vendedor e Serviço ganharam um ícone de info. Ao passar o mouse, aparece como aquele número é calculado. O Ranking SDR também explica por que pode diferir do KPI 'Reuniões Agendadas'.",
+      },
+      {
+        type: "fix",
+        text: "SDR — textos de KPI corrigidos: 'Cards no estágio Agendado' e similares confundiam. Como uma automação esvazia a etapa Agendado, o número conta quantas reuniões passaram pela etapa no período (não quantas estão nela agora).",
+      },
+    ],
+  },
+  {
     version: "1.8.19",
     date: "19/08/2026",
     entries: [

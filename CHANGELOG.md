@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.8.20] — 24/08/2026
+
+### Adicionado
+- **Dashboards — explicação (ℹ️) em cada KPI:** todos os indicadores dos dashboards de **SDR, Vendedor e Serviço/Cobrança** ganharam um ícone de informação. Ao passar o mouse, aparece uma explicação de **como aquele número é calculado**. O **Ranking SDR** também explica por que pode diferir um pouco do KPI "Reuniões Agendadas" (o ranking desconta no-shows não remarcados).
+
+### Corrigido
+- **SDR — textos de KPI que confundiam:** subtítulos como *"Cards no estágio Agendado"* foram corrigidos. Como uma automação move o card de "Agendado" para a Aquisição, a etapa fica sempre vazia; o número na verdade conta **quantas reuniões passaram pela etapa no período**. Ajustado também em "Em Prospecção", "Conectados" e "Reuniões Qualificadas".
+
+---
+
 ## [1.8.19] — 19/08/2026
 
 ### Melhorado
