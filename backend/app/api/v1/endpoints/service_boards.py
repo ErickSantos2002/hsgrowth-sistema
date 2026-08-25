@@ -5,7 +5,7 @@ Completamente independentes dos boards de vendas.
 import asyncio
 import json
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, Query, Path, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Path, HTTPException, status, UploadFile, File
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -480,6 +480,7 @@ async def delete_service_card(
 
 @router.put("/{board_id}/cards/{card_id}/move", response_model=ServiceCardResponse)
 async def move_service_card(
+    background_tasks: BackgroundTasks,
     board_id: int = Path(...),
     card_id: int = Path(...),
     data: ServiceCardMoveRequest = ...,
@@ -487,7 +488,10 @@ async def move_service_card(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    card = svc.move_card(card_id, data.list_id, data.position, current_user)
+    # `background_tasks` leva o aviso de Ganho ao GestorHS para depois da resposta,
+    # sem segurar o usuário e sem depender de worker Celery (ver move_card).
+    card = svc.move_card(card_id, data.list_id, data.position, current_user,
+                         background_tasks=background_tasks)
 
     realtime.publish_card_moved(
         "service", board_id, card.id, card.list_id, float(card.position or 0)

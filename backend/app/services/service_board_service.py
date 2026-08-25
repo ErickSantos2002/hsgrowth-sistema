@@ -1,11 +1,13 @@
 """
 Service para lógica de negócio de ServiceBoard, ServiceList e ServiceCard.
 """
+import time
 import uuid
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Optional, List
-from fastapi import HTTPException, status, UploadFile
+from fastapi import BackgroundTasks, HTTPException, status, UploadFile
+from loguru import logger
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -50,6 +52,44 @@ UPLOAD_DIR = Path("/app/uploads")
 
 def _brl(valor: float) -> str:
     return f"{valor:,.2f}".replace(",", "§").replace(".", ",").replace("§", ".")
+
+
+# Tentativas do aviso de Ganho ao GestorHS e a espera (em segundos) antes de cada
+# retentativa. Substitui o retry exponencial que o Celery fazia — hoje o envio roda
+# em background no processo da API, sem worker.
+GANHO_TENTATIVAS = 3
+GANHO_ESPERA_SEGUNDOS = (2, 5)
+
+
+def enviar_ganho_gestorhs(caixa_id: str, numero_proposta: Optional[int], observacao: str) -> bool:
+    """Avisa o GestorHS que a caixa foi ganha (move Pós-Vendas → Financeiro).
+
+    Roda fora do request (BackgroundTasks) e **nunca levanta**: uma falha aqui não
+    pode afetar o Ganho, que já foi gravado. O endpoint do GestorHS é idempotente,
+    então retentar é seguro. O que não for entregue depois de todas as tentativas
+    fica no log e pode ser recuperado com scripts/retroagir_ganho_gestorhs.py.
+    """
+    from app.integrations import gestorhs_client
+
+    for tentativa in range(1, GANHO_TENTATIVAS + 1):
+        try:
+            gestorhs_client.mover_caixa_ganho(caixa_id, numero_proposta, observacao)
+            logger.info(f"[GANHO-GESTORHS] avisado (caixa={caixa_id})")
+            return True
+        except Exception as e:  # noqa: BLE001 — best-effort
+            ultima = tentativa == GANHO_TENTATIVAS
+            logger.warning(
+                f"[GANHO-GESTORHS] tentativa {tentativa}/{GANHO_TENTATIVAS} "
+                f"falhou (caixa={caixa_id}): {e}"
+            )
+            if ultima:
+                logger.error(
+                    f"[GANHO-GESTORHS] NAO ENTREGUE (caixa={caixa_id}, proposta={numero_proposta}) "
+                    f"— recupere com scripts/retroagir_ganho_gestorhs.py"
+                )
+                return False
+            time.sleep(GANHO_ESPERA_SEGUNDOS[tentativa - 1])
+    return False
 
 
 def deal_value_by_card(db: Session, card_ids: List[int]) -> dict:
@@ -678,7 +718,8 @@ class ServiceBoardService:
                 detail=f"Para avançar de '{old_list.name}', preencha: " + "; ".join(miss) + ".",
             )
 
-    def move_card(self, card_id: int, new_list_id: int, new_position: Optional[float], user: User) -> ServiceCard:
+    def move_card(self, card_id: int, new_list_id: int, new_position: Optional[float],
+                  user: User, background_tasks: Optional[BackgroundTasks] = None) -> ServiceCard:
         card = self.get_card(card_id)
         old_list = self.repo.find_list_by_id(card.list_id)
         new_list = self.get_list(new_list_id)
@@ -705,7 +746,7 @@ class ServiceBoardService:
             if is_funnel and (new_list.is_done_stage or "ganho" in new_name):
                 self.log_event(card_id, user, "card_won", f"Negócio marcado como Ganho ({new_list.name})", meta)
                 self._complete_pending_activities(card_id)
-                self._notificar_ganho_gestorhs(card, user)
+                self._notificar_ganho_gestorhs(card, user, background_tasks)
             elif is_funnel and (new_list.is_lost_stage or "perdido" in new_name):
                 self.log_event(card_id, user, "card_lost", f"Negócio marcado como Perdido ({new_list.name})", meta)
                 self._complete_pending_activities(card_id)
@@ -745,25 +786,32 @@ class ServiceBoardService:
             print(f"[SERVICE-ACTIVITY] erro ao concluir atividades pendentes: {e}")
             return 0
 
-    def _notificar_ganho_gestorhs(self, card: ServiceCard, user: User) -> None:
-        """Enfileira o aviso de Ganho ao GestorHS — só para cards vindos de OS.
+    def _notificar_ganho_gestorhs(self, card: ServiceCard, user: User,
+                                  background_tasks: Optional[BackgroundTasks] = None) -> None:
+        """Avisa o GestorHS do Ganho — só para cards vindos de OS.
 
-        Best-effort: enfileirar nunca pode quebrar o Ganho. Se o broker estiver
-        fora, o card ainda vira Ganho e a falha fica logada.
+        O envio sai **em background dentro do próprio processo da API**, não por
+        Celery: o container de produção sobe apenas o uvicorn (ver scripts/start.sh),
+        então a task enfileirada ficava na fila sem ninguém consumir e o Ganho nunca
+        chegava ao GestorHS. Sem `background_tasks` (scripts, testes) envia inline.
+
+        Best-effort em qualquer caminho: montar ou agendar o aviso nunca pode
+        quebrar o Ganho.
         """
         if card.external_source != "gestorhs.os" or not card.external_id:
             return
         try:
-            from app.workers.tasks import notificar_ganho_gestorhs
-
             valor = deal_value_by_card(self.db, [card.id]).get(card.id, 0.0)
             numero = (card.business_info or {}).get("proposal_number")
             numero = int(numero) if numero not in (None, "") else None
             quem = user.name if user else "sistema"
             obs = f"Ganho no GrowthHS — card #{card.id} · R$ {_brl(valor)} · por {quem}"
-            notificar_ganho_gestorhs.delay(card.external_id, numero, obs)
+            if background_tasks is not None:
+                background_tasks.add_task(enviar_ganho_gestorhs, card.external_id, numero, obs)
+            else:
+                enviar_ganho_gestorhs(card.external_id, numero, obs)
         except Exception as e:  # noqa: BLE001 — best-effort, nunca quebra o Ganho
-            print(f"[GANHO-GESTORHS] falha ao enfileirar aviso (card {card.id}): {e}")
+            print(f"[GANHO-GESTORHS] falha ao preparar aviso (card {card.id}): {e}")
 
     # ─── Card Products ────────────────────────────────────────────────────────
 

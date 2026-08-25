@@ -7,7 +7,8 @@ docs/superpowers/specs/2026-07-29-fase2-ganho-move-caixa-gestorhs-design.md.
 
 Best-effort e gating por env, no mesmo padrão do webhook de Vendas
 (_send_automacao01_webhook): se as envs estiverem vazias, é no-op. Erros HTTP/rede
-são propagados — quem trata o retry é a task Celery que chama este cliente.
+são propagados — quem trata o retry é `enviar_ganho_gestorhs`, chamado via
+BackgroundTasks da API (não há worker Celery em produção).
 """
 import logging
 from typing import Optional
@@ -28,10 +29,16 @@ def mover_caixa_ganho(caixa_id: str, numero_proposta: Optional[int], observacao:
 
     `caixa_id` é o `external_id` cru do card (o `caixa.id` do GestorHS).
     `numero_proposta` só entra no corpo quando não-nulo (é opcional no contrato).
-    Não faz retry — o chamador (task Celery) trata falha.
+    Não faz retry — quem retenta é `enviar_ganho_gestorhs` (service_board_service),
+    que roda em background no processo da API.
     """
     if not integracao_ativa():
-        logger.info("integração GestorHS desligada (envs vazias) — no-op para caixa %s", caixa_id)
+        # WARNING, não INFO: com as envs vazias o Ganho é engolido em silêncio e a
+        # caixa fica parada em Pós-Vendas sem ninguém perceber. Tem que aparecer.
+        logger.warning(
+            "integração GestorHS DESLIGADA (GESTORHS_INBOUND_URL/API_KEY vazias) — "
+            "Ganho da caixa %s NAO foi enviado", caixa_id,
+        )
         return
 
     url = f"{settings.GESTORHS_INBOUND_URL.rstrip('/')}/integracao/growthhs/caixas/{caixa_id}/ganho"
