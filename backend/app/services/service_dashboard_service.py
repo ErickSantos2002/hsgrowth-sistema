@@ -177,6 +177,39 @@ class ServiceDashboardService:
         avg_ticket = (won_value / won_count) if won_count else 0.0
         win_rate = (won_count / (won_count + lost_count) * 100) if (won_count + lost_count) else 0.0
 
+        # Receita Cobrança (Phoebus): soma apenas dos SERVIÇOS Phoebus (SKUs abaixo)
+        # nos cards GANHOS do board de COBRANÇA (2) no período. NÃO é o valor total do
+        # card — só as linhas desses serviços (Σ quantidade × preço − desconto da linha).
+        # Company-wide (não filtra por usuário/collection_type). O front mostra só na
+        # dashboard de Serviço. Editar PHOEBUS_SERVICE_SKUS para incluir/remover SKUs.
+        PHOEBUS_SERVICE_SKUS = ("306", "307", "309", "310", "311")
+        collection_won_value = 0.0
+        _cob_board_ids = [
+            b.id for b in db.query(ServiceBoard.id)
+            .filter(ServiceBoard.is_deleted == False, ServiceBoard.id == 2).all()  # noqa: E712
+        ]
+        if _cob_board_ids:
+            _cob_lists = db.query(ServiceList).filter(ServiceList.board_id.in_(_cob_board_ids)).all()
+            _cob_list_ids = [l.id for l in _cob_lists]
+            _cob_done_ids = {l.id for l in _cob_lists if l.is_done_stage or "ganho" in (l.name or "").lower()}
+            _cob_won_ids = [
+                c.id for c in db.query(ServiceCard.id, ServiceCard.list_id, ServiceCard.updated_at)
+                .filter(ServiceCard.list_id.in_(_cob_list_ids), ServiceCard.is_deleted == False).all()  # noqa: E712
+                if c.list_id in _cob_done_ids and c.updated_at and start <= c.updated_at <= end
+            ] if _cob_list_ids else []
+            if _cob_won_ids:
+                from app.models.service import Service
+                _phoebus_ids = [sid for (sid,) in db.query(Service.id).filter(Service.sku.in_(PHOEBUS_SERVICE_SKUS)).all()]
+                if _phoebus_ids:
+                    _val = db.query(func.coalesce(func.sum(
+                        ServiceCardService.quantity * ServiceCardService.unit_price
+                        - ServiceCardService.discount
+                    ), 0)).filter(
+                        ServiceCardService.service_card_id.in_(_cob_won_ids),
+                        ServiceCardService.service_id.in_(_phoebus_ids),
+                    ).scalar()
+                    collection_won_value = float(_val or 0)
+
         # ── Atrasados 3d+ ────────────────────────────────────────────────────
         # Cards ativos com ao menos uma atividade pendente vencida há 3+ dias
         # (due_date no passado, antes do threshold de 3 dias e não concluída).
@@ -406,6 +439,7 @@ class ServiceDashboardService:
             won_count=won_count,
             lost_count=lost_count,
             won_value=won_value,
+            collection_won_value=collection_won_value,
             activities_count=activities_count,
             avg_ticket=avg_ticket,
             win_rate=round(win_rate, 1),

@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.9.1] — 24/08/2026
+
+### Adicionado
+- **Dashboard de Serviço — KPI "Receita Cobrança (Phoebus)":** novo indicador, ao lado de "Receita ganha", mostrando a receita **apenas dos serviços Phoebus** (anuidade da plataforma + calibração do módulo) nos negócios **ganhos** do board de Cobrança, no período — não o total da Cobrança, só as linhas desses serviços. Conta quando o card é **Ganho** e aparece **só na dashboard de Serviço**.
+
+---
+
 ## [1.9.0] — 24/08/2026
 
 > 🎉 **Marco de versão** — grande atualização consolidando todas as melhorias desde a 1.8.5, pronta para produção.

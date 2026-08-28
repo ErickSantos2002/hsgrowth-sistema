@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.9.1",
+    date: "24/08/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Dashboard de Serviço — KPI 'Receita Cobrança (Phoebus)': novo indicador ao lado de 'Receita ganha' mostrando a receita apenas dos serviços Phoebus (anuidade da plataforma + calibração do módulo) nos negócios ganhos do board de Cobrança, no período (não o total da Cobrança). Conta quando o card é Ganho e aparece só na dashboard de Serviço.",
+      },
+    ],
+  },
+  {
     version: "1.9.0",
     date: "24/08/2026",
     entries: [
