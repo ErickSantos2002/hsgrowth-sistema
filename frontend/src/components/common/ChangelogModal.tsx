@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.9.2",
+    date: "01/09/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Visibilidade por vínculo: vendedores e SDRs passam a enxergar e editar os negócios em que estão vinculados como vendedor OU como SDR. Antes o cargo decidia sozinho, então quem mudava de função perdia o acesso à carteira anterior — agora é possível trocar de cargo sem que os negócios desapareçam.",
+      },
+      {
+        type: "improvement",
+        text: "Filtros de SDR passam a listar também quem já atuou como SDR em algum negócio, mesmo que hoje tenha outro cargo. E no Dashboard de Admin/Gerente, ao selecionar um usuário, os números seguem a visão escolhida (SDR ou Vendedor) em vez do cargo atual da pessoa — o histórico de quem mudou de função continua acessível.",
+      },
+    ],
+  },
+  {
     version: "1.9.1",
     date: "24/08/2026",
     entries: [
