@@ -72,22 +72,19 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
 }) => {
   const { user } = useAuth();
 
-  // Salesperson trava no filtro de Vendedor; SDR trava no filtro de SDR
-  const isVendorLocked = user?.role === "salesperson";
-  const isSdrLocked = user?.role === "sdr";
+  // RN-037: vendedor/SDR exportam pelo VÍNCULO (o backend já restringe aos
+  // cards em que são vendedor OU SDR). Os seletores ficam desabilitados, mas
+  // NÃO pré-selecionados no próprio id: filtrar por assigned_to cortaria os
+  // cards em que a pessoa é apenas SDR (assigned_to vazio).
+  const isVendorLocked = user?.role === "salesperson" || user?.role === "sdr";
+  const isSdrLocked = isVendorLocked;
 
   // ─── Filtros ──────────────────────────────────────────────────────────────
   const [selectedBoardId, setSelectedBoardId] = useState<number | "all">("all");
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
   const [selectedListId, setSelectedListId] = useState<number | "all">("all");
-  // Vendedor: salesperson parte do próprio ID travado; demais partem de "all"
-  const [selectedUserId, setSelectedUserId] = useState<number | "all">(
-    isVendorLocked ? (user?.id ?? "all") : "all"
-  );
-  // SDR: sdr parte do próprio ID travado; demais partem de "all"
-  const [selectedSdrId, setSelectedSdrId] = useState<number | "all">(
-    isSdrLocked ? (user?.id ?? "all") : "all"
-  );
+  const [selectedUserId, setSelectedUserId] = useState<number | "all">("all");
+  const [selectedSdrId, setSelectedSdrId] = useState<number | "all">("all");
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
   const [closeDateStart, setCloseDateStart] = useState("");
@@ -111,8 +108,8 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
       userService.listSdrs().then((us) => setSdrIds(us.map((u) => u.id))).catch(console.error);
 
       // Reaplica travamento caso o modal seja reaberto
-      if (isVendorLocked && user?.id) setSelectedUserId(user.id);
-      if (isSdrLocked && user?.id) setSelectedSdrId(user.id);
+      setSelectedUserId("all");
+      setSelectedSdrId("all");
     }
   }, [isOpen]);
 
@@ -137,8 +134,8 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
     setSelectedBoardId("all");
     setSelectedStatus("all");
     setSelectedListId("all");
-    setSelectedUserId(isVendorLocked ? (user?.id ?? "all") : "all");
-    setSelectedSdrId(isSdrLocked ? (user?.id ?? "all") : "all");
+    setSelectedUserId("all");
+    setSelectedSdrId("all");
     setDateStart("");
     setDateEnd("");
     setCloseDateStart("");
@@ -537,7 +534,7 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
               Vendedor
               {isVendorLocked && (
                 <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-normal text-amber-600 dark:text-amber-400">
-                  travado
+                  seus negócios
                 </span>
               )}
             </label>
@@ -551,9 +548,9 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
               disabled={isVendorLocked}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
             >
-              {!isVendorLocked && (
-                <option value="all">Todos os vendedores</option>
-              )}
+              <option value="all">
+                {isVendorLocked ? "Seus negócios" : "Todos os vendedores"}
+              </option>
               {/* Exibe apenas usuários com role salesperson */}
               {users
                 .filter((u) => u.role === "salesperson")
@@ -571,7 +568,7 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
               SDR
               {isSdrLocked && (
                 <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-normal text-amber-600 dark:text-amber-400">
-                  travado
+                  seus negócios
                 </span>
               )}
             </label>
@@ -585,9 +582,9 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
               disabled={isSdrLocked}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
             >
-              {!isSdrLocked && (
-                <option value="all">Todos os SDRs</option>
-              )}
+              <option value="all">
+                {isSdrLocked ? "Seus negócios" : "Todos os SDRs"}
+              </option>
               {/* Exibe quem atua ou já atuou como SDR (RN-037) */}
               {users
                 .filter((u) => sdrIds.includes(u.id))

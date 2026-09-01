@@ -120,12 +120,13 @@ const KanbanBoard: React.FC = () => {
 
   /**
    * Restaura os filtros salvos quando o board muda.
-   * Filtros travados por role (salesperson/sdr) serão sobrescritos pelo
-   * useEffect de usuários logo em seguida — comportamento intencional.
+   * A chave é versionada (_v2) porque, antes da RN-037, o filtro de responsável
+   * era travado no próprio usuário e ficava salvo aqui — restaurá-lo esconderia
+   * os cards em que a pessoa é apenas SDR.
    */
   useEffect(() => {
     if (!boardId) return;
-    const raw = localStorage.getItem(`kanban_filters_${boardId}`);
+    const raw = localStorage.getItem(`kanban_filters_v2_${boardId}`);
     if (raw) {
       try {
         const saved = JSON.parse(raw);
@@ -165,7 +166,7 @@ const KanbanBoard: React.FC = () => {
   useEffect(() => {
     if (!boardId || restoredBoardId !== boardId) return;
     localStorage.setItem(
-      `kanban_filters_${boardId}`,
+      `kanban_filters_v2_${boardId}`,
       JSON.stringify({
         listFilter,
         statusFilter,
@@ -293,15 +294,11 @@ const KanbanBoard: React.FC = () => {
         // Quem pode figurar como SDR: cargo SDR + ex-SDR com card (RN-037)
         setSdrOptionsUsers(await userService.listSdrs());
 
-        // Se o usuário logado é vendedor (salesperson), trava o filtro nele
-        if (user && user.role === "salesperson") {
-          setAssignedToFilter(String(user.id));
-        }
-
-        // Se o usuário logado é SDR, trava o filtro nele
-        if (user && user.role === "sdr") {
-          setSdrFilter(String(user.id));
-        }
+        // RN-037: vendedor/SDR não têm filtro de responsável travado. A
+        // visibilidade deles já é resolvida no backend pelo VÍNCULO (vendedor
+        // OU SDR). Travar aqui pelo próprio id no campo de vendedor cortaria
+        // justamente os cards em que a pessoa é só SDR (assigned_to vazio) —
+        // era o que escondia os negócios perdidos de quem mudou de cargo.
       } catch (error) {
         console.error("Erro ao carregar usuários:", error);
       }
@@ -767,8 +764,7 @@ const KanbanBoard: React.FC = () => {
     setCustomDateStart("");
     setCustomDateEnd("");
     setAssignedToFilter("");
-    // SDR volta a ver apenas os próprios leads ao limpar filtros
-    setSdrFilter(user?.role === "sdr" ? String(user.id) : "");
+    setSdrFilter("");
     setAcquisitionChannelFilter("");
     setAcquisitionChannelDetailFilter("");
     setCardTagFilter("");
@@ -781,8 +777,7 @@ const KanbanBoard: React.FC = () => {
   };
 
   /** Indica se algum filtro está ativo (diferente do padrão) */
-  // O sdrFilter fixo do próprio SDR não conta como filtro ativo
-  const sdrFilterIsDefault = user?.role === "sdr" ? sdrFilter === String(user.id) : sdrFilter === "";
+  const sdrFilterIsDefault = sdrFilter === "";
   const hasActiveFilters =
     listFilter !== "" ||
     statusFilter !== "open" ||
@@ -835,10 +830,9 @@ const KanbanBoard: React.FC = () => {
       }
 
       // Filtro por SDR (sdr_id). "none" = cards sem SDR (p/ resgatar).
-      // Para o SDR, a visibilidade já é feita no backend (próprios + perdidos SEM
-      // SDR na Aquisição, p/ resgatar — RN-036). Refiltrar aqui pelo próprio id
-      // excluiria justamente os órfãos, então NÃO aplica o filtro client-side p/ SDR.
-      if (sdrFilter && user?.role !== "sdr") {
+      // Só roda quando alguém escolhe um SDR no filtro — para vendedor/SDR o
+      // seletor fica desabilitado e vazio, pois a visibilidade vem do backend.
+      if (sdrFilter) {
         if (sdrFilter === "none") {
           if ((card as any).sdr_id != null) return false;
         } else {
@@ -1325,7 +1319,8 @@ const KanbanBoard: React.FC = () => {
                     })),
                 ]}
                 onChange={setAssignedToFilter}
-                disabled={user?.role === "salesperson"} // Trava se for vendedor
+                // RN-037: quem é vendedor/SDR vê pelo vínculo (backend); filtro sem função
+                disabled={user?.role === "salesperson" || user?.role === "sdr"}
               />
             </div>
 
@@ -1343,7 +1338,8 @@ const KanbanBoard: React.FC = () => {
                   })),
                 ]}
                 onChange={setSdrFilter}
-                disabled={user?.role === "sdr"} // SDR só vê os próprios leads
+                // RN-037: quem é vendedor/SDR vê pelo vínculo (backend); filtro sem função
+                disabled={user?.role === "salesperson" || user?.role === "sdr"}
               />
             </div>
 
