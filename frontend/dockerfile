@@ -21,7 +21,7 @@ COPY postcss.config.js ./
 RUN rm -f package-lock.json && npm install --legacy-peer-deps
 
 # CACHEBUST: incremente este número para forçar rebuild completo no EasyPanel
-ARG CACHEBUST=1
+ARG CACHEBUST=2
 
 # Copia o restante do projeto (src/, index.html, public/, etc)
 COPY . .
