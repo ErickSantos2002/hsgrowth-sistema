@@ -356,11 +356,11 @@ HOST=0.0.0.0
 PORT=8000
 
 # Database (Banco Remoto)
-DATABASE_URL=postgresql://administrador:administrador@62.72.11.28:3388/hsgrowth
-DB_HOST=62.72.11.28
-DB_PORT=3388
-DB_USER=administrador
-DB_PASSWORD=administrador
+DATABASE_URL=postgresql://USUARIO:SENHA@HOST:PORTA/hsgrowth
+DB_HOST=<host-do-banco>
+DB_PORT=<porta>
+DB_USER=<usuario>
+DB_PASSWORD=<senha>
 DB_NAME=hsgrowth
 
 # JWT

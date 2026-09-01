@@ -2,6 +2,7 @@
 Script para popular o banco de dados remoto com dados fictícios.
 Executa diretamente sem passar pelo settings do app.
 """
+import os
 import sys
 from pathlib import Path
 
@@ -12,8 +13,10 @@ sys.path.insert(0, str(backend_dir))
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# Configuração direta do banco remoto
-DATABASE_URL = "postgresql://administrador:administrador@62.72.11.28:3388/hsgrowth"
+# Banco remoto lido do ambiente — nunca versionar credencial aqui
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise SystemExit("Defina DATABASE_URL antes de rodar (ex.: export DATABASE_URL=postgresql://usuario:senha@host:porta/hsgrowth)")
 
 # Cria engine e session
 engine = create_engine(DATABASE_URL)
