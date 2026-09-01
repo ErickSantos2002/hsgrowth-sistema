@@ -106,6 +106,8 @@ const Activities: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<ActivityFilterState>(DEFAULT_FILTERS);
   const [users, setUsers] = useState<User[]>([]);
+  // Quem pode figurar como SDR: cargo SDR + ex-SDR com card (RN-037)
+  const [sdrIds, setSdrIds] = useState<number[]>([]);
   const [focusModeOpen, setFocusModeOpen] = useState(false);
   const [focusTasks, setFocusTasks] = useState<CardTask[]>([]);
   const [cadenciaModalOpen, setCadenciaModalOpen] = useState(false);
@@ -114,6 +116,7 @@ const Activities: React.FC = () => {
   useEffect(() => {
     if (!isAdminOrManager) return;
     userService.listActive().then(setUsers).catch(console.error);
+    userService.listSdrs().then((us) => setSdrIds(us.map((u) => u.id))).catch(console.error);
   }, [isAdminOrManager]);
 
   // ─── Busca de atividades ─────────────────────────────────────────────────────
@@ -301,7 +304,7 @@ const Activities: React.FC = () => {
             onChange={handleFiltersChange}
             // Dropdown de responsável mostra só quem tem o role da aba atual
             // (Vendedor → salesperson, SDR → sdr). O de Serviço é a página embutida.
-            users={users.filter((u) => u.role === view)}
+            users={users.filter((u) => (view === "sdr" ? sdrIds.includes(u.id) : u.role === view))}
             isAdminOrManager={isAdminOrManager}
           />
         </div>

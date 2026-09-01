@@ -142,14 +142,17 @@ class ReportService:
     def _build_dashboard_user_filter(
         self,
         current_user: Optional[User] = None,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
+        view: Optional[str] = None
     ) -> list:
         """
         Retorna lista de filtros SQLAlchemy a aplicar em todas as queries do dashboard.
 
-        - salesperson: sempre filtra por assigned_to_id do próprio usuário
-        - sdr: sempre filtra por sdr_id do próprio usuário
-        - admin/manager + user_id: filtra pelo usuário selecionado usando a coluna correta
+        - salesperson/sdr: filtra pelo VÍNCULO — cards em que a pessoa é vendedor
+          OU SDR (RN-037). O cargo não manda: quem muda de cargo continua vendo
+          o próprio histórico.
+        - admin/manager + user_id: a coluna vem da VISÃO ativa (sdr/vendedor);
+          sem visão, cai no cargo do alvo e, em último caso, no vínculo.
         - admin/manager sem user_id: sem filtro (todos os dados)
         """
         if not current_user or not current_user.role:
@@ -157,19 +160,23 @@ class ReportService:
 
         role_name = current_user.role.name
 
-        if role_name == "salesperson":
-            return [Card.assigned_to_id == current_user.id]
-
-        if role_name == "sdr":
-            return [Card.sdr_id == current_user.id]
+        if role_name in ("salesperson", "sdr"):
+            return [or_(Card.assigned_to_id == current_user.id, Card.sdr_id == current_user.id)]
 
         if role_name in ("admin", "manager") and user_id:
+            if view == "sdr":
+                return [Card.sdr_id == user_id]
+            if view == "vendedor":
+                return [Card.assigned_to_id == user_id]
+
             target = self.db.query(User).filter(User.id == user_id).first()
             if target and target.role:
                 if target.role.name == "salesperson":
                     return [Card.assigned_to_id == user_id]
                 if target.role.name == "sdr":
                     return [Card.sdr_id == user_id]
+
+            return [or_(Card.assigned_to_id == user_id, Card.sdr_id == user_id)]
 
         return []
 
@@ -219,7 +226,7 @@ class ReportService:
             start_of_period, end_of_period = self._get_date_range(period_enum)
 
         # Filtro de usuário: salesperson/sdr veem só os próprios dados; admin/manager podem filtrar por user_id
-        uf = self._build_dashboard_user_filter(current_user, user_id)
+        uf = self._build_dashboard_user_filter(current_user, user_id, view)
 
         # Filtro de visão: garante que a dashboard SDR só conta cards com SDR vinculado
         # e a dashboard Vendedor só conta cards com vendedor vinculado

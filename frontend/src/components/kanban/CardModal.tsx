@@ -234,7 +234,8 @@ const CardModal: React.FC<CardModalProps> = ({
     try {
       const activeUsers = await userService.listActive();
       setSalespeople(activeUsers.filter((u) => u.role === "salesperson"));
-      setSDRs(activeUsers.filter((u) => u.role === "sdr"));
+      // Quem pode figurar como SDR: cargo SDR + ex-SDR com card (RN-037)
+      setSDRs(await userService.listSdrs());
     } catch {
       showError("Erro ao carregar lista de usuários. Tente novamente.");
     }

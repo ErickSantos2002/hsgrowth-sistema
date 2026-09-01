@@ -55,6 +55,7 @@ class CardRepository:
         assigned_to_id: Optional[int] = None,
         sdr_id: Optional[int] = None,
         sdr_include_orphan_lost: bool = False,
+        owner_or_sdr_id: Optional[int] = None,
         person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
         is_lost: Optional[bool] = None,
@@ -95,13 +96,16 @@ class CardRepository:
             query = query.filter(Card.assigned_to_id == assigned_to_id)
 
         if sdr_id is not None:
+            query = query.filter(Card.sdr_id == sdr_id)
+
+        if owner_or_sdr_id is not None:
+            # RN-037: enxerga quem é vendedor OU SDR do card. O vínculo manda,
+            # não o cargo — permite trocar de cargo sem perder a carteira.
+            cond = (Card.assigned_to_id == owner_or_sdr_id) | (Card.sdr_id == owner_or_sdr_id)
             if sdr_include_orphan_lost:
-                # SDR na Aquisição: vê os próprios cards + os PERDIDOS sem SDR (p/ resgatar)
-                query = query.filter(
-                    (Card.sdr_id == sdr_id) | (Card.sdr_id.is_(None) & (Card.is_won == -1))
-                )
-            else:
-                query = query.filter(Card.sdr_id == sdr_id)
+                # RN-036: SDR na Aquisição vê também os PERDIDOS sem SDR (p/ resgatar)
+                cond = cond | (Card.sdr_id.is_(None) & (Card.is_won == -1))
+            query = query.filter(cond)
 
         if person_id is not None:
             query = query.filter(Card.person_id == person_id)
@@ -146,6 +150,7 @@ class CardRepository:
         assigned_to_id: Optional[int] = None,
         sdr_id: Optional[int] = None,
         sdr_include_orphan_lost: bool = False,
+        owner_or_sdr_id: Optional[int] = None,
         person_id: Optional[int] = None,
         is_won: Optional[bool] = None,
         is_lost: Optional[bool] = None,
@@ -176,13 +181,16 @@ class CardRepository:
             query = query.filter(Card.assigned_to_id == assigned_to_id)
 
         if sdr_id is not None:
+            query = query.filter(Card.sdr_id == sdr_id)
+
+        if owner_or_sdr_id is not None:
+            # RN-037: enxerga quem é vendedor OU SDR do card. O vínculo manda,
+            # não o cargo — permite trocar de cargo sem perder a carteira.
+            cond = (Card.assigned_to_id == owner_or_sdr_id) | (Card.sdr_id == owner_or_sdr_id)
             if sdr_include_orphan_lost:
-                # SDR na Aquisição: vê os próprios cards + os PERDIDOS sem SDR (p/ resgatar)
-                query = query.filter(
-                    (Card.sdr_id == sdr_id) | (Card.sdr_id.is_(None) & (Card.is_won == -1))
-                )
-            else:
-                query = query.filter(Card.sdr_id == sdr_id)
+                # RN-036: SDR na Aquisição vê também os PERDIDOS sem SDR (p/ resgatar)
+                cond = cond | (Card.sdr_id.is_(None) & (Card.is_won == -1))
+            query = query.filter(cond)
 
         if person_id is not None:
             query = query.filter(Card.person_id == person_id)

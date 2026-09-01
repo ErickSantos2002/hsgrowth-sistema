@@ -87,6 +87,15 @@ class UserService {
   }
 
   /**
+   * Lista quem deve aparecer nos seletores de SDR: quem tem o cargo SDR hoje
+   * + quem já é SDR de algum card (ex-SDR que virou vendedor). Ver RN-037.
+   */
+  async listSdrs(): Promise<User[]> {
+    const response = await api.get<User[]>("/api/v1/users/sdrs");
+    return response.data;
+  }
+
+  /**
    * [ADMIN/MANAGER] Retorna usuários com sessão ativa no Redis (últimos 15 min)
    */
   async getOnlineUsers(): Promise<OnlineUsersResponse> {

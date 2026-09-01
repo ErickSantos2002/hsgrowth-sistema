@@ -316,6 +316,24 @@ Este documento especifica as regras de negócio e validações que devem ser imp
 
 ---
 
+### RN-037: Visibilidade e edição por vínculo (não por cargo) *(adicionado 01/09/2026)*
+
+**Contexto**: a visibilidade era decidida pelo **cargo** — vendedor via só `assigned_to_id`, SDR via só `sdr_id`, de forma exclusiva. Quem mudava de cargo perdia o acesso a toda a carteira anterior. O caso que originou a regra: Miguel e Karolaine passaram de SDR para Vendedor com 3.314 cards vinculados como SDR.
+
+**Regras**:
+- **Quem**: usuários com cargo **Vendedor** ou **SDR**.
+- **O que enxerga e edita**: os cards em que está vinculado como **vendedor OU como SDR**. O vínculo manda, não o cargo.
+- **Onde vale**:
+  - listagem de cards — `card_service.list_cards` → parâmetro `owner_or_sdr_id` do repositório;
+  - permissão de escrita — `card_service._check_card_write_permission`;
+  - dashboard próprio — `report_service._build_dashboard_user_filter`.
+- **Dashboard de Admin/Gerente**: ao filtrar por um usuário, a coluna consultada vem da **visão ativa** (SDR/Vendedor), não do cargo atual do alvo. Assim o histórico de quem mudou de cargo continua acessível e as métricas de SDR e de Vendedor seguem separadas. Sem visão informada, cai no cargo do alvo e, em último caso, no vínculo.
+- **Seletores de SDR**: alimentados por `GET /api/v1/users/sdrs` — quem tem o cargo SDR **∪** quem já é `sdr_id` de algum card. Sem isso, um ex-SDR sumiria de todos os filtros do sistema.
+- **Não altera**: a RN-036 (resgatar perdidos órfãos na Aquisição) continua restrita a quem tem o cargo **SDR**.
+- **Relacionado**: RN-034 (Atribuição de Cartão), RN-036 (SDR — Resgatar negócio perdido).
+
+---
+
 ## 6. REGRAS DE IMPORTAÇÃO DE DADOS
 
 ### RN-040: Importação do Pipedrive

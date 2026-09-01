@@ -5,6 +5,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.9.2] — 01/09/2026
+
+### Adicionado
+- **RN-037 — visibilidade por vínculo:** vendedores e SDRs passam a enxergar e editar os negócios em que estão vinculados como **vendedor ou como SDR**. Antes, o cargo decidia sozinho qual vínculo era consultado, então quem mudava de cargo perdia o acesso a toda a carteira anterior. Agora a pessoa pode trocar de função sem que os negócios dela desapareçam.
+- **Endpoint `GET /users/sdrs`:** alimenta os filtros e seletores de SDR com quem tem o cargo hoje **e** quem já atuou como SDR em algum negócio — assim um ex-SDR não some dos filtros e o histórico dele continua consultável.
+
+### Alterado
+- **Dashboard (Admin/Gerente):** ao filtrar por um usuário, a coluna consultada passa a vir da **visão ativa** (SDR ou Vendedor) em vez do cargo atual da pessoa. O histórico de quem mudou de cargo continua acessível e as métricas de SDR e de Vendedor seguem separadas.
+
+---
+
 ## [1.9.1] — 24/08/2026
 
 ### Adicionado

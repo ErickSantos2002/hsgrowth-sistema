@@ -261,6 +261,71 @@ async def list_active_users(
 
 
 @router.get(
+    "/sdrs",
+    response_model=List[UserResponse],
+    summary="Usuários que atuam ou já atuaram como SDR",
+    description="""
+    Lista os usuários que devem aparecer nos filtros e seletores de SDR.
+
+    Inclui:
+    - quem tem o cargo SDR hoje;
+    - quem já está vinculado como SDR em pelo menos um card (ex-SDR que mudou
+      de cargo) — sem isso o histórico dessa pessoa sumiria dos filtros. Ver RN-037.
+
+    Apenas usuários ativos, ordenados por nome.
+    """,
+)
+async def list_sdr_users(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    from sqlalchemy import or_
+    from sqlalchemy.orm import joinedload
+    from app.models.role import Role
+    from app.models.card import Card
+
+    sdr_role_ids = [r.id for r in db.query(Role).filter(Role.name.ilike("sdr")).all()]
+    sdr_card_user_ids = [
+        row[0] for row in db.query(Card.sdr_id).filter(Card.sdr_id.isnot(None)).distinct().all()
+    ]
+
+    if not sdr_role_ids and not sdr_card_user_ids:
+        return []
+
+    users = (
+        db.query(User)
+        .options(joinedload(User.role))
+        .filter(
+            User.is_active == True,
+            User.is_deleted == False,
+            or_(User.role_id.in_(sdr_role_ids), User.id.in_(sdr_card_user_ids)),
+        )
+        .order_by(User.name)
+        .all()
+    )
+
+    return [
+        UserResponse(
+            id=user.id,
+            email=user.email,
+            username=user.username,
+            name=user.name,
+            avatar_url=user.avatar_url,
+            phone=getattr(user, 'phone', None),
+            email_signature=getattr(user, 'email_signature', None),
+            role_id=user.role_id,
+            is_active=user.is_active,
+            last_login_at=user.last_login_at,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+            role=user.role.name if user.role else None,
+            role_name=user.role.display_name if user.role else None,
+        )
+        for user in users
+    ]
+
+
+@router.get(
     "/online",
     summary="Usuários online (sessões ativas)",
     description="""

@@ -209,7 +209,8 @@ class CardService:
         if role_name in ("admin", "manager"):
             return
 
-        if role_name == "salesperson" and card.assigned_to_id != current_user.id:
+        # RN-037: edita quem é vendedor OU SDR do card — o vínculo manda, não o cargo.
+        if role_name == "salesperson" and current_user.id not in (card.assigned_to_id, card.sdr_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Você não tem permissão para editar este card",
@@ -223,7 +224,8 @@ class CardService:
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="SDRs só podem editar cards no board de Prospecção",
                 )
-            if card.sdr_id != current_user.id:
+            # RN-037: vale nos dois sentidos — vendedor OU SDR do card.
+            if current_user.id not in (card.assigned_to_id, card.sdr_id):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Você não tem permissão para editar este card",
@@ -269,17 +271,19 @@ class CardService:
         """
         from app.schemas.card import CardMinimalResponse, CardMinimalListResponse
 
-        # SDRs e Vendedores só enxergam os próprios cards
+        # SDRs e Vendedores só enxergam os cards em que têm vínculo — como
+        # vendedor OU como SDR (RN-037). O vínculo manda, não o cargo: quem
+        # muda de cargo continua enxergando a própria carteira.
         sdr_include_orphan_lost = False
+        owner_or_sdr_id = None
         if current_user and current_user.role:
-            if current_user.role.name == "sdr":
-                sdr_id = current_user.id
-                # Aquisição (board 7): SDR também enxerga os perdidos SEM SDR
-                # (sdr_id nulo), para poder resgatá-los. Ver RN-036.
-                # str(...) porque o board_id pode chegar como string "7" na request.
-                sdr_include_orphan_lost = (str(board_id) == "7")
-            elif current_user.role.name == "salesperson":
-                assigned_to_id = current_user.id
+            if current_user.role.name in ("sdr", "salesperson"):
+                owner_or_sdr_id = current_user.id
+                if current_user.role.name == "sdr":
+                    # Aquisição (board 7): SDR também enxerga os perdidos SEM SDR
+                    # (sdr_id nulo), para poder resgatá-los. Ver RN-036.
+                    # str(...) porque o board_id pode chegar como string "7" na request.
+                    sdr_include_orphan_lost = (str(board_id) == "7")
 
         # Verifica se o board existe
         board = self.board_repository.find_by_id(board_id)
@@ -305,6 +309,7 @@ class CardService:
             assigned_to_id=assigned_to_id,
             sdr_id=sdr_id,
             sdr_include_orphan_lost=sdr_include_orphan_lost,
+            owner_or_sdr_id=owner_or_sdr_id,
             person_id=person_id,
             is_won=is_won,
             is_lost=is_lost,
@@ -320,6 +325,7 @@ class CardService:
             assigned_to_id=assigned_to_id,
             sdr_id=sdr_id,
             sdr_include_orphan_lost=sdr_include_orphan_lost,
+            owner_or_sdr_id=owner_or_sdr_id,
             person_id=person_id,
             is_won=is_won,
             is_lost=is_lost,
