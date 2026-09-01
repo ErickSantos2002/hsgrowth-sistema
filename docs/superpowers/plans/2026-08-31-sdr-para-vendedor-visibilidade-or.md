@@ -1322,7 +1322,7 @@ carteira anterior (caso Miguel/Karol, 31/08/2026 — 3.314 cards).
 
 **Onde vale:**
 - listagem de cards (`card_service.list_cards` → `owner_or_sdr_id`)
-- permissão de escrita (`card_service._check_card_write_permission`)
+- permissão de escrita (`card_service._check_write_permission`)
 - dashboard próprio (`report_service._build_dashboard_user_filter`)
 
 **Dashboard de admin/gerente:** ao filtrar por um usuário, a coluna vem da

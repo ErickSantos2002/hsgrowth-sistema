@@ -325,7 +325,7 @@ Este documento especifica as regras de negócio e validações que devem ser imp
 - **O que enxerga e edita**: os cards em que está vinculado como **vendedor OU como SDR**. O vínculo manda, não o cargo.
 - **Onde vale**:
   - listagem de cards — `card_service.list_cards` → parâmetro `owner_or_sdr_id` do repositório;
-  - permissão de escrita — `card_service._check_card_write_permission`;
+  - permissão de escrita — `card_service._check_write_permission`;
   - dashboard próprio — `report_service._build_dashboard_user_filter`.
 - **Dashboard de Admin/Gerente**: ao filtrar por um usuário, a coluna consultada vem da **visão ativa** (SDR/Vendedor), não do cargo atual do alvo. Assim o histórico de quem mudou de cargo continua acessível e as métricas de SDR e de Vendedor seguem separadas. Sem visão informada, cai no cargo do alvo e, em último caso, no vínculo.
 - **Seletores de SDR**: alimentados por `GET /api/v1/users/sdrs` — quem tem o cargo SDR **∪** quem já é `sdr_id` de algum card. Sem isso, um ex-SDR sumiria de todos os filtros do sistema.
