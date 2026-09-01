@@ -148,6 +148,13 @@ def test_roles(db: Session) -> dict:
             "description": "Gerencia seus próprios cards",
             "permissions": ["cards.read", "cards.create", "cards.update", "boards.read"],
             "is_system_role": True
+        },
+        {
+            "name": "sdr",
+            "display_name": "SDR",
+            "description": "Prospecção e qualificação de leads",
+            "permissions": ["cards.read", "cards.create", "cards.update", "boards.read"],
+            "is_system_role": True
         }
     ]
 
@@ -251,6 +258,35 @@ def test_salesperson_user(db: Session, test_roles: dict) -> User:
     db.commit()
 
     # Recarrega o usuário com eager loading do role
+    user = db.query(User).options(joinedload(User.role)).filter(User.id == user.id).first()
+    return user
+
+
+@pytest.fixture
+def test_sdr_user(db: Session, test_roles: dict) -> User:
+    """
+    Cria um usuário SDR de teste.
+
+    Args:
+        db: Sessão de banco de dados
+        test_roles: Roles de teste
+
+    Returns:
+        User: Usuário SDR criado
+    """
+    from sqlalchemy.orm import joinedload
+
+    user = User(
+        name="SDR User",
+        email="sdr@test.com",
+        password_hash=hash_password("sdr123"),
+        role_id=test_roles["sdr"].id,
+        is_active=True,
+        is_deleted=False
+    )
+    db.add(user)
+    db.commit()
+
     user = db.query(User).options(joinedload(User.role)).filter(User.id == user.id).first()
     return user
 
@@ -387,6 +423,20 @@ def salesperson_token(test_salesperson_user: User) -> str:
 
 
 @pytest.fixture
+def sdr_token(test_sdr_user: User) -> str:
+    """
+    Cria um token de autenticação para o usuário SDR.
+
+    Args:
+        test_sdr_user: Usuário SDR de teste
+
+    Returns:
+        str: Token JWT válido
+    """
+    return create_access_token(data={"sub": str(test_sdr_user.id)})
+
+
+@pytest.fixture
 def admin_headers(admin_token: str) -> dict:
     """
     Cria headers de autenticação para admin.
@@ -426,6 +476,20 @@ def salesperson_headers(salesperson_token: str) -> dict:
         dict: Headers com Authorization
     """
     return {"Authorization": f"Bearer {salesperson_token}"}
+
+
+@pytest.fixture
+def sdr_headers(sdr_token: str) -> dict:
+    """
+    Cria headers de autenticação para SDR.
+
+    Args:
+        sdr_token: Token JWT do SDR
+
+    Returns:
+        dict: Headers com Authorization
+    """
+    return {"Authorization": f"Bearer {sdr_token}"}
 
 
 # ==================== CONFIGURAÇÕES ADICIONAIS ====================
