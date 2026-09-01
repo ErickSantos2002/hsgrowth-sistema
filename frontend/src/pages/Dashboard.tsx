@@ -69,15 +69,19 @@ const Dashboard: React.FC = () => {
 
   // Lista de usuários para o seletor (admin/manager)
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  // Quem pode figurar como SDR: cargo SDR + ex-SDR com card (RN-037)
+  const [sdrIds, setSdrIds] = useState<number[]>([]);
   useEffect(() => {
     if (isAdminOrManager) {
       userService.listActive().then(setAllUsers).catch(() => {});
+      userService.listSdrs().then((us) => setSdrIds(us.map((u) => u.id))).catch(() => {});
     }
   }, [isAdminOrManager]);
 
-  // Filtra usuários pelo papel da visão selecionada
+  // Filtra usuários pela visão selecionada — na visão SDR considera também
+  // quem já atuou como SDR, mesmo tendo outro cargo hoje (RN-037)
   const filteredUsers = allUsers.filter((u) =>
-    view === "sdr" ? u.role === "sdr" : u.role === "salesperson"
+    view === "sdr" ? sdrIds.includes(u.id) : u.role === "salesperson"
   );
 
   // Rótulo do período

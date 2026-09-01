@@ -87,6 +87,7 @@ const KanbanBoard: React.FC = () => {
   const [customDateEnd, setCustomDateEnd] = useState("");
   const [assignedToFilter, setAssignedToFilter] = useState(""); // Filtro de vendedor
   const [sdrFilter, setSdrFilter] = useState(""); // Filtro de SDR
+  const [sdrOptionsUsers, setSdrOptionsUsers] = useState<User[]>([]); // Quem pode aparecer no filtro de SDR (RN-037)
   const [acquisitionChannelFilter, setAcquisitionChannelFilter] = useState(""); // Filtro de canal de aquisição
   const [acquisitionChannelDetailFilter, setAcquisitionChannelDetailFilter] = useState(""); // Filtro de detalhe do canal
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
@@ -289,6 +290,8 @@ const KanbanBoard: React.FC = () => {
       try {
         const users = await userService.listActive();
         setAvailableUsers(users);
+        // Quem pode figurar como SDR: cargo SDR + ex-SDR com card (RN-037)
+        setSdrOptionsUsers(await userService.listSdrs());
 
         // Se o usuário logado é vendedor (salesperson), trava o filtro nele
         if (user && user.role === "salesperson") {
@@ -1334,12 +1337,10 @@ const KanbanBoard: React.FC = () => {
                 options={[
                   { value: "", label: "Todos os SDRs" },
                   { value: "none", label: "Sem SDR" },
-                  ...availableUsers
-                    .filter((u) => u.role === "sdr") // Apenas SDRs
-                    .map((u) => ({
-                      value: String(u.id),
-                      label: u.name,
-                    })),
+                  ...sdrOptionsUsers.map((u) => ({
+                    value: String(u.id),
+                    label: u.name,
+                  })),
                 ]}
                 onChange={setSdrFilter}
                 disabled={user?.role === "sdr"} // SDR só vê os próprios leads

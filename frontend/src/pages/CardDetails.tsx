@@ -61,6 +61,7 @@ const CardDetails: React.FC = () => {
   const [card, setCard] = useState<Card | null>(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserType[]>([]);
+  const [sdrUsersList, setSdrUsersList] = useState<UserType[]>([]); // Cargo SDR + ex-SDR com card (RN-037)
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
@@ -147,6 +148,8 @@ const CardDetails: React.FC = () => {
     try {
       const activeUsers = await userService.listActive();
       setUsers(activeUsers);
+      // Quem pode figurar como SDR: cargo SDR + ex-SDR com card (RN-037)
+      setSdrUsersList(await userService.listSdrs());
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
     }
@@ -614,8 +617,8 @@ const CardDetails: React.FC = () => {
   // Encontra o SDR atual
   const sdrUser = users.find((u) => u.id === card?.sdr_id);
 
-  // Filtra apenas SDRs para o dropdown
-  const sdrUsers = users.filter((u) => u.role === "sdr");
+  // Quem pode figurar como SDR no dropdown (RN-037)
+  const sdrUsers = sdrUsersList;
 
   // Loading
   if (loading) {

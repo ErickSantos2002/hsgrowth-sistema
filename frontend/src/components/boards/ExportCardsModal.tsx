@@ -97,6 +97,8 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
   // ─── Dados auxiliares ─────────────────────────────────────────────────────
   const [lists, setLists] = useState<any[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  // Quem pode figurar como SDR: cargo SDR + ex-SDR com card (RN-037)
+  const [sdrIds, setSdrIds] = useState<number[]>([]);
 
   // ─── Estados de carregamento ──────────────────────────────────────────────
   const [loadingLists, setLoadingLists] = useState(false);
@@ -106,6 +108,7 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       userService.listActive().then(setUsers).catch(console.error);
+      userService.listSdrs().then((us) => setSdrIds(us.map((u) => u.id))).catch(console.error);
 
       // Reaplica travamento caso o modal seja reaberto
       if (isVendorLocked && user?.id) setSelectedUserId(user.id);
@@ -585,9 +588,9 @@ const ExportCardsModal: React.FC<ExportCardsModalProps> = ({
               {!isSdrLocked && (
                 <option value="all">Todos os SDRs</option>
               )}
-              {/* Exibe apenas usuários com role SDR */}
+              {/* Exibe quem atua ou já atuou como SDR (RN-037) */}
               {users
-                .filter((u) => u.role === "sdr")
+                .filter((u) => sdrIds.includes(u.id))
                 .map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name}

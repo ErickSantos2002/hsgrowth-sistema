@@ -68,14 +68,14 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, readOnl
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [allUsers, boardsData] = await Promise.all([
+        const [allUsers, boardsData, sdrs] = await Promise.all([
           userService.listActive(),
           boardService.list({ all: true }),
+          userService.listSdrs(),
         ]);
 
         setUsers(allUsers);
-        // Filtra SDRs (role = "sdr")
-        const sdrs = allUsers.filter((u) => u.role === "sdr");
+        // Quem pode figurar como SDR: cargo SDR + ex-SDR com card (RN-037)
         setSDRUsers(sdrs);
         setBoards(boardsData.boards);
 
