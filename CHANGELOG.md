@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.9.3] — 02/09/2026
+
+### Corrigido
+- **Cliente — "Documento já cadastrado" indevido e duplicados por formatação:** a validação de CNPJ/CPF passou a comparar **apenas os dígitos**, então `30.511.844/0001-68` e `30511844000168` são reconhecidos como o **mesmo documento**. Isso evita o erro "Documento já cadastrado" ao editar um cliente e impede a criação de **clientes duplicados** só por diferença de pontuação.
+
+---
+
 ## [1.9.2] — 01/09/2026
 
 ### Adicionado

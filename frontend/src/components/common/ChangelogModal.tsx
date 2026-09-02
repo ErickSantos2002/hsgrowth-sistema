@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.9.3",
+    date: "02/09/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Cliente — 'Documento já cadastrado' indevido: a validação de CNPJ/CPF agora compara só os dígitos, então formatos diferentes (com ou sem pontuação) são o mesmo documento. Corrige o erro ao editar cliente e evita duplicados criados por diferença de formatação.",
+      },
+    ],
+  },
+  {
     version: "1.9.2",
     date: "01/09/2026",
     entries: [

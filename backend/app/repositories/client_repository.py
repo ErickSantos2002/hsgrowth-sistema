@@ -186,7 +186,9 @@ class ClientRepository:
 
     def exists_document(self, document: str, exclude_id: Optional[int] = None) -> bool:
         """
-        Verifica se existe um cliente com o documento informado.
+        Verifica se existe um cliente com o mesmo documento, comparando apenas os
+        DÍGITOS — assim "30.511.844/0001-68" e "30511844000168" são o mesmo CNPJ.
+        Evita duplicados criados por diferença de formatação.
 
         Args:
             document: Documento a verificar
@@ -195,8 +197,15 @@ class ClientRepository:
         Returns:
             True se existe, False caso contrário
         """
+        import re
+        digits = re.sub(r"\D", "", document or "")
+        if not digits:
+            return False
+
+        # Normaliza o documento gravado para só dígitos direto no SQL (Postgres).
+        norm_stored = func.regexp_replace(Client.document, r"[^0-9]", "", "g")
         query = self.db.query(Client).filter(
-            Client.document == document,
+            norm_stored == digits,
             Client.is_deleted == False
         )
 
