@@ -1,6 +1,6 @@
 # Reunião por vídeo no CRM — material para decisão com o gestor
 
-**Data:** 02/09/2026
+**Data:** 02/09/2026 (custos revisados em 03/09/2026 com o volume real)
 **Para:** conversa de aprovação (vale a pena fazer?)
 **Detalhe técnico completo:** `2026-09-01-reuniao-video-daily-design.md`
 **Câmbio usado:** US$ 1 = R$ 5,20
@@ -37,60 +37,54 @@ Ao criar a reunião, o vendedor escolhe no próprio formulário: **"No CRM"** ou
 Nos **dois** casos o comportamento continua idêntico ao de hoje:
 
 - o evento entra na agenda do Outlook do vendedor;
-- o cliente recebe o convite por e-mail, do mesmo jeito;
+- o cliente recebe o convite por e-mail, do mesmo jeito, com **um** link;
 - o horário bloqueia a agenda, então o SDR continua conferindo a disponibilidade do vendedor exatamente onde já confere.
 
-**Consequência prática: zero treinamento.** Para o time, é como se o Teams tivesse ficado mais fácil para o cliente — que passa a entrar por um link, sem instalar nada.
-
-Se a resposta do gestor for *"o atrito do cliente entrar no Teams não é problema pra gente"*, então o valor real está concentrado nas Fases 2 e 5 — e talvez a ordem das fases deva mudar.
+**Consequência prática: zero treinamento.** Para o time, é como se o Teams tivesse ficado mais fácil para o cliente.
 
 ---
 
-## 3. Custos — cenário de vocês
+## 3. Custos — volume real de vocês
 
-**Premissas:** time de 9 pessoas, reuniões de **1 hora**, **2 participantes** por reunião (vendedor + cliente).
+**Volume:** 7 pessoas x 20 reuniões/mês = **140 reuniões hoje**, chegando a **180** quando entrarem mais 2 pessoas.
+**Duração:** 1 hora cada. **Participantes:** 2 (vendedor + cliente).
 
-Como "20 reuniões/mês" pode significar duas coisas, seguem os dois cálculos:
+### Quadro geral
 
-### Cenário A — 20 reuniões/mês no time todo
+| Cenário | 140 reuniões/mês | 180 reuniões/mês |
+|---|---|---|
+| **Fase 1** — só a reunião por vídeo | **R$ 171** | **R$ 279** |
+| **Fase 3** — grava tudo em vídeo + transcrição + IA | **R$ 955** | **R$ 1.288** |
+| **Fase 3** — grava tudo, **só áudio** | **R$ 577** | **R$ 801** |
+| **Fase 3** — grava **só 40%** (proposta/negociação) | **R$ 484** | **R$ 682** |
+| **Fase 5** — tudo + IA sugerindo resposta ao vivo | **R$ 1.647** | **R$ 2.177** |
 
-| Item | Cálculo | US$/mês | R$/mês |
+### Onde o dinheiro vai (140 reuniões, gravando tudo em vídeo)
+
+| Item | US$/mês | R$/mês | % |
 |---|---|---|---|
-| Vídeo | 2.400 min (limite grátis: 10.000) | **0** | **0** |
-| Gravação | 1.200 min x 0,01349 | 16,19 | 84 |
-| Transcrição pós-call | 1.200 min x 0,0043 | 5,16 | 27 |
-| Armazenamento (R2) | ~15 GB/mês | 0,08 | 0,40 |
-| IA — análise pós-reunião | 20 análises | 0,80 | 4 |
-| **Total sem IA ao vivo** | | **≈ 22** | **≈ R$ 115** |
-| *Trocando por transcrição ao vivo* | 2.400 min x 0,0059 | +9 | +47 |
-| *IA sugerindo resposta na call* | ~20 x US$ 0,50 | +10 | +52 |
-| **Total com IA ao vivo** | | **≈ 41** | **≈ R$ 215** |
+| Gravação | 113 | 589 | **62%** |
+| Transcrição (pós-call) | 36 | 188 | 20% |
+| Vídeo (minutos acima do grátis) | 27 | 142 | 15% |
+| Análise por IA (OpenAI) | 6 | 29 | 3% |
+| Armazenamento (R2) | 1 | 7 | 1% |
+| **Total** | **184** | **955** | |
 
-### Cenário B — 20 reuniões/mês por pessoa (9 pessoas = 180/mês)
+**A gravação é 62% da conta.** É nela que estão as decisões de economia.
 
-| Item | Cálculo | US$/mês | R$/mês |
-|---|---|---|---|
-| Vídeo | 21.600 min − 10.000 grátis = 11.600 x 0,004 | 46,40 | 241 |
-| Gravação | 10.800 min x 0,01349 | 145,69 | 758 |
-| Transcrição pós-call | 10.800 min x 0,0043 | 46,44 | 242 |
-| Armazenamento (R2) | ~135 GB/mês | 1,88 | 10 |
-| IA — análise pós-reunião | 180 análises | 7,20 | 37 |
-| **Total sem IA ao vivo** | | **≈ 248** | **≈ R$ 1.290** |
-| *Trocando por transcrição ao vivo* | 21.600 min x 0,0059 | +81 | +421 |
-| *IA sugerindo resposta na call* | ~180 x US$ 0,50 | +90 | +468 |
-| **Total com IA ao vivo** | | **≈ 419** | **≈ R$ 2.180** |
+### Três formas de reduzir
 
-### Observações que mudam a conta
+1. **Gravar só áudio** — economiza **R$ 378/mês** (custa 1/3 do vídeo). Para transcrever e analisar, áudio basta; vídeo só importa se alguém for reassistir a reunião.
+2. **Gravar só as reuniões que importam** — se gravar apenas proposta/negociação (~40%), economiza **R$ 471/mês**.
+3. **As duas juntas** — cai para cerca de R$ 300/mês.
 
-- **O armazenamento acumula.** Os valores acima são do primeiro mês. Em 12 meses sem apagar nada: Cenário A ≈ US$ 2,55/mês; Cenário B ≈ US$ 24/mês. Definir prazo de descarte resolve.
-- **Um 3º participante encarece o vídeo**, porque o Daily cobra por participante-minuto. No Cenário B com 3 pessoas, o vídeo sobe de US$ 46 para ~US$ 130/mês.
-- **Gravar só o que importa reduz muito.** Gravação é o maior item da conta. Se gravar só reuniões de proposta/negociação, o custo cai proporcionalmente.
-- **Gravação só de áudio custa 1/3** (US$ 0,005 vs 0,01349/min). Para transcrição e análise, áudio basta — vídeo só importa se alguém for reassistir.
-- **A IA ao vivo pode ficar bem mais barata** usando um modelo menor. Os números acima assumem GPT-4o; com um modelo econômico cai para menos de 1/10 disso.
+### Correções importantes ao que se pensava antes
 
-### Só para a Fase 1 (sem gravação): custo **zero** nos dois cenários
+> ⚠️ **A Fase 1 não é de graça neste volume.** O Daily dá 10.000 minutos grátis/mês, mas 140 reuniões de 1 hora com 2 participantes consomem **16.800 minutos** (o Daily cobra por *participante*-minuto). Sobra uma conta de ~R$ 171/mês já na Fase 1. Com 180 reuniões, ~R$ 279/mês.
 
-Nos dois casos o consumo de vídeo fica dentro dos 10.000 minutos grátis do Daily. Dá para **testar de graça** antes de decidir sobre gravação.
+> ⚠️ **Um terceiro participante encarece.** Se o SDR também entrar na reunião (vendedor + SDR + cliente), o custo total sobe de R$ 955 para **R$ 1.130/mês** no cenário de 140. Vale definir se o SDR participa ou não.
+
+> ⚠️ **O armazenamento acumula.** Os valores são do primeiro mês. Gravando tudo em vídeo sem apagar nada, em 12 meses o armazenamento vai de R$ 7 para ~R$ 98/mês. Definir prazo de descarte resolve — e com áudio o problema praticamente desaparece.
 
 ---
 
@@ -118,18 +112,19 @@ Boa parte do caminho já está andada: existe um projeto interno (`dn.nexus`) co
 2. Entre as entregas, qual resolve mais dor: **reunião dentro do CRM**, **cliente se auto-agendando** ou **IA sugerindo resposta na hora**?
 3. Se só desse para fazer **uma** fase este trimestre, qual seria?
 
-### Sobre volume e custo
+### Sobre custo — as decisões que mais pesam
 
-4. Quantas reuniões por mês, de fato? (Cenário A ou B — muda de R$ 115 para R$ 1.290/mês)
-5. **Gravar todas** as reuniões ou só as de proposta/negociação?
-6. Vídeo é necessário na gravação, ou **áudio basta**? (áudio custa 1/3)
-7. Por quanto tempo guardar as gravações — 6 meses, 1 ano, sempre?
-8. A **IA ao vivo** justifica dobrar o custo mensal?
+4. **Gravar todas** as reuniões ou só as de proposta/negociação? (diferença de ~R$ 470/mês)
+5. Precisamos de **vídeo** na gravação, ou **áudio basta**? (áudio custa 1/3 → economia de ~R$ 380/mês)
+6. Por quanto tempo guardar as gravações — 6 meses, 1 ano, sempre?
+7. O **SDR participa** da reunião junto? (um 3º participante custa ~R$ 175/mês a mais)
+8. A **IA ao vivo** justifica dobrar a conta (de ~R$ 955 para ~R$ 1.647)?
+9. Existe orçamento aprovado para ~**R$ 500 a R$ 1.000/mês** em ferramenta, ou precisa passar por aprovação de custo recorrente?
 
 ### Sobre execução
 
-9. Quem desenvolve e quando? São ~11 dias para as Fases 1 e 3.
-10. Topa começar pela **Fase 1 (custo zero)** como piloto, medir o uso real e só então decidir gravação?
+10. Quem desenvolve e quando? São ~11 dias para as Fases 1 e 3.
+11. Faz sentido rodar a **Fase 1 como piloto** (~R$ 171/mês), medir o uso real e só então decidir sobre gravação?
 
 ---
 
@@ -147,9 +142,13 @@ Boa parte do caminho já está andada: existe um projeto interno (`dn.nexus`) co
 
 ## 7. Recomendação
 
-**Começar pela Fase 1 como piloto.** Custo **zero**, 6-7 dias de trabalho, e ao fim vocês têm dado real — quantas reuniões acontecem, se o cliente entra mais fácil, se o time usa. Com isso na mão, a decisão sobre gravação (que é o que custa) deixa de ser aposta.
+**Rodar a Fase 1 como piloto (~R$ 171/mês) antes de decidir sobre gravação.**
 
-Se o gestor priorizar o **auto-agendamento** (Fase 2), vale saber: ela depende da Fase 1 e é a mais cara de construir, mas é a única entrega que o Teams não cobre de jeito nenhum.
+São 6-7 dias de trabalho e um custo baixo para descobrir o que nenhuma planilha responde: o cliente entra mais fácil? O time adota? Quantas reuniões de fato acontecem por lá? Com esse dado, a decisão sobre gravação — que é 62% da conta — deixa de ser aposta.
+
+**Se a gravação for aprovada, começar por áudio.** Entrega transcrição e análise por IA, que é o valor real, por 1/3 do preço. Migrar para vídeo depois é trivial; o contrário é dinheiro gasto.
+
+**Sobre a Fase 5 (IA ao vivo):** dobra a conta mensal. Vale discutir depois que o time estiver usando as fases 1 e 3 — aí dá para estimar o ganho com base em reuniões reais, não em expectativa.
 
 ---
 
