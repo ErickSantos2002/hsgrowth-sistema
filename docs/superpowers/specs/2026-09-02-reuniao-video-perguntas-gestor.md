@@ -30,6 +30,18 @@ Resposta honesta — **não é trocar, é o que o Teams não faz:**
 
 **O Teams continua funcionando.** A proposta é somar uma opção, não substituir.
 
+### E o fluxo do time não muda (importante)
+
+Ao criar a reunião, o vendedor escolhe no próprio formulário: **"No CRM"** ou **"Teams/Outlook"**. Só isso muda na tela.
+
+Nos **dois** casos o comportamento continua idêntico ao de hoje:
+
+- o evento entra na agenda do Outlook do vendedor;
+- o cliente recebe o convite por e-mail, do mesmo jeito;
+- o horário bloqueia a agenda, então o SDR continua conferindo a disponibilidade do vendedor exatamente onde já confere.
+
+**Consequência prática: zero treinamento.** Para o time, é como se o Teams tivesse ficado mais fácil para o cliente — que passa a entrar por um link, sem instalar nada.
+
 Se a resposta do gestor for *"o atrito do cliente entrar no Teams não é problema pra gente"*, então o valor real está concentrado nas Fases 2 e 5 — e talvez a ordem das fases deva mudar.
 
 ---

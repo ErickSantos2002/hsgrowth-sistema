@@ -295,7 +295,82 @@ Estimando ~500 MB por reunião gravada: 100 reuniões ≈ **50 GB/mês**, ou ~US
 
 **7. Não é preocupação:** banda, servidor de mídia, escala de vídeo — tudo isso fica com o Daily.
 
-## 14. Fontes dos preços
+---
+
+## 14. Decisões de UX e integração com a agenda *(03/09/2026)*
+
+Levantamento do fluxo real do SDR ao agendar reunião, e as decisões que saíram dele.
+
+### 14.1 O fluxo do SDR hoje (já existente, não muda)
+
+1. SDR está com o card em **Conectado** e vincula o **vendedor**.
+2. Vai na aba **Calendário** → sub-aba **Outlook** e confere a disponibilidade do vendedor.
+3. Vai na aba **Reuniões** → cria a reunião → o sistema gera o link e dispara o convite.
+
+O passo 2 **já está implementado** e é o que sustenta o fluxo:
+
+| O que faz | Onde |
+|---|---|
+| Compromissos do próprio usuário | `GET /auth/me/calendar-events` |
+| **Ocupação do vendedor do card** (free/busy via Microsoft `getSchedule`) | `GET /auth/me/seller-schedule?email=...` |
+| Consumido em | `frontend/src/components/cardDetails/SchedulerSection.tsx` (~L231-248) |
+
+O passo 3 hoje chama `cardTaskService.createTeamsMeeting()` automaticamente, sem opção de escolha ([MeetingSection.tsx](../../frontend/src/components/cardDetails/MeetingSection.tsx) ~L154), que por sua vez usa `microsoft_graph_service.create_calendar_event()` — essa função **já monta os convidados** (vendedor do card + e-mails do contato) e o **próprio Outlook envia o convite**. O CRM não dispara e-mail.
+
+### 14.2 Decisão — escolha do tipo de reunião: **seletor dentro do modal**
+
+Um único botão **"Nova reunião"**. Dentro do formulário, o usuário escolhe **onde a reunião acontece**:
+
+```
+┌──────────────────────────────────┐
+│  Nova reunião                  X │
+├──────────────────────────────────┤
+│  Onde vai acontecer?             │
+│  ┌────────────┐ ┌──────────────┐ │
+│  │ ◉ No CRM   │ │ ○ Teams      │ │
+│  │   (vídeo)  │ │   (Outlook)  │ │
+│  └────────────┘ └──────────────┘ │
+│                                  │
+│  Título   [___________________]  │
+│  Data     [__/__/____]  [__:__]  │
+│  Duração  [ 30 min  v]           │
+│  Contato  [___________________]  │
+│           [Cancelar]  [Criar]    │
+└──────────────────────────────────┘
+```
+
+**Motivo:** o restante do formulário é idêntico nos dois casos — só o provedor muda. Um lugar só evita duplicar tela e mantém a manutenção barata.
+
+**Implementação:** a escolha grava `meeting_provider` (`"daily"` | `"teams"`) no `CardTask` e decide qual serviço é chamado após criar a task. O caminho `"teams"` continua exatamente como está hoje.
+
+### 14.3 Decisão — o convite continua saindo pelo Outlook nos dois casos
+
+Mesmo na reunião **dentro do CRM**, o backend cria o evento no calendário do vendedor via Graph, com o **link do Daily** no corpo.
+
+**Consequências (todas desejadas):**
+
+- O cliente recebe o convite por e-mail **exatamente como hoje** — é o convite nativo do Outlook, com os mesmos convidados.
+- O horário **bloqueia o free/busy** do vendedor, então o `seller-schedule` que o SDR já consulta passa a refletir as reuniões do CRM. **Sem isso, o SDR agendaria em cima de reunião interna.**
+- O vendedor vê a reunião no Outlook e no celular, com lembrete.
+- **O fluxo do SDR e do vendedor não muda em nada** — mesma tela, mesmos cliques. Zero treinamento.
+
+**Custo de implementação: ~zero.** Reusa `create_calendar_event()`, que já resolve convidados e envio. Deixa de ser item separado e passa a ser parte natural da Fase 1.
+
+> **Impacto no plano:** este item **substitui** a necessidade de construir uma visão de agenda nova para o SDR na Fase 1. A visão nativa no CRM (somar `card_tasks` de reunião do vendedor, e liberar o SDR a consultar a agenda de outro usuário — hoje a página Calendário trava vendedor/SDR no próprio id) fica como **melhoria opcional**, não bloqueante.
+
+### 14.4 Alinhamento com a Fase 2
+
+O "motor de disponibilidade" da Fase 2 precisa cruzar **reuniões do CRM + agenda do Outlook**. Com a decisão 15.3, as reuniões do CRM já estarão no Outlook — então o motor pode se apoiar no `getSchedule` que já existe, em vez de reconciliar duas fontes. **Barateia a Fase 2.**
+
+### 14.5 Um link por convite
+
+O convite leva **apenas o link do tipo escolhido** — Daily ou Teams, nunca os dois. Mandar dois links faria o cliente parar para decidir em qual clicar, criando justamente o atrito que a proposta quer eliminar.
+
+**Plano B se uma chamada falhar:** o vendedor cria uma reunião Teams na hora e envia o link pelo chat/WhatsApp. O Teams segue disponível como alternativa, sem precisar de nada especial no convite.
+
+---
+
+## 15. Fontes dos preços
 
 - Daily.co — Video SDK pricing: https://www.daily.co/pricing/video-sdk/
 - Daily.co — documentação de gravação: https://docs.daily.co/docs/guides/features/recording
