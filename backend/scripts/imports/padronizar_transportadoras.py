@@ -59,6 +59,9 @@ P_SDR, P_CANAL, P_DETALHE = 34, 35, 36
 P_STATUS = 51
 P_LINKEDIN_EMP = 52   # NOVA coluna: LinkedIn da empresa -> client.linkedin_url
 P_NOTES_CLI = 53      # NOVA coluna: Observações do cliente -> client.notes (link SSMA)
+P_VENDEDOR = 54       # NOVA coluna: Vendedor_Responsavel -> card.assigned_to_id
+                      # (o template padrão só tem SDR_Responsavel; esta coluna permite
+                      #  atribuir vendedores. Preenchida pelos scripts de lote.)
 
 STATUS_IMPORTED = "Importado"
 STATUS_DUP_CRM  = "CNPJ_no_CRM"   # marca linhas cujo CNPJ já está cadastrado no CRM
@@ -220,6 +223,7 @@ def main():
     ws_out.cell(2, P_LINKEDIN_EMP).value = "DADOS EXTRAS DO CLIENTE"
     ws_out.cell(STD_HEADER, P_LINKEDIN_EMP).value = "Linkedin_Empresa"
     ws_out.cell(STD_HEADER, P_NOTES_CLI).value = "Notes_Cliente"
+    ws_out.cell(STD_HEADER, P_VENDEDOR).value = "Vendedor_Responsavel"
 
     # 2) Lê a planilha nova (NÃO read_only, para acessar hyperlinks)
     wb_src = openpyxl.load_workbook(SRC_FILE)

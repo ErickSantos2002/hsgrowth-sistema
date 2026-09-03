@@ -242,6 +242,12 @@ Padronizada para o layout CRM via `padronizar_transportadoras.py` → **`Planilh
 - ⚠️ Esses campos só são gravados em **clientes novos**. Se o CNPJ já existir no CRM, o importer reaproveita o cliente e não sobrescreve.
 - O script preserva o controle (`Status_Importacao`/SDR/Canal) por CNPJ, então pode ser re-rodado sem re-importar lotes já subidos. Os 500 já importados (Transp. Lote 1+2) **não** foram retroativamente preenchidos.
 
+**SDR vs Vendedor (a partir de 24/08/2026):** Miguel (16) e Karolaine (9) viraram **Vendedores** (role `salesperson`); Claudia (8) continua **SDR**. Os três seguem recebendo leads das transportadoras. O board mostra o card por vínculo (RN-037: `assigned_to_id == eu OR sdr_id == eu`), então funciona nos dois casos — mas para ficar semanticamente certo, os lotes agora roteiam por pessoa:
+- **Claudia** → coluna `SDR_Responsavel *` → `card.sdr_id`.
+- **Miguel / Karolaine** → coluna `Vendedor_Responsavel` (col 54, adicionada ao `_fixed` pelo `padronizar_transportadoras.py`) → `card.assigned_to_id`.
+
+O gerador de lote decide a coluna por nome (conjunto `VENDEDORES = {"Miguel", "Karolaine"}`). Os ~1.900 cards antigos deles continuam como `sdr_id` (não retroativo) — a carteira fica dividida entre os dois campos, mas ambos aparecem/editam normalmente.
+
 **Priorização por Website (a partir de 09/07/2026):** o `padronizar_transportadoras.py` ordena as linhas pendentes **com site primeiro** (bloco já importado fica no topo, depois pendentes com Website em ordem original, por último os sem Website). Como os geradores de lote pegam as pendentes na ordem do arquivo, os próximos lotes sobem automaticamente quem tem site até esgotar, depois os demais. Situação em 09/07/2026: **2.014 pendentes com site** (rows 504–2517) e **1.542 sem site** (rows 2518+).
 
 **Gerar lote:** use `fix_transportadoras_lote1.py` como base (ajuste `SDRS`, `CARDS_PER_SDR` e `OUTPUT_LOTE`), aponta para o `_fixed` desta fonte. Import roda com o mesmo `import_from_planilha.py`.
