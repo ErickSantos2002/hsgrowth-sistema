@@ -265,6 +265,30 @@ class CardTaskService {
   }
 
   /**
+   * Cria a sala de reunião por vídeo dentro do CRM (Daily) e agenda o evento
+   * no Outlook, que envia o convite. Devolve o link público do convidado.
+   */
+  async createDailyRoom(taskId: number): Promise<{
+    room_url: string;
+    public_link: string;
+    public_access_token: string;
+  }> {
+    const response = await api.post(`/api/v1/card-tasks/${taskId}/daily-room`);
+    return response.data;
+  }
+
+  /** Token de anfitrião para entrar na sala de reunião por vídeo. */
+  async getDailyHostToken(taskId: number): Promise<{ token: string; room_url: string }> {
+    const response = await api.post(`/api/v1/card-tasks/${taskId}/daily-host-token`);
+    return response.data;
+  }
+
+  /** Cancela a sala de reunião por vídeo (a atividade permanece). */
+  async cancelDailyRoom(taskId: number): Promise<void> {
+    await api.delete(`/api/v1/card-tasks/${taskId}/daily-room`);
+  }
+
+  /**
    * Busca a transcrição da reunião Teams e executa análise com IA (GPT-4o).
    * Salva transcript_raw e transcript_analysis na atividade.
    */

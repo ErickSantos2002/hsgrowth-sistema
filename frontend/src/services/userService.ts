@@ -96,6 +96,15 @@ class UserService {
   }
 
   /**
+   * Funcionalidades em homologação visíveis para o usuário logado.
+   * Usado para esconder recursos que ainda não foram liberados ao time.
+   */
+  async getFeatures(): Promise<{ daily_meeting: boolean }> {
+    const response = await api.get<{ daily_meeting: boolean }>("/api/v1/features");
+    return response.data;
+  }
+
+  /**
    * [ADMIN/MANAGER] Retorna usuários com sessão ativa no Redis (últimos 15 min)
    */
   async getOnlineUsers(): Promise<OnlineUsersResponse> {

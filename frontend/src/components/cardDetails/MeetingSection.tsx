@@ -22,6 +22,7 @@ import {
   CalendarX,
 } from "lucide-react";
 import cardTaskService, { CardTask } from "../../services/cardTaskService";
+import userService from "../../services/userService";
 import { showSuccess, showError } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
 import { useAuth } from "../../context/AuthContext";
@@ -84,6 +85,20 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<NewMeetingForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+
+  // Onde a reunião vai acontecer: dentro do CRM (Daily) ou no Teams.
+  // O formulário é o mesmo nos dois casos — só muda o provedor. Ver seção
+  // 14.2 do design da reunião por vídeo.
+  const [meetingProvider, setMeetingProvider] = useState<"daily" | "teams">("teams");
+  // Trava por usuário: enquanto não homologado, só quem homologa vê a opção
+  const [dailyEnabled, setDailyEnabled] = useState(false);
+
+  useEffect(() => {
+    userService
+      .getFeatures()
+      .then((f) => setDailyEnabled(f.daily_meeting))
+      .catch(() => setDailyEnabled(false));
+  }, []);
 
   // Modal editar reunião
   const [editingMeeting, setEditingMeeting] = useState<CardTask | null>(null);
@@ -149,13 +164,29 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
       setShowModal(false);
       setForm(EMPTY_FORM);
 
-      // Cria automaticamente o evento no calendário Teams
-      try {
-        await cardTaskService.createTeamsMeeting(created.id);
-        showSuccess("Reunião criada e agendada no calendário!");
-      } catch {
-        // Se falhar (ex: usuário sem MS token), avisa mas não bloqueia
-        showSuccess("Reunião criada! Ative o link Teams manualmente se necessário.");
+      // Agenda no provedor escolhido. Nos dois casos o convite sai pelo
+      // Outlook e o horário bloqueia a agenda do vendedor.
+      if (dailyEnabled && meetingProvider === "daily") {
+        try {
+          const { public_link } = await cardTaskService.createDailyRoom(created.id);
+          await navigator.clipboard.writeText(public_link).catch(() => {});
+          showSuccess("Reunião criada! O convite foi enviado e o link do cliente está copiado.");
+        } catch (error: any) {
+          // 400 = sem conta Microsoft conectada (bloqueia, por decisão)
+          // 503 = Daily indisponível (a mensagem já sugere usar o Teams)
+          showError(
+            error.response?.data?.detail ||
+              "Reunião criada, mas não foi possível gerar a sala de vídeo."
+          );
+        }
+      } else {
+        try {
+          await cardTaskService.createTeamsMeeting(created.id);
+          showSuccess("Reunião criada e agendada no calendário!");
+        } catch {
+          // Se falhar (ex: usuário sem MS token), avisa mas não bloqueia
+          showSuccess("Reunião criada! Ative o link Teams manualmente se necessário.");
+        }
       }
 
       await loadMeetings();
@@ -873,6 +904,47 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         size="md"
       >
         <div className="space-y-4">
+          {/* Onde a reunião acontece — só aparece para quem tem a funcionalidade
+              liberada. O restante do formulário é igual nos dois casos. */}
+          {dailyEnabled && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Onde vai acontecer?
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMeetingProvider("daily")}
+                  className={`flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2.5 text-sm transition-all ${
+                    meetingProvider === "daily"
+                      ? "border-purple-500 bg-purple-500/10 text-purple-300"
+                      : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
+                  }`}
+                >
+                  <span className="font-medium">No CRM</span>
+                  <span className="text-[11px] opacity-70">reunião por vídeo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMeetingProvider("teams")}
+                  className={`flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2.5 text-sm transition-all ${
+                    meetingProvider === "teams"
+                      ? "border-purple-500 bg-purple-500/10 text-purple-300"
+                      : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
+                  }`}
+                >
+                  <span className="font-medium">Teams</span>
+                  <span className="text-[11px] opacity-70">Outlook</span>
+                </button>
+              </div>
+              <p className="mt-1.5 text-[11px] text-slate-500">
+                {meetingProvider === "daily"
+                  ? "O cliente entra por um link, sem instalar nada. O convite é enviado normalmente."
+                  : "Reunião pelo Teams, como sempre."}
+              </p>
+            </div>
+          )}
+
           {/* Título */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-400">
