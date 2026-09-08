@@ -14,6 +14,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.user import User
 from app.services.microsoft_auth_service import microsoft_auth_service
 
@@ -167,13 +168,23 @@ class MicrosoftGraphService:
         start_dt: datetime,
         end_dt: Optional[datetime] = None,
         attendee_emails: Optional[list[str]] = None,
+        body_html: Optional[str] = None,
+        is_online_meeting: bool = True,
     ) -> dict:
         """
-        Cria um evento no calendário do Outlook/Teams com link de reunião Teams.
+        Cria um evento no calendário do Outlook.
         O evento aparece no calendário do organizador e envia convites aos participantes.
 
+        Args:
+            body_html: corpo do convite. Usado pela reunião do Daily para levar
+                o link da sala — no fluxo Teams o link é gerado pela Microsoft.
+            is_online_meeting: True cria reunião do Teams (fluxo original).
+                False apenas agenda o horário — é o caso do Daily, onde a sala
+                é nossa e o link vai no corpo.
+
         Returns:
-            dict com: meeting_id (online meeting ID para transcrições), join_url (str)
+            dict com: meeting_id, join_url e event_id. Quando
+            is_online_meeting=False, meeting_id e join_url vêm vazios.
 
         Raises:
             ValueError: Se o usuário não tiver token MS válido ou a chamada falhar
@@ -192,9 +203,27 @@ class MicrosoftGraphService:
             "subject": title,
             "start": {"dateTime": to_iso(start_dt), "timeZone": "UTC"},
             "end": {"dateTime": to_iso(end_dt), "timeZone": "UTC"},
-            "isOnlineMeeting": True,
-            "onlineMeetingProvider": "teamsForBusiness",
+            "isOnlineMeeting": is_online_meeting,
         }
+
+        if is_online_meeting:
+            payload["onlineMeetingProvider"] = "teamsForBusiness"
+
+        if body_html:
+            payload["body"] = {"contentType": "HTML", "content": body_html}
+
+        # Proteção de desenvolvimento: enquanto a reunião por vídeo não é
+        # homologada, convite não sai para e-mail de cliente real. Ver seção
+        # 15.8 do design — não existe ambiente de homologação separado.
+        if attendee_emails and settings.DAILY_DEV_MODE:
+            dominio = (settings.DAILY_INTERNAL_EMAIL_DOMAIN or "").lower()
+            filtrados = [e for e in attendee_emails if e and e.lower().strip().endswith(f"@{dominio}")]
+            removidos = len(attendee_emails) - len(filtrados)
+            if removidos:
+                print(
+                    f"[DAILY_DEV_MODE] {removidos} convidado(s) externo(s) removido(s) do convite."
+                )
+            attendee_emails = filtrados
 
         if attendee_emails:
             payload["attendees"] = [
@@ -216,6 +245,12 @@ class MicrosoftGraphService:
                 raise ValueError(f"Erro ao criar evento no calendário: {error_msg}")
 
             data = resp.json()
+
+            # Reunião do Daily: o evento só reserva o horário e leva o link no
+            # corpo — não há sala do Teams para resolver.
+            if not is_online_meeting:
+                return {"meeting_id": "", "join_url": "", "event_id": data.get("id", "")}
+
             join_url = data.get("onlineMeeting", {}).get("joinUrl", "")
 
             if not join_url:
