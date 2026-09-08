@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import MeetingRoom from './pages/MeetingRoom';
+import MeetingGate from './pages/MeetingGate';
 import { useAuth } from './hooks/useAuth';
 
 // Importação direta (sem lazy loading) para navegação instantânea
@@ -89,6 +90,11 @@ const AppRoutes: React.FC = () => (
   <Routes>
     <Route path="/login" element={<Login />} />
     <Route path="/auth/callback" element={<AuthCallback />} />
+
+    {/* Entrada publica do convidado na reuniao por video — SEM autenticacao.
+        Precisa ficar fora do ProtectedRoute: quem abre e o cliente, que nao
+        tem conta no CRM. */}
+    <Route path="/entrar/:publicToken" element={<MeetingGate />} />
 
     {/* Sala de reunião por vídeo (fullscreen, sem MainLayout) */}
     <Route

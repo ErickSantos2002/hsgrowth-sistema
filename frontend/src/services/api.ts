@@ -9,6 +9,21 @@ const api: AxiosInstance = axios.create({
   },
 });
 
+/**
+ * Instância para rotas públicas (convidado da reunião por vídeo).
+ *
+ * Propositalmente SEM os interceptadores: a instância padrão redireciona para
+ * /login quando recebe 401, o que jogaria o cliente para a tela de login do
+ * CRM. Aqui não há sessão nem token — é gente de fora.
+ */
+export const publicApi: AxiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  timeout: 30000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
 // Interceptador de requisição: adiciona o token JWT em todas as requisições
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
