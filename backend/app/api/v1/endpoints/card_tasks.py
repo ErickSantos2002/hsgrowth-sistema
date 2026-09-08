@@ -7,7 +7,10 @@ from fastapi import APIRouter, Depends, status, Request, HTTPException
 from sqlalchemy.orm import Session
 import json
 
-from app.db.session import get_db
+# get_db vem de app.api.deps (mesma implementacao de app.db.session), porque e
+# esse o objeto que a suite de testes substitui pelo banco de teste. Importar do
+# outro modulo faria os testes rodarem contra o banco real.
+from app.api.deps import get_db
 from app.services.card_task_service import CardTaskService
 from app.schemas.card_task import (
     CardTaskCreate,
@@ -1116,3 +1119,226 @@ async def fetch_transcript(
     service = CardTaskService(db)
     return service.get_task(task_id)
 
+
+
+# ==================== REUNIÃO POR VÍDEO (DAILY) ====================
+
+
+def _verificar_acesso_reuniao(db: Session, task: CardTask, current_user: User) -> None:
+    """
+    Garante que o usuário tem vínculo com o negócio antes de mexer na reunião.
+
+    Sem isso, qualquer usuário autenticado poderia pegar o token de anfitrião de
+    uma reunião alheia e entrar na conversa de outro vendedor com o cliente dele,
+    além de criar salas (disparando convite para contatos de terceiros) e
+    cancelar reuniões dos outros.
+
+    Regra (RN-037): admin e gerente acessam tudo; os demais precisam ser o
+    responsável pela tarefa, o vendedor do card ou o SDR do card.
+
+    Raises:
+        HTTPException 403: sem vínculo com o negócio
+    """
+    from app.models.card import Card
+
+    role_name = current_user.role.name if current_user.role else ""
+    if role_name in ("admin", "manager"):
+        return
+
+    if task.assigned_to_id == current_user.id:
+        return
+
+    card = db.query(Card).filter(Card.id == task.card_id).first()
+    if card and current_user.id in (card.assigned_to_id, card.sdr_id):
+        return
+
+    raise HTTPException(
+        status_code=403,
+        detail="Você não tem permissão para acessar esta reunião.",
+    )
+
+
+def _agendar_evento_daily_no_outlook(
+    db: Session,
+    task: CardTask,
+    current_user: User,
+    public_link: str,
+) -> None:
+    """
+    Cria o evento no calendário do Outlook com o link da sala do Daily.
+
+    É este evento que dispara o convite ao cliente e bloqueia o horário na
+    agenda do vendedor — o SDR consulta esse mesmo free/busy antes de agendar.
+    Sem ele, haveria agendamento em cima de reunião interna.
+
+    Levanta ValueError quando o usuário não tem conta Microsoft conectada;
+    quem chama decide o que fazer (a regra é bloquear a criação).
+    """
+    from app.services.microsoft_graph_service import microsoft_graph_service
+    from app.models.card import Card
+
+    attendee_emails: list[str] = []
+
+    card = db.query(Card).filter(Card.id == task.card_id).first()
+    if card and card.assigned_to and card.assigned_to.email:
+        seller_email = card.assigned_to.email.strip()
+        if seller_email and seller_email != current_user.email:
+            attendee_emails.append(seller_email)
+
+    if card and card.person:
+        for email in (card.person.email, card.person.email_commercial, card.person.email_personal):
+            if email and email.strip() and email.strip() not in attendee_emails:
+                attendee_emails.append(email.strip())
+
+    body_html = (
+        "<p>Reunião por vídeo — clique no link abaixo para entrar. "
+        "Não é necessário instalar nada.</p>"
+        f'<p><a href="{public_link}">{public_link}</a></p>'
+    )
+
+    microsoft_graph_service.create_calendar_event(
+        user=current_user,
+        db=db,
+        title=task.title,
+        start_dt=task.due_date or datetime.utcnow(),
+        end_dt=None,
+        attendee_emails=attendee_emails or None,
+        body_html=body_html,
+        is_online_meeting=False,
+    )
+
+
+@router.post(
+    "/{task_id}/daily-room",
+    summary="Criar sala de reunião por vídeo (Daily)",
+    description="""
+    Cria a sala no Daily para esta tarefa, gera o link público do convidado e
+    agenda o evento no calendário do Outlook (que envia o convite).
+
+    O link público permite que o cliente entre sem login e sem instalar nada.
+
+    **Requer conta Microsoft conectada** — o convite sai pelo calendário do
+    usuário que cria a reunião.
+    """,
+)
+async def create_daily_room(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.core.config import settings
+    from app.services.daily_service import DailyService
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    service = DailyService(db)
+
+    try:
+        room = service.create_room(task)
+    except ValueError as e:
+        # Daily fora do ar ou sem chave: sugere a alternativa que continua ali
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Não foi possível criar a reunião por vídeo. {e} "
+                "Você pode criar a reunião pelo Teams enquanto isso."
+            ),
+        )
+
+    public_link = f"{settings.FRONTEND_URL}/entrar/{task.public_access_token}"
+
+    try:
+        _agendar_evento_daily_no_outlook(db, task, current_user, public_link)
+    except ValueError:
+        # Sem conta Microsoft: a decisão é bloquear (o convite é parte do fluxo).
+        # Desfaz a sala para não deixar reunião pela metade.
+        service.delete_room(task)
+        task.daily_room_name = None
+        task.daily_room_url = None
+        task.public_access_token = None
+        task.meeting_provider = None
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Conecte sua conta Microsoft antes de criar a reunião — "
+                "o convite é enviado pelo seu calendário."
+            ),
+        )
+
+    return {
+        "room_url": task.daily_room_url,
+        "public_link": public_link,
+        "public_access_token": task.public_access_token,
+    }
+
+
+@router.post(
+    "/{task_id}/daily-host-token",
+    summary="Token de anfitrião para entrar na sala",
+    description="Devolve o token que permite ao vendedor/SDR entrar como dono da sala.",
+)
+async def create_daily_host_token(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.services.daily_service import DailyService
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    if not task.daily_room_name:
+        raise HTTPException(
+            status_code=400,
+            detail="Esta reunião ainda não tem sala criada.",
+        )
+
+    service = DailyService(db)
+    try:
+        token = service.create_host_token(task, current_user)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+    # Marca o início na primeira entrada do anfitrião
+    if not task.meeting_started_at:
+        task.meeting_started_at = datetime.utcnow()
+        db.commit()
+
+    return {"token": token, "room_url": task.daily_room_url}
+
+
+@router.delete(
+    "/{task_id}/daily-room",
+    summary="Cancelar a sala de reunião por vídeo",
+    description="Apaga a sala no Daily e limpa os dados da reunião. A tarefa permanece.",
+)
+async def delete_daily_room(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.services.daily_service import DailyService
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    DailyService(db).delete_room(task)
+
+    task.daily_room_name = None
+    task.daily_room_url = None
+    task.public_access_token = None
+    task.meeting_provider = None
+    db.commit()
+
+    return {"message": "Sala cancelada"}
