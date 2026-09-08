@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import MeetingRoom from './pages/MeetingRoom';
 import { useAuth } from './hooks/useAuth';
 
 // Importação direta (sem lazy loading) para navegação instantânea
@@ -88,6 +89,16 @@ const AppRoutes: React.FC = () => (
   <Routes>
     <Route path="/login" element={<Login />} />
     <Route path="/auth/callback" element={<AuthCallback />} />
+
+    {/* Sala de reunião por vídeo (fullscreen, sem MainLayout) */}
+    <Route
+      path="/reuniao/:taskId"
+      element={
+        <ProtectedRoute>
+          <MeetingRoom />
+        </ProtectedRoute>
+      }
+    />
 
     {/* Editor de automações (fullscreen, sem MainLayout) - bloqueado para viewer */}
     <Route

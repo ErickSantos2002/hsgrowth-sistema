@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Users,
   Plus,
   Loader2,
   MonitorPlay,
+  Video,
   ExternalLink,
   BrainCircuit,
   AlertTriangle,
@@ -73,6 +75,7 @@ const EMPTY_FORM: NewMeetingForm = {
 const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, onCountChange, readOnly, onCardUpdate }) => {
   const { confirm } = useConfirm();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isAdmin = user?.role?.toLowerCase() === "admin" || user?.role?.toLowerCase() === "manager";
   const [meetings, setMeetings] = useState<CardTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -519,6 +522,33 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
           <div className="space-y-3 border-t border-slate-700/40 px-3 pb-3 pt-3">
             {meeting.description && (
               <p className="text-xs text-slate-400 leading-relaxed">{meeting.description}</p>
+            )}
+
+            {/* Reunião por vídeo no CRM — entrar na sala e copiar o link do cliente */}
+            {meeting.meeting_provider === "daily" && !meeting.is_completed && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate(`/reuniao/${meeting.id}`)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20"
+                >
+                  <Video size={14} />
+                  Entrar na Reunião
+                </button>
+                {meeting.public_access_token && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `${window.location.origin}/entrar/${meeting.public_access_token}`
+                      );
+                      showSuccess("Link do cliente copiado!");
+                    }}
+                    title="Copiar o link para enviar ao cliente"
+                    className="flex items-center justify-center rounded border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-emerald-400 transition-colors hover:bg-emerald-500/20"
+                  >
+                    <Copy size={14} />
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Link de entrada — só para reuniões não concluídas */}

@@ -32,6 +32,13 @@ export interface CardTask {
   // Microsoft Teams
   teams_meeting_id?: string | null;
   teams_join_url?: string | null;
+  // Reunião por vídeo dentro do CRM (Daily)
+  meeting_provider?: string | null;
+  daily_room_url?: string | null;
+  public_access_token?: string | null;
+  meeting_started_at?: string | null;
+  contact_joined_at?: string | null;
+  meeting_ended_at?: string | null;
   teams_event_id?: string | null;
   transcript_raw?: string | null;
   transcript_analysis?: string | null;
