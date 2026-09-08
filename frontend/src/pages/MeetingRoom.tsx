@@ -15,9 +15,9 @@
  *   container é esvaziado — senão a câmera continua ativa depois de sair.
  */
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import DailyIframe, { DailyCall } from "@daily-co/daily-js";
-import { ArrowLeft, Loader2, VideoOff } from "lucide-react";
+import { Loader2, VideoOff } from "lucide-react";
 
 import cardTaskService from "../services/cardTaskService";
 
@@ -26,13 +26,13 @@ const IFRAME_ALLOW =
 
 const MeetingRoom: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
-  const navigate = useNavigate();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const callRef = useRef<DailyCall | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [encerrada, setEncerrada] = useState(false);
 
   useEffect(() => {
     if (!taskId) return;
@@ -65,9 +65,20 @@ const MeetingRoom: React.FC = () => {
         });
         callRef.current = call;
 
-        call.on("left-meeting", () => navigate(-1));
+        call.on("left-meeting", () => setEncerrada(true));
 
+        // A partir daqui quem manda na tela é o Daily — inclusive o próprio
+        // aviso de "entrando". Nosso indicador precisa sair já: enquanto ele
+        // estiver visível, cobre o iframe e impede o clique em opções como
+        // "participar sem câmera".
         setLoading(false);
+
+        // wrap() só monta o iframe; quem entra de fato na sala é o join().
+        call.join().catch(() => {
+          setErro(
+            "Não foi possível entrar na sala. Verifique as permissões de câmera e microfone e tente de novo."
+          );
+        });
       } catch (e: any) {
         if (cancelado) return;
         setErro(
@@ -93,26 +104,29 @@ const MeetingRoom: React.FC = () => {
       }
       containerRef.current?.replaceChildren();
     };
-  }, [taskId, navigate]);
+  }, [taskId]);
 
   return (
     <div className="flex h-screen flex-col bg-slate-900">
       <div className="flex items-center gap-3 border-b border-slate-700/50 px-4 py-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="rounded-lg p-2 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
-          aria-label="Voltar"
-        >
-          <ArrowLeft size={20} />
-        </button>
         <span className="text-sm font-medium text-white">Reunião por vídeo</span>
       </div>
 
       <div className="relative flex-1">
+        {/* pointer-events-none: mesmo enquanto visível, não pode roubar o
+            clique do que o Daily desenha por baixo */}
         {loading && !erro && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3">
+          <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3">
             <Loader2 className="animate-spin text-purple-400" size={32} />
             <p className="text-sm text-slate-400">Entrando na reunião...</p>
+          </div>
+        )}
+
+        {encerrada && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-slate-900 p-6">
+            <VideoOff className="text-slate-500" size={36} />
+            <p className="text-sm text-slate-300">Reunião encerrada.</p>
+            <p className="text-xs text-slate-500">Você já pode fechar esta aba.</p>
           </div>
         )}
 
@@ -120,12 +134,7 @@ const MeetingRoom: React.FC = () => {
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 p-6">
             <VideoOff className="text-slate-500" size={36} />
             <p className="max-w-md text-center text-sm text-slate-300">{erro}</p>
-            <button
-              onClick={() => navigate(-1)}
-              className="mt-2 rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800"
-            >
-              Voltar
-            </button>
+            <p className="text-xs text-slate-500">Você pode fechar esta aba e tentar novamente pelo card.</p>
           </div>
         )}
 

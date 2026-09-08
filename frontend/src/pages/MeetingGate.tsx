@@ -24,11 +24,14 @@ const MeetingGate: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const callRef = useRef<DailyCall | null>(null);
+  const urlDaSalaRef = useRef<string | null>(null);
+  const nomeDoConvidadoRef = useRef<string>("Convidado");
 
   const [info, setInfo] = useState<PublicMeetingInfo | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [entrando, setEntrando] = useState(false);
   const [naSala, setNaSala] = useState(false);
+  const [saiu, setSaiu] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", company: "", email: "" });
 
@@ -45,6 +48,39 @@ const MeetingGate: React.FC = () => {
       )
       .finally(() => setCarregando(false));
   }, [publicToken]);
+
+  // Monta o iframe assim que a tela da sala entra no DOM
+  useEffect(() => {
+    if (!naSala || !urlDaSalaRef.current) return;
+    if (!containerRef.current || callRef.current) return;
+
+    const iframeEl = document.createElement("iframe");
+    iframeEl.allow = IFRAME_ALLOW;
+    iframeEl.title = "Reunião por vídeo";
+    iframeEl.style.position = "absolute";
+    iframeEl.style.inset = "0";
+    iframeEl.style.width = "100%";
+    iframeEl.style.height = "100%";
+    iframeEl.style.border = "0";
+    containerRef.current.replaceChildren(iframeEl);
+
+    const call = DailyIframe.wrap(iframeEl, {
+      url: urlDaSalaRef.current,
+      showLeaveButton: true,
+    });
+    callRef.current = call;
+
+    call.on("left-meeting", () => setSaiu(true));
+
+    // wrap() só monta o iframe; quem entra de fato na sala é o join().
+    // userName vai junto para o anfitrião ver quem está pedindo para entrar.
+    call.join({ userName: nomeDoConvidadoRef.current }).catch(() => {
+      setNaSala(false);
+      setErro(
+        "Não foi possível entrar na sala. Verifique se o navegador tem permissão para câmera e microfone."
+      );
+    });
+  }, [naSala]);
 
   // Ao sair da página, encerra a chamada — senão a câmera segue ativa
   useEffect(() => {
@@ -70,37 +106,20 @@ const MeetingGate: React.FC = () => {
     setErro(null);
 
     try {
-      const { token, room_url } = await publicMeetingService.join(publicToken, {
+      const { room_url, user_name } = await publicMeetingService.join(publicToken, {
         name: form.name.trim(),
         company: form.company.trim() || undefined,
         email: form.email.trim() || undefined,
       });
 
       const joinUrl = new URL(room_url);
-      joinUrl.searchParams.set("t", token);
       joinUrl.searchParams.set("lang", "pt-BR");
 
+      // Sem token na URL: é isso que faz o convidado cair na sala de espera
+      // em vez de entrar direto.
+      urlDaSalaRef.current = joinUrl.toString();
+      nomeDoConvidadoRef.current = user_name;
       setNaSala(true);
-
-      // Espera o container existir no DOM antes de montar o iframe
-      window.setTimeout(() => {
-        if (!containerRef.current || callRef.current) return;
-
-        const iframeEl = document.createElement("iframe");
-        iframeEl.allow = IFRAME_ALLOW;
-        iframeEl.title = "Reunião por vídeo";
-        iframeEl.style.position = "absolute";
-        iframeEl.style.inset = "0";
-        iframeEl.style.width = "100%";
-        iframeEl.style.height = "100%";
-        iframeEl.style.border = "0";
-        containerRef.current.replaceChildren(iframeEl);
-
-        callRef.current = DailyIframe.wrap(iframeEl, {
-          url: joinUrl.toString(),
-          showLeaveButton: true,
-        });
-      }, 0);
     } catch (err: any) {
       setErro(
         err.response?.data?.detail ||
@@ -114,8 +133,15 @@ const MeetingGate: React.FC = () => {
 
   if (naSala) {
     return (
-      <div className="h-screen w-screen bg-slate-900">
-        <div ref={containerRef} className="relative h-full w-full" />
+      <div className="relative h-screen w-screen bg-slate-900">
+        <div ref={containerRef} className="absolute inset-0" />
+        {saiu && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-slate-900 p-6 text-center">
+            <CalendarX className="text-slate-500" size={36} />
+            <p className="text-sm text-slate-300">Você saiu da reunião.</p>
+            <p className="text-xs text-slate-500">Pode fechar esta aba.</p>
+          </div>
+        )}
       </div>
     );
   }
