@@ -95,6 +95,17 @@ class CardTask(Base, TimestampMixin):
     transcript_raw = Column(Text, nullable=True, comment="Transcrição bruta da reunião em formato VTT")
     transcript_analysis = Column(Text, nullable=True, comment="Análise IA da transcrição (JSON)")
 
+    # Reunião por vídeo dentro do CRM (Daily) — convive com o fluxo Teams acima.
+    # meeting_provider nulo = reunião antiga do Teams (compatibilidade).
+    meeting_provider = Column(String(20), nullable=True, comment="teams | daily | null (null = teams)")
+    daily_room_name = Column(String(255), nullable=True, comment="Nome único da sala no Daily")
+    daily_room_url = Column(String(1000), nullable=True, comment="URL da sala no Daily")
+    public_access_token = Column(String(64), nullable=True, index=True, unique=True,
+                                 comment="Token opaco do link público do convidado")
+    meeting_started_at = Column(DateTime, nullable=True, comment="Quando o host entrou na sala")
+    contact_joined_at = Column(DateTime, nullable=True, comment="Quando o convidado entrou na sala")
+    meeting_ended_at = Column(DateTime, nullable=True, comment="Quando a sala encerrou")
+
     # Cadência por lead — FK para a instância da cadência que gerou esta task (nullable)
     card_cadence_id = Column(Integer, ForeignKey("card_cadences.id", ondelete="SET NULL"), nullable=True, index=True)
 

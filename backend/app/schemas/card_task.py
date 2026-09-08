@@ -156,6 +156,14 @@ class CardTaskResponse(BaseModel):
     transcript_raw: Optional[str] = Field(None, description="Transcrição bruta em formato VTT")
     transcript_analysis: Optional[str] = Field(None, description="Análise IA da transcrição (JSON)")
 
+    # Reunião por vídeo dentro do CRM (Daily)
+    meeting_provider: Optional[str] = Field(None, description="teams | daily")
+    daily_room_url: Optional[str] = Field(None, description="URL da sala no Daily")
+    public_access_token: Optional[str] = Field(None, description="Token do link público do convidado")
+    meeting_started_at: Optional[datetime] = Field(None, description="Quando o host entrou na sala")
+    contact_joined_at: Optional[datetime] = Field(None, description="Quando o convidado entrou na sala")
+    meeting_ended_at: Optional[datetime] = Field(None, description="Quando a sala encerrou")
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
