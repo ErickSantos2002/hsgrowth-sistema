@@ -497,6 +497,25 @@ O armazenamento cresce até ~US$ 19/mês no 12º mês e então estabiliza, por c
 
 ---
 
+## 15.11 Anotado para a Fase 3 — nome do arquivo da gravação
+
+A sala no Daily se chama `hsg-{card_task_id}` (ex.: `hsg-36197`), sem o título.
+No painel do Daily e no bucket do Cloudflare não dá para localizar uma reunião
+pelo assunto.
+
+**Decisão:** não alterar o nome da sala (o Daily não aceita acento nem espaço, e
+a previsibilidade do nome é útil). Na Fase 3, **nomear o arquivo da gravação com
+o título**, por exemplo:
+
+```
+2026-09-08-apresentacao-de-proposta-36197.mp4
+```
+
+Assim a gravação é localizável pelo assunto direto no bucket, que é onde a
+necessidade realmente aparece.
+
+---
+
 ## 16. Fontes dos preços
 
 - Daily.co — Video SDK pricing: https://www.daily.co/pricing/video-sdk/
