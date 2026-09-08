@@ -12,7 +12,13 @@
 2. Cadastre com o e-mail corporativo (de preferência um e-mail de equipe, não pessoal — se a pessoa sair, a conta continua acessível)
 3. Confirme o e-mail
 
-**Plano:** comece no **gratuito**. Ele já inclui 10.000 minutos de participante por mês, que é o suficiente para todo o desenvolvimento e a homologação. O cartão só é necessário quando o time começar a usar de verdade e o consumo passar do limite gratuito.
+**Plano:** comece no **gratuito** — inclui 10.000 minutos de participante por mês, suficiente para todo o desenvolvimento e a homologação.
+
+> ⚠️ **O Daily exige cartão de crédito para liberar o acesso à API**, mesmo no plano gratuito ("É necessário um cartão de crédito para testar as funcionalidades da API do Daily"). Como toda a integração passa pela API — criar sala, gerar token, gravar —, o cartão é obrigatório desde o início. Eles concedem **US$ 15 de crédito** para desenvolvimento.
+>
+> Isso **não muda o custo previsto**: os 10.000 minutos gratuitos continuam valendo e o desenvolvimento consome poucas dezenas de minutos. A cobrança real só começa com o time usando em produção.
+>
+> Ao cadastrar: usar **cartão corporativo** e, se o menu **Cobrança** oferecer, configurar um **alerta de gasto** (ex.: US$ 50) para avisar caso algo fuja do previsto.
 
 ---
 
