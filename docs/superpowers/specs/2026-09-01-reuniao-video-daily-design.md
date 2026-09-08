@@ -370,7 +370,134 @@ O convite leva **apenas o link do tipo escolhido** — Daily ou Teams, nunca os 
 
 ---
 
-## 15. Fontes dos preços
+---
+
+## 15. Escopo e decisões aprovadas *(04/09/2026)*
+
+Levantamento fechado com o gestor. **Estas decisões valem sobre qualquer coisa dita antes neste documento.**
+
+### 15.1 Escopo aprovado
+
+| Fase | Situação |
+|---|---|
+| **1 — Reunião por vídeo + link público** | ✅ Aprovada |
+| **3 — Gravação + transcrição + análise IA** | ✅ Aprovada |
+| **5 — IA ao vivo** | ✅ Aprovada |
+| **2 — Auto-agendamento público** | ❌ **Fora.** O SDR confere a agenda do vendedor e o vendedor cria a reunião, como já é hoje |
+| **4 — Mover card automaticamente** | ⏸️ Parada. O time continua movendo à mão |
+
+**Custo:** aprovado pelo gestor sem teto rígido.
+
+**Consequência técnica:** como a Fase 5 está aprovada, a transcrição é **em tempo real** desde a Fase 3 (não pós-call). Evita refazer depois; encarece a operação.
+
+### 15.2 Criação da reunião
+
+- Um botão **"Nova reunião"**; dentro do formulário, seletor **"No CRM"** | **"Teams/Outlook"** (grava `meeting_provider`).
+- **Qualquer cargo** pode criar.
+- Convite sai **pelo Outlook nos dois casos**, com **um único link** (o do tipo escolhido).
+- **Sem Microsoft conectado: bloqueia** e pede para conectar a conta. Não cria a reunião.
+- **Daily indisponível:** avisa e sugere criar pelo Teams.
+- **Reuniões Teams existentes: intactas.** Nenhuma mudança no fluxo atual.
+
+### 15.3 Sala e experiência do cliente
+
+- Tela de entrada pedindo **nome, empresa e e-mail**.
+- **Sala de espera** — o vendedor libera um a um ou todos de uma vez (`enable_knocking`).
+- **Aviso visível de gravação** quando estiver gravando.
+- Visual com **cores do CRM e logo** da Health & Safety.
+
+### 15.4 Gravação
+
+- **Vídeo (com áudio)**, iniciada **manualmente** pelo botão. Não começa sozinha.
+- Quem decide gravar: **vendedor ou SDR** na sala. Intenção é gravar todas.
+- **Proteção contra gravação esquecida** (3 camadas):
+  1. webhook `meeting.ended` → backend chama `POST /rooms/{name}/recordings/stop`;
+  2. sala criada com expiração (`eject_at_room_exp`);
+  3. teto do próprio Daily (~3h por gravação).
+  > Validar em teste real: a doc do Daily indica que, se quem iniciou a gravação sair sem parar, **a gravação pode ser perdida**. A camada 1 existe para cobrir isso.
+- **Retenção: 12 meses**, com rotina de descarte automático.
+- **Falha na gravação:** notifica o **dono da reunião e os admins**.
+
+### 15.5 Acesso à gravação
+
+Três caminhos distintos:
+
+| Caminho | Para quem | Regras |
+|---|---|---|
+| **Assistir no CRM** | quem tem permissão | player na aba Reuniões do card, sem prazo |
+| **Baixar arquivo** | quem tem permissão | download direto |
+| **Link compartilhável** | terceiros (cliente) | **expira em 30 dias**; qualquer um que enxerga a gravação pode gerar; **registra quem gerou e quando** |
+
+**Permissão de leitura = RN-037:** vendedor **ou** SDR do card enxergam; gerente e admin veem tudo; vendedor vê só as suas. O SDR vê reunião que agendou mesmo sem ter participado.
+
+### 15.6 Análise pós-reunião (nível 2)
+
+Mantém os 6 campos atuais (`resumo`, `sentimento`, `interesse_cliente`, `objecoes`, `proximos_passos`, `pontos_de_atencao`) e acrescenta **8**:
+
+| Campo | O que traz |
+|---|---|
+| `compromissos` | quem ficou de fazer o quê, até quando |
+| `produtos_citados` | itens do catálogo que apareceram |
+| `concorrentes` | empresas citadas e em que contexto |
+| `orcamento` | se preço foi discutido, faixa e reação |
+| `nota` | 0-10 com justificativa |
+| `decisor` | se ficou claro quem decide e se estava presente |
+| `temperatura` | proximidade do fechamento, pelo que o cliente disse |
+| `oportunidades_perdidas` | o que o vendedor deixou passar |
+
+- **`oportunidades_perdidas` é visível também para o vendedor** (decisão consciente: serve para ele se corrigir sozinho).
+- Onde aparece: **aba Reuniões do card**, junto do player e da transcrição — mesmo padrão do Teams hoje.
+- **Notificação no sino** quando a gravação e a análise ficarem prontas.
+- **Nível 3 (playbook configurável, como o dn.nexus) fica anotado para o futuro.**
+
+### 15.7 IA ao vivo (Fase 5)
+
+- **Apenas sob demanda** — botão "me ajuda aqui". **Não** sugere sozinha (menos ruído e bem mais barata).
+- Painel visível para **vendedor e SDR**; **nunca para o cliente**.
+- Conteúdo das sugestões: proposta a ser detalhada no plano da Fase 5, tomando como base o `meeting-insights` do dn.nexus (insight curto + fala pronta + tags do que foi detectado), somando contexto do próprio CRM.
+
+### 15.8 Ambiente e forma de trabalho
+
+- **Não existe homologação — só produção.** O container local aponta para o banco de produção.
+- Decisão: **manter assim**, com proteções durante o desenvolvimento:
+  - funcionalidade atrás de **trava por usuário** (visível só para o admin que homologa);
+  - testes apenas em **card de teste** criado para isso;
+  - contato de teste com **e-mail interno**;
+  - **envio de convite bloqueado para e-mails externos** enquanto não homologado.
+- **Entrega por partes:** Fase 1 → homologação → Fase 3 → Fase 5.
+- Homologação pelo admin; divulgação por aviso interno + changelog.
+- Sem prazo rígido.
+
+### 15.9 Contas e segredos
+
+| Item | Quem faz |
+|---|---|
+| Conta Daily.co + API key | criada pelo cliente, com passo a passo |
+| Bucket R2 + credenciais | criados junto, com passo a passo |
+| Variáveis no EasyPanel (`DAILY_API_KEY`, R2) | aplicadas pelo cliente |
+
+Segredos **nunca** vão para o código nem para o Git.
+
+### 15.10 Custo revisado com as decisões
+
+Reuniões de 1h; SDR participando de ~30% delas; gravação e transcrição ao vivo em todas; IA ao vivo sob demanda (~5 acionamentos por reunião).
+
+| Item | 140 reuniões/mês | 180 reuniões/mês |
+|---|---|---|
+| Vídeo (acima do free tier) | US$ 37 | US$ 59 |
+| Gravação | US$ 113 | US$ 146 |
+| Transcrição em tempo real | US$ 114 | US$ 147 |
+| IA (análise + ao vivo) | US$ 11 | US$ 14 |
+| Armazenamento (R2) | US$ 1 | US$ 2 |
+| **Total** | **≈ US$ 277 (R$ 1.441)** | **≈ US$ 368 (R$ 1.913)** |
+
+O armazenamento cresce até ~US$ 19/mês no 12º mês e então estabiliza, por causa da retenção de 12 meses.
+
+> Substitui as estimativas das seções 12 e anteriores, que assumiam transcrição pós-call e não consideravam o SDR como terceiro participante.
+
+---
+
+## 16. Fontes dos preços
 
 - Daily.co — Video SDK pricing: https://www.daily.co/pricing/video-sdk/
 - Daily.co — documentação de gravação: https://docs.daily.co/docs/guides/features/recording
