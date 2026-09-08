@@ -84,27 +84,36 @@ class TestInfoPublica:
 class TestEntrada:
 
     def test_entrar_devolve_acesso_a_sala(self, client: TestClient, task_com_sala):
-        """Com nome, empresa e e-mail, o convidado recebe o acesso."""
-        with patch(
-            "app.services.daily_service.DailyService.create_guest_token", return_value="tok-guest"
-        ):
-            response = client.post(
-                f"/api/v1/public/meeting/{TOKEN_VALIDO}/join",
-                json={"name": "Fulano", "company": "ACME", "email": "fulano@acme.com"},
-            )
+        """Com nome, empresa e e-mail, o convidado recebe o endereço da sala."""
+        response = client.post(
+            f"/api/v1/public/meeting/{TOKEN_VALIDO}/join",
+            json={"name": "Fulano", "company": "ACME", "email": "fulano@acme.com"},
+        )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["token"] == "tok-guest"
         assert data["room_url"] == "https://healthsafety.daily.co/hsg-teste"
+        assert data["user_name"] == "Fulano"
+
+    def test_convidado_nao_recebe_token(self, client: TestClient, task_com_sala):
+        """
+        Sem token o convidado passa pela sala de espera. Com token ele entraria
+        direto, mesmo com enable_knocking ligado — é assim que o Daily funciona.
+        """
+        response = client.post(
+            f"/api/v1/public/meeting/{TOKEN_VALIDO}/join",
+            json={"name": "Fulano", "company": "ACME", "email": "fulano@acme.com"},
+        )
+
+        assert response.status_code == 200
+        assert "token" not in response.json()
 
     def test_marca_horario_de_entrada(self, client: TestClient, task_com_sala, db):
         """A entrada do convidado fica registrada."""
-        with patch("app.services.daily_service.DailyService.create_guest_token", return_value="t"):
-            client.post(
-                f"/api/v1/public/meeting/{TOKEN_VALIDO}/join",
-                json={"name": "Fulano", "company": "ACME", "email": "fulano@acme.com"},
-            )
+        client.post(
+            f"/api/v1/public/meeting/{TOKEN_VALIDO}/join",
+            json={"name": "Fulano", "company": "ACME", "email": "fulano@acme.com"},
+        )
 
         db.refresh(task_com_sala)
         assert task_com_sala.contact_joined_at is not None
@@ -119,11 +128,10 @@ class TestEntrada:
 
     def test_empresa_e_email_sao_opcionais(self, client: TestClient, task_com_sala):
         """Não travar a entrada do cliente por causa de campo secundário."""
-        with patch("app.services.daily_service.DailyService.create_guest_token", return_value="t"):
-            response = client.post(
-                f"/api/v1/public/meeting/{TOKEN_VALIDO}/join",
-                json={"name": "Fulano"},
-            )
+        response = client.post(
+            f"/api/v1/public/meeting/{TOKEN_VALIDO}/join",
+            json={"name": "Fulano"},
+        )
         assert response.status_code == 200
 
     def test_token_invalido_nao_entra(self, client: TestClient):

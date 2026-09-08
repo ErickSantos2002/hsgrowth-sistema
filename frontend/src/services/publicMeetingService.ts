@@ -25,7 +25,12 @@ const publicMeetingService = {
     return response.data;
   },
 
-  async join(token: string, data: GuestJoinData): Promise<{ token: string; room_url: string }> {
+  /**
+   * Registra a entrada e devolve o endereço da sala.
+   * Não há token: sem ele o convidado passa pela sala de espera, e o
+   * anfitrião precisa admitir. Com token, o Daily deixaria entrar direto.
+   */
+  async join(token: string, data: GuestJoinData): Promise<{ room_url: string; user_name: string }> {
     const response = await publicApi.post(`/api/v1/public/meeting/${token}/join`, data);
     return response.data;
   },

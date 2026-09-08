@@ -96,14 +96,16 @@ async def join_public_meeting(
     if task.meeting_ended_at:
         raise HTTPException(status_code=410, detail="Esta reunião já foi encerrada.")
 
-    service = DailyService(db)
-    try:
-        token = service.create_guest_token(task, payload.name)
-    except ValueError as e:
-        raise HTTPException(status_code=503, detail=f"Não foi possível entrar na reunião. {e}")
-
     if not task.contact_joined_at:
         task.contact_joined_at = datetime.utcnow()
         db.commit()
 
-    return {"token": token, "room_url": task.daily_room_url}
+    # O convidado entra SEM token do Daily, de propósito.
+    #
+    # Token vale como autorização: quem tem um entra direto, mesmo em sala com
+    # enable_knocking. Sem token, o Daily apresenta a tela de "pedir para
+    # entrar" e o anfitrião aprova — que é a sala de espera que queremos.
+    #
+    # Continua seguro: a sala é privada, só chega aqui quem tem o link, e
+    # ninguém entra sem o anfitrião admitir.
+    return {"room_url": task.daily_room_url, "user_name": payload.name}
