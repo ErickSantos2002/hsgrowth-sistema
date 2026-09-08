@@ -495,6 +495,13 @@ class CardTaskService:
             "teams_join_url": task.teams_join_url if hasattr(task, 'teams_join_url') else None,
             "transcript_raw": task.transcript_raw if hasattr(task, 'transcript_raw') else None,
             "transcript_analysis": task.transcript_analysis if hasattr(task, 'transcript_analysis') else None,
+            # Reunião por vídeo dentro do CRM (Daily)
+            "meeting_provider": getattr(task, "meeting_provider", None),
+            "daily_room_url": getattr(task, "daily_room_url", None),
+            "public_access_token": getattr(task, "public_access_token", None),
+            "meeting_started_at": getattr(task, "meeting_started_at", None),
+            "contact_joined_at": getattr(task, "contact_joined_at", None),
+            "meeting_ended_at": getattr(task, "meeting_ended_at", None),
         }
 
         # Adiciona nome do responsável se disponível

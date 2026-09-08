@@ -279,3 +279,39 @@ class TestPermissaoDeAcesso:
             )
 
         assert response.status_code == 200
+
+
+class TestCamposNaResposta:
+    """
+    A resposta da API precisa carregar os campos da reunião por vídeo — sem
+    eles o frontend não sabe que a reunião é do CRM e não mostra o botão de
+    entrar. O _build_response monta o schema campo a campo, então campo novo
+    tem que ser adicionado lá explicitamente.
+    """
+
+    def test_lista_devolve_os_campos_da_reuniao(
+        self, client: TestClient, salesperson_headers, task_com_sala, test_card
+    ):
+        response = client.get(
+            f"/api/v1/card-tasks?card_id={test_card.id}&task_type=meeting",
+            headers=salesperson_headers,
+        )
+
+        assert response.status_code == 200
+        task = next(t for t in response.json()["tasks"] if t["id"] == task_com_sala.id)
+        assert task["meeting_provider"] == "daily"
+        assert task["public_access_token"] == task_com_sala.public_access_token
+        assert task["daily_room_url"] == task_com_sala.daily_room_url
+
+    def test_reuniao_teams_nao_ganha_campos_de_daily(
+        self, client: TestClient, salesperson_headers, task_reuniao, test_card
+    ):
+        """Reunião comum continua com os campos vazios."""
+        response = client.get(
+            f"/api/v1/card-tasks?card_id={test_card.id}&task_type=meeting",
+            headers=salesperson_headers,
+        )
+
+        task = next(t for t in response.json()["tasks"] if t["id"] == task_reuniao.id)
+        assert task["meeting_provider"] is None
+        assert task["public_access_token"] is None
