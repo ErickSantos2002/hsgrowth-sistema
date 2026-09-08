@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Users,
   Plus,
@@ -75,7 +74,6 @@ const EMPTY_FORM: NewMeetingForm = {
 const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, onCountChange, readOnly, onCardUpdate }) => {
   const { confirm } = useConfirm();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const isAdmin = user?.role?.toLowerCase() === "admin" || user?.role?.toLowerCase() === "manager";
   const [meetings, setMeetings] = useState<CardTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -527,13 +525,18 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
             {/* Reunião por vídeo no CRM — entrar na sala e copiar o link do cliente */}
             {meeting.meeting_provider === "daily" && !meeting.is_completed && (
               <div className="flex gap-2">
-                <button
-                  onClick={() => navigate(`/reuniao/${meeting.id}`)}
+                {/* Abre em outra aba: o vendedor continua com o card à mão
+                    para consultar o cliente durante a conversa. */}
+                <a
+                  href={`/reuniao/${meeting.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex flex-1 items-center justify-center gap-2 rounded border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20"
                 >
                   <Video size={14} />
                   Entrar na Reunião
-                </button>
+                  <ExternalLink size={12} />
+                </a>
                 {meeting.public_access_token && (
                   <button
                     onClick={() => {
