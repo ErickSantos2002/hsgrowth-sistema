@@ -1,7 +1,7 @@
 """
 Endpoints da API para CardTask (Tarefas/Atividades dos Cards).
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status, Request, HTTPException
 from sqlalchemy.orm import Session
@@ -957,6 +957,10 @@ async def create_teams_meeting(
             start_dt=task.due_date,
             end_dt=end_dt,
             attendee_emails=attendee_emails or None,
+            # Mesmo corpo da reunião no CRM, para o cliente receber sempre a
+            # mesma comunicação. Sem public_link: o Outlook acrescenta o bloco
+            # de entrada do Teams por conta própria.
+            body_html=_montar_corpo_convite(task, current_user),
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -1124,6 +1128,69 @@ async def fetch_transcript(
 # ==================== REUNIÃO POR VÍDEO (DAILY) ====================
 
 
+def _montar_corpo_convite(
+    task: CardTask,
+    organizador: User,
+    public_link: str | None = None,
+) -> str:
+    """
+    Monta o corpo do convite enviado ao cliente.
+
+    Usado pelos dois fluxos (reunião no CRM e Teams) para o cliente receber
+    sempre a mesma comunicação. A pauta escrita pelo vendedor entra aqui —
+    antes ficava só no CRM, e quem recebia o convite não via.
+
+    Args:
+        public_link: link da sala no CRM. Quando ausente (fluxo Teams), o
+            próprio Outlook insere o bloco de entrada da reunião.
+    """
+    from html import escape
+    from zoneinfo import ZoneInfo
+
+    # Título, pauta e nome vêm do usuário e são interpolados em HTML. Sem
+    # escapar, quem preenche esses campos poderia injetar marcação no convite —
+    # inclusive um link disfarçado, que sairia com a credibilidade do domínio
+    # da empresa para a caixa de entrada do cliente.
+    linhas = ["<p>Olá!</p>", "<p>Sua reunião com a <strong>Health &amp; Safety Tech</strong> está agendada.</p>"]
+
+    detalhes = [f"<strong>Assunto:</strong> {escape(task.title or '')}"]
+
+    if task.due_date:
+        # due_date é gravado em UTC; o cliente lê em horário de Brasília
+        quando = task.due_date
+        if quando.tzinfo is None:
+            quando = quando.replace(tzinfo=timezone.utc)
+        quando_br = quando.astimezone(ZoneInfo("America/Sao_Paulo"))
+        detalhes.append(
+            f"<strong>Quando:</strong> {quando_br.strftime('%d/%m/%Y às %H:%M')} "
+            f"(horário de Brasília)"
+        )
+
+    if task.duration_minutes:
+        detalhes.append(f"<strong>Duração prevista:</strong> {task.duration_minutes} minutos")
+
+    linhas.append("<p>" + "<br>".join(detalhes) + "</p>")
+
+    if task.description and task.description.strip():
+        # escapa ANTES de trocar as quebras, senão o próprio <br> seria escapado
+        pauta = escape(task.description.strip()).replace("\n", "<br>")
+        linhas.append(f"<p><strong>Pauta:</strong><br>{pauta}</p>")
+
+    if public_link:
+        link_seguro = escape(public_link, quote=True)
+        linhas.append(
+            "<p><strong>Como entrar:</strong><br>"
+            f'<a href="{link_seguro}">{link_seguro}</a></p>'
+            "<p>É só clicar no link no horário combinado — a reunião abre direto "
+            "no navegador, sem instalar nem criar conta.</p>"
+        )
+
+    linhas.append("<p>Se precisar remarcar ou tiver qualquer dúvida, é só responder este convite.</p>")
+    linhas.append(f"<p>Até lá!<br>{escape(organizador.name or '')}<br>Health &amp; Safety Tech</p>")
+
+    return "".join(linhas)
+
+
 def _verificar_acesso_reuniao(db: Session, task: CardTask, current_user: User) -> None:
     """
     Garante que o usuário tem vínculo com o negócio antes de mexer na reunião.
@@ -1190,11 +1257,7 @@ def _agendar_evento_daily_no_outlook(
             if email and email.strip() and email.strip() not in attendee_emails:
                 attendee_emails.append(email.strip())
 
-    body_html = (
-        "<p>Reunião por vídeo — clique no link abaixo para entrar. "
-        "Não é necessário instalar nada.</p>"
-        f'<p><a href="{public_link}">{public_link}</a></p>'
-    )
+    body_html = _montar_corpo_convite(task, current_user, public_link=public_link)
 
     microsoft_graph_service.create_calendar_event(
         user=current_user,
