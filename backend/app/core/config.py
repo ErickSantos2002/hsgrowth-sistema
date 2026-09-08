@@ -102,6 +102,17 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""  # Chave da API da OpenAI (definir no .env)
     OPENAI_MODEL: str = "gpt-4o-mini"  # Modelo padrão (melhor custo-benefício)
 
+    # Daily.co — reunião por vídeo dentro do CRM
+    DAILY_API_KEY: str = ""  # Chave da API do Daily (definir no .env / EasyPanel)
+    DAILY_API_URL: str = "https://api.daily.co/v1"
+    # IDs liberados para o fluxo Daily enquanto não homologado.
+    # Vazio = liberado para todos. Ex.: "18" ou "18,10"
+    DAILY_ENABLED_USER_IDS: str = ""
+    # Em modo dev, convites só saem para e-mails do domínio interno —
+    # impede que um convite de teste chegue a um cliente real.
+    DAILY_DEV_MODE: bool = True
+    DAILY_INTERNAL_EMAIL_DOMAIN: str = "healthsafetytech.com"
+
     # Rate limiting de IA (Redis DB 2)
     REDIS_AI_RATE_DB: int = 2  # DB separado para contadores de rate limiting da IA
     AI_RATE_LIMIT_PER_HOUR: int = 20  # Máximo de chamadas ao Agent por hora por usuário

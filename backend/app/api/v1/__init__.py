@@ -4,7 +4,7 @@ Agrega todos os endpoints da versão 1 da API.
 """
 from fastapi import APIRouter, Depends
 from app.api.deps import require_service_access
-from app.api.v1.endpoints import auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products, integration_clients, api4com, audit_logs, attachments, user_avatar, custom_reports, ai, call_evaluations, cadencias, email_templates, cadences, service_boards, service_dashboard, service_activities, proposals, services, integration, service_products
+from app.api.v1.endpoints import features, auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products, integration_clients, api4com, audit_logs, attachments, user_avatar, custom_reports, ai, call_evaluations, cadencias, email_templates, cadences, service_boards, service_dashboard, service_activities, proposals, services, integration, service_products
 
 api_router = APIRouter()
 
@@ -24,6 +24,7 @@ api_router.include_router(persons.router, prefix="/persons", tags=["Persons"])
 api_router.include_router(gamification.router, prefix="/gamification", tags=["Gamification"])
 api_router.include_router(automations.router, prefix="/automations", tags=["Automations"])
 api_router.include_router(transfers.router, prefix="/transfers", tags=["Transfers"])
+api_router.include_router(features.router, prefix="/features", tags=["Features"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])
 api_router.include_router(custom_reports.router, prefix="/reports", tags=["Custom Reports"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
