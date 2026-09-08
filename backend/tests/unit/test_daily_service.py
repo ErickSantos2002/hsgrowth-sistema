@@ -1,0 +1,140 @@
+"""
+Serviço do Daily.co — criação de sala e tokens.
+
+A API do Daily é sempre simulada aqui; nenhum teste faz chamada real
+(evita custo e dependência de rede na suíte).
+"""
+import pytest
+from unittest.mock import patch
+from sqlalchemy.orm import Session
+
+from app.models.card_task import CardTask
+from app.services.daily_service import DailyService
+
+
+class _Resp:
+    """Resposta HTTP falsa no formato que o httpx devolve."""
+
+    def __init__(self, status_code=200, payload=None):
+        self.status_code = status_code
+        self._payload = payload or {}
+        self.text = str(payload)
+
+    def json(self):
+        return self._payload
+
+
+@pytest.fixture
+def task(db: Session, test_card, test_salesperson_user) -> CardTask:
+    t = CardTask(
+        card_id=test_card.id,
+        title="Reunião de teste",
+        task_type="meeting",
+        assigned_to_id=test_salesperson_user.id,
+        duration_minutes=60,
+    )
+    db.add(t)
+    db.commit()
+    db.refresh(t)
+    return t
+
+
+class TestCriacaoDeSala:
+
+    def test_cria_sala_e_guarda_na_task(self, db: Session, task):
+        """A sala recebe nome derivado do id da task e os dados ficam gravados."""
+        svc = DailyService(db)
+        fake = _Resp(200, {"name": f"hsg-{task.id}", "url": f"https://x.daily.co/hsg-{task.id}"})
+
+        with patch("httpx.Client.post", return_value=fake) as mock_post:
+            result = svc.create_room(task)
+
+        assert result["name"] == f"hsg-{task.id}"
+        assert result["url"].startswith("https://")
+        assert task.daily_room_name == f"hsg-{task.id}"
+        assert task.meeting_provider == "daily"
+        mock_post.assert_called_once()
+
+    def test_gera_token_publico_opaco(self, db: Session, task):
+        """O link do convidado usa token aleatório longo, não o id da task."""
+        svc = DailyService(db)
+        fake = _Resp(200, {"name": f"hsg-{task.id}", "url": "https://x.daily.co/h"})
+
+        with patch("httpx.Client.post", return_value=fake):
+            svc.create_room(task)
+
+        assert task.public_access_token
+        assert len(task.public_access_token) >= 32
+        assert str(task.id) != task.public_access_token
+
+    def test_sala_criada_com_sala_de_espera(self, db: Session, task):
+        """A sala exige liberação do anfitrião (knocking) e expira sozinha."""
+        svc = DailyService(db)
+        fake = _Resp(200, {"name": f"hsg-{task.id}", "url": "https://x.daily.co/h"})
+
+        with patch("httpx.Client.post", return_value=fake) as m:
+            svc.create_room(task)
+
+        props = m.call_args.kwargs["json"]["properties"]
+        assert props["enable_knocking"] is True
+        assert props["eject_at_room_exp"] is True
+        assert props["exp"] > 0
+        assert props["lang"] == "pt"
+
+    def test_erro_do_daily_vira_excecao_clara(self, db: Session, task):
+        """Falha na API do Daily não passa silenciosa."""
+        svc = DailyService(db)
+
+        with patch("httpx.Client.post", return_value=_Resp(500, {"error": "boom"})):
+            with pytest.raises(ValueError, match="Daily"):
+                svc.create_room(task)
+
+    def test_sem_chave_configurada_avisa(self, db: Session, task, monkeypatch):
+        """Sem DAILY_API_KEY, a mensagem diz o que está faltando."""
+        from app.core.config import settings
+        monkeypatch.setattr(settings, "DAILY_API_KEY", "")
+
+        svc = DailyService(db)
+        with pytest.raises(ValueError, match="DAILY_API_KEY"):
+            svc.create_room(task)
+
+
+class TestTokens:
+
+    def test_token_de_host_e_dono_da_sala(self, db: Session, task, test_salesperson_user):
+        """O anfitrião recebe token de dono — é quem libera quem está esperando."""
+        task.daily_room_name = "hsg-1"
+        db.commit()
+
+        svc = DailyService(db)
+        with patch("httpx.Client.post", return_value=_Resp(200, {"token": "tok-host"})) as m:
+            token = svc.create_host_token(task, test_salesperson_user)
+
+        assert token == "tok-host"
+        props = m.call_args.kwargs["json"]["properties"]
+        assert props["is_owner"] is True
+        assert props["room_name"] == "hsg-1"
+
+    def test_token_de_convidado_nunca_e_dono(self, db: Session, task):
+        """O convidado não pode liberar ninguém nem encerrar a sala."""
+        task.daily_room_name = "hsg-1"
+        db.commit()
+
+        svc = DailyService(db)
+        with patch("httpx.Client.post", return_value=_Resp(200, {"token": "tok-guest"})) as m:
+            token = svc.create_guest_token(task, "Cliente Teste")
+
+        assert token == "tok-guest"
+        props = m.call_args.kwargs["json"]["properties"]
+        assert props["is_owner"] is False
+        assert props["user_name"] == "Cliente Teste"
+
+    def test_token_ausente_na_resposta_vira_erro(self, db: Session, task, test_salesperson_user):
+        """Se o Daily não devolver token, falha explicitamente."""
+        task.daily_room_name = "hsg-1"
+        db.commit()
+
+        svc = DailyService(db)
+        with patch("httpx.Client.post", return_value=_Resp(200, {})):
+            with pytest.raises(ValueError, match="token"):
+                svc.create_host_token(task, test_salesperson_user)
