@@ -228,3 +228,89 @@ class TestRegistroDoWebhook:
             svc.garantir_webhook("https://crm.exemplo/api/v1/daily/webhook")
 
         delete.assert_not_called()
+
+
+class TestGravacaoNaSala:
+    """
+    A sala precisa permitir gravação e guardar a transcrição. Gravar continua
+    sendo decisão do vendedor: o Daily mostra o botão para o dono da sala, e
+    nada começa sozinho.
+    """
+
+    def test_sala_permite_gravacao_em_nuvem(self, db: Session, task):
+        svc = DailyService(db)
+        fake = _Resp(200, {"name": f"hsg-{task.id}", "url": "https://x.daily.co/h"})
+
+        with patch("httpx.Client.post", return_value=fake) as m:
+            svc.create_room(task)
+
+        props = m.call_args.kwargs["json"]["properties"]
+        assert props["enable_recording"] == "cloud"
+
+    def test_sala_guarda_a_transcricao(self, db: Session, task):
+        """Sem isso o VTT não é salvo e o webhook de transcrição nunca chega."""
+        svc = DailyService(db)
+        fake = _Resp(200, {"name": f"hsg-{task.id}", "url": "https://x.daily.co/h"})
+
+        with patch("httpx.Client.post", return_value=fake) as m:
+            svc.create_room(task)
+
+        props = m.call_args.kwargs["json"]["properties"]
+        assert props["enable_transcription_storage"] is True
+
+    def test_transcricao_comeca_com_o_anfitriao(self, db: Session, task, test_salesperson_user):
+        """
+        A transcrição acompanha a reunião desde o início — é ela que alimenta
+        a análise depois e a IA ao vivo (Fase 5). Só o dono pode iniciá-la.
+        """
+        task.daily_room_name = "hsg-1"
+        db.commit()
+
+        svc = DailyService(db)
+        with patch("httpx.Client.post", return_value=_Resp(200, {"token": "t"})) as m:
+            svc.create_host_token(task, test_salesperson_user)
+
+        props = m.call_args.kwargs["json"]["properties"]
+        assert props["auto_start_transcription"] is True
+
+    def test_convidado_nao_inicia_transcricao(self, db: Session, task):
+        task.daily_room_name = "hsg-1"
+        db.commit()
+
+        svc = DailyService(db)
+        with patch("httpx.Client.post", return_value=_Resp(200, {"token": "t"})) as m:
+            svc.create_guest_token(task, "Cliente")
+
+        props = m.call_args.kwargs["json"]["properties"]
+        assert not props.get("auto_start_transcription")
+
+
+class TestConsultaDeGravacoes:
+    """
+    Caminho de recuperação: se o webhook não chegar, dá para perguntar ao
+    Daily quais gravações a sala tem.
+    """
+
+    def test_lista_gravacoes_da_sala(self, db: Session, task):
+        task.daily_room_name = "hsg-99"
+        db.commit()
+
+        resposta = _Resp(200, {"data": [
+            {"id": "rec-1", "status": "finished", "duration": 1800},
+        ]})
+
+        svc = DailyService(db)
+        with patch("httpx.Client.get", return_value=resposta):
+            gravacoes = svc.listar_gravacoes(task)
+
+        assert len(gravacoes) == 1
+        assert gravacoes[0]["id"] == "rec-1"
+
+    def test_link_de_download_da_gravacao(self, db: Session, task):
+        svc = DailyService(db)
+        resposta = _Resp(200, {"download_link": "https://daily/arquivo.mp4"})
+
+        with patch("httpx.Client.get", return_value=resposta):
+            url = svc.link_download_gravacao("rec-1")
+
+        assert url == "https://daily/arquivo.mp4"

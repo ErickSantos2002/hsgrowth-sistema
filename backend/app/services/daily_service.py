@@ -106,6 +106,12 @@ class DailyService:
                 "enable_chat": True,
                 "enable_screenshare": True,
                 "lang": "pt",
+                # Permite gravar. Não começa sozinho: o Daily mostra o botão
+                # para o dono da sala e gravar é decisão do vendedor.
+                "enable_recording": "cloud",
+                # Salva o VTT da transcrição — sem isso o arquivo não é
+                # guardado e o webhook de transcrição nunca chega.
+                "enable_transcription_storage": True,
                 "exp": self._room_expiry(task),
                 "eject_at_room_exp": True,   # não deixa sala aberta para sempre
             },
@@ -143,15 +149,22 @@ class DailyService:
 
     # ── tokens ──────────────────────────────────────────────────────────────
 
-    def _create_token(self, task: CardTask, user_name: str, is_owner: bool) -> str:
-        payload = {
-            "properties": {
-                "room_name": task.daily_room_name,
-                "user_name": user_name,
-                "is_owner": is_owner,
-                "exp": self._room_expiry(task),
-            }
+    def _create_token(
+        self, task: CardTask, user_name: str, is_owner: bool, iniciar_transcricao: bool = False
+    ) -> str:
+        propriedades = {
+            "room_name": task.daily_room_name,
+            "user_name": user_name,
+            "is_owner": is_owner,
+            "exp": self._room_expiry(task),
         }
+
+        if iniciar_transcricao:
+            # A transcrição acompanha a reunião desde o início: é ela que
+            # alimenta a análise depois e a IA ao vivo. Só o dono pode iniciar.
+            propriedades["auto_start_transcription"] = True
+
+        payload = {"properties": propriedades}
 
         data = self._post("/meeting-tokens", payload)
 
@@ -163,7 +176,9 @@ class DailyService:
 
     def create_host_token(self, task: CardTask, user: User) -> str:
         """Token do vendedor/SDR — dono da sala, libera quem está esperando."""
-        return self._create_token(task, user.name or "Anfitrião", is_owner=True)
+        return self._create_token(
+            task, user.name or "Anfitrião", is_owner=True, iniciar_transcricao=True
+        )
 
     def create_guest_token(self, task: CardTask, guest_name: str) -> str:
         """Token do convidado — nunca dono, não libera ninguém nem encerra a sala."""
@@ -221,3 +236,36 @@ class DailyService:
 
         payload = {"url": url, "eventTypes": WEBHOOK_EVENTOS}
         return self._post("/webhooks", payload)
+
+    # ── gravações ───────────────────────────────────────────────────────────
+
+    def _get(self, path: str) -> dict:
+        """GET na API do Daily."""
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT_SECONDS) as client:
+                resp = client.get(f"{settings.DAILY_API_URL}{path}", headers=self._headers())
+        except httpx.HTTPError as e:
+            raise ValueError(f"Não foi possível falar com o Daily: {e}") from e
+
+        if resp.status_code >= 400:
+            raise ValueError(f"Daily retornou erro {resp.status_code}: {resp.text}")
+
+        return resp.json()
+
+    def listar_gravacoes(self, task: CardTask) -> list:
+        """
+        Gravações que o Daily tem para esta sala.
+
+        Usado quando o webhook não chega: dá para buscar a gravação em vez de
+        esperar um aviso que ficou pelo caminho.
+        """
+        if not task.daily_room_name:
+            return []
+
+        dados = self._get(f"/recordings?room_name={task.daily_room_name}")
+        return dados.get("data") or []
+
+    def link_download_gravacao(self, recording_id: str) -> str:
+        """URL temporária para baixar a gravação do Daily."""
+        dados = self._get(f"/recordings/{recording_id}/access-link")
+        return dados.get("download_link") or dados.get("link") or ""
