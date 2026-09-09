@@ -199,9 +199,65 @@ def processar_gravacao(
 
 def processar_transcricao(task_id: int, download_url: str) -> None:
     """
-    Baixa a transcrição, salva e manda para a análise.
+    Baixa a transcrição da reunião, salva e roda a análise da IA.
 
-    Implementado na Task 8/9 — o parser precisa entender o formato do Daily
-    antes de a análise fazer sentido.
+    A transcrição é texto, não vídeo: cabe na memória sem problema. Ela é
+    guardada no banco (não no bucket) porque é o que sustenta a análise e as
+    consultas futuras, e ocupa pouco.
+
+    A análise é o passo que pode falhar sem invalidar o resto: se o modelo
+    estiver fora do ar, a transcrição continua salva e dá para analisar
+    depois.
     """
-    print(f"[RECORDING] Transcrição da tarefa {task_id} — processamento na próxima etapa.")
+    db = SessionLocal()
+    try:
+        task = db.query(CardTask).filter(CardTask.id == task_id).first()
+        if not task:
+            print(f"[RECORDING] Tarefa {task_id} nao encontrada — transcricao ignorada.")
+            return
+
+        if task.transcript_status == "ready" and task.transcript_raw:
+            print(f"[RECORDING] Transcricao da tarefa {task_id} ja processada — ignorado.")
+            return
+
+        try:
+            resposta = httpx.get(download_url, timeout=120.0, follow_redirects=True)
+            if resposta.status_code >= 400:
+                raise ValueError(f"Daily devolveu {resposta.status_code}")
+            vtt = resposta.text
+        except Exception as e:
+            task.transcript_status = "failed"
+            db.commit()
+            print(f"[RECORDING] Falha ao baixar a transcricao da tarefa {task_id}: {e}")
+            return
+
+        task.transcript_raw = vtt
+        task.transcript_status = "ready"
+        db.commit()
+        print(f"[RECORDING] Transcricao da tarefa {task_id} salva ({len(vtt)} caracteres)")
+
+        # Analise em seguida. Falhar aqui nao desfaz a transcricao — ela fica
+        # salva e da para reanalisar depois.
+        try:
+            from app.services.transcript_analysis_service import transcript_analysis_service
+            import json as _json
+
+            analise = transcript_analysis_service.analyze(vtt)
+            task.transcript_analysis = _json.dumps(analise, ensure_ascii=False)
+            db.commit()
+            print(f"[RECORDING] Analise da tarefa {task_id} concluida")
+
+            _notificar(
+                db,
+                donos_da_reuniao(db, task),
+                "Analise da reuniao pronta",
+                f'A transcricao e a analise da reuniao "{task.title}" ja estao no card.',
+                task,
+            )
+        except Exception as e:
+            print(f"[RECORDING] Transcricao salva, mas a analise falhou na tarefa {task_id}: {e}")
+
+    except Exception as e:
+        print(f"[RECORDING] Erro inesperado na transcricao da tarefa {task_id}: {e}")
+    finally:
+        db.close()

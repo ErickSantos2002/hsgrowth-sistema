@@ -319,3 +319,67 @@ class TestNotificacoes:
             Notification.user_id == test_admin_user.id
         ).all()
         assert len(avisos) >= 1
+
+
+class TestTranscricao:
+    """
+    A transcrição é texto: cabe na memória e vai para o banco, não para o
+    bucket. É ela que sustenta a análise e as consultas futuras.
+    """
+
+    def _resposta(self, texto="WEBVTT\n\n00:00:01.000 --> 00:00:03.000\n<v Ana>Bom dia\n", ok=True):
+        r = MagicMock()
+        r.status_code = 200 if ok else 500
+        r.text = texto
+        return r
+
+    def test_salva_a_transcricao_e_roda_a_analise(self, db, task):
+        from app.services.recording_service import processar_transcricao
+
+        analise = {"resumo": "Conversa breve", "sentimento": "positivo"}
+
+        with patch("httpx.get", return_value=self._resposta()), \
+             patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
+                   return_value=analise):
+            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+
+        db.refresh(task)
+        assert task.transcript_status == "ready"
+        assert "Bom dia" in task.transcript_raw
+        assert "Conversa breve" in task.transcript_analysis
+
+    def test_analise_falha_mas_transcricao_permanece(self, db, task):
+        """Modelo fora do ar não pode custar a transcrição — dá para reanalisar depois."""
+        from app.services.recording_service import processar_transcricao
+
+        with patch("httpx.get", return_value=self._resposta()), \
+             patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
+                   side_effect=ValueError("OpenAI indisponível")):
+            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+
+        db.refresh(task)
+        assert task.transcript_status == "ready"
+        assert task.transcript_raw
+        assert not task.transcript_analysis
+
+    def test_download_falho_marca_status(self, db, task):
+        from app.services.recording_service import processar_transcricao
+
+        with patch("httpx.get", return_value=self._resposta(ok=False)):
+            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+
+        db.refresh(task)
+        assert task.transcript_status == "failed"
+
+    def test_nao_reprocessa_transcricao_pronta(self, db, task):
+        from app.services.recording_service import processar_transcricao
+
+        task.transcript_status = "ready"
+        task.transcript_raw = "ja existe"
+        db.commit()
+
+        get = MagicMock()
+        with patch("httpx.get", get):
+            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+
+        get.assert_not_called()
