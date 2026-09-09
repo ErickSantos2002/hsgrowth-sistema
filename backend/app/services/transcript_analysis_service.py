@@ -46,47 +46,85 @@ class TranscriptAnalysisService:
 
     def _parse_vtt(self, vtt_content: str) -> str:
         """
-        Converte VTT (WebVTT) para texto legível, processando linha por linha.
-        Compatível com \r\n (Windows) e \n (Unix).
-        Remove timestamps e tags HTML, preserva nome do falante quando disponível.
+        Converte VTT (WebVTT) em texto legível, com o nome de quem falou.
 
-        Exemplo de entrada VTT:
-            WEBVTT
+        Precisa dar conta de dois formatos, porque o CRM usa os dois:
+
+        Teams:
             00:00:01.000 --> 00:00:04.000
             <v João Silva>Olá, como vai?
+
+        Daily:
+            transcript:357
+            00:00:01.000 --> 00:00:04.000
+            <v Maria:</v>Bom dia, tudo bem?
+
+        O do Daily traz identificadores de trecho e fecha a tag de voz. Sem
+        tratar isso, o texto sai com números e marcação no meio das frases — e
+        a IA analisa uma conversa que ninguém teve.
+
+        Falas seguidas da mesma pessoa são juntadas: o Daily quebra a fala em
+        trechos curtos, e repetir o nome a cada linha polui a leitura e gasta
+        contexto do modelo à toa.
 
         Saída:
             João Silva: Olá, como vai?
         """
-        # Normaliza line endings para \n
         normalized = vtt_content.replace("\r\n", "\n").replace("\r", "\n")
-        lines = normalized.split("\n")
-        result_lines = []
 
-        for line in lines:
+        # Cada turno é (quem falou, [o que falou])
+        turnos: list[tuple[str | None, list[str]]] = []
+
+        for line in normalized.split("\n"):
             trimmed = line.strip()
-            # Pula linhas vazias, cabeçalho e timestamps
+
             if not trimmed:
                 continue
             if trimmed == "WEBVTT" or trimmed.startswith("NOTE"):
                 continue
-            if re.match(r"^\d{2}:\d{2}:\d{2}", trimmed) or re.match(r"^\d+$", trimmed):
+            if "-->" in trimmed:
+                continue
+            if re.match(r"^\d+$", trimmed):
+                continue
+            # Identificador de trecho do Daily: "transcript:357"
+            if re.match(r"^[A-Za-z_][A-Za-z0-9_-]*:\d+$", trimmed):
                 continue
 
-            # Extrai nome do falante da tag <v NomeFalante>texto
-            speaker_match = re.match(r"<v ([^>]+)>(.*)", trimmed)
-            if speaker_match:
-                speaker = speaker_match.group(1).strip()
-                text = re.sub(r"<[^>]+>", "", speaker_match.group(2)).strip()
-                if text:
-                    result_lines.append(f"{speaker}: {text}")
-            else:
-                # Linha sem speaker tag — remove HTML e adiciona
-                clean = re.sub(r"<[^>]+>", "", trimmed).strip()
-                if clean:
-                    result_lines.append(clean)
+            # <v Nome>texto (Teams) ou <v Nome:</v>texto (Daily)
+            voz = re.match(r"^<v(?:\s[^>]*?)?>\s*(.*)$", trimmed)
+            if voz is None:
+                voz = re.match(r"^<v\s+([^>]*?)>\s*(.*)$", trimmed)
 
-        result = "\n".join(result_lines)
+            falante = None
+            texto = trimmed
+
+            # Daily: <v Maria:</v>Bom dia
+            daily = re.match(r"^<v\s+([^<>]*?):?\s*</v>\s*(.*)$", trimmed)
+            if daily:
+                falante = (daily.group(1) or "").strip() or None
+                texto = daily.group(2)
+            else:
+                # Teams: <v João Silva>Olá
+                teams = re.match(r"^<v\s+([^>]+)>(.*)$", trimmed)
+                if teams:
+                    falante = teams.group(1).strip().rstrip(":") or None
+                    texto = teams.group(2)
+
+            texto = re.sub(r"</?[^>]+>", "", texto).strip()
+            if not texto:
+                continue
+
+            atual = turnos[-1] if turnos else None
+            if atual and atual[0] == falante:
+                atual[1].append(texto)
+            else:
+                turnos.append((falante, [texto]))
+
+        result = "\n".join(
+            f"{falante}: {' '.join(falas)}" if falante else " ".join(falas)
+            for falante, falas in turnos
+        )
+
         # Limita a 12.000 caracteres para não estourar o contexto do GPT
         if len(result) > 12000:
             result = result[:12000] + "\n[... transcrição truncada ...]"
