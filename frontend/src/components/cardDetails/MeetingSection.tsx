@@ -44,6 +44,12 @@ interface MeetingSectionProps {
   onCardUpdate?: () => void;
 }
 
+interface Compromisso {
+  quem: string;
+  o_que: string;
+  quando?: string;
+}
+
 interface TranscriptAnalysis {
   resumo: string;
   sentimento: "positivo" | "neutro" | "negativo";
@@ -51,6 +57,15 @@ interface TranscriptAnalysis {
   objecoes: string[];
   proximos_passos: string[];
   pontos_de_atencao: string[];
+  // Campos acrescentados na Fase 3 — valem para Teams e para a reunião no CRM
+  compromissos?: Compromisso[];
+  produtos_citados?: string[];
+  concorrentes?: string[];
+  orcamento?: string;
+  nota?: number | null;
+  decisor?: string;
+  temperatura?: "quente" | "morno" | "frio";
+  oportunidades_perdidas?: string[];
 }
 
 interface NewMeetingForm {
@@ -456,10 +471,139 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
               </ul>
             </div>
           )}
+
+          {/* ── Campos acrescentados na Fase 3 ─────────────────────────────
+              Valem para os dois fluxos: reunião no CRM e Teams. Cada bloco só
+              aparece quando a IA encontrou algo — análise de conversa curta
+              não deve virar uma parede de seções vazias. */}
+
+          {(a.nota != null || a.temperatura) && (
+            <div className="flex flex-wrap gap-2">
+              {a.nota != null && (
+                <span className="rounded border border-purple-500/30 bg-purple-500/5 px-2 py-1 text-xs text-purple-300">
+                  Nota da reunião: <strong>{a.nota}/10</strong>
+                </span>
+              )}
+              {a.temperatura && (
+                <span
+                  className={`rounded border px-2 py-1 text-xs ${
+                    a.temperatura === "quente"
+                      ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-300"
+                      : a.temperatura === "frio"
+                      ? "border-sky-500/30 bg-sky-500/5 text-sky-300"
+                      : "border-slate-500/30 bg-slate-500/5 text-slate-300"
+                  }`}
+                >
+                  Temperatura: <strong>{a.temperatura}</strong>
+                </span>
+              )}
+            </div>
+          )}
+
+          {a.compromissos && a.compromissos.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-emerald-400">O que ficou combinado</p>
+              <ul className="space-y-0.5">
+                {a.compromissos.map((c, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-slate-400">
+                    <span className="mt-0.5 text-emerald-400">•</span>
+                    <span>
+                      <strong className="text-slate-300">{c.quem}</strong>: {c.o_que}
+                      {c.quando ? ` — ${c.quando}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {a.decisor && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-slate-300">Quem decide</p>
+              <p className="text-xs text-slate-400">{a.decisor}</p>
+            </div>
+          )}
+
+          {a.orcamento && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-slate-300">Orçamento</p>
+              <p className="text-xs text-slate-400">{a.orcamento}</p>
+            </div>
+          )}
+
+          {a.produtos_citados && a.produtos_citados.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-slate-300">Produtos citados</p>
+              <div className="flex flex-wrap gap-1">
+                {a.produtos_citados.map((p, i) => (
+                  <span key={i} className="rounded bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-300">
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {a.concorrentes && a.concorrentes.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-orange-400">Concorrentes mencionados</p>
+              <ul className="space-y-0.5">
+                {a.concorrentes.map((c, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-slate-400">
+                    <span className="mt-0.5 text-orange-400">•</span>
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {a.oportunidades_perdidas && a.oportunidades_perdidas.length > 0 && (
+            <div className="rounded border border-slate-600/40 bg-slate-700/20 p-2">
+              <p className="mb-1 text-xs font-medium text-slate-300">
+                Para a próxima
+              </p>
+              <ul className="space-y-0.5">
+                {a.oportunidades_perdidas.map((o, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-slate-400">
+                    <span className="mt-0.5 text-slate-500">•</span>
+                    {o}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       );
     } catch {
       return null;
+    }
+  };
+
+  /** Abre a gravação numa aba nova, usando link temporário do bucket. */
+  const handleAssistirGravacao = async (id: number) => {
+    try {
+      setActionLoadingId(id);
+      const { url } = await cardTaskService.obterGravacao(id);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error: any) {
+      showError(error.response?.data?.detail || "Não foi possível abrir a gravação.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  /** Gera o link da gravação para enviar ao cliente e copia. */
+  const handleCompartilharGravacao = async (id: number) => {
+    try {
+      setActionLoadingId(id);
+      const { url, expira_em_dias } = await cardTaskService.compartilharGravacao(id);
+      await navigator.clipboard.writeText(url).catch(() => {});
+      showSuccess(`Link copiado! Válido por ${expira_em_dias} dias.`);
+    } catch (error: any) {
+      showError(error.response?.data?.detail || "Não foi possível gerar o link.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -520,6 +664,60 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
           <div className="space-y-3 border-t border-slate-700/40 px-3 pb-3 pt-3">
             {meeting.description && (
               <p className="text-xs text-slate-400 leading-relaxed">{meeting.description}</p>
+            )}
+
+            {/* Estado da gravação — só aparece quando houve gravação */}
+            {meeting.recording_status && meeting.recording_status !== "none" && (
+              <div className="flex flex-wrap items-center gap-2">
+                {meeting.recording_status === "processing" && (
+                  <span className="flex items-center gap-1.5 rounded border border-slate-600/50 bg-slate-700/30 px-2 py-1 text-xs text-slate-400">
+                    <Loader2 size={11} className="animate-spin" />
+                    Preparando a gravação...
+                  </span>
+                )}
+
+                {(meeting.recording_status === "ready" ||
+                  meeting.recording_status === "external_link") && (
+                  <>
+                    <button
+                      onClick={() => handleAssistirGravacao(meeting.id)}
+                      disabled={isActioning}
+                      className="flex items-center gap-1.5 rounded border border-purple-500/50 bg-purple-500/10 px-2.5 py-1.5 text-xs font-medium text-purple-300 transition-colors hover:bg-purple-500/20 disabled:opacity-50"
+                    >
+                      <MonitorPlay size={12} />
+                      Assistir gravação
+                      {meeting.recording_duration_seconds
+                        ? ` (${Math.round(meeting.recording_duration_seconds / 60)} min)`
+                        : ""}
+                    </button>
+                    <button
+                      onClick={() => handleCompartilharGravacao(meeting.id)}
+                      disabled={isActioning}
+                      title="Gerar link para enviar ao cliente"
+                      className="flex items-center gap-1.5 rounded border border-slate-600/50 px-2.5 py-1.5 text-xs text-slate-300 transition-colors hover:bg-slate-700/50 disabled:opacity-50"
+                    >
+                      <Copy size={12} />
+                      Link para o cliente
+                    </button>
+                  </>
+                )}
+
+                {meeting.recording_status === "expired" && (
+                  <span className="rounded border border-slate-600/50 bg-slate-700/20 px-2 py-1 text-xs text-slate-500">
+                    Gravação expirada (mais de 12 meses)
+                  </span>
+                )}
+
+                {meeting.recording_status === "failed" && (
+                  <span
+                    title={meeting.recording_error || ""}
+                    className="flex items-center gap-1.5 rounded border border-red-500/30 bg-red-500/5 px-2 py-1 text-xs text-red-400"
+                  >
+                    <AlertTriangle size={11} />
+                    Falha ao processar a gravação
+                  </span>
+                )}
+              </div>
             )}
 
             {/* Reunião por vídeo no CRM — entrar na sala e copiar o link do cliente */}

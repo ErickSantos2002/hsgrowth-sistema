@@ -39,6 +39,13 @@ export interface CardTask {
   meeting_started_at?: string | null;
   contact_joined_at?: string | null;
   meeting_ended_at?: string | null;
+  // Gravação da reunião
+  recording_status?: string | null;
+  recording_duration_seconds?: number | null;
+  recording_size_bytes?: number | null;
+  recording_ready_at?: string | null;
+  recording_error?: string | null;
+  transcript_status?: string | null;
   teams_event_id?: string | null;
   transcript_raw?: string | null;
   transcript_analysis?: string | null;
@@ -287,6 +294,23 @@ class CardTaskService {
   /** Token de anfitrião para entrar na sala de reunião por vídeo. */
   async getDailyHostToken(taskId: number): Promise<{ token: string; room_url: string }> {
     const response = await api.post(`/api/v1/card-tasks/${taskId}/daily-host-token`);
+    return response.data;
+  }
+
+  /**
+   * Link temporário para assistir ou baixar a gravação.
+   * O bucket é privado — nada abre por URL direta.
+   */
+  async obterGravacao(taskId: number): Promise<{ url: string; externo: boolean }> {
+    const response = await api.get(`/api/v1/card-tasks/${taskId}/gravacao`);
+    return response.data;
+  }
+
+  /** Link da gravação para enviar ao cliente (expira, e fica registrado quem gerou). */
+  async compartilharGravacao(
+    taskId: number
+  ): Promise<{ url: string; expira_em_dias: number }> {
+    const response = await api.post(`/api/v1/card-tasks/${taskId}/gravacao/compartilhar`);
     return response.data;
   }
 

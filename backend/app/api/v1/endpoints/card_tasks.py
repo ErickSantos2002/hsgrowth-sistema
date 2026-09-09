@@ -1405,3 +1405,99 @@ async def delete_daily_room(
     db.commit()
 
     return {"message": "Sala cancelada"}
+
+
+@router.get(
+    "/{task_id}/gravacao",
+    summary="Link para assistir ou baixar a gravação",
+    description="""
+    Devolve um link temporário para a gravação.
+
+    O bucket é privado: nada nele abre por URL direta. O acesso sempre passa
+    por um link assinado, gerado apenas para quem tem vínculo com o negócio.
+    """,
+)
+async def obter_gravacao(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.services.storage_service import storage_service
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    if task.recording_status == "expired":
+        raise HTTPException(
+            status_code=410,
+            detail="Esta gravação expirou e não está mais disponível.",
+        )
+
+    # Arquivo grande demais na época: a gravação ficou no Daily
+    if task.recording_status == "external_link" and task.recording_external_url:
+        return {"url": task.recording_external_url, "externo": True}
+
+    if not task.recording_key:
+        raise HTTPException(status_code=404, detail="Esta reunião não tem gravação.")
+
+    try:
+        url = storage_service.gerar_link_temporario(task.recording_key, dias=1)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+    return {"url": url, "externo": False}
+
+
+@router.post(
+    "/{task_id}/gravacao/compartilhar",
+    summary="Gerar link da gravação para enviar ao cliente",
+    description="""
+    Cria um link temporário para alguém de fora assistir à gravação.
+
+    O link expira sozinho — se vazar depois, já não abre nada. Fica registrado
+    quem gerou e quando, para responder um dia como a gravação circulou.
+    """,
+)
+async def compartilhar_gravacao(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from datetime import timedelta
+
+    from app.core.config import settings
+    from app.models.recording_share import RecordingShare
+    from app.services.storage_service import storage_service
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    if task.recording_status == "expired":
+        raise HTTPException(status_code=410, detail="Esta gravação expirou.")
+
+    if not task.recording_key:
+        raise HTTPException(status_code=404, detail="Esta reunião não tem gravação.")
+
+    dias = settings.R2_LINK_EXPIRACAO_DIAS
+
+    try:
+        url = storage_service.gerar_link_temporario(task.recording_key, dias=dias)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+    registro = RecordingShare(
+        card_task_id=task.id,
+        created_by_id=current_user.id,
+        created_at=datetime.utcnow(),
+        expires_at=datetime.utcnow() + timedelta(days=dias),
+    )
+    db.add(registro)
+    db.commit()
+
+    return {"url": url, "expira_em_dias": dias}
