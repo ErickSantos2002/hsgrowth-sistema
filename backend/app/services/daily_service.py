@@ -27,6 +27,15 @@ DEFAULT_DURATION_MINUTES = 60
 
 HTTP_TIMEOUT_SECONDS = 15.0
 
+# Eventos que o webhook precisa receber. Mudar esta lista faz o webhook ser
+# recriado no Daily na próxima chamada de garantir_webhook().
+WEBHOOK_EVENTOS = [
+    "recording.ready-to-download",
+    "transcript.ready-to-download",
+    "participant.joined",
+    "meeting.ended",
+]
+
 
 class DailyService:
     def __init__(self, db: Session):
@@ -159,3 +168,56 @@ class DailyService:
     def create_guest_token(self, task: CardTask, guest_name: str) -> str:
         """Token do convidado — nunca dono, não libera ninguém nem encerra a sala."""
         return self._create_token(task, guest_name or "Convidado", is_owner=False)
+
+    # ── webhook ─────────────────────────────────────────────────────────────
+
+    def garantir_webhook(self, url: str) -> dict:
+        """
+        Garante que existe na conta do Daily um webhook para esta URL com os
+        eventos que precisamos.
+
+        Registrar sem conferir os existentes acumula webhooks duplicados, e aí
+        o mesmo evento chega várias vezes — cada gravação seria processada em
+        duplicidade.
+
+        Webhook de outra URL (outro ambiente na mesma conta) não é tocado.
+
+        Returns:
+            dict do webhook. Em criação, traz o campo `hmac` — o segredo que
+            valida as chamadas. Guardar em DAILY_WEBHOOK_SECRET.
+        """
+        headers = self._headers()
+
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT_SECONDS) as client:
+                resp = client.get(f"{settings.DAILY_API_URL}/webhooks", headers=headers)
+        except httpx.HTTPError as e:
+            raise ValueError(f"Não foi possível consultar os webhooks do Daily: {e}") from e
+
+        if resp.status_code >= 400:
+            raise ValueError(f"Daily retornou erro {resp.status_code}: {resp.text}")
+
+        dados = resp.json()
+        existentes = dados if isinstance(dados, list) else (dados.get("data") or [])
+
+        desejados = sorted(WEBHOOK_EVENTOS)
+
+        for webhook in existentes:
+            if (webhook.get("url") or "").rstrip("/") != url.rstrip("/"):
+                continue  # webhook de outro ambiente
+
+            if sorted(webhook.get("eventTypes") or []) == desejados:
+                return webhook  # já está como queremos
+
+            # Mesma URL com lista diferente: substitui
+            try:
+                with httpx.Client(timeout=HTTP_TIMEOUT_SECONDS) as client:
+                    client.delete(
+                        f"{settings.DAILY_API_URL}/webhooks/{webhook.get('uuid')}",
+                        headers=headers,
+                    )
+            except Exception as e:
+                print(f"[DAILY] Aviso: falha ao remover webhook antigo: {e}")
+
+        payload = {"url": url, "eventTypes": WEBHOOK_EVENTOS}
+        return self._post("/webhooks", payload)

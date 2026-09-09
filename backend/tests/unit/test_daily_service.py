@@ -138,3 +138,93 @@ class TestTokens:
         with patch("httpx.Client.post", return_value=_Resp(200, {})):
             with pytest.raises(ValueError, match="token"):
                 svc.create_host_token(task, test_salesperson_user)
+
+
+class TestRegistroDoWebhook:
+    """
+    O webhook precisa existir na conta do Daily para os eventos chegarem.
+    Registrar sem conferir os existentes acumula webhooks duplicados, e aí o
+    mesmo evento chega várias vezes.
+    """
+
+    EVENTOS = [
+        "recording.ready-to-download",
+        "transcript.ready-to-download",
+        "participant.joined",
+        "meeting.ended",
+    ]
+
+    def test_cria_quando_nao_existe(self, db: Session):
+        svc = DailyService(db)
+        criado = _Resp(200, {"uuid": "wh-1", "hmac": "c2VncmVkbw=="})
+
+        with patch("httpx.Client.get", return_value=_Resp(200, {"total_count": 0, "data": []})), \
+             patch("httpx.Client.post", return_value=criado) as post:
+            resultado = svc.garantir_webhook("https://crm.exemplo/api/v1/daily/webhook")
+
+        assert resultado["uuid"] == "wh-1"
+        assert resultado["hmac"] == "c2VncmVkbw=="
+        enviado = post.call_args.kwargs["json"]
+        assert sorted(enviado["eventTypes"]) == sorted(self.EVENTOS)
+
+    def test_nao_duplica_quando_ja_existe_igual(self, db: Session):
+        """Mesma URL e mesmos eventos: não cria outro."""
+        existente = {
+            "total_count": 1,
+            "data": [{
+                "uuid": "wh-existente",
+                "url": "https://crm.exemplo/api/v1/daily/webhook",
+                "eventTypes": self.EVENTOS,
+                "state": "ACTIVE",
+            }],
+        }
+
+        svc = DailyService(db)
+        with patch("httpx.Client.get", return_value=_Resp(200, existente)), \
+             patch("httpx.Client.post") as post:
+            resultado = svc.garantir_webhook("https://crm.exemplo/api/v1/daily/webhook")
+
+        assert resultado["uuid"] == "wh-existente"
+        post.assert_not_called()
+
+    def test_recria_quando_os_eventos_mudaram(self, db: Session):
+        """Webhook antigo com lista diferente precisa ser substituído."""
+        existente = {
+            "total_count": 1,
+            "data": [{
+                "uuid": "wh-velho",
+                "url": "https://crm.exemplo/api/v1/daily/webhook",
+                "eventTypes": ["meeting.ended"],
+                "state": "ACTIVE",
+            }],
+        }
+
+        svc = DailyService(db)
+        with patch("httpx.Client.get", return_value=_Resp(200, existente)), \
+             patch("httpx.Client.delete") as delete, \
+             patch("httpx.Client.post", return_value=_Resp(200, {"uuid": "wh-novo"})) as post:
+            resultado = svc.garantir_webhook("https://crm.exemplo/api/v1/daily/webhook")
+
+        assert resultado["uuid"] == "wh-novo"
+        delete.assert_called_once()
+        post.assert_called_once()
+
+    def test_webhook_de_outra_url_e_ignorado(self, db: Session):
+        """Não mexer em webhook de outro ambiente na mesma conta."""
+        existente = {
+            "total_count": 1,
+            "data": [{
+                "uuid": "wh-de-outro-ambiente",
+                "url": "https://outro.exemplo/webhook",
+                "eventTypes": self.EVENTOS,
+                "state": "ACTIVE",
+            }],
+        }
+
+        svc = DailyService(db)
+        with patch("httpx.Client.get", return_value=_Resp(200, existente)), \
+             patch("httpx.Client.delete") as delete, \
+             patch("httpx.Client.post", return_value=_Resp(200, {"uuid": "wh-novo"})):
+            svc.garantir_webhook("https://crm.exemplo/api/v1/daily/webhook")
+
+        delete.assert_not_called()
