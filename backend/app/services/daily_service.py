@@ -269,3 +269,21 @@ class DailyService:
         """URL temporária para baixar a gravação do Daily."""
         dados = self._get(f"/recordings/{recording_id}/access-link")
         return dados.get("download_link") or dados.get("link") or ""
+
+    def apagar_gravacao(self, recording_id: str) -> None:
+        """
+        Remove a gravação do Daily.
+
+        Chamado depois que a cópia está guardada no nosso bucket: lá o arquivo
+        ficaria para sempre, cobrando armazenamento, sem servir para nada.
+        """
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT_SECONDS) as client:
+                resp = client.delete(
+                    f"{settings.DAILY_API_URL}/recordings/{recording_id}",
+                    headers=self._headers(),
+                )
+            if resp.status_code >= 400:
+                print(f"[DAILY] Aviso: nao foi possivel apagar a gravacao {recording_id}: {resp.text}")
+        except Exception as e:
+            print(f"[DAILY] Aviso: falha ao apagar a gravacao {recording_id}: {e}")

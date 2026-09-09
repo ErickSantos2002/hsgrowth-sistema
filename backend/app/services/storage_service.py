@@ -19,6 +19,10 @@ from app.core.config import settings
 # Deixa o nome do arquivo curto o bastante para caber em caminho e listagem
 TAMANHO_MAXIMO_TITULO = 60
 
+# Tamanho de cada parte no envio de arquivo grande. O S3 exige no mínimo 5 MB
+# por parte (exceto a última); 8 MB dá margem sem pesar na memória.
+TAMANHO_BLOCO = 8 * 1024 * 1024
+
 
 def montar_chave_gravacao(titulo: str, task_id: int, quando: Optional[datetime] = None) -> str:
     """
@@ -81,6 +85,103 @@ class StorageService:
         )
 
         return chave
+
+    def upload_em_partes(self, blocos, chave: str, content_type: str = "video/mp4") -> int:
+        """
+        Sobe um arquivo grande sem carregá-lo inteiro na memória.
+
+        `blocos` é um gerador que entrega o arquivo em pedaços. Eles são
+        enviados um a um e montados no bucket no final — o resultado é **um
+        arquivo único**, igual a qualquer outro. As "partes" existem apenas
+        durante o transporte.
+
+        É assim que uma gravação de 1 hora (500 MB ou mais) passa por um
+        servidor que não teria memória para segurá-la de uma vez.
+
+        Se algo falhar no meio, o envio é abortado e nenhum arquivo pela
+        metade fica no bucket — melhor nenhum vídeo do que um truncado.
+
+        Returns:
+            Total de bytes enviados.
+        """
+        cliente = self._cliente()
+
+        acumulado = b""
+        total = 0
+        partes = []
+        upload_id: Optional[str] = None
+
+        def _garantir_upload_aberto() -> str:
+            nonlocal upload_id
+            if upload_id is None:
+                resposta = cliente.create_multipart_upload(
+                    Bucket=settings.R2_BUCKET, Key=chave, ContentType=content_type
+                )
+                upload_id = resposta["UploadId"]
+            return upload_id
+
+        try:
+            for bloco in blocos:
+                if not bloco:
+                    continue
+                acumulado += bloco
+                total += len(bloco)
+
+                # O S3 exige que cada parte (menos a última) tenha um tamanho
+                # mínimo, então acumulamos até atingir o bloco antes de enviar.
+                while len(acumulado) >= TAMANHO_BLOCO:
+                    pedaco, acumulado = acumulado[:TAMANHO_BLOCO], acumulado[TAMANHO_BLOCO:]
+                    numero = len(partes) + 1
+                    resposta = cliente.upload_part(
+                        Bucket=settings.R2_BUCKET,
+                        Key=chave,
+                        PartNumber=numero,
+                        UploadId=_garantir_upload_aberto(),
+                        Body=pedaco,
+                    )
+                    partes.append({"PartNumber": numero, "ETag": resposta["ETag"]})
+
+            # Arquivo pequeno: não vale abrir envio em partes
+            if upload_id is None:
+                cliente.put_object(
+                    Bucket=settings.R2_BUCKET,
+                    Key=chave,
+                    Body=acumulado,
+                    ContentType=content_type,
+                )
+                return total
+
+            # Sobra final vira a última parte (pode ser menor que o mínimo)
+            if acumulado:
+                numero = len(partes) + 1
+                resposta = cliente.upload_part(
+                    Bucket=settings.R2_BUCKET,
+                    Key=chave,
+                    PartNumber=numero,
+                    UploadId=upload_id,
+                    Body=acumulado,
+                )
+                partes.append({"PartNumber": numero, "ETag": resposta["ETag"]})
+
+            # "junta tudo": é aqui que as partes viram um arquivo só
+            cliente.complete_multipart_upload(
+                Bucket=settings.R2_BUCKET,
+                Key=chave,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": partes},
+            )
+
+            return total
+
+        except Exception:
+            if upload_id is not None:
+                try:
+                    cliente.abort_multipart_upload(
+                        Bucket=settings.R2_BUCKET, Key=chave, UploadId=upload_id
+                    )
+                except Exception as e:
+                    print(f"[STORAGE] Aviso: falha ao abortar envio de {chave}: {e}")
+            raise
 
     def gerar_link_temporario(self, chave: str, dias: Optional[int] = None) -> str:
         """

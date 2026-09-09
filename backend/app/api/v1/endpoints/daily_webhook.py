@@ -74,11 +74,21 @@ def _task_da_sala(db: Session, nome_sala: Optional[str]) -> Optional[CardTask]:
     return db.query(CardTask).filter(CardTask.id == int(correspondencia.group(1))).first()
 
 
-def processar_gravacao_em_background(task_id: int, download_url: str, duration: Optional[int] = None) -> None:
-    """Baixa a gravação e guarda no bucket. Implementado na Task 7."""
+def processar_gravacao_em_background(
+    task_id: int,
+    download_url: str,
+    duration: Optional[int] = None,
+    recording_id: Optional[str] = None,
+) -> None:
+    """Baixa a gravação, guarda no bucket e apaga a cópia do Daily."""
     from app.services.recording_service import processar_gravacao
 
-    processar_gravacao(task_id=task_id, download_url=download_url, duration=duration)
+    processar_gravacao(
+        task_id=task_id,
+        download_url=download_url,
+        duration=duration,
+        recording_id=recording_id,
+    )
 
 
 def processar_transcricao_em_background(task_id: int, download_url: str) -> None:
@@ -158,6 +168,7 @@ async def receber_evento_daily(
                 task_id=task.id,
                 download_url=url,
                 duration=dados.get("duration"),
+                recording_id=dados.get("recording_id") or dados.get("id"),
             )
 
     elif tipo == "transcript.ready-to-download":
