@@ -236,8 +236,18 @@ def processar_transcricao(task_id: int, download_url: str) -> None:
         db.commit()
         print(f"[RECORDING] Transcricao da tarefa {task_id} salva ({len(vtt)} caracteres)")
 
-        # Analise em seguida. Falhar aqui nao desfaz a transcricao — ela fica
-        # salva e da para reanalisar depois.
+        # A analise so roda quando a reuniao foi gravada. Gravar e uma decisao
+        # consciente do vendedor — e o sinal de que aquela conversa importa.
+        # Reuniao interna, teste ou conversa de tres minutos nao viram analise
+        # (e nao geram custo). Para os demais casos, o botao "Analisar Reuniao"
+        # continua disponivel no card.
+        houve_gravacao = task.recording_status in ("ready", "processing", "external_link")
+        if not houve_gravacao:
+            print(f"[RECORDING] Tarefa {task_id} sem gravacao — analise nao disparada.")
+            return
+
+        # Falhar aqui nao desfaz a transcricao — ela fica salva e da para
+        # reanalisar depois pelo botao.
         try:
             from app.services.transcript_analysis_service import transcript_analysis_service
             import json as _json
@@ -259,5 +269,69 @@ def processar_transcricao(task_id: int, download_url: str) -> None:
 
     except Exception as e:
         print(f"[RECORDING] Erro inesperado na transcricao da tarefa {task_id}: {e}")
+    finally:
+        db.close()
+
+
+def limpar_gravacoes_antigas() -> int:
+    """
+    Apaga do bucket as gravações que passaram do prazo de retenção.
+
+    Sem isso o bucket cresce indefinidamente — cerca de 50 GB por mês —, e em
+    alguns anos vira uma conta desnecessária por vídeos que ninguém assiste.
+
+    A transcrição e a análise **não** são apagadas: ocupam pouco e são o que
+    tem valor duradouro no histórico do negócio. Some o vídeo, fica o conteúdo.
+
+    Rodado diariamente pelo scheduler.
+
+    Returns:
+        Quantas gravações foram descartadas.
+    """
+    from datetime import timedelta
+
+    from app.services.storage_service import storage_service
+
+    db = SessionLocal()
+    descartadas = 0
+
+    try:
+        limite = datetime.utcnow() - timedelta(days=settings.GRAVACAO_RETENCAO_MESES * 30)
+
+        antigas = (
+            db.query(CardTask)
+            .filter(
+                CardTask.recording_key.isnot(None),
+                CardTask.recording_ready_at.isnot(None),
+                CardTask.recording_ready_at < limite,
+            )
+            .all()
+        )
+
+        if not antigas:
+            return 0
+
+        print(f"[RETENCAO] {len(antigas)} gravacao(oes) acima de "
+              f"{settings.GRAVACAO_RETENCAO_MESES} meses para descartar.")
+
+        for task in antigas:
+            # Um arquivo problemático não pode interromper a limpeza dos
+            # demais; o que falhar fica para a próxima execução.
+            if not storage_service.apagar(task.recording_key):
+                print(f"[RETENCAO] Falha ao apagar {task.recording_key} — sera tentado de novo.")
+                continue
+
+            task.recording_key = None
+            task.recording_status = "expired"
+            task.recording_size_bytes = None
+            db.commit()
+            descartadas += 1
+
+        print(f"[RETENCAO] {descartadas} gravacao(oes) descartada(s).")
+        return descartadas
+
+    except Exception as e:
+        print(f"[RETENCAO] Erro na limpeza de gravacoes: {e}")
+        return descartadas
     finally:
         db.close()

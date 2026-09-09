@@ -336,6 +336,10 @@ class TestTranscricao:
     def test_salva_a_transcricao_e_roda_a_analise(self, db, task):
         from app.services.recording_service import processar_transcricao
 
+        # a análise só roda quando houve gravação (ver TestAnaliseSoQuandoGravou)
+        task.recording_status = "ready"
+        db.commit()
+
         analise = {"resumo": "Conversa breve", "sentimento": "positivo"}
 
         with patch("httpx.get", return_value=self._resposta()), \
@@ -351,6 +355,9 @@ class TestTranscricao:
     def test_analise_falha_mas_transcricao_permanece(self, db, task):
         """Modelo fora do ar não pode custar a transcrição — dá para reanalisar depois."""
         from app.services.recording_service import processar_transcricao
+
+        task.recording_status = "ready"
+        db.commit()
 
         with patch("httpx.get", return_value=self._resposta()), \
              patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
@@ -383,3 +390,47 @@ class TestTranscricao:
             processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
 
         get.assert_not_called()
+
+
+class TestAnaliseSoQuandoGravou:
+    """
+    Gravar é decisão consciente do vendedor — é o sinal de que a conversa
+    importa. Reunião interna ou teste não vira análise nem gera custo; para
+    esses casos o botão "Analisar Reunião" continua no card.
+    """
+
+    def _resposta(self):
+        r = MagicMock()
+        r.status_code = 200
+        r.text = "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\n<v Ana>Bom dia\n"
+        return r
+
+    def test_com_gravacao_analisa(self, db, task):
+        from app.services.recording_service import processar_transcricao
+
+        task.recording_status = "ready"
+        db.commit()
+
+        analisar = MagicMock(return_value={"resumo": "ok"})
+        with patch("httpx.get", return_value=self._resposta()), \
+             patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
+                   analisar):
+            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+
+        analisar.assert_called_once()
+
+    def test_sem_gravacao_salva_transcricao_mas_nao_analisa(self, db, task):
+        from app.services.recording_service import processar_transcricao
+
+        analisar = MagicMock()
+        with patch("httpx.get", return_value=self._resposta()), \
+             patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
+                   analisar):
+            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+
+        analisar.assert_not_called()
+
+        # a transcrição fica salva — dá para analisar depois pelo botão
+        db.refresh(task)
+        assert task.transcript_status == "ready"
+        assert task.transcript_raw

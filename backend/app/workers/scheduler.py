@@ -95,6 +95,23 @@ def job_recalculate_gamification_rankings():
         db.close()
 
 
+def job_limpar_gravacoes_antigas():
+    """
+    Descarta as gravações que passaram do prazo de retenção.
+
+    Sem isso o bucket cresce indefinidamente. A transcrição e a análise ficam:
+    ocupam pouco e são o que tem valor no histórico do negócio.
+    """
+    try:
+        from app.services.recording_service import limpar_gravacoes_antigas
+
+        descartadas = limpar_gravacoes_antigas()
+        if descartadas:
+            logger.info(f"[CRON] {descartadas} gravacao(oes) antiga(s) descartada(s)")
+    except Exception as e:
+        logger.error(f"[CRON] Erro ao limpar gravacoes antigas: {e}")
+
+
 def job_verify_badges():
     """
     Job: Verifica e concede badges automáticos aos usuários.
@@ -489,6 +506,16 @@ def configure_jobs():
         name="Recalcular Rankings de Gamificação",
         replace_existing=True,
         next_run_time=datetime.now(timezone.utc)
+    )
+
+    # 2b. Descartar gravações antigas - Diariamente às 03:00
+    # Madrugada porque percorre o bucket e pode demorar em volume grande
+    sched.add_job(
+        job_limpar_gravacoes_antigas,
+        trigger=CronTrigger(hour=3, minute=0),
+        id="limpar_gravacoes_antigas",
+        name="Descartar Gravações Antigas",
+        replace_existing=True
     )
 
     # 3. Verificar badges - Diariamente às 01:00
