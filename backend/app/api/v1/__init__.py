@@ -4,7 +4,7 @@ Agrega todos os endpoints da versão 1 da API.
 """
 from fastapi import APIRouter, Depends
 from app.api.deps import require_service_access
-from app.api.v1.endpoints import features, public_meeting, auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products, integration_clients, api4com, audit_logs, attachments, user_avatar, custom_reports, ai, call_evaluations, cadencias, email_templates, cadences, service_boards, service_dashboard, service_activities, proposals, services, integration, service_products
+from app.api.v1.endpoints import features, public_meeting, daily_webhook, auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products, integration_clients, api4com, audit_logs, attachments, user_avatar, custom_reports, ai, call_evaluations, cadencias, email_templates, cadences, service_boards, service_dashboard, service_activities, proposals, services, integration, service_products
 
 api_router = APIRouter()
 
@@ -27,6 +27,8 @@ api_router.include_router(transfers.router, prefix="/transfers", tags=["Transfer
 api_router.include_router(features.router, prefix="/features", tags=["Features"])
 # Rotas publicas do convidado — SEM autenticacao (ver public_meeting.py)
 api_router.include_router(public_meeting.router, prefix="/public", tags=["Reuniao publica"])
+# Webhook do Daily — rota publica, protegida por assinatura HMAC
+api_router.include_router(daily_webhook.router, prefix="/daily", tags=["Daily Webhook"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])
 api_router.include_router(custom_reports.router, prefix="/reports", tags=["Custom Reports"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
