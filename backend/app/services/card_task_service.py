@@ -502,6 +502,14 @@ class CardTaskService:
             "meeting_started_at": getattr(task, "meeting_started_at", None),
             "contact_joined_at": getattr(task, "contact_joined_at", None),
             "meeting_ended_at": getattr(task, "meeting_ended_at", None),
+            # Gravação da reunião
+            "recording_status": getattr(task, "recording_status", None),
+            "recording_duration_seconds": getattr(task, "recording_duration_seconds", None),
+            "recording_size_bytes": getattr(task, "recording_size_bytes", None),
+            "recording_started_at": getattr(task, "recording_started_at", None),
+            "recording_ready_at": getattr(task, "recording_ready_at", None),
+            "recording_error": getattr(task, "recording_error", None),
+            "transcript_status": getattr(task, "transcript_status", None),
         }
 
         # Adiciona nome do responsável se disponível

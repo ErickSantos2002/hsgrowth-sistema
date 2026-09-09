@@ -3,7 +3,7 @@ Modelo de CardTask (Tarefa/Atividade do Card).
 Representa atividades criadas pelos usuários: ligações, reuniões, tarefas, etc.
 Diferente de Activity que registra eventos de auditoria.
 """
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime, Boolean, Enum as SQLEnum
+from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey, Text, DateTime, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -105,6 +105,22 @@ class CardTask(Base, TimestampMixin):
     meeting_started_at = Column(DateTime, nullable=True, comment="Quando o host entrou na sala")
     contact_joined_at = Column(DateTime, nullable=True, comment="Quando o convidado entrou na sala")
     meeting_ended_at = Column(DateTime, nullable=True, comment="Quando a sala encerrou")
+
+    # Gravação e transcrição da reunião por vídeo.
+    # recording_status nulo = reunião sem gravação (é o padrão: gravar é uma
+    # decisão do vendedor na sala, não automático).
+    recording_status = Column(String(30), nullable=True,
+                              comment="none | recording | processing | ready | failed | external_link")
+    recording_key = Column(String(500), nullable=True, comment="Caminho do arquivo no bucket R2")
+    recording_external_url = Column(String(1000), nullable=True,
+                                    comment="URL no Daily, quando o arquivo é grande demais para baixar")
+    recording_duration_seconds = Column(Integer, nullable=True, comment="Duração gravada, em segundos")
+    recording_size_bytes = Column(BigInteger, nullable=True, comment="Tamanho do arquivo")
+    recording_started_at = Column(DateTime, nullable=True, comment="Quando a gravação começou")
+    recording_ready_at = Column(DateTime, nullable=True, comment="Quando a gravação ficou disponível")
+    recording_error = Column(Text, nullable=True, comment="Motivo da falha no processamento")
+    transcript_status = Column(String(30), nullable=True,
+                               comment="none | processing | ready | failed")
 
     # Cadência por lead — FK para a instância da cadência que gerou esta task (nullable)
     card_cadence_id = Column(Integer, ForeignKey("card_cadences.id", ondelete="SET NULL"), nullable=True, index=True)

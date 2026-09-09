@@ -164,6 +164,17 @@ class CardTaskResponse(BaseModel):
     contact_joined_at: Optional[datetime] = Field(None, description="Quando o convidado entrou na sala")
     meeting_ended_at: Optional[datetime] = Field(None, description="Quando a sala encerrou")
 
+    # Gravação da reunião
+    recording_status: Optional[str] = Field(
+        None, description="none | recording | processing | ready | failed | external_link"
+    )
+    recording_duration_seconds: Optional[int] = Field(None, description="Duração gravada, em segundos")
+    recording_size_bytes: Optional[int] = Field(None, description="Tamanho do arquivo")
+    recording_started_at: Optional[datetime] = Field(None, description="Quando a gravação começou")
+    recording_ready_at: Optional[datetime] = Field(None, description="Quando ficou disponível")
+    recording_error: Optional[str] = Field(None, description="Motivo da falha, quando houver")
+    transcript_status: Optional[str] = Field(None, description="none | processing | ready | failed")
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
