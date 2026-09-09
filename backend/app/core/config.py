@@ -112,6 +112,22 @@ class Settings(BaseSettings):
     # impede que um convite de teste chegue a um cliente real.
     DAILY_DEV_MODE: bool = True
     DAILY_INTERNAL_EMAIL_DOMAIN: str = "healthsafetytech.com"
+    # Segredo que o Daily devolve ao chamar nosso webhook — sem ele qualquer um
+    # poderia forjar "gravação pronta" e fazer o backend baixar arquivo de fora
+    DAILY_WEBHOOK_SECRET: str = ""
+
+    # Cloudflare R2 — armazenamento das gravações (API compatível com S3)
+    R2_ACCOUNT_ID: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET: str = "hsgrowth-gravacoes"
+    # Validade do link que o cliente recebe para assistir à gravação
+    R2_LINK_EXPIRACAO_DIAS: int = 30
+    # Por quanto tempo a gravação fica guardada antes do descarte automático
+    GRAVACAO_RETENCAO_MESES: int = 12
+    # Teto para baixar a gravação em memória. Acima disso guardamos apenas a
+    # referência do arquivo — baixar um vídeo longo de uma vez derruba o serviço.
+    GRAVACAO_TAMANHO_MAXIMO_MB: int = 200
 
     # Rate limiting de IA (Redis DB 2)
     REDIS_AI_RATE_DB: int = 2  # DB separado para contadores de rate limiting da IA

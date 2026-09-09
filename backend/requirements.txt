@@ -36,6 +36,9 @@ httpx==0.26.0
 # OpenAI SDK
 openai>=1.40.0
 
+# Cloudflare R2 (API compatível com S3) — gravações das reuniões
+boto3==1.35.0
+
 # Email
 fastapi-mail==1.4.1
 
