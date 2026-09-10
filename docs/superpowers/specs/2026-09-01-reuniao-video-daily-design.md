@@ -133,7 +133,7 @@ Mover o card de etapa automaticamente quando o convidado entra na reunião (com 
 
 ## 7. Fase 5 — IA ao vivo (futuro)
 
-Assistente que sugere ao vendedor a resposta ideal durante a call, com base na transcrição em tempo real + contexto acumulado (janela rolante de trechos por interlocutor). Depende da captura de transcrição da Fase 3. Design detalhado a definir quando chegarmos aqui; a Fase 3 já deixará a transcrição disponível de forma compatível.
+Assistente que sugere ao vendedor a resposta ideal durante a call, com base na transcrição em tempo real + contexto acumulado (janela rolante de trechos por interlocutor). Depende da captura de transcrição da Fase 3. Design detalhado em [2026-09-10-reuniao-video-ia-ao-vivo-design.md](2026-09-10-reuniao-video-ia-ao-vivo-design.md) (seção 15.7).
 
 ---
 
@@ -450,11 +450,28 @@ Mantém os 6 campos atuais (`resumo`, `sentimento`, `interesse_cliente`, `objeco
 - **Notificação no sino** quando a gravação e a análise ficarem prontas.
 - **Nível 3 (playbook configurável, como o dn.nexus) fica anotado para o futuro.**
 
+**Quando a análise roda** *(decisão de 09/09/2026)*
+
+| Origem da reunião | Transcrição | Análise |
+|---|---|---|
+| Teams | por clique | por clique — botão "Analisar Reunião" |
+| CRM (Daily) | automática | **automática, se houve gravação** |
+
+Gravar é uma decisão consciente do vendedor — é o sinal de que aquela conversa
+importa. Reunião interna, teste ou conversa de três minutos não vira análise e
+não gera custo.
+
+Chegou-se a cogitar exigir o clique também no CRM, por economia. Medido, o
+argumento não se sustenta: a análise custa centavos por reunião, contra
+US$ 113 de gravação e US$ 114 de transcrição ao vivo por mês. Exigir o clique
+economizaria poucos dólares e custaria uma etapa manual — mantido automático.
+
 ### 15.7 IA ao vivo (Fase 5)
 
 - **Apenas sob demanda** — botão "me ajuda aqui". **Não** sugere sozinha (menos ruído e bem mais barata).
 - Painel visível para **vendedor e SDR**; **nunca para o cliente**.
 - Conteúdo das sugestões: proposta a ser detalhada no plano da Fase 5, tomando como base o `meeting-insights` do dn.nexus (insight curto + fala pronta + tags do que foi detectado), somando contexto do próprio CRM.
+- **Design detalhado (10/09/2026):** [2026-09-10-reuniao-video-ia-ao-vivo-design.md](2026-09-10-reuniao-video-ia-ao-vivo-design.md) — formato da resposta, contexto do CRM, painel lateral, histórico no card e custo revisado.
 
 ### 15.8 Ambiente e forma de trabalho
 
@@ -492,6 +509,8 @@ Reuniões de 1h; SDR participando de ~30% delas; gravação e transcrição ao v
 | **Total** | **≈ US$ 277 (R$ 1.441)** | **≈ US$ 368 (R$ 1.913)** |
 
 O armazenamento cresce até ~US$ 19/mês no 12º mês e então estabiliza, por causa da retenção de 12 meses.
+
+> **Revisado em 10/09/2026:** a linha "IA" subestimava o custo da IA ao vivo. O valor correto é ≈ US$ 20 (140 reuniões) e ≈ US$ 26 (180 reuniões), levando o total a ≈ **US$ 286** e ≈ **US$ 380**. Detalhes na seção 10 do [design da Fase 5](2026-09-10-reuniao-video-ia-ao-vivo-design.md).
 
 > Substitui as estimativas das seções 12 e anteriores, que assumiam transcrição pós-call e não consideravam o SDR como terceiro participante.
 
