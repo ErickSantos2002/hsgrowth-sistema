@@ -267,6 +267,7 @@ O gerador de lote decide a coluna por nome (conjunto `VENDEDORES = {"Miguel", "K
 | Transp. Lote 11 | 18/08/2026 | 100 | Karolaine | 10387–10486 | ✅ Importado |
 | Transp. Lote 12 | 20/08/2026 | 100 | Miguel | 10503–10602 | ✅ Importado |
 | Transp. Lote 13 | 24/08/2026 | 200 | Claudia (100), Karolaine (100) | 10612–10824 | ✅ Importado |
+| Transp. Lote 14 | 10/09/2026 | 200 | Miguel (100, Vendedor), Karolaine (100, Vendedor) | 10918–11181 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
 **Obs. Transp. Lote 2:** o range 8804–9006 inclui 1 card orgânico de Karolaine (Lista fria) criado por SDR na janela; o lote em si é 100/100 (200 linhas, 0 erros).
@@ -295,7 +296,9 @@ O gerador de lote decide a coluna por nome (conjunto `VENDEDORES = {"Miguel", "K
 
 **Obs. Transp. Lote 13:** 200/200 com site, 200 clientes novos, 0 pulados. Karolaine 10725–10824 (o range de Claudia inclui 1 card orgânico; o lote é 100/100). website 200, notes 200, linkedin 197.
 
-**Total Transportadoras importado:** 1900 | **Pendentes novos:** 1.987 de 4.056 | **Separados (CNPJ já no CRM):** 169.
+**Obs. Transp. Lote 14:** **primeiro lote com Miguel e Karolaine como VENDEDORES** — atribuídos em `assigned_to_id` (coluna `Vendedor_Responsavel`), `sdr_id` vazio. 200/200 com site, 200 clientes novos, 0 pulados. Confirmado no banco: Miguel 100 + Karolaine 100 em `assigned_to_id`, todos com `sdr_id=None`.
+
+**Total Transportadoras importado:** 2100 | **Pendentes novos:** 1.787 de 4.056 | **Separados (CNPJ já no CRM):** 169.
 
 ---
 
