@@ -117,6 +117,22 @@ class CardTaskMarkComplete(BaseModel):
 
 # ==================== RESPONSE SCHEMAS ====================
 
+class GravacaoResumo(BaseModel):
+    """
+    Um trecho gravado, como a tela precisa dele.
+
+    O caminho do arquivo no bucket não sai daqui: o acesso é sempre por link
+    temporário assinado, pedido no momento de assistir.
+    """
+    id: int = Field(..., description="ID do trecho")
+    ordem: int = Field(..., description="1 = primeiro trecho da reunião")
+    status: str = Field(..., description="processing | ready | failed | expired")
+    duracao_segundos: Optional[int] = Field(None, description="Duração deste trecho")
+    tamanho_bytes: Optional[int] = Field(None, description="Tamanho do arquivo")
+    pronta_em: Optional[datetime] = Field(None, description="Quando ficou disponível")
+    erro: Optional[str] = Field(None, description="Motivo da falha, quando houver")
+
+
 class CardTaskResponse(BaseModel):
     """Dados completos de uma tarefa/atividade."""
     id: int = Field(..., description="ID único da tarefa")
@@ -174,6 +190,9 @@ class CardTaskResponse(BaseModel):
     recording_ready_at: Optional[datetime] = Field(None, description="Quando ficou disponível")
     recording_error: Optional[str] = Field(None, description="Motivo da falha, quando houver")
     transcript_status: Optional[str] = Field(None, description="none | processing | ready | failed")
+    gravacoes: list[GravacaoResumo] = Field(
+        default_factory=list, description="Trechos gravados desta reunião, em ordem"
+    )
 
     model_config = ConfigDict(
         from_attributes=True,

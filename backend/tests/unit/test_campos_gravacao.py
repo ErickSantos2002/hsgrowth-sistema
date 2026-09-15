@@ -33,6 +33,22 @@ def task_com_gravacao(db: Session, test_card, test_salesperson_user) -> CardTask
     db.add(task)
     db.commit()
     db.refresh(task)
+
+    from app.models.meeting_recording import MeetingRecording
+
+    for ordem, rec_id in enumerate(["rec-1", "rec-2"], start=1):
+        db.add(MeetingRecording(
+            card_task_id=task.id,
+            daily_recording_id=rec_id,
+            ordem=ordem,
+            status="ready",
+            r2_key=f"2026/09/apresentacao-36197-parte{ordem}.mp4",
+            duration_seconds=1350,
+            size_bytes=262144000,
+            ready_at=datetime(2026, 9, 9, 12, 0),
+        ))
+    db.commit()
+    db.refresh(task)
     return task
 
 
@@ -53,6 +69,44 @@ class TestCamposDaGravacaoNaAPI:
         assert task["recording_size_bytes"] == 524288000
         assert task["transcript_status"] == "ready"
         assert task["recording_ready_at"] is not None
+
+    def test_listagem_traz_os_trechos_gravados(
+        self, client: TestClient, salesperson_headers, task_com_gravacao, test_card
+    ):
+        """
+        Mesma armadilha da Fase 1: o dicionário da resposta é montado campo a
+        campo, então um relacionamento novo não aparece sozinho.
+        """
+        response = client.get(
+            f"/api/v1/card-tasks?card_id={test_card.id}&task_type=meeting",
+            headers=salesperson_headers,
+        )
+
+        task = next(t for t in response.json()["tasks"] if t["id"] == task_com_gravacao.id)
+        assert [g["ordem"] for g in task["gravacoes"]] == [1, 2]
+        assert task["gravacoes"][0]["status"] == "ready"
+        assert task["gravacoes"][0]["duracao_segundos"] == 1350
+
+    def test_reuniao_sem_trechos_vem_com_lista_vazia(
+        self, client: TestClient, salesperson_headers, db, test_card, test_salesperson_user
+    ):
+        """A tela precisa distinguir 'sem gravação' de 'campo ausente'."""
+        task = CardTask(
+            card_id=test_card.id,
+            title="Reunião sem gravar (trechos)",
+            task_type="meeting",
+            assigned_to_id=test_salesperson_user.id,
+        )
+        db.add(task)
+        db.commit()
+
+        response = client.get(
+            f"/api/v1/card-tasks?card_id={test_card.id}&task_type=meeting",
+            headers=salesperson_headers,
+        )
+
+        encontrada = next(t for t in response.json()["tasks"] if t["id"] == task.id)
+        assert encontrada["gravacoes"] == []
 
     def test_nao_expoe_o_caminho_do_arquivo(
         self, client: TestClient, salesperson_headers, task_com_gravacao, test_card

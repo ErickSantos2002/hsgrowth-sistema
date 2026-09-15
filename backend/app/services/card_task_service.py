@@ -510,6 +510,21 @@ class CardTaskService:
             "recording_ready_at": getattr(task, "recording_ready_at", None),
             "recording_error": getattr(task, "recording_error", None),
             "transcript_status": getattr(task, "transcript_status", None),
+            # Trechos gravados. O dicionário é montado campo a campo: sem esta
+            # linha, a tela nunca enxerga as gravações (foi o que aconteceu com
+            # os campos da reunião na Fase 1).
+            "gravacoes": [
+                {
+                    "id": g.id,
+                    "ordem": g.ordem,
+                    "status": g.status,
+                    "duracao_segundos": g.duration_seconds,
+                    "tamanho_bytes": g.size_bytes,
+                    "pronta_em": g.ready_at,
+                    "erro": g.error,
+                }
+                for g in sorted(getattr(task, "recordings", []) or [], key=lambda g: g.ordem)
+            ],
         }
 
         # Adiciona nome do responsável se disponível
