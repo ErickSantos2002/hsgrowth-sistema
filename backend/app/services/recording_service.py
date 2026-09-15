@@ -209,7 +209,11 @@ def processar_gravacao(
         db.close()
 
 
-def processar_transcricao(task_id: int, download_url: str) -> None:
+def processar_transcricao(
+    task_id: int,
+    transcript_id: Optional[str] = None,
+    mtg_session_id: Optional[str] = None,
+) -> None:
     """
     Baixa a transcrição da reunião, salva e roda a análise da IA.
 
@@ -230,6 +234,39 @@ def processar_transcricao(task_id: int, download_url: str) -> None:
 
         if task.transcript_status == "ready" and task.transcript_raw:
             print(f"[RECORDING] Transcricao da tarefa {task_id} ja processada — ignorado.")
+            return
+
+        from app.services.daily_service import DailyService
+
+        service = DailyService(db)
+
+        # O aviso pode vir sem o identificador da transcricao; com o da sessao
+        # da reuniao da para encontra-la.
+        if not transcript_id and mtg_session_id:
+            try:
+                transcript_id = service.transcricao_da_sessao(mtg_session_id)
+            except Exception as e:
+                print(f"[RECORDING] Falha ao procurar a transcricao da tarefa {task_id}: {e}")
+                transcript_id = None
+
+        if not transcript_id:
+            task.transcript_status = "failed"
+            db.commit()
+            print(f"[RECORDING] Sem identificador de transcricao para a tarefa {task_id}.")
+            return
+
+        try:
+            download_url = service.link_download_transcricao(transcript_id)
+        except Exception as e:
+            task.transcript_status = "failed"
+            db.commit()
+            print(f"[RECORDING] Falha ao obter o link da transcricao da tarefa {task_id}: {e}")
+            return
+
+        if not download_url:
+            task.transcript_status = "failed"
+            db.commit()
+            print(f"[RECORDING] Daily nao devolveu link da transcricao da tarefa {task_id}.")
             return
 
         try:

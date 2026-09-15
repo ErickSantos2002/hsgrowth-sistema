@@ -314,3 +314,34 @@ class TestConsultaDeGravacoes:
             url = svc.link_download_gravacao("rec-1")
 
         assert url == "https://daily/arquivo.mp4"
+
+
+class TestConsultaDeTranscricao:
+    """
+    O aviso de transcrição pronta traz identificador, não arquivo — e às vezes
+    nem o identificador da transcrição, só o da sessão da reunião.
+    """
+
+    def test_link_de_download_da_transcricao(self, db: Session, task):
+        svc = DailyService(db)
+        resposta = _Resp(200, {"transcriptId": "t-1", "link": "https://daily/arquivo.vtt"})
+
+        with patch("httpx.Client.get", return_value=resposta):
+            url = svc.link_download_transcricao("t-1")
+
+        assert url == "https://daily/arquivo.vtt"
+
+    def test_acha_transcricao_pela_sessao(self, db: Session, task):
+        svc = DailyService(db)
+        resposta = _Resp(200, {"total_count": 1, "data": [{"transcriptId": "t-9"}]})
+
+        with patch("httpx.Client.get", return_value=resposta):
+            assert svc.transcricao_da_sessao("sessao-abc") == "t-9"
+
+    def test_sessao_sem_transcricao_devolve_none(self, db: Session, task):
+        """Sem transcrição na sessão, quem chama decide o que fazer — não quebra."""
+        svc = DailyService(db)
+        resposta = _Resp(200, {"total_count": 0, "data": []})
+
+        with patch("httpx.Client.get", return_value=resposta):
+            assert svc.transcricao_da_sessao("sessao-abc") is None

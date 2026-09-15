@@ -90,6 +90,10 @@ def link_do_daily(monkeypatch):
         "app.services.daily_service.DailyService.link_download_gravacao",
         lambda self, recording_id: f"https://daily/{recording_id}.mp4",
     )
+    monkeypatch.setattr(
+        "app.services.daily_service.DailyService.link_download_transcricao",
+        lambda self, transcript_id: f"https://daily/{transcript_id}.vtt",
+    )
 
 
 class TestFluxoNormal:
@@ -355,7 +359,7 @@ class TestTranscricao:
         with patch("httpx.get", return_value=self._resposta()), \
              patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
                    return_value=analise):
-            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+            processar_transcricao(task_id=task.id, transcript_id="t-1")
 
         db.refresh(task)
         assert task.transcript_status == "ready"
@@ -372,7 +376,7 @@ class TestTranscricao:
         with patch("httpx.get", return_value=self._resposta()), \
              patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
                    side_effect=ValueError("OpenAI indisponível")):
-            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+            processar_transcricao(task_id=task.id, transcript_id="t-1")
 
         db.refresh(task)
         assert task.transcript_status == "ready"
@@ -383,7 +387,7 @@ class TestTranscricao:
         from app.services.recording_service import processar_transcricao
 
         with patch("httpx.get", return_value=self._resposta(ok=False)):
-            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+            processar_transcricao(task_id=task.id, transcript_id="t-1")
 
         db.refresh(task)
         assert task.transcript_status == "failed"
@@ -397,7 +401,7 @@ class TestTranscricao:
 
         get = MagicMock()
         with patch("httpx.get", get):
-            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+            processar_transcricao(task_id=task.id, transcript_id="t-1")
 
         get.assert_not_called()
 
@@ -425,7 +429,7 @@ class TestAnaliseSoQuandoGravou:
         with patch("httpx.get", return_value=self._resposta()), \
              patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
                    analisar):
-            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+            processar_transcricao(task_id=task.id, transcript_id="t-1")
 
         analisar.assert_called_once()
 
@@ -436,7 +440,7 @@ class TestAnaliseSoQuandoGravou:
         with patch("httpx.get", return_value=self._resposta()), \
              patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
                    analisar):
-            processar_transcricao(task_id=task.id, download_url="https://daily/t.vtt")
+            processar_transcricao(task_id=task.id, transcript_id="t-1")
 
         analisar.assert_not_called()
 

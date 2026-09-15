@@ -177,22 +177,45 @@ class TestEventos:
         assert chamou == []
 
     def test_transcricao_pronta_dispara_processamento(self, client: TestClient, task, monkeypatch):
+        """O evento real traz o identificador da transcricao, nao o arquivo."""
         chamou = {}
         monkeypatch.setattr(
             "app.api.v1.endpoints.daily_webhook.processar_transcricao_em_background",
-            lambda task_id, download_url, **kw: chamou.update(task_id=task_id, url=download_url),
+            lambda **kw: chamou.update(kw),
         )
 
         response = enviar(client, {
             "type": "transcript.ready-to-download",
             "payload": {
                 "room_name": task.daily_room_name,
-                "download_url": "https://daily/transcricao.vtt",
+                "transcriptId": "4849ed58-1f89",
+                "mtgSessionId": "5644f650-c60e",
+                "status": "t_finished",
             },
         })
 
         assert response.status_code == 200
-        assert chamou["task_id"] == task.id
+        assert chamou == {
+            "task_id": task.id,
+            "transcript_id": "4849ed58-1f89",
+            "mtg_session_id": "5644f650-c60e",
+        }
+
+    def test_transcricao_sem_identificador_usa_a_sessao(self, client: TestClient, task, monkeypatch):
+        """Quando so vem a sessao, o servico procura a transcricao por ela."""
+        chamou = {}
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.processar_transcricao_em_background",
+            lambda **kw: chamou.update(kw),
+        )
+
+        enviar(client, {
+            "type": "transcript.ready-to-download",
+            "payload": {"room_name": task.daily_room_name, "mtg_session_id": "sessao-1"},
+        })
+
+        assert chamou["transcript_id"] is None
+        assert chamou["mtg_session_id"] == "sessao-1"
 
 
 class TestResiliencia:

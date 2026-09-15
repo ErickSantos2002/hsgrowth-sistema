@@ -89,11 +89,19 @@ def processar_gravacao_em_background(
     )
 
 
-def processar_transcricao_em_background(task_id: int, download_url: str) -> None:
-    """Baixa a transcrição, salva e manda para a análise. Implementado na Task 7."""
+def processar_transcricao_em_background(
+    task_id: int,
+    transcript_id: Optional[str] = None,
+    mtg_session_id: Optional[str] = None,
+) -> None:
+    """Baixa a transcrição, salva e manda para a análise."""
     from app.services.recording_service import processar_transcricao
 
-    processar_transcricao(task_id=task_id, download_url=download_url)
+    processar_transcricao(
+        task_id=task_id,
+        transcript_id=transcript_id,
+        mtg_session_id=mtg_session_id,
+    )
 
 
 @router.post(
@@ -175,15 +183,23 @@ async def receber_evento_daily(
             print("[DAILY-WEBHOOK] Gravacao pronta sem identificador — ignorado.")
 
     elif tipo == "transcript.ready-to-download":
-        url = dados.get("download_url")
-        if url:
+        # Mesma história da gravação: vem identificador, não link. Quando nem o
+        # identificador da transcrição vem, o da sessão permite encontrá-la.
+        transcript_id = (
+            dados.get("transcript_id") or dados.get("transcriptId") or dados.get("id")
+        )
+        sessao = dados.get("mtg_session_id") or dados.get("mtgSessionId")
+        if transcript_id or sessao:
             task.transcript_status = "processing"
             db.commit()
             background_tasks.add_task(
                 processar_transcricao_em_background,
                 task_id=task.id,
-                download_url=url,
+                transcript_id=transcript_id,
+                mtg_session_id=sessao,
             )
+        else:
+            print("[DAILY-WEBHOOK] Transcricao pronta sem identificador — ignorado.")
 
     else:
         print(f"[DAILY-WEBHOOK] Evento '{tipo}' não tratado — ignorado sem erro.")

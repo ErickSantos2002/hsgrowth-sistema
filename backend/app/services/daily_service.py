@@ -9,6 +9,7 @@ devolvido ao frontend sem passar por validação de acesso no endpoint.
 """
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 import httpx
 from sqlalchemy.orm import Session
@@ -269,6 +270,29 @@ class DailyService:
         """URL temporária para baixar a gravação do Daily."""
         dados = self._get(f"/recordings/{recording_id}/access-link")
         return dados.get("download_link") or dados.get("link") or ""
+
+    # ── transcrição ─────────────────────────────────────────────────────────
+
+    def link_download_transcricao(self, transcript_id: str) -> str:
+        """
+        URL temporária do arquivo .vtt.
+
+        Como na gravação, o aviso do Daily não traz link: traz identificador.
+        E o link vale poucos minutos, então é pedido na hora de baixar.
+        """
+        dados = self._get(f"/transcript/{transcript_id}/access-link")
+        return dados.get("link") or dados.get("download_link") or ""
+
+    def transcricao_da_sessao(self, mtg_session_id: str) -> Optional[str]:
+        """
+        Acha a transcrição pela sessão da reunião.
+
+        O aviso nem sempre traz o identificador da transcrição, mas sempre traz
+        o da sessão — este é o caminho de recuperação.
+        """
+        dados = self._get(f"/transcript?mtgSessionId={mtg_session_id}")
+        itens = dados.get("data") or []
+        return itens[0].get("transcriptId") if itens else None
 
     def apagar_gravacao(self, recording_id: str) -> None:
         """
