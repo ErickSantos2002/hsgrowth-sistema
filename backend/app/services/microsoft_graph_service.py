@@ -532,18 +532,20 @@ class MicrosoftGraphService:
         # a análise vive. Quando o locatário não permite atribuição de locutor,
         # o Graph recusa esse formato com 403 e sobra o texto corrido — pior,
         # mas melhor do que nada.
+        # O formato vai no cabeçalho Accept, não na query: o "+" de
+        # "transcript+text" viraria espaço na URL e o Graph recusa com 400.
         formatos = [
             ("text/vtt", "com o nome de quem falou"),
             ("application/vnd.microsoft.graph.transcript+text", "sem identificar quem falou"),
         ]
 
         try:
-            headers = {"Authorization": f"Bearer {access_token}"}
             ultimo_erro = ""
 
             for formato, _descricao in formatos:
+                headers = {"Authorization": f"Bearer {access_token}", "Accept": formato}
                 with httpx.Client(timeout=30) as client:
-                    resp = client.get(f"{base}?$format={formato}", headers=headers)
+                    resp = client.get(base, headers=headers)
 
                 if resp.status_code == 200:
                     return resp.text
