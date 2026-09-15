@@ -24,7 +24,9 @@ TAMANHO_MAXIMO_TITULO = 60
 TAMANHO_BLOCO = 8 * 1024 * 1024
 
 
-def montar_chave_gravacao(titulo: str, task_id: int, quando: Optional[datetime] = None) -> str:
+def montar_chave_gravacao(
+    titulo: str, task_id: int, quando: Optional[datetime] = None, parte: int = 1
+) -> str:
     """
     Monta o caminho do arquivo no bucket.
 
@@ -44,6 +46,11 @@ def montar_chave_gravacao(titulo: str, task_id: int, quando: Optional[datetime] 
     if limpo:
         partes.append(limpo)
     partes.append(str(task_id))
+
+    # A partir do segundo trecho o nome ganha sufixo: sem isso, gravar em
+    # partes faria um arquivo sobrescrever o outro no bucket.
+    if parte > 1:
+        partes.append(f"parte{parte}")
 
     return f"{quando.strftime('%Y/%m')}/{'-'.join(partes)}.mp4"
 

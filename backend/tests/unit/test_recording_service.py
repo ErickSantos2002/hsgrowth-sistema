@@ -248,22 +248,86 @@ class TestFalhas:
         """Chamado em segundo plano: exceção aqui não tem quem trate."""
         processar_gravacao(task_id=99999999, recording_id="rec-1")
 
-    def test_gravacao_ja_processada_nao_repete(self, db, task):
-        task.recording_status = "ready"
-        task.recording_key = "2026/09/ja-existe.mp4"
+    def test_trecho_ja_processado_nao_repete(self, db, task):
+        """Reenvio do webhook é normal; o mesmo trecho não pode virar dois arquivos."""
+        from app.models.meeting_recording import MeetingRecording
+
+        db.add(MeetingRecording(
+            card_task_id=task.id,
+            daily_recording_id="rec-1",
+            ordem=1,
+            status="ready",
+            r2_key="2026/09/ja-existe.mp4",
+        ))
         db.commit()
 
         upload = MagicMock()
         with patch("httpx.stream", return_value=_StreamFalso(1024)), \
              patch("app.services.storage_service.storage_service.upload_em_partes", upload), \
              patch("app.services.daily_service.DailyService.apagar_gravacao"):
-            processar_gravacao(
-                task_id=task.id, recording_id="rec-1"
-            )
+            processar_gravacao(task_id=task.id, recording_id="rec-1")
 
         upload.assert_not_called()
         db.refresh(task)
-        assert task.recording_key == "2026/09/ja-existe.mp4"
+        assert len(task.recordings) == 1
+
+
+class TestGravacaoEmPartes:
+    """
+    Gravar em pedaços é normal: o vendedor para e recomeça. Na homologação de
+    14/09 uma única reunião gerou três arquivos, e guardar só um perderia
+    parte da conversa.
+    """
+
+    def test_dois_trechos_viram_duas_gravacoes(self, db, task):
+        with patch("httpx.stream", return_value=_StreamFalso(2048)), \
+             patch("app.services.storage_service.storage_service.upload_em_partes", return_value=2048), \
+             patch("app.services.daily_service.DailyService.apagar_gravacao"):
+            processar_gravacao(task_id=task.id, recording_id="rec-1", duration=49)
+            processar_gravacao(task_id=task.id, recording_id="rec-2", duration=173)
+
+        db.refresh(task)
+        trechos = sorted(task.recordings, key=lambda g: g.ordem)
+
+        assert [g.ordem for g in trechos] == [1, 2]
+        assert [g.daily_recording_id for g in trechos] == ["rec-1", "rec-2"]
+        assert all(g.status == "ready" and g.r2_key for g in trechos)
+
+        # a tarefa guarda o resumo: a soma dos trechos prontos
+        assert task.recording_status == "ready"
+        assert task.recording_duration_seconds == 49 + 173
+        assert task.recording_size_bytes == 2048 * 2
+
+    def test_segundo_trecho_nao_sobrescreve_o_arquivo_do_primeiro(self, db, task):
+        upload = MagicMock(return_value=1024)
+        with patch("httpx.stream", return_value=_StreamFalso(1024)), \
+             patch("app.services.storage_service.storage_service.upload_em_partes", upload), \
+             patch("app.services.daily_service.DailyService.apagar_gravacao"):
+            processar_gravacao(task_id=task.id, recording_id="rec-1")
+            processar_gravacao(task_id=task.id, recording_id="rec-2")
+
+        chaves = [chamada.args[1] for chamada in upload.call_args_list]
+        assert chaves[0] != chaves[1]
+        assert "parte2" in chaves[1]
+
+    def test_falha_em_um_trecho_nao_derruba_o_outro(self, db, task):
+        """O primeiro trecho falha no bucket; o segundo precisa ser guardado."""
+        with patch("httpx.stream", return_value=_StreamFalso(1024)), \
+             patch("app.services.storage_service.storage_service.upload_em_partes", side_effect=ValueError("R2 indisponivel")), \
+             patch("app.services.daily_service.DailyService.apagar_gravacao"):
+            processar_gravacao(task_id=task.id, recording_id="rec-1")
+
+        with patch("httpx.stream", return_value=_StreamFalso(1024)), \
+             patch("app.services.storage_service.storage_service.upload_em_partes", return_value=1024), \
+             patch("app.services.daily_service.DailyService.apagar_gravacao"):
+            processar_gravacao(task_id=task.id, recording_id="rec-2")
+
+        db.refresh(task)
+        por_id = {g.daily_recording_id: g for g in task.recordings}
+        assert por_id["rec-1"].status == "failed"
+        assert por_id["rec-2"].status == "ready"
+        assert task.recording_status == "ready"
+
 
 
 class TestDonosDaReuniao:

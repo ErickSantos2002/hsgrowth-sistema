@@ -90,8 +90,12 @@ def _notificar(db, user_ids: List[int], titulo: str, mensagem: str, task: CardTa
             print(f"[RECORDING] Aviso: falha ao notificar usuário {user_id}: {e}")
 
 
-def _marcar_falha(db, task: CardTask, motivo: str) -> None:
-    """Registra a falha na tarefa e avisa os donos e os admins."""
+def _marcar_falha(db, task: CardTask, motivo: str, gravacao=None) -> None:
+    """Registra a falha na tarefa (e no trecho, quando houver) e avisa os donos e os admins."""
+    if gravacao is not None:
+        gravacao.status = "failed"
+        gravacao.error = motivo[:1000]
+
     task.recording_status = "failed"
     task.recording_error = motivo[:1000]
     db.commit()
@@ -133,27 +137,51 @@ def processar_gravacao(
             print(f"[RECORDING] Tarefa {task_id} nao encontrada — ignorado.")
             return
 
-        # Reenvio do webhook e normal; nao reprocessa o que ja esta pronto
-        if task.recording_status == "ready" and task.recording_key:
-            print(f"[RECORDING] Gravacao da tarefa {task_id} ja processada — ignorado.")
+        from app.models.meeting_recording import MeetingRecording
+
+        # Reenvio do webhook e normal; o mesmo trecho nao pode virar dois
+        # arquivos no bucket.
+        gravacao = (
+            db.query(MeetingRecording)
+            .filter(MeetingRecording.daily_recording_id == recording_id)
+            .first()
+        )
+        if gravacao and gravacao.status == "ready" and gravacao.r2_key:
+            print(f"[RECORDING] Trecho {recording_id} ja processado — ignorado.")
             return
+
+        if not gravacao:
+            ordem = (
+                db.query(MeetingRecording)
+                .filter(MeetingRecording.card_task_id == task.id)
+                .count()
+            ) + 1
+            gravacao = MeetingRecording(
+                card_task_id=task.id,
+                daily_recording_id=recording_id,
+                ordem=ordem,
+                status="processing",
+            )
+            db.add(gravacao)
+            db.commit()
 
         from app.services.daily_service import DailyService
 
         try:
             download_url = DailyService(db).link_download_gravacao(recording_id)
         except Exception as e:
-            _marcar_falha(db, task, f"Nao foi possivel obter o link da gravacao: {e}")
+            _marcar_falha(db, task, f"Nao foi possivel obter o link da gravacao: {e}", gravacao)
             return
 
         if not download_url:
-            _marcar_falha(db, task, "Daily nao devolveu link para a gravacao.")
+            _marcar_falha(db, task, "Daily nao devolveu link para a gravacao.", gravacao)
             return
 
         chave = montar_chave_gravacao(
             titulo=task.title,
             task_id=task.id,
             quando=task.due_date or datetime.utcnow(),
+            parte=gravacao.ordem,
         )
 
         try:
@@ -164,6 +192,7 @@ def processar_gravacao(
                     _marcar_falha(
                         db, task,
                         f"Daily devolveu {resposta.status_code} ao baixar a gravacao.",
+                        gravacao,
                     )
                     return
 
@@ -173,13 +202,32 @@ def processar_gravacao(
                     resposta.iter_bytes(), chave, "video/mp4"
                 )
         except Exception as e:
-            _marcar_falha(db, task, f"Erro ao guardar a gravacao: {e}")
+            _marcar_falha(db, task, f"Erro ao guardar a gravacao: {e}", gravacao)
             return
 
+        gravacao.status = "ready"
+        gravacao.r2_key = chave
+        gravacao.size_bytes = tamanho
+        gravacao.duration_seconds = duration
+        gravacao.ready_at = datetime.utcnow()
+        gravacao.error = None
+        db.commit()
+
+        # A tarefa guarda o resumo — status e as somas dos trechos prontos. E o
+        # que a lista de reunioes mostra sem precisar abrir cada gravacao.
+        prontos = (
+            db.query(MeetingRecording)
+            .filter(
+                MeetingRecording.card_task_id == task.id,
+                MeetingRecording.status == "ready",
+            )
+            .order_by(MeetingRecording.ordem)
+            .all()
+        )
         task.recording_status = "ready"
-        task.recording_key = chave
-        task.recording_size_bytes = tamanho
-        task.recording_duration_seconds = duration
+        task.recording_key = prontos[0].r2_key if prontos else chave
+        task.recording_size_bytes = sum(g.size_bytes or 0 for g in prontos)
+        task.recording_duration_seconds = sum(g.duration_seconds or 0 for g in prontos)
         task.recording_ready_at = datetime.utcnow()
         task.recording_error = None
         db.commit()
@@ -347,12 +395,16 @@ def limpar_gravacoes_antigas() -> int:
     try:
         limite = datetime.utcnow() - timedelta(days=settings.GRAVACAO_RETENCAO_MESES * 30)
 
+        from app.models.meeting_recording import MeetingRecording
+
+        # O descarte é por trecho: uma reunião gravada em partes tem um
+        # arquivo por trecho, e cada um vence na sua data.
         antigas = (
-            db.query(CardTask)
+            db.query(MeetingRecording)
             .filter(
-                CardTask.recording_key.isnot(None),
-                CardTask.recording_ready_at.isnot(None),
-                CardTask.recording_ready_at < limite,
+                MeetingRecording.r2_key.isnot(None),
+                MeetingRecording.ready_at.isnot(None),
+                MeetingRecording.ready_at < limite,
             )
             .all()
         )
@@ -363,18 +415,42 @@ def limpar_gravacoes_antigas() -> int:
         print(f"[RETENCAO] {len(antigas)} gravacao(oes) acima de "
               f"{settings.GRAVACAO_RETENCAO_MESES} meses para descartar.")
 
-        for task in antigas:
+        for gravacao in antigas:
             # Um arquivo problemático não pode interromper a limpeza dos
             # demais; o que falhar fica para a próxima execução.
-            if not storage_service.apagar(task.recording_key):
-                print(f"[RETENCAO] Falha ao apagar {task.recording_key} — sera tentado de novo.")
+            if not storage_service.apagar(gravacao.r2_key):
+                print(f"[RETENCAO] Falha ao apagar {gravacao.r2_key} — sera tentado de novo.")
                 continue
 
-            task.recording_key = None
-            task.recording_status = "expired"
-            task.recording_size_bytes = None
+            gravacao.r2_key = None
+            gravacao.status = "expired"
+            gravacao.size_bytes = None
             db.commit()
             descartadas += 1
+
+            # A reunião só aparece como expirada quando nenhum trecho sobrou:
+            # gravada em partes, uma pode vencer antes da outra.
+            task = db.query(CardTask).filter(CardTask.id == gravacao.card_task_id).first()
+            if not task:
+                continue
+
+            restantes = (
+                db.query(MeetingRecording)
+                .filter(
+                    MeetingRecording.card_task_id == task.id,
+                    MeetingRecording.status == "ready",
+                )
+                .order_by(MeetingRecording.ordem)
+                .all()
+            )
+            if restantes:
+                task.recording_key = restantes[0].r2_key
+                task.recording_size_bytes = sum(g.size_bytes or 0 for g in restantes)
+            else:
+                task.recording_key = None
+                task.recording_status = "expired"
+                task.recording_size_bytes = None
+            db.commit()
 
         print(f"[RETENCAO] {descartadas} gravacao(oes) descartada(s).")
         return descartadas
