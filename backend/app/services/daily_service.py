@@ -290,6 +290,25 @@ class DailyService:
         dados = self._get(f"/transcript/{transcript_id}/access-link")
         return dados.get("link") or dados.get("download_link") or ""
 
+    def transcricao_da_sala(self, room_name: str) -> Optional[str]:
+        """
+        Última transcrição desta sala.
+
+        A API do Daily não aceita filtro por sala, então a lista vem inteira e
+        o filtro é nosso. É o caminho usado quando o aviso se perdeu e não há
+        identificador de sessão guardado.
+        """
+        dados = self._get("/transcript?limit=100")
+        daqui = [
+            t for t in (dados.get("data") or [])
+            if (t.get("roomName") or "") == room_name
+        ]
+        if not daqui:
+            return None
+
+        daqui.sort(key=lambda t: t.get("created_at") or "", reverse=True)
+        return daqui[0].get("transcriptId")
+
     def transcricao_da_sessao(self, mtg_session_id: str) -> Optional[str]:
         """
         Acha a transcrição pela sessão da reunião.

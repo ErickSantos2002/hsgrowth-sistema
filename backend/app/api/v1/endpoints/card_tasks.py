@@ -1015,6 +1015,63 @@ def cancel_teams_meeting(
     return service.get_task(task_id)
 
 
+def _analisar_transcricao_do_daily(db: Session, task: CardTask):
+    """
+    Busca no Daily a transcrição desta reunião, salva e analisa com a IA.
+
+    Espelha o fluxo do Teams, trocando a origem do arquivo. O acesso já foi
+    conferido por quem chama.
+    """
+    import httpx
+
+    from app.services.daily_service import DailyService
+    from app.services.transcript_analysis_service import transcript_analysis_service
+
+    if not task.daily_room_name:
+        raise HTTPException(status_code=400, detail="Esta reunião não tem sala no CRM.")
+
+    service = DailyService(db)
+
+    try:
+        transcript_id = service.transcricao_da_sala(task.daily_room_name)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Não foi possível consultar o Daily: {e}")
+
+    if not transcript_id:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Nenhuma transcrição disponível ainda para esta reunião. "
+                "Aguarde alguns minutos após o término e tente de novo."
+            ),
+        )
+
+    try:
+        link = service.link_download_transcricao(transcript_id)
+        resposta = httpx.get(link, timeout=120.0, follow_redirects=True)
+        if resposta.status_code >= 400:
+            raise ValueError(f"Daily devolveu {resposta.status_code}")
+        vtt = resposta.text
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Falha ao baixar a transcrição: {e}")
+
+    task.transcript_raw = vtt
+    task.transcript_status = "ready"
+
+    try:
+        analise = transcript_analysis_service.analyze(vtt)
+        task.transcript_analysis = json.dumps(analise, ensure_ascii=False)
+    except ValueError as e:
+        # A transcrição fica salva mesmo se a análise falhar — dá para tentar depois
+        db.commit()
+        raise HTTPException(status_code=422, detail=f"Transcrição salva, mas a análise falhou: {e}")
+
+    db.commit()
+    db.refresh(task)
+
+    return CardTaskService(db).get_task(task.id)
+
+
 @router.post(
     "/{task_id}/fetch-transcript",
     response_model=CardTaskResponse,
@@ -1049,6 +1106,12 @@ async def fetch_transcript(
     task = db.query(CardTask).filter(CardTask.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Atividade não encontrada")
+
+    # Reunião do CRM: a transcrição está no Daily, não no Teams. Sem este
+    # desvio o botão ia ao Microsoft Graph e falhava — mesmo com a transcrição
+    # pronta e disponível (homologação de 15/09).
+    if task.meeting_provider == "daily":
+        return _analisar_transcricao_do_daily(db, task)
 
     if not task.teams_meeting_id:
         raise HTTPException(
@@ -1617,4 +1680,24 @@ async def sincronizar_gravacoes(
         task.recording_status = "processing"
         db.commit()
 
-    return {"encontradas": novas}
+    # A transcrição pode ter se perdido no mesmo aviso; recupera junto.
+    transcricao = False
+    if task.transcript_status != "ready":
+        try:
+            transcript_id = DailyService(db).transcricao_da_sala(task.daily_room_name)
+        except Exception:
+            transcript_id = None
+
+        if transcript_id:
+            from app.api.v1.endpoints.daily_webhook import processar_transcricao_em_background
+
+            task.transcript_status = "processing"
+            db.commit()
+            background_tasks.add_task(
+                processar_transcricao_em_background,
+                task_id=task.id,
+                transcript_id=transcript_id,
+            )
+            transcricao = True
+
+    return {"encontradas": novas, "transcricao": transcricao}

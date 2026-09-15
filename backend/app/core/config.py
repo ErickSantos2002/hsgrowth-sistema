@@ -122,7 +122,9 @@ class Settings(BaseSettings):
     R2_SECRET_ACCESS_KEY: str = ""
     R2_BUCKET: str = "hsgrowth-gravacoes"
     # Validade do link que o cliente recebe para assistir à gravação
-    R2_LINK_EXPIRACAO_DIAS: int = 30
+    # Teto do S3/R2: link assinado vale no maximo 7 dias (604800s). Pedir
+    # mais devolve InvalidArgument e o link nao abre.
+    R2_LINK_EXPIRACAO_DIAS: int = 7
     # Por quanto tempo a gravação fica guardada antes do descarte automático
     GRAVACAO_RETENCAO_MESES: int = 12
     # Teto para baixar a gravação em memória. Acima disso guardamos apenas a

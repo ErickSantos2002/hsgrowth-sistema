@@ -23,6 +23,9 @@ TAMANHO_MAXIMO_TITULO = 60
 # por parte (exceto a última); 8 MB dá margem sem pesar na memória.
 TAMANHO_BLOCO = 8 * 1024 * 1024
 
+# Teto do S3/R2 para link assinado: uma semana
+MAXIMO_DIAS_LINK = 7
+
 
 def montar_chave_gravacao(
     titulo: str, task_id: int, quando: Optional[datetime] = None, parte: int = 1
@@ -199,6 +202,10 @@ class StorageService:
         """
         cliente = self._cliente()
         dias = dias if dias is not None else settings.R2_LINK_EXPIRACAO_DIAS
+
+        # O S3 recusa assinatura acima de 7 dias. Cortar aqui evita devolver ao
+        # vendedor um link que só falha quando o cliente tenta abrir.
+        dias = min(dias, MAXIMO_DIAS_LINK)
 
         return cliente.generate_presigned_url(
             "get_object",

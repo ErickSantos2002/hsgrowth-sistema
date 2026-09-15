@@ -98,13 +98,14 @@ class TestUpload:
 class TestLinkTemporario:
 
     def test_gera_link_com_a_validade_pedida(self, cliente_falso):
+        """Dentro do teto de 7 dias, vale o prazo pedido (ver TestTetoDoLink)."""
         svc = StorageService()
         with patch.object(svc, "_cliente", return_value=cliente_falso):
-            url = svc.gerar_link_temporario("2026/09/reuniao-1.mp4", dias=30)
+            url = svc.gerar_link_temporario("2026/09/reuniao-1.mp4", dias=3)
 
         assert url.startswith("https://")
         chamada = cliente_falso.generate_presigned_url.call_args
-        assert chamada.kwargs["ExpiresIn"] == 30 * 24 * 3600
+        assert chamada.kwargs["ExpiresIn"] == 3 * 24 * 3600
 
     def test_validade_padrao_vem_da_configuracao(self, cliente_falso, monkeypatch):
         monkeypatch.setattr(settings, "R2_LINK_EXPIRACAO_DIAS", 7)
@@ -206,3 +207,41 @@ class TestEnvioEmPartes:
             resultado = svc.upload_em_partes(blocos(), "chave.mp4", "video/mp4")
 
         assert resultado == 100
+
+
+class TestTetoDoLink:
+    """
+    O S3/R2 recusa assinatura acima de 7 dias. Pedir 30 devolvia
+    InvalidArgument e o cliente recebia um link que nunca abria — descoberto na
+    homologação de 15/09, com o link já enviado.
+    """
+
+    def test_corta_no_maximo_permitido(self, monkeypatch):
+        from unittest.mock import MagicMock
+
+        from app.services.storage_service import storage_service
+
+        cliente = MagicMock()
+        monkeypatch.setattr(
+            "app.services.storage_service.StorageService._cliente",
+            lambda self: cliente,
+        )
+
+        storage_service.gerar_link_temporario("2026/09/reuniao.mp4", dias=30)
+
+        assert cliente.generate_presigned_url.call_args.kwargs["ExpiresIn"] == 7 * 24 * 3600
+
+    def test_prazo_menor_e_respeitado(self, monkeypatch):
+        from unittest.mock import MagicMock
+
+        from app.services.storage_service import storage_service
+
+        cliente = MagicMock()
+        monkeypatch.setattr(
+            "app.services.storage_service.StorageService._cliente",
+            lambda self: cliente,
+        )
+
+        storage_service.gerar_link_temporario("2026/09/reuniao.mp4", dias=1)
+
+        assert cliente.generate_presigned_url.call_args.kwargs["ExpiresIn"] == 24 * 3600

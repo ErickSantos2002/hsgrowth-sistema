@@ -208,7 +208,7 @@ class TestAssistirEBaixar:
 
 class TestLinkParaOCliente:
 
-    def test_gera_link_de_30_dias_e_registra(
+    def test_gera_link_com_prazo_e_registra(
         self, client: TestClient, salesperson_headers, task_com_duas_gravacoes, db,
         test_salesperson_user
     ):
@@ -233,7 +233,10 @@ class TestLinkParaOCliente:
         assert registro is not None
         assert registro.created_by_id == test_salesperson_user.id
         assert registro.meeting_recording_id == gravacao.id
-        assert registro.expires_at > datetime.utcnow() + timedelta(days=29)
+        # 7 dias: teto do S3/R2 para link assinado. Pedir mais devolvia
+        # InvalidArgument e o cliente recebia um link que nunca abria.
+        assert registro.expires_at > datetime.utcnow() + timedelta(days=6)
+        assert registro.expires_at < datetime.utcnow() + timedelta(days=8)
 
     def test_estranho_nao_gera_link(
         self, client: TestClient, task_com_duas_gravacoes, db, test_roles
