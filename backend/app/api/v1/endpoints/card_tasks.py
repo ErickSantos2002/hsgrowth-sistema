@@ -3,7 +3,7 @@ Endpoints da API para CardTask (Tarefas/Atividades dos Cards).
 """
 from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Depends, status, Request, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, status, Request, HTTPException
 from sqlalchemy.orm import Session
 import json
 
@@ -1408,17 +1408,86 @@ async def delete_daily_room(
 
 
 @router.get(
-    "/{task_id}/gravacao",
-    summary="Link para assistir ou baixar a gravação",
+    "/{task_id}/gravacoes",
+    summary="Trechos gravados da reunião",
     description="""
-    Devolve um link temporário para a gravação.
+    Lista os trechos gravados desta reunião, em ordem.
+
+    Uma reunião pode ter vários: o vendedor para a gravação e recomeça. O
+    caminho do arquivo no bucket nunca é devolvido — o acesso passa sempre
+    por um link temporário assinado.
+    """,
+)
+async def listar_gravacoes_da_reuniao(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    return [
+        {
+            "id": g.id,
+            "ordem": g.ordem,
+            "status": g.status,
+            "duracao_segundos": g.duration_seconds,
+            "tamanho_bytes": g.size_bytes,
+            "pronta_em": g.ready_at,
+            "erro": g.error,
+        }
+        for g in sorted(task.recordings, key=lambda g: g.ordem)
+    ]
+
+
+def _trecho_da_reuniao(db: Session, task: CardTask, gravacao_id: int):
+    """
+    Busca o trecho conferindo que ele pertence a esta reunião.
+
+    Sem essa conferência, quem tem acesso a uma reunião abriria a gravação de
+    outra apenas trocando o número na URL.
+    """
+    from app.models.meeting_recording import MeetingRecording
+
+    gravacao = (
+        db.query(MeetingRecording)
+        .filter(
+            MeetingRecording.id == gravacao_id,
+            MeetingRecording.card_task_id == task.id,
+        )
+        .first()
+    )
+    if not gravacao:
+        raise HTTPException(status_code=404, detail="Gravação não encontrada nesta reunião.")
+
+    if gravacao.status == "expired":
+        raise HTTPException(
+            status_code=410,
+            detail="Esta gravação expirou e não está mais disponível.",
+        )
+
+    if not gravacao.r2_key:
+        raise HTTPException(status_code=404, detail="Esta gravação ainda não está disponível.")
+
+    return gravacao
+
+
+@router.get(
+    "/{task_id}/gravacoes/{gravacao_id}/link",
+    summary="Link para assistir ou baixar um trecho",
+    description="""
+    Devolve um link temporário para o trecho gravado.
 
     O bucket é privado: nada nele abre por URL direta. O acesso sempre passa
     por um link assinado, gerado apenas para quem tem vínculo com o negócio.
     """,
 )
-async def obter_gravacao(
+async def link_da_gravacao(
     task_id: int,
+    gravacao_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -1429,40 +1498,30 @@ async def obter_gravacao(
         raise HTTPException(status_code=404, detail="Tarefa não encontrada")
 
     _verificar_acesso_reuniao(db, task, current_user)
-
-    if task.recording_status == "expired":
-        raise HTTPException(
-            status_code=410,
-            detail="Esta gravação expirou e não está mais disponível.",
-        )
-
-    # Arquivo grande demais na época: a gravação ficou no Daily
-    if task.recording_status == "external_link" and task.recording_external_url:
-        return {"url": task.recording_external_url, "externo": True}
-
-    if not task.recording_key:
-        raise HTTPException(status_code=404, detail="Esta reunião não tem gravação.")
+    gravacao = _trecho_da_reuniao(db, task, gravacao_id)
 
     try:
-        url = storage_service.gerar_link_temporario(task.recording_key, dias=1)
+        url = storage_service.gerar_link_temporario(gravacao.r2_key, dias=1)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
-    return {"url": url, "externo": False}
+    return {"url": url}
 
 
 @router.post(
-    "/{task_id}/gravacao/compartilhar",
-    summary="Gerar link da gravação para enviar ao cliente",
+    "/{task_id}/gravacoes/{gravacao_id}/compartilhar",
+    summary="Gerar link de um trecho para enviar ao cliente",
     description="""
-    Cria um link temporário para alguém de fora assistir à gravação.
+    Cria um link temporário para alguém de fora assistir ao trecho.
 
-    O link expira sozinho — se vazar depois, já não abre nada. Fica registrado
-    quem gerou e quando, para responder um dia como a gravação circulou.
+    O link expira sozinho — se vazar depois, já não abre nada. Fica
+    registrado quem gerou e quando, para responder um dia como a gravação
+    circulou.
     """,
 )
 async def compartilhar_gravacao(
     task_id: int,
+    gravacao_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -1477,22 +1536,18 @@ async def compartilhar_gravacao(
         raise HTTPException(status_code=404, detail="Tarefa não encontrada")
 
     _verificar_acesso_reuniao(db, task, current_user)
-
-    if task.recording_status == "expired":
-        raise HTTPException(status_code=410, detail="Esta gravação expirou.")
-
-    if not task.recording_key:
-        raise HTTPException(status_code=404, detail="Esta reunião não tem gravação.")
+    gravacao = _trecho_da_reuniao(db, task, gravacao_id)
 
     dias = settings.R2_LINK_EXPIRACAO_DIAS
 
     try:
-        url = storage_service.gerar_link_temporario(task.recording_key, dias=dias)
+        url = storage_service.gerar_link_temporario(gravacao.r2_key, dias=dias)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
     registro = RecordingShare(
         card_task_id=task.id,
+        meeting_recording_id=gravacao.id,
         created_by_id=current_user.id,
         created_at=datetime.utcnow(),
         expires_at=datetime.utcnow() + timedelta(days=dias),
@@ -1501,3 +1556,65 @@ async def compartilhar_gravacao(
     db.commit()
 
     return {"url": url, "expira_em_dias": dias}
+
+
+@router.post(
+    "/{task_id}/gravacoes/sincronizar",
+    summary="Buscar no Daily gravações que não chegaram",
+    description="""
+    Procura no Daily os trechos desta sala e processa os que faltam.
+
+    Existe porque um aviso perdido deixaria a gravação inacessível para
+    sempre — foi o que aconteceu na homologação de 14/09, quando três
+    gravações ficaram no Daily sem chegar ao card.
+    """,
+)
+async def sincronizar_gravacoes(
+    task_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.api.v1.endpoints.daily_webhook import processar_gravacao_em_background
+    from app.models.meeting_recording import MeetingRecording
+    from app.services.daily_service import DailyService
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    if not task.daily_room_name:
+        raise HTTPException(status_code=400, detail="Esta reunião não tem sala no CRM.")
+
+    existentes = {
+        g.daily_recording_id
+        for g in db.query(MeetingRecording).filter(
+            MeetingRecording.card_task_id == task.id
+        )
+    }
+
+    try:
+        gravacoes = DailyService(db).listar_gravacoes(task)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Não foi possível consultar o Daily: {e}")
+
+    novas = 0
+    for gravacao in gravacoes:
+        rec_id = gravacao.get("id")
+        if not rec_id or rec_id in existentes:
+            continue
+        background_tasks.add_task(
+            processar_gravacao_em_background,
+            task_id=task.id,
+            recording_id=rec_id,
+            duration=gravacao.get("duration"),
+        )
+        novas += 1
+
+    if novas:
+        task.recording_status = "processing"
+        db.commit()
+
+    return {"encontradas": novas}
