@@ -387,21 +387,64 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     }
   };
 
+  /**
+   * Converte o arquivo de transcrição em falas para a tela.
+   *
+   * Três formatos convivem:
+   *   Teams:         <v João Silva>Olá
+   *   CRM (Daily):   <v>João Silva:</v>Olá
+   *   Texto corrido: Olá          (a Microsoft entrega assim quando o
+   *                                locatário não permite dizer quem falou)
+   *
+   * O terceiro caso deixava a tela dizendo "nenhuma fala identificada" com a
+   * conversa inteira salva no banco — 45 mil caracteres invisíveis. E o
+   * segundo, que é o das reuniões no CRM, nunca tinha sido tratado aqui.
+   */
   const parseVtt = (vtt: string): { speaker: string; text: string }[] => {
-    const lines = vtt.split("\n");
     const result: { speaker: string; text: string }[] = [];
-    for (const line of lines) {
+    let novoTrecho = true;
+
+    const limpo = (t: string) => t.replace(/<[^>]+>/g, "").trim();
+
+    for (const line of vtt.split("\n")) {
       const trimmed = line.trim();
-      if (!trimmed || trimmed === "WEBVTT" || trimmed.includes("-->")) continue;
-      // Extrai speaker de <v Nome>texto
-      const vMatch = trimmed.match(/^<v ([^>]+)>(.*)/);
-      if (vMatch) {
-        result.push({ speaker: vMatch[1], text: vMatch[2].replace(/<[^>]+>/g, "").trim() });
-      } else if (result.length > 0 && !trimmed.match(/^\d+$/) && !trimmed.match(/^\d{2}:\d{2}/)) {
-        // Continuação de linha sem speaker tag
-        result[result.length - 1].text += " " + trimmed.replace(/<[^>]+>/g, "").trim();
+
+      if (!trimmed || trimmed === "WEBVTT" || trimmed.startsWith("NOTE")) continue;
+      if (trimmed.includes("-->")) {
+        novoTrecho = true;
+        continue;
       }
+      if (/^[0-9]+$/.test(trimmed)) continue;
+      // identificador de trecho do Daily: "transcript:357"
+      if (/^[A-Za-z_][A-Za-z0-9_-]*:[0-9]+$/.test(trimmed)) continue;
+
+      const daily = trimmed.match(/^<v\s*>?\s*([^<>]*?)\s*:?\s*<\/v>\s*(.*)$/);
+      if (daily) {
+        result.push({ speaker: daily[1].trim(), text: limpo(daily[2]) });
+        novoTrecho = false;
+        continue;
+      }
+
+      const teams = trimmed.match(/^<v\s+([^>]+)>(.*)$/);
+      if (teams) {
+        result.push({ speaker: teams[1].trim().replace(/:$/, ""), text: limpo(teams[2]) });
+        novoTrecho = false;
+        continue;
+      }
+
+      const texto = limpo(trimmed);
+      if (!texto) continue;
+
+      const ultimo = result[result.length - 1];
+      if (ultimo && !novoTrecho) {
+        // continuação da mesma fala, que se estende por várias linhas
+        ultimo.text += " " + texto;
+      } else {
+        result.push({ speaker: "", text: texto });
+      }
+      novoTrecho = false;
     }
+
     return result.filter((l) => l.text);
   };
 
@@ -942,9 +985,14 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
                   <div className="mt-2 max-h-64 overflow-y-auto rounded border border-slate-700/50 bg-slate-900/60 p-3 space-y-2">
                     {parseVtt(meeting.transcript_raw).map((line, i) => (
                       <div key={i} className="flex gap-2 text-xs">
-                        <span className="w-24 flex-shrink-0 font-medium text-purple-400/80 truncate">
-                          {line.speaker}
-                        </span>
+                        {/* Quando o locatário não permite dizer quem falou, a
+                            transcrição vem sem nomes: o texto ocupa a linha
+                            inteira em vez de deixar uma coluna vazia. */}
+                        {line.speaker && (
+                          <span className="w-24 flex-shrink-0 font-medium text-purple-400/80 truncate">
+                            {line.speaker}
+                          </span>
+                        )}
                         <span className="text-slate-400 leading-relaxed">{line.text}</span>
                       </div>
                     ))}
