@@ -111,15 +111,18 @@ def _marcar_falha(db, task: CardTask, motivo: str) -> None:
 
 def processar_gravacao(
     task_id: int,
-    download_url: str,
+    recording_id: str,
     duration: Optional[int] = None,
-    recording_id: Optional[str] = None,
 ) -> None:
     """
     Baixa a gravação do Daily e guarda no bucket.
 
     O arquivo viaja em blocos: nunca fica inteiro na memória, então tamanho
     deixa de ser limitação. Ao final, a cópia no Daily é apagada.
+
+    Recebe o identificador, não o link: o aviso do Daily não traz link algum,
+    e o link de download expira em minutos — pedi-lo aqui, na hora de baixar,
+    é o único jeito que funciona.
 
     Chamado em segundo plano pelo webhook.
     """
@@ -133,6 +136,18 @@ def processar_gravacao(
         # Reenvio do webhook e normal; nao reprocessa o que ja esta pronto
         if task.recording_status == "ready" and task.recording_key:
             print(f"[RECORDING] Gravacao da tarefa {task_id} ja processada — ignorado.")
+            return
+
+        from app.services.daily_service import DailyService
+
+        try:
+            download_url = DailyService(db).link_download_gravacao(recording_id)
+        except Exception as e:
+            _marcar_falha(db, task, f"Nao foi possivel obter o link da gravacao: {e}")
+            return
+
+        if not download_url:
+            _marcar_falha(db, task, "Daily nao devolveu link para a gravacao.")
             return
 
         chave = montar_chave_gravacao(
@@ -174,13 +189,10 @@ def processar_gravacao(
         # Com a copia no nosso bucket, a do Daily so geraria custo de
         # armazenamento. Falha aqui nao invalida a gravacao — no pior caso
         # sobra um arquivo la, que da para apagar depois.
-        if recording_id:
-            try:
-                from app.services.daily_service import DailyService
-
-                DailyService(db).apagar_gravacao(recording_id)
-            except Exception as e:
-                print(f"[RECORDING] Aviso: falha ao apagar a gravacao no Daily: {e}")
+        try:
+            DailyService(db).apagar_gravacao(recording_id)
+        except Exception as e:
+            print(f"[RECORDING] Aviso: falha ao apagar a gravacao no Daily: {e}")
 
         _notificar(
             db,

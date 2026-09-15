@@ -129,11 +129,15 @@ class TestEventos:
         assert task.contact_joined_at is not None
 
     def test_recording_pronta_dispara_processamento(self, client: TestClient, task, db, monkeypatch):
+        """
+        O evento real do Daily não traz link de arquivo, só o identificador —
+        confirmado na homologação de 14/09, quando três gravações existiam no
+        Daily e nenhuma chegou ao card.
+        """
         chamou = {}
 
-        def fake(task_id, download_url, duration=None, **kwargs):
-            chamou["task_id"] = task_id
-            chamou["url"] = download_url
+        def fake(task_id, recording_id, duration=None, **kwargs):
+            chamou.update(task_id=task_id, recording_id=recording_id, duration=duration)
 
         monkeypatch.setattr(
             "app.api.v1.endpoints.daily_webhook.processar_gravacao_em_background", fake
@@ -142,15 +146,35 @@ class TestEventos:
         response = enviar(client, {
             "type": "recording.ready-to-download",
             "payload": {
+                "recording_id": "rec-123",
                 "room_name": task.daily_room_name,
-                "download_url": "https://daily/gravacao.mp4",
-                "duration": 1800,
+                "duration": 173,
+                "s3_key": "healthsafety/hsg-1/1789386947497",
+                "status": "finished",
             },
         })
 
         assert response.status_code == 200
-        assert chamou["task_id"] == task.id
-        assert chamou["url"] == "https://daily/gravacao.mp4"
+        assert chamou == {"task_id": task.id, "recording_id": "rec-123", "duration": 173}
+
+        db.refresh(task)
+        assert task.recording_status == "processing"
+
+    def test_recording_sem_identificador_nao_quebra(self, client: TestClient, task, monkeypatch):
+        """Evento estranho não pode virar erro: o Daily desliga o webhook após 3 falhas."""
+        chamou = []
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.processar_gravacao_em_background",
+            lambda **kw: chamou.append(kw),
+        )
+
+        response = enviar(client, {
+            "type": "recording.ready-to-download",
+            "payload": {"room_name": task.daily_room_name, "duration": 10},
+        })
+
+        assert response.status_code == 200
+        assert chamou == []
 
     def test_transcricao_pronta_dispara_processamento(self, client: TestClient, task, monkeypatch):
         chamou = {}

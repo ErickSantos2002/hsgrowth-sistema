@@ -41,6 +41,7 @@ services:
       - ./logs:/app/logs
       - ./backups:/app/backups
       - ./scripts:/app/scripts
+      - ./tests:/app/tests  # roda a suíte sem recriar a imagem
     ports:
       - "8000:8000"
     healthcheck:

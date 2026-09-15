@@ -80,6 +80,18 @@ def sessao_do_teste(db, monkeypatch):
     )
 
 
+@pytest.fixture(autouse=True)
+def link_do_daily(monkeypatch):
+    """
+    O aviso do Daily traz só o identificador, então o serviço pede o link antes
+    de baixar. Aqui esse pedido é simulado — nenhum teste toca a rede.
+    """
+    monkeypatch.setattr(
+        "app.services.daily_service.DailyService.link_download_gravacao",
+        lambda self, recording_id: f"https://daily/{recording_id}.mp4",
+    )
+
+
 class TestFluxoNormal:
 
     def test_baixa_e_guarda_no_bucket(self, db, task):
@@ -89,8 +101,7 @@ class TestFluxoNormal:
              patch("app.services.storage_service.storage_service.upload_em_partes", upload), \
              patch("app.services.daily_service.DailyService.apagar_gravacao"):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4",
-                duration=1800, recording_id="rec-1",
+                task_id=task.id, recording_id="rec-1", duration=1800,
             )
 
         db.refresh(task)
@@ -108,7 +119,7 @@ class TestFluxoNormal:
              patch("app.services.storage_service.storage_service.upload_em_partes", upload), \
              patch("app.services.daily_service.DailyService.apagar_gravacao"):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4", recording_id="rec-1"
+                task_id=task.id, recording_id="rec-1"
             )
 
         chave = upload.call_args.args[1]
@@ -129,8 +140,7 @@ class TestArquivoGrande:
              patch("app.services.storage_service.storage_service.upload_em_partes", upload), \
              patch("app.services.daily_service.DailyService.apagar_gravacao"):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/grande.mp4",
-                duration=3600, recording_id="rec-1",
+                task_id=task.id, recording_id="rec-1", duration=3600,
             )
 
         db.refresh(task)
@@ -150,7 +160,7 @@ class TestArquivoGrande:
              patch("app.services.storage_service.storage_service.upload_em_partes", capturar), \
              patch("app.services.daily_service.DailyService.apagar_gravacao"):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4", recording_id="rec-1"
+                task_id=task.id, recording_id="rec-1"
             )
 
         assert recebido["e_gerador"] is True
@@ -170,7 +180,7 @@ class TestLimpezaNoDaily:
              patch("app.services.storage_service.storage_service.upload_em_partes", return_value=1024), \
              patch("app.services.daily_service.DailyService.apagar_gravacao", apagar):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4", recording_id="rec-1"
+                task_id=task.id, recording_id="rec-1"
             )
 
         apagar.assert_called_once_with("rec-1")
@@ -184,7 +194,7 @@ class TestLimpezaNoDaily:
                    side_effect=ValueError("R2 fora do ar")), \
              patch("app.services.daily_service.DailyService.apagar_gravacao", apagar):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4", recording_id="rec-1"
+                task_id=task.id, recording_id="rec-1"
             )
 
         apagar.assert_not_called()
@@ -198,7 +208,7 @@ class TestLimpezaNoDaily:
              patch("app.services.daily_service.DailyService.apagar_gravacao",
                    side_effect=Exception("indisponível")):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4", recording_id="rec-1"
+                task_id=task.id, recording_id="rec-1"
             )
 
         db.refresh(task)
@@ -210,7 +220,7 @@ class TestFalhas:
     def test_download_falho_registra_o_erro(self, db, task):
         with patch("httpx.stream", return_value=_StreamFalso(ok=False)):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4", recording_id="rec-1"
+                task_id=task.id, recording_id="rec-1"
             )
 
         db.refresh(task)
@@ -223,7 +233,7 @@ class TestFalhas:
                    side_effect=ValueError("R2 indisponível")), \
              patch("app.services.daily_service.DailyService.apagar_gravacao"):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4", recording_id="rec-1"
+                task_id=task.id, recording_id="rec-1"
             )
 
         db.refresh(task)
@@ -232,7 +242,7 @@ class TestFalhas:
 
     def test_tarefa_inexistente_nao_quebra(self, db):
         """Chamado em segundo plano: exceção aqui não tem quem trate."""
-        processar_gravacao(task_id=99999999, download_url="https://daily/g.mp4")
+        processar_gravacao(task_id=99999999, recording_id="rec-1")
 
     def test_gravacao_ja_processada_nao_repete(self, db, task):
         task.recording_status = "ready"
@@ -244,7 +254,7 @@ class TestFalhas:
              patch("app.services.storage_service.storage_service.upload_em_partes", upload), \
              patch("app.services.daily_service.DailyService.apagar_gravacao"):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4", recording_id="rec-1"
+                task_id=task.id, recording_id="rec-1"
             )
 
         upload.assert_not_called()
@@ -299,7 +309,7 @@ class TestNotificacoes:
              patch("app.services.storage_service.storage_service.upload_em_partes", return_value=1024), \
              patch("app.services.daily_service.DailyService.apagar_gravacao"):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4", recording_id="rec-1"
+                task_id=task.id, recording_id="rec-1"
             )
 
         from app.models.notification import Notification
@@ -311,7 +321,7 @@ class TestNotificacoes:
     def test_falha_avisa_tambem_os_admins(self, db, task, test_admin_user):
         with patch("httpx.stream", return_value=_StreamFalso(ok=False)):
             processar_gravacao(
-                task_id=task.id, download_url="https://daily/g.mp4", recording_id="rec-1"
+                task_id=task.id, recording_id="rec-1"
             )
 
         from app.models.notification import Notification

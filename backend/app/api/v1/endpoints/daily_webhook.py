@@ -76,18 +76,16 @@ def _task_da_sala(db: Session, nome_sala: Optional[str]) -> Optional[CardTask]:
 
 def processar_gravacao_em_background(
     task_id: int,
-    download_url: str,
+    recording_id: str,
     duration: Optional[int] = None,
-    recording_id: Optional[str] = None,
 ) -> None:
     """Baixa a gravação, guarda no bucket e apaga a cópia do Daily."""
     from app.services.recording_service import processar_gravacao
 
     processar_gravacao(
         task_id=task_id,
-        download_url=download_url,
-        duration=duration,
         recording_id=recording_id,
+        duration=duration,
     )
 
 
@@ -159,17 +157,22 @@ async def receber_evento_daily(
             db.commit()
 
     elif tipo == "recording.ready-to-download":
-        url = dados.get("download_url")
-        if url:
+        # O Daily não manda link de arquivo: manda o identificador, e o link
+        # é pedido à API na hora do download (ele expira em minutos). Esperar
+        # um `download_url` que nunca vem fazia o evento ser ignorado em
+        # silêncio — a gravação existia no Daily e nunca chegava ao card.
+        recording_id = dados.get("recording_id") or dados.get("id")
+        if recording_id:
             task.recording_status = "processing"
             db.commit()
             background_tasks.add_task(
                 processar_gravacao_em_background,
                 task_id=task.id,
-                download_url=url,
+                recording_id=recording_id,
                 duration=dados.get("duration"),
-                recording_id=dados.get("recording_id") or dados.get("id"),
             )
+        else:
+            print("[DAILY-WEBHOOK] Gravacao pronta sem identificador — ignorado.")
 
     elif tipo == "transcript.ready-to-download":
         url = dados.get("download_url")
