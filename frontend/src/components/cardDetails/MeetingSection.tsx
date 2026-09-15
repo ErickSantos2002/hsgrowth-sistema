@@ -149,6 +149,25 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     loadMeetings(true);
   }, [cardId]);
 
+  // Enquanto algo estiver sendo preparado, a lista se atualiza sozinha.
+  // O processamento roda no servidor e nada avisa a tela quando termina — sem
+  // isto, o vendedor precisa recarregar a página na mão para ver a gravação
+  // chegar (foi o que aconteceu na homologação de 15/09).
+  useEffect(() => {
+    const preparando = meetings.some(
+      (m) =>
+        m.recording_status === "processing" ||
+        m.transcript_status === "processing" ||
+        m.gravacoes?.some((g) => g.status === "processing")
+    );
+    if (!preparando) return;
+
+    const timer = window.setInterval(() => loadMeetings(), 15000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meetings]);
+
+
   const pending = meetings.filter((m) => !m.is_completed && !m.is_cancelled);
   const completed = meetings.filter((m) => m.is_completed && !m.is_cancelled);
   const cancelled = meetings.filter((m) => m.is_cancelled);
@@ -673,9 +692,15 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
                 </span>
               )}
               {meeting.contact_name && <span>• {meeting.contact_name}</span>}
-              {meeting.teams_join_url && (
+              {/* Onde a reunião acontece. Uma atividade pode ter os dois links
+                  (sala do CRM e evento no Teams); manda o provedor escolhido. */}
+              {meeting.meeting_provider === "daily" ? (
+                <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-emerald-400">
+                  No CRM
+                </span>
+              ) : meeting.teams_join_url ? (
                 <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-purple-400">Teams</span>
-              )}
+              ) : null}
               {meeting.transcript_analysis && (
                 <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-violet-400">Analisada</span>
               )}
