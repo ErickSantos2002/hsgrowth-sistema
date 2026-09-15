@@ -20,6 +20,7 @@ import DailyIframe, { DailyCall } from "@daily-co/daily-js";
 import { Loader2, VideoOff } from "lucide-react";
 
 import cardTaskService from "../services/cardTaskService";
+import RecordingBanner from "../components/meeting/RecordingBanner";
 
 const IFRAME_ALLOW =
   "camera; microphone; fullscreen; display-capture; autoplay; picture-in-picture";
@@ -30,6 +31,9 @@ const MeetingRoom: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const callRef = useRef<DailyCall | null>(null);
 
+  // A chamada vai para o estado (além do ref) porque a faixa de gravação
+  // precisa reagir aos eventos dela.
+  const [call, setCall] = useState<DailyCall | null>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [encerrada, setEncerrada] = useState(false);
@@ -64,6 +68,7 @@ const MeetingRoom: React.FC = () => {
           showFullscreenButton: true,
         });
         callRef.current = call;
+        setCall(call);
 
         call.on("left-meeting", () => setEncerrada(true));
 
@@ -123,6 +128,8 @@ const MeetingRoom: React.FC = () => {
       <div className="flex items-center gap-3 border-b border-slate-700/50 px-4 py-3">
         <span className="text-sm font-medium text-white">Reunião por vídeo</span>
       </div>
+
+      <RecordingBanner call={call} />
 
       <div className="relative flex-1">
         {/* pointer-events-none: mesmo enquanto visível, não pode roubar o

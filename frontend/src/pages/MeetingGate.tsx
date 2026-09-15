@@ -12,6 +12,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import DailyIframe, { DailyCall } from "@daily-co/daily-js";
+
+import RecordingBanner from "../components/meeting/RecordingBanner";
 import { Loader2, Video, CalendarX, Clock } from "lucide-react";
 
 import publicMeetingService, { PublicMeetingInfo } from "../services/publicMeetingService";
@@ -31,6 +33,9 @@ const MeetingGate: React.FC = () => {
   const [carregando, setCarregando] = useState(true);
   const [entrando, setEntrando] = useState(false);
   const [naSala, setNaSala] = useState(false);
+  // O cliente também vê a faixa de gravação: quem está sendo gravado
+  // precisa saber disso.
+  const [call, setCall] = useState<DailyCall | null>(null);
   const [saiu, setSaiu] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", company: "", email: "" });
@@ -69,6 +74,7 @@ const MeetingGate: React.FC = () => {
       showLeaveButton: true,
     });
     callRef.current = call;
+    setCall(call);
 
     call.on("left-meeting", () => setSaiu(true));
 
@@ -133,8 +139,11 @@ const MeetingGate: React.FC = () => {
 
   if (naSala) {
     return (
-      <div className="relative h-screen w-screen bg-slate-900">
-        <div ref={containerRef} className="absolute inset-0" />
+      <div className="relative flex h-screen w-screen flex-col bg-slate-900">
+        <RecordingBanner call={call} />
+        <div className="relative flex-1">
+          <div ref={containerRef} className="absolute inset-0" />
+        </div>
         {saiu && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-slate-900 p-6 text-center">
             <CalendarX className="text-slate-500" size={36} />
