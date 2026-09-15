@@ -25,6 +25,7 @@ from app.models.activity import Activity
 from app.models.audit_log import AuditLog
 from app.models.card_task import CardTask
 from app.models.recording_share import RecordingShare
+from app.models.meeting_recording import MeetingRecording
 
 # Modelos de produtos
 from app.models.product import Product
@@ -112,6 +113,7 @@ __all__ = [
     "AuditLog",
     "CardTask",
     "RecordingShare",
+    "MeetingRecording",
     "Product",
     "CardProduct",
     "GamificationPoint",

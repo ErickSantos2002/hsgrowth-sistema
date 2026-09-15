@@ -26,6 +26,12 @@ class RecordingShare(Base):
         nullable=False,
         index=True,
     )
+    meeting_recording_id = Column(
+        Integer,
+        ForeignKey("meeting_recordings.id", ondelete="CASCADE"),
+        nullable=True,
+        comment="Trecho compartilhado; nulo nos registros anteriores à gravação em partes",
+    )
     created_by_id = Column(
         Integer,
         ForeignKey("users.id", ondelete="SET NULL"),

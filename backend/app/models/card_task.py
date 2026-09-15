@@ -130,6 +130,13 @@ class CardTask(Base, TimestampMixin):
     assigned_to = relationship("User", foreign_keys=[assigned_to_id], back_populates="tasks")
     created_by = relationship("User", foreign_keys=[created_by_id])
     card_cadence = relationship("CardCadence", back_populates="tasks", foreign_keys=[card_cadence_id])
+    # Trechos gravados desta reunião — uma reunião pode ter vários
+    recordings = relationship(
+        "MeetingRecording",
+        back_populates="task",
+        cascade="all, delete-orphan",
+        order_by="MeetingRecording.ordem",
+    )
 
     def __repr__(self):
         return f"<CardTask(id={self.id}, card_id={self.card_id}, type='{self.task_type}', title='{self.title}')>"
