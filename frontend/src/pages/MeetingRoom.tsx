@@ -67,6 +67,18 @@ const MeetingRoom: React.FC = () => {
 
         call.on("left-meeting", () => setEncerrada(true));
 
+        // A transcrição sustenta a análise depois da reunião e a IA ao vivo.
+        // Precisa ser pedida em pt-BR: o padrão do Daily é inglês, e uma
+        // conversa em português virou ruído na homologação de 14/09.
+        call.on("joined-meeting", () => {
+          try {
+            call.startTranscription({ language: "pt-BR", model: "nova-3" });
+          } catch (e) {
+            // "already started" é esperado quando o anfitrião reabre a aba
+            console.warn("[reuniao] transcricao nao iniciou", e);
+          }
+        });
+
         // A partir daqui quem manda na tela é o Daily — inclusive o próprio
         // aviso de "entrando". Nosso indicador precisa sair já: enquanto ele
         // estiver visível, cobre o iframe e impede o clique em opções como

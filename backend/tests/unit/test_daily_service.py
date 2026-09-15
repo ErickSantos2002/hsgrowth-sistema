@@ -258,10 +258,11 @@ class TestGravacaoNaSala:
         props = m.call_args.kwargs["json"]["properties"]
         assert props["enable_transcription_storage"] is True
 
-    def test_transcricao_comeca_com_o_anfitriao(self, db: Session, task, test_salesperson_user):
+    def test_token_nao_inicia_transcricao_sozinho(self, db: Session, task, test_salesperson_user):
         """
-        A transcrição acompanha a reunião desde o início — é ela que alimenta
-        a análise depois e a IA ao vivo (Fase 5). Só o dono pode iniciá-la.
+        Quem inicia a transcrição é a página da sala, em pt-BR. O início
+        automático do Daily usa o modelo padrão, em inglês, e transcreveu uma
+        conversa em português como ruído na homologação de 14/09.
         """
         task.daily_room_name = "hsg-1"
         db.commit()
@@ -271,7 +272,24 @@ class TestGravacaoNaSala:
             svc.create_host_token(task, test_salesperson_user)
 
         props = m.call_args.kwargs["json"]["properties"]
-        assert props["auto_start_transcription"] is True
+        assert "auto_start_transcription" not in props
+        assert props["is_owner"] is True
+
+    def test_sala_nega_gravacao_a_quem_nao_e_dono(self, db: Session, task):
+        """
+        Na homologação de 14/09 o convidado iniciou e parou a gravação: sem
+        `permissions`, o padrão do Daily libera isso para qualquer um.
+        """
+        svc = DailyService(db)
+        fake = _Resp(200, {"name": f"hsg-{task.id}", "url": "https://x.daily.co/h"})
+
+        with patch("httpx.Client.post", return_value=fake) as m:
+            svc.create_room(task)
+
+        permissoes = m.call_args.kwargs["json"]["properties"]["permissions"]
+        assert permissoes["canAdmin"] is False
+        assert permissoes["hasPresence"] is True
+        assert permissoes["canSend"] is True
 
     def test_convidado_nao_inicia_transcricao(self, db: Session, task):
         task.daily_room_name = "hsg-1"

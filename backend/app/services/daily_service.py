@@ -113,6 +113,15 @@ class DailyService:
                 # Salva o VTT da transcrição — sem isso o arquivo não é
                 # guardado e o webhook de transcrição nunca chega.
                 "enable_transcription_storage": True,
+                # Sem isto, o padrão do Daily deixa QUALQUER participante
+                # iniciar e parar a gravação — o convidado fez isso na
+                # homologação de 14/09. O anfitrião não é afetado: ele entra
+                # com token de dono.
+                "permissions": {
+                    "hasPresence": True,
+                    "canSend": True,
+                    "canAdmin": False,
+                },
                 "exp": self._room_expiry(task),
                 "eject_at_room_exp": True,   # não deixa sala aberta para sempre
             },
@@ -150,20 +159,13 @@ class DailyService:
 
     # ── tokens ──────────────────────────────────────────────────────────────
 
-    def _create_token(
-        self, task: CardTask, user_name: str, is_owner: bool, iniciar_transcricao: bool = False
-    ) -> str:
+    def _create_token(self, task: CardTask, user_name: str, is_owner: bool) -> str:
         propriedades = {
             "room_name": task.daily_room_name,
             "user_name": user_name,
             "is_owner": is_owner,
             "exp": self._room_expiry(task),
         }
-
-        if iniciar_transcricao:
-            # A transcrição acompanha a reunião desde o início: é ela que
-            # alimenta a análise depois e a IA ao vivo. Só o dono pode iniciar.
-            propriedades["auto_start_transcription"] = True
 
         payload = {"properties": propriedades}
 
@@ -176,10 +178,15 @@ class DailyService:
         return token
 
     def create_host_token(self, task: CardTask, user: User) -> str:
-        """Token do vendedor/SDR — dono da sala, libera quem está esperando."""
-        return self._create_token(
-            task, user.name or "Anfitrião", is_owner=True, iniciar_transcricao=True
-        )
+        """
+        Token do vendedor/SDR — dono da sala, libera quem está esperando.
+
+        A transcrição não começa por aqui. O início automático do Daily usa o
+        modelo padrão, em inglês: na homologação de 14/09 uma conversa em
+        português virou "Have on the ip key". Quem inicia é a página da sala,
+        pedindo pt-BR explicitamente.
+        """
+        return self._create_token(task, user.name or "Anfitrião", is_owner=True)
 
     def create_guest_token(self, task: CardTask, guest_name: str) -> str:
         """Token do convidado — nunca dono, não libera ninguém nem encerra a sala."""
