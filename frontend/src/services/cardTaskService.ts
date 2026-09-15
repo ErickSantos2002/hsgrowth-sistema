@@ -49,6 +49,18 @@ export interface CardTask {
   teams_event_id?: string | null;
   transcript_raw?: string | null;
   transcript_analysis?: string | null;
+  // Trechos gravados: uma reunião pode ter vários (o vendedor para e recomeça)
+  gravacoes?: GravacaoTrecho[];
+}
+
+export interface GravacaoTrecho {
+  id: number;
+  ordem: number;
+  status: "processing" | "ready" | "failed" | "expired";
+  duracao_segundos?: number | null;
+  tamanho_bytes?: number | null;
+  pronta_em?: string | null;
+  erro?: string | null;
 }
 
 export interface CreateCardTaskRequest {
@@ -298,19 +310,33 @@ class CardTaskService {
   }
 
   /**
-   * Link temporário para assistir ou baixar a gravação.
+   * Link temporário para assistir ou baixar um trecho gravado.
    * O bucket é privado — nada abre por URL direta.
    */
-  async obterGravacao(taskId: number): Promise<{ url: string; externo: boolean }> {
-    const response = await api.get(`/api/v1/card-tasks/${taskId}/gravacao`);
+  async linkGravacao(taskId: number, gravacaoId: number): Promise<{ url: string }> {
+    const response = await api.get(
+      `/api/v1/card-tasks/${taskId}/gravacoes/${gravacaoId}/link`
+    );
     return response.data;
   }
 
-  /** Link da gravação para enviar ao cliente (expira, e fica registrado quem gerou). */
+  /** Link de um trecho para enviar ao cliente (expira, e fica registrado quem gerou). */
   async compartilharGravacao(
-    taskId: number
+    taskId: number,
+    gravacaoId: number
   ): Promise<{ url: string; expira_em_dias: number }> {
-    const response = await api.post(`/api/v1/card-tasks/${taskId}/gravacao/compartilhar`);
+    const response = await api.post(
+      `/api/v1/card-tasks/${taskId}/gravacoes/${gravacaoId}/compartilhar`
+    );
+    return response.data;
+  }
+
+  /**
+   * Procura no Daily gravações que não chegaram pelo aviso automático.
+   * Recuperação para quando um aviso se perde no caminho.
+   */
+  async sincronizarGravacoes(taskId: number): Promise<{ encontradas: number }> {
+    const response = await api.post(`/api/v1/card-tasks/${taskId}/gravacoes/sincronizar`);
     return response.data;
   }
 

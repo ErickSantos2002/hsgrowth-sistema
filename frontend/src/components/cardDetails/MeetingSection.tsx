@@ -13,6 +13,7 @@ import {
   Minus,
   Clock,
   ChevronDown,
+  RefreshCw,
   ChevronRight,
   Check,
   X,
@@ -580,11 +581,11 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     }
   };
 
-  /** Abre a gravação numa aba nova, usando link temporário do bucket. */
-  const handleAssistirGravacao = async (id: number) => {
+  /** Abre um trecho gravado numa aba nova, usando link temporário do bucket. */
+  const handleAssistirGravacao = async (id: number, gravacaoId: number) => {
     try {
       setActionLoadingId(id);
-      const { url } = await cardTaskService.obterGravacao(id);
+      const { url } = await cardTaskService.linkGravacao(id, gravacaoId);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (error: any) {
       showError(error.response?.data?.detail || "Não foi possível abrir a gravação.");
@@ -593,15 +594,41 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     }
   };
 
-  /** Gera o link da gravação para enviar ao cliente e copia. */
-  const handleCompartilharGravacao = async (id: number) => {
+  /** Gera o link de um trecho para enviar ao cliente e copia. */
+  const handleCompartilharGravacao = async (id: number, gravacaoId: number) => {
     try {
       setActionLoadingId(id);
-      const { url, expira_em_dias } = await cardTaskService.compartilharGravacao(id);
+      const { url, expira_em_dias } = await cardTaskService.compartilharGravacao(
+        id,
+        gravacaoId
+      );
       await navigator.clipboard.writeText(url).catch(() => {});
       showSuccess(`Link copiado! Válido por ${expira_em_dias} dias.`);
     } catch (error: any) {
       showError(error.response?.data?.detail || "Não foi possível gerar o link.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  /**
+   * Procura no Daily gravações que não chegaram pelo aviso automático.
+   *
+   * Existe porque um aviso perdido deixaria a gravação inacessível para
+   * sempre — foi o que aconteceu na homologação de 14/09.
+   */
+  const handleSincronizarGravacoes = async (id: number) => {
+    try {
+      setActionLoadingId(id);
+      const { encontradas } = await cardTaskService.sincronizarGravacoes(id);
+      showSuccess(
+        encontradas > 0
+          ? `${encontradas} gravação(ões) encontrada(s). O processamento leva alguns minutos.`
+          : "Nenhuma gravação encontrada para esta reunião."
+      );
+      await loadMeetings();
+    } catch (error: any) {
+      showError(error.response?.data?.detail || "Não foi possível procurar a gravação.");
     } finally {
       setActionLoadingId(null);
     }
@@ -666,59 +693,88 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
               <p className="text-xs text-slate-400 leading-relaxed">{meeting.description}</p>
             )}
 
-            {/* Estado da gravação — só aparece quando houve gravação */}
-            {meeting.recording_status && meeting.recording_status !== "none" && (
-              <div className="flex flex-wrap items-center gap-2">
-                {meeting.recording_status === "processing" && (
-                  <span className="flex items-center gap-1.5 rounded border border-slate-600/50 bg-slate-700/30 px-2 py-1 text-xs text-slate-400">
-                    <Loader2 size={11} className="animate-spin" />
-                    Preparando a gravação...
-                  </span>
-                )}
-
-                {(meeting.recording_status === "ready" ||
-                  meeting.recording_status === "external_link") && (
-                  <>
-                    <button
-                      onClick={() => handleAssistirGravacao(meeting.id)}
-                      disabled={isActioning}
-                      className="flex items-center gap-1.5 rounded border border-purple-500/50 bg-purple-500/10 px-2.5 py-1.5 text-xs font-medium text-purple-300 transition-colors hover:bg-purple-500/20 disabled:opacity-50"
-                    >
-                      <MonitorPlay size={12} />
-                      Assistir gravação
-                      {meeting.recording_duration_seconds
-                        ? ` (${Math.round(meeting.recording_duration_seconds / 60)} min)`
-                        : ""}
-                    </button>
-                    <button
-                      onClick={() => handleCompartilharGravacao(meeting.id)}
-                      disabled={isActioning}
-                      title="Gerar link para enviar ao cliente"
-                      className="flex items-center gap-1.5 rounded border border-slate-600/50 px-2.5 py-1.5 text-xs text-slate-300 transition-colors hover:bg-slate-700/50 disabled:opacity-50"
-                    >
-                      <Copy size={12} />
-                      Link para o cliente
-                    </button>
-                  </>
-                )}
-
-                {meeting.recording_status === "expired" && (
-                  <span className="rounded border border-slate-600/50 bg-slate-700/20 px-2 py-1 text-xs text-slate-500">
-                    Gravação expirada (mais de 12 meses)
-                  </span>
-                )}
-
-                {meeting.recording_status === "failed" && (
-                  <span
-                    title={meeting.recording_error || ""}
-                    className="flex items-center gap-1.5 rounded border border-red-500/30 bg-red-500/5 px-2 py-1 text-xs text-red-400"
+            {/* Trechos gravados — a reunião pode ter mais de um, porque o
+                vendedor para a gravação e recomeça */}
+            {meeting.gravacoes && meeting.gravacoes.length > 0 && (
+              <div className="space-y-1.5">
+                {meeting.gravacoes.map((gravacao) => (
+                  <div
+                    key={gravacao.id}
+                    className="flex flex-wrap items-center gap-2 rounded border border-slate-700/40 px-2.5 py-1.5"
                   >
-                    <AlertTriangle size={11} />
-                    Falha ao processar a gravação
-                  </span>
-                )}
+                    <span className="text-xs text-slate-400">
+                      {meeting.gravacoes!.length > 1
+                        ? `Parte ${gravacao.ordem} de ${meeting.gravacoes!.length}`
+                        : "Gravação"}
+                      {gravacao.duracao_segundos
+                        ? ` · ${Math.max(1, Math.round(gravacao.duracao_segundos / 60))} min`
+                        : ""}
+                    </span>
+
+                    {gravacao.status === "processing" && (
+                      <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                        <Loader2 size={11} className="animate-spin" />
+                        Preparando...
+                      </span>
+                    )}
+
+                    {gravacao.status === "ready" && (
+                      <>
+                        <button
+                          onClick={() => handleAssistirGravacao(meeting.id, gravacao.id)}
+                          disabled={isActioning}
+                          className="flex items-center gap-1.5 rounded border border-purple-500/50 bg-purple-500/10 px-2.5 py-1 text-xs font-medium text-purple-300 transition-colors hover:bg-purple-500/20 disabled:opacity-50"
+                        >
+                          <MonitorPlay size={12} />
+                          Assistir
+                        </button>
+                        <button
+                          onClick={() => handleCompartilharGravacao(meeting.id, gravacao.id)}
+                          disabled={isActioning}
+                          title="Gerar link para enviar ao cliente"
+                          className="flex items-center gap-1.5 rounded border border-slate-600/50 px-2.5 py-1 text-xs text-slate-300 transition-colors hover:bg-slate-700/50 disabled:opacity-50"
+                        >
+                          <Copy size={12} />
+                          Link para o cliente
+                        </button>
+                      </>
+                    )}
+
+                    {gravacao.status === "expired" && (
+                      <span className="text-xs text-slate-500">
+                        Expirada (mais de 12 meses)
+                      </span>
+                    )}
+
+                    {gravacao.status === "failed" && (
+                      <span
+                        title={gravacao.erro || ""}
+                        className="flex items-center gap-1.5 text-xs text-red-400"
+                      >
+                        <AlertTriangle size={11} />
+                        Falha ao processar
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
+
+            {/* Reunião encerrada e nenhuma gravação registrada: o aviso do
+                Daily pode ter se perdido — dá para buscar sem depender de nós */}
+            {meeting.meeting_provider === "daily" &&
+              meeting.meeting_ended_at &&
+              (!meeting.gravacoes || meeting.gravacoes.length === 0) && (
+                <button
+                  onClick={() => handleSincronizarGravacoes(meeting.id)}
+                  disabled={isActioning}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 underline-offset-2 transition-colors hover:text-slate-200 hover:underline disabled:opacity-50"
+                >
+                  <RefreshCw size={11} className={isActioning ? "animate-spin" : ""} />
+                  Procurar gravação desta reunião
+                </button>
+              )}
+
 
             {/* Reunião por vídeo no CRM — entrar na sala e copiar o link do cliente */}
             {meeting.meeting_provider === "daily" && !meeting.is_completed && (
