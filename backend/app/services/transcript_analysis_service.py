@@ -100,7 +100,7 @@ class TranscriptAnalysisService:
         Daily:
             transcript:357
             00:00:01.000 --> 00:00:04.000
-            <v Maria:</v>Bom dia, tudo bem?
+            <v>Maria:</v>Bom dia, tudo bem?
 
         O do Daily traz identificadores de trecho e fecha a tag de voz. Sem
         tratar isso, o texto sai com números e marcação no meio das frases — e
@@ -133,16 +133,13 @@ class TranscriptAnalysisService:
             if re.match(r"^[A-Za-z_][A-Za-z0-9_-]*:\d+$", trimmed):
                 continue
 
-            # <v Nome>texto (Teams) ou <v Nome:</v>texto (Daily)
-            voz = re.match(r"^<v(?:\s[^>]*?)?>\s*(.*)$", trimmed)
-            if voz is None:
-                voz = re.match(r"^<v\s+([^>]*?)>\s*(.*)$", trimmed)
-
             falante = None
             texto = trimmed
 
-            # Daily: <v Maria:</v>Bom dia
-            daily = re.match(r"^<v\s+([^<>]*?):?\s*</v>\s*(.*)$", trimmed)
+            # Daily: "<v>Maria:</v>Bom dia" (formato real, sem espaço depois do
+            # <v) e "<v Maria:</v>Bom dia". O `>?` cobre os dois; sem ele, o
+            # nome de quem falou se perdia e a conversa virava um monólogo.
+            daily = re.match(r"^<v\s*>?\s*([^<>]*?)\s*:?\s*</v>\s*(.*)$", trimmed)
             if daily:
                 falante = (daily.group(1) or "").strip() or None
                 texto = daily.group(2)

@@ -146,3 +146,46 @@ class TestCasosDeBorda:
 
         assert len(texto) <= 12100
         assert "truncada" in texto
+
+
+class TestFormatoRealDoDaily:
+    """
+    O arquivo que o Daily entregou na homologação de 14/09 vem como
+    `<v>Nome:</v>texto` — sem espaço depois do `<v`. O reconhecimento só
+    cobria a variante com espaço, então o nome de quem falou se perdia e a
+    conversa inteira virava uma linha só, que a IA analisaria como monólogo.
+    """
+
+    def test_reconhece_v_fechado_sem_espaco(self):
+        vtt = """WEBVTT
+
+transcript:0
+00:00:45.588 --> 00:00:47.888
+<v>Welton Kellyson:</v>Bom dia, tudo certo?
+
+transcript:1
+00:01:28.330 --> 00:01:31.720
+<v>Erick:</v>Tudo, e com voce?
+"""
+
+        esperado = """Welton Kellyson: Bom dia, tudo certo?
+Erick: Tudo, e com voce?"""
+
+        assert transcript_analysis_service._parse_vtt(vtt) == esperado
+
+    def test_junta_falas_seguidas_do_mesmo_interlocutor(self):
+        """O Daily quebra a fala em trechos curtos; repetir o nome polui a leitura."""
+        vtt = """WEBVTT
+
+transcript:0
+00:00:01.000 --> 00:00:02.000
+<v>Erick:</v>Entao
+
+transcript:1
+00:00:02.500 --> 00:00:04.000
+<v>Erick:</v>o contrato vence em outubro.
+"""
+
+        assert transcript_analysis_service._parse_vtt(vtt) == (
+            "Erick: Entao o contrato vence em outubro."
+        )
