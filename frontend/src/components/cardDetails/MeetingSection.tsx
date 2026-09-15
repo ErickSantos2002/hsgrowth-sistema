@@ -154,12 +154,27 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
   // isto, o vendedor precisa recarregar a página na mão para ver a gravação
   // chegar (foi o que aconteceu na homologação de 15/09).
   useEffect(() => {
-    const preparando = meetings.some(
-      (m) =>
-        m.recording_status === "processing" ||
-        m.transcript_status === "processing" ||
-        m.gravacoes?.some((g) => g.status === "processing")
-    );
+    const agora = Date.now();
+
+    const preparando = meetings.some((m) => {
+      if (m.recording_status === "processing" || m.transcript_status === "processing") return true;
+      if (m.gravacoes?.some((g) => g.status === "processing")) return true;
+
+      // Reunião do CRM recém-encerrada: a gravação leva alguns minutos para
+      // chegar e, até chegar, nada está marcado como "em preparo". Sem esta
+      // janela a tela ficava parada e só mostrava depois de um F5 — foi o que
+      // aconteceu nas duas homologações.
+      if (m.meeting_provider === "daily" && m.meeting_ended_at) {
+        const iso = m.meeting_ended_at.endsWith("Z")
+          ? m.meeting_ended_at
+          : m.meeting_ended_at + "Z";
+        const minutos = (agora - Date.parse(iso)) / 60000;
+        const faltaAlgo = !m.gravacoes?.length || m.transcript_status !== "ready";
+        if (minutos >= 0 && minutos < 30 && faltaAlgo) return true;
+      }
+
+      return false;
+    });
     if (!preparando) return;
 
     const timer = window.setInterval(() => loadMeetings(), 15000);
