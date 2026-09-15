@@ -526,21 +526,38 @@ class MicrosoftGraphService:
             String com conteúdo VTT da transcrição
         """
         access_token = self._require_token(user, db)
-        url = (
-            f"{GRAPH_BASE}/me/onlineMeetings/{meeting_id}"
-            f"/transcripts/{transcript_id}/content?$format=text/vtt"
-        )
+        base = f"{GRAPH_BASE}/me/onlineMeetings/{meeting_id}/transcripts/{transcript_id}/content"
+
+        # O VTT é o formato preferido: traz o nome de quem falou, e é disso que
+        # a análise vive. Quando o locatário não permite atribuição de locutor,
+        # o Graph recusa esse formato com 403 e sobra o texto corrido — pior,
+        # mas melhor do que nada.
+        formatos = [
+            ("text/vtt", "com o nome de quem falou"),
+            ("application/vnd.microsoft.graph.transcript+text", "sem identificar quem falou"),
+        ]
 
         try:
             headers = {"Authorization": f"Bearer {access_token}"}
-            with httpx.Client(timeout=30) as client:
-                resp = client.get(url, headers=headers)
+            ultimo_erro = ""
 
-            if resp.status_code != 200:
-                error_msg = f"HTTP {resp.status_code}"
-                raise ValueError(f"Erro ao baixar transcrição: {error_msg}")
+            for formato, _descricao in formatos:
+                with httpx.Client(timeout=30) as client:
+                    resp = client.get(f"{base}?$format={formato}", headers=headers)
 
-            return resp.text
+                if resp.status_code == 200:
+                    return resp.text
+
+                # A mensagem do Graph diz o motivo real (permissão do locatário,
+                # atribuição de locutor, transcrição expirada). Sem ela, o
+                # usuário só via "HTTP 403" e ninguém sabia o que fazer.
+                detalhe = (resp.text or "")[:300]
+                ultimo_erro = f"HTTP {resp.status_code} — {detalhe}"
+
+                if resp.status_code != 403:
+                    break
+
+            raise ValueError(f"Erro ao baixar transcrição: {ultimo_erro}")
         except ValueError:
             raise
         except Exception as e:
