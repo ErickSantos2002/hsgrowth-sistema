@@ -946,7 +946,10 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
                 </button>
               )}
 
-              {meeting.teams_join_url && !meeting.transcript_analysis && (
+              {/* Vale para os dois fluxos: no CRM a análise roda sozinha quando
+                  houve gravação, mas se falhar é por aqui que se tenta de novo. */}
+              {(meeting.teams_join_url || meeting.meeting_provider === "daily") &&
+                !meeting.transcript_analysis && (
                 <button
                   onClick={() => handleFetchTranscript(meeting.id)}
                   disabled={transcriptLoadingId === meeting.id}
