@@ -168,6 +168,17 @@ tags_metadata = [
 ]
 
 # Criar instância do FastAPI
+def documentacao_liberada() -> bool:
+    """
+    Diz se /docs, /redoc e /openapi.json devem existir.
+
+    Só fora de produção. Qualquer ambiente que não se identifique como
+    desenvolvimento ou teste é tratado como produção — inclusive um servidor
+    que perdeu a variável de ambiente.
+    """
+    return settings.ENVIRONMENT in ("development", "testing")
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
@@ -224,9 +235,12 @@ A API utiliza **Celery** para processamento assíncrono e **APScheduler** para c
 - **Pydantic** 2.5.3 - Validação de dados
 - **JWT** - Autenticação stateless
 """,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    # Fora de produção apenas: a documentação lista todos os endpoints, com
+    # parâmetros e formatos. Não vaza dado (tudo exige login), mas é um mapa
+    # pronto do sistema para quem quiser sondar.
+    docs_url="/docs" if documentacao_liberada() else None,
+    redoc_url="/redoc" if documentacao_liberada() else None,
+    openapi_url="/openapi.json" if documentacao_liberada() else None,
     openapi_tags=tags_metadata,
     contact={
         "name": "HSGrowth - Suporte Técnico",

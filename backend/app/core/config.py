@@ -13,7 +13,10 @@ class Settings(BaseSettings):
     # Application
     PROJECT_NAME: str = "HSGrowth CRM API"
     VERSION: str = "1.0.0"
-    ENVIRONMENT: str = "development"
+    # Padrão "production" de propósito: se a variável sumir do servidor
+    # (já aconteceu na limpeza da VPS em 11/09), o sistema fecha o que é
+    # sensível em vez de abrir.
+    ENVIRONMENT: str = "production"
     DEBUG: bool = True
 
     # Server
