@@ -203,6 +203,7 @@ export const SERVICE_LOSS_REASONS = [
   "Data de Recalibração Errada",
   "Cliente Inadimplente",
   "Cliente em standby",
+  "Sem Conserto",
 ];
 
 // Motivo exclusivo do Admin — descarte de cards criados errados (sem apagar).

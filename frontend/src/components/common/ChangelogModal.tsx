@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.9.4",
+    date: "16/09/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Serviço — novo motivo de perda 'Sem Conserto': disponível no modal de perda e no filtro de motivo dos boards de Serviço e de Cobrança.",
+      },
+    ],
+  },
+  {
     version: "1.9.3",
     date: "02/09/2026",
     entries: [

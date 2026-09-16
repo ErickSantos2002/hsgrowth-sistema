@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.9.4] — 16/09/2026
+
+### Adicionado
+- **Serviço — novo motivo de perda "Sem Conserto":** disponível no modal de perda e no filtro de motivo dos boards de **Serviço** e de **Cobrança**.
+
+---
+
 ## [1.9.3] — 02/09/2026
 
 ### Corrigido
