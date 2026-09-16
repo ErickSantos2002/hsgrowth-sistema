@@ -23,7 +23,8 @@ import {
   Pencil,
   CalendarX,
 } from "lucide-react";
-import cardTaskService, { CardTask } from "../../services/cardTaskService";
+import cardTaskService, { CardTask, SugestaoDaIA } from "../../services/cardTaskService";
+import AssistSuggestion from "../meeting/AssistSuggestion";
 import userService from "../../services/userService";
 import { showSuccess, showError } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
@@ -85,6 +86,71 @@ const EMPTY_FORM: NewMeetingForm = {
   duration: "30",
   contact_name: "",
   description: "",
+};
+
+/**
+ * Histórico dos pedidos de ajuda à IA durante a reunião.
+ *
+ * Fechado por padrão e buscado só quando alguém abre: a maioria das reuniões
+ * não terá pedido nenhum, e não vale pesar a lista por causa disso.
+ */
+const AjudaDaIA: React.FC<{ taskId: number }> = ({ taskId }) => {
+  const [aberto, setAberto] = useState(false);
+  const [pedidos, setPedidos] = useState<SugestaoDaIA[] | null>(null);
+
+  useEffect(() => {
+    if (!aberto || pedidos) return;
+    cardTaskService
+      .listarAjudaAoVivo(taskId)
+      .then(setPedidos)
+      .catch(() => setPedidos([]));
+  }, [aberto, pedidos, taskId]);
+
+  return (
+    <div>
+      <button
+        onClick={() => setAberto((a) => !a)}
+        className="flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-300"
+      >
+        {aberto ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        Ajuda da IA durante a reunião
+      </button>
+
+      {aberto && (
+        <div className="mt-2 space-y-2">
+          {pedidos === null && <p className="text-xs text-slate-500">Carregando...</p>}
+
+          {pedidos?.length === 0 && (
+            <p className="text-xs italic text-slate-500">
+              Ninguém pediu ajuda nesta reunião.
+            </p>
+          )}
+
+          {pedidos?.map((pedido) => (
+            <div key={pedido.id} className="rounded border border-slate-700/40 p-2">
+              <p className="mb-1 text-[11px] text-slate-500">
+                {new Date(pedido.criado_em).toLocaleString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                {pedido.quem_pediu ? " · " + pedido.quem_pediu : ""}
+              </p>
+
+              {pedido.trecho && (
+                <p className="mb-1.5 whitespace-pre-line border-l-2 border-slate-700 pl-2 text-[11px] text-slate-400">
+                  {pedido.trecho}
+                </p>
+              )}
+
+              <AssistSuggestion sugestao={pedido} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, onCountChange, readOnly, onCardUpdate }) => {
@@ -984,6 +1050,9 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
 
             {/* Análise IA */}
             {meeting.transcript_analysis && renderAnalysis(meeting.transcript_analysis)}
+
+            {/* Ajuda da IA durante a reunião — só nas reuniões do CRM */}
+            {meeting.meeting_provider === "daily" && <AjudaDaIA taskId={meeting.id} />}
 
             {/* Transcrição completa */}
             {meeting.transcript_raw && (

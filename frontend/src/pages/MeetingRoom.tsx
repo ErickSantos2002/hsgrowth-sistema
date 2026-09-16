@@ -17,10 +17,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import DailyIframe, { DailyCall } from "@daily-co/daily-js";
-import { Loader2, VideoOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, VideoOff } from "lucide-react";
 
 import cardTaskService from "../services/cardTaskService";
 import RecordingBanner from "../components/meeting/RecordingBanner";
+import LiveAssistPanel from "../components/meeting/LiveAssistPanel";
 
 const IFRAME_ALLOW =
   "camera; microphone; fullscreen; display-capture; autoplay; picture-in-picture";
@@ -37,6 +38,28 @@ const MeetingRoom: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [encerrada, setEncerrada] = useState(false);
+
+  // Painel recolhido é painel esquecido, então o padrão é aberto. A escolha de
+  // quem recolhe vale para as próximas reuniões.
+  const [painelAberto, setPainelAberto] = useState(() => {
+    try {
+      return window.localStorage.getItem("ia_ao_vivo_painel") !== "fechado";
+    } catch {
+      return true;
+    }
+  });
+
+  const alternarPainel = () => {
+    setPainelAberto((antes) => {
+      const novo = !antes;
+      try {
+        window.localStorage.setItem("ia_ao_vivo_painel", novo ? "aberto" : "fechado");
+      } catch {
+        // sem armazenamento: a preferência vale só nesta sessão
+      }
+      return novo;
+    });
+  };
 
   useEffect(() => {
     if (!taskId) return;
@@ -131,7 +154,8 @@ const MeetingRoom: React.FC = () => {
 
       <RecordingBanner call={call} />
 
-      <div className="relative flex-1">
+      <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex-1">
         {/* pointer-events-none: mesmo enquanto visível, não pode roubar o
             clique do que o Daily desenha por baixo */}
         {loading && !erro && (
@@ -157,7 +181,34 @@ const MeetingRoom: React.FC = () => {
           </div>
         )}
 
-        <div ref={containerRef} className="absolute inset-0" />
+          <div ref={containerRef} className="absolute inset-0" />
+        </div>
+
+        {/* Ajuda da IA — só o time vê. A página do convidado nem carrega
+            este componente. */}
+        {painelAberto ? (
+          <div className="flex w-[340px] flex-shrink-0 flex-col border-l border-slate-700/50">
+            <button
+              onClick={alternarPainel}
+              title="Recolher o painel"
+              className="flex items-center justify-between px-3 py-1.5 text-[11px] text-slate-400 transition-colors hover:text-slate-200"
+            >
+              Ajuda da IA
+              <ChevronRight size={13} />
+            </button>
+            <div className="flex-1 overflow-hidden">
+              <LiveAssistPanel call={call} taskId={taskId} />
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={alternarPainel}
+            title="Abrir a ajuda da IA"
+            className="flex w-8 flex-shrink-0 items-center justify-center border-l border-slate-700/50 bg-slate-900/60 text-slate-400 transition-colors hover:text-slate-200"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
       </div>
     </div>
   );
