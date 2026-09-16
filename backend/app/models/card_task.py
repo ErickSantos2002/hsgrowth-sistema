@@ -137,6 +137,13 @@ class CardTask(Base, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="MeetingRecording.ordem",
     )
+    # Pedidos de ajuda à IA feitos durante esta reunião
+    assist_requests = relationship(
+        "MeetingAssistRequest",
+        back_populates="task",
+        cascade="all, delete-orphan",
+        order_by="MeetingAssistRequest.created_at",
+    )
 
     def __repr__(self):
         return f"<CardTask(id={self.id}, card_id={self.card_id}, type='{self.task_type}', title='{self.title}')>"
