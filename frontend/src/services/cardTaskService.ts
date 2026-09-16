@@ -63,6 +63,28 @@ export interface GravacaoTrecho {
   erro?: string | null;
 }
 
+/** Uma sugestão que a IA deu durante a reunião. */
+export interface SugestaoDaIA {
+  id: number;
+  criado_em: string;
+  quem_pediu?: string | null;
+  trecho?: string | null;
+  leitura: string;
+  fala: string;
+  pergunta?: string | null;
+  alertas: string[];
+  fato_crm?: string | null;
+  marcadores: string[];
+}
+
+/** Uma fala da conversa, como o backend espera receber. */
+export interface FalaParaIA {
+  papel: "time" | "cliente";
+  nome: string;
+  texto: string;
+  em?: string;
+}
+
 export interface CreateCardTaskRequest {
   card_id: number;
   assigned_to_id?: number;
@@ -343,6 +365,22 @@ class CardTaskService {
   /** Cancela a sala de reunião por vídeo (a atividade permanece). */
   async cancelDailyRoom(taskId: number): Promise<void> {
     await api.delete(`/api/v1/card-tasks/${taskId}/daily-room`);
+  }
+
+  /**
+   * Pede ajuda à IA durante a reunião ("Me ajuda aqui").
+   *
+   * Manda a conversa até o momento; o servidor soma o contexto do negócio.
+   */
+  async pedirAjudaAoVivo(taskId: number, falas: FalaParaIA[]): Promise<SugestaoDaIA> {
+    const response = await api.post(`/api/v1/card-tasks/${taskId}/ajuda-ao-vivo`, { falas });
+    return response.data;
+  }
+
+  /** Pedidos de ajuda já feitos nesta reunião, do mais recente ao mais antigo. */
+  async listarAjudaAoVivo(taskId: number): Promise<SugestaoDaIA[]> {
+    const response = await api.get(`/api/v1/card-tasks/${taskId}/ajuda-ao-vivo`);
+    return response.data;
   }
 
   /**
