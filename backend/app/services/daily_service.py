@@ -140,6 +140,38 @@ class DailyService:
 
         return {"name": task.daily_room_name, "url": task.daily_room_url}
 
+    def atualizar_expiracao(self, task: CardTask) -> None:
+        """
+        Estende o prazo da sala quando a reunião é reagendada.
+
+        A sala nasce válida até o fim previsto mais a margem. Reagendar sem
+        mexer nisso deixa o convite apontando para uma sala que expira antes da
+        nova data — e o vendedor só descobre na hora, com o cliente esperando.
+
+        Sala que o Daily já removeu (prazo vencido) é recriada com o mesmo
+        nome, para o link já enviado ao cliente continuar valendo.
+        """
+        if not task.daily_room_name:
+            return
+
+        url = f"{settings.DAILY_API_URL}/rooms/{task.daily_room_name}"
+        payload = {"properties": {"exp": self._room_expiry(task)}}
+
+        try:
+            with httpx.Client(timeout=HTTP_TIMEOUT_SECONDS) as client:
+                resp = client.post(url, headers=self._headers(), json=payload)
+        except httpx.HTTPError as e:
+            raise ValueError(f"Não foi possível falar com o Daily: {e}") from e
+
+        if resp.status_code == 404:
+            # O Daily apaga a sala depois do prazo. Recriar com o mesmo nome
+            # devolve o mesmo endereço — o convite já enviado continua válido.
+            self.create_room(task)
+            return
+
+        if resp.status_code >= 400:
+            raise ValueError(f"Daily retornou erro {resp.status_code}: {resp.text}")
+
     def delete_room(self, task: CardTask) -> None:
         """
         Apaga a sala no Daily.

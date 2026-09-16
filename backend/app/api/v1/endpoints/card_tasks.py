@@ -556,6 +556,19 @@ def update_task(
             # Não bloqueia o update da tarefa se o calendário falhar
             print(f"[CardTask] Aviso: não foi possível reagendar evento no calendário: {e}")
 
+    # Reunião do CRM reagendada: a sala precisa acompanhar a nova data. Sem
+    # isto o convite continua válido no calendário e a sala expira antes —
+    # ninguém entra no dia remarcado.
+    if task_data.due_date is not None and task.meeting_provider == "daily":
+        try:
+            from app.services.daily_service import DailyService
+
+            DailyService(db).atualizar_expiracao(task)
+        except Exception as e:
+            # Não bloqueia a edição: a data muda de qualquer forma, e a sala
+            # pode ser recriada depois pelo próprio vendedor.
+            print(f"[CardTask] Aviso: não foi possível estender a sala do Daily: {e}")
+
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")

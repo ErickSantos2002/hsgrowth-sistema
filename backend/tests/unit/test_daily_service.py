@@ -363,3 +363,73 @@ class TestConsultaDeTranscricao:
 
         with patch("httpx.Client.get", return_value=resposta):
             assert svc.transcricao_da_sessao("sessao-abc") is None
+
+
+class TestReagendamento:
+    """
+    Reagendar a reunião precisa estender a sala.
+
+    A sala vale até o fim previsto mais a margem. Sem estender, o convite
+    (que continua no calendário do cliente) aponta para uma sala expirada e
+    ninguém entra no dia remarcado — o vendedor só descobre na hora.
+    """
+
+    def test_estende_o_prazo_da_sala(self, db: Session, task):
+        from datetime import datetime, timedelta, timezone
+
+        task.daily_room_name = "hsg-77"
+        task.due_date = datetime.utcnow() + timedelta(days=3)
+        db.commit()
+
+        svc = DailyService(db)
+        with patch("httpx.Client.post", return_value=_Resp(200, {"name": "hsg-77"})) as m:
+            svc.atualizar_expiracao(task)
+
+        url = m.call_args.args[0]
+        exp = m.call_args.kwargs["json"]["properties"]["exp"]
+        assert url.endswith("/rooms/hsg-77")
+        # o novo prazo precisa cobrir a data remarcada
+        assert exp > (task.due_date.replace(tzinfo=timezone.utc)).timestamp()
+
+    def test_sala_ja_removida_e_recriada(self, db: Session, task):
+        """Passado o prazo, o Daily apaga a sala. Recriar mantém o mesmo endereço."""
+        task.daily_room_name = "hsg-77"
+        db.commit()
+
+        svc = DailyService(db)
+        respostas = [
+            _Resp(404, {"error": "not-found"}),
+            _Resp(200, {"name": "hsg-77", "url": "https://x.daily.co/hsg-77"}),
+        ]
+        with patch("httpx.Client.post", side_effect=respostas) as m:
+            svc.atualizar_expiracao(task)
+
+        assert m.call_count == 2
+        assert m.call_args.args[0].endswith("/rooms")  # criação
+        assert task.daily_room_name == "hsg-77"
+
+    def test_recriar_mantem_o_link_do_convidado(self, db: Session, task):
+        """O convite já enviado ao cliente precisa continuar funcionando."""
+        task.daily_room_name = "hsg-77"
+        task.public_access_token = "token-que-o-cliente-ja-tem"
+        db.commit()
+
+        svc = DailyService(db)
+        with patch("httpx.Client.post", side_effect=[
+            _Resp(404, {"error": "not-found"}),
+            _Resp(200, {"name": "hsg-77", "url": "https://x.daily.co/hsg-77"}),
+        ]):
+            svc.atualizar_expiracao(task)
+
+        assert task.public_access_token == "token-que-o-cliente-ja-tem"
+
+    def test_reuniao_sem_sala_nao_faz_nada(self, db: Session, task):
+        """Reunião do Teams ou ainda sem sala: nada a estender."""
+        task.daily_room_name = None
+        db.commit()
+
+        svc = DailyService(db)
+        with patch("httpx.Client.post") as m:
+            svc.atualizar_expiracao(task)
+
+        m.assert_not_called()
