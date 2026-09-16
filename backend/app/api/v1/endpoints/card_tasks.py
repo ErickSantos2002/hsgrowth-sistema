@@ -1714,3 +1714,170 @@ async def sincronizar_gravacoes(
             transcricao = True
 
     return {"encontradas": novas, "transcricao": transcricao}
+
+
+# ── ajuda ao vivo durante a reunião (Fase 5) ────────────────────────────────
+
+MINIMO_DE_FALAS = 5
+MAX_FALAS = 2_000
+MAX_CARACTERES_POR_FALA = 1_000
+LIMITE_PEDIDOS_POR_REUNIAO = 30
+FALAS_NO_TRECHO = 6
+
+
+def _pedido_de_ajuda_para_resposta(pedido) -> dict:
+    """Formato único do pedido, usado ao criar e ao listar."""
+    return {
+        "id": pedido.id,
+        "criado_em": pedido.created_at,
+        "quem_pediu": pedido.user.name if pedido.user else None,
+        "trecho": pedido.trecho,
+        "leitura": pedido.leitura,
+        "fala": pedido.fala,
+        "pergunta": pedido.pergunta,
+        "alertas": pedido.alertas or [],
+        "fato_crm": pedido.fato_crm,
+        "marcadores": pedido.marcadores or [],
+    }
+
+
+@router.post(
+    "/{task_id}/ajuda-ao-vivo",
+    status_code=201,
+    summary='Pedir ajuda à IA durante a reunião ("Me ajuda aqui")',
+    description="""
+    Recebe a conversa até o momento e devolve uma leitura do que está
+    acontecendo e uma fala pronta, somando o contexto do negócio no CRM.
+
+    Só vale para reunião do CRM, e apenas para quem tem vínculo com o negócio.
+    """,
+)
+async def pedir_ajuda_ao_vivo(
+    task_id: int,
+    corpo: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.api.v1.endpoints.features import _daily_enabled_for
+    from app.core.config import settings
+    from app.models.meeting_assist_request import MeetingAssistRequest
+    from app.services import live_assist_service
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Reunião não encontrada")
+
+    if task.meeting_provider != "daily":
+        raise HTTPException(status_code=400, detail="Esta reunião não acontece no CRM.")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    # A tela esconde o painel de quem não tem acesso, mas cada pedido custa
+    # dinheiro — por isso a trava também é conferida aqui, e não só no frontend.
+    if not _daily_enabled_for(current_user):
+        raise HTTPException(status_code=403, detail="Recurso ainda não liberado para você.")
+
+    falas = corpo.get("falas") if isinstance(corpo, dict) else None
+    if not isinstance(falas, list) or len(falas) > MAX_FALAS:
+        raise HTTPException(status_code=422, detail="Conversa em formato inválido.")
+
+    limpas = []
+    for fala in falas:
+        if not isinstance(fala, dict):
+            raise HTTPException(status_code=422, detail="Conversa em formato inválido.")
+        if fala.get("papel") not in ("time", "cliente"):
+            raise HTTPException(status_code=422, detail="Papel inválido na conversa.")
+
+        texto = (fala.get("texto") or "")[:MAX_CARACTERES_POR_FALA]
+        if texto.strip():
+            limpas.append({
+                "papel": fala["papel"],
+                "nome": fala.get("nome") or "",
+                "texto": texto,
+            })
+
+    if len(limpas) < MINIMO_DE_FALAS or not any(f["papel"] == "cliente" for f in limpas):
+        raise HTTPException(
+            status_code=422,
+            detail="Ainda não há conversa suficiente para uma sugestão.",
+        )
+
+    ja_pediu = (
+        db.query(MeetingAssistRequest)
+        .filter(
+            MeetingAssistRequest.card_task_id == task.id,
+            MeetingAssistRequest.user_id == current_user.id,
+        )
+        .count()
+    )
+    if ja_pediu >= LIMITE_PEDIDOS_POR_REUNIAO:
+        raise HTTPException(
+            status_code=429, detail="Limite de pedidos desta reunião atingido."
+        )
+
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(status_code=503, detail="IA indisponível no momento.")
+
+    conversa = live_assist_service.formatar_conversa(limpas)
+    contexto = live_assist_service.montar_contexto_crm(db, task)
+
+    try:
+        resposta = live_assist_service.pedir_ajuda(conversa, contexto)
+    except Exception as e:
+        # Nada é gravado: registro pela metade confundiria quem ler depois.
+        print(f"[AJUDA-AO-VIVO] Falha na reunião {task.id}: {e}")
+        raise HTTPException(
+            status_code=502, detail="A IA não respondeu agora. Tente de novo."
+        )
+
+    pedido = MeetingAssistRequest(
+        card_task_id=task.id,
+        user_id=current_user.id,
+        trecho=live_assist_service.formatar_conversa(limpas[-FALAS_NO_TRECHO:]),
+        leitura=resposta["leitura"],
+        fala=resposta["fala"],
+        pergunta=resposta["pergunta"],
+        alertas=resposta["alertas"],
+        fato_crm=resposta["fato_crm"],
+        marcadores=resposta["marcadores"],
+        modelo=resposta.get("modelo"),
+        tokens_entrada=resposta.get("tokens_entrada"),
+        tokens_saida=resposta.get("tokens_saida"),
+        latencia_ms=resposta.get("latencia_ms"),
+    )
+    db.add(pedido)
+    db.commit()
+    db.refresh(pedido)
+
+    return _pedido_de_ajuda_para_resposta(pedido)
+
+
+@router.get(
+    "/{task_id}/ajuda-ao-vivo",
+    summary="Pedidos de ajuda desta reunião",
+    description="""
+    Lista os pedidos feitos durante a reunião, do mais recente para o mais
+    antigo, com quem pediu e o trecho da conversa no momento.
+    """,
+)
+async def listar_ajuda_ao_vivo(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.models.meeting_assist_request import MeetingAssistRequest
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Reunião não encontrada")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    pedidos = (
+        db.query(MeetingAssistRequest)
+        .filter(MeetingAssistRequest.card_task_id == task.id)
+        .order_by(MeetingAssistRequest.created_at.desc())
+        .all()
+    )
+
+    return [_pedido_de_ajuda_para_resposta(p) for p in pedidos]
