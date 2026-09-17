@@ -21,6 +21,7 @@ import {
     BellOff,
     CheckSquare,
     Phone,
+  Video,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -35,6 +36,7 @@ import { AgentGrowthWidget } from "../components/agentGrowth";
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/activities", icon: CheckSquare, label: "Atividades", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/reunioes", icon: Video, label: "Reuniões", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/boards", icon: Trello, label: "Boards (Vendas)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/servicos", icon: Wrench, label: "Boards (Serviços)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },

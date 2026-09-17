@@ -33,6 +33,7 @@ import Calendar from './pages/Calendar';
 import Activities from './pages/Activities';
 import ServiceActivities from './pages/ServiceActivities';
 import CallEvaluationsPage from './pages/CallEvaluationsPage';
+import ReunioesPage from './pages/ReunioesPage';
 import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
 // Módulo de Propostas descontinuado (migrado p/ sistema externo). Página e API
@@ -166,6 +167,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/admin/badges" element={<ViewerGuard><ServiceGuard><BadgesAdmin /></ServiceGuard></ViewerGuard>} />
       <Route path="/calendar" element={<ViewerGuard><ServiceGuard><Calendar /></ServiceGuard></ViewerGuard>} />
       <Route path="/ligacoes" element={<ViewerGuard><ServiceGuard><CallEvaluationsPage /></ServiceGuard></ViewerGuard>} />
+      <Route path="/reunioes" element={<ViewerGuard><ServiceGuard><ReunioesPage /></ServiceGuard></ViewerGuard>} />
     </Route>
 
     <Route path="*" element={<NotFound />} />
