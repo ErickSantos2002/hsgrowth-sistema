@@ -1017,6 +1017,16 @@ def cancel_teams_meeting(
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
+    # Reunião do CRM: a sala também tem de morrer. Sem isto, cancelar deixava
+    # o "Entrar na Reunião" funcionando e a sala aberta no Daily (17/09).
+    if task.daily_room_name:
+        from app.services.daily_service import DailyService
+
+        DailyService(db).delete_room(task)
+        task.daily_room_name = None
+        task.daily_room_url = None
+        task.public_access_token = None
+
     task.is_cancelled = True
     task.teams_meeting_id = None
     task.teams_join_url = None

@@ -376,10 +376,12 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     }
   };
 
-  const handleCancelTeams = async (meeting: CardTask) => {
+  const handleCancelarReuniao = async (meeting: CardTask) => {
     const ok = await confirm({
       title: "Cancelar reunião?",
-      message: meeting.teams_join_url
+      message: meeting.meeting_provider === "daily"
+        ? "A sala será apagada e o link do cliente deixa de funcionar. Esta ação não pode ser desfeita."
+        : meeting.teams_join_url
         ? "O evento será removido da agenda do Teams/Outlook. Esta ação não pode ser desfeita."
         : "A reunião não possui evento no Teams. Deseja apenas remover os dados de reunião?",
       confirmText: "Sim, cancelar",
@@ -389,10 +391,10 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     try {
       setActionLoadingId(meeting.id);
       await cardTaskService.cancelTeamsMeeting(meeting.id);
-      showSuccess("Reunião cancelada e removida da agenda.");
+      showSuccess("Reunião cancelada.");
       await loadMeetings();
     } catch (error: any) {
-      showError(error.response?.data?.detail || "Erro ao cancelar reunião no Teams");
+      showError(error.response?.data?.detail || "Erro ao cancelar a reunião");
     } finally {
       setActionLoadingId(null);
     }
@@ -925,8 +927,11 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
               )}
 
 
-            {/* Reunião por vídeo no CRM — entrar na sala e copiar o link do cliente */}
-            {meeting.meeting_provider === "daily" && !meeting.is_completed && (
+            {/* Reunião por vídeo no CRM — entrar na sala e copiar o link do cliente.
+                Cancelada não entra: a sala já foi apagada no Daily. */}
+            {meeting.meeting_provider === "daily" &&
+              !meeting.is_completed &&
+              !meeting.is_cancelled && (
               <div className="flex gap-2">
                 {/* Abre em outra aba: o vendedor continua com o card à mão
                     para consultar o cliente durante a conversa. */}
@@ -1121,7 +1126,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
                       Editar
                     </button>
                     <button
-                      onClick={() => handleCancelTeams(meeting)}
+                      onClick={() => handleCancelarReuniao(meeting)}
                       disabled={isActioning}
                       className="flex items-center gap-1.5 rounded border border-red-500/40 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
                     >
