@@ -27,6 +27,7 @@ from app.models.card_task import CardTask
 from app.models.recording_share import RecordingShare
 from app.models.meeting_recording import MeetingRecording
 from app.models.meeting_assist_request import MeetingAssistRequest
+from app.models.meeting_evaluation import MeetingEvaluation, MeetingEvaluationItem
 
 # Modelos de produtos
 from app.models.product import Product
@@ -116,6 +117,8 @@ __all__ = [
     "RecordingShare",
     "MeetingRecording",
     "MeetingAssistRequest",
+    "MeetingEvaluation",
+    "MeetingEvaluationItem",
     "Product",
     "CardProduct",
     "GamificationPoint",

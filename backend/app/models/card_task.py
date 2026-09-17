@@ -144,6 +144,13 @@ class CardTask(Base, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="MeetingAssistRequest.created_at",
     )
+    # Avaliação pela régua da consultoria — uma por reunião, reavaliar substitui
+    evaluation = relationship(
+        "MeetingEvaluation",
+        back_populates="task",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<CardTask(id={self.id}, card_id={self.card_id}, type='{self.task_type}', title='{self.title}')>"
