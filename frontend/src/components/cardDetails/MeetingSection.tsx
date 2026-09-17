@@ -22,9 +22,15 @@ import {
   Copy,
   Pencil,
   CalendarX,
+  ClipboardCheck,
 } from "lucide-react";
-import cardTaskService, { CardTask, SugestaoDaIA } from "../../services/cardTaskService";
+import cardTaskService, {
+  AvaliacaoDaReuniao,
+  CardTask,
+  SugestaoDaIA,
+} from "../../services/cardTaskService";
 import AssistSuggestion from "../meeting/AssistSuggestion";
+import MeetingEvaluation from "./MeetingEvaluation";
 import userService from "../../services/userService";
 import { showSuccess, showError } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
@@ -192,6 +198,50 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
   const [teamsLoadingId, setTeamsLoadingId] = useState<number | null>(null);
   const [transcriptLoadingId, setTranscriptLoadingId] = useState<number | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [avaliacaoLoadingId, setAvaliacaoLoadingId] = useState<number | null>(null);
+  // Avaliações já feitas, por reunião — carregadas junto com a lista
+  const [avaliacoes, setAvaliacoes] = useState<Record<number, AvaliacaoDaReuniao>>({});
+
+  /**
+   * Traz as avaliações que já existem.
+   *
+   * Uma chamada por reunião com transcrição — são poucas por card, e assim o
+   * bloco já aparece aberto quando o vendedor volta ao negócio, sem precisar
+   * avaliar de novo (o que custaria uma chamada à IA).
+   */
+  const carregarAvaliacoes = async (reunioes: CardTask[]) => {
+    const comTranscricao = reunioes.filter((m) => m.transcript_raw);
+    if (comTranscricao.length === 0) return;
+
+    const resultados = await Promise.all(
+      comTranscricao.map(async (m) => {
+        try {
+          return [m.id, await cardTaskService.obterAvaliacao(m.id)] as const;
+        } catch {
+          return [m.id, null] as const;
+        }
+      })
+    );
+
+    setAvaliacoes(
+      Object.fromEntries(
+        resultados.filter(([, avaliacao]) => avaliacao)
+      ) as Record<number, AvaliacaoDaReuniao>
+    );
+  };
+
+  const handleAvaliar = async (meetingId: number) => {
+    try {
+      setAvaliacaoLoadingId(meetingId);
+      const avaliacao = await cardTaskService.avaliarReuniao(meetingId);
+      setAvaliacoes((antes) => ({ ...antes, [meetingId]: avaliacao }));
+      showSuccess("Reunião avaliada pelo roteiro.");
+    } catch (error: any) {
+      showError(error.response?.data?.detail || "Não foi possível avaliar a reunião");
+    } finally {
+      setAvaliacaoLoadingId(null);
+    }
+  };
 
   const loadMeetings = async (showSpinner = false) => {
     try {
@@ -204,6 +254,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
       setMeetings(result.tasks);
       const pendingCount = result.tasks.filter((m) => !m.is_completed).length;
       onCountChange?.(pendingCount);
+      carregarAvaliacoes(result.tasks);
     } catch {
       // silencioso
     } finally {
@@ -1051,10 +1102,35 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
                   {transcriptLoadingId === meeting.id ? "Analisando..." : "Re-analisar"}
                 </button>
               )}
+
+              {/* Avaliação pela régua da consultoria — vale para qualquer
+                  reunião com transcrição, inclusive as do Teams. */}
+              {meeting.transcript_raw && (
+                <button
+                  onClick={() => handleAvaliar(meeting.id)}
+                  disabled={avaliacaoLoadingId === meeting.id}
+                  title="Avaliar os 26 critérios da matriz, com evidência de cada nota"
+                  className="flex items-center gap-1.5 rounded border border-purple-500/50 bg-purple-500/10 px-3 py-1.5 text-xs font-medium text-purple-300 transition-colors hover:bg-purple-500/20 disabled:opacity-50"
+                >
+                  {avaliacaoLoadingId === meeting.id ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <ClipboardCheck size={13} />
+                  )}
+                  {avaliacaoLoadingId === meeting.id
+                    ? "Avaliando..."
+                    : avaliacoes[meeting.id]
+                    ? "Reavaliar"
+                    : "Avaliar pelo roteiro"}
+                </button>
+              )}
             </div>
 
             {/* Análise IA */}
             {meeting.transcript_analysis && renderAnalysis(meeting.transcript_analysis)}
+
+            {/* Avaliação pela régua da consultoria */}
+            {avaliacoes[meeting.id] && <MeetingEvaluation avaliacao={avaliacoes[meeting.id]} />}
 
             {/* Ajuda da IA durante a reunião — só nas reuniões do CRM */}
             {meeting.meeting_provider === "daily" && <AjudaDaIA taskId={meeting.id} />}

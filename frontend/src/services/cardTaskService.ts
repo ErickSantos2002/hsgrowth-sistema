@@ -77,6 +77,34 @@ export interface SugestaoDaIA {
   marcadores: string[];
 }
 
+/** Um critério da régua da consultoria, já avaliado. */
+export interface ItemDaAvaliacao {
+  criterio_id: string;
+  bloco: string;
+  peso: number;
+  nota: number | null;
+  evidencia?: string;
+  porque?: string;
+}
+
+/** A avaliação da reunião pela régua da consultoria. */
+export interface AvaliacaoDaReuniao {
+  id: number;
+  card_task_id: number;
+  avaliado_em: string;
+  avaliado_por: string | null;
+  versao_criterios: string;
+  score: number | null;
+  veredito: string | null;
+  cobertura: number | null;
+  medias_por_bloco: Record<string, number> | null;
+  desfecho?: string;
+  ponto_forte?: string;
+  foco_desenvolvimento?: string;
+  proxima_acao?: string;
+  itens: ItemDaAvaliacao[];
+}
+
 /** Uma fala da conversa, como o backend espera receber. */
 export interface FalaParaIA {
   papel: "time" | "cliente";
@@ -380,6 +408,22 @@ class CardTaskService {
   /** Pedidos de ajuda já feitos nesta reunião, do mais recente ao mais antigo. */
   async listarAjudaAoVivo(taskId: number): Promise<SugestaoDaIA[]> {
     const response = await api.get(`/api/v1/card-tasks/${taskId}/ajuda-ao-vivo`);
+    return response.data;
+  }
+
+  /**
+   * Avalia a reunião pela régua da consultoria — 26 critérios com evidência.
+   *
+   * Só por clique: cada avaliação custa uma chamada à IA.
+   */
+  async avaliarReuniao(taskId: number): Promise<AvaliacaoDaReuniao> {
+    const response = await api.post(`/api/v1/card-tasks/${taskId}/avaliacao`);
+    return response.data;
+  }
+
+  /** Devolve a avaliação já feita, ou null se a reunião ainda não foi avaliada. */
+  async obterAvaliacao(taskId: number): Promise<AvaliacaoDaReuniao | null> {
+    const response = await api.get(`/api/v1/card-tasks/${taskId}/avaliacao`);
     return response.data;
   }
 
