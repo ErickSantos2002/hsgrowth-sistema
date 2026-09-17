@@ -42,6 +42,16 @@ export default function AuthCallback() {
       // Busca os dados completos do usuário (salva no localStorage internamente)
       try {
         await authService.getMe();
+
+        // Entrar pela Microsoft é entrar do mesmo jeito: o "o que há de novo"
+        // precisa abrir aqui também, senão quem usa o login da empresa —
+        // que é quase todo mundo — nunca vê o aviso.
+        try {
+          sessionStorage.setItem("changelog_pendente", "1");
+        } catch {
+          // aba anônima ou armazenamento bloqueado: segue sem o aviso
+        }
+
         window.location.href = "/";
       } catch {
         localStorage.removeItem("access_token");
