@@ -218,24 +218,52 @@ def montar_contexto_crm(db: Session, task: CardTask) -> str:
     return "\n\n".join(partes)
 
 
+def _texto(valor) -> str:
+    """
+    Vira texto, venha o que vier.
+
+    O modelo nem sempre devolve uma string onde pedimos uma: às vezes manda
+    uma lista (duas perguntas, por exemplo). Isso derrubava o pedido com 502
+    no meio da reunião — aconteceu na homologação de 17/09.
+    """
+    if valor is None:
+        return ""
+
+    if isinstance(valor, (list, tuple)):
+        return " ".join(_texto(v) for v in valor if _texto(v)).strip()
+
+    return str(valor).strip()
+
+
+def _lista_de_textos(valor) -> list:
+    """Uma frase solta também vale como lista de um item."""
+    if valor is None:
+        return []
+
+    if isinstance(valor, (list, tuple)):
+        return [t for t in (_texto(v) for v in valor) if t]
+
+    texto = _texto(valor)
+    return [texto] if texto else []
+
+
 def normalizar_resposta(bruto: dict) -> dict:
     """
     Deixa a resposta no formato que a tela espera.
 
-    Campo ausente não pode quebrar a sala no meio de uma reunião, e marcador
-    inventado estragaria a contagem depois.
+    Campo ausente ou em formato inesperado não pode quebrar a sala no meio de
+    uma reunião, e marcador inventado estragaria a contagem depois.
     """
-    alertas = [
-        str(a).strip() for a in (bruto.get("alertas") or []) if str(a).strip()
+    marcadores = [
+        m for m in _lista_de_textos(bruto.get("marcadores")) if m in MARCADORES_VALIDOS
     ]
-    marcadores = [m for m in (bruto.get("marcadores") or []) if m in MARCADORES_VALIDOS]
 
     return {
-        "leitura": (bruto.get("leitura") or "").strip(),
-        "fala": (bruto.get("fala") or "").strip(),
-        "pergunta": (bruto.get("pergunta") or "").strip(),
-        "alertas": alertas[:MAX_ALERTAS],
-        "fato_crm": (bruto.get("fato_crm") or None),
+        "leitura": _texto(bruto.get("leitura")),
+        "fala": _texto(bruto.get("fala")),
+        "pergunta": _texto(bruto.get("pergunta")),
+        "alertas": _lista_de_textos(bruto.get("alertas"))[:MAX_ALERTAS],
+        "fato_crm": _texto(bruto.get("fato_crm")) or None,
         "marcadores": marcadores[:MAX_MARCADORES],
     }
 

@@ -170,3 +170,50 @@ class TestContextoDoCRM:
         db.commit()
 
         montar_contexto_crm(db, self._reuniao(db, test_card))  # não levanta
+
+
+class TestRespostaEmFormatoInesperado:
+    """
+    O modelo nem sempre devolve string onde pedimos string.
+
+    Na homologação de 17/09 o primeiro pedido funcionou e os seguintes
+    devolveram 502 ('list' object has no attribute 'strip') — no meio da
+    reunião, que é o pior momento possível.
+    """
+
+    def test_campo_que_veio_como_lista_vira_texto(self):
+        dados = normalizar_resposta({
+            "leitura": ["O cliente hesitou", "e mudou de assunto"],
+            "fala": "Faz sentido?",
+            "pergunta": ["Quem mais decide?", "Qual o prazo?"],
+        })
+
+        assert dados["leitura"] == "O cliente hesitou e mudou de assunto"
+        assert dados["pergunta"] == "Quem mais decide? Qual o prazo?"
+
+    def test_alerta_solto_vale_como_lista(self):
+        dados = normalizar_resposta({"alertas": "Não ficou claro quem decide"})
+
+        assert dados["alertas"] == ["Não ficou claro quem decide"]
+
+    def test_marcador_solto_vale_como_lista(self):
+        dados = normalizar_resposta({"marcadores": "objecao_prazo"})
+
+        assert dados["marcadores"] == ["objecao_prazo"]
+
+    def test_marcador_inventado_continua_fora(self):
+        dados = normalizar_resposta({"marcadores": ["objecao_prazo", "inventado"]})
+
+        assert dados["marcadores"] == ["objecao_prazo"]
+
+    def test_fato_crm_em_lista_vira_texto(self):
+        dados = normalizar_resposta({"fato_crm": ["Proposta enviada em 10/09"]})
+
+        assert dados["fato_crm"] == "Proposta enviada em 10/09"
+
+    def test_resposta_vazia_nao_quebra(self):
+        dados = normalizar_resposta({})
+
+        assert dados["leitura"] == ""
+        assert dados["alertas"] == []
+        assert dados["fato_crm"] is None
