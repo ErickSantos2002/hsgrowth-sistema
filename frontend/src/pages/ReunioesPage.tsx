@@ -1,41 +1,37 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Loader2, Video } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Calendar, Filter, UserCheck, Users, Video } from "lucide-react";
 
 import reunioesService, {
   FiltrosDeReunioes,
   RespostaDeReunioes,
 } from "../services/reunioesService";
+import { EmptyState, LoadingSpinner, Pagination, SelectMenu } from "../components/common";
 import ReunioesKpis from "../components/reunioes/ReunioesKpis";
 import QuadroPorVendedor from "../components/reunioes/QuadroPorVendedor";
+import { OPCOES_DE_PERIODO, Periodo, datasDoPeriodo } from "../utils/periodo";
 
-const PERIODOS: { rotulo: string; dias: number | null }[] = [
-  { rotulo: "7 dias", dias: 7 },
-  { rotulo: "30 dias", dias: 30 },
-  { rotulo: "90 dias", dias: 90 },
-  { rotulo: "Tudo", dias: null },
+const TAMANHO_DA_PAGINA = 20;
+
+const ESTADOS: { value: string; label: string }[] = [
+  { value: "", label: "Todas as reuniões" },
+  { value: "avaliadas", label: "Avaliadas" },
+  { value: "nao_avaliadas", label: "Não avaliadas" },
+  { value: "sem_gravacao", label: "Sem gravação" },
 ];
 
-const ESTADOS: { rotulo: string; valor: FiltrosDeReunioes["estado"] }[] = [
-  { rotulo: "Todas", valor: undefined },
-  { rotulo: "Avaliadas", valor: "avaliadas" },
-  { rotulo: "Não avaliadas", valor: "nao_avaliadas" },
-  { rotulo: "Sem gravação", valor: "sem_gravacao" },
-];
-
-const corDoSelo = (selo: string) => {
-  if (selo === "avaliada") return "border-purple-500/40 text-purple-300";
-  if (selo === "gravada") return "border-sky-500/40 text-sky-300";
-  if (selo === "no-show") return "border-orange-500/40 text-orange-300";
-  return "border-slate-600/50 text-slate-400";
+const estiloDoSelo = (selo: string) => {
+  if (selo === "avaliada")
+    return "border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400";
+  if (selo === "gravada")
+    return "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400";
+  if (selo === "no-show")
+    return "border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-400";
+  return "border-gray-300 bg-gray-100 text-slate-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400";
 };
 
-const desde = (dias: number | null) => {
-  if (dias === null) return undefined;
-  const d = new Date();
-  d.setDate(d.getDate() - dias);
-  return d.toISOString().slice(0, 10);
-};
+const cabecalho =
+  "px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300";
 
 /**
  * Todas as reuniões do time, com a avaliação de cada uma.
@@ -45,24 +41,35 @@ const desde = (dias: number | null) => {
  * usa a ferramenta.
  */
 const ReunioesPage: React.FC = () => {
+  const navigate = useNavigate();
+
   const [dados, setDados] = useState<RespostaDeReunioes | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-  const [periodo, setPeriodo] = useState<number | null>(30);
-  const [estado, setEstado] = useState<FiltrosDeReunioes["estado"]>(undefined);
-  const [vendedorId, setVendedorId] = useState<number | undefined>(undefined);
+
+  const [periodo, setPeriodo] = useState<Periodo>("month");
+  const [inicioPersonalizado, setInicioPersonalizado] = useState("");
+  const [fimPersonalizado, setFimPersonalizado] = useState("");
+  const [estado, setEstado] = useState("");
+  const [vendedorId, setVendedorId] = useState("");
+  const [sdrId, setSdrId] = useState("");
   const [pagina, setPagina] = useState(1);
 
   const carregar = useCallback(async () => {
+    // Personalizado sem as duas datas ainda não é um filtro: esperar
+    if (periodo === "custom" && (!inicioPersonalizado || !fimPersonalizado)) return;
+
     setCarregando(true);
     setErro(null);
     try {
       setDados(
         await reunioesService.listar({
           page: pagina,
-          date_from: desde(periodo),
-          estado,
-          vendedor_id: vendedorId,
+          page_size: TAMANHO_DA_PAGINA,
+          ...datasDoPeriodo(periodo, inicioPersonalizado, fimPersonalizado),
+          estado: (estado || undefined) as FiltrosDeReunioes["estado"],
+          vendedor_id: vendedorId ? Number(vendedorId) : undefined,
+          sdr_id: sdrId ? Number(sdrId) : undefined,
         })
       );
     } catch {
@@ -70,160 +77,211 @@ const ReunioesPage: React.FC = () => {
     } finally {
       setCarregando(false);
     }
-  }, [pagina, periodo, estado, vendedorId]);
+  }, [pagina, periodo, inicioPersonalizado, fimPersonalizado, estado, vendedorId, sdrId]);
 
   useEffect(() => {
     carregar();
   }, [carregar]);
 
+  // Trocar um filtro volta para a primeira página: manter a página 3 ao mudar
+  // o período mostraria uma lista vazia sem explicar por quê.
+  const aoFiltrar = (aplicar: () => void) => {
+    setPagina(1);
+    aplicar();
+  };
+
+  const totalPaginas = dados?.total_pages ?? 1;
+  const total = dados?.total ?? 0;
+
+  const paginacao = {
+    currentPage: pagina,
+    totalPages: totalPaginas,
+    totalItems: total,
+    startIndex: (pagina - 1) * TAMANHO_DA_PAGINA,
+    endIndex: Math.min(pagina * TAMANHO_DA_PAGINA, total),
+    hasNextPage: pagina < totalPaginas,
+    hasPrevPage: pagina > 1,
+    goToPage: setPagina,
+    goToNextPage: () => setPagina((p) => Math.min(totalPaginas, p + 1)),
+    goToPrevPage: () => setPagina((p) => Math.max(1, p - 1)),
+  };
+
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex items-center gap-2">
-        <Video className="text-purple-400" size={20} />
-        <h1 className="text-lg font-semibold text-slate-100">Reuniões</h1>
+    <div className="p-6">
+      {/* Cabeçalho */}
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400">
+          <Video size={20} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Reuniões</h1>
+          {!carregando && (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {total} {total === 1 ? "reunião no período" : "reuniões no período"}
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {PERIODOS.map((p) => (
-          <button
-            key={p.rotulo}
-            onClick={() => {
-              setPagina(1);
-              setPeriodo(p.dias);
-            }}
-            className={`rounded border px-2.5 py-1 text-xs transition-colors ${
-              periodo === p.dias
-                ? "border-purple-500/50 bg-purple-500/10 text-purple-300"
-                : "border-slate-700/50 text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            {p.rotulo}
-          </button>
-        ))}
+      {/* Filtros */}
+      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <SelectMenu
+          value={periodo}
+          options={OPCOES_DE_PERIODO}
+          onChange={(v) => aoFiltrar(() => setPeriodo(v as Periodo))}
+          icon={<Calendar size={14} className="text-slate-400" />}
+          size="sm"
+          className="w-full sm:w-auto"
+        />
 
-        <span className="mx-1 h-4 w-px bg-slate-700/60" />
+        {periodo === "custom" && (
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <input
+              type="date"
+              value={inicioPersonalizado}
+              max={fimPersonalizado || undefined}
+              onChange={(e) => aoFiltrar(() => setInicioPersonalizado(e.target.value))}
+              className="h-[38px] rounded-lg border border-gray-200 bg-white px-3 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+            <span className="text-slate-400">–</span>
+            <input
+              type="date"
+              value={fimPersonalizado}
+              min={inicioPersonalizado || undefined}
+              onChange={(e) => aoFiltrar(() => setFimPersonalizado(e.target.value))}
+              className="h-[38px] rounded-lg border border-gray-200 bg-white px-3 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+          </div>
+        )}
 
-        {ESTADOS.map((e) => (
-          <button
-            key={e.rotulo}
-            onClick={() => {
-              setPagina(1);
-              setEstado(e.valor);
-            }}
-            className={`rounded border px-2.5 py-1 text-xs transition-colors ${
-              estado === e.valor
-                ? "border-purple-500/50 bg-purple-500/10 text-purple-300"
-                : "border-slate-700/50 text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            {e.rotulo}
-          </button>
-        ))}
+        <SelectMenu
+          value={estado}
+          options={ESTADOS}
+          onChange={(v) => aoFiltrar(() => setEstado(v))}
+          icon={<Filter size={14} className="text-slate-400" />}
+          size="sm"
+          className="w-full sm:w-auto"
+        />
 
-        {/* Só o gestor recebe a lista; para o vendedor ela vem vazia */}
+        {/* Só o gestor recebe as listas; para o vendedor elas vêm vazias */}
         {dados && dados.vendedores.length > 0 && (
-          <select
-            value={vendedorId ?? ""}
-            onChange={(e) => {
-              setPagina(1);
-              setVendedorId(e.target.value ? Number(e.target.value) : undefined);
-            }}
-            className="rounded border border-slate-700/50 bg-slate-800/40 px-2 py-1 text-xs text-slate-300"
-          >
-            <option value="">Todos os vendedores</option>
-            {dados.vendedores.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.nome}
-              </option>
-            ))}
-          </select>
+          <SelectMenu
+            value={vendedorId}
+            options={[
+              { value: "", label: "Todos os Vendedores" },
+              ...dados.vendedores.map((v) => ({ value: String(v.id), label: v.nome })),
+            ]}
+            onChange={(v) => aoFiltrar(() => setVendedorId(v))}
+            icon={<Users size={14} className="text-slate-400" />}
+            size="sm"
+            className="w-full sm:w-auto"
+          />
+        )}
+
+        {dados && dados.sdrs.length > 0 && (
+          <SelectMenu
+            value={sdrId}
+            options={[
+              { value: "", label: "Todos os SDRs" },
+              ...dados.sdrs.map((s) => ({ value: String(s.id), label: s.nome })),
+            ]}
+            onChange={(v) => aoFiltrar(() => setSdrId(v))}
+            icon={<UserCheck size={14} className="text-slate-400" />}
+            size="sm"
+            className="w-full sm:w-auto"
+          />
         )}
       </div>
 
-      {carregando && (
-        <div className="flex items-center gap-2 text-sm text-slate-400">
-          <Loader2 className="animate-spin" size={16} />
-          Carregando...
+      {erro && (
+        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-400">
+          {erro}
         </div>
       )}
 
-      {erro && <p className="text-sm text-red-400">{erro}</p>}
-
       {dados && !carregando && (
-        <>
+        <div className="mb-6">
           <ReunioesKpis dados={dados} />
-
-          {dados.por_vendedor.length > 0 && <QuadroPorVendedor linhas={dados.por_vendedor} />}
-
-          <div className="overflow-x-auto rounded border border-slate-700/50">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-800/60 text-slate-400">
-                <tr>
-                  <th className="px-3 py-2">Data</th>
-                  <th className="px-3 py-2">Cliente</th>
-                  <th className="px-3 py-2">Vendedor</th>
-                  <th className="px-3 py-2">Duração</th>
-                  <th className="px-3 py-2">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dados.items.map((r) => (
-                  <tr
-                    key={r.task_id}
-                    className="border-t border-slate-700/40 hover:bg-slate-800/30"
-                  >
-                    <td className="px-3 py-2 text-slate-300">
-                      {r.quando ? new Date(r.quando).toLocaleDateString("pt-BR") : "—"}
-                    </td>
-                    <td className="px-3 py-2">
-                      <Link to={`/cards/${r.card_id}`} className="text-sky-400 hover:underline">
-                        {r.cliente || "—"}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-2 text-slate-300">{r.vendedor || "—"}</td>
-                    <td className="px-3 py-2 text-slate-400">
-                      {r.duracao_minutos ? `${r.duracao_minutos} min` : "—"}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className={`rounded border px-1.5 py-0.5 ${corDoSelo(r.selo)}`}>
-                        {r.selo === "avaliada" && r.score !== null
-                          ? `avaliada ${r.score} · ${r.veredito}`
-                          : r.selo}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {dados.items.length === 0 && (
-            <p className="text-sm text-slate-500">Nenhuma reunião no período.</p>
-          )}
-
-          {dados.total_pages > 1 && (
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <button
-                onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                disabled={pagina === 1}
-                className="rounded border border-slate-700/50 px-2 py-1 disabled:opacity-40"
-              >
-                Anterior
-              </button>
-              <span>
-                {pagina} de {dados.total_pages}
-              </span>
-              <button
-                onClick={() => setPagina((p) => Math.min(dados.total_pages, p + 1))}
-                disabled={pagina === dados.total_pages}
-                className="rounded border border-slate-700/50 px-2 py-1 disabled:opacity-40"
-              >
-                Próxima
-              </button>
-            </div>
-          )}
-        </>
+        </div>
       )}
+
+      {dados && !carregando && dados.por_vendedor.length > 0 && (
+        <div className="mb-6">
+          <QuadroPorVendedor linhas={dados.por_vendedor} />
+        </div>
+      )}
+
+      {/* Lista */}
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/30">
+        {carregando ? (
+          <div className="flex justify-center py-16">
+            <LoadingSpinner size="lg" label="Carregando reuniões..." />
+          </div>
+        ) : !dados || dados.items.length === 0 ? (
+          <div className="p-4">
+            <EmptyState
+              icon={Video}
+              title="Nenhuma reunião no período"
+              description="Ajuste os filtros ou agende uma reunião pelo card do negócio."
+            />
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50">
+                    <th className={cabecalho}>Data</th>
+                    <th className={cabecalho}>Cliente</th>
+                    <th className={cabecalho}>Vendedor</th>
+                    <th className={cabecalho}>SDR</th>
+                    <th className={cabecalho}>Duração</th>
+                    <th className={cabecalho}>Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-slate-700/50">
+                  {dados.items.map((r) => (
+                    <tr
+                      key={r.task_id}
+                      onClick={() => navigate(`/cards/${r.card_id}`)}
+                      className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/50"
+                    >
+                      <td className="px-6 py-3 text-sm text-slate-600 dark:text-slate-300">
+                        {r.quando ? new Date(r.quando).toLocaleDateString("pt-BR") : "—"}
+                      </td>
+                      <td className="px-6 py-3 text-sm font-medium text-slate-900 dark:text-white">
+                        {r.cliente || "—"}
+                      </td>
+                      <td className="px-6 py-3 text-sm text-slate-600 dark:text-slate-300">
+                        {r.vendedor || "—"}
+                      </td>
+                      <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400">
+                        {r.sdr || "—"}
+                      </td>
+                      <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400">
+                        {r.duracao_minutos ? `${r.duracao_minutos} min` : "—"}
+                      </td>
+                      <td className="px-6 py-3">
+                        <span
+                          className={`inline-block rounded-lg border px-2 py-0.5 text-xs font-medium ${estiloDoSelo(
+                            r.selo
+                          )}`}
+                        >
+                          {r.selo === "avaliada" && r.score !== null
+                            ? `${r.score} · ${r.veredito}`
+                            : r.selo}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <Pagination {...paginacao} itemLabel="reuniões" />
+          </>
+        )}
+      </div>
     </div>
   );
 };

@@ -25,6 +25,11 @@ interface SelectMenuProps {
    * Use "sm" em barras de filtro para economizar espaço horizontal.
    */
   size?: "md" | "sm";
+  /**
+   * Ícone à esquerda do rótulo, como nas barras de filtro do Dashboard.
+   * Ajuda a distinguir seletores lado a lado sem precisar de label acima.
+   */
+  icon?: React.ReactNode;
 }
 
 /**
@@ -54,6 +59,7 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
   className = "",
   error = false,
   size = "md",
+  icon,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -121,10 +127,13 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span
-          className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}
-        >
-          {selectedLabel}
+        <span className="flex min-w-0 items-center gap-2">
+          {icon}
+          <span
+            className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}
+          >
+            {selectedLabel}
+          </span>
         </span>
         <ChevronDown
           size={size === "sm" ? 14 : 16}

@@ -7,6 +7,7 @@ export interface ReuniaoDaLista {
   titulo: string;
   cliente: string | null;
   vendedor: string | null;
+  sdr: string | null;
   quando: string | null;
   duracao_minutos: number | null;
   selo: "sem gravação" | "gravada" | "avaliada" | "no-show";
@@ -22,6 +23,11 @@ export interface LinhaDoVendedor {
   media_por_bloco: Record<string, number>;
 }
 
+export interface PessoaDoFiltro {
+  id: number;
+  nome: string;
+}
+
 export interface RespostaDeReunioes {
   items: ReuniaoDaLista[];
   total: number;
@@ -34,7 +40,8 @@ export interface RespostaDeReunioes {
   percentual_avaliadas: number;
   percentual_proximo_passo: number;
   por_vendedor: LinhaDoVendedor[];
-  vendedores: { id: number; nome: string }[];
+  vendedores: PessoaDoFiltro[];
+  sdrs: PessoaDoFiltro[];
 }
 
 export interface FiltrosDeReunioes {
@@ -43,6 +50,7 @@ export interface FiltrosDeReunioes {
   date_from?: string;
   date_to?: string;
   vendedor_id?: number;
+  sdr_id?: number;
   veredito?: string;
   estado?: "todas" | "sem_gravacao" | "avaliadas" | "nao_avaliadas";
 }
