@@ -3,6 +3,9 @@
  *
  * Os mesmos rótulos do Dashboard (Hoje, Esta Semana, Este Mês...), para quem
  * usa as duas telas não precisar aprender dois jeitos de filtrar.
+ *
+ * O intervalo cobre o período inteiro, e não só até hoje: reunião já agendada
+ * para o fim do mês é "deste mês" para quem está olhando a agenda do time.
  */
 export type Periodo =
   | "today"
@@ -58,16 +61,19 @@ export function datasDoPeriodo(
     }
 
     case "week": {
-      // Semana começando no domingo, como no Dashboard
+      // Semana começando no domingo, como no Dashboard. O fim é o sábado, e
+      // não hoje: reunião já agendada para sexta é desta semana.
       const inicio = new Date(hoje);
       inicio.setDate(hoje.getDate() - hoje.getDay());
-      return { date_from: iso(inicio), date_to: iso(hoje) };
+      const fim = new Date(inicio);
+      fim.setDate(inicio.getDate() + 6);
+      return { date_from: iso(inicio), date_to: iso(fim) };
     }
 
     case "month":
       return {
         date_from: iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
-        date_to: iso(hoje),
+        date_to: iso(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)),
       };
 
     case "last_month":
@@ -80,14 +86,14 @@ export function datasDoPeriodo(
       const primeiroMesDoTrimestre = Math.floor(hoje.getMonth() / 3) * 3;
       return {
         date_from: iso(new Date(hoje.getFullYear(), primeiroMesDoTrimestre, 1)),
-        date_to: iso(hoje),
+        date_to: iso(new Date(hoje.getFullYear(), primeiroMesDoTrimestre + 3, 0)),
       };
     }
 
     case "year":
       return {
         date_from: iso(new Date(hoje.getFullYear(), 0, 1)),
-        date_to: iso(hoje),
+        date_to: iso(new Date(hoje.getFullYear(), 11, 31)),
       };
 
     case "custom":
