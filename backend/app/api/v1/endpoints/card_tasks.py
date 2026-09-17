@@ -1893,3 +1893,152 @@ async def listar_ajuda_ao_vivo(
     )
 
     return [_pedido_de_ajuda_para_resposta(p) for p in pedidos]
+
+
+# ==================== AVALIAÇÃO PELA RÉGUA DA CONSULTORIA ====================
+
+
+def _montar_resposta_avaliacao(avaliacao) -> dict:
+    """Formato da tela: quem avaliou vem como nome, não como id."""
+    return {
+        "id": avaliacao.id,
+        "card_task_id": avaliacao.card_task_id,
+        "avaliado_em": avaliacao.avaliado_em,
+        "avaliado_por": avaliacao.avaliado_por.name if avaliacao.avaliado_por else None,
+        "versao_criterios": avaliacao.versao_criterios,
+        "score": avaliacao.score,
+        "veredito": avaliacao.veredito,
+        "cobertura": avaliacao.cobertura,
+        "medias_por_bloco": avaliacao.medias_por_bloco,
+        "desfecho": avaliacao.desfecho,
+        "ponto_forte": avaliacao.ponto_forte,
+        "foco_desenvolvimento": avaliacao.foco_desenvolvimento,
+        "proxima_acao": avaliacao.proxima_acao,
+        "itens": [
+            {
+                "criterio_id": i.criterio_id,
+                "bloco": i.bloco,
+                "peso": i.peso,
+                "nota": i.nota,
+                "evidencia": i.evidencia,
+                "porque": i.porque,
+            }
+            for i in avaliacao.itens
+        ],
+    }
+
+
+@router.post(
+    "/{task_id}/avaliacao",
+    status_code=status.HTTP_201_CREATED,
+    summary="Avaliar a reunião pela régua da consultoria",
+    description="""
+    Classifica os 26 critérios da régua a partir da transcrição e calcula
+    score, cobertura e veredito.
+
+    Roda só por clique. Reavaliar substitui a avaliação anterior.
+    """,
+)
+def avaliar_reuniao(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.core.config import settings
+    from app.models.meeting_evaluation import MeetingEvaluation, MeetingEvaluationItem
+    from app.services.avaliacao_reuniao import servico
+    from app.services.avaliacao_reuniao.criterios import VERSAO
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Reunião não encontrada")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    if not (task.transcript_raw or "").strip():
+        raise HTTPException(
+            status_code=422,
+            detail="Esta reunião ainda não tem transcrição para avaliar.",
+        )
+
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Avaliação indisponível: OPENAI_API_KEY não configurada.",
+        )
+
+    contexto = f"Negócio: {task.card.title}" if task.card else ""
+
+    try:
+        resultado = servico.avaliar(task.transcript_raw, contexto)
+    except Exception as e:
+        # Nada é gravado: avaliação pela metade é pior que nenhuma
+        raise HTTPException(status_code=502, detail=f"A IA não conseguiu avaliar: {e}")
+
+    anterior = (
+        db.query(MeetingEvaluation)
+        .filter(MeetingEvaluation.card_task_id == task.id)
+        .first()
+    )
+    if anterior:
+        db.delete(anterior)
+        db.flush()
+
+    avaliacao = MeetingEvaluation(
+        card_task_id=task.id,
+        avaliado_por_id=current_user.id,
+        versao_criterios=VERSAO,
+        score=resultado["score"],
+        veredito=resultado["veredito"],
+        cobertura=resultado["cobertura"],
+        medias_por_bloco=resultado["medias_por_bloco"],
+        desfecho=resultado["desfecho"],
+        ponto_forte=resultado["ponto_forte"],
+        foco_desenvolvimento=resultado["foco_desenvolvimento"],
+        proxima_acao=resultado["proxima_acao"],
+        modelo=resultado.get("modelo"),
+        tokens_entrada=resultado.get("tokens_entrada"),
+        tokens_saida=resultado.get("tokens_saida"),
+        latencia_ms=resultado.get("latencia_ms"),
+    )
+    for item in resultado["itens"]:
+        avaliacao.itens.append(MeetingEvaluationItem(
+            criterio_id=item["criterio_id"],
+            bloco=item["bloco"],
+            peso=item["peso"],
+            nota=item["nota"],
+            evidencia=item.get("evidencia"),
+            porque=item.get("porque"),
+        ))
+
+    db.add(avaliacao)
+    db.commit()
+    db.refresh(avaliacao)
+
+    return _montar_resposta_avaliacao(avaliacao)
+
+
+@router.get(
+    "/{task_id}/avaliacao",
+    summary="Avaliação da reunião",
+    description="Devolve a avaliação com os 26 critérios, ou nulo se ainda não foi avaliada.",
+)
+def obter_avaliacao(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.models.meeting_evaluation import MeetingEvaluation
+
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Reunião não encontrada")
+
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    avaliacao = (
+        db.query(MeetingEvaluation)
+        .filter(MeetingEvaluation.card_task_id == task.id)
+        .first()
+    )
+    return _montar_resposta_avaliacao(avaliacao) if avaliacao else None
