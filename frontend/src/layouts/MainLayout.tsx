@@ -60,6 +60,19 @@ export default function MainLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [changelogOpen, setChangelogOpen] = useState(false);
 
+    // Depois de entrar, mostra o que mudou. A marca é consumida na abertura,
+    // então recarregar a página não reabre o modal.
+    useEffect(() => {
+        try {
+            if (sessionStorage.getItem("changelog_pendente")) {
+                sessionStorage.removeItem("changelog_pendente");
+                setChangelogOpen(true);
+            }
+        } catch {
+            // sem sessionStorage o modal simplesmente não abre sozinho
+        }
+    }, []);
+
     // Controla visibilidade do aviso de permissão de notificações do browser
     const [showNotificationBanner, setShowNotificationBanner] = useState(false);
 
@@ -274,7 +287,7 @@ export default function MainLayout() {
                                     className="text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                                     title="Ver o que há de novo nessa versão"
                                 >
-                                    HSGrowth CRM v1.9.4
+                                    HSGrowth CRM v1.10.0
                                 </button>
                                 <p className="text-[10px] text-slate-300 dark:text-slate-600">
                                     © 2026 Health & Safety Tech

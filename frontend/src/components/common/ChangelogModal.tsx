@@ -25,6 +25,40 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.0",
+    date: "18/09/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Reunião por vídeo dentro do CRM: crie a sala pelo card e envie ao cliente um link que abre no navegador, sem ele precisar instalar nada nem ter conta. A sala tem sala de espera — o cliente só entra quando você libera.",
+      },
+      {
+        type: "feature",
+        text: "Gravação e transcrição automáticas: ao encerrar, a gravação vai para o card em poucos minutos, junto da transcrição em português e da análise da IA. Só o anfitrião da reunião pode iniciar ou parar a gravação; o cliente e os colegas que entram para acompanhar não têm esse botão.",
+      },
+      {
+        type: "feature",
+        text: "Ajuda da IA durante a reunião: o botão 'Me ajuda aqui', no painel lateral da sala, lê a conversa até aquele momento e sugere o que dizer em seguida, com uma pergunta para avançar e alertas do que ainda não ficou claro. Só o time vê o painel — o cliente não.",
+      },
+      {
+        type: "feature",
+        text: "Avaliação da reunião pelo roteiro da consultoria: o botão 'Avaliar pelo roteiro' classifica os 26 critérios da matriz (Abertura, Diagnóstico, Demonstração e Fechamento) e mostra nota por bloco, ponto forte, o que desenvolver e a próxima ação. Cada critério vem com o trecho literal da conversa que justifica a nota, então dá para conferir de onde veio cada ponto. Vale também para reuniões feitas pelo Teams.",
+      },
+      {
+        type: "feature",
+        text: "Nova página 'Reuniões' na barra lateral: todas as reuniões do período num lugar só, com score médio, percentual de avaliadas, média por bloco e quantas fecharam com próximo passo combinado. Gerentes e administradores veem ainda o quadro por vendedor. Cada reunião leva ao card, onde ficam gravação, transcrição e avaliação.",
+      },
+      {
+        type: "improvement",
+        text: "Cancelar uma reunião do CRM agora apaga a sala e invalida o link do cliente — antes o link continuava funcionando depois do cancelamento.",
+      },
+      {
+        type: "improvement",
+        text: "Este aviso de novidades passa a aparecer a cada login, e fecha pelo X.",
+      },
+    ],
+  },
+  {
     version: "1.9.4",
     date: "16/09/2026",
     entries: [
@@ -2026,20 +2060,19 @@ interface ChangelogModalProps {
 
 /**
  * Modal de changelog acessível, com linguagem simples para todos os usuários.
- * Exibido ao clicar na versão do sistema na sidebar.
+ *
+ * Abre sozinho depois do login e ao clicar na versão do sistema na sidebar.
+ *
+ * Fecha só pelo X, de propósito: abrindo a cada login, um clique fora
+ * dispensaria o aviso sem ninguém ter lido — e é justamente quem fecha sem ler
+ * que depois não sabe que a funcionalidade existe.
  */
 const ChangelogModal: React.FC<ChangelogModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-900"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-900">
         {/* Cabeçalho */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 px-6 py-5 dark:border-slate-700">
           <div>
@@ -2052,6 +2085,8 @@ const ChangelogModal: React.FC<ChangelogModalProps> = ({ isOpen, onClose }) => {
           </div>
           <button
             onClick={onClose}
+            title="Fechar"
+            aria-label="Fechar"
             className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
           >
             <X size={20} />

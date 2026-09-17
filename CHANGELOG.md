@@ -5,6 +5,29 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.0] — 18/09/2026
+
+### Adicionado
+- **Reunião por vídeo dentro do CRM (Daily.co):** a sala é criada pelo card e o cliente entra por um link no navegador, sem instalar nada e sem conta. Sala de espera: o cliente só entra quando o anfitrião libera. O convite sai pelo Outlook com a pauta escrita no CRM.
+- **Gravação e transcrição automáticas:** ao encerrar, a gravação é baixada do Daily, guardada no Cloudflare R2 e ligada ao card, junto da transcrição em pt-BR e da análise da IA (14 campos). Gravações longas chegam em trechos, na ordem.
+- **Ajuda da IA ao vivo:** botão "Me ajuda aqui" no painel lateral da sala — lê a conversa até ali e devolve leitura da situação, o que falar em seguida, uma pergunta para avançar, alertas e um fato do CRM. Cada pedido fica registrado no card, com quem pediu e o trecho da conversa.
+- **Avaliação pela matriz da consultoria:** botão "Avaliar pelo roteiro" classifica os 26 critérios (4 blocos, pesos somando 100) com nota 0/1/2 ou N/A e **trecho literal da transcrição como evidência**. A IA classifica; o sistema calcula score, cobertura e veredito — assim a nota é reproduzível e contestável critério a critério. Cobertura abaixo de 70% não gera score comparável. A régua fica versionada no código e a versão usada é gravada em cada avaliação.
+- **Página "Reuniões"** (`/reunioes`, na sidebar abaixo de Atividades): todas as reuniões do período, com ou sem avaliação, e os indicadores — score médio, % avaliadas, média por bloco, % que fechou com próximo passo e distribuição por veredito. Gerente e admin veem o quadro por vendedor. Visibilidade por vínculo com o negócio (RN-037, por id): vendedor e SDR do card veem a mesma reunião; nos indicadores ela conta para quem conduziu.
+
+### Alterado
+- **Só o anfitrião grava:** a permissão de gravação passou a ser emitida no token de quem conduz a reunião. No Daily, sala que libera gravação libera para todos os participantes — inclusive o cliente pelo link público.
+- **Cancelar reunião do CRM apaga a sala** no Daily e invalida o link do cliente. Antes o cancelamento só limpava os campos do Teams e o link seguia funcionando.
+- **Aviso de novidades a cada login**, fechando apenas pelo X.
+
+### Corrigido
+- **Webhook do Daily confere a sala:** o evento era casado só pelo número no nome da sala, sem verificar se aquela tarefa era mesmo daquela sala — uma gravação de homologação chegou a ser anexada a uma tarefa de e-mail de um cliente real em produção.
+- **Ambientes separados:** prefixo de sala (`DAILY_ROOM_PREFIX`) e pasta própria no bucket (`R2_PREFIXO`) por ambiente, com produção repassando à homologação os eventos que não são dela (`DAILY_WEBHOOK_FORWARD_URL`) — o Daily aceita um webhook por conta.
+- **Nota da avaliação estável:** temperatura zero e escala explicada no prompt. Antes a mesma reunião recebia 23 e depois 51, porque a IA lia a rubrica como tudo-ou-nada enquanto o avaliador humano classifica a maioria dos critérios como "fez em parte".
+- **Ajuda ao vivo tolerante ao formato da resposta:** campo que voltava como lista derrubava o pedido no meio da reunião.
+- **Transcrição ao vivo separa time e cliente** por marca no token, não mais por "é dono da sala" — com a gravação restrita ao anfitrião, o colega deixaria de ser dono e sua fala entraria como fala do cliente.
+
+---
+
 ## [1.9.4] — 16/09/2026
 
 ### Adicionado

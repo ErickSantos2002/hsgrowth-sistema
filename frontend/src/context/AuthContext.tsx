@@ -56,6 +56,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setToken(response.access_token);
       setUser(response.user);
+
+      // O "o que há de novo" abre depois de entrar, uma vez por login. Marcar
+      // aqui (e não no layout) é o que separa entrar de recarregar a página:
+      // quem dá F5 no meio do trabalho não precisa ver o aviso de novo.
+      try {
+        sessionStorage.setItem("changelog_pendente", "1");
+      } catch {
+        // aba anônima ou armazenamento bloqueado: segue sem o aviso
+      }
     } catch (err: any) {
       // Tratamento de erros HTTP
       if (err.response) {
