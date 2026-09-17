@@ -192,6 +192,15 @@ onde estão gravação, transcrição, análise e avaliação.
 **Permissão:** admin e gerente veem tudo; os demais veem as reuniões dos
 negócios em que são vendedor ou SDR (RN-037, por id).
 
+**SDR e vendedor na mesma reunião (decidido em 17/09):** o SDR agenda para o
+vendedor e às vezes acompanha a conversa. A mesma reunião aparece para os dois
+— para o vendedor porque o negócio é dele, para o SDR porque ele é o SDR
+daquele negócio. Nos indicadores, porém, ela conta só para **quem conduziu**, o
+vendedor: score, quadro por pessoa e média por bloco são sobre o desempenho na
+conversa, e somar isso ao SDR daria a ele notas de reuniões que não conduziu.
+Reunião agendada por alguém em card de outro SDR fica fora da página dele, mas
+continua visível no card.
+
 > A página de Ligações resolve isso comparando **nomes em texto** (`ilike` com
 > o primeiro nome), o que erra com homônimo e nome composto. A de Reuniões usa
 > o vínculo por id, como o resto do sistema.
