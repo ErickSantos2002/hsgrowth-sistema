@@ -152,7 +152,9 @@ const MeetingRoom: React.FC = () => {
         <span className="text-sm font-medium text-white">Reunião por vídeo</span>
       </div>
 
-      <RecordingBanner call={call} />
+      {/* Quem já saiu não está mais gravando: o contador ficava subindo na
+          tela de "reunião encerrada", parecendo que a gravação continuava. */}
+      {!encerrada && <RecordingBanner call={call} />}
 
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
