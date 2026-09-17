@@ -28,6 +28,10 @@ DEFAULT_DURATION_MINUTES = 60
 
 HTTP_TIMEOUT_SECONDS = 15.0
 
+# Começo do `user_id` de quem entra pelo CRM. A sala usa isso para saber que a
+# fala é do time, e não do cliente.
+PREFIXO_DO_TIME = "time-"
+
 # Eventos que o webhook precisa receber. Mudar esta lista faz o webhook ser
 # recriado no Daily na próxima chamada de garantir_webhook().
 WEBHOOK_EVENTOS = [
@@ -197,7 +201,7 @@ class DailyService:
         user_name: str,
         is_owner: bool,
         permissions: Optional[dict] = None,
-        user_data: Optional[dict] = None,
+        user_id: Optional[str] = None,
     ) -> str:
         propriedades = {
             "room_name": task.daily_room_name,
@@ -209,8 +213,8 @@ class DailyService:
         if permissions:
             propriedades["permissions"] = permissions
 
-        if user_data:
-            propriedades["user_data"] = user_data
+        if user_id:
+            propriedades["user_id"] = user_id
 
         payload = {"properties": propriedades}
 
@@ -258,16 +262,18 @@ class DailyService:
         # Quem entra pelo CRM é do time. A sala usa essa marca para separar a
         # fala do time da fala do cliente na transcrição ao vivo — antes isso
         # vinha de "é dono da sala", que deixou de valer para os acompanhantes.
-        marca_do_time = {"time": True}
+        # O token do Daily não aceita dados livres; `user_id` é o campo que
+        # chega ao participante na sala.
+        marca_do_time = f"{PREFIXO_DO_TIME}{user.id}"
 
         if self._e_anfitriao(task, user):
-            return self._create_token(task, nome, is_owner=True, user_data=marca_do_time)
+            return self._create_token(task, nome, is_owner=True, user_id=marca_do_time)
 
         return self._create_token(
             task,
             nome,
             is_owner=False,
-            user_data=marca_do_time,
+            user_id=marca_do_time,
             permissions={
                 "hasPresence": True,
                 "canSend": True,

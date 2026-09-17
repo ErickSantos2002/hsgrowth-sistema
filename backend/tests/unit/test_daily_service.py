@@ -467,6 +467,24 @@ class TestQuemPodeGravar:
         assert props["is_owner"] is True
         assert "permissions" not in props
 
+    def test_quem_entra_pelo_crm_vai_marcado_como_time(
+        self, db: Session, task, test_salesperson_user
+    ):
+        """
+        A sala separa a fala do time da fala do cliente por esta marca.
+
+        Vai em `user_id` porque o token do Daily não aceita dados livres —
+        `user_data` foi recusado com 400 na homologação de 17/09.
+        """
+        task.daily_room_name = "hsg-1"
+        task.assigned_to_id = test_salesperson_user.id
+        db.commit()
+
+        props = self._payload_do_token(db, task, test_salesperson_user, pytest.MonkeyPatch())
+
+        assert props["user_id"] == f"time-{test_salesperson_user.id}"
+        assert "user_data" not in props
+
     def test_colega_entra_sem_poder_gravar(self, db: Session, task, test_salesperson_user,
                                            test_manager_user):
         """Gerente ou SDR acompanham a reunião, mas a gravação é decisão do anfitrião."""
@@ -478,6 +496,8 @@ class TestQuemPodeGravar:
 
         assert props["is_owner"] is False
         assert "streaming" not in props["permissions"]["canAdmin"]
+        # segue sendo do time, mesmo sem ser dono
+        assert props["user_id"] == f"time-{test_manager_user.id}"
 
     def test_colega_ainda_libera_a_sala_de_espera(self, db: Session, task, test_salesperson_user,
                                                   test_manager_user):

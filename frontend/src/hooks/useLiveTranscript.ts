@@ -8,6 +8,9 @@ export interface FalaAoVivo {
   em: string;
 }
 
+// Começo do `user_id` de quem entrou pelo CRM — definido no token, no backend
+const MARCA_DO_TIME = "time-";
+
 const MAXIMO_DE_FALAS_GUARDADAS = 2000;
 const MINIMO_PARA_PEDIR_AJUDA = 5;
 
@@ -15,9 +18,9 @@ const MINIMO_PARA_PEDIR_AJUDA = 5;
  * Acumula a transcrição ao vivo da reunião.
  *
  * O Daily entrega cada frase pelo evento `transcription-message`. Quem é do
- * time e quem é o cliente sai da própria sala: quem entra pelo CRM recebe a
- * marca `time` no token, os demais são o cliente. Só o anfitrião é dono da
- * sala — por isso a marca, e não o "dono", separa os dois lados.
+ * time e quem é o cliente sai da própria sala: quem entra pelo CRM recebe um
+ * `user_id` começando com "time-", os demais são o cliente. Só o anfitrião é
+ * dono da sala — por isso a marca, e não o "dono", separa os dois lados.
  *
  * As falas também vão para o `sessionStorage`: recarregar a aba no meio de uma
  * reunião não pode zerar o contexto que a IA vai receber.
@@ -63,13 +66,12 @@ export function useLiveTranscript(call: DailyCall | null, taskId: string | undef
       if (bruto && bruto.is_final === false) return;
 
       const participantes = call.participants?.() as
-        | Record<
-            string,
-            { owner?: boolean; user_name?: string; userData?: { time?: boolean } }
-          >
+        | Record<string, { owner?: boolean; user_name?: string; user_id?: string }>
         | undefined;
       const participante = participantes?.[ev.participantId];
-      const doTime = Boolean(participante?.userData?.time || participante?.owner);
+      const doTime = Boolean(
+        participante?.user_id?.startsWith(MARCA_DO_TIME) || participante?.owner
+      );
 
       setFalas((antes) => [
         ...antes,
