@@ -111,9 +111,10 @@ class DailyService:
                 "enable_chat": True,
                 "enable_screenshare": True,
                 "lang": "pt",
-                # Permite gravar. Não começa sozinho: o Daily mostra o botão
-                # para o dono da sala e gravar é decisão do vendedor.
-                "enable_recording": "cloud",
+                # `enable_recording` NÃO entra aqui de propósito: no Daily, a
+                # sala que libera gravação libera para todos os participantes,
+                # inclusive o convidado (visto em 14/09 e de novo em 17/09).
+                # Quem pode gravar recebe a permissão no próprio token.
                 # Salva o VTT da transcrição — sem isso o arquivo não é
                 # guardado e o webhook de transcrição nunca chega.
                 "enable_transcription_storage": True,
@@ -202,6 +203,7 @@ class DailyService:
         is_owner: bool,
         permissions: Optional[dict] = None,
         user_id: Optional[str] = None,
+        extras: Optional[dict] = None,
     ) -> str:
         propriedades = {
             "room_name": task.daily_room_name,
@@ -215,6 +217,9 @@ class DailyService:
 
         if user_id:
             propriedades["user_id"] = user_id
+
+        if extras:
+            propriedades.update(extras)
 
         payload = {"properties": propriedades}
 
@@ -267,7 +272,13 @@ class DailyService:
         marca_do_time = f"{PREFIXO_DO_TIME}{user.id}"
 
         if self._e_anfitriao(task, user):
-            return self._create_token(task, nome, is_owner=True, user_id=marca_do_time)
+            return self._create_token(
+                task,
+                nome,
+                is_owner=True,
+                user_id=marca_do_time,
+                extras={"enable_recording": "cloud"},
+            )
 
         return self._create_token(
             task,
@@ -277,14 +288,26 @@ class DailyService:
             permissions={
                 "hasPresence": True,
                 "canSend": True,
-                # sem "streaming": não grava
+                # sem "streaming": não administra gravação
                 "canAdmin": ["participants", "transcription"],
             },
+            # sem `enable_recording`, e sem o botão na barra
+            extras={"enable_recording_ui": False},
         )
 
     def create_guest_token(self, task: CardTask, guest_name: str) -> str:
-        """Token do convidado — nunca dono, não libera ninguém nem encerra a sala."""
-        return self._create_token(task, guest_name or "Convidado", is_owner=False)
+        """
+        Token do convidado — nunca dono, não libera ninguém nem encerra a sala.
+
+        Sem `enable_recording`: gravar é decisão de quem conduz a reunião, e o
+        botão nem aparece para o cliente.
+        """
+        return self._create_token(
+            task,
+            guest_name or "Convidado",
+            is_owner=False,
+            extras={"enable_recording_ui": False},
+        )
 
     # ── webhook ─────────────────────────────────────────────────────────────
 

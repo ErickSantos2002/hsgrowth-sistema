@@ -232,12 +232,12 @@ class TestRegistroDoWebhook:
 
 class TestGravacaoNaSala:
     """
-    A sala precisa permitir gravação e guardar a transcrição. Gravar continua
-    sendo decisão do vendedor: o Daily mostra o botão para o dono da sala, e
-    nada começa sozinho.
+    A sala guarda a transcrição, mas não libera gravação: no Daily, sala com
+    `enable_recording` libera para todos os participantes, o cliente
+    inclusive. Quem grava recebe a permissão no próprio token.
     """
 
-    def test_sala_permite_gravacao_em_nuvem(self, db: Session, task):
+    def test_sala_nao_libera_gravacao_para_todos(self, db: Session, task):
         svc = DailyService(db)
         fake = _Resp(200, {"name": f"hsg-{task.id}", "url": "https://x.daily.co/h"})
 
@@ -245,7 +245,7 @@ class TestGravacaoNaSala:
             svc.create_room(task)
 
         props = m.call_args.kwargs["json"]["properties"]
-        assert props["enable_recording"] == "cloud"
+        assert "enable_recording" not in props
 
     def test_sala_guarda_a_transcricao(self, db: Session, task):
         """Sem isso o VTT não é salvo e o webhook de transcrição nunca chega."""
@@ -485,6 +485,24 @@ class TestQuemPodeGravar:
         assert props["user_id"] == f"time-{test_salesperson_user.id}"
         assert "user_data" not in props
 
+    def test_so_o_anfitriao_recebe_permissao_de_gravar(
+        self, db: Session, task, test_salesperson_user
+    ):
+        """
+        A permissão de gravar vive no token, nunca na sala.
+
+        Sala com `enable_recording` libera gravação para TODOS os
+        participantes, convidado incluído — foi assim que o cliente conseguiu
+        gravar em 14/09 e o colega em 17/09.
+        """
+        task.daily_room_name = "hsg-1"
+        task.assigned_to_id = test_salesperson_user.id
+        db.commit()
+
+        props = self._payload_do_token(db, task, test_salesperson_user, pytest.MonkeyPatch())
+
+        assert props["enable_recording"] == "cloud"
+
     def test_colega_entra_sem_poder_gravar(self, db: Session, task, test_salesperson_user,
                                            test_manager_user):
         """Gerente ou SDR acompanham a reunião, mas a gravação é decisão do anfitrião."""
@@ -496,6 +514,8 @@ class TestQuemPodeGravar:
 
         assert props["is_owner"] is False
         assert "streaming" not in props["permissions"]["canAdmin"]
+        assert "enable_recording" not in props
+        assert props["enable_recording_ui"] is False
         # segue sendo do time, mesmo sem ser dono
         assert props["user_id"] == f"time-{test_manager_user.id}"
 
@@ -521,3 +541,29 @@ class TestQuemPodeGravar:
         props = self._payload_do_token(db, task, test_salesperson_user, pytest.MonkeyPatch())
 
         assert props["is_owner"] is True
+
+
+class TestSalaNaoLiberaGravacao:
+    """
+    A sala nunca carrega `enable_recording`.
+
+    No Daily, sala que libera gravação libera para todo mundo que entra nela,
+    inclusive o cliente pelo link público. Quem pode gravar recebe isso no
+    próprio token.
+    """
+
+    def test_sala_criada_sem_enable_recording(self, db: Session, task, monkeypatch):
+        enviados = {}
+
+        def fake_post(caminho, payload):
+            enviados["payload"] = payload
+            return {"name": payload["name"], "url": "https://x.daily.co/sala"}
+
+        svc = DailyService(db)
+        monkeypatch.setattr(svc, "_post", fake_post)
+        svc.create_room(task)
+
+        propriedades = enviados["payload"]["properties"]
+        assert "enable_recording" not in propriedades
+        # a trava de admin continua, para quem entra sem token
+        assert propriedades["permissions"]["canAdmin"] is False
