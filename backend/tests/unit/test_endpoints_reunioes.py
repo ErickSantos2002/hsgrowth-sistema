@@ -269,3 +269,74 @@ class TestVisibilidade:
 
     def test_exige_autenticacao(self, client: TestClient):
         assert client.get("/api/v1/reunioes").status_code in (401, 403)
+
+
+class TestSDR:
+    """
+    O SDR agenda a reunião e às vezes acompanha.
+
+    Ele vê as reuniões dos negócios em que é o SDR, e o gestor pode filtrar
+    por ele — é a leitura do que a pré-venda colocou de pé, diferente da do
+    vendedor que conduziu.
+    """
+
+    def test_item_traz_o_sdr_do_negocio(
+        self, client: TestClient, manager_headers, db, test_card,
+        test_salesperson_user, test_sdr_user
+    ):
+        test_card.sdr_id = test_sdr_user.id
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "Com SDR")
+
+        item = client.get("/api/v1/reunioes", headers=manager_headers).json()["items"][0]
+
+        assert item["sdr"] == test_sdr_user.name
+        assert item["vendedor"] == test_salesperson_user.name
+
+    def test_gestor_recebe_a_lista_de_sdrs(
+        self, client: TestClient, manager_headers, db, test_card,
+        test_salesperson_user, test_sdr_user
+    ):
+        test_card.sdr_id = test_sdr_user.id
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "Com SDR")
+
+        corpo = client.get("/api/v1/reunioes", headers=manager_headers).json()
+
+        assert corpo["sdrs"] == [{"id": test_sdr_user.id, "nome": test_sdr_user.name}]
+
+    def test_filtra_por_sdr(
+        self, client: TestClient, manager_headers, db, test_lists, test_card,
+        test_salesperson_user, test_sdr_user
+    ):
+        from app.models.card import Card
+
+        test_card.sdr_id = test_sdr_user.id
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "Com SDR")
+
+        sem_sdr = Card(
+            title="Negócio sem SDR",
+            list_id=test_lists[0].id,
+            assigned_to_id=test_salesperson_user.id,
+            position=2,
+        )
+        db.add(sem_sdr)
+        db.commit()
+        criar_reuniao(db, sem_sdr, test_salesperson_user, "Sem SDR")
+
+        r = client.get(
+            f"/api/v1/reunioes?sdr_id={test_sdr_user.id}", headers=manager_headers
+        )
+
+        assert r.json()["total"] == 1
+        assert r.json()["items"][0]["titulo"] == "Com SDR"
+
+    def test_negocio_sem_sdr_nao_entra_na_lista_de_sdrs(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        criar_reuniao(db, test_card, test_salesperson_user, "Sem SDR")
+
+        corpo = client.get("/api/v1/reunioes", headers=manager_headers).json()
+
+        assert corpo["sdrs"] == []

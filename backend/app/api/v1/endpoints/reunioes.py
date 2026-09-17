@@ -61,6 +61,7 @@ def listar_reunioes(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     vendedor_id: Optional[int] = None,
+    sdr_id: Optional[int] = None,
     veredito: Optional[str] = None,
     estado: Optional[str] = Query(
         None, pattern="^(todas|sem_gravacao|avaliadas|nao_avaliadas)$"
@@ -77,6 +78,7 @@ def listar_reunioes(
         .outerjoin(MeetingEvaluation, MeetingEvaluation.card_task_id == CardTask.id)
         .options(
             joinedload(CardTask.card).joinedload(Card.assigned_to),
+            joinedload(CardTask.card).joinedload(Card.sdr),
             joinedload(CardTask.evaluation).joinedload(MeetingEvaluation.itens),
         )
         .filter(CardTask.task_type == "meeting")
@@ -100,17 +102,30 @@ def listar_reunioes(
     # senão escolher uma pessoa apagaria as outras do seletor e o gestor
     # ficaria preso naquele nome.
     vendedores = []
+    sdrs = []
     if e_gestor:
-        vistos = {}
+        vistos_vendedor = {}
+        vistos_sdr = {}
         for t in consulta.all():
             if t.card and t.card.assigned_to:
-                vistos[t.card.assigned_to.id] = t.card.assigned_to.name
+                vistos_vendedor[t.card.assigned_to.id] = t.card.assigned_to.name
+            if t.card and t.card.sdr:
+                vistos_sdr[t.card.sdr.id] = t.card.sdr.name
         vendedores = [
-            {"id": i, "nome": nome} for i, nome in sorted(vistos.items(), key=lambda x: x[1])
+            {"id": i, "nome": nome}
+            for i, nome in sorted(vistos_vendedor.items(), key=lambda x: x[1])
+        ]
+        sdrs = [
+            {"id": i, "nome": nome}
+            for i, nome in sorted(vistos_sdr.items(), key=lambda x: x[1])
         ]
 
     if e_gestor and vendedor_id:
         consulta = consulta.filter(Card.assigned_to_id == vendedor_id)
+    # O SDR agenda a reunião e acompanha; filtrar por ele mostra o que a
+    # pré-venda colocou de pé, que é uma leitura diferente da do vendedor.
+    if e_gestor and sdr_id:
+        consulta = consulta.filter(Card.sdr_id == sdr_id)
     if veredito:
         consulta = consulta.filter(MeetingEvaluation.veredito == veredito)
 
@@ -194,6 +209,7 @@ def listar_reunioes(
             "titulo": t.title,
             "cliente": t.card.title if t.card else None,
             "vendedor": t.card.assigned_to.name if t.card and t.card.assigned_to else None,
+            "sdr": t.card.sdr.name if t.card and t.card.sdr else None,
             "quando": _quando(t),
             "duracao_minutos": (
                 int((t.meeting_ended_at - t.meeting_started_at).total_seconds() / 60)
@@ -222,4 +238,5 @@ def listar_reunioes(
         ),
         "por_vendedor": por_vendedor,
         "vendedores": vendedores,
+        "sdrs": sdrs,
     }
