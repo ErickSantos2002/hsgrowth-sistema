@@ -34,7 +34,7 @@ MSYS_NO_PATHCONV=1 docker exec -e PYTHONPATH=/app -w /app hsgrowth-api-local \
 | `backend/app/services/avaliacao_reuniao/calculo.py` | Score, cobertura, veredito, médias por bloco. Puro, sem IA e sem banco |
 | `backend/app/services/avaliacao_reuniao/servico.py` | Prompt, chamada ao modelo, normalização da resposta |
 | `backend/app/models/meeting_evaluation.py` | `MeetingEvaluation` e `MeetingEvaluationItem` |
-| `backend/alembic/versions/2026_09_18_1000-a1b2c3d4e5f6_avaliacao_reuniao.py` | Duas tabelas novas |
+| `backend/alembic/versions/2026_09_18_1000-a5b6c7d8e9f0_avaliacao_reuniao.py` | Duas tabelas novas |
 | `backend/app/schemas/meeting_evaluation.py` | Schemas de resposta |
 | `backend/app/api/v1/endpoints/card_tasks.py` | `POST`/`GET` `/{id}/avaliacao` |
 | `backend/app/api/v1/endpoints/reunioes.py` | `GET /reunioes` — lista e indicadores |
@@ -321,9 +321,9 @@ git commit -m "feat(avaliacao-reuniao): regua da consultoria versionada no codig
 
 **Files:**
 - Create: `backend/app/models/meeting_evaluation.py`
-- Create: `backend/alembic/versions/2026_09_18_1000-a1b2c3d4e5f6_avaliacao_reuniao.py`
+- Create: `backend/alembic/versions/2026_09_18_1000-a5b6c7d8e9f0_avaliacao_reuniao.py`
 - Modify: `backend/app/models/card_task.py` (relação `evaluation`)
-- Modify: `backend/app/db/base.py` (importar os modelos novos)
+- Modify: `backend/app/models/__init__.py` (registrar os modelos novos)
 - Test: `backend/tests/unit/test_modelo_avaliacao.py`
 
 - [ ] **Step 1: Escrever o teste**
@@ -542,19 +542,26 @@ Em `backend/app/models/card_task.py`, junto das outras relações (perto de `ass
     )
 ```
 
-Em `backend/app/db/base.py`, junto dos outros imports de modelo:
+Em `backend/app/models/__init__.py` (é lá que os modelos são registrados, não
+em `db/base.py`, que só define a `Base`), junto do import do
+`MeetingAssistRequest` e na lista `__all__`:
 
 ```python
-from app.models.meeting_evaluation import MeetingEvaluation, MeetingEvaluationItem  # noqa
+from app.models.meeting_evaluation import MeetingEvaluation, MeetingEvaluationItem
 ```
 
 - [ ] **Step 5: Escrever a migration**
 
+O id `a1b2c3d4e5f6` parece livre mas **já é usado** desde janeiro
+(`add_color_icon_to_boards`), e um id repetido faz o alembic acusar ciclo em
+todas as revisões. Antes de escolher, conferir:
+`grep -rh "^revision = " alembic/versions/*.py | sort`.
+
 ```python
-# backend/alembic/versions/2026_09_18_1000-a1b2c3d4e5f6_avaliacao_reuniao.py
+# backend/alembic/versions/2026_09_18_1000-a5b6c7d8e9f0_avaliacao_reuniao.py
 """avaliacao de reuniao: meeting_evaluations e meeting_evaluation_items
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: a5b6c7d8e9f0
 Revises: f4a5b6c7d8e9
 Create Date: 2026-09-18 10:00:00
 
@@ -564,7 +571,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = 'a1b2c3d4e5f6'
+revision = 'a5b6c7d8e9f0'
 down_revision = 'f4a5b6c7d8e9'
 branch_labels = None
 depends_on = None
@@ -652,12 +659,12 @@ Esperado: 4 passed.
 MSYS_NO_PATHCONV=1 docker exec -w /app hsgrowth-api-local alembic heads
 ```
 
-Esperado: `a1b2c3d4e5f6 (head)` — uma cabeça só. **Não rodar `alembic upgrade` aqui:** o container local aponta para o banco de produção; a aplicação é passo de deploy, com autorização.
+Esperado: `a5b6c7d8e9f0 (head)` — uma cabeça só. **Não rodar `alembic upgrade` aqui:** o container local aponta para o banco de produção; a aplicação é passo de deploy, com autorização.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add backend/app/models/meeting_evaluation.py backend/alembic/versions/2026_09_18_1000-a1b2c3d4e5f6_avaliacao_reuniao.py backend/app/models/card_task.py backend/app/db/base.py backend/tests/unit/test_modelo_avaliacao.py
+git add backend/app/models/meeting_evaluation.py backend/alembic/versions/2026_09_18_1000-a5b6c7d8e9f0_avaliacao_reuniao.py backend/app/models/card_task.py backend/app/models/__init__.py backend/tests/unit/test_modelo_avaliacao.py
 git commit -m "feat(avaliacao-reuniao): tabelas da avaliacao e dos 26 itens"
 ```
 
@@ -714,7 +721,8 @@ class TestScore:
 
         # (40×2÷2) + (60×1÷2) = 40 + 30 = 70 de 100
         assert r["score"] == 70
-        assert r["veredito"] == "Boa call, com gaps claros"
+        # 70 ainda é frágil: "boa call" começa em 75
+        assert r["veredito"] == "Call frágil — valor percebido parcial"
 
 
 class TestCriterioQueNaoSeAplica:
@@ -1931,47 +1939,116 @@ git commit -m "feat(avaliacao-reuniao): bloco da avaliacao no card"
 
 ## Task 7: Calibragem contra a consultoria
 
-A planilha traz 7 reuniões já avaliadas por gente (aba `Calls`, scores de 48 a 56; aba `Avaliacoes`, 26 linhas por reunião). Antes de liberar, é preciso saber o quanto a IA se afasta desse padrão — senão o time recebe notas que não correspondem ao que a consultoria diria.
+A planilha traz 7 reuniões avaliadas por gente (scores de 48 a 56, uma marcada
+como parcial). Rodar a régua nelas e comparar diz se a ferramenta pode ser
+liberada: uma IA que dá 80 onde a consultoria deu 50 treina o vendedor na
+direção errada.
+
+**As 7 estão no CRM**, como reuniões do Teams da Sandra Silva — conferido no
+banco de produção em 17/09. Nenhuma tem a transcrição importada ainda, mas
+todas têm `teams_meeting_id`, e o CRM sabe buscar:
+
+| Call | Cliente | Data | Score humano | Tarefa |
+|---|---|---|---|---|
+| C01 | Concrenorte | 25/08 | 50,5 | 33810 |
+| C02 | Unimodal | 24/08 | 49 | 33585 |
+| C03 | PIRECAL | 21/08 | 48 | 33238 |
+| C04 | Ludvig | 18/08 | parcial | 31362 |
+| C05 | Arauco Brasil | 13/08 | 56,5 | 31472 |
+| C06 | Leblon Transporte | 09/07 | 54,5 | 24382 |
+| C07 | Rota Transportes | 12/06 | 50 | 20011 |
 
 **Files:**
 - Create: `backend/scripts/calibrar_avaliacao.py`
 - Create: `docs/superpowers/notas/2026-09-calibragem-avaliacao.md` (resultado)
 
-- [ ] **Step 1: Escrever o script de comparação**
+- [ ] **Step 1: Importar a transcrição das 7 reuniões**
+
+`POST /api/v1/card-tasks/{id}/fetch-transcript` busca no Teams e salva em
+`transcript_raw`. Ele usa o **token de quem chama**, e a transcrição pertence a
+quem organizou a reunião: quem precisa clicar é a **Sandra**, abrindo cada um
+dos 7 cards e usando "Analisar Reunião" na aba Reuniões. Um admin tentando no
+lugar dela recebe 403 do Microsoft Graph.
+
+Duas reuniões são antigas (C06 de julho, C07 de junho): se a retenção do tenant
+já apagou a transcrição, elas ficam de fora e a calibragem roda com as cinco de
+agosto. Cinco já dizem se a nota da IA acompanha a da consultoria.
+
+Conferir o que entrou:
+
+```bash
+MSYS_NO_PATHCONV=1 docker exec -e PYTHONPATH=/app -w /app hsgrowth-api-local python -c "
+from sqlalchemy import text
+from app.db.session import SessionLocal
+db = SessionLocal()
+for r in db.execute(text('''
+    SELECT id, length(transcript_raw) FROM card_tasks
+    WHERE id IN (33810, 33585, 33238, 31362, 31472, 24382, 20011) ORDER BY id
+''')):
+    print(r[0], r[1] or 'sem transcricao')
+"
+```
+
+- [ ] **Step 2: Escrever o script de comparação**
 
 ```python
 # backend/scripts/calibrar_avaliacao.py
 """
 Compara a avaliação da IA com as notas humanas da consultoria.
 
-As 7 reuniões da planilha foram avaliadas por gente. Rodar a régua nelas e
-comparar diz se a ferramenta pode ser liberada: uma IA que dá 80 onde a
-consultoria deu 50 treina o vendedor na direção errada.
+As 7 reuniões da planilha foram avaliadas por gente e estão no CRM como
+reuniões do Teams. Rodar a régua nelas e comparar é o que autoriza liberar:
+uma IA que dá 80 onde a consultoria deu 50 treina o vendedor na direção errada.
 
-Uso (a planilha e as transcrições precisam estar no container):
-    docker exec -e PYTHONPATH=/app -w /app hsgrowth-api-local \
-        python scripts/calibrar_avaliacao.py /tmp/avaliacao.xlsm /tmp/transcricoes
+Antes de rodar, as transcrições precisam ter sido importadas do Teams (botão
+"Analisar Reunião", pela conta de quem organizou a reunião).
+
+Uso:
+    docker cp "Documentação/Avaliacao_Calls_HealthSafety_alinhada_a_matriz.xlsm" \\
+        hsgrowth-api-local:/tmp/avaliacao.xlsm
+    docker exec -e PYTHONPATH=/app -w /app hsgrowth-api-local \\
+        python scripts/calibrar_avaliacao.py /tmp/avaliacao.xlsm
+
+Custo: ~US$ 0,05 por reunião — cerca de US$ 0,35 no total.
 """
 import sys
 import warnings
-from pathlib import Path
 
 import openpyxl
+from sqlalchemy import text
 
+from app.db.session import SessionLocal
 from app.services.avaliacao_reuniao import servico
 
 warnings.filterwarnings("ignore")
 
+# Call da planilha -> tarefa no CRM (conferido no banco em 17/09)
+TAREFAS = {
+    "C01": 33810,
+    "C02": 33585,
+    "C03": 33238,
+    "C04": 31362,
+    "C05": 31472,
+    "C06": 24382,
+    "C07": 20011,
+}
+
+TOLERANCIA = 10  # pontos de diferença que ainda consideramos aceitável
+
 
 def notas_humanas(caminho_planilha: str) -> dict:
-    """{call_id: {"score": float, "itens": {criterio_id: nota}}}"""
+    """{call_id: {"cliente": str, "score": float|None, "itens": {criterio: nota}}}"""
     wb = openpyxl.load_workbook(caminho_planilha, data_only=True)
 
     humano = {}
     for linha in wb["Calls"].iter_rows(min_row=2, values_only=True):
         if not linha[0]:
             continue
-        humano[str(linha[0])] = {"cliente": linha[1], "score": float(linha[6]), "itens": {}}
+        humano[str(linha[0])] = {
+            "cliente": str(linha[1]),
+            "score": float(linha[6]) if linha[6] is not None else None,
+            "itens": {},
+        }
 
     for linha in wb["Avaliacoes"].iter_rows(min_row=2, values_only=True):
         call_id = str(linha[0]) if linha[0] else None
@@ -1984,67 +2061,86 @@ def notas_humanas(caminho_planilha: str) -> dict:
     return humano
 
 
-def main(caminho_planilha: str, pasta_transcricoes: str) -> None:
+def main(caminho_planilha: str) -> None:
     humano = notas_humanas(caminho_planilha)
+    db = SessionLocal()
 
-    print(f"{'Call':6} {'Cliente':16} {'Humano':>7} {'IA':>7} {'Dif':>6}  Critérios iguais")
+    print(f"{'Call':5} {'Cliente':18} {'Humano':>8} {'IA':>8} {'Dif':>7}  Critérios iguais")
     diferencas = []
 
     for call_id, dados in humano.items():
-        arquivo = Path(pasta_transcricoes) / f"{call_id}.txt"
-        if not arquivo.exists():
-            print(f"{call_id:6} {str(dados['cliente'])[:16]:16} — sem transcrição em {arquivo}")
+        task_id = TAREFAS.get(call_id)
+        transcricao = db.execute(
+            text("SELECT transcript_raw FROM card_tasks WHERE id = :id"), {"id": task_id}
+        ).scalar() if task_id else None
+
+        if not transcricao:
+            print(f"{call_id:5} {dados['cliente'][:18]:18} "
+                  f"-- sem transcricao na tarefa {task_id}")
             continue
 
-        resultado = servico.avaliar(arquivo.read_text(encoding="utf-8"), "")
-        score_ia = resultado["score"]
+        resultado = servico.avaliar(transcricao, "")
 
         iguais = sum(
             1 for i in resultado["itens"]
             if dados["itens"].get(i["criterio_id"]) == i["nota"]
         )
 
-        if score_ia is None:
-            print(f"{call_id:6} {str(dados['cliente'])[:16]:16} {dados['score']:7.1f} "
-                  f"{'parcial':>7} {'—':>6}  {iguais}/26")
+        score_humano = dados["score"]
+        score_ia = resultado["score"]
+
+        if score_ia is None or score_humano is None:
+            print(f"{call_id:5} {dados['cliente'][:18]:18} "
+                  f"{(score_humano if score_humano is not None else 'parcial'):>8} "
+                  f"{(score_ia if score_ia is not None else 'parcial'):>8} {'--':>7}  {iguais}/26")
             continue
 
-        diferenca = score_ia - dados["score"]
+        diferenca = score_ia - score_humano
         diferencas.append(abs(diferenca))
-        print(f"{call_id:6} {str(dados['cliente'])[:16]:16} {dados['score']:7.1f} "
-              f"{score_ia:7.1f} {diferenca:+6.1f}  {iguais}/26")
+        print(f"{call_id:5} {dados['cliente'][:18]:18} {score_humano:8.1f} "
+              f"{score_ia:8.1f} {diferenca:+7.1f}  {iguais}/26")
+
+    db.close()
 
     if diferencas:
         media = sum(diferencas) / len(diferencas)
-        print(f"\nDiferenca media: {media:.1f} pontos")
-        print("Ate 10 pontos: aceitavel. Acima disso, ajustar a rubrica no prompt.")
+        print(f"\nDiferenca media: {media:.1f} pontos ({len(diferencas)} reunioes)")
+        if media <= TOLERANCIA:
+            print("Dentro da tolerancia: a regua pode ser liberada.")
+        else:
+            print("Acima da tolerancia: ajustar a rubrica no prompt e rodar de novo.")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
-```
-
-- [ ] **Step 2: Reunir as transcrições das 7 reuniões**
-
-As transcrições dessas calls não estão no CRM — peça ao gestor os arquivos da consultoria e salve como `C01.txt` … `C07.txt`. Sem elas, a calibragem não roda (e o script avisa, em vez de fingir que rodou).
-
-```bash
-MSYS_NO_PATHCONV=1 docker exec hsgrowth-api-local mkdir -p /tmp/transcricoes
-MSYS_NO_PATHCONV=1 docker cp C01.txt hsgrowth-api-local:/tmp/transcricoes/C01.txt
+    main(sys.argv[1] if len(sys.argv) > 1 else "/tmp/avaliacao.xlsm")
 ```
 
 - [ ] **Step 3: Rodar a calibragem**
 
 ```bash
+MSYS_NO_PATHCONV=1 docker cp "Documentação/Avaliacao_Calls_HealthSafety_alinhada_a_matriz.xlsm" \
+  hsgrowth-api-local:/tmp/avaliacao.xlsm
 MSYS_NO_PATHCONV=1 docker exec -e PYTHONPATH=/app -w /app hsgrowth-api-local \
-  python scripts/calibrar_avaliacao.py /tmp/avaliacao.xlsm /tmp/transcricoes
+  python scripts/calibrar_avaliacao.py /tmp/avaliacao.xlsm
 ```
 
-Esperado: uma linha por call, com score humano, score da IA e diferença. **Isto gasta tokens de verdade** — cerca de US$ 0,05 por reunião, US$ 0,35 no total.
+Esperado: uma linha por call, com score humano, score da IA, diferença e
+quantos dos 26 critérios receberam a mesma nota. **Isto gasta tokens de
+verdade** e lê o banco de produção (só leitura; nada é gravado).
 
-- [ ] **Step 4: Registrar o resultado**
+- [ ] **Step 4: Registrar o resultado e decidir**
 
-Criar `docs/superpowers/notas/2026-09-calibragem-avaliacao.md` com a tabela impressa pelo script, a diferença média e a decisão: liberar como está, ou ajustar a rubrica no prompt e rodar de novo.
+Criar `docs/superpowers/notas/2026-09-calibragem-avaliacao.md` com a tabela
+impressa, a diferença média e a decisão:
+
+- **Diferença média até 10 pontos:** liberar como está.
+- **Acima disso:** olhar os critérios que mais divergiram (o script mostra
+  quantos bateram) e ajustar a redação da rubrica no prompt do `servico.py` —
+  não os pesos, que são da consultoria. Rodar de novo.
+
+O que importa mais que o número absoluto é a **ordem**: se a IA concorda que
+C05 foi a melhor e C03 a pior, ela serve para treinar mesmo com alguns pontos
+de diferença.
 
 - [ ] **Step 5: Commit**
 
