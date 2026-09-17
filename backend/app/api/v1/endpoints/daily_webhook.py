@@ -30,6 +30,9 @@ from app.models.card_task import CardTask
 
 router = APIRouter()
 
+# Marca do evento que já veio repassado de outro ambiente
+CABECALHO_DE_REPASSE = "X-HSG-Repassado"
+
 
 def _assinatura_confere(corpo_bruto: bytes, timestamp: Optional[str], assinatura: Optional[str]) -> bool:
     """
@@ -61,17 +64,76 @@ def _task_da_sala(db: Session, nome_sala: Optional[str]) -> Optional[CardTask]:
     """
     Encontra a reunião pelo nome da sala (`hsg-{task_id}`).
 
+    O número no nome não basta: a tarefa encontrada precisa ser mesmo aquela
+    sala. Em 16/09 uma sala criada na homologação avisou o webhook de produção,
+    onde o mesmo número era uma tarefa de e-mail de um cliente real — e a
+    gravação do teste foi anexada a ela. Conferir o nome corta qualquer sala
+    que não seja deste ambiente.
+
     Devolve None em vez de levantar: sala desconhecida é situação normal
-    (reunião apagada, sala de teste) e não pode virar falha no webhook.
+    (reunião apagada, sala de outro ambiente) e não pode virar falha no
+    webhook — o Daily reenviaria o evento à toa.
     """
     if not nome_sala:
         return None
 
-    correspondencia = re.fullmatch(r"hsg-(\d+)", nome_sala.strip())
+    nome_sala = nome_sala.strip()
+
+    prefixo = re.escape(settings.DAILY_ROOM_PREFIX)
+    correspondencia = re.fullmatch(rf"{prefixo}-(\d+)", nome_sala)
     if not correspondencia:
         return None
 
-    return db.query(CardTask).filter(CardTask.id == int(correspondencia.group(1))).first()
+    task = db.query(CardTask).filter(CardTask.id == int(correspondencia.group(1))).first()
+    if not task or task.daily_room_name != nome_sala:
+        return None
+
+    return task
+
+
+def _sala_deste_ambiente(nome_sala: Optional[str]) -> bool:
+    """Diz se a sala tem o prefixo deste ambiente (`hsg-` ou `hsg-homo-`)."""
+    if not nome_sala:
+        return False
+
+    prefixo = re.escape(settings.DAILY_ROOM_PREFIX)
+    return bool(re.fullmatch(rf"{prefixo}-\d+", nome_sala.strip()))
+
+
+def encaminhar_em_background(
+    corpo_bruto: bytes, timestamp: Optional[str], assinatura: Optional[str]
+) -> None:
+    """
+    Repassa o evento ao outro ambiente, com corpo e assinatura intactos.
+
+    O Daily aceita um webhook por conta, e ele é o de produção. Sem isto, a
+    gravação de uma sala da homologação nunca chegaria ao homo — foi o que
+    aconteceu em 16/09.
+
+    Falha aqui é registrada e esquecida: homologação fora do ar não pode
+    derrubar o webhook de produção, que o Daily desliga após 3 falhas.
+    """
+    import httpx
+
+    url = settings.DAILY_WEBHOOK_FORWARD_URL
+
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resposta = client.post(
+                url,
+                content=corpo_bruto,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Webhook-Timestamp": timestamp or "",
+                    "X-Webhook-Signature": assinatura or "",
+                    # Evento repassado não se repassa de novo: com os dois
+                    # ambientes configurados, um devolveria ao outro sem fim.
+                    CABECALHO_DE_REPASSE: "1",
+                },
+            )
+        print(f"[DAILY-WEBHOOK] Evento repassado para {url}: {resposta.status_code}")
+    except Exception as e:
+        print(f"[DAILY-WEBHOOK] Falha ao repassar evento para {url}: {e}")
 
 
 def processar_gravacao_em_background(
@@ -145,6 +207,22 @@ async def receber_evento_daily(
     task = _task_da_sala(db, nome_sala)
 
     if not task:
+        # Sala que não é deste ambiente: quem responde por ela é o outro lado
+        ja_repassado = request.headers.get(CABECALHO_DE_REPASSE)
+        if (
+            settings.DAILY_WEBHOOK_FORWARD_URL
+            and not ja_repassado
+            and not _sala_deste_ambiente(nome_sala)
+        ):
+            background_tasks.add_task(
+                encaminhar_em_background,
+                corpo_bruto,
+                x_webhook_timestamp,
+                x_webhook_signature,
+            )
+            print(f"[DAILY-WEBHOOK] Evento '{tipo}' da sala {nome_sala} — repassado.")
+            return {"status": "repassado"}
+
         print(f"[DAILY-WEBHOOK] Evento '{tipo}' de sala desconhecida ({nome_sala}) — ignorado.")
         return {"status": "ignorado"}
 

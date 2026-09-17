@@ -15,8 +15,9 @@ const MINIMO_PARA_PEDIR_AJUDA = 5;
  * Acumula a transcrição ao vivo da reunião.
  *
  * O Daily entrega cada frase pelo evento `transcription-message`. Quem é do
- * time e quem é o cliente sai da própria sala: participante dono é do time
- * (vendedor ou SDR entram com token de dono), os demais são o cliente.
+ * time e quem é o cliente sai da própria sala: quem entra pelo CRM recebe a
+ * marca `time` no token, os demais são o cliente. Só o anfitrião é dono da
+ * sala — por isso a marca, e não o "dono", separa os dois lados.
  *
  * As falas também vão para o `sessionStorage`: recarregar a aba no meio de uma
  * reunião não pode zerar o contexto que a IA vai receber.
@@ -62,10 +63,13 @@ export function useLiveTranscript(call: DailyCall | null, taskId: string | undef
       if (bruto && bruto.is_final === false) return;
 
       const participantes = call.participants?.() as
-        | Record<string, { owner?: boolean; user_name?: string }>
+        | Record<
+            string,
+            { owner?: boolean; user_name?: string; userData?: { time?: boolean } }
+          >
         | undefined;
       const participante = participantes?.[ev.participantId];
-      const doTime = Boolean(participante?.owner);
+      const doTime = Boolean(participante?.userData?.time || participante?.owner);
 
       setFalas((antes) => [
         ...antes,

@@ -97,7 +97,7 @@ class DailyService:
         Também gera o token opaco do link público do convidado, se ainda não
         houver — ele é o que permite o cliente entrar sem login.
         """
-        room_name = f"hsg-{task.id}"
+        room_name = f"{settings.DAILY_ROOM_PREFIX}-{task.id}"
 
         payload = {
             "name": room_name,
@@ -191,13 +191,26 @@ class DailyService:
 
     # ── tokens ──────────────────────────────────────────────────────────────
 
-    def _create_token(self, task: CardTask, user_name: str, is_owner: bool) -> str:
+    def _create_token(
+        self,
+        task: CardTask,
+        user_name: str,
+        is_owner: bool,
+        permissions: Optional[dict] = None,
+        user_data: Optional[dict] = None,
+    ) -> str:
         propriedades = {
             "room_name": task.daily_room_name,
             "user_name": user_name,
             "is_owner": is_owner,
             "exp": self._room_expiry(task),
         }
+
+        if permissions:
+            propriedades["permissions"] = permissions
+
+        if user_data:
+            propriedades["user_data"] = user_data
 
         payload = {"properties": propriedades}
 
@@ -209,16 +222,59 @@ class DailyService:
 
         return token
 
+    def _e_anfitriao(self, task: CardTask, user: User) -> bool:
+        """
+        Diz se a pessoa conduz esta reunião.
+
+        É quem responde pela atividade; sem responsável definido, o vendedor do
+        negócio. Os demais do time entram como acompanhantes.
+        """
+        if task.assigned_to_id:
+            return task.assigned_to_id == user.id
+
+        from app.models.card import Card
+
+        card = self.db.query(Card).filter(Card.id == task.card_id).first()
+        return bool(card and card.assigned_to_id == user.id)
+
     def create_host_token(self, task: CardTask, user: User) -> str:
         """
-        Token do vendedor/SDR — dono da sala, libera quem está esperando.
+        Token de quem entra pelo CRM.
 
-        A transcrição não começa por aqui. O início automático do Daily usa o
+        **Só o anfitrião pode gravar.** Dono de sala no Daily é sempre
+        administrador de tudo, inclusive da gravação — por isso qualquer pessoa
+        do time que entrasse pelo CRM conseguia iniciar e parar a gravação
+        (visto na homologação de 16/09). Quem acompanha entra sem ser dono, mas
+        com permissão de liberar a sala de espera e de manter a transcrição:
+        precisa disso para a reunião funcionar, e nada disso mexe na gravação.
+
+        A transcrição não começa pelo token. O início automático do Daily usa o
         modelo padrão, em inglês: na homologação de 14/09 uma conversa em
         português virou "Have on the ip key". Quem inicia é a página da sala,
         pedindo pt-BR explicitamente.
         """
-        return self._create_token(task, user.name or "Anfitrião", is_owner=True)
+        nome = user.name or "Anfitrião"
+
+        # Quem entra pelo CRM é do time. A sala usa essa marca para separar a
+        # fala do time da fala do cliente na transcrição ao vivo — antes isso
+        # vinha de "é dono da sala", que deixou de valer para os acompanhantes.
+        marca_do_time = {"time": True}
+
+        if self._e_anfitriao(task, user):
+            return self._create_token(task, nome, is_owner=True, user_data=marca_do_time)
+
+        return self._create_token(
+            task,
+            nome,
+            is_owner=False,
+            user_data=marca_do_time,
+            permissions={
+                "hasPresence": True,
+                "canSend": True,
+                # sem "streaming": não grava
+                "canAdmin": ["participants", "transcription"],
+            },
+        )
 
     def create_guest_token(self, task: CardTask, guest_name: str) -> str:
         """Token do convidado — nunca dono, não libera ninguém nem encerra a sala."""

@@ -108,6 +108,11 @@ class Settings(BaseSettings):
     # Daily.co — reunião por vídeo dentro do CRM
     DAILY_API_KEY: str = ""  # Chave da API do Daily (definir no .env / EasyPanel)
     DAILY_API_URL: str = "https://api.daily.co/v1"
+
+    # Prefixo do nome da sala. Homologação usa "hsg-homo": com o mesmo prefixo
+    # os dois ambientes disputam o nome "hsg-<id>" na conta do Daily, e um
+    # evento de gravação de um cai no outro (aconteceu em 16/09).
+    DAILY_ROOM_PREFIX: str = "hsg"
     # IDs liberados para o fluxo Daily enquanto não homologado.
     # Vazio = liberado para todos. Ex.: "18" ou "18,10"
     DAILY_ENABLED_USER_IDS: str = ""
@@ -119,11 +124,21 @@ class Settings(BaseSettings):
     # poderia forjar "gravação pronta" e fazer o backend baixar arquivo de fora
     DAILY_WEBHOOK_SECRET: str = ""
 
+    # O Daily aceita um webhook por conta, e ele aponta para produção. Quando
+    # esta URL está preenchida, produção repassa ao outro ambiente os eventos
+    # de sala que não é dela. O ambiente que recebe valida a assinatura com o
+    # MESMO DAILY_WEBHOOK_SECRET — a assinatura repassada é a original.
+    DAILY_WEBHOOK_FORWARD_URL: str = ""
+
     # Cloudflare R2 — armazenamento das gravações (API compatível com S3)
     R2_ACCOUNT_ID: str = ""
     R2_ACCESS_KEY_ID: str = ""
     R2_SECRET_ACCESS_KEY: str = ""
     R2_BUCKET: str = "hsgrowth-gravacoes"
+
+    # Pasta raiz no bucket. Homologação grava em "homologacao/", e aí dá para
+    # apagar tudo de uma vez sem encostar no que é de produção.
+    R2_PREFIXO: str = ""
     # Validade do link que o cliente recebe para assistir à gravação
     # Teto do S3/R2: link assinado vale no maximo 7 dias (604800s). Pedir
     # mais devolve InvalidArgument e o link nao abre.

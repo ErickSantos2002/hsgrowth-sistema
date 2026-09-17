@@ -55,7 +55,12 @@ def montar_chave_gravacao(
     if parte > 1:
         partes.append(f"parte{parte}")
 
-    return f"{quando.strftime('%Y/%m')}/{'-'.join(partes)}.mp4"
+    caminho = f"{quando.strftime('%Y/%m')}/{'-'.join(partes)}.mp4"
+
+    # Homologação grava sob a própria pasta: as duas gravações de teste que
+    # caíram no bucket de produção em 16/09 não teriam se misturado assim.
+    raiz = (settings.R2_PREFIXO or "").strip("/")
+    return f"{raiz}/{caminho}" if raiz else caminho
 
 
 class StorageService:

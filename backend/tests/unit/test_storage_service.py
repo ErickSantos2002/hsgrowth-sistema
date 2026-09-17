@@ -245,3 +245,34 @@ class TestTetoDoLink:
         storage_service.gerar_link_temporario("2026/09/reuniao.mp4", dias=1)
 
         assert cliente.generate_presigned_url.call_args.kwargs["ExpiresIn"] == 24 * 3600
+
+
+class TestPastaDoAmbiente:
+    """
+    Homologação e produção dividem o bucket; o que separa é a pasta raiz.
+
+    Em 16/09 duas gravações de teste (170 MB) foram parar no meio das
+    gravações de produção, sem nada no caminho que dissesse de onde vinham.
+    """
+
+    def test_producao_grava_na_raiz(self, monkeypatch):
+        monkeypatch.setattr(settings, "R2_PREFIXO", "")
+
+        chave = montar_chave_gravacao("Reunião", 42, datetime(2026, 9, 17))
+
+        assert chave == "2026/09/2026-09-17-reuniao-42.mp4"
+
+    def test_homologacao_grava_na_propria_pasta(self, monkeypatch):
+        monkeypatch.setattr(settings, "R2_PREFIXO", "homologacao")
+
+        chave = montar_chave_gravacao("Reunião", 42, datetime(2026, 9, 17))
+
+        assert chave == "homologacao/2026/09/2026-09-17-reuniao-42.mp4"
+
+    def test_barra_sobrando_nao_vira_pasta_vazia(self, monkeypatch):
+        """Digitar "/homologacao/" no EasyPanel não pode criar caminho quebrado."""
+        monkeypatch.setattr(settings, "R2_PREFIXO", "/homologacao/")
+
+        chave = montar_chave_gravacao("Reunião", 42, datetime(2026, 9, 17))
+
+        assert chave == "homologacao/2026/09/2026-09-17-reuniao-42.mp4"

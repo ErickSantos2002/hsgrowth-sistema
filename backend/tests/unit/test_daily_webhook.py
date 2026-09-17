@@ -253,3 +253,201 @@ class TestResiliencia:
         db.refresh(task)
 
         assert task.meeting_ended_at == primeiro
+
+
+class TestSalaDeOutroAmbiente:
+    """
+    Aconteceu de verdade em 16/09: uma sala criada no ambiente de homologação
+    avisou o webhook de produção, onde o mesmo número era uma tarefa de e-mail
+    de um cliente real. A gravação do teste — 170 MB — foi anexada a ela.
+
+    O webhook precisa do nome da sala batendo, não só do número.
+    """
+
+    def test_tarefa_que_nao_e_daquela_sala_e_ignorada(
+        self, client: TestClient, db, test_card, monkeypatch
+    ):
+        tarefa_de_email = CardTask(
+            card_id=test_card.id,
+            title="FUP E-mail",
+            task_type="EMAIL",
+        )
+        db.add(tarefa_de_email)
+        db.commit()
+        db.refresh(tarefa_de_email)
+
+        chamou = []
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.processar_gravacao_em_background",
+            lambda **kw: chamou.append(kw),
+        )
+
+        response = enviar(client, {
+            "type": "recording.ready-to-download",
+            "payload": {
+                "recording_id": "rec-do-outro-ambiente",
+                # mesmo número, sala de outro ambiente
+                "room_name": f"hsg-{tarefa_de_email.id}",
+                "duration": 297,
+            },
+        })
+
+        # 200 para o Daily não desligar o webhook, mas nada foi processado
+        assert response.status_code == 200
+        assert chamou == []
+
+        db.refresh(tarefa_de_email)
+        assert tarefa_de_email.recording_status is None
+
+    def test_sala_com_outro_nome_nao_casa(self, client: TestClient, task, db, monkeypatch):
+        """A tarefa é do Daily, mas a sala avisada é outra."""
+        task.daily_room_name = "hsg-999999"
+        db.commit()
+
+        chamou = []
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.processar_gravacao_em_background",
+            lambda **kw: chamou.append(kw),
+        )
+
+        response = enviar(client, {
+            "type": "recording.ready-to-download",
+            "payload": {"recording_id": "rec-x", "room_name": f"hsg-{task.id}"},
+        })
+
+        assert response.status_code == 200
+        assert chamou == []
+
+    def test_sala_de_prefixo_diferente_e_ignorada(
+        self, client: TestClient, task, db, monkeypatch
+    ):
+        """
+        Produção não responde por sala da homologação.
+
+        Os dois ambientes olham a mesma conta do Daily e recebem os mesmos
+        eventos; o prefixo é o que diz de quem é cada sala.
+        """
+        monkeypatch.setattr(settings, "DAILY_ROOM_PREFIX", "hsg")
+
+        chamou = []
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.processar_gravacao_em_background",
+            lambda **kw: chamou.append(kw),
+        )
+
+        response = enviar(client, {
+            "type": "recording.ready-to-download",
+            "payload": {"recording_id": "rec-y", "room_name": f"hsg-homo-{task.id}"},
+        })
+
+        assert response.status_code == 200
+        assert chamou == []
+
+
+class TestRepasseParaOutroAmbiente:
+    """
+    O Daily aceita um webhook por conta, e ele aponta para produção.
+
+    Para o ambiente de homologação receber suas próprias gravações, produção
+    repassa o que não é dela — com a assinatura original, que é o que o outro
+    lado vai conferir.
+    """
+
+    @pytest.fixture(autouse=True)
+    def repasse_ligado(self, monkeypatch):
+        monkeypatch.setattr(settings, "DAILY_ROOM_PREFIX", "hsg")
+        monkeypatch.setattr(
+            settings, "DAILY_WEBHOOK_FORWARD_URL", "https://homo.exemplo/api/v1/daily/webhook"
+        )
+
+    def test_sala_do_outro_ambiente_e_repassada(self, client: TestClient, monkeypatch):
+        repassado = {}
+
+        def fake(corpo_bruto, timestamp, assinatura):
+            repassado.update(corpo=corpo_bruto, ts=timestamp, sig=assinatura)
+
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.encaminhar_em_background", fake
+        )
+
+        corpo = {
+            "type": "recording.ready-to-download",
+            "payload": {"recording_id": "rec-do-homo", "room_name": "hsg-homo-37045"},
+        }
+        response = enviar(client, corpo)
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "repassado"
+        # corpo e assinatura vão intactos: o outro lado valida com o mesmo segredo
+        assert json.loads(repassado["corpo"]) == corpo
+        assert repassado["sig"]
+
+    def test_sala_apagada_deste_ambiente_nao_e_repassada(
+        self, client: TestClient, monkeypatch
+    ):
+        """Sala nossa que não existe mais é assunto encerrado, não do outro lado."""
+        repassou = []
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.encaminhar_em_background",
+            lambda *a: repassou.append(a),
+        )
+
+        response = enviar(client, {
+            "type": "meeting.ended",
+            "payload": {"room_name": "hsg-99999999"},
+        })
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "ignorado"
+        assert repassou == []
+
+    def test_sem_repasse_configurado_apenas_ignora(self, client: TestClient, monkeypatch):
+        monkeypatch.setattr(settings, "DAILY_WEBHOOK_FORWARD_URL", "")
+
+        response = enviar(client, {
+            "type": "meeting.ended",
+            "payload": {"room_name": "hsg-homo-37045"},
+        })
+
+        assert response.json()["status"] == "ignorado"
+
+    def test_outro_ambiente_fora_do_ar_nao_derruba_o_webhook(self, monkeypatch):
+        """
+        O Daily desliga o webhook após 3 falhas seguidas. Homologação caída
+        não pode custar a gravação de produção.
+        """
+        from app.api.v1.endpoints.daily_webhook import encaminhar_em_background
+
+        class ClienteQueFalha:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def post(self, *a, **kw):
+                raise OSError("conexão recusada")
+
+        monkeypatch.setattr("httpx.Client", lambda **kw: ClienteQueFalha())
+
+        # não levanta
+        encaminhar_em_background(b'{"type":"meeting.ended"}', "1757400000", "assinatura")
+
+    def test_evento_ja_repassado_nao_volta(self, client: TestClient, monkeypatch):
+        """Os dois ambientes com repasse ligado devolveriam o evento sem fim."""
+        from app.api.v1.endpoints.daily_webhook import CABECALHO_DE_REPASSE
+
+        repassou = []
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.encaminhar_em_background",
+            lambda *a: repassou.append(a),
+        )
+
+        corpo = {"type": "meeting.ended", "payload": {"room_name": "hsg-homo-37045"}}
+        headers, bruto = assinar(corpo)
+        response = client.post("/api/v1/daily/webhook", data=bruto, headers={
+            **headers, "Content-Type": "application/json", CABECALHO_DE_REPASSE: "1",
+        })
+
+        assert response.status_code == 200
+        assert repassou == []

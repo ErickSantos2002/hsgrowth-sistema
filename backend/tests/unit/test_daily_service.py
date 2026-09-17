@@ -433,3 +433,71 @@ class TestReagendamento:
             svc.atualizar_expiracao(task)
 
         m.assert_not_called()
+
+
+class TestQuemPodeGravar:
+    """
+    Só o anfitrião grava.
+
+    Dono de sala no Daily é administrador de tudo, inclusive da gravação. Como
+    todo mundo do time entrava pelo CRM com token de dono, qualquer pessoa
+    conseguia iniciar e parar a gravação — o convidado não, mas o colega sim
+    (visto na homologação de 16/09).
+    """
+
+    def _payload_do_token(self, db, task, user, monkeypatch):
+        enviados = {}
+
+        def fake_post(caminho, payload):
+            enviados["payload"] = payload
+            return {"token": "tok"}
+
+        svc = DailyService(db)
+        monkeypatch.setattr(svc, "_post", fake_post)
+        svc.create_host_token(task, user)
+        return enviados["payload"]["properties"]
+
+    def test_responsavel_pela_reuniao_e_dono(self, db: Session, task, test_salesperson_user):
+        task.daily_room_name = "hsg-1"
+        task.assigned_to_id = test_salesperson_user.id
+        db.commit()
+
+        props = self._payload_do_token(db, task, test_salesperson_user, pytest.MonkeyPatch())
+
+        assert props["is_owner"] is True
+        assert "permissions" not in props
+
+    def test_colega_entra_sem_poder_gravar(self, db: Session, task, test_salesperson_user,
+                                           test_manager_user):
+        """Gerente ou SDR acompanham a reunião, mas a gravação é decisão do anfitrião."""
+        task.daily_room_name = "hsg-1"
+        task.assigned_to_id = test_salesperson_user.id
+        db.commit()
+
+        props = self._payload_do_token(db, task, test_manager_user, pytest.MonkeyPatch())
+
+        assert props["is_owner"] is False
+        assert "streaming" not in props["permissions"]["canAdmin"]
+
+    def test_colega_ainda_libera_a_sala_de_espera(self, db: Session, task, test_salesperson_user,
+                                                  test_manager_user):
+        """Sem isso, o cliente ficaria esperando quando o anfitrião atrasa."""
+        task.daily_room_name = "hsg-1"
+        task.assigned_to_id = test_salesperson_user.id
+        db.commit()
+
+        props = self._payload_do_token(db, task, test_manager_user, pytest.MonkeyPatch())
+
+        assert "participants" in props["permissions"]["canAdmin"]
+        assert "transcription" in props["permissions"]["canAdmin"]
+
+    def test_sem_responsavel_vale_o_vendedor_do_card(self, db: Session, task, test_card,
+                                                     test_salesperson_user):
+        task.daily_room_name = "hsg-1"
+        task.assigned_to_id = None
+        test_card.assigned_to_id = test_salesperson_user.id
+        db.commit()
+
+        props = self._payload_do_token(db, task, test_salesperson_user, pytest.MonkeyPatch())
+
+        assert props["is_owner"] is True
