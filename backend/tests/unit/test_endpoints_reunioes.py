@@ -4,6 +4,10 @@ A página de Reuniões: todas as reuniões, com ou sem avaliação.
 Mostrar só as avaliadas esconderia justamente o que interessa ao gestor — as
 reuniões que ninguém gravou nem avaliou.
 
+Quem responde pela reunião é o responsável pela tarefa; sem responsável, o
+vendedor do negócio. É a mesma regra do Dashboard e a mesma que decide quem
+pode gravar.
+
 Visibilidade (RN-037): admin e gerente veem tudo; os demais veem os negócios
 em que são vendedor ou SDR.
 """
@@ -251,7 +255,7 @@ class TestVisibilidade:
         criar_reuniao(db, test_card, test_salesperson_user, "A")
 
         corpo = client.get(
-            f"/api/v1/reunioes?vendedor_id={test_salesperson_user.id}", headers=manager_headers
+            f"/api/v1/reunioes?vendedor={test_salesperson_user.id}", headers=manager_headers
         ).json()
 
         assert len(corpo["vendedores"]) == 1
@@ -326,7 +330,7 @@ class TestSDR:
         criar_reuniao(db, sem_sdr, test_salesperson_user, "Sem SDR")
 
         r = client.get(
-            f"/api/v1/reunioes?sdr_id={test_sdr_user.id}", headers=manager_headers
+            f"/api/v1/reunioes?sdr={test_sdr_user.id}", headers=manager_headers
         )
 
         assert r.json()["total"] == 1
@@ -340,3 +344,199 @@ class TestSDR:
         corpo = client.get("/api/v1/reunioes", headers=manager_headers).json()
 
         assert corpo["sdrs"] == []
+
+
+class TestQuemRespondePelaReuniao:
+    """
+    A reunião é de quem a conduz, não de quem é dono do negócio.
+
+    Em 18/09 o Miguel sumiu da página: ele conduziu uma reunião num negócio da
+    Sandra, e a tela mostrava a reunião como dela — enquanto o Dashboard
+    contava para ele. Mesma reunião, duas respostas diferentes.
+    """
+
+    def test_responsavel_pela_tarefa_ganha_a_reuniao(
+        self, client: TestClient, manager_headers, db, test_card,
+        test_salesperson_user, test_manager_user
+    ):
+        # negócio da salesperson, reunião conduzida pelo manager
+        criar_reuniao(db, test_card, test_manager_user, "Conduzida por outro")
+
+        item = client.get("/api/v1/reunioes", headers=manager_headers).json()["items"][0]
+
+        assert item["vendedor"] == test_manager_user.name
+
+    def test_sem_responsavel_vale_o_vendedor_do_negocio(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        task = criar_reuniao(db, test_card, test_salesperson_user, "Sem responsável")
+        task.assigned_to_id = None
+        db.commit()
+
+        item = client.get("/api/v1/reunioes", headers=manager_headers).json()["items"][0]
+
+        assert item["vendedor"] == test_salesperson_user.name
+
+    def test_quadro_agrupa_por_quem_conduziu(
+        self, client: TestClient, manager_headers, db, test_card,
+        test_salesperson_user, test_manager_user
+    ):
+        criar_reuniao(db, test_card, test_manager_user, "A")
+        criar_reuniao(db, test_card, test_manager_user, "B")
+
+        corpo = client.get("/api/v1/reunioes", headers=manager_headers).json()
+
+        assert corpo["por_vendedor"][0]["vendedor"] == test_manager_user.name
+        assert corpo["por_vendedor"][0]["reunioes"] == 2
+
+    def test_filtro_de_vendedor_segue_quem_conduziu(
+        self, client: TestClient, manager_headers, db, test_card,
+        test_salesperson_user, test_manager_user
+    ):
+        criar_reuniao(db, test_card, test_manager_user, "Do manager")
+        criar_reuniao(db, test_card, test_salesperson_user, "Do vendedor")
+
+        r = client.get(
+            f"/api/v1/reunioes?vendedor={test_manager_user.id}", headers=manager_headers
+        )
+
+        assert r.json()["total"] == 1
+        assert r.json()["items"][0]["titulo"] == "Do manager"
+
+
+class TestDataDaReuniao:
+
+    def test_periodo_usa_a_data_em_que_aconteceu(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        """
+        Agendada para daqui a duas semanas, mas realizada hoje: entra no
+        período de hoje, que é a data que a lista mostra.
+        """
+        task = criar_reuniao(db, test_card, test_salesperson_user, "Antecipada")
+        task.due_date = datetime.utcnow() + timedelta(days=14)
+        task.meeting_ended_at = datetime.utcnow()
+        db.commit()
+
+        hoje = datetime.utcnow().date().isoformat()
+        r = client.get(
+            f"/api/v1/reunioes?date_from={hoje}&date_to={hoje}", headers=manager_headers
+        )
+
+        assert r.json()["total"] == 1
+
+
+class TestColunasDaLista:
+
+    def test_reuniao_do_crm_e_do_teams_aparecem_separadas(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        do_crm = criar_reuniao(db, test_card, test_salesperson_user, "No CRM")
+        do_crm.meeting_provider = "daily"
+        do_teams = criar_reuniao(db, test_card, test_salesperson_user, "No Teams")
+        do_teams.teams_join_url = "https://teams.microsoft.com/l/meetup-join/x"
+        db.commit()
+
+        items = client.get("/api/v1/reunioes", headers=manager_headers).json()["items"]
+        por_titulo = {i["titulo"]: i["tipo"] for i in items}
+
+        assert por_titulo["No CRM"] == "CRM"
+        assert por_titulo["No Teams"] == "Teams"
+
+    def test_reuniao_sem_sala_nao_inventa_tipo(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        criar_reuniao(db, test_card, test_salesperson_user, "Presencial")
+
+        item = client.get("/api/v1/reunioes", headers=manager_headers).json()["items"][0]
+
+        assert item["tipo"] == "—"
+
+    def test_diz_se_foi_avaliada(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        criar_reuniao(db, test_card, test_salesperson_user, "Avaliada", avaliada=True)
+        criar_reuniao(db, test_card, test_salesperson_user, "Crua", dias_atras=1)
+
+        items = client.get("/api/v1/reunioes", headers=manager_headers).json()["items"]
+        por_titulo = {i["titulo"]: i["avaliada"] for i in items}
+
+        assert por_titulo["Avaliada"] is True
+        assert por_titulo["Crua"] is False
+
+
+class TestQuadroPorSDR:
+
+    def test_agrupa_por_sdr_do_negocio(
+        self, client: TestClient, manager_headers, db, test_card,
+        test_salesperson_user, test_sdr_user
+    ):
+        test_card.sdr_id = test_sdr_user.id
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "A")
+        criar_reuniao(db, test_card, test_salesperson_user, "B")
+
+        corpo = client.get("/api/v1/reunioes", headers=manager_headers).json()
+
+        assert corpo["por_sdr"][0]["sdr"] == test_sdr_user.name
+        assert corpo["por_sdr"][0]["reunioes"] == 2
+
+    def test_negocio_sem_sdr_aparece_agrupado_a_parte(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        """Sem isso, o gestor não veria quantas reuniões saíram sem pré-venda."""
+        criar_reuniao(db, test_card, test_salesperson_user, "Sem SDR")
+
+        corpo = client.get("/api/v1/reunioes", headers=manager_headers).json()
+
+        assert corpo["por_sdr"][0]["sdr"] == "(sem sdr)"
+
+
+class TestFiltrosSemVinculo:
+
+    def test_filtrar_reunioes_sem_sdr(
+        self, client: TestClient, manager_headers, db, test_lists, test_card,
+        test_salesperson_user, test_sdr_user
+    ):
+        from app.models.card import Card
+
+        test_card.sdr_id = test_sdr_user.id
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "Com SDR")
+
+        sem_sdr = Card(
+            title="Negócio sem SDR",
+            list_id=test_lists[0].id,
+            assigned_to_id=test_salesperson_user.id,
+            position=3,
+        )
+        db.add(sem_sdr)
+        db.commit()
+        criar_reuniao(db, sem_sdr, test_salesperson_user, "Sem SDR")
+
+        r = client.get("/api/v1/reunioes?sdr=sem", headers=manager_headers)
+
+        assert r.json()["total"] == 1
+        assert r.json()["items"][0]["titulo"] == "Sem SDR"
+
+    def test_filtrar_reunioes_sem_vendedor(
+        self, client: TestClient, manager_headers, db, test_lists, test_salesperson_user
+    ):
+        from app.models.card import Card
+
+        orfao = Card(
+            title="Negócio sem dono",
+            list_id=test_lists[0].id,
+            assigned_to_id=None,
+            position=4,
+        )
+        db.add(orfao)
+        db.commit()
+        task = criar_reuniao(db, orfao, test_salesperson_user, "Sem vendedor")
+        task.assigned_to_id = None
+        db.commit()
+
+        r = client.get("/api/v1/reunioes?vendedor=sem", headers=manager_headers)
+
+        assert r.json()["total"] == 1
+        assert r.json()["items"][0]["vendedor"] is None
