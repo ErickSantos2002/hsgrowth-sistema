@@ -1876,7 +1876,9 @@ async def listar_ajuda_ao_vivo(
     pedidos = (
         db.query(MeetingAssistRequest)
         .filter(MeetingAssistRequest.card_task_id == task.id)
-        .order_by(MeetingAssistRequest.created_at.desc())
+        # id desempata: dois pedidos no mesmo instante não podem trocar de
+        # lugar a cada recarga da tela
+        .order_by(MeetingAssistRequest.created_at.desc(), MeetingAssistRequest.id.desc())
         .all()
     )
 
