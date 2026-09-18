@@ -66,6 +66,30 @@ mostra Fechamento como o ponto mais fraco (43 a 46).
 
 ---
 
+## 3.1 Decisões de uso (18/09/2026, com o gestor)
+
+Depois da calibragem — que mostrou a régua ~10 pontos mais dura que a
+consultoria, apontando os mesmos pontos fracos:
+
+| Questão | Decisão |
+|---|---|
+| Para que serve a nota | **Treinamento.** O vendedor lê a própria reunião e a análise dela. Não entra em meta, ranking ou bônus |
+| E a consultoria | **Continua.** As duas rodam em paralelo: a consultoria avalia a amostra dela, a ferramenta avalia todas as gravadas |
+| Quem vê primeiro | **O vendedor**, e ele mesmo se avalia |
+
+**Why (nota como treinamento):** com viés de 10 pontos e variação de até 4
+entre execuções, usar como nota de desempenho seria injusto — e basta um
+vendedor reavaliar e ver outro número para ninguém mais confiar na ferramenta.
+
+**Why (o vendedor primeiro):** em reunião do Teams isso já é técnico, não
+escolha. A transcrição pertence a quem organizou, e o CRM a busca com o acesso
+de quem clica: só o vendedor consegue trazê-la. Em reunião do CRM a
+transcrição vem do Daily pela chave da conta, então gerente e admin também
+conseguem — e fica assim mesmo, sem trava adicional: quem chegar primeiro
+avalia, e o normal é ser o vendedor.
+
+---
+
 ## 4. Como a avaliação funciona
 
 ### A IA classifica; o sistema calcula
