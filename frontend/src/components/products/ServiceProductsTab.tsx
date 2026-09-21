@@ -1,17 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Filter, RefreshCw, Wrench } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Filter, RefreshCw, Wrench, Plus, Edit, Trash2 } from "lucide-react";
 import serviceProductService, { ServiceProduct } from "../../services/serviceProductService";
 import { Button, SearchInput, Pagination, SelectMenu } from "../common";
-import { showError } from "../../utils/toast";
-import { usePagination } from "../../hooks";
+import ServiceProductModal from "./ServiceProductModal";
+import { showError, showSuccess } from "../../utils/toast";
+import { usePagination, useCRUD } from "../../hooks";
+import { useAuth } from "../../hooks/useAuth";
 
 /**
  * Aba "Produtos de Serviço" da página Produtos.
  *
  * Catálogo de EQUIPAMENTOS do módulo de Serviços (`service_products`), separado do
- * catálogo de Vendas. Somente leitura: a maior parte das entradas é criada e
- * mantida pela integração com o GestorHS, então não há botões de criar/editar/
- * excluir aqui — mexer nelas pela mão brigaria com o que a integração gerencia.
+ * catálogo de Vendas. Permite cadastrar/editar/excluir à mão. A maior parte das
+ * entradas nasce da integração com o GestorHS; editar uma delas é seguro (o
+ * resolver casa por modelo normalizado, não pelo nome), mas excluir um equipamento
+ * do GestorHS pode fazê-lo reaparecer se a integração voltar a ver aquele modelo.
  * Não há coluna de preço: em Serviços o valor do negócio vem das propostas.
  */
 
@@ -23,29 +26,33 @@ const origemLabel = (source?: string | null) => {
 };
 
 const ServiceProductsTab: React.FC = () => {
-  const [items, setItems] = useState<ServiceProduct[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const isViewer = user?.role === "viewer";
+
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [origemFilter, setOrigemFilter] = useState("all");
 
-  const load = async () => {
-    try {
-      setLoading(true);
-      setItems(await serviceProductService.list({ limit: 1000 }));
-    } catch (error) {
-      console.error("Erro ao carregar equipamentos:", error);
-      showError("Erro ao carregar catálogo de equipamentos");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const {
+    items,
+    loading,
+    editing,
+    showModal,
+    loadItems,
+    handleCreate,
+    handleEdit,
+    handleDelete,
+    handleSaveSuccess,
+    handleCloseModal,
+  } = useCRUD<ServiceProduct>(
+    {
+      // Sem is_active => backend retorna ativos E inativos (gestão vê os dois).
+      list: () => serviceProductService.list({ limit: 1000 }),
+      delete: serviceProductService.delete,
+    },
+    { onSuccess: showSuccess, onError: showError }
+  );
 
   const filtered = useMemo(() => {
     const termo = searchTerm.trim().toLowerCase();
@@ -68,26 +75,21 @@ const ServiceProductsTab: React.FC = () => {
 
   return (
     <div>
-      {/* Ação: atualizar (não há criar — o catálogo é alimentado pela integração) */}
-      <div className="mb-4 flex justify-end">
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={<RefreshCw size={16} />}
-          onClick={load}
-          disabled={loading}
-        >
+      {/* Ações */}
+      <div className="mb-4 flex justify-end gap-2">
+        <Button variant="secondary" size="sm" icon={<RefreshCw size={16} />} onClick={() => loadItems()} disabled={loading}>
           Atualizar
         </Button>
+        {!isViewer && (
+          <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={handleCreate}>
+            Novo Produto de Serviço
+          </Button>
+        )}
       </div>
 
       {/* Busca e filtros */}
       <div className="flex flex-col gap-3 md:flex-row">
-        <SearchInput
-          value={searchTerm}
-          onChange={setSearchTerm}
-          placeholder="Buscar por nome, SKU ou categoria..."
-        />
+        <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="Buscar por nome, SKU ou categoria..." />
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors ${
@@ -138,19 +140,23 @@ const ServiceProductsTab: React.FC = () => {
 
       {/* Contador */}
       <div className="mb-4 mt-3 text-sm text-slate-600 dark:text-slate-400">
-        {filtered.length} equipamento{filtered.length !== 1 ? "s" : ""} encontrado
-        {filtered.length !== 1 ? "s" : ""}
+        {filtered.length} equipamento{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
       </div>
 
       {loading ? (
         <div className="py-12 text-center text-slate-500 dark:text-slate-400">Carregando equipamentos...</div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-gray-50 py-12 text-center dark:border-slate-700 dark:bg-slate-800/50">
-          <p className="text-slate-500 dark:text-slate-400">
+          <p className="mb-4 text-slate-500 dark:text-slate-400">
             {searchTerm || statusFilter !== "all" || origemFilter !== "all"
               ? "Nenhum equipamento encontrado com os filtros aplicados"
               : "Nenhum equipamento no catálogo ainda"}
           </p>
+          {!isViewer && !searchTerm && statusFilter === "all" && origemFilter === "all" && (
+            <Button variant="primary" icon={<Plus size={16} />} onClick={handleCreate}>
+              Cadastrar Primeiro Equipamento
+            </Button>
+          )}
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-800/30">
@@ -163,6 +169,9 @@ const ServiceProductsTab: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Origem</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Cadastro</th>
+                  {!isViewer && (
+                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Ações</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-slate-700/50">
@@ -183,9 +192,7 @@ const ServiceProductsTab: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{p.category || "-"}</td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${origem.cls}`}>
-                          {origem.texto}
-                        </span>
+                        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${origem.cls}`}>{origem.texto}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span
@@ -199,6 +206,26 @@ const ServiceProductsTab: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{formatDate(p.created_at)}</td>
+                      {!isViewer && (
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleEdit(p)}
+                              className="rounded-lg bg-yellow-600/20 p-2 text-slate-900 transition-colors hover:bg-yellow-600/30 dark:text-yellow-400"
+                              title="Editar"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(p)}
+                              className="rounded-lg bg-red-600/20 p-2 text-slate-900 transition-colors hover:bg-red-600/30 dark:text-red-400"
+                              title="Deletar"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -208,6 +235,14 @@ const ServiceProductsTab: React.FC = () => {
           <Pagination {...pagination} totalItems={filtered.length} itemLabel="equipamentos" />
         </div>
       )}
+
+      {/* Modal de Criar/Editar Equipamento */}
+      <ServiceProductModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onSave={handleSaveSuccess}
+        product={editing}
+      />
     </div>
   );
 };

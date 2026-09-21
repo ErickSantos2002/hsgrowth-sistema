@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.3",
+    date: "21/09/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Produtos de Serviço — agora dá para cadastrar, editar e excluir equipamentos direto pela aba (botão 'Novo Produto de Serviço' e ações por linha), igual à aba de Produtos. Excluir um equipamento vindo do GestorHS pode fazê-lo reaparecer se a integração voltar a ver aquele modelo.",
+      },
+    ],
+  },
+  {
     version: "1.10.2",
     date: "21/09/2026",
     entries: [

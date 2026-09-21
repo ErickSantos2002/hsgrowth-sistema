@@ -53,6 +53,10 @@ class ServiceProductService {
     const r = await api.put<ServiceProduct>(`${BASE}/${id}`, data);
     return r.data;
   }
+
+  async delete(id: number): Promise<void> {
+    await api.delete(`${BASE}/${id}`);
+  }
 }
 
 export default new ServiceProductService();

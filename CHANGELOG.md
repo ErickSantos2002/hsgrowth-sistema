@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.3] — 21/09/2026
+
+### Adicionado
+- **Produtos de Serviço — cadastrar, editar e excluir:** a aba "Produtos de Serviço" ganhou o botão **"Novo Produto de Serviço"** e as ações de **editar/excluir** por linha, igual à aba de Produtos (sem preço — em Serviços o valor vem das propostas). Editar um equipamento vindo do GestorHS é seguro; excluir um do GestorHS pode fazê-lo reaparecer se a integração voltar a ver aquele modelo (os criados à mão somem de vez).
+
+---
+
 ## [1.10.2] — 21/09/2026
 
 ### Adicionado

@@ -30,11 +30,15 @@ router = APIRouter()
 @router.get("", response_model=List[ServiceProductResponse])
 async def list_service_products(
     search: Optional[str] = Query(None, description="Busca por nome, SKU ou categoria"),
-    is_active: Optional[bool] = Query(True),
+    is_active: Optional[bool] = Query(None, description="Filtra por ativo/inativo; omitido retorna todos"),
     limit: int = Query(200, ge=1, le=1000),
     db: Session = Depends(get_db),
 ) -> Any:
-    """Lista o catálogo de equipamentos de Serviços, ordenado por nome."""
+    """Lista o catálogo de equipamentos de Serviços, ordenado por nome.
+
+    Sem `is_active` retorna todos (a tela de gestão precisa ver inativos). O seletor
+    de equipamento do card passa `is_active=true` para listar só os ativos.
+    """
     q = db.query(ServiceProduct).filter(ServiceProduct.is_deleted.is_(False))
 
     if is_active is not None:
@@ -88,3 +92,33 @@ async def update_service_product(
     db.commit()
     db.refresh(item)
     return item
+
+
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_service_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_not_viewer()),
+) -> None:
+    """Exclui (soft delete) um equipamento do catálogo de Serviços.
+
+    Observação: equipamentos vindos do GestorHS podem reaparecer se a integração
+    voltar a ver aquele modelo (o resolver recria quando não encontra ativo). Os
+    criados à mão somem de vez.
+    """
+    from datetime import datetime
+
+    item = (
+        db.query(ServiceProduct)
+        .filter(ServiceProduct.id == product_id, ServiceProduct.is_deleted.is_(False))
+        .first()
+    )
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Equipamento {product_id} não encontrado",
+        )
+
+    item.is_deleted = True
+    item.deleted_at = datetime.utcnow()
+    db.commit()
