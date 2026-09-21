@@ -81,6 +81,21 @@ def sessao_do_teste(db, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def avaliacao_nunca_chama_a_ia(monkeypatch):
+    """
+    A avaliação pelo roteiro roda sozinha ao fim da reunião. Sem isto, qualquer
+    teste de transcrição com a chave da OpenAI no ambiente (o container local
+    tem) faria uma chamada de verdade — gasto e lentidão escondidos no teste.
+
+    Quem quer exercitar a avaliação substitui este dublê.
+    """
+    def recusar(*args, **kwargs):
+        raise RuntimeError("avaliacao desligada nos testes")
+
+    monkeypatch.setattr("app.services.avaliacao_reuniao.servico.avaliar", recusar)
+
+
+@pytest.fixture(autouse=True)
 def link_do_daily(monkeypatch):
     """
     O aviso do Daily traz só o identificador, então o serviço pede o link antes
@@ -512,3 +527,135 @@ class TestAnaliseSoQuandoGravou:
         db.refresh(task)
         assert task.transcript_status == "ready"
         assert task.transcript_raw
+
+
+AVALIACAO_DA_IA = {
+    "itens": [
+        {"criterio_id": "A1", "bloco": "Abertura", "peso": 50, "nota": 2,
+         "evidencia": "Sou o Miguel", "porque": "apresentou-se com autoridade"},
+        {"criterio_id": "D1", "bloco": "Diagnóstico", "peso": 50, "nota": 1,
+         "evidencia": "Como é hoje?", "porque": "mapeou parcialmente"},
+    ],
+    "score": 75.0,
+    "veredito": "Boa call, com gaps claros",
+    "cobertura": 1.0,
+    "medias_por_bloco": {"Abertura": 100, "Diagnóstico": 50},
+    "desfecho": "Proposta pedida",
+    "ponto_forte": "Mapeou o processo",
+    "foco_desenvolvimento": "Conectar dor e risco",
+    "proxima_acao": "Perguntar quem aprova",
+    "modelo": "gpt-4o",
+    "latencia_ms": 18000,
+    "tokens_entrada": 12000,
+    "tokens_saida": 2000,
+}
+
+
+class TestAvaliacaoAutomatica:
+    """
+    Reunião do CRM gravada já chega avaliada pelo roteiro, junto com a análise.
+
+    O vendedor recebe o retorno sem precisar lembrar de clicar — e se
+    discordar, "Reavaliar" continua no card (decisão de 21/09).
+    """
+
+    VTT = "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\n<v Ana>Bom dia\n"
+
+    @pytest.fixture(autouse=True)
+    def ambiente(self, monkeypatch):
+        monkeypatch.setattr("app.core.config.settings.OPENAI_API_KEY", "chave-de-teste")
+
+    def _processar(self, task, avaliar):
+        from app.services.recording_service import processar_transcricao
+
+        resposta = MagicMock()
+        resposta.status_code = 200
+        resposta.text = self.VTT
+
+        with patch("httpx.get", return_value=resposta), \
+             patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
+                   return_value={"resumo": "Conversa breve"}), \
+             patch("app.services.avaliacao_reuniao.servico.avaliar", avaliar):
+            processar_transcricao(task_id=task.id, transcript_id="t-1")
+
+    def _gravada(self, db, task):
+        task.recording_status = "ready"
+        db.commit()
+
+    def test_reuniao_gravada_chega_avaliada(self, db, task):
+        self._gravada(db, task)
+
+        self._processar(task, MagicMock(return_value=AVALIACAO_DA_IA))
+
+        db.refresh(task)
+        assert task.evaluation is not None
+        assert task.evaluation.score == 75.0
+        assert len(task.evaluation.itens) == 2
+
+    def test_avaliacao_automatica_nao_tem_autor(self, db, task):
+        """Ninguém clicou: a tela mostra 'avaliada automaticamente'."""
+        self._gravada(db, task)
+
+        self._processar(task, MagicMock(return_value=AVALIACAO_DA_IA))
+
+        db.refresh(task)
+        assert task.evaluation.avaliado_por_id is None
+
+    def test_reuniao_sem_gravacao_nao_e_avaliada(self, db, task):
+        """Sem gravação não roda nem a análise — e nem a avaliação."""
+        avaliar = MagicMock(return_value=AVALIACAO_DA_IA)
+
+        self._processar(task, avaliar)
+
+        avaliar.assert_not_called()
+
+    def test_falha_na_avaliacao_nao_desfaz_a_analise(self, db, task):
+        self._gravada(db, task)
+
+        self._processar(task, MagicMock(side_effect=ValueError("modelo fora do ar")))
+
+        db.refresh(task)
+        assert task.transcript_status == "ready"
+        assert "Conversa breve" in task.transcript_analysis
+        assert task.evaluation is None
+
+    def test_nao_passa_por_cima_de_avaliacao_existente(self, db, task):
+        """Alguém já clicou em avaliar: a automática não sobrescreve."""
+        from app.models.meeting_evaluation import MeetingEvaluation
+
+        self._gravada(db, task)
+        db.add(MeetingEvaluation(
+            card_task_id=task.id, versao_criterios="2026-09", score=40.0,
+        ))
+        db.commit()
+        avaliar = MagicMock(return_value=AVALIACAO_DA_IA)
+
+        self._processar(task, avaliar)
+
+        avaliar.assert_not_called()
+        db.refresh(task)
+        assert task.evaluation.score == 40.0
+
+    def test_sem_chave_da_ia_nem_tenta(self, db, task, monkeypatch):
+        monkeypatch.setattr("app.core.config.settings.OPENAI_API_KEY", "")
+        self._gravada(db, task)
+        avaliar = MagicMock(return_value=AVALIACAO_DA_IA)
+
+        self._processar(task, avaliar)
+
+        avaliar.assert_not_called()
+
+    def test_um_aviso_so_com_tudo_pronto(self, db, task, test_card, test_salesperson_user):
+        """Dois avisos seguidos para a mesma reunião viram ruído."""
+        from app.models.notification import Notification
+
+        test_card.assigned_to_id = test_salesperson_user.id
+        self._gravada(db, task)
+
+        self._processar(task, MagicMock(return_value=AVALIACAO_DA_IA))
+
+        avisos = db.query(Notification).filter(
+            Notification.user_id == test_salesperson_user.id
+        ).all()
+        assert len(avisos) == 1
+        assert "avaliacao pelo roteiro" in avisos[0].message

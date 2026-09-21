@@ -55,7 +55,9 @@ const MeetingEvaluation: React.FC<{ avaliacao: AvaliacaoDaReuniao }> = ({ avalia
       )}
 
       <p className="text-[11px] text-slate-500">
-        Cobertura {Math.round((avaliacao.cobertura ?? 0) * 100)}% · avaliada em{" "}
+        Cobertura {Math.round((avaliacao.cobertura ?? 0) * 100)}% ·{" "}
+        {/* Sem autor é a avaliação que roda sozinha ao fim da reunião do CRM */}
+        {avaliacao.avaliado_por ? "avaliada" : "avaliada automaticamente"} em{" "}
         {new Date(avaliacao.avaliado_em).toLocaleDateString("pt-BR")}
         {avaliacao.avaliado_por ? ` por ${avaliacao.avaliado_por}` : ""}
       </p>

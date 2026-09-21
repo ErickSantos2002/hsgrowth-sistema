@@ -345,6 +345,7 @@ def processar_transcricao(
 
         # Falhar aqui nao desfaz a transcricao — ela fica salva e da para
         # reanalisar depois pelo botao.
+        analisada = False
         try:
             from app.services.transcript_analysis_service import transcript_analysis_service
             import json as _json
@@ -352,22 +353,75 @@ def processar_transcricao(
             analise = transcript_analysis_service.analyze(vtt)
             task.transcript_analysis = _json.dumps(analise, ensure_ascii=False)
             db.commit()
+            analisada = True
             print(f"[RECORDING] Analise da tarefa {task_id} concluida")
+        except Exception as e:
+            print(f"[RECORDING] Transcricao salva, mas a analise falhou na tarefa {task_id}: {e}")
 
+        avaliada = _avaliar_pelo_roteiro(db, task, vtt)
+
+        # Um aviso so, quando tudo o que tinha de ficar pronto ficou: dois
+        # avisos seguidos para a mesma reuniao viram ruido.
+        if analisada or avaliada:
+            partes = ["a transcricao", "a analise" if analisada else None,
+                      "a avaliacao pelo roteiro" if avaliada else None]
+            partes = [p for p in partes if p]
+            lista = ", ".join(partes[:-1]) + " e " + partes[-1]
             _notificar(
                 db,
                 donos_da_reuniao(db, task),
                 "Analise da reuniao pronta",
-                f'A transcricao e a analise da reuniao "{task.title}" ja estao no card.',
+                f'{lista[0].upper()}{lista[1:]} da reuniao "{task.title}" ja estao no card.',
                 task,
             )
-        except Exception as e:
-            print(f"[RECORDING] Transcricao salva, mas a analise falhou na tarefa {task_id}: {e}")
 
     except Exception as e:
         print(f"[RECORDING] Erro inesperado na transcricao da tarefa {task_id}: {e}")
     finally:
         db.close()
+
+
+def _avaliar_pelo_roteiro(db, task: CardTask, vtt: str) -> bool:
+    """
+    Avalia a reunião pelo roteiro da consultoria, junto com a análise.
+
+    Mesmo critério da análise: só chega aqui reunião do CRM que foi gravada,
+    e gravar é o sinal de que a conversa importa. O vendedor recebe o retorno
+    sem precisar lembrar de clicar — e se discordar, "Reavaliar" continua no
+    card (decisão de 21/09).
+
+    Reunião com transcrição picotada não vira nota injusta: a cobertura cai
+    abaixo de 70% e a avaliação sai como "parcial — não comparar".
+
+    Nunca levanta: falhar aqui não desfaz a transcrição nem a análise.
+
+    Returns:
+        True se a avaliação foi gravada.
+    """
+    from app.core.config import settings
+    from app.models.meeting_evaluation import MeetingEvaluation
+
+    if not settings.OPENAI_API_KEY:
+        return False
+
+    # Alguém já avaliou (reprocessamento, ou um clique que chegou antes):
+    # não passa por cima de uma avaliação que outra pessoa pediu.
+    if db.query(MeetingEvaluation).filter(MeetingEvaluation.card_task_id == task.id).first():
+        return False
+
+    try:
+        from app.services.avaliacao_reuniao import servico
+        from app.services.avaliacao_reuniao.gravar import gravar_avaliacao
+
+        contexto = f"Negócio: {task.card.title}" if task.card else ""
+        resultado = servico.avaliar(vtt, contexto)
+        gravar_avaliacao(db, task, resultado, avaliado_por_id=None)
+        print(f"[RECORDING] Avaliacao pelo roteiro da tarefa {task.id} concluida")
+        return True
+    except Exception as e:
+        db.rollback()
+        print(f"[RECORDING] Avaliacao pelo roteiro falhou na tarefa {task.id}: {e}")
+        return False
 
 
 def limpar_gravacoes_antigas() -> int:

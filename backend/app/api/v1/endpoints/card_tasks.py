@@ -1945,9 +1945,8 @@ def avaliar_reuniao(
     current_user: User = Depends(get_current_active_user),
 ):
     from app.core.config import settings
-    from app.models.meeting_evaluation import MeetingEvaluation, MeetingEvaluationItem
     from app.services.avaliacao_reuniao import servico
-    from app.services.avaliacao_reuniao.criterios import VERSAO
+    from app.services.avaliacao_reuniao.gravar import gravar_avaliacao
 
     task = db.query(CardTask).filter(CardTask.id == task_id).first()
     if not task:
@@ -1975,45 +1974,7 @@ def avaliar_reuniao(
         # Nada é gravado: avaliação pela metade é pior que nenhuma
         raise HTTPException(status_code=502, detail=f"A IA não conseguiu avaliar: {e}")
 
-    anterior = (
-        db.query(MeetingEvaluation)
-        .filter(MeetingEvaluation.card_task_id == task.id)
-        .first()
-    )
-    if anterior:
-        db.delete(anterior)
-        db.flush()
-
-    avaliacao = MeetingEvaluation(
-        card_task_id=task.id,
-        avaliado_por_id=current_user.id,
-        versao_criterios=VERSAO,
-        score=resultado["score"],
-        veredito=resultado["veredito"],
-        cobertura=resultado["cobertura"],
-        medias_por_bloco=resultado["medias_por_bloco"],
-        desfecho=resultado["desfecho"],
-        ponto_forte=resultado["ponto_forte"],
-        foco_desenvolvimento=resultado["foco_desenvolvimento"],
-        proxima_acao=resultado["proxima_acao"],
-        modelo=resultado.get("modelo"),
-        tokens_entrada=resultado.get("tokens_entrada"),
-        tokens_saida=resultado.get("tokens_saida"),
-        latencia_ms=resultado.get("latencia_ms"),
-    )
-    for item in resultado["itens"]:
-        avaliacao.itens.append(MeetingEvaluationItem(
-            criterio_id=item["criterio_id"],
-            bloco=item["bloco"],
-            peso=item["peso"],
-            nota=item["nota"],
-            evidencia=item.get("evidencia"),
-            porque=item.get("porque"),
-        ))
-
-    db.add(avaliacao)
-    db.commit()
-    db.refresh(avaliacao)
+    avaliacao = gravar_avaliacao(db, task, resultado, avaliado_por_id=current_user.id)
 
     return _montar_resposta_avaliacao(avaliacao)
 

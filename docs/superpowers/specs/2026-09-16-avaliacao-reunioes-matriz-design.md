@@ -58,7 +58,7 @@ mostra Fechamento como o ponto mais fraco (43 a 46).
 |---|---|
 | Uso | treinar o vendedor **e** dar visão de gestão |
 | Relação com a análise atual (14 campos) | duas análises separadas, ligáveis de forma independente |
-| Quando roda | **só por clique** — nada automático |
+| Quando roda | ~~só por clique~~ — **automática nas reuniões do CRM gravadas**, por clique nas do Teams (mudou em 21/09, ver 3.1) |
 | Quem vê | vendedor vê as dele; gerente e admin veem todas |
 | Indicadores da página | quantidade, score médio, % avaliadas, distribuição por veredito, média por bloco e recorte por vendedor |
 | Escopo da lista | **todas** as reuniões, com selo de estado |
@@ -80,6 +80,17 @@ consultoria, apontando os mesmos pontos fracos:
 **Why (nota como treinamento):** com viés de 10 pontos e variação de até 4
 entre execuções, usar como nota de desempenho seria injusto — e basta um
 vendedor reavaliar e ver outro número para ninguém mais confiar na ferramenta.
+
+**Mudou em 21/09 — automática no CRM:** reunião do CRM que foi gravada chega
+avaliada, logo depois da análise, sem ninguém clicar. Se o vendedor discordar,
+"Reavaliar" continua no card. No Teams segue por clique, e só quem organizou
+consegue (a transcrição vem com o acesso dele).
+
+*Por quê:* com a nota decidida como ferramenta de treinamento e o vendedor
+vendo primeiro, esperar um clique só atrasava o retorno. Custa cerca de
+US$ 0,05 por reunião gravada. A avaliação automática nunca passa por cima de
+uma que alguém já tenha pedido, e transcrição picotada não vira nota injusta:
+com cobertura abaixo de 70% ela sai como "parcial — não comparar".
 
 **Why (o vendedor primeiro):** em reunião do Teams isso já é técnico, não
 escolha. A transcrição pertence a quem organizou, e o CRM a busca com o acesso
@@ -358,7 +369,7 @@ time — a decisão foi soltar tudo de uma vez.
 
 ## 14. Fora de escopo
 
-- Avaliação automática ao fim da reunião
+- ~~Avaliação automática ao fim da reunião~~ — entrou em 21/09 para as reuniões do CRM
 - Tela para o gestor editar critérios e pesos
 - Avaliar ligações por esta régua (já existe a avaliação de calls do api4com)
 - Ranking público entre vendedores

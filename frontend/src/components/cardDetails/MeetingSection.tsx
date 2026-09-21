@@ -286,7 +286,14 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
           ? m.meeting_ended_at
           : m.meeting_ended_at + "Z";
         const minutos = (agora - Date.parse(iso)) / 60000;
-        const faltaAlgo = !m.gravacoes?.length || m.transcript_status !== "ready";
+        // A ordem de chegada é gravação → transcrição → análise → avaliação.
+        // Parar na transcrição deixava as duas últimas invisíveis até um F5,
+        // e a avaliação sozinha leva de 20 a 60 segundos a mais.
+        const faltaAlgo =
+          !m.gravacoes?.length ||
+          m.transcript_status !== "ready" ||
+          !m.transcript_analysis ||
+          !avaliacoes[m.id];
         if (minutos >= 0 && minutos < 30 && faltaAlgo) return true;
       }
 
@@ -297,7 +304,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     const timer = window.setInterval(() => loadMeetings(), 15000);
     return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [meetings]);
+  }, [meetings, avaliacoes]);
 
 
   const pending = meetings.filter((m) => !m.is_completed && !m.is_cancelled);
