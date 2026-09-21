@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.2] — 21/09/2026
+
+### Adicionado
+- **Serviço e Cobrança — "Valor total" e "Valor ponderado" no rodapé de cada lista:** igual aos boards de Vendas. O **Valor total** soma o valor dos negócios da etapa; o **Valor ponderado** soma apenas os que têm **data esperada de fechamento no mês atual** (com o % ao lado).
+
+---
+
 ## [1.10.1] — 21/09/2026
 
 ### Adicionado

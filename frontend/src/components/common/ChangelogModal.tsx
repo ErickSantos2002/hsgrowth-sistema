@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.2",
+    date: "21/09/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Boards de Serviço e Cobrança — cada lista agora mostra no rodapé o 'Valor total' e o 'Valor ponderado' (soma dos negócios com data esperada de fechamento no mês atual), igual aos boards de Vendas.",
+      },
+    ],
+  },
+  {
     version: "1.10.1",
     date: "21/09/2026",
     entries: [
