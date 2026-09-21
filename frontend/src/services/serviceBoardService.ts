@@ -56,6 +56,9 @@ export interface ServiceBusinessInfo {
   closing_type?: "faturamento_direto" | "pedido" | ""; // Forma de fechamento
   // Confirmação de envio (Cobrança/Operações): trava para dar Ganho em Operações → Ganho.
   shipping_confirmed?: "sim" | "nao" | "";
+  // Origem: este negócio (board de Serviço) veio de uma Cobrança? Preenchido no Resumo
+  // ou no modal ao dar Ganho. Alimenta a KPI "Receita de Cobrança (concluída)".
+  from_collection?: "sim" | "nao" | "";
   // Número da proposta do GestorHS (#N da tela de Propostas de lá). Obrigatório
   // para dar Ganho no board 1; vai no aviso de volta ao GestorHS (fase 2).
   proposal_number?: number | null;

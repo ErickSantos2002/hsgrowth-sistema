@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.1] — 21/09/2026
+
+### Adicionado
+- **Serviço — origem "Cobrança" no Ganho:** ao marcar um negócio como **Ganho** no board de Serviço, se ainda não estiver respondido no Resumo, aparece a pergunta **"Este negócio foi originado de uma Cobrança?"** (Sim/Não). A resposta fica salva no Resumo (campo **"Origem: Cobrança?"**), que também pode ser editado direto lá.
+- **Dashboard de Serviço — KPI "Receita de Cobrança (concluída)":** ao lado da "Receita Cobrança (Phoebus)", soma o valor dos negócios **ganhos no período** que foram marcados como originados de Cobrança. É a fatia da "Receita ganha" que veio de uma Cobrança.
+
+---
+
 ## [1.10.0] — 18/09/2026
 
 ### Adicionado

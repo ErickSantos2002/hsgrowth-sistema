@@ -150,12 +150,15 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
 
       {/* ── KPIs (5 em cima · 5 embaixo, cada linha de canto a canto) ── */}
       <div className="space-y-4">
-        <div className={`grid grid-cols-1 gap-4 sm:grid-cols-3 ${board !== 2 ? "lg:grid-cols-6" : "lg:grid-cols-5"}`}>
+        <div className={`grid grid-cols-1 gap-4 sm:grid-cols-3 ${board !== 2 ? "lg:grid-cols-7" : "lg:grid-cols-5"}`}>
           <KpiCard icon={<Briefcase size={18} className="text-violet-400" />} iconBg="bg-violet-500/20" label="Negócios ativos" value={data.active_count} info="Negócios em aberto no pipeline agora (nem ganho, nem perdido)." sub="Em aberto no pipeline" highlight="purple" />
           <KpiCard icon={<DollarSign size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Pipeline (em aberto)" value={data.pipeline_value} format="currency" info="Soma do valor dos negócios em aberto no funil." sub="Valor em aberto no período" highlight="green" />
           <KpiCard icon={<DollarSign size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Receita ganha" value={data.won_value} format="currency" info="Valor total dos negócios ganhos no período." sub="Valor total ganho no período" highlight="green" />
           {board !== 2 && (
             <KpiCard icon={<DollarSign size={18} className="text-teal-400" />} iconBg="bg-teal-500/20" label="Receita Cobrança (Phoebus)" value={data.collection_won_value} format="currency" info="Receita APENAS dos serviços Phoebus (anuidade da plataforma + calibração do módulo) nos negócios GANHOS do board de Cobrança, no período. Não é o total da Cobrança — só as linhas desses serviços." sub="Serviços Phoebus ganhos na Cobrança" highlight="green" />
+          )}
+          {board !== 2 && (
+            <KpiCard icon={<DollarSign size={18} className="text-cyan-400" />} iconBg="bg-cyan-500/20" label="Receita de Cobrança (concluída)" value={data.from_collection_won_value} format="currency" info="Valor total dos negócios GANHOS no board de Serviço, no período, que foram marcados no Resumo como 'Origem: Cobrança = Sim'. É a fatia da Receita ganha que veio de uma Cobrança." sub="Ganhos no Serviço originados de Cobrança" highlight="green" />
           )}
           <KpiCard icon={<CheckCircle2 size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Ganhos no período" value={data.won_count} info="Quantos negócios foram marcados como ganho no período." sub="Negócios ganhos no período" highlight="green" />
           <KpiCard icon={<XCircle size={18} className="text-red-400" />} iconBg="bg-red-500/20" label="Perdidos no período" value={data.lost_count} info="Quantos negócios foram marcados como perdido no período." sub="Negócios perdidos no período" highlight="red" />

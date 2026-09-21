@@ -51,6 +51,7 @@ class ServiceDashboardResponse(BaseModel):
     lost_count: int
     won_value: float
     collection_won_value: float = 0  # Receita ganha do board de Cobrança (Phoebus) — KPI na dash de Serviço
+    from_collection_won_value: float = 0  # Receita dos ganhos do Serviço originados de Cobrança (from_collection="sim")
     activities_count: int
     avg_ticket: float
     win_rate: float                # %

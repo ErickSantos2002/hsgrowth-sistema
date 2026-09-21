@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.1",
+    date: "21/09/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Serviço — ao dar Ganho, pergunta se o negócio foi originado de uma Cobrança (Sim/Não), caso ainda não tenha sido respondido no Resumo. A resposta fica salva no Resumo, no campo 'Origem: Cobrança?', e pode ser editada por lá.",
+      },
+      {
+        type: "feature",
+        text: "Dashboard de Serviço — nova KPI 'Receita de Cobrança (concluída)', ao lado da 'Receita Cobrança (Phoebus)': soma o valor dos negócios ganhos no período que vieram de uma Cobrança.",
+      },
+    ],
+  },
+  {
     version: "1.10.0",
     date: "18/09/2026",
     entries: [

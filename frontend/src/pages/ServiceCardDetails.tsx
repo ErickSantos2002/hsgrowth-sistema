@@ -369,6 +369,15 @@ const ServiceSummarySection: React.FC<{
                   />
                 </div>
               )}
+              {!isCobranca && (
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-400">Origem: Cobrança?</label>
+                  <SelectMenu size="sm" value={biz.from_collection || ""} placeholder="Não definido"
+                    options={[{ value: "", label: "Não definido" }, { value: "sim", label: "Sim" }, { value: "nao", label: "Não" }]}
+                    onChange={(v) => setBizField("from_collection", v)} />
+                  <p className="text-[11px] text-slate-400">Marque se este negócio veio de uma Cobrança. Se ficar em branco, será perguntado ao dar Ganho.</p>
+                </div>
+              )}
               {isCobranca && (
                 <div className="space-y-1 border-t border-gray-200/40 dark:border-slate-700/40 pt-3">
                   <p className="text-[11px] uppercase tracking-wide text-slate-400">Operações</p>
@@ -398,6 +407,7 @@ const ServiceSummarySection: React.FC<{
                 ...(isCobranca ? [] : [{ label: "Forma de fechamento", value: closingLabel(biz.closing_type) }]),
                 ...(isCobranca ? [] : [{ label: "Número da proposta", value: biz.proposal_number ? String(biz.proposal_number) : "" }]),
                 ...(isCobranca ? [] : [{ label: "Número do pedido", value: biz.order_number ? String(biz.order_number) : "" }]),
+                ...(isCobranca ? [] : [{ label: "Origem: Cobrança?", value: biz.from_collection === "sim" ? "Sim" : biz.from_collection === "nao" ? "Não" : "" }]),
                 ...(isCobranca ? [{ label: "Confirmação de envio", value: biz.shipping_confirmed === "sim" ? "Sim" : biz.shipping_confirmed === "nao" ? "Não" : "" }] : []),
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between gap-3">
@@ -935,6 +945,8 @@ const ServiceCardDetails: React.FC = () => {
   const [isQuickCalling, setIsQuickCalling] = useState(false);
   const [quickCallNumbers, setQuickCallNumbers] = useState<{ label: string; number: string }[] | null>(null);
   const [showLossModal, setShowLossModal] = useState(false);
+  // Modal "Originado de Cobrança?" — só no board de Serviço (1), ao dar Ganho sem resposta no Resumo.
+  const [showFromCollectionModal, setShowFromCollectionModal] = useState(false);
 
   const reloadActivities = async () => {
     try {
@@ -1113,8 +1125,32 @@ const ServiceCardDetails: React.FC = () => {
       }
     }
 
+    // Board de Serviço: precisa saber se o negócio veio de uma Cobrança. Se ainda não
+    // respondido no Resumo, abre o modal (que conclui o Ganho após a resposta) e interrompe.
+    if (numBoardId === 1) {
+      const fc = card?.business_info?.from_collection;
+      if (fc !== "sim" && fc !== "nao") {
+        setShowFromCollectionModal(true);
+        return;
+      }
+    }
+
     const ok = await confirm({ title: "Marcar como Ganho", message: `Mover este card para "${doneList.name}"?`, confirmText: "Ganho", isDanger: false });
     if (!ok) return;
+    await handleMove(doneList.id);
+  };
+
+  // Resposta do modal "Originado de Cobrança?": grava no Resumo e conclui o Ganho.
+  const answerFromCollection = async (ans: "sim" | "nao") => {
+    setShowFromCollectionModal(false);
+    try {
+      await updateCard({ business_info: { ...(card?.business_info || {}), from_collection: ans } });
+    } catch {
+      showError("Erro ao salvar a origem do negócio");
+      return;
+    }
+    const doneList = lists.find((l) => l.is_done_stage) || lists.find((l) => /ganho/i.test(l.name));
+    if (!doneList) { showError("Nenhuma etapa de 'Ganho' configurada no board"); return; }
     await handleMove(doneList.id);
   };
 
@@ -1384,6 +1420,34 @@ const ServiceCardDetails: React.FC = () => {
         boardName="Serviços"
         reasons={lossReasons}
       />
+
+      {/* Modal "Originado de Cobrança?" — só board de Serviço, ao dar Ganho sem resposta no Resumo.
+          Não fecha ao clicar fora (fechar no X cancela o Ganho). */}
+      {showFromCollectionModal && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 p-4">
+              <h3 className="font-semibold text-slate-900 dark:text-white">Antes de concluir o Ganho</h3>
+              <button onClick={() => setShowFromCollectionModal(false)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="space-y-4 p-5">
+              <p className="text-sm text-slate-700 dark:text-slate-200">Este negócio foi <strong>originado de uma Cobrança</strong>?</p>
+              <div className="flex items-center gap-3">
+                <button onClick={() => answerFromCollection("sim")}
+                  className="flex-1 rounded-lg bg-emerald-500/20 px-4 py-2.5 text-sm font-medium text-emerald-500 hover:bg-emerald-500/30">
+                  Sim
+                </button>
+                <button onClick={() => answerFromCollection("nao")}
+                  className="flex-1 rounded-lg bg-gray-200/70 dark:bg-slate-700/60 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-gray-300/70 dark:hover:bg-slate-700">
+                  Não
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400">A resposta fica salva no Resumo do negócio. Você pode alterá-la depois lá.</p>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Modal de seleção de número para ligação rápida (2+ números) */}
       {quickCallNumbers && ReactDOM.createPortal(

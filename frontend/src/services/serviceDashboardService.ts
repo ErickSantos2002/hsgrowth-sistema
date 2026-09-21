@@ -14,6 +14,7 @@ export interface ServiceDashboard {
   lost_count: number;
   won_value: number;
   collection_won_value: number;
+  from_collection_won_value: number;
   activities_count: number;
   avg_ticket: number;
   win_rate: number;

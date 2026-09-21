@@ -174,6 +174,13 @@ class ServiceDashboardService:
         won_count = len(won_cards)
         lost_count = len(lost_cards)
         won_value = sum(value_by_card.get(c.id, 0.0) for c in won_cards)
+        # Receita de Cobrança (concluída): fatia da Receita ganha cujos cards foram
+        # marcados no Resumo como originados de uma Cobrança (business_info.from_collection="sim").
+        from_collection_won_value = sum(
+            value_by_card.get(c.id, 0.0)
+            for c in won_cards
+            if (c.business_info or {}).get("from_collection") == "sim"
+        )
         avg_ticket = (won_value / won_count) if won_count else 0.0
         win_rate = (won_count / (won_count + lost_count) * 100) if (won_count + lost_count) else 0.0
 
@@ -440,6 +447,7 @@ class ServiceDashboardService:
             lost_count=lost_count,
             won_value=won_value,
             collection_won_value=collection_won_value,
+            from_collection_won_value=from_collection_won_value,
             activities_count=activities_count,
             avg_ticket=avg_ticket,
             win_rate=round(win_rate, 1),
