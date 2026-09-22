@@ -365,13 +365,20 @@ const Settings: React.FC = () => {
     try {
       setLoading(true);
 
+      // A assinatura é montada AQUI a partir dos estados reais do editor
+      // (texto + imagem). Não usar profileData.email_signature: o useEffect([user])
+      // reseta esse campo com o valor do servidor sempre que o `user` muda de
+      // referência, o que descartava a remoção/troca da imagem antes de salvar
+      // (a imagem "voltava" após o F5).
+      const email_signature = buildSignatureHtml(signatureText, signatureImageUrl);
+
       // Atualiza o perfil no backend
       const updatedUser = await userService.update(user.id, {
         name: profileData.name,
         username: profileData.username,
         email: profileData.email,
         phone: profileData.phone,
-        email_signature: profileData.email_signature || null,
+        email_signature: email_signature || null,
       });
 
       // Atualiza o contexto de autenticação
@@ -1332,10 +1339,10 @@ const Settings: React.FC = () => {
                       Adicionada automaticamente ao final de todo e-mail enviado pelo CRM.
                     </p>
 
-                    {showSignaturePreview && profileData.email_signature && (
+                    {showSignaturePreview && (signatureText.trim() || signatureImageUrl) && (
                       <div className="mt-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 p-4">
                         <p className="mb-2 text-xs font-medium text-slate-400">Preview:</p>
-                        <div className="text-slate-900 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: profileData.email_signature }} />
+                        <div className="text-slate-900 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: buildSignatureHtml(signatureText, signatureImageUrl) }} />
                       </div>
                     )}
                   </div>

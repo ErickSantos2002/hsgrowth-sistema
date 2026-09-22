@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.4",
+    date: "22/09/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Assinatura de e-mail — remover ou trocar a imagem agora persiste: antes a alteração voltava atrás ao atualizar a página. O que aparece no preview é exatamente o que será salvo.",
+      },
+    ],
+  },
+  {
     version: "1.10.3",
     date: "21/09/2026",
     entries: [
