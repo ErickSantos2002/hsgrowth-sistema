@@ -223,6 +223,21 @@ const Settings: React.FC = () => {
     return textHtml + imgHtml;
   };
 
+  // Grava a assinatura no backend IMEDIATAMENTE (a imagem persiste ao Trocar/Remover,
+  // sem depender do botão "Salvar Alterações" lá embaixo — como a foto de perfil).
+  // Envia só o campo email_signature para não mexer nos demais dados do perfil.
+  const persistSignature = async (sigHtml: string) => {
+    if (!user) return;
+    try {
+      const updatedUser = await userService.update(user.id, { email_signature: sigHtml || null });
+      updateUser(updatedUser);
+      showSuccess("Assinatura atualizada!");
+    } catch (error: any) {
+      console.error("Erro ao salvar assinatura:", error);
+      showError(error.response?.data?.detail || "Erro ao salvar a assinatura");
+    }
+  };
+
   const handleSignatureImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -236,11 +251,12 @@ const Settings: React.FC = () => {
 
     setUploadingSignatureImage(true);
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUrl = reader.result as string;
       setSignatureImageUrl(dataUrl);
       const newHtml = buildSignatureHtml(signatureText, dataUrl);
       setProfileData(p => ({ ...p, email_signature: newHtml }));
+      await persistSignature(newHtml); // grava na hora
       setUploadingSignatureImage(false);
     };
     reader.onerror = () => {
@@ -1315,9 +1331,11 @@ const Settings: React.FC = () => {
                           {signatureImageUrl && (
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 setSignatureImageUrl(null);
-                                setProfileData(p => ({ ...p, email_signature: buildSignatureHtml(signatureText, null) }));
+                                const newHtml = buildSignatureHtml(signatureText, null);
+                                setProfileData(p => ({ ...p, email_signature: newHtml }));
+                                await persistSignature(newHtml); // grava na hora
                               }}
                               className="text-xs text-red-400 hover:text-red-300"
                             >

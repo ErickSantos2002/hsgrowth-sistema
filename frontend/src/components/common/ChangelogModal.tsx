@@ -30,7 +30,7 @@ const CHANGELOG: ChangelogVersion[] = [
     entries: [
       {
         type: "fix",
-        text: "Assinatura de e-mail — remover ou trocar a imagem agora persiste: antes a alteração voltava atrás ao atualizar a página. O que aparece no preview é exatamente o que será salvo.",
+        text: "Assinatura de e-mail — ao trocar ou remover a imagem, a alteração agora é salva na hora (como a foto de perfil), sem depender do botão 'Salvar Alterações'. Resolve o caso em que a imagem voltava após atualizar a página.",
       },
     ],
   },

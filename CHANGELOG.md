@@ -8,7 +8,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 ## [1.10.4] — 22/09/2026
 
 ### Corrigido
-- **Assinatura de e-mail — remover/trocar a imagem não persistia:** ao remover ou trocar a imagem da assinatura e salvar, a alteração voltava atrás no F5. A assinatura passou a ser montada a partir do que está no editor (texto + imagem) no momento de salvar, em vez de um estado interno que era sobrescrito com o valor do servidor. O preview também passou a refletir exatamente o que será salvo.
+- **Assinatura de e-mail — remover/trocar a imagem não persistia:** ao **trocar** ou **remover** a imagem da assinatura, a alteração agora é **salva na hora** no servidor (como a foto de perfil), sem depender do botão "Salvar Alterações". Antes a imagem "voltava" após atualizar a página. O preview também reflete exatamente o que será salvo.
 
 ---
 
