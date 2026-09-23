@@ -61,6 +61,7 @@ const ReunioesPage: React.FC = () => {
   const [estado, setEstado] = useState("");
   const [vendedor, setVendedor] = useState("");
   const [sdr, setSdr] = useState("");
+  const [tipoReuniao, setTipoReuniao] = useState("");
   const [visaoDoQuadro, setVisaoDoQuadro] = useState<VisaoDoQuadro>("vendedor");
   const [pagina, setPagina] = useState(1);
 
@@ -79,6 +80,7 @@ const ReunioesPage: React.FC = () => {
           estado: (estado || undefined) as FiltrosDeReunioes["estado"],
           vendedor: vendedor || undefined,
           sdr: sdr || undefined,
+          tipo_reuniao: tipoReuniao || undefined,
         })
       );
     } catch {
@@ -86,7 +88,9 @@ const ReunioesPage: React.FC = () => {
     } finally {
       setCarregando(false);
     }
-  }, [pagina, periodo, inicioPersonalizado, fimPersonalizado, estado, vendedor, sdr]);
+  }, [
+    pagina, periodo, inicioPersonalizado, fimPersonalizado, estado, vendedor, sdr, tipoReuniao,
+  ]);
 
   useEffect(() => {
     carregar();
@@ -102,6 +106,7 @@ const ReunioesPage: React.FC = () => {
   const filtrosAtivos = [
     vendedor,
     sdr,
+    tipoReuniao,
     estado,
     periodo !== PERIODO_PADRAO ? periodo : "",
   ].filter(Boolean).length;
@@ -218,6 +223,23 @@ const ReunioesPage: React.FC = () => {
             </div>
 
             <div className="min-w-[170px] flex-1">
+              <label className={rotulo}>Tipo de reunião</label>
+              <select
+                value={tipoReuniao}
+                onChange={(e) => aoFiltrar(() => setTipoReuniao(e.target.value))}
+                className={campo}
+              >
+                <option value="">Todos os tipos</option>
+                <option value="sem">Sem tipo</option>
+                {dados?.tipos_de_reuniao.map((tipo) => (
+                  <option key={tipo.id} value={tipo.id}>
+                    {tipo.rotulo}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="min-w-[170px] flex-1">
               <label className={rotulo}>Período</label>
               <select
                 value={periodo}
@@ -307,6 +329,7 @@ const ReunioesPage: React.FC = () => {
                     <th className={cabecalho}>Cliente</th>
                     <th className={cabecalho}>Vendedor</th>
                     <th className={cabecalho}>SDR</th>
+                    <th className={cabecalho}>Onde</th>
                     <th className={cabecalho}>Tipo</th>
                     <th className={cabecalho}>Duração</th>
                     <th className={cabecalho}>Avaliada</th>
@@ -334,6 +357,9 @@ const ReunioesPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400">
                         {r.tipo}
+                      </td>
+                      <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400">
+                        {r.tipo_reuniao_rotulo || "—"}
                       </td>
                       <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400">
                         {r.duracao_minutos ? `${r.duracao_minutos} min` : "—"}

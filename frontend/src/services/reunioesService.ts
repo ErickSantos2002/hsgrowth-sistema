@@ -8,7 +8,11 @@ export interface ReuniaoDaLista {
   cliente: string | null;
   vendedor: string | null;
   sdr: string | null;
+  /** Onde a reunião aconteceu. */
   tipo: "CRM" | "Teams" | "—";
+  /** O assunto da reunião, como escolhido na criação. */
+  tipo_reuniao: string | null;
+  tipo_reuniao_rotulo: string | null;
   quando: string | null;
   duracao_minutos: number | null;
   avaliada: boolean;
@@ -46,6 +50,7 @@ export interface RespostaDeReunioes {
   por_sdr: LinhaDoQuadro[];
   vendedores: PessoaDoFiltro[];
   sdrs: PessoaDoFiltro[];
+  tipos_de_reuniao: { id: string; rotulo: string }[];
 }
 
 export interface FiltrosDeReunioes {
@@ -58,6 +63,8 @@ export interface FiltrosDeReunioes {
   /** Id do SDR do negócio, ou "sem" para negócios sem SDR. */
   sdr?: string;
   veredito?: string;
+  /** Id do tipo, ou "sem" para reuniões de antes do padrão. */
+  tipo_reuniao?: string;
   estado?: "todas" | "sem_gravacao" | "avaliadas" | "nao_avaliadas";
 }
 
