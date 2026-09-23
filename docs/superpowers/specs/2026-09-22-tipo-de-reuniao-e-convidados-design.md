@@ -36,6 +36,7 @@ Duas causas, e as duas precisam de tratamento:
 |---|---|
 | Quais reuniões são avaliadas sozinhas | Só **Apresentação Phoebus** |
 | E as demais | O botão "Avaliar pelo roteiro" continua em qualquer reunião com transcrição |
+| Quando roda | **Assim que a transcrição chega** — sozinha no CRM, junto do "Analisar Reunião" no Teams |
 | Como o tipo vive no sistema | **Campo próprio** na reunião; o título é montado a partir dele |
 | Reunião fora dos quatro tipos | Opção **"Outra"**, com título livre, nunca avaliada sozinha |
 | Nome da empresa no título | Razão social do cliente; faltando, o nome do negócio |
@@ -80,11 +81,23 @@ Ao **editar** a reunião, o tipo pode ser trocado e o título é remontado. Em
 
 ### O que muda na avaliação
 
-A avaliação automática passa a exigir três coisas, em vez de duas:
+A regra passa a ser uma só, para os dois fluxos:
 
 ```
-reunião do CRM  +  foi gravada  +  tipo "Apresentação Phoebus"
+chegou transcrição  +  tipo "Apresentação Phoebus"  →  avalia
 ```
+
+- **No CRM**, a transcrição chega sozinha depois da reunião gravada, então a
+  avaliação sai sozinha também.
+- **No Teams**, a transcrição chega quando o vendedor clica em "Analisar
+  Reunião" — e a avaliação sai junto, no mesmo clique. Antes eram dois.
+
+O clique continua sendo do vendedor porque a transcrição do Teams pertence a
+quem organizou a reunião: sem o acesso dele, não existe texto para avaliar.
+
+Uma regra só é o que dá para explicar ao time em uma frase — *reunião de
+Apresentação Phoebus é avaliada assim que a transcrição chega*. Duas regras,
+uma por tecnologia, ninguém decora.
 
 Reunião sem tipo — todas as que já existem — **não** é avaliada sozinha.
 Ninguém escolheu tipo quando elas foram criadas, e assumir um seria inventar
@@ -183,6 +196,7 @@ Sem rotas novas. Mudam as que já existem:
 | `PUT /card-tasks/{id}` | Mesma coisa, na edição |
 | `POST /card-tasks/{id}/daily-room` | Convida quem está em `invited_emails` |
 | `POST /card-tasks/{id}/teams-meeting` | Idem |
+| `POST /card-tasks/{id}/fetch-transcript` | Depois de trazer a transcrição do Teams, avalia quando o tipo for Apresentação Phoebus |
 | `GET /reunioes` | Devolve o tipo em cada item e aceita o filtro por tipo |
 
 Chamada sem `invited_emails` — API, integração antiga — mantém o
@@ -223,4 +237,4 @@ escrita em lugar nenhum.
 - Régua diferente por tipo de reunião — a matriz da consultoria é uma só
 - Renomear reuniões antigas para o novo padrão
 - Salvar no cadastro do contato os e-mails digitados à mão
-- Avaliar automaticamente reunião do Teams (continua dependendo do clique de quem organizou)
+- Trazer a transcrição do Teams sem o clique de quem organizou — é limitação do Microsoft Graph, não escolha nossa
