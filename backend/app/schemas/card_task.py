@@ -1,8 +1,8 @@
 """
 Schemas Pydantic para CardTask (Tarefas/Atividades do Card).
 """
-from pydantic import BaseModel, ConfigDict, Field, validator
-from typing import Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, validator
+from typing import List, Optional
 from datetime import datetime
 from enum import Enum
 
@@ -52,6 +52,24 @@ class CardTaskCreate(BaseModel):
     contact_name: Optional[str] = Field(None, max_length=255, description="Nome do contato relacionado")
     status: TaskStatus = Field(TaskStatus.FREE, description="Status de disponibilidade (free, busy)")
 
+    meeting_kind: Optional[str] = Field(
+        None,
+        description="Tipo da reunião: apresentacao_phoebus, duvidas_phoebus, apresentacao, duvidas, outra",
+    )
+    invited_emails: Optional[List[EmailStr]] = Field(
+        None, description="Endereços que recebem o convite"
+    )
+
+    @field_validator("meeting_kind")
+    @classmethod
+    def tipo_precisa_existir(cls, valor):
+        """Tipo inventado viraria título estranho e nota fora do lugar."""
+        from app.services.reunioes.tipos import tipo_por_id
+
+        if valor is not None and tipo_por_id(valor) is None:
+            raise ValueError("Tipo de reunião desconhecido")
+        return valor
+
     model_config = ConfigDict(
         use_enum_values=True,
         json_schema_extra={
@@ -86,6 +104,24 @@ class CardTaskUpdate(BaseModel):
     contact_name: Optional[str] = Field(None, max_length=255)
     status: Optional[TaskStatus] = None
     is_completed: Optional[bool] = None
+
+    meeting_kind: Optional[str] = Field(
+        None,
+        description="Tipo da reunião: apresentacao_phoebus, duvidas_phoebus, apresentacao, duvidas, outra",
+    )
+    invited_emails: Optional[List[EmailStr]] = Field(
+        None, description="Endereços que recebem o convite"
+    )
+
+    @field_validator("meeting_kind")
+    @classmethod
+    def tipo_precisa_existir(cls, valor):
+        """Tipo inventado viraria título estranho e nota fora do lugar."""
+        from app.services.reunioes.tipos import tipo_por_id
+
+        if valor is not None and tipo_por_id(valor) is None:
+            raise ValueError("Tipo de reunião desconhecido")
+        return valor
 
     model_config = ConfigDict(
         use_enum_values=True,
@@ -146,6 +182,8 @@ class CardTaskResponse(BaseModel):
     duration_minutes: Optional[int] = Field(None, description="Duração em minutos")
     location: Optional[str] = Field(None, description="Local da atividade")
     video_link: Optional[str] = Field(None, description="Link de videochamada")
+    meeting_kind: Optional[str] = Field(None, description="Tipo da reunião")
+    invited_emails: Optional[List[str]] = Field(None, description="Quem recebeu o convite")
     notes: Optional[str] = Field(None, description="Notas adicionais")
     contact_name: Optional[str] = Field(None, description="Nome do contato")
     status: str = Field(..., description="Status de disponibilidade")

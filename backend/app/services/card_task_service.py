@@ -119,6 +119,16 @@ class CardTaskService:
                 )
             if task_data.assigned_to_id is None:
                 task_data.assigned_to_id = card.assigned_to_id
+
+            # O título padronizado é responsabilidade do servidor: a tela só
+            # mostra a prévia. Assim o padrão que a consultora pediu não
+            # depende de cada vendedor lembrar de escrever igual — nem de quem
+            # chama a API.
+            from app.services.reunioes.tipos import montar_titulo
+
+            titulo_padrao = montar_titulo(task_data.meeting_kind, card)
+            if titulo_padrao:
+                task_data.title = titulo_padrao
         elif task_data.assigned_to_id is None:
             task_data.assigned_to_id = current_user.id
 
@@ -244,6 +254,16 @@ class CardTaskService:
 
         # Verifica permissão: admin/manager sempre podem; salesperson/SDR apenas se forem o responsável
         self._check_task_permission(task, current_user)
+
+        # Trocar o tipo remonta o título; em "Outra" vale o que foi digitado.
+        if task_data.meeting_kind is not None:
+            from app.models.card import Card
+            from app.services.reunioes.tipos import montar_titulo
+
+            card = self.db.query(Card).filter(Card.id == task.card_id).first()
+            titulo_padrao = montar_titulo(task_data.meeting_kind, card)
+            if titulo_padrao:
+                task_data.title = titulo_padrao
 
         # Captura o responsável anterior para detectar reatribuição
         old_assigned_to_id = task.assigned_to_id
@@ -499,6 +519,8 @@ class CardTaskService:
             "meeting_provider": getattr(task, "meeting_provider", None),
             "daily_room_url": getattr(task, "daily_room_url", None),
             "public_access_token": getattr(task, "public_access_token", None),
+            "meeting_kind": getattr(task, "meeting_kind", None),
+            "invited_emails": getattr(task, "invited_emails", None),
             "meeting_started_at": getattr(task, "meeting_started_at", None),
             "contact_joined_at": getattr(task, "contact_joined_at", None),
             "meeting_ended_at": getattr(task, "meeting_ended_at", None),
