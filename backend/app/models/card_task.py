@@ -3,7 +3,7 @@ Modelo de CardTask (Tarefa/Atividade do Card).
 Representa atividades criadas pelos usuários: ligações, reuniões, tarefas, etc.
 Diferente de Activity que registra eventos de auditoria.
 """
-from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey, Text, DateTime, Boolean, Enum as SQLEnum
+from sqlalchemy import JSON, Column, Integer, BigInteger, String, ForeignKey, Text, DateTime, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -98,6 +98,13 @@ class CardTask(Base, TimestampMixin):
     # Reunião por vídeo dentro do CRM (Daily) — convive com o fluxo Teams acima.
     # meeting_provider nulo = reunião antiga do Teams (compatibilidade).
     meeting_provider = Column(String(20), nullable=True, comment="teams | daily | null (null = teams)")
+
+    # Tipo escolhido pelo vendedor ao criar a reunião. Nulo nas reuniões
+    # criadas antes de 09/2026 — e reunião sem tipo não é avaliada sozinha.
+    meeting_kind = Column(String(30), nullable=True, index=True)
+
+    # Endereços que receberam o convite, como escolhidos na criação
+    invited_emails = Column(JSON, nullable=True)
     daily_room_name = Column(String(255), nullable=True, comment="Nome único da sala no Daily")
     daily_room_url = Column(String(1000), nullable=True, comment="URL da sala no Daily")
     public_access_token = Column(String(64), nullable=True, index=True, unique=True,
