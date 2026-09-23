@@ -299,18 +299,27 @@ class MicrosoftGraphService:
         user: User,
         db: Session,
         event_id: str,
-        start_dt: datetime,
+        start_dt: Optional[datetime] = None,
         end_dt: Optional[datetime] = None,
+        title: Optional[str] = None,
     ) -> None:
         """
-        Atualiza o horário de um evento existente no calendário do Outlook via PATCH.
+        Atualiza horário e assunto de um evento existente no Outlook, via PATCH.
+
+        O `sendUpdates=all` é o que faz o Outlook avisar os participantes: o
+        cliente recebe "reunião atualizada" e a agenda dele se ajusta sozinha.
+
+        O assunto entrou aqui porque o título da reunião passou a vir do tipo
+        escolhido — muda com mais frequência, e o cliente veria o texto antigo.
 
         Raises:
-            ValueError: Se o usuário não tiver token MS válido ou a chamada falhar
+            ValueError: Se o usuário não tiver token MS válido ou a chamada
+                falhar. O evento pertence a quem criou a reunião, então o
+                Microsoft recusa a alteração feita por outra pessoa.
         """
         access_token = self._require_token(user, db)
 
-        if end_dt is None:
+        if start_dt is not None and end_dt is None:
             end_dt = start_dt + timedelta(hours=1)
 
         def to_iso(dt: datetime) -> str:
@@ -318,10 +327,17 @@ class MicrosoftGraphService:
                 dt = dt.replace(tzinfo=timezone.utc)
             return dt.strftime("%Y-%m-%dT%H:%M:%S")
 
-        payload = {
-            "start": {"dateTime": to_iso(start_dt), "timeZone": "UTC"},
-            "end": {"dateTime": to_iso(end_dt), "timeZone": "UTC"},
-        }
+        # Só vai o que mudou: mandar o horário numa edição de título faria o
+        # Outlook avisar o cliente de uma remarcação que não houve.
+        payload = {}
+        if start_dt is not None:
+            payload["start"] = {"dateTime": to_iso(start_dt), "timeZone": "UTC"}
+            payload["end"] = {"dateTime": to_iso(end_dt), "timeZone": "UTC"}
+        if title:
+            payload["subject"] = title
+
+        if not payload:
+            return
 
         try:
             with httpx.Client(timeout=15) as client:

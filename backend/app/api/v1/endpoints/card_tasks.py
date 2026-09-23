@@ -28,6 +28,10 @@ from app.services.cadence_service import CadenceService
 
 router = APIRouter()
 
+# Saudação do convite. Fica aqui, e não na tela, para o texto ser o mesmo na
+# prévia e no que o cliente recebe quando ninguém edita.
+MENSAGEM_PADRAO_DO_CONVITE = 'Olá!\n\nSua reunião com a Health & Safety Tech está agendada.'
+
 
 @router.get(
     "/sugestoes-de-reuniao",
@@ -64,6 +68,8 @@ def sugestoes_de_reuniao(
             for tipo in TIPOS
         ],
         "convidados": sugerir_convidados(db, card),
+        # A tela mostra este texto já preenchido; o vendedor edita se quiser.
+        "mensagem_padrao": MENSAGEM_PADRAO_DO_CONVITE,
     }
 
 
@@ -576,23 +582,37 @@ def update_task(
     service = CardTaskService(db)
     task = service.update_task(task_id, task_data, current_user)
 
-    # Se due_date foi alterada e a tarefa tem evento no calendário, reagenda automaticamente
-    if task_data.due_date is not None and task.teams_event_id:
+    # O evento no calendário precisa acompanhar data, duração e título: é ele
+    # que o cliente enxerga, e é o Outlook que avisa os participantes quando
+    # muda. O título entrou nesta conta porque agora ele vem do tipo da
+    # reunião e muda com mais frequência.
+    mudou_o_convite = any(
+        valor is not None
+        for valor in (task_data.due_date, task_data.duration_minutes, task_data.title)
+    )
+    calendario_desatualizado = False
+
+    if mudou_o_convite and task.teams_event_id:
         try:
             from app.services.microsoft_graph_service import microsoft_graph_service
             from datetime import timedelta
+
             duration = task.duration_minutes or 60
-            end_dt = task.due_date + timedelta(minutes=duration)
+            end_dt = task.due_date + timedelta(minutes=duration) if task.due_date else None
             microsoft_graph_service.update_calendar_event(
                 user=current_user,
                 db=db,
                 event_id=task.teams_event_id,
                 start_dt=task.due_date,
                 end_dt=end_dt,
+                title=task.title,
             )
         except Exception as e:
-            # Não bloqueia o update da tarefa se o calendário falhar
-            print(f"[CardTask] Aviso: não foi possível reagendar evento no calendário: {e}")
+            # Não bloqueia a edição, mas a tela avisa: o evento pertence a quem
+            # criou a reunião, então o Microsoft recusa a alteração de outra
+            # pessoa — e antes isso ficava só no log do servidor.
+            calendario_desatualizado = True
+            print(f"[CardTask] Aviso: não foi possível atualizar o evento no calendário: {e}")
 
     # Reunião do CRM reagendada: a sala precisa acompanhar a nova data. Sem
     # isto o convite continua válido no calendário e a sala expira antes —
@@ -639,6 +659,14 @@ def update_task(
     )
     db.add(audit_log)
     db.commit()
+
+    if calendario_desatualizado:
+        # O vendedor precisa saber que o cliente continua com os dados antigos
+        # — e que quem criou a reunião é quem consegue alterar o evento.
+        resposta = task.model_dump() if hasattr(task, "model_dump") else task
+        if isinstance(resposta, dict):
+            resposta["calendario_desatualizado"] = True
+            return resposta
 
     return task
 
@@ -1290,7 +1318,15 @@ def _montar_corpo_convite(
     # escapar, quem preenche esses campos poderia injetar marcação no convite —
     # inclusive um link disfarçado, que sairia com a credibilidade do domínio
     # da empresa para a caixa de entrada do cliente.
-    linhas = ["<p>Olá!</p>", "<p>Sua reunião com a <strong>Health &amp; Safety Tech</strong> está agendada.</p>"]
+    # O vendedor pode escrever a saudação; sem isso, vale o texto padrão.
+    mensagem = (task.invite_message or "").strip()
+    if mensagem:
+        linhas = [f"<p>{escape(mensagem).replace(chr(10), '<br>')}</p>"]
+    else:
+        linhas = [
+            "<p>Olá!</p>",
+            "<p>Sua reunião com a <strong>Health &amp; Safety Tech</strong> está agendada.</p>",
+        ]
 
     detalhes = [f"<strong>Assunto:</strong> {escape(task.title or '')}"]
 
@@ -1325,7 +1361,17 @@ def _montar_corpo_convite(
         )
 
     linhas.append("<p>Se precisar remarcar ou tiver qualquer dúvida, é só responder este convite.</p>")
-    linhas.append(f"<p>Até lá!<br>{escape(organizador.name or '')}<br>Health &amp; Safety Tech</p>")
+
+    # A assinatura que o vendedor já usa nos e-mails do CRM — o cliente vê a
+    # comunicação com a cara dele. Sem assinatura cadastrada, o rodapé de
+    # sempre.
+    assinatura = (getattr(organizador, "email_signature", "") or "").strip()
+    if assinatura:
+        linhas.append(f"<p>Até lá!</p>{assinatura}")
+    else:
+        linhas.append(
+            f"<p>Até lá!<br>{escape(organizador.name or '')}<br>Health &amp; Safety Tech</p>"
+        )
 
     return "".join(linhas)
 
@@ -1416,6 +1462,12 @@ def _agendar_evento_daily_no_outlook(
         body_html=body_html,
         is_online_meeting=False,
     )
+
+    # Sem guardar o id, remarcar a reunião não teria como alterar o evento — o
+    # cliente ficaria com o horário antigo na agenda e ninguém perceberia.
+    task.teams_event_id = resultado_do_convite.get("event_id", "")
+    db.commit()
+
     return resultado_do_convite.get("convidados_removidos", 0)
 
 

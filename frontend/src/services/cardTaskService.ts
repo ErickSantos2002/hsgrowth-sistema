@@ -37,6 +37,9 @@ export interface CardTask {
   /** Tipo da reunião; null nas criadas antes de 09/2026. */
   meeting_kind?: string | null;
   invited_emails?: string[] | null;
+  invite_message?: string | null;
+  /** A edição não chegou ao evento do calendário (quem criou é quem altera). */
+  calendario_desatualizado?: boolean;
   daily_room_url?: string | null;
   public_access_token?: string | null;
   meeting_started_at?: string | null;
@@ -127,6 +130,8 @@ export interface ConvidadoSugerido {
 export interface SugestoesDeReuniao {
   tipos: TipoDeReuniao[];
   convidados: ConvidadoSugerido[];
+  /** Saudação do convite, já preenchida na tela e editável. */
+  mensagem_padrao: string;
 }
 
 /** Uma fala da conversa, como o backend espera receber. */
@@ -155,6 +160,8 @@ export interface CreateCardTaskRequest {
   meeting_kind?: string;
   /** Quem recebe o convite. */
   invited_emails?: string[];
+  /** Saudação do convite; data, duração e link são do sistema. */
+  invite_message?: string;
 }
 
 export interface UpdateCardTaskRequest {
@@ -172,6 +179,7 @@ export interface UpdateCardTaskRequest {
   /** Trocar o tipo remonta o título no servidor. */
   meeting_kind?: string;
   invited_emails?: string[];
+  invite_message?: string;
 }
 
 export interface CardTaskListResponse {

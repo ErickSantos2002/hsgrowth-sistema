@@ -183,6 +183,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
   const [tipoEscolhido, setTipoEscolhido] = useState("apresentacao_phoebus");
   const [tipoEditado, setTipoEditado] = useState<string>("");
   const [convidados, setConvidados] = useState<string[]>([]);
+  const [mensagemDoConvite, setMensagemDoConvite] = useState("");
   const [form, setForm] = useState<NewMeetingForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
@@ -288,6 +289,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         setTiposDeReuniao(sugestoes.tipos);
         setConvidadosSugeridos(sugestoes.convidados);
         setConvidados(sugestoes.convidados.filter((c) => c.marcado).map((c) => c.email));
+        setMensagemDoConvite(sugestoes.mensagem_padrao || "");
       })
       .catch(() => {
         // Sem sugestões o vendedor ainda cria a reunião escolhendo "Outra" e
@@ -393,6 +395,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         description: form.description.trim() || undefined,
         meeting_kind: tiposDeReuniao.length > 0 ? tipoEscolhido : undefined,
         invited_emails: convidados,
+        invite_message: mensagemDoConvite.trim() || undefined,
       });
       setShowModal(false);
       setForm(EMPTY_FORM);
@@ -555,7 +558,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     try {
       setSavingEdit(true);
       const dueDateUTC = convertBrazilToUTC(editForm.date, editForm.time);
-      await cardTaskService.update(editingMeeting.id, {
+      const atualizada = await cardTaskService.update(editingMeeting.id, {
         title: editForm.title.trim(),
         due_date: dueDateUTC,
         duration_minutes: parseInt(editForm.duration) || 30,
@@ -566,6 +569,14 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         meeting_kind: tipoEditado || undefined,
       });
       showSuccess("Reunião atualizada!");
+      if (atualizada?.calendario_desatualizado) {
+        // O evento pertence a quem criou a reunião: o Microsoft recusa a
+        // alteração de outra pessoa, e o cliente fica com os dados antigos.
+        showError(
+          "A reunião foi atualizada no CRM, mas o convite do cliente não mudou — " +
+            "quem criou a reunião precisa fazer essa alteração."
+        );
+      }
       setEditingMeeting(null);
       await loadMeetings();
     } catch (error: any) {
@@ -1661,6 +1672,21 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
             marcados={convidados}
             onChange={setConvidados}
           />
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              Mensagem do convite
+            </label>
+            <textarea
+              value={mensagemDoConvite}
+              onChange={(e) => setMensagemDoConvite(e.target.value)}
+              rows={3}
+              className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+            />
+            <p className="mt-1 text-[11px] text-slate-500">
+              Data, duração e o link da sala entram automaticamente, junto da sua assinatura.
+            </p>
+          </div>
 
           {/* Duração e Contato */}
           <div className="grid grid-cols-2 gap-3">

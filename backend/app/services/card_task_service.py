@@ -513,6 +513,9 @@ class CardTaskService:
             # Microsoft Teams
             "teams_meeting_id": task.teams_meeting_id if hasattr(task, 'teams_meeting_id') else None,
             "teams_join_url": task.teams_join_url if hasattr(task, 'teams_join_url') else None,
+            # Sem este campo na resposta, o reagendamento não achava o evento
+            # e o cliente ficava com o horário antigo — sem erro nenhum.
+            "teams_event_id": getattr(task, "teams_event_id", None),
             "transcript_raw": task.transcript_raw if hasattr(task, 'transcript_raw') else None,
             "transcript_analysis": task.transcript_analysis if hasattr(task, 'transcript_analysis') else None,
             # Reunião por vídeo dentro do CRM (Daily)
@@ -521,6 +524,7 @@ class CardTaskService:
             "public_access_token": getattr(task, "public_access_token", None),
             "meeting_kind": getattr(task, "meeting_kind", None),
             "invited_emails": getattr(task, "invited_emails", None),
+            "invite_message": getattr(task, "invite_message", None),
             "meeting_started_at": getattr(task, "meeting_started_at", None),
             "contact_joined_at": getattr(task, "contact_joined_at", None),
             "meeting_ended_at": getattr(task, "meeting_ended_at", None),

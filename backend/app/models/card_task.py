@@ -105,6 +105,10 @@ class CardTask(Base, TimestampMixin):
 
     # Endereços que receberam o convite, como escolhidos na criação
     invited_emails = Column(JSON, nullable=True)
+
+    # Texto que o vendedor escreveu para o convite. Os blocos de data,
+    # duração e link continuam sendo montados pelo sistema.
+    invite_message = Column(Text, nullable=True)
     daily_room_name = Column(String(255), nullable=True, comment="Nome único da sala no Daily")
     daily_room_url = Column(String(1000), nullable=True, comment="URL da sala no Daily")
     public_access_token = Column(String(64), nullable=True, index=True, unique=True,

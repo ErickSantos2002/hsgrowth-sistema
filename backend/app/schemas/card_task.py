@@ -59,6 +59,9 @@ class CardTaskCreate(BaseModel):
     invited_emails: Optional[List[EmailStr]] = Field(
         None, description="Endereços que recebem o convite"
     )
+    invite_message: Optional[str] = Field(
+        None, description="Texto do convite; os blocos de data, duração e link são do sistema"
+    )
 
     @field_validator("meeting_kind")
     @classmethod
@@ -111,6 +114,9 @@ class CardTaskUpdate(BaseModel):
     )
     invited_emails: Optional[List[EmailStr]] = Field(
         None, description="Endereços que recebem o convite"
+    )
+    invite_message: Optional[str] = Field(
+        None, description="Texto do convite; os blocos de data, duração e link são do sistema"
     )
 
     @field_validator("meeting_kind")
@@ -184,9 +190,16 @@ class CardTaskResponse(BaseModel):
     video_link: Optional[str] = Field(None, description="Link de videochamada")
     meeting_kind: Optional[str] = Field(None, description="Tipo da reunião")
     invited_emails: Optional[List[str]] = Field(None, description="Quem recebeu o convite")
+    invite_message: Optional[str] = Field(None, description="Texto do convite")
     # Quantos endereços a trava de ambiente cortou do convite. Sem este campo
     # a tela não teria como avisar, e o vendedor acharia que convidou o cliente.
     convidados_removidos: int = Field(0, description="Endereços cortados pela trava de ambiente")
+    # A edição mexe no evento do Outlook, que pertence a quem criou a reunião:
+    # outra pessoa editando recebe recusa do Microsoft, e o cliente fica com os
+    # dados antigos sem ninguém saber.
+    calendario_desatualizado: bool = Field(
+        False, description="A alteração não chegou ao evento no calendário"
+    )
     notes: Optional[str] = Field(None, description="Notas adicionais")
     contact_name: Optional[str] = Field(None, description="Nome do contato")
     status: str = Field(..., description="Status de disponibilidade")
