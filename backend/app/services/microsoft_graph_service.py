@@ -160,6 +160,33 @@ class MicrosoftGraphService:
 
     # ==================== CALENDÁRIO + TEAMS ====================
 
+    def _filtrar_convidados(self, attendee_emails: Optional[list]) -> tuple:
+        """
+        Aplica a trava de ambiente e diz quantos endereços foram cortados.
+
+        `DAILY_DEV_MODE` existe para não disparar convite a cliente real em
+        homologação. O problema nunca foi a trava, e sim o silêncio: ela
+        removia os externos e registrava isso só no log do servidor, então o
+        vendedor achava que tinha convidado o cliente — foi o que o time
+        relatou em 22/09.
+
+        Returns:
+            (endereços que ficam, quantos foram removidos)
+        """
+        if not attendee_emails or not settings.DAILY_DEV_MODE:
+            return list(attendee_emails or []), 0
+
+        dominio = (settings.DAILY_INTERNAL_EMAIL_DOMAIN or "").lower()
+        restantes = [
+            e for e in attendee_emails
+            if e and e.lower().strip().endswith(f"@{dominio}")
+        ]
+        removidos = len(attendee_emails) - len(restantes)
+        if removidos:
+            print(f"[DAILY_DEV_MODE] {removidos} convidado(s) externo(s) removido(s) do convite.")
+
+        return restantes, removidos
+
     def create_calendar_event(
         self,
         user: User,
@@ -215,15 +242,7 @@ class MicrosoftGraphService:
         # Proteção de desenvolvimento: enquanto a reunião por vídeo não é
         # homologada, convite não sai para e-mail de cliente real. Ver seção
         # 15.8 do design — não existe ambiente de homologação separado.
-        if attendee_emails and settings.DAILY_DEV_MODE:
-            dominio = (settings.DAILY_INTERNAL_EMAIL_DOMAIN or "").lower()
-            filtrados = [e for e in attendee_emails if e and e.lower().strip().endswith(f"@{dominio}")]
-            removidos = len(attendee_emails) - len(filtrados)
-            if removidos:
-                print(
-                    f"[DAILY_DEV_MODE] {removidos} convidado(s) externo(s) removido(s) do convite."
-                )
-            attendee_emails = filtrados
+        attendee_emails, convidados_removidos = self._filtrar_convidados(attendee_emails)
 
         if attendee_emails:
             payload["attendees"] = [
@@ -249,7 +268,12 @@ class MicrosoftGraphService:
             # Reunião do Daily: o evento só reserva o horário e leva o link no
             # corpo — não há sala do Teams para resolver.
             if not is_online_meeting:
-                return {"meeting_id": "", "join_url": "", "event_id": data.get("id", "")}
+                return {
+                    "meeting_id": "",
+                    "join_url": "",
+                    "event_id": data.get("id", ""),
+                    "convidados_removidos": convidados_removidos,
+                }
 
             join_url = data.get("onlineMeeting", {}).get("joinUrl", "")
 
@@ -263,6 +287,7 @@ class MicrosoftGraphService:
                 "meeting_id": meeting_id,
                 "join_url": join_url,
                 "event_id": data.get("id", ""),
+                "convidados_removidos": convidados_removidos,
             }
         except ValueError:
             raise

@@ -184,6 +184,9 @@ class CardTaskResponse(BaseModel):
     video_link: Optional[str] = Field(None, description="Link de videochamada")
     meeting_kind: Optional[str] = Field(None, description="Tipo da reunião")
     invited_emails: Optional[List[str]] = Field(None, description="Quem recebeu o convite")
+    # Quantos endereços a trava de ambiente cortou do convite. Sem este campo
+    # a tela não teria como avisar, e o vendedor acharia que convidou o cliente.
+    convidados_removidos: int = Field(0, description="Endereços cortados pela trava de ambiente")
     notes: Optional[str] = Field(None, description="Notas adicionais")
     contact_name: Optional[str] = Field(None, description="Nome do contato")
     status: str = Field(..., description="Status de disponibilidade")

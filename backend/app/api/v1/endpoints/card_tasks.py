@@ -982,24 +982,28 @@ async def create_teams_meeting(
 
         end_dt = task.due_date + timedelta(minutes=duration)
 
-        # Coleta e-mails dos convidados: vendedor responsável + contato do card
-        attendee_emails = []
         card = db.query(Card).filter(Card.id == task.card_id).first()
 
-        # Vendedor (assigned_to) — convidado principal, a reunião deve aparecer no calendário dele
-        if card and card.assigned_to and card.assigned_to.email:
-            seller_email = card.assigned_to.email.strip()
-            # Não convida o próprio organizador (quem está criando a reunião)
-            if seller_email and seller_email != current_user.email:
-                attendee_emails.append(seller_email)
+        # Quem o vendedor marcou ao criar a reunião. Sem lista — chamada pela
+        # API, ou reunião criada antes desta mudança — vale o comportamento
+        # antigo: vendedor do negócio + os e-mails do contato.
+        if task.invited_emails:
+            attendee_emails = list(task.invited_emails)
+        else:
+            attendee_emails = []
 
-        # Contato do card (cliente/pessoa vinculada)
-        if card and card.person_id:
-            person = db.query(Person).filter(Person.id == card.person_id).first()
-            if person:
-                for email in [person.email, person.email_commercial, person.email_personal]:
-                    if email and email.strip() and email not in attendee_emails:
-                        attendee_emails.append(email.strip())
+            if card and card.assigned_to and card.assigned_to.email:
+                seller_email = card.assigned_to.email.strip()
+                # Não convida o próprio organizador (quem está criando a reunião)
+                if seller_email and seller_email != current_user.email:
+                    attendee_emails.append(seller_email)
+
+            if card and card.person_id:
+                person = db.query(Person).filter(Person.id == card.person_id).first()
+                if person:
+                    for email in [person.email, person.email_commercial, person.email_personal]:
+                        if email and email.strip() and email not in attendee_emails:
+                            attendee_emails.append(email.strip())
 
         result = microsoft_graph_service.create_calendar_event(
             user=current_user,
@@ -1023,7 +1027,10 @@ async def create_teams_meeting(
     db.refresh(task)
 
     service = CardTaskService(db)
-    return service.get_task(task_id)
+    resposta = service.get_task(task_id).model_dump()
+    # A tela avisa quando a trava de ambiente cortou alguém do convite.
+    resposta["convidados_removidos"] = result.get("convidados_removidos", 0)
+    return resposta
 
 
 @router.post(
@@ -1362,7 +1369,7 @@ def _agendar_evento_daily_no_outlook(
     task: CardTask,
     current_user: User,
     public_link: str,
-) -> None:
+) -> int:
     """
     Cria o evento no calendário do Outlook com o link da sala do Daily.
 
@@ -1376,22 +1383,30 @@ def _agendar_evento_daily_no_outlook(
     from app.services.microsoft_graph_service import microsoft_graph_service
     from app.models.card import Card
 
-    attendee_emails: list[str] = []
-
     card = db.query(Card).filter(Card.id == task.card_id).first()
-    if card and card.assigned_to and card.assigned_to.email:
-        seller_email = card.assigned_to.email.strip()
-        if seller_email and seller_email != current_user.email:
-            attendee_emails.append(seller_email)
 
-    if card and card.person:
-        for email in (card.person.email, card.person.email_commercial, card.person.email_personal):
-            if email and email.strip() and email.strip() not in attendee_emails:
-                attendee_emails.append(email.strip())
+    # Quem o vendedor marcou ao criar a reunião. Sem lista — chamada pela API,
+    # ou reunião criada antes desta mudança — vale o comportamento antigo.
+    if task.invited_emails:
+        attendee_emails: list[str] = list(task.invited_emails)
+    else:
+        attendee_emails = []
+
+        if card and card.assigned_to and card.assigned_to.email:
+            seller_email = card.assigned_to.email.strip()
+            if seller_email and seller_email != current_user.email:
+                attendee_emails.append(seller_email)
+
+        if card and card.person:
+            for email in (
+                card.person.email, card.person.email_commercial, card.person.email_personal
+            ):
+                if email and email.strip() and email.strip() not in attendee_emails:
+                    attendee_emails.append(email.strip())
 
     body_html = _montar_corpo_convite(task, current_user, public_link=public_link)
 
-    microsoft_graph_service.create_calendar_event(
+    resultado_do_convite = microsoft_graph_service.create_calendar_event(
         user=current_user,
         db=db,
         title=task.title,
@@ -1401,6 +1416,7 @@ def _agendar_evento_daily_no_outlook(
         body_html=body_html,
         is_online_meeting=False,
     )
+    return resultado_do_convite.get("convidados_removidos", 0)
 
 
 @router.post(
@@ -1447,7 +1463,9 @@ async def create_daily_room(
     public_link = f"{settings.FRONTEND_URL}/entrar/{task.public_access_token}"
 
     try:
-        _agendar_evento_daily_no_outlook(db, task, current_user, public_link)
+        convidados_removidos = _agendar_evento_daily_no_outlook(
+            db, task, current_user, public_link
+        )
     except ValueError:
         # Sem conta Microsoft: a decisão é bloquear (o convite é parte do fluxo).
         # Desfaz a sala para não deixar reunião pela metade.
@@ -1469,6 +1487,9 @@ async def create_daily_room(
         "room_url": task.daily_room_url,
         "public_link": public_link,
         "public_access_token": task.public_access_token,
+        # A tela avisa quando a trava de ambiente cortou alguém: sem isto, o
+        # vendedor acha que convidou o cliente e não convidou.
+        "convidados_removidos": convidados_removidos,
     }
 
 
