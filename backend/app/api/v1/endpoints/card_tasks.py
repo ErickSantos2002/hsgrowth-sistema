@@ -1204,6 +1204,14 @@ async def fetch_transcript(
         )
 
     db.commit()
+
+    # Apresentação Phoebus sai avaliada no mesmo clique: a transcrição do
+    # Teams só chega aqui, com o acesso de quem organizou a reunião. Antes o
+    # vendedor precisava clicar duas vezes para ter análise e avaliação.
+    from app.services.avaliacao_reuniao.automatica import avaliar_se_for_o_caso
+
+    avaliar_se_for_o_caso(db, task, vtt_content)
+
     db.refresh(task)
 
     service = CardTaskService(db)

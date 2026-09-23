@@ -553,10 +553,15 @@ AVALIACAO_DA_IA = {
 
 class TestAvaliacaoAutomatica:
     """
-    Reunião do CRM gravada já chega avaliada pelo roteiro, junto com a análise.
+    Reunião do CRM gravada, do tipo Apresentação Phoebus, já chega avaliada
+    pelo roteiro junto com a análise.
 
     O vendedor recebe o retorno sem precisar lembrar de clicar — e se
     discordar, "Reavaliar" continua no card (decisão de 21/09).
+
+    Quais tipos entram nessa conta é assunto de `test_avaliacao_automatica.py`;
+    aqui interessa que o processamento da gravação chama a avaliação e que uma
+    falha nela não desfaz a transcrição.
     """
 
     VTT = "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\n<v Ana>Bom dia\n"
@@ -579,7 +584,15 @@ class TestAvaliacaoAutomatica:
             processar_transcricao(task_id=task.id, transcript_id="t-1")
 
     def _gravada(self, db, task):
+        """
+        Gravada e do tipo que se avalia.
+
+        Desde 23/09 o tipo entrou na conta: reunião gravada só é avaliada se
+        for Apresentação Phoebus. As de dúvidas e as sem tipo ficam de fora —
+        a régua é de apresentação.
+        """
         task.recording_status = "ready"
+        task.meeting_kind = "apresentacao_phoebus"
         db.commit()
 
     def test_reuniao_gravada_chega_avaliada(self, db, task):
@@ -603,6 +616,8 @@ class TestAvaliacaoAutomatica:
 
     def test_reuniao_sem_gravacao_nao_e_avaliada(self, db, task):
         """Sem gravação não roda nem a análise — e nem a avaliação."""
+        task.meeting_kind = "apresentacao_phoebus"
+        db.commit()
         avaliar = MagicMock(return_value=AVALIACAO_DA_IA)
 
         self._processar(task, avaliar)
