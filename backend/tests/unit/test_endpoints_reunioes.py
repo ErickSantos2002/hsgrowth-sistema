@@ -540,3 +540,74 @@ class TestFiltrosSemVinculo:
 
         assert r.json()["total"] == 1
         assert r.json()["items"][0]["vendedor"] is None
+
+
+class TestTipoDaReuniao:
+    """
+    O recorte que a consultora vai querer: abrir a lista e ver só as
+    apresentações.
+    """
+
+    def test_item_traz_o_tipo_e_o_rotulo(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        task = criar_reuniao(db, test_card, test_salesperson_user, "Com tipo")
+        task.meeting_kind = "apresentacao_phoebus"
+        db.commit()
+
+        item = client.get("/api/v1/reunioes", headers=manager_headers).json()["items"][0]
+
+        assert item["tipo_reuniao"] == "apresentacao_phoebus"
+        assert item["tipo_reuniao_rotulo"] == "Apresentação Phoebus"
+
+    def test_reuniao_antiga_sem_tipo(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        criar_reuniao(db, test_card, test_salesperson_user, "Sem tipo")
+
+        item = client.get("/api/v1/reunioes", headers=manager_headers).json()["items"][0]
+
+        assert item["tipo_reuniao"] is None
+        assert item["tipo_reuniao_rotulo"] is None
+
+    def test_filtra_por_tipo(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        apresentacao = criar_reuniao(db, test_card, test_salesperson_user, "Apresentação")
+        apresentacao.meeting_kind = "apresentacao_phoebus"
+        duvidas = criar_reuniao(db, test_card, test_salesperson_user, "Dúvidas", dias_atras=1)
+        duvidas.meeting_kind = "duvidas"
+        db.commit()
+
+        r = client.get(
+            "/api/v1/reunioes?tipo_reuniao=apresentacao_phoebus", headers=manager_headers
+        )
+
+        assert r.json()["total"] == 1
+        assert r.json()["items"][0]["titulo"] == "Apresentação"
+
+    def test_filtrar_por_sem_tipo(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        """As reuniões de antes da mudança — o gestor precisa conseguir achá-las."""
+        com_tipo = criar_reuniao(db, test_card, test_salesperson_user, "Nova")
+        com_tipo.meeting_kind = "duvidas"
+        criar_reuniao(db, test_card, test_salesperson_user, "Antiga", dias_atras=1)
+        db.commit()
+
+        r = client.get("/api/v1/reunioes?tipo_reuniao=sem", headers=manager_headers)
+
+        assert r.json()["total"] == 1
+        assert r.json()["items"][0]["titulo"] == "Antiga"
+
+    def test_lista_de_tipos_para_o_seletor(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        criar_reuniao(db, test_card, test_salesperson_user, "A")
+
+        corpo = client.get("/api/v1/reunioes", headers=manager_headers).json()
+
+        ids = [t["id"] for t in corpo["tipos_de_reuniao"]]
+        assert ids == [
+            "apresentacao_phoebus", "duvidas_phoebus", "apresentacao", "duvidas", "outra"
+        ]

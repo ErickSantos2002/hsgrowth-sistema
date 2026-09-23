@@ -28,6 +28,7 @@ from app.models.card import Card
 from app.models.card_task import CardTask
 from app.models.meeting_evaluation import MeetingEvaluation
 from app.models.user import User
+from app.services.reunioes.tipos import TIPOS, tipo_por_id
 
 router = APIRouter()
 
@@ -132,6 +133,9 @@ def listar_reunioes(
         None, description="Id do SDR do negócio, ou 'sem' para negócios sem SDR"
     ),
     veredito: Optional[str] = None,
+    tipo_reuniao: Optional[str] = Query(
+        None, description="Id do tipo da reunião, ou 'sem' para reuniões sem tipo"
+    ),
     estado: Optional[str] = Query(
         None, pattern="^(todas|sem_gravacao|avaliadas|nao_avaliadas)$"
     ),
@@ -224,6 +228,11 @@ def listar_reunioes(
     if veredito:
         consulta = consulta.filter(MeetingEvaluation.veredito == veredito)
 
+    if tipo_reuniao == SEM_VINCULO:
+        consulta = consulta.filter(CardTask.meeting_kind.is_(None))
+    elif tipo_reuniao:
+        consulta = consulta.filter(CardTask.meeting_kind == tipo_reuniao)
+
     if estado == "avaliadas":
         consulta = consulta.filter(MeetingEvaluation.id.isnot(None))
     elif estado == "nao_avaliadas":
@@ -284,6 +293,10 @@ def listar_reunioes(
             "vendedor": responsavel.name if responsavel else None,
             "sdr": t.card.sdr.name if t.card and t.card.sdr else None,
             "tipo": _tipo(t),
+            "tipo_reuniao": t.meeting_kind,
+            "tipo_reuniao_rotulo": (
+                tipo_por_id(t.meeting_kind).rotulo if tipo_por_id(t.meeting_kind) else None
+            ),
             "quando": _quando(t),
             "duracao_minutos": (
                 int((t.meeting_ended_at - t.meeting_started_at).total_seconds() / 60)
@@ -313,4 +326,5 @@ def listar_reunioes(
         "por_sdr": por_sdr,
         "vendedores": vendedores,
         "sdrs": sdrs,
+        "tipos_de_reuniao": [{"id": tipo.id, "rotulo": tipo.rotulo} for tipo in TIPOS],
     }
