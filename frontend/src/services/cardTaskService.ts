@@ -34,6 +34,9 @@ export interface CardTask {
   teams_join_url?: string | null;
   // Reunião por vídeo dentro do CRM (Daily)
   meeting_provider?: string | null;
+  /** Tipo da reunião; null nas criadas antes de 09/2026. */
+  meeting_kind?: string | null;
+  invited_emails?: string[] | null;
   daily_room_url?: string | null;
   public_access_token?: string | null;
   meeting_started_at?: string | null;
@@ -105,6 +108,27 @@ export interface AvaliacaoDaReuniao {
   itens: ItemDaAvaliacao[];
 }
 
+/** Um tipo de reunião, com a prévia do título que ele monta. */
+export interface TipoDeReuniao {
+  id: string;
+  rotulo: string;
+  avaliado: boolean;
+  /** Prévia do título; null em "Outra", onde o vendedor escreve. */
+  titulo: string | null;
+}
+
+/** Um endereço que o sistema conhece para o convite. */
+export interface ConvidadoSugerido {
+  email: string;
+  rotulo: string;
+  marcado: boolean;
+}
+
+export interface SugestoesDeReuniao {
+  tipos: TipoDeReuniao[];
+  convidados: ConvidadoSugerido[];
+}
+
 /** Uma fala da conversa, como o backend espera receber. */
 export interface FalaParaIA {
   papel: "time" | "cliente";
@@ -127,6 +151,10 @@ export interface CreateCardTaskRequest {
   notes?: string;
   contact_name?: string;
   status?: "free" | "busy";
+  /** Tipo da reunião — o servidor monta o título a partir dele. */
+  meeting_kind?: string;
+  /** Quem recebe o convite. */
+  invited_emails?: string[];
 }
 
 export interface UpdateCardTaskRequest {
@@ -141,6 +169,9 @@ export interface UpdateCardTaskRequest {
   notes?: string;
   contact_name?: string;
   status?: "free" | "busy";
+  /** Trocar o tipo remonta o título no servidor. */
+  meeting_kind?: string;
+  invited_emails?: string[];
 }
 
 export interface CardTaskListResponse {
@@ -330,8 +361,22 @@ class CardTaskService {
    * Cria uma reunião no Microsoft Teams para a atividade e salva o link.
    * A atividade deve ser do tipo "meeting" e ter due_date definida.
    */
-  async createTeamsMeeting(taskId: number): Promise<CardTask> {
-    const response = await api.post<CardTask>(`/api/v1/card-tasks/${taskId}/teams-meeting`);
+  /**
+   * Tipos com a prévia do título e os endereços conhecidos para o convite.
+   *
+   * Vem do servidor para a prévia ser exatamente o título que será gravado.
+   */
+  async sugestoesDeReuniao(cardId: number): Promise<SugestoesDeReuniao> {
+    const response = await api.get("/api/v1/card-tasks/sugestoes-de-reuniao", {
+      params: { card_id: cardId },
+    });
+    return response.data;
+  }
+
+  async createTeamsMeeting(
+    taskId: number
+  ): Promise<CardTask & { convidados_removidos?: number }> {
+    const response = await api.post(`/api/v1/card-tasks/${taskId}/teams-meeting`);
     return response.data;
   }
 
@@ -348,6 +393,8 @@ class CardTaskService {
     room_url: string;
     public_link: string;
     public_access_token: string;
+    /** Quantos endereços a trava de ambiente cortou do convite. */
+    convidados_removidos?: number;
   }> {
     const response = await api.post(`/api/v1/card-tasks/${taskId}/daily-room`);
     return response.data;

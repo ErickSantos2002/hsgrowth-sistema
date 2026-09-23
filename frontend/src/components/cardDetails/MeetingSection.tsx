@@ -27,10 +27,13 @@ import {
 import cardTaskService, {
   AvaliacaoDaReuniao,
   CardTask,
+  ConvidadoSugerido,
   SugestaoDaIA,
+  TipoDeReuniao,
 } from "../../services/cardTaskService";
 import AssistSuggestion from "../meeting/AssistSuggestion";
 import MeetingEvaluation from "./MeetingEvaluation";
+import ConvidadosDaReuniao from "./ConvidadosDaReuniao";
 import userService from "../../services/userService";
 import { showSuccess, showError } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
@@ -172,6 +175,14 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
 
   // Modal nova reunião
   const [showModal, setShowModal] = useState(false);
+
+  // Tipos e convidados vêm do servidor: a prévia do título tem de ser
+  // exatamente o que vai ser gravado, e os e-mails saem de três cadastros.
+  const [tiposDeReuniao, setTiposDeReuniao] = useState<TipoDeReuniao[]>([]);
+  const [convidadosSugeridos, setConvidadosSugeridos] = useState<ConvidadoSugerido[]>([]);
+  const [tipoEscolhido, setTipoEscolhido] = useState("apresentacao_phoebus");
+  const [tipoEditado, setTipoEditado] = useState<string>("");
+  const [convidados, setConvidados] = useState<string[]>([]);
   const [form, setForm] = useState<NewMeetingForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
@@ -266,6 +277,26 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     loadMeetings(true);
   }, [cardId]);
 
+  // Sugestões do servidor, a cada abertura do modal: o cliente do negócio pode
+  // ter mudado desde a última vez.
+  useEffect(() => {
+    if (!showModal) return;
+
+    cardTaskService
+      .sugestoesDeReuniao(cardId)
+      .then((sugestoes) => {
+        setTiposDeReuniao(sugestoes.tipos);
+        setConvidadosSugeridos(sugestoes.convidados);
+        setConvidados(sugestoes.convidados.filter((c) => c.marcado).map((c) => c.email));
+      })
+      .catch(() => {
+        // Sem sugestões o vendedor ainda cria a reunião escolhendo "Outra" e
+        // digitando os destinatários.
+        setTiposDeReuniao([]);
+        setConvidadosSugeridos([]);
+      });
+  }, [showModal, cardId]);
+
   // Enquanto algo estiver sendo preparado, a lista se atualiza sozinha.
   // O processamento roda no servidor e nada avisa a tela quando termina — sem
   // isto, o vendedor precisa recarregar a página na mão para ver a gravação
@@ -319,9 +350,32 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     });
   };
 
+  /**
+   * A trava de ambiente corta convidados externos e, até 22/09, registrava
+   * isso só no log do servidor — o vendedor achava que tinha convidado o
+   * cliente. Agora ele descobre na hora.
+   */
+  const avisarConvidadosRemovidos = (quantos?: number) => {
+    if (!quantos) return;
+    showError(
+      `O convite não foi enviado para ${quantos} endereço(s) externo(s) ` +
+        "(modo de desenvolvimento ligado)."
+    );
+  };
+
   const handleCreate = async () => {
-    if (!form.title.trim() || !form.date || !form.time) {
-      showError("Título, data e hora são obrigatórios");
+    const precisaDeTitulo = tipoEscolhido === "outra" || tiposDeReuniao.length === 0;
+
+    if (!form.date || !form.time) {
+      showError("Data e hora são obrigatórias");
+      return;
+    }
+    if (precisaDeTitulo && !form.title.trim()) {
+      showError("Escreva o título da reunião");
+      return;
+    }
+    if (convidados.length === 0) {
+      showError("Marque pelo menos um destinatário do convite");
       return;
     }
     try {
@@ -329,12 +383,16 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
       const dueDateUTC = convertBrazilToUTC(form.date, form.time);
       const created = await cardTaskService.create({
         card_id: cardId,
-        title: form.title.trim(),
+        // Nos tipos fixos o servidor monta o título; aqui vai o que o vendedor
+        // digitou, que só é usado em "Outra".
+        title: form.title.trim() || "Reunião",
         task_type: "meeting",
         due_date: dueDateUTC,
         duration_minutes: parseInt(form.duration) || 30,
         contact_name: form.contact_name.trim() || undefined,
         description: form.description.trim() || undefined,
+        meeting_kind: tiposDeReuniao.length > 0 ? tipoEscolhido : undefined,
+        invited_emails: convidados,
       });
       setShowModal(false);
       setForm(EMPTY_FORM);
@@ -343,9 +401,11 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
       // Outlook e o horário bloqueia a agenda do vendedor.
       if (dailyEnabled && meetingProvider === "daily") {
         try {
-          const { public_link } = await cardTaskService.createDailyRoom(created.id);
+          const { public_link, convidados_removidos } =
+            await cardTaskService.createDailyRoom(created.id);
           await navigator.clipboard.writeText(public_link).catch(() => {});
           showSuccess("Reunião criada! O convite foi enviado e o link do cliente está copiado.");
+          avisarConvidadosRemovidos(convidados_removidos);
         } catch (error: any) {
           // 400 = sem conta Microsoft conectada (bloqueia, por decisão)
           // 503 = Daily indisponível (a mensagem já sugere usar o Teams)
@@ -356,8 +416,9 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         }
       } else {
         try {
-          await cardTaskService.createTeamsMeeting(created.id);
+          const { convidados_removidos } = await cardTaskService.createTeamsMeeting(created.id);
           showSuccess("Reunião criada e agendada no calendário!");
+          avisarConvidadosRemovidos(convidados_removidos);
         } catch {
           // Se falhar (ex: usuário sem MS token), avisa mas não bloqueia
           showSuccess("Reunião criada! Ative o link Teams manualmente se necessário.");
@@ -473,6 +534,15 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     } else {
       setEditForm({ ...EMPTY_FORM, title: meeting.title || "" });
     }
+    // Reunião antiga não tem tipo: fica em "Outra", com o título como está —
+    // nunca inventamos um tipo que ninguém escolheu.
+    setTipoEditado(meeting.meeting_kind || "outra");
+    if (tiposDeReuniao.length === 0) {
+      cardTaskService
+        .sugestoesDeReuniao(cardId)
+        .then((sugestoes) => setTiposDeReuniao(sugestoes.tipos))
+        .catch(() => setTiposDeReuniao([]));
+    }
     setEditingMeeting(meeting);
   };
 
@@ -491,6 +561,9 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         duration_minutes: parseInt(editForm.duration) || 30,
         contact_name: editForm.contact_name.trim() || undefined,
         description: editForm.description.trim() || undefined,
+        // Trocar o tipo remonta o título no servidor; em "Outra" vale o
+        // texto digitado aqui.
+        meeting_kind: tipoEditado || undefined,
       });
       showSuccess("Reunião atualizada!");
       setEditingMeeting(null);
@@ -1338,6 +1411,34 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         size="md"
       >
         <div className="space-y-4">
+          {tiposDeReuniao.length > 0 && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Tipo de reunião
+              </label>
+              <select
+                value={tipoEditado}
+                onChange={(e) => setTipoEditado(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+              >
+                {tiposDeReuniao.map((tipo) => (
+                  <option key={tipo.id} value={tipo.id}>
+                    {tipo.rotulo}
+                    {tipo.avaliado ? " · avaliada pelo roteiro" : ""}
+                  </option>
+                ))}
+              </select>
+              {/* Trocar o tipo remonta o título no servidor — o vendedor vê
+                  antes de salvar o que o título vai virar. */}
+              {tipoEditado !== "outra" && (
+                <p className="mt-1 text-[11px] text-slate-500">
+                  O título passa a ser{" "}
+                  {tiposDeReuniao.find((t) => t.id === tipoEditado)?.titulo || "—"}.
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-400">
               Título <span className="text-red-400">*</span>
@@ -1480,20 +1581,54 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
             </div>
           )}
 
-          {/* Título */}
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">
-              Título <span className="text-red-400">*</span>
-            </label>
-            <input
-              autoFocus
-              type="text"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Ex: Apresentação de proposta"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-            />
-          </div>
+          {/* Tipo da reunião — é ele que decide o título e o que é avaliado */}
+          {tiposDeReuniao.length > 0 && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Tipo de reunião <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={tipoEscolhido}
+                onChange={(e) => setTipoEscolhido(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+              >
+                {tiposDeReuniao.map((tipo) => (
+                  <option key={tipo.id} value={tipo.id}>
+                    {tipo.rotulo}
+                    {tipo.avaliado ? " · avaliada pelo roteiro" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Título: digitado em "Outra", montado nos demais */}
+          {tipoEscolhido === "outra" || tiposDeReuniao.length === 0 ? (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Título <span className="text-red-400">*</span>
+              </label>
+              <input
+                autoFocus
+                type="text"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="Ex: Alinhamento com a equipe técnica"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                Título da reunião
+              </label>
+              {/* O vendedor vê o que o cliente vai receber, sem poder digitar
+                  errado — o padrão é o que a consultora pediu. */}
+              <p className="rounded-lg border border-slate-700/60 bg-slate-800/40 px-3 py-2 text-sm text-slate-400">
+                {tiposDeReuniao.find((t) => t.id === tipoEscolhido)?.titulo || "—"}
+              </p>
+            </div>
+          )}
 
           {/* Data e Hora */}
           <div className="grid grid-cols-2 gap-3">
@@ -1520,6 +1655,12 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
               />
             </div>
           </div>
+
+          <ConvidadosDaReuniao
+            sugeridos={convidadosSugeridos}
+            marcados={convidados}
+            onChange={setConvidados}
+          />
 
           {/* Duração e Contato */}
           <div className="grid grid-cols-2 gap-3">
