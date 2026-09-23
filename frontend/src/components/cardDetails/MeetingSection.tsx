@@ -1684,8 +1684,23 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
               className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
             />
             <p className="mt-1 text-[11px] text-slate-500">
-              Data, duração e o link da sala entram automaticamente, junto da sua assinatura.
+              Data, duração e o link da sala entram automaticamente.
             </p>
+
+            {/* A assinatura vai no rodapé do convite, como no e-mail — mostrar
+                aqui evita a dúvida de como o cliente vai receber. */}
+            {user?.email_signature && (
+              <div className="mt-2 overflow-hidden rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2">
+                <p className="mb-2 text-[11px] text-slate-400">
+                  Assinatura (adicionada automaticamente)
+                </p>
+                <div
+                  className="max-w-full text-sm text-slate-300 [&_img]:max-w-full [&_table]:max-w-full [&_td]:max-w-full"
+                  style={{ overflowX: "hidden" }}
+                  dangerouslySetInnerHTML={{ __html: user.email_signature }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Duração e Contato */}
