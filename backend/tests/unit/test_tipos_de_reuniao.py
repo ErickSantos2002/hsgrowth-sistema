@@ -15,8 +15,9 @@ from app.services.reunioes.tipos import (
 
 
 class _Cliente:
-    def __init__(self, company_name=None):
+    def __init__(self, company_name=None, name=None):
         self.company_name = company_name
+        self.name = name
 
 
 class _Card:
@@ -64,11 +65,27 @@ class TestNomeDaEmpresa:
 
         assert nome_da_empresa(card) == "RS TRANSPORTES E LOGISTICA LTDA"
 
-    def test_sem_razao_social_usa_o_nome_do_negocio(self):
+    def test_sem_razao_social_usa_o_nome_do_cadastro(self):
+        """
+        É onde o nome da empresa costuma estar de verdade.
+
+        Em 23/09 um cliente com "Teste" no nome e razão social vazia fez a
+        reunião nascer com o nome do negócio no título.
+        """
+        card = _Card(title="Negócio de teste", client=_Cliente(company_name="", name="Teste"))
+
+        assert nome_da_empresa(card) == "Teste"
+
+    def test_cliente_sem_nome_nenhum_usa_o_nome_do_negocio(self):
         """O card costuma se chamar como a empresa — é o que o vendedor digitou."""
-        card = _Card(title="CONCRENORTE", client=_Cliente(""))
+        card = _Card(title="CONCRENORTE", client=_Cliente(company_name="", name=""))
 
         assert nome_da_empresa(card) == "CONCRENORTE"
+
+    def test_razao_social_tem_prioridade_sobre_o_nome(self):
+        card = _Card(client=_Cliente(company_name="CONCRENORTE LTDA", name="Concrenorte"))
+
+        assert nome_da_empresa(card) == "CONCRENORTE LTDA"
 
     def test_sem_cliente_vinculado_usa_o_nome_do_negocio(self):
         card = _Card(title="PIRECAL", client=None)

@@ -52,19 +52,26 @@ def e_avaliado(tipo_id: Optional[str]) -> bool:
 
 def nome_da_empresa(card) -> str:
     """
-    A razão social do cliente; faltando, o nome do negócio.
+    O nome do cliente; faltando, o nome do negócio.
 
-    O card costuma se chamar como a empresa ("RS TRANSPORTES E LOGISTICA
-    LTDA"), então a reunião sempre nasce com nome — sem travar quem só quer
-    agendar.
+    Vale a razão social e, quando ela está vazia, o nome do cadastro — é a
+    mesma regra do `Client.display_name`, e é onde o nome da empresa costuma
+    estar de verdade: em 23/09 um cliente com "Teste" no nome e razão social
+    vazia fez a reunião nascer com o nome do negócio no título.
+
+    Sem cliente nenhum, sobra o nome do negócio, que costuma ser o nome da
+    empresa ("RS TRANSPORTES E LOGISTICA LTDA") — assim a reunião sempre nasce
+    com nome, sem travar quem só quer agendar.
     """
     if card is None:
         return ""
 
     cliente = getattr(card, "client", None)
-    razao_social = (getattr(cliente, "company_name", "") or "").strip()
-    if razao_social:
-        return razao_social
+    if cliente is not None:
+        for campo in ("company_name", "name"):
+            valor = (getattr(cliente, campo, "") or "").strip()
+            if valor:
+                return valor
 
     return (getattr(card, "title", "") or "").strip()
 
