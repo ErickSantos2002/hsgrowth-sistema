@@ -6,7 +6,7 @@ import reunioesService, {
   FiltrosDeReunioes,
   RespostaDeReunioes,
 } from "../services/reunioesService";
-import { EmptyState, LoadingSpinner, Pagination } from "../components/common";
+import { EmptyState, LoadingSpinner, Pagination, SelectMenu } from "../components/common";
 import ReunioesKpis from "../components/reunioes/ReunioesKpis";
 import QuadroPorPessoa, { VisaoDoQuadro } from "../components/reunioes/QuadroPorPessoa";
 import { OPCOES_DE_PERIODO, Periodo, datasDoPeriodo } from "../utils/periodo";
@@ -62,6 +62,7 @@ const ReunioesPage: React.FC = () => {
   const [vendedor, setVendedor] = useState("");
   const [sdr, setSdr] = useState("");
   const [tipoReuniao, setTipoReuniao] = useState("");
+  const [canal, setCanal] = useState("");
   const [visaoDoQuadro, setVisaoDoQuadro] = useState<VisaoDoQuadro>("vendedor");
   const [pagina, setPagina] = useState(1);
 
@@ -81,6 +82,7 @@ const ReunioesPage: React.FC = () => {
           vendedor: vendedor || undefined,
           sdr: sdr || undefined,
           tipo_reuniao: tipoReuniao || undefined,
+          canal: canal || undefined,
         })
       );
     } catch {
@@ -90,6 +92,7 @@ const ReunioesPage: React.FC = () => {
     }
   }, [
     pagina, periodo, inicioPersonalizado, fimPersonalizado, estado, vendedor, sdr, tipoReuniao,
+    canal,
   ]);
 
   useEffect(() => {
@@ -107,6 +110,7 @@ const ReunioesPage: React.FC = () => {
     vendedor,
     sdr,
     tipoReuniao,
+    canal,
     estado,
     periodo !== PERIODO_PADRAO ? periodo : "",
   ].filter(Boolean).length;
@@ -172,86 +176,94 @@ const ReunioesPage: React.FC = () => {
             {ehGestor && (
               <div className="min-w-[170px] flex-1">
                 <label className={rotulo}>Vendedor</label>
-                <select
+                <SelectMenu
+                  size="sm"
                   value={vendedor}
-                  onChange={(e) => aoFiltrar(() => setVendedor(e.target.value))}
-                  className={campo}
-                >
-                  <option value="">Todos os vendedores</option>
-                  <option value="sem">Sem vendedor</option>
-                  {dados?.vendedores.map((v) => (
-                    <option key={v.id} value={String(v.id)}>
-                      {v.nome}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: "", label: "Todos os vendedores" },
+                    { value: "sem", label: "Sem vendedor" },
+                    ...(dados?.vendedores ?? []).map((v) => ({
+                      value: String(v.id),
+                      label: v.nome,
+                    })),
+                  ]}
+                  onChange={(valor) => aoFiltrar(() => setVendedor(valor))}
+                />
               </div>
             )}
 
             {ehGestor && (
               <div className="min-w-[170px] flex-1">
                 <label className={rotulo}>SDR</label>
-                <select
+                <SelectMenu
+                  size="sm"
                   value={sdr}
-                  onChange={(e) => aoFiltrar(() => setSdr(e.target.value))}
-                  className={campo}
-                >
-                  <option value="">Todos os SDRs</option>
-                  <option value="sem">Sem SDR</option>
-                  {dados?.sdrs.map((s) => (
-                    <option key={s.id} value={String(s.id)}>
-                      {s.nome}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: "", label: "Todos os SDRs" },
+                    { value: "sem", label: "Sem SDR" },
+                    ...(dados?.sdrs ?? []).map((s) => ({
+                      value: String(s.id),
+                      label: s.nome,
+                    })),
+                  ]}
+                  onChange={(valor) => aoFiltrar(() => setSdr(valor))}
+                />
+              </div>
+            )}
+
+            {/* De onde veio o negócio: liga a reunião ao marketing — quais
+                canais trazem conversa que anda. */}
+            {ehGestor && (
+              <div className="min-w-[170px] flex-1">
+                <label className={rotulo}>Canal de aquisição</label>
+                <SelectMenu
+                  size="sm"
+                  value={canal}
+                  options={[
+                    { value: "", label: "Todos os canais" },
+                    { value: "sem", label: "Sem canal" },
+                    ...(dados?.canais ?? []).map((c) => ({ value: c, label: c })),
+                  ]}
+                  onChange={(valor) => aoFiltrar(() => setCanal(valor))}
+                />
               </div>
             )}
 
             <div className="min-w-[170px] flex-1">
-              <label className={rotulo}>Estado</label>
-              <select
-                value={estado}
-                onChange={(e) => aoFiltrar(() => setEstado(e.target.value))}
-                className={campo}
-              >
-                {ESTADOS.map((opcao) => (
-                  <option key={opcao.value} value={opcao.value}>
-                    {opcao.label}
-                  </option>
-                ))}
-              </select>
+              <label className={rotulo}>Tipo de reunião</label>
+              <SelectMenu
+                size="sm"
+                value={tipoReuniao}
+                options={[
+                  { value: "", label: "Todos os tipos" },
+                  { value: "sem", label: "Sem tipo" },
+                  ...(dados?.tipos_de_reuniao ?? []).map((t) => ({
+                    value: t.id,
+                    label: t.rotulo,
+                  })),
+                ]}
+                onChange={(valor) => aoFiltrar(() => setTipoReuniao(valor))}
+              />
             </div>
 
             <div className="min-w-[170px] flex-1">
-              <label className={rotulo}>Tipo de reunião</label>
-              <select
-                value={tipoReuniao}
-                onChange={(e) => aoFiltrar(() => setTipoReuniao(e.target.value))}
-                className={campo}
-              >
-                <option value="">Todos os tipos</option>
-                <option value="sem">Sem tipo</option>
-                {dados?.tipos_de_reuniao.map((tipo) => (
-                  <option key={tipo.id} value={tipo.id}>
-                    {tipo.rotulo}
-                  </option>
-                ))}
-              </select>
+              <label className={rotulo}>Estado</label>
+              <SelectMenu
+                size="sm"
+                value={estado}
+                options={ESTADOS}
+                onChange={(valor) => aoFiltrar(() => setEstado(valor))}
+              />
             </div>
 
             <div className="min-w-[170px] flex-1">
               <label className={rotulo}>Período</label>
-              <select
+              <SelectMenu
+                size="sm"
                 value={periodo}
-                onChange={(e) => aoFiltrar(() => setPeriodo(e.target.value as Periodo))}
-                className={campo}
-              >
-                {OPCOES_DE_PERIODO.map((opcao) => (
-                  <option key={opcao.value} value={opcao.value}>
-                    {opcao.label}
-                  </option>
-                ))}
-              </select>
+                options={OPCOES_DE_PERIODO}
+                onChange={(valor) => aoFiltrar(() => setPeriodo(valor as Periodo))}
+              />
             </div>
 
             {periodo === "custom" && (
@@ -331,6 +343,7 @@ const ReunioesPage: React.FC = () => {
                     <th className={cabecalho}>SDR</th>
                     <th className={cabecalho}>Onde</th>
                     <th className={cabecalho}>Tipo</th>
+                    <th className={cabecalho}>Canal</th>
                     <th className={cabecalho}>Duração</th>
                     <th className={cabecalho}>Avaliada</th>
                     <th className={cabecalho}>Estado</th>
@@ -360,6 +373,9 @@ const ReunioesPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400">
                         {r.tipo_reuniao_rotulo || "—"}
+                      </td>
+                      <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400">
+                        {r.canal || "—"}
                       </td>
                       <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400">
                         {r.duracao_minutos ? `${r.duracao_minutos} min` : "—"}

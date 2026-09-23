@@ -13,6 +13,8 @@ export interface ReuniaoDaLista {
   /** O assunto da reunião, como escolhido na criação. */
   tipo_reuniao: string | null;
   tipo_reuniao_rotulo: string | null;
+  /** De onde veio o negócio. */
+  canal: string | null;
   quando: string | null;
   duracao_minutos: number | null;
   avaliada: boolean;
@@ -51,6 +53,8 @@ export interface RespostaDeReunioes {
   vendedores: PessoaDoFiltro[];
   sdrs: PessoaDoFiltro[];
   tipos_de_reuniao: { id: string; rotulo: string }[];
+  /** Canais que aparecem no período — enche o seletor. */
+  canais: string[];
 }
 
 export interface FiltrosDeReunioes {
@@ -65,6 +69,8 @@ export interface FiltrosDeReunioes {
   veredito?: string;
   /** Id do tipo, ou "sem" para reuniões de antes do padrão. */
   tipo_reuniao?: string;
+  /** Canal de aquisição, ou "sem" para negócios sem canal. */
+  canal?: string;
   estado?: "todas" | "sem_gravacao" | "avaliadas" | "nao_avaliadas";
 }
 

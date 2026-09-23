@@ -611,3 +611,135 @@ class TestTipoDaReuniao:
         assert ids == [
             "apresentacao_phoebus", "duvidas_phoebus", "apresentacao", "duvidas", "outra"
         ]
+
+
+class TestCanalDeAquisicao:
+    """
+    De onde veio o negócio da reunião.
+
+    É a leitura que liga a reunião ao marketing: quais canais trazem conversa
+    que anda, e não só quantos leads entraram.
+    """
+
+    def test_item_traz_o_canal_do_negocio(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        test_card.acquisition_channel = "Inbound"
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "De inbound")
+
+        item = client.get("/api/v1/reunioes", headers=manager_headers).json()["items"][0]
+
+        assert item["canal"] == "Inbound"
+
+    def test_negocio_sem_canal(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        test_card.acquisition_channel = None
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "Sem canal")
+
+        item = client.get("/api/v1/reunioes", headers=manager_headers).json()["items"][0]
+
+        assert item["canal"] is None
+
+    def test_filtra_por_canal(
+        self, client: TestClient, manager_headers, db, test_lists, test_card,
+        test_salesperson_user
+    ):
+        from app.models.card import Card
+
+        test_card.acquisition_channel = "Inbound"
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "De inbound")
+
+        outro = Card(
+            title="Negócio de outbound",
+            list_id=test_lists[0].id,
+            assigned_to_id=test_salesperson_user.id,
+            position=7,
+            acquisition_channel="Outbound",
+        )
+        db.add(outro)
+        db.commit()
+        criar_reuniao(db, outro, test_salesperson_user, "De outbound", dias_atras=1)
+
+        r = client.get("/api/v1/reunioes?canal=Inbound", headers=manager_headers)
+
+        assert r.json()["total"] == 1
+        assert r.json()["items"][0]["titulo"] == "De inbound"
+
+    def test_filtrar_os_sem_canal(
+        self, client: TestClient, manager_headers, db, test_lists, test_card,
+        test_salesperson_user
+    ):
+        from app.models.card import Card
+
+        test_card.acquisition_channel = "Inbound"
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "Com canal")
+
+        sem_canal = Card(
+            title="Negócio sem canal",
+            list_id=test_lists[0].id,
+            assigned_to_id=test_salesperson_user.id,
+            position=8,
+        )
+        db.add(sem_canal)
+        db.commit()
+        criar_reuniao(db, sem_canal, test_salesperson_user, "Sem canal", dias_atras=1)
+
+        r = client.get("/api/v1/reunioes?canal=sem", headers=manager_headers)
+
+        assert r.json()["total"] == 1
+        assert r.json()["items"][0]["titulo"] == "Sem canal"
+
+    def test_lista_de_canais_para_o_seletor(
+        self, client: TestClient, manager_headers, db, test_lists, test_card,
+        test_salesperson_user
+    ):
+        """Só os canais que aparecem no período — a lista acompanha os dados."""
+        from app.models.card import Card
+
+        test_card.acquisition_channel = "Outbound"
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "A")
+
+        outro = Card(
+            title="Outro negócio",
+            list_id=test_lists[0].id,
+            assigned_to_id=test_salesperson_user.id,
+            position=9,
+            acquisition_channel="Indicação",
+        )
+        db.add(outro)
+        db.commit()
+        criar_reuniao(db, outro, test_salesperson_user, "B", dias_atras=1)
+
+        corpo = client.get("/api/v1/reunioes", headers=manager_headers).json()
+
+        assert corpo["canais"] == ["Indicação", "Outbound"]
+
+    def test_canal_repetido_aparece_uma_vez(
+        self, client: TestClient, manager_headers, db, test_card, test_salesperson_user
+    ):
+        test_card.acquisition_channel = "Inbound"
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "A")
+        criar_reuniao(db, test_card, test_salesperson_user, "B", dias_atras=1)
+
+        corpo = client.get("/api/v1/reunioes", headers=manager_headers).json()
+
+        assert corpo["canais"] == ["Inbound"]
+
+    def test_vendedor_nao_recebe_a_lista_de_canais(
+        self, client: TestClient, salesperson_headers, db, test_card, test_salesperson_user
+    ):
+        """Como os outros seletores, o filtro de canal é do gestor."""
+        test_card.acquisition_channel = "Inbound"
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "A")
+
+        corpo = client.get("/api/v1/reunioes", headers=salesperson_headers).json()
+
+        assert corpo["canais"] == []

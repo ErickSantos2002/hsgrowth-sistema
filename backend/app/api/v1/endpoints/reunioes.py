@@ -136,6 +136,9 @@ def listar_reunioes(
     tipo_reuniao: Optional[str] = Query(
         None, description="Id do tipo da reunião, ou 'sem' para reuniões sem tipo"
     ),
+    canal: Optional[str] = Query(
+        None, description="Canal de aquisição do negócio, ou 'sem' para os sem canal"
+    ),
     estado: Optional[str] = Query(
         None, pattern="^(todas|sem_gravacao|avaliadas|nao_avaliadas)$"
     ),
@@ -183,16 +186,21 @@ def listar_reunioes(
     # preso naquele nome.
     vendedores = []
     sdrs = []
+    canais = []
     do_periodo = consulta.all() if e_gestor else []
     if e_gestor:
         vistos_vendedor = {}
         vistos_sdr = {}
+        vistos_canal = set()
         for t in do_periodo:
             responsavel = _responsavel(t)
             if responsavel:
                 vistos_vendedor[responsavel.id] = responsavel.name
             if t.card and t.card.sdr:
                 vistos_sdr[t.card.sdr.id] = t.card.sdr.name
+            if t.card and (t.card.acquisition_channel or "").strip():
+                vistos_canal.add(t.card.acquisition_channel.strip())
+        canais = sorted(vistos_canal)
         vendedores = [
             {"id": i, "nome": nome}
             for i, nome in sorted(vistos_vendedor.items(), key=lambda x: x[1])
@@ -232,6 +240,15 @@ def listar_reunioes(
         consulta = consulta.filter(CardTask.meeting_kind.is_(None))
     elif tipo_reuniao:
         consulta = consulta.filter(CardTask.meeting_kind == tipo_reuniao)
+
+    # De onde veio o negócio. É a leitura que liga a reunião ao marketing:
+    # quais canais trazem conversa que anda.
+    if canal == SEM_VINCULO:
+        consulta = consulta.filter(
+            or_(Card.acquisition_channel.is_(None), Card.acquisition_channel == "")
+        )
+    elif canal:
+        consulta = consulta.filter(Card.acquisition_channel == canal)
 
     if estado == "avaliadas":
         consulta = consulta.filter(MeetingEvaluation.id.isnot(None))
@@ -293,6 +310,7 @@ def listar_reunioes(
             "vendedor": responsavel.name if responsavel else None,
             "sdr": t.card.sdr.name if t.card and t.card.sdr else None,
             "tipo": _tipo(t),
+            "canal": (t.card.acquisition_channel or None) if t.card else None,
             "tipo_reuniao": t.meeting_kind,
             "tipo_reuniao_rotulo": (
                 tipo_por_id(t.meeting_kind).rotulo if tipo_por_id(t.meeting_kind) else None
@@ -327,4 +345,5 @@ def listar_reunioes(
         "vendedores": vendedores,
         "sdrs": sdrs,
         "tipos_de_reuniao": [{"id": tipo.id, "rotulo": tipo.rotulo} for tipo in TIPOS],
+        "canais": canais,
     }
