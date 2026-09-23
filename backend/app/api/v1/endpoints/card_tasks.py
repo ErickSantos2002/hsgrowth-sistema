@@ -29,6 +29,44 @@ from app.services.cadence_service import CadenceService
 router = APIRouter()
 
 
+@router.get(
+    "/sugestoes-de-reuniao",
+    summary="Tipos e convidados sugeridos para uma nova reunião",
+    description="""
+    Devolve os tipos de reunião com a prévia do título de cada um e os
+    endereços que o sistema conhece para o convite.
+
+    A prévia sai daqui, e não do navegador, para ser exatamente o título que
+    será gravado.
+    """,
+)
+def sugestoes_de_reuniao(
+    card_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from app.models.card import Card
+    from app.services.reunioes.convidados import sugerir_convidados
+    from app.services.reunioes.tipos import TIPOS, montar_titulo
+
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Negócio não encontrado")
+
+    return {
+        "tipos": [
+            {
+                "id": tipo.id,
+                "rotulo": tipo.rotulo,
+                "avaliado": tipo.avaliado,
+                "titulo": montar_titulo(tipo.id, card),
+            }
+            for tipo in TIPOS
+        ],
+        "convidados": sugerir_convidados(db, card),
+    }
+
+
 @router.post(
     "",
     response_model=CardTaskResponse,
