@@ -264,12 +264,12 @@ class TestVisibilidade:
     def test_vendedor_nao_recebe_quadro_por_vendedor(
         self, client: TestClient, salesperson_headers, db, test_card, test_salesperson_user
     ):
+        """O quadro comparando pessoas é leitura de gestão."""
         criar_reuniao(db, test_card, test_salesperson_user, "Minha", avaliada=True)
 
         corpo = client.get("/api/v1/reunioes", headers=salesperson_headers).json()
 
         assert corpo["por_vendedor"] == []
-        assert corpo["vendedores"] == []
 
     def test_exige_autenticacao(self, client: TestClient):
         assert client.get("/api/v1/reunioes").status_code in (401, 403)
@@ -732,14 +732,144 @@ class TestCanalDeAquisicao:
 
         assert corpo["canais"] == ["Inbound"]
 
-    def test_vendedor_nao_recebe_a_lista_de_canais(
+    def test_vendedor_tambem_recebe_a_lista_de_canais(
         self, client: TestClient, salesperson_headers, db, test_card, test_salesperson_user
     ):
-        """Como os outros seletores, o filtro de canal é do gestor."""
+        """
+        O filtro de canal serve ao time, não só ao gestor.
+
+        Em 24/09 o vendedor abria a página com o seletor vazio: os canais só
+        eram montados para gestor.
+        """
         test_card.acquisition_channel = "Inbound"
         db.commit()
         criar_reuniao(db, test_card, test_salesperson_user, "A")
 
         corpo = client.get("/api/v1/reunioes", headers=salesperson_headers).json()
 
-        assert corpo["canais"] == []
+        assert corpo["canais"] == ["Inbound"]
+
+
+class TestFiltrosDeQuemNaoEGestor:
+    """
+    Os seletores da página para o vendedor e para o SDR.
+
+    Até 24/09 vendedor, SDR e canal só eram montados para gestor, e o time
+    abria a página com três filtros vazios — o problema apareceu na hora de
+    mostrar a página para os colaboradores.
+
+    As listas saem das reuniões que a pessoa já pode ver, então filtrar é um
+    recorte do que é dela: ninguém passa a enxergar nome de quem não aparece
+    nas próprias reuniões.
+    """
+
+    def test_sdr_recebe_os_vendedores_das_reunioes_dele(
+        self, client: TestClient, sdr_headers, db, test_card,
+        test_salesperson_user, test_sdr_user
+    ):
+        """O SDR trabalha com vários vendedores — é o filtro que ele precisa."""
+        test_card.sdr_id = test_sdr_user.id
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "Agendada por mim")
+
+        corpo = client.get("/api/v1/reunioes", headers=sdr_headers).json()
+
+        assert corpo["vendedores"] == [
+            {"id": test_salesperson_user.id, "nome": test_salesperson_user.name}
+        ]
+
+    def test_sdr_filtra_por_vendedor(
+        self, client: TestClient, sdr_headers, db, test_lists, test_card,
+        test_salesperson_user, test_sdr_user, test_manager_user
+    ):
+        from app.models.card import Card
+
+        test_card.sdr_id = test_sdr_user.id
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "Do vendedor")
+
+        outro = Card(
+            title="Outro negócio",
+            list_id=test_lists[0].id,
+            assigned_to_id=test_manager_user.id,
+            sdr_id=test_sdr_user.id,
+            position=21,
+        )
+        db.add(outro)
+        db.commit()
+        criar_reuniao(db, outro, test_manager_user, "De outra pessoa", dias_atras=1)
+
+        r = client.get(
+            f"/api/v1/reunioes?vendedor={test_salesperson_user.id}", headers=sdr_headers
+        )
+
+        assert r.json()["total"] == 1
+        assert r.json()["items"][0]["titulo"] == "Do vendedor"
+
+    def test_vendedor_recebe_os_sdrs_das_reunioes_dele(
+        self, client: TestClient, salesperson_headers, db, test_card,
+        test_salesperson_user, test_sdr_user
+    ):
+        test_card.sdr_id = test_sdr_user.id
+        db.commit()
+        criar_reuniao(db, test_card, test_salesperson_user, "Minha")
+
+        corpo = client.get("/api/v1/reunioes", headers=salesperson_headers).json()
+
+        assert corpo["sdrs"] == [{"id": test_sdr_user.id, "nome": test_sdr_user.name}]
+
+    def test_seletor_nao_mostra_quem_esta_fora_do_alcance(
+        self, client: TestClient, salesperson_headers, db, test_lists,
+        test_card, test_salesperson_user, test_manager_user, test_sdr_user
+    ):
+        """
+        Reunião de um negócio que não é do vendedor não pode aparecer nem
+        pela porta do seletor.
+        """
+        from app.models.card import Card
+
+        criar_reuniao(db, test_card, test_salesperson_user, "Minha")
+
+        de_outro = Card(
+            title="Negócio de outra pessoa",
+            list_id=test_lists[0].id,
+            assigned_to_id=test_manager_user.id,
+            sdr_id=test_sdr_user.id,
+            position=22,
+        )
+        db.add(de_outro)
+        db.commit()
+        criar_reuniao(db, de_outro, test_manager_user, "Não é minha", dias_atras=1)
+
+        corpo = client.get("/api/v1/reunioes", headers=salesperson_headers).json()
+
+        assert corpo["vendedores"] == [
+            {"id": test_salesperson_user.id, "nome": test_salesperson_user.name}
+        ]
+        assert corpo["sdrs"] == []
+        assert corpo["total"] == 1
+
+    def test_filtrar_por_outra_pessoa_nao_abre_o_que_nao_e_dele(
+        self, client: TestClient, salesperson_headers, db, test_lists,
+        test_card, test_salesperson_user, test_manager_user
+    ):
+        """O filtro recorta o que já é visível; não é uma porta dos fundos."""
+        from app.models.card import Card
+
+        criar_reuniao(db, test_card, test_salesperson_user, "Minha")
+
+        de_outro = Card(
+            title="Negócio de outra pessoa",
+            list_id=test_lists[0].id,
+            assigned_to_id=test_manager_user.id,
+            position=23,
+        )
+        db.add(de_outro)
+        db.commit()
+        criar_reuniao(db, de_outro, test_manager_user, "Não é minha", dias_atras=1)
+
+        r = client.get(
+            f"/api/v1/reunioes?vendedor={test_manager_user.id}", headers=salesperson_headers
+        )
+
+        assert r.json()["total"] == 0

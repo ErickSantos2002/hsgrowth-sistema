@@ -57,7 +57,7 @@ const ConvidadosDaReuniao: React.FC<Props> = ({ sugeridos, marcados, onChange })
 
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-slate-400">
+      <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400">
         Quem recebe o convite <span className="text-red-400">*</span>
       </label>
 
@@ -65,34 +65,34 @@ const ConvidadosDaReuniao: React.FC<Props> = ({ sugeridos, marcados, onChange })
         {sugeridos.map((convidado) => (
           <label
             key={convidado.email}
-            className="flex cursor-pointer items-center gap-2 text-sm text-slate-300"
+            className="flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
           >
             <input
               type="checkbox"
               checked={marcados.includes(convidado.email)}
               onChange={() => alternar(convidado.email)}
-              className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-purple-500"
+              className="h-4 w-4 rounded border-gray-300 bg-white text-purple-600 dark:border-slate-600 dark:bg-slate-800 dark:text-purple-500"
             />
             <span className="truncate">{convidado.email}</span>
-            <span className="flex-shrink-0 text-[11px] text-slate-500">
+            <span className="flex-shrink-0 text-[11px] text-slate-500 dark:text-slate-500">
               {convidado.rotulo}
             </span>
           </label>
         ))}
 
         {avulsos.map((email) => (
-          <div key={email} className="flex items-center gap-2 text-sm text-slate-300">
+          <div key={email} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
             <input
               type="checkbox"
               checked
               onChange={() => alternar(email)}
-              className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-purple-500"
+              className="h-4 w-4 rounded border-gray-300 bg-white text-purple-600 dark:border-slate-600 dark:bg-slate-800 dark:text-purple-500"
             />
             <span className="truncate">{email}</span>
             <button
               type="button"
               onClick={() => alternar(email)}
-              className="text-slate-500 transition-colors hover:text-slate-300"
+              className="text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
               title="Remover"
             >
               <X size={12} />
@@ -116,22 +116,22 @@ const ConvidadosDaReuniao: React.FC<Props> = ({ sugeridos, marcados, onChange })
             }
           }}
           placeholder="Adicionar e-mail"
-          className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+          className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-purple-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
         />
         <button
           type="button"
           onClick={acrescentar}
           title="Adicionar destinatário"
-          className="flex items-center gap-1 rounded-lg border border-slate-700 px-3 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+          className="flex items-center gap-1 rounded-lg border border-gray-300 px-3 text-sm text-slate-600 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
         >
           <Plus size={14} />
         </button>
       </div>
 
-      {erro && <p className="mt-1 text-[11px] text-red-400">{erro}</p>}
+      {erro && <p className="mt-1 text-[11px] text-red-500 dark:text-red-400">{erro}</p>}
 
       {marcados.length === 0 && (
-        <p className="mt-1 text-[11px] text-amber-400">
+        <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
           Marque pelo menos um destinatário.
         </p>
       )}

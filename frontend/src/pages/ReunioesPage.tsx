@@ -10,6 +10,7 @@ import { EmptyState, LoadingSpinner, Pagination, SelectMenu } from "../component
 import ReunioesKpis from "../components/reunioes/ReunioesKpis";
 import QuadroPorPessoa, { VisaoDoQuadro } from "../components/reunioes/QuadroPorPessoa";
 import { OPCOES_DE_PERIODO, Periodo, datasDoPeriodo } from "../utils/periodo";
+import { useAuth } from "../hooks/useAuth";
 
 const TAMANHO_DA_PAGINA = 20;
 
@@ -48,6 +49,7 @@ const rotulo = "mb-2 block text-xs font-medium text-slate-500 dark:text-slate-40
  * usa a ferramenta.
  */
 const ReunioesPage: React.FC = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [dados, setDados] = useState<RespostaDeReunioes | null>(null);
@@ -131,7 +133,10 @@ const ReunioesPage: React.FC = () => {
     goToPrevPage: () => setPagina((p) => Math.max(1, p - 1)),
   };
 
-  const ehGestor = Boolean(dados && (dados.vendedores.length > 0 || dados.sdrs.length > 0));
+  // Quem é gestor vem do papel, não do conteúdo da resposta: desde 24/09 as
+  // listas de vendedores, SDRs e canais vão para todo mundo, e inferir o papel
+  // a partir delas passaria a dar "gestor" para o time inteiro.
+  const ehGestor = user?.role === "admin" || user?.role === "manager";
 
   return (
     <div className="p-6">
@@ -173,7 +178,11 @@ const ReunioesPage: React.FC = () => {
       {mostrarFiltros && (
         <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
           <div className="flex flex-wrap gap-4">
-            {ehGestor && (
+            {/* Vendedor, SDR e canal saem das reuniões que a pessoa já vê, e
+                por isso valem para o time também: o SDR filtra por vendedor, o
+                vendedor filtra por SDR. Some quando só há um nome na lista —
+                aí o seletor não recortaria nada. */}
+            {(ehGestor || (dados?.vendedores?.length ?? 0) > 1) && (
               <div className="min-w-[170px] flex-1">
                 <label className={rotulo}>Vendedor</label>
                 <SelectMenu
@@ -192,7 +201,7 @@ const ReunioesPage: React.FC = () => {
               </div>
             )}
 
-            {ehGestor && (
+            {(ehGestor || (dados?.sdrs?.length ?? 0) > 1) && (
               <div className="min-w-[170px] flex-1">
                 <label className={rotulo}>SDR</label>
                 <SelectMenu
@@ -213,7 +222,7 @@ const ReunioesPage: React.FC = () => {
 
             {/* De onde veio o negócio: liga a reunião ao marketing — quais
                 canais trazem conversa que anda. */}
-            {ehGestor && (
+            {(ehGestor || (dados?.canais?.length ?? 0) > 1) && (
               <div className="min-w-[170px] flex-1">
                 <label className={rotulo}>Canal de aquisição</label>
                 <SelectMenu

@@ -45,6 +45,7 @@ import {
   extractBrazilTimeForInput,
 } from "../../utils/timezone";
 import BaseModal from "../common/BaseModal";
+import { SelectMenu } from "../common/SelectMenu";
 
 interface MeetingSectionProps {
   cardId: number;
@@ -96,6 +97,31 @@ const EMPTY_FORM: NewMeetingForm = {
   contact_name: "",
   description: "",
 };
+
+/**
+ * Classes dos campos dos modais de reunião.
+ *
+ * Ficam aqui porque os dois modais (novo e edição) precisam do mesmo visual —
+ * e porque até 24/09 os campos tinham só as cores do modo escuro cravadas, o
+ * que deixava o formulário preto no tema claro.
+ */
+const CAMPO =
+  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-purple-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500";
+const CAMPO_AREA = `${CAMPO} resize-none`;
+const ROTULO = "mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400";
+const AJUDA = "mt-1 text-[11px] text-slate-500 dark:text-slate-500";
+const BOTAO_CANCELAR =
+  "rounded-lg border border-gray-300 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white";
+
+/** Duração da reunião — as mesmas opções no modal novo e no de edição. */
+const DURACOES = [
+  { value: "15", label: "15 min" },
+  { value: "30", label: "30 min" },
+  { value: "45", label: "45 min" },
+  { value: "60", label: "1 hora" },
+  { value: "90", label: "1h30" },
+  { value: "120", label: "2 horas" },
+];
 
 /**
  * Histórico dos pedidos de ajuda à IA durante a reunião.
@@ -190,7 +216,11 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
   // Onde a reunião vai acontecer: dentro do CRM (Daily) ou no Teams.
   // O formulário é o mesmo nos dois casos — só muda o provedor. Ver seção
   // 14.2 do design da reunião por vídeo.
-  const [meetingProvider, setMeetingProvider] = useState<"daily" | "teams">("teams");
+  //
+  // Nasce em "No CRM": é a reunião que grava, transcreve e é avaliada pelo
+  // roteiro. Quem não tem a funcionalidade liberada cai no Teams sozinho (a
+  // criação só usa o Daily com `dailyEnabled`).
+  const [meetingProvider, setMeetingProvider] = useState<"daily" | "teams">("daily");
   // Trava por usuário: enquanto não homologado, só quem homologa vê a opção
   const [dailyEnabled, setDailyEnabled] = useState(false);
 
@@ -930,7 +960,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         key={meeting.id}
         className={`rounded-lg border transition-all ${
           isHistory
-            ? "border-slate-700/40 bg-slate-800/30"
+            ? "border-gray-200 bg-gray-50 dark:border-slate-700/40 dark:bg-slate-800/30"
             : "border-purple-500/20 bg-purple-500/5"
         }`}
       >
@@ -1235,13 +1265,13 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
                     next.has(meeting.id) ? next.delete(meeting.id) : next.add(meeting.id);
                     return next;
                   })}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-700 dark:hover:text-slate-300"
                 >
                   {showTranscriptIds.has(meeting.id) ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                   Ver transcrição completa
                 </button>
                 {showTranscriptIds.has(meeting.id) && (
-                  <div className="mt-2 max-h-64 overflow-y-auto rounded border border-slate-700/50 bg-slate-900/60 p-3 space-y-2">
+                  <div className="mt-2 max-h-64 space-y-2 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-3 dark:border-slate-700/50 dark:bg-slate-900/60">
                     {parseVtt(meeting.transcript_raw).map((line, i) => (
                       <div key={i} className="flex gap-2 text-xs">
                         {/* Quando o locatário não permite dizer quem falou, a
@@ -1336,19 +1366,25 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         {!readOnly && (
           <div className="relative group">
             <button
-              onClick={() => { if (assignedToId) { setForm(EMPTY_FORM); setShowModal(true); } }}
+              onClick={() => {
+                if (!assignedToId) return;
+                setForm(EMPTY_FORM);
+                // Cada reunião começa do padrão, sem herdar a escolha da anterior.
+                setMeetingProvider(dailyEnabled ? "daily" : "teams");
+                setShowModal(true);
+              }}
               disabled={!assignedToId}
               className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                 assignedToId
                   ? "border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"
-                  : "border-slate-700 bg-slate-800/50 text-slate-500 cursor-not-allowed"
+                  : "cursor-not-allowed border-gray-200 bg-gray-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-500"
               }`}
             >
               <Plus size={13} />
               Nova Reunião
             </button>
             {!assignedToId && (
-              <div className="absolute right-0 top-full mt-1.5 z-10 hidden group-hover:block w-56 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-400 shadow-lg">
+              <div className="absolute right-0 top-full z-10 mt-1.5 hidden w-56 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-lg group-hover:block dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                 Vincule um vendedor ao card antes de agendar uma reunião.
               </div>
             )}
@@ -1365,8 +1401,8 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
 
       {/* Reuniões pendentes */}
       {!loading && pending.length === 0 && completed.length === 0 && cancelled.length === 0 && (
-        <div className="rounded-lg border border-dashed border-slate-700/50 py-8 text-center">
-          <Users size={24} className="mx-auto mb-2 text-slate-600" />
+        <div className="rounded-lg border border-dashed border-gray-300 py-8 text-center dark:border-slate-700/50">
+          <Users size={24} className="mx-auto mb-2 text-slate-400 dark:text-slate-600" />
           <p className="text-sm text-slate-500">Nenhuma reunião registrada</p>
         </div>
       )}
@@ -1382,7 +1418,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         <div>
           <button
             onClick={() => setShowHistory((v) => !v)}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-700 dark:hover:text-slate-300"
           >
             {showHistory ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
             {completed.length} reunião{completed.length !== 1 ? "s" : ""} concluída{completed.length !== 1 ? "s" : ""}
@@ -1400,7 +1436,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         <div>
           <button
             onClick={() => setShowCancelled((v) => !v)}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-700 dark:hover:text-slate-300"
           >
             {showCancelled ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
             <CalendarX size={12} className="text-red-400/60" />
@@ -1419,30 +1455,25 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         isOpen={!!editingMeeting}
         onClose={() => setEditingMeeting(null)}
         title="Editar Reunião"
-        size="md"
+        size="lg"
       >
         <div className="space-y-4">
           {tiposDeReuniao.length > 0 && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                Tipo de reunião
-              </label>
-              <select
+              <label className={ROTULO}>Tipo de reunião</label>
+              <SelectMenu
+                size="sm"
                 value={tipoEditado}
-                onChange={(e) => setTipoEditado(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-              >
-                {tiposDeReuniao.map((tipo) => (
-                  <option key={tipo.id} value={tipo.id}>
-                    {tipo.rotulo}
-                    {tipo.avaliado ? " · avaliada pelo roteiro" : ""}
-                  </option>
-                ))}
-              </select>
+                options={tiposDeReuniao.map((tipo) => ({
+                  value: tipo.id,
+                  label: `${tipo.rotulo}${tipo.avaliado ? " · avaliada pelo roteiro" : ""}`,
+                }))}
+                onChange={setTipoEditado}
+              />
               {/* Trocar o tipo remonta o título no servidor — o vendedor vê
                   antes de salvar o que o título vai virar. */}
               {tipoEditado !== "outra" && (
-                <p className="mt-1 text-[11px] text-slate-500">
+                <p className={AJUDA}>
                   O título passa a ser{" "}
                   {tiposDeReuniao.find((t) => t.id === tipoEditado)?.titulo || "—"}.
                 </p>
@@ -1451,7 +1482,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
           )}
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">
+            <label className={ROTULO}>
               Título <span className="text-red-400">*</span>
             </label>
             <input
@@ -1460,75 +1491,66 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
               value={editForm.title}
               onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
               placeholder="Ex: Apresentação de proposta"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+              className={CAMPO}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              <label className={ROTULO}>
                 Data <span className="text-red-400">*</span>
               </label>
               <input
                 type="date"
                 value={editForm.date}
                 onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+                className={CAMPO}
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              <label className={ROTULO}>
                 Hora <span className="text-red-400">*</span>
               </label>
               <input
                 type="time"
                 value={editForm.time}
                 onChange={(e) => setEditForm({ ...editForm, time: e.target.value })}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+                className={CAMPO}
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">Duração (min)</label>
-              <select
+              <label className={ROTULO}>Duração (min)</label>
+              <SelectMenu
+                size="sm"
                 value={editForm.duration}
-                onChange={(e) => setEditForm({ ...editForm, duration: e.target.value })}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-              >
-                <option value="15">15 min</option>
-                <option value="30">30 min</option>
-                <option value="45">45 min</option>
-                <option value="60">1 hora</option>
-                <option value="90">1h30</option>
-                <option value="120">2 horas</option>
-              </select>
+                options={DURACOES}
+                onChange={(valor) => setEditForm({ ...editForm, duration: valor })}
+              />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">Contato</label>
+              <label className={ROTULO}>Contato</label>
               <input
                 type="text"
                 value={editForm.contact_name}
                 onChange={(e) => setEditForm({ ...editForm, contact_name: e.target.value })}
                 placeholder="Nome do participante"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+                className={CAMPO}
               />
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">Descrição / Pauta</label>
+            <label className={ROTULO}>Descrição / Pauta</label>
             <textarea
               value={editForm.description}
               onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
               placeholder="Tópicos da reunião, agenda, observações..."
               rows={3}
-              className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+              className={CAMPO_AREA}
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button
-              onClick={() => setEditingMeeting(null)}
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
-            >
+            <button onClick={() => setEditingMeeting(null)} className={BOTAO_CANCELAR}>
               Cancelar
             </button>
             <button
@@ -1548,24 +1570,22 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         title="Nova Reunião"
-        size="md"
+        size="lg"
       >
         <div className="space-y-4">
           {/* Onde a reunião acontece — só aparece para quem tem a funcionalidade
               liberada. O restante do formulário é igual nos dois casos. */}
           {dailyEnabled && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                Onde vai acontecer?
-              </label>
+              <label className={ROTULO}>Onde vai acontecer?</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setMeetingProvider("daily")}
                   className={`flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2.5 text-sm transition-all ${
                     meetingProvider === "daily"
-                      ? "border-purple-500 bg-purple-500/10 text-purple-300"
-                      : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
+                      ? "border-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-300"
+                      : "border-gray-300 bg-white text-slate-600 hover:border-gray-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-slate-600"
                   }`}
                 >
                   <span className="font-medium">No CRM</span>
@@ -1576,15 +1596,15 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
                   onClick={() => setMeetingProvider("teams")}
                   className={`flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2.5 text-sm transition-all ${
                     meetingProvider === "teams"
-                      ? "border-purple-500 bg-purple-500/10 text-purple-300"
-                      : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
+                      ? "border-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-300"
+                      : "border-gray-300 bg-white text-slate-600 hover:border-gray-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-slate-600"
                   }`}
                 >
                   <span className="font-medium">Teams</span>
                   <span className="text-[11px] opacity-70">Outlook</span>
                 </button>
               </div>
-              <p className="mt-1.5 text-[11px] text-slate-500">
+              <p className={AJUDA}>
                 {meetingProvider === "daily"
                   ? "O cliente entra por um link, sem instalar nada. O convite é enviado normalmente."
                   : "Reunião pelo Teams, como sempre."}
@@ -1595,28 +1615,25 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
           {/* Tipo da reunião — é ele que decide o título e o que é avaliado */}
           {tiposDeReuniao.length > 0 && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              <label className={ROTULO}>
                 Tipo de reunião <span className="text-red-400">*</span>
               </label>
-              <select
+              <SelectMenu
+                size="sm"
                 value={tipoEscolhido}
-                onChange={(e) => setTipoEscolhido(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-              >
-                {tiposDeReuniao.map((tipo) => (
-                  <option key={tipo.id} value={tipo.id}>
-                    {tipo.rotulo}
-                    {tipo.avaliado ? " · avaliada pelo roteiro" : ""}
-                  </option>
-                ))}
-              </select>
+                options={tiposDeReuniao.map((tipo) => ({
+                  value: tipo.id,
+                  label: `${tipo.rotulo}${tipo.avaliado ? " · avaliada pelo roteiro" : ""}`,
+                }))}
+                onChange={setTipoEscolhido}
+              />
             </div>
           )}
 
           {/* Título: digitado em "Outra", montado nos demais */}
           {tipoEscolhido === "outra" || tiposDeReuniao.length === 0 ? (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              <label className={ROTULO}>
                 Título <span className="text-red-400">*</span>
               </label>
               <input
@@ -1625,17 +1642,15 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Ex: Alinhamento com a equipe técnica"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+                className={CAMPO}
               />
             </div>
           ) : (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                Título da reunião
-              </label>
+              <label className={ROTULO}>Título da reunião</label>
               {/* O vendedor vê o que o cliente vai receber, sem poder digitar
                   errado — o padrão é o que a consultora pediu. */}
-              <p className="rounded-lg border border-slate-700/60 bg-slate-800/40 px-3 py-2 text-sm text-slate-400">
+              <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-600 dark:border-slate-700/60 dark:bg-slate-800/40 dark:text-slate-400">
                 {tiposDeReuniao.find((t) => t.id === tipoEscolhido)?.titulo || "—"}
               </p>
             </div>
@@ -1644,25 +1659,25 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
           {/* Data e Hora */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              <label className={ROTULO}>
                 Data <span className="text-red-400">*</span>
               </label>
               <input
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+                className={CAMPO}
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              <label className={ROTULO}>
                 Hora <span className="text-red-400">*</span>
               </label>
               <input
                 type="time"
                 value={form.time}
                 onChange={(e) => setForm({ ...form, time: e.target.value })}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+                className={CAMPO}
               />
             </div>
           </div>
@@ -1674,28 +1689,24 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
           />
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">
-              Mensagem do convite
-            </label>
+            <label className={ROTULO}>Mensagem do convite</label>
             <textarea
               value={mensagemDoConvite}
               onChange={(e) => setMensagemDoConvite(e.target.value)}
               rows={3}
-              className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+              className={CAMPO_AREA}
             />
-            <p className="mt-1 text-[11px] text-slate-500">
-              Data, duração e o link da sala entram automaticamente.
-            </p>
+            <p className={AJUDA}>Data, duração e o link da sala entram automaticamente.</p>
 
             {/* A assinatura vai no rodapé do convite, como no e-mail — mostrar
                 aqui evita a dúvida de como o cliente vai receber. */}
             {user?.email_signature && (
-              <div className="mt-2 overflow-hidden rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2">
-                <p className="mb-2 text-[11px] text-slate-400">
+              <div className="mt-2 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+                <p className="mb-2 text-[11px] text-slate-500 dark:text-slate-400">
                   Assinatura (adicionada automaticamente)
                 </p>
                 <div
-                  className="max-w-full text-sm text-slate-300 [&_img]:max-w-full [&_table]:max-w-full [&_td]:max-w-full"
+                  className="max-w-full text-sm text-slate-700 dark:text-slate-300 [&_img]:max-w-full [&_table]:max-w-full [&_td]:max-w-full"
                   style={{ overflowX: "hidden" }}
                   dangerouslySetInnerHTML={{ __html: user.email_signature }}
                 />
@@ -1706,56 +1717,41 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
           {/* Duração e Contato */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                Duração (min)
-              </label>
-              <select
+              <label className={ROTULO}>Duração (min)</label>
+              <SelectMenu
+                size="sm"
                 value={form.duration}
-                onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-              >
-                <option value="15">15 min</option>
-                <option value="30">30 min</option>
-                <option value="45">45 min</option>
-                <option value="60">1 hora</option>
-                <option value="90">1h30</option>
-                <option value="120">2 horas</option>
-              </select>
+                options={DURACOES}
+                onChange={(valor) => setForm({ ...form, duration: valor })}
+              />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                Contato
-              </label>
+              <label className={ROTULO}>Contato</label>
               <input
                 type="text"
                 value={form.contact_name}
                 onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
                 placeholder="Nome do participante"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+                className={CAMPO}
               />
             </div>
           </div>
 
           {/* Descrição */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">
-              Descrição / Pauta
-            </label>
+            <label className={ROTULO}>Descrição / Pauta</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Tópicos da reunião, agenda, observações..."
               rows={3}
-              className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+              className={CAMPO_AREA}
             />
           </div>
 
           {/* Botões */}
           <div className="flex justify-end gap-2 pt-2">
-            <button
-              onClick={() => setShowModal(false)}
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
-            >
+            <button onClick={() => setShowModal(false)} className={BOTAO_CANCELAR}>
               Cancelar
             </button>
             <button

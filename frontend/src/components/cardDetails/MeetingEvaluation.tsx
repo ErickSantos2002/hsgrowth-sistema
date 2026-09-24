@@ -10,7 +10,7 @@ const corDoVeredito = (veredito: string | null) => {
   if (veredito.startsWith("Call padrão ouro")) return "text-emerald-400 border-emerald-500/40";
   if (veredito.startsWith("Boa call")) return "text-sky-400 border-sky-500/40";
   if (veredito.startsWith("Call frágil")) return "text-amber-400 border-amber-500/40";
-  return "text-slate-300 border-slate-600/50";
+  return "text-slate-600 dark:text-slate-300 border-slate-600/50";
 };
 
 const corDaNota = (nota: number | null) => {
@@ -31,9 +31,9 @@ const MeetingEvaluation: React.FC<{ avaliacao: AvaliacaoDaReuniao }> = ({ avalia
   const [aberto, setAberto] = useState(false);
 
   return (
-    <div className="space-y-2.5 rounded border border-slate-700/50 bg-slate-800/30 p-3">
+    <div className="space-y-2.5 rounded border border-gray-200 bg-gray-50 dark:border-slate-700/50 dark:bg-slate-800/30 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-medium text-slate-200">Avaliação da reunião</span>
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Avaliação da reunião</span>
         <span
           className={`rounded border px-2 py-0.5 text-xs font-medium ${corDoVeredito(
             avaliacao.veredito
@@ -47,7 +47,7 @@ const MeetingEvaluation: React.FC<{ avaliacao: AvaliacaoDaReuniao }> = ({ avalia
       {avaliacao.medias_por_bloco && (
         <div className="flex flex-wrap gap-2 text-[11px] text-slate-400">
           {BLOCOS.filter((b) => avaliacao.medias_por_bloco?.[b] !== undefined).map((bloco) => (
-            <span key={bloco} className="rounded bg-slate-700/40 px-1.5 py-0.5">
+            <span key={bloco} className="rounded bg-gray-200 dark:bg-slate-700/40 px-1.5 py-0.5">
               {bloco} {avaliacao.medias_por_bloco?.[bloco]}
             </span>
           ))}
@@ -64,7 +64,7 @@ const MeetingEvaluation: React.FC<{ avaliacao: AvaliacaoDaReuniao }> = ({ avalia
 
       <div className="space-y-1.5 text-xs">
         {avaliacao.ponto_forte && (
-          <p className="flex gap-1.5 text-slate-200">
+          <p className="flex gap-1.5 text-slate-700 dark:text-slate-200">
             <Trophy size={13} className="mt-0.5 flex-shrink-0 text-emerald-400" />
             <span>
               <span className="text-slate-400">Ponto forte · </span>
@@ -73,7 +73,7 @@ const MeetingEvaluation: React.FC<{ avaliacao: AvaliacaoDaReuniao }> = ({ avalia
           </p>
         )}
         {avaliacao.foco_desenvolvimento && (
-          <p className="flex gap-1.5 text-slate-200">
+          <p className="flex gap-1.5 text-slate-700 dark:text-slate-200">
             <TrendingUp size={13} className="mt-0.5 flex-shrink-0 text-amber-400" />
             <span>
               <span className="text-slate-400">Desenvolver · </span>
@@ -82,7 +82,7 @@ const MeetingEvaluation: React.FC<{ avaliacao: AvaliacaoDaReuniao }> = ({ avalia
           </p>
         )}
         {avaliacao.proxima_acao && (
-          <p className="flex gap-1.5 text-slate-200">
+          <p className="flex gap-1.5 text-slate-700 dark:text-slate-200">
             <Target size={13} className="mt-0.5 flex-shrink-0 text-sky-400" />
             <span>
               <span className="text-slate-400">Próxima ação · </span>
@@ -94,7 +94,7 @@ const MeetingEvaluation: React.FC<{ avaliacao: AvaliacaoDaReuniao }> = ({ avalia
 
       <button
         onClick={() => setAberto((a) => !a)}
-        className="flex items-center gap-1 text-[11px] text-slate-400 transition-colors hover:text-slate-200"
+        className="flex items-center gap-1 text-[11px] text-slate-400 transition-colors hover:text-slate-700 dark:hover:text-slate-200"
       >
         <ChevronRight
           size={11}
@@ -112,7 +112,7 @@ const MeetingEvaluation: React.FC<{ avaliacao: AvaliacaoDaReuniao }> = ({ avalia
               <div key={bloco} className="space-y-1">
                 <p className="text-[11px] font-medium text-slate-400">{bloco}</p>
                 {doBloco.map((item) => (
-                  <div key={item.criterio_id} className="rounded bg-slate-900/40 p-1.5 text-[11px]">
+                  <div key={item.criterio_id} className="rounded bg-gray-100 dark:bg-slate-900/40 p-1.5 text-[11px]">
                     <p className="flex items-center gap-1.5">
                       <span className="font-mono text-slate-500">{item.criterio_id}</span>
                       <span className="text-slate-400">peso {item.peso}</span>
@@ -120,7 +120,7 @@ const MeetingEvaluation: React.FC<{ avaliacao: AvaliacaoDaReuniao }> = ({ avalia
                         {item.nota === null ? "não se aplica" : `nota ${item.nota}`}
                       </span>
                     </p>
-                    {item.porque && <p className="text-slate-300">{item.porque}</p>}
+                    {item.porque && <p className="text-slate-600 dark:text-slate-300">{item.porque}</p>}
                     {item.evidencia && (
                       <p className="mt-0.5 border-l-2 border-slate-700 pl-1.5 italic text-slate-400">
                         "{item.evidencia}"

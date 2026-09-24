@@ -182,35 +182,37 @@ def listar_reunioes(
         consulta = consulta.filter(data_da_reuniao <= datetime.combine(date_to, time.max))
 
     # Quem tem reunião no período — levantado ANTES dos filtros de pessoa,
-    # senão escolher alguém apagaria os outros do seletor e o gestor ficaria
-    # preso naquele nome.
-    vendedores = []
-    sdrs = []
-    canais = []
-    do_periodo = consulta.all() if e_gestor else []
-    if e_gestor:
-        vistos_vendedor = {}
-        vistos_sdr = {}
-        vistos_canal = set()
-        for t in do_periodo:
-            responsavel = _responsavel(t)
-            if responsavel:
-                vistos_vendedor[responsavel.id] = responsavel.name
-            if t.card and t.card.sdr:
-                vistos_sdr[t.card.sdr.id] = t.card.sdr.name
-            if t.card and (t.card.acquisition_channel or "").strip():
-                vistos_canal.add(t.card.acquisition_channel.strip())
-        canais = sorted(vistos_canal)
-        vendedores = [
-            {"id": i, "nome": nome}
-            for i, nome in sorted(vistos_vendedor.items(), key=lambda x: x[1])
-        ]
-        sdrs = [
-            {"id": i, "nome": nome}
-            for i, nome in sorted(vistos_sdr.items(), key=lambda x: x[1])
-        ]
+    # senão escolher alguém apagaria os outros do seletor e quem filtrou
+    # ficaria preso naquele nome.
+    #
+    # Vale para todo mundo, não só para o gestor: as listas saem das reuniões
+    # que a pessoa JÁ pode ver (o recorte por vínculo foi aplicado acima), então
+    # não mostram ninguém novo — só deixam o SDR filtrar por vendedor e o
+    # vendedor filtrar por SDR dentro do que é dele. Até 24/09 os três seletores
+    # eram do gestor e o time ficava sem filtro nenhum além de tipo e período.
+    do_periodo = consulta.all()
+    vistos_vendedor = {}
+    vistos_sdr = {}
+    vistos_canal = set()
+    for t in do_periodo:
+        responsavel = _responsavel(t)
+        if responsavel:
+            vistos_vendedor[responsavel.id] = responsavel.name
+        if t.card and t.card.sdr:
+            vistos_sdr[t.card.sdr.id] = t.card.sdr.name
+        if t.card and (t.card.acquisition_channel or "").strip():
+            vistos_canal.add(t.card.acquisition_channel.strip())
+    canais = sorted(vistos_canal)
+    vendedores = [
+        {"id": i, "nome": nome}
+        for i, nome in sorted(vistos_vendedor.items(), key=lambda x: x[1])
+    ]
+    sdrs = [
+        {"id": i, "nome": nome}
+        for i, nome in sorted(vistos_sdr.items(), key=lambda x: x[1])
+    ]
 
-    if e_gestor and vendedor:
+    if vendedor:
         if vendedor == SEM_VINCULO:
             consulta = consulta.filter(
                 CardTask.assigned_to_id.is_(None), Card.assigned_to_id.is_(None)
@@ -227,7 +229,7 @@ def listar_reunioes(
 
     # O SDR agenda a reunião e acompanha; filtrar por ele mostra o que a
     # pré-venda colocou de pé, que é uma leitura diferente da do vendedor.
-    if e_gestor and sdr:
+    if sdr:
         if sdr == SEM_VINCULO:
             consulta = consulta.filter(Card.sdr_id.is_(None))
         elif sdr.isdigit():

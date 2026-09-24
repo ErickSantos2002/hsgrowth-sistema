@@ -36,20 +36,20 @@ const AssistSuggestion: React.FC<{ sugestao: SugestaoDaIA; compacto?: boolean }>
   };
 
   return (
-    <div className="space-y-2 rounded border border-slate-700/50 bg-slate-800/40 p-2.5 text-xs">
-      <p className="flex gap-1.5 text-slate-200">
+    <div className="space-y-2 rounded border border-gray-200 bg-gray-50 dark:border-slate-700/50 dark:bg-slate-800/40 p-2.5 text-xs">
+      <p className="flex gap-1.5 text-slate-700 dark:text-slate-200">
         <Lightbulb size={13} className="mt-0.5 flex-shrink-0 text-amber-400" />
         <span>{sugestao.leitura}</span>
       </p>
 
-      <div className="rounded bg-slate-900/60 p-2">
+      <div className="rounded bg-gray-100 dark:bg-slate-900/60 p-2">
         <p className="flex gap-1.5 text-slate-100">
           <MessageSquare size={13} className="mt-0.5 flex-shrink-0 text-emerald-400" />
           <span className="leading-relaxed">{sugestao.fala}</span>
         </p>
         <button
           onClick={copiar}
-          className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-400 transition-colors hover:text-slate-200"
+          className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-400 transition-colors hover:text-slate-700 dark:hover:text-slate-200"
         >
           <Copy size={11} />
           {copiado ? "Copiado" : "Copiar fala"}
@@ -57,7 +57,7 @@ const AssistSuggestion: React.FC<{ sugestao: SugestaoDaIA; compacto?: boolean }>
       </div>
 
       {sugestao.pergunta && (
-        <p className="flex gap-1.5 text-slate-300">
+        <p className="flex gap-1.5 text-slate-600 dark:text-slate-300">
           <HelpCircle size={13} className="mt-0.5 flex-shrink-0 text-sky-400" />
           <span>{sugestao.pergunta}</span>
         </p>
@@ -71,7 +71,7 @@ const AssistSuggestion: React.FC<{ sugestao: SugestaoDaIA; compacto?: boolean }>
       ))}
 
       {sugestao.fato_crm && (
-        <p className="flex gap-1.5 text-slate-300">
+        <p className="flex gap-1.5 text-slate-600 dark:text-slate-300">
           <FileText size={13} className="mt-0.5 flex-shrink-0 text-purple-400" />
           <span>{sugestao.fato_crm}</span>
         </p>

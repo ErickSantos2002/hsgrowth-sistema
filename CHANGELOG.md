@@ -5,6 +5,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.9] — 24/09/2026
+
+### Corrigido
+- **Reunião no modo claro:** os modais de **Nova Reunião** e **Editar Reunião**, o bloco da avaliação e as sugestões da IA tinham as cores do modo escuro fixas e ficavam pretos no tema claro. Agora acompanham o tema, como o resto do sistema.
+- **Filtros da página de Reuniões para o time:** os seletores de **Vendedor**, **SDR** e **Canal de aquisição** só eram montados para gestor — o vendedor e o SDR abriam a página sem eles. Agora as listas saem das reuniões que a pessoa já vê: o SDR filtra por vendedor, o vendedor filtra por SDR, e ninguém passa a enxergar reunião que não é sua.
+
+### Alterado
+- **"Onde vai acontecer?" começa em "No CRM":** a reunião por vídeo do CRM (que grava, transcreve e é avaliada pelo roteiro) passa a ser o padrão ao abrir o modal; o Teams continua a um clique.
+- **Padrão visual do formulário de reunião:** os seletores de **Tipo de reunião** e **Duração** passaram a usar o mesmo componente de seleção do resto do sistema, e os dois modais ficaram mais largos.
+
+---
+
 ## [1.10.8] — 24/09/2026
 
 ### Adicionado

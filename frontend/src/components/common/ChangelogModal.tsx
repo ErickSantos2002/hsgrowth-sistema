@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.9",
+    date: "24/09/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Reunião no modo claro — os modais de Nova Reunião e Editar Reunião, o bloco da avaliação e as sugestões da IA apareciam escuros no tema claro. Agora acompanham o tema.",
+      },
+      {
+        type: "fix",
+        text: "Página de Reuniões — os filtros de Vendedor, SDR e Canal de aquisição só apareciam para gestor. Agora o time também tem os filtros, montados a partir das reuniões que cada um já enxerga.",
+      },
+      {
+        type: "improvement",
+        text: "Nova Reunião já abre em \"No CRM\" (a reunião por vídeo que grava, transcreve e é avaliada pelo roteiro); o Teams continua a um clique. Os seletores de tipo e duração ficaram no padrão do sistema e o modal, mais largo.",
+      },
+    ],
+  },
+  {
     version: "1.10.8",
     date: "24/09/2026",
     entries: [
