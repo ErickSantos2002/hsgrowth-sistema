@@ -92,7 +92,7 @@ const KanbanBoard: React.FC = () => {
   const [acquisitionChannelDetailFilter, setAcquisitionChannelDetailFilter] = useState(""); // Filtro de detalhe do canal
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
   const [lossReasonFilter, setLossReasonFilter] = useState(""); // Filtro de motivo de perda (só em "Apenas Perdidos", boards 6/7/8)
-  const [cardTagFilter, setCardTagFilter] = useState(""); // Filtro por etiqueta: "" | "nutricao" | "parado"
+  const [cardTagFilter, setCardTagFilter] = useState(""); // Filtro por etiqueta: "" | "nutricao" | "parado" | "cross-sell" | ...
   const [enteredPeriod, setEnteredPeriod] = useState(""); // Período de criação do card
   const [enteredCustomStart, setEnteredCustomStart] = useState("");
   const [enteredCustomEnd, setEnteredCustomEnd] = useState("");
@@ -984,6 +984,7 @@ const KanbanBoard: React.FC = () => {
           case "parado":   if (!isStuck)                                 return false; break;
           case "parado7":  if (!card.is_stuck_7d)                        return false; break;
           case "nutricao": if (!card.automacao01)                        return false; break;
+          case "cross-sell": if (card.deal_type !== "Cross Sell")        return false; break;
         }
       }
 
@@ -1407,6 +1408,7 @@ const KanbanBoard: React.FC = () => {
                   { value: "parado", label: "🔴 Parado 3d+" },
                   { value: "parado7", label: "🟥 Parado 7d+" },
                   { value: "nutricao", label: "🟠 Em Nutrição" },
+                  { value: "cross-sell", label: "🔁 Cross-sell" },
                 ]}
                 onChange={setCardTagFilter}
               />

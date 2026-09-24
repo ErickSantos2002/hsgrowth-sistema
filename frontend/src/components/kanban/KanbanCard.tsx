@@ -156,6 +156,17 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick, href }) => {
           </span>
         )}
 
+        {/* Badge de cross-sell (venda para cliente da base) */}
+        {card.deal_type === "Cross Sell" && (
+          <span
+            className="flex items-center gap-0.5 rounded bg-cyan-500/15 px-1.5 py-0.5 text-[10px] font-medium text-cyan-700 dark:text-cyan-400"
+            title="Cross-sell — venda para cliente da base"
+          >
+            <RefreshCw size={9} />
+            Cross-sell
+          </span>
+        )}
+
         {/* Badge parado 7d+ (vermelho mais escuro) */}
         {isStuck7d && (
           <span
