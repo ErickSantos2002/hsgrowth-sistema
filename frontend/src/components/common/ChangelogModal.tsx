@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.6",
+    date: "24/09/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Cobrança — os cards criados pela integração (GestorHS) já chegam com 'Recalibração e/ou Manutenção' marcado como Recalibração, junto do Tipo de cobrança e do Canal de aquisição. Dá para trocar para Manutenção/Ambos depois. Não afeta o board de Serviços.",
+      },
+    ],
+  },
+  {
     version: "1.10.5",
     date: "24/09/2026",
     entries: [

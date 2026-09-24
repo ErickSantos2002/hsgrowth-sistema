@@ -76,6 +76,10 @@ class IntegrationCardService:
         ct = COLLECTION_TYPE_POR_SOURCE.get(data.source)
         if ct:
             business_info.setdefault("collection_type", ct)
+            # Cobrança: o serviço é, por padrão, Recalibração (o vendedor pode trocar
+            # para Manutenção/Ambos depois). Só vale para as fontes de Cobrança
+            # (calibracao/atrasados); o board de Serviços (gestorhs.os) não entra.
+            business_info.setdefault("service_type", "recalibracao")
 
         card = ServiceCard(
             list_id=entry_list.id,

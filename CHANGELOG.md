@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.6] — 24/09/2026
+
+### Alterado
+- **Cobrança — cards da integração já vêm com "Recalibração e/ou Manutenção" = Recalibração:** os negócios criados pela integração (GestorHS) no board de **Cobrança** passam a chegar com o campo **Recalibração** já marcado (além do Tipo de cobrança e Canal de aquisição que já vinham). O vendedor pode trocar para Manutenção/Ambos depois. Não afeta o board de Serviços.
+
+---
+
 ## [1.10.5] — 24/09/2026
 
 ### Alterado
