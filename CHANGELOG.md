@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.7] — 24/09/2026
+
+### Alterado
+- **Dashboard de Serviço — receita reorganizada em "Receita Total":** as 3 KPIs de receita (Receita ganha, Receita Cobrança Phoebus e Receita de Cobrança concluída) foram unificadas em **um card "Receita Total"** = Receita ganha (Serviço) + Cobrança (Phoebus), com a **composição** logo abaixo: Serviço e Phoebus com seu peso em R$ e %, e a fatia **originada de Cobrança** (que já está dentro da Receita ganha). Fica mais claro o que soma no faturamento e o quanto a Cobrança pesa.
+
+---
+
 ## [1.10.6] — 24/09/2026
 
 ### Alterado

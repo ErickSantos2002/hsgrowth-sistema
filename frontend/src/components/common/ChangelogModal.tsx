@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.7",
+    date: "24/09/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Dashboard de Serviço — as receitas foram unificadas num card 'Receita Total' (Receita ganha + Cobrança Phoebus), com a composição abaixo: Serviço e Phoebus com peso em R$ e %, e a fatia originada de Cobrança (já incluída na Receita ganha). Ficou mais claro o que soma no faturamento e o peso da Cobrança.",
+      },
+    ],
+  },
+  {
     version: "1.10.6",
     date: "24/09/2026",
     entries: [

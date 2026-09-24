@@ -150,15 +150,57 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
 
       {/* ── KPIs (5 em cima · 5 embaixo, cada linha de canto a canto) ── */}
       <div className="space-y-4">
-        <div className={`grid grid-cols-1 gap-4 sm:grid-cols-3 ${board !== 2 ? "lg:grid-cols-7" : "lg:grid-cols-5"}`}>
+        <div className={`grid grid-cols-1 gap-4 sm:grid-cols-3 ${board !== 2 ? "lg:grid-cols-6" : "lg:grid-cols-5"}`}>
           <KpiCard icon={<Briefcase size={18} className="text-violet-400" />} iconBg="bg-violet-500/20" label="Negócios ativos" value={data.active_count} info="Negócios em aberto no pipeline agora (nem ganho, nem perdido)." sub="Em aberto no pipeline" highlight="purple" />
           <KpiCard icon={<DollarSign size={18} className="text-emerald-400" />} iconBg="bg-emerald-500/20" label="Pipeline (em aberto)" value={data.pipeline_value} format="currency" info="Soma do valor dos negócios em aberto no funil." sub="Valor em aberto no período" highlight="green" />
-          <KpiCard icon={<DollarSign size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Receita ganha" value={data.won_value} format="currency" info="Valor total dos negócios ganhos no período." sub="Valor total ganho no período" highlight="green" />
-          {board !== 2 && (
-            <KpiCard icon={<DollarSign size={18} className="text-teal-400" />} iconBg="bg-teal-500/20" label="Receita Cobrança (Phoebus)" value={data.collection_won_value} format="currency" info="Receita APENAS dos serviços Phoebus (anuidade da plataforma + calibração do módulo) nos negócios GANHOS do board de Cobrança, no período. Não é o total da Cobrança — só as linhas desses serviços." sub="Serviços Phoebus ganhos na Cobrança" highlight="green" />
-          )}
-          {board !== 2 && (
-            <KpiCard icon={<DollarSign size={18} className="text-cyan-400" />} iconBg="bg-cyan-500/20" label="Receita de Cobrança (concluída)" value={data.from_collection_won_value} format="currency" info="Valor total dos negócios GANHOS no board de Serviço, no período, que foram marcados no Resumo como 'Origem: Cobrança = Sim'. É a fatia da Receita ganha que veio de uma Cobrança." sub="Ganhos no Serviço originados de Cobrança" highlight="green" />
+          {board !== 2 ? (
+            // Dash de Serviço: card composto "Receita Total" = Receita ganha (Serviço)
+            // + Receita Cobrança (Phoebus). "Originado de Cobrança" é uma fatia da
+            // Receita ganha (já incluída) — mostrada só para medir o peso da Cobrança.
+            (() => {
+              const ganha = Number(data.won_value) || 0;
+              const phoebus = Number(data.collection_won_value) || 0;
+              const concluida = Number(data.from_collection_won_value) || 0;
+              const total = ganha + phoebus;
+              const fmtBRL = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+              return (
+                <div className="rounded-xl border border-emerald-500/30 bg-white p-5 transition-all hover:shadow-sm dark:border-emerald-500/20 dark:bg-slate-800/50 sm:col-span-3 lg:col-span-2">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className="rounded-lg bg-green-500/20 p-2.5"><DollarSign size={18} className="text-green-400" /></div>
+                      <div className="group relative flex">
+                        <Info size={13} className="cursor-help text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-200" />
+                        <div role="tooltip" className="pointer-events-none absolute left-0 top-6 z-50 w-72 rounded-lg border border-gray-200 bg-white p-2.5 text-left text-[11px] leading-relaxed text-slate-600 opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                          Faturamento total do período = Receita ganha (board de Serviço) + Receita Cobrança (Phoebus, board de Cobrança). "Originado de Cobrança" é uma fatia da Receita ganha (já incluída no total), mostrada para medir o peso da Cobrança no faturamento.
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="mb-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">Receita Total</p>
+                      <span className="text-2xl font-bold text-slate-900 dark:text-white">{fmtBRL(total)}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1 border-t border-gray-200/60 pt-2 text-xs dark:border-slate-700/40">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Serviço (Receita ganha)</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">{fmtBRL(ganha)} · {pct(ganha)}%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Cobrança (Phoebus)</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">{fmtBRL(phoebus)} · {pct(phoebus)}%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 dark:text-slate-500">↳ originado de Cobrança*</span>
+                      <span className="text-slate-500 dark:text-slate-400">{fmtBRL(concluida)}</span>
+                    </div>
+                    <p className="pt-0.5 text-[10px] text-slate-400 dark:text-slate-500">*fatia da Receita ganha, já incluída no total</p>
+                  </div>
+                </div>
+              );
+            })()
+          ) : (
+            <KpiCard icon={<DollarSign size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Receita ganha" value={data.won_value} format="currency" info="Valor total dos negócios ganhos no período." sub="Valor total ganho no período" highlight="green" />
           )}
           <KpiCard icon={<CheckCircle2 size={18} className="text-green-400" />} iconBg="bg-green-500/20" label="Ganhos no período" value={data.won_count} info="Quantos negócios foram marcados como ganho no período." sub="Negócios ganhos no período" highlight="green" />
           <KpiCard icon={<XCircle size={18} className="text-red-400" />} iconBg="bg-red-500/20" label="Perdidos no período" value={data.lost_count} info="Quantos negócios foram marcados como perdido no período." sub="Negócios perdidos no período" highlight="red" />
