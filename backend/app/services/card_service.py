@@ -540,6 +540,7 @@ class CardService:
                         is_lost=card.is_lost,
                         loss_reason=card.loss_reason,  # p/ o filtro "Motivo de perda" no kanban
                         closed_at=card.closed_at,
+                        deal_type=card.deal_type,  # p/ o badge e o filtro "Cross-sell" no kanban
                         acquisition_channel=card.acquisition_channel,
                         acquisition_channel_detail=card.acquisition_channel_detail,
                         reopened_from_card_id=card.reopened_from_card_id,

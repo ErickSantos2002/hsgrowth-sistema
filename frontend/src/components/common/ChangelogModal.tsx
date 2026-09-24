@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.8",
+    date: "24/09/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Board de Vendas — negócios de cross-sell (venda para cliente da base) agora aparecem com a etiqueta '🔁 Cross-sell' na cara do card, e o filtro de etiqueta ganhou a opção 'Cross-sell' para ver só esses negócios.",
+      },
+    ],
+  },
+  {
     version: "1.10.7",
     date: "24/09/2026",
     entries: [

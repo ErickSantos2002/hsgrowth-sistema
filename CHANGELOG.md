@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.8] — 24/09/2026
+
+### Adicionado
+- **Board de Vendas — etiqueta e filtro "Cross-sell":** negócios com **Tipo de negócio = Cross Sell** (venda para cliente da base) passam a exibir o selo **🔁 Cross-sell** direto no card, sem precisar abrir, e o filtro de etiqueta ganhou a opção **"🔁 Cross-sell"** para listar só esses negócios. Acompanha a importação da base Phoebus (148 negócios, Canal = Base / Tipo = Cross Sell).
+
+### Corrigido
+- **Tipo de negócio voltando na listagem do board:** a listagem enxuta que alimenta o Kanban não enviava o campo `deal_type`, então o selo de Cross-sell não aparecia e o filtro devolvia vazio.
+
+---
+
 ## [1.10.7] — 24/09/2026
 
 ### Alterado

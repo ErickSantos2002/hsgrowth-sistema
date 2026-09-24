@@ -525,6 +525,7 @@ class CardMinimalResponse(BaseModel):
     is_lost: bool = Field(..., description="Card perdido")
     loss_reason: Optional[str] = Field(None, max_length=200, description="Motivo da perda (quando card é perdido) — usado no filtro do kanban")
     closed_at: Optional[datetime] = Field(None, description="Data de fechamento (ganho ou perdido)")
+    deal_type: Optional[str] = Field(None, description="Tipo de negócio — usado no badge e no filtro 'Cross-sell' do kanban")
     acquisition_channel: Optional[str] = Field(None, description="Canal de aquisição")
     acquisition_channel_detail: Optional[str] = Field(None, description="Detalhamento do canal de aquisição")
     reopened_from_card_id: Optional[int] = Field(None, description="ID do card original que gerou esta reabertura (None = criado do zero)")
