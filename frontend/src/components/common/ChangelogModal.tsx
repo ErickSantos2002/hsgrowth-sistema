@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.5",
+    date: "24/09/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Boards de Vendas e Serviço — o selo 'Parado 3d+/7d+' agora considera atividades agendadas: cards com atividade/tarefa para hoje ou futura não são mais marcados como parados (já têm próximo passo). O selo só aparece quando não há atividade à frente (só atrasada ou nenhuma) e o card está sem movimentação há +3d/+7d.",
+      },
+    ],
+  },
+  {
     version: "1.10.4",
     date: "22/09/2026",
     entries: [

@@ -362,6 +362,9 @@ class CardService:
             seven_days_ago = business_days_ago(7)
             stuck_card_ids: set = set()
             stuck_7d_card_ids: set = set()
+            # Cards com tarefa pendente para HOJE ou FUTURA — têm próximo passo
+            # planejado e NÃO devem contar como "Parado" (mesma regra do Serviço).
+            ahead_ids: set = set()
             if card_ids:
                 # IDs de cards que tiveram alguma tarefa criada ou concluída nos últimos 3 dias
                 active_by_task = {
@@ -487,6 +490,16 @@ class CardService:
                         pending_tasks_statuses[card_id] = "future"
                     else:
                         pending_tasks_statuses[card_id] = "none"
+
+                    # Tem tarefa para hoje ou futura → próximo passo planejado.
+                    if has_today or has_future:
+                        ahead_ids.add(card_id)
+
+                # Cards com atividade à frente saem do "Parado" (3d+ e 7d+): mesmo
+                # sem movimentação, há um próximo passo agendado. Só volta a contar
+                # como parado quem só tem tarefa atrasada (ou nenhuma).
+                stuck_card_ids -= ahead_ids
+                stuck_7d_card_ids -= ahead_ids
 
             for card in cards:
                 # Usa o usuário já carregado via eager loading (sem query adicional)

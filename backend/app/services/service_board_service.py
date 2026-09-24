@@ -382,6 +382,10 @@ class ServiceBoardService:
                 "value": value_by_card.get(cid, 0.0),
                 "pending_status": status_str,
                 "pending_count": p["count"] if p else 0,
+                # Tem atividade pendente para HOJE ou FUTURA? Se sim, o card tem um
+                # próximo passo planejado e NÃO deve contar como "Parado" — mesmo sem
+                # movimentação. Só atividade atrasada (ou nenhuma) volta a valer o parado.
+                "has_pending_ahead": bool(p and (p["today"] or p["future"])),
                 "has_activity": cid in has_activity,
                 "recent_activity": cid in recent_activity,
                 "recent_activity_7d": cid in recent_activity_7d,
@@ -415,8 +419,12 @@ class ServiceBoardService:
         for c in cards:
             a = agg.get(c.id, {})
             closed = c.list_id in closed_list_ids
-            is_stuck = bool(not closed and a.get("has_activity") and not a.get("recent_activity") and c.updated_at and c.updated_at < threshold)
-            is_stuck_7d = bool(not closed and a.get("has_activity") and not a.get("recent_activity_7d") and c.updated_at and c.updated_at < threshold_7d)
+            # Card com atividade pendente para HOJE ou FUTURA tem próximo passo
+            # planejado → não é "Parado", mesmo sem movimentação recente. Só conta
+            # como parado quando não há atividade à frente (só atrasada ou nenhuma).
+            ahead = a.get("has_pending_ahead")
+            is_stuck = bool(not closed and not ahead and a.get("has_activity") and not a.get("recent_activity") and c.updated_at and c.updated_at < threshold)
+            is_stuck_7d = bool(not closed and not ahead and a.get("has_activity") and not a.get("recent_activity_7d") and c.updated_at and c.updated_at < threshold_7d)
             items.append(ServiceCardResponse(
                 id=c.id,
                 list_id=c.list_id,

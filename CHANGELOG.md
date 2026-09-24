@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.5] — 24/09/2026
+
+### Alterado
+- **Boards de Vendas e Serviço — "Parado 3d+/7d+" considera atividades agendadas:** um card com atividade/tarefa pendente para **hoje** ou **futura** deixa de ser marcado como "Parado", mesmo sem movimentação — pois já tem um próximo passo planejado. O selo (e o filtro) só aparece quando o card **não tem atividade à frente** (só **atrasada** ou nenhuma) e está sem movimentação há +3d/+7d úteis. Vale para os **boards de Vendas** e para os de **Serviço/Cobrança**.
+
+---
+
 ## [1.10.4] — 22/09/2026
 
 ### Corrigido
