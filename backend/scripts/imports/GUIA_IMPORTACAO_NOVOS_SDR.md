@@ -268,6 +268,7 @@ O gerador de lote decide a coluna por nome (conjunto `VENDEDORES = {"Miguel", "K
 | Transp. Lote 12 | 20/08/2026 | 100 | Miguel | 10503–10602 | ✅ Importado |
 | Transp. Lote 13 | 24/08/2026 | 200 | Claudia (100), Karolaine (100) | 10612–10824 | ✅ Importado |
 | Transp. Lote 14 | 10/09/2026 | 200 | Miguel (100, Vendedor), Karolaine (100, Vendedor) | 10961–11160 (re-subido) | ✅ Importado |
+| Transp. Lote 15 | 24/09/2026 | 100 | Claudia (SDR) | 11344–11443 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
 **Obs. Transp. Lote 2:** o range 8804–9006 inclui 1 card orgânico de Karolaine (Lista fria) criado por SDR na janela; o lote em si é 100/100 (200 linhas, 0 erros).
@@ -300,7 +301,9 @@ O gerador de lote decide a coluna por nome (conjunto `VENDEDORES = {"Miguel", "K
 
 **Recuperação pós-restore (10/09/2026):** a VPS foi zerada e o banco voltou para antes de 07/09, perdendo os cards do Lote 14 (a única importação nessa janela). Re-importado o MESMO `transportadoras_lote14.xlsx` — guardrail confirmou 0 dos 200 CNPJs no CRM restaurado, recriando os 200 sem duplicata. Novos IDs: Miguel 10961–11060, Karolaine 11061–11160. Lotes 1–13 (todos antes de 07/09) não foram afetados.
 
-**Total Transportadoras importado:** 2100 | **Pendentes novos:** 1.787 de 4.056 | **Separados (CNPJ já no CRM):** 169.
+**Obs. Transp. Lote 15:** 100/100 com site, 100 clientes novos, 0 pulados. Claudia atribuída em `sdr_id` (SDR); `assigned_to_id` vazio nos 100. IDs 11344–11443.
+
+**Total Transportadoras importado:** 2200 | **Pendentes novos:** 1.687 de 4.056 | **Separados (CNPJ já no CRM):** 169.
 
 ---
 
