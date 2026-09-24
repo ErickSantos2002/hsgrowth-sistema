@@ -307,6 +307,22 @@ O gerador de lote decide a coluna por nome (conjunto `VENDEDORES = {"Miguel", "K
 
 ---
 
+## Fonte 3 — Phoebus / Base (Cross-sell)
+
+Planilha `Fase6-Import-Phoebus-Base-2026-09-24.xlsx` — já entregue **no layout de import** (aba `Importação_CRM`, 54 colunas, dados a partir da row 5). São **clientes da base** para vender o Phoebus (Canal = "Base", Tipo = "Cross Sell"). Miguel e Karolaine como **Vendedores** (`Vendedor_Responsavel`).
+
+**Diferença importante — guardrail DESLIGADO:** como é cross-sell da base, a maioria já é cliente no CRM (121 de 148). Por isso o import rodou com a flag **`--allow-existing-cnpj`**, que cria o card mesmo para CNPJ existente (reaproveitando o cliente). Não confundir com as transportadoras (lista fria), onde o guardrail fica LIGADO.
+
+Comando: `python scripts/imports/import_from_planilha.py <arquivo>.xlsx --allow-existing-cnpj`
+
+| Lote | Data | Cards | Divisão | IDs no banco | Status |
+|---|---|---|---|---|---|
+| Phoebus Base 1 | 24/09/2026 | 148 | Karolaine (74), Miguel (74) — Vendedores | 11455–11603 | ✅ Importado |
+
+**Obs. Phoebus 1:** 148/148, 0 erros, 0 pulados. 27 clientes novos + 121 reaproveitados; 44 pessoas criadas (120 cards com contato). Destino Lead Novo / Prospecção (list 22).
+
+---
+
 **Obs. Lote 3:** 299 importados pelo script + 1 manual (EFITRANS TRANSPORTES LTDA, id=5750, Ãhwaryoné). Karolaine Martins (id=9) incluída pela primeira vez.
 
 **Obs. Lote 5:** A partir deste lote, `import_from_planilha.py` preenche automaticamente: `deal_type="Nova Venda"` (Card), `relationship_type="Lead"` e `commercial_activity="Ativo"` (Client). SDRs não precisam mais preencher esses campos manualmente.

@@ -569,11 +569,18 @@ def create_activities(
 # IMPORTAÇÃO PRINCIPAL
 # ============================================================
 
-def import_from_sheet(filename: str | None = None):
+def import_from_sheet(filename: str | None = None, allow_existing_cnpj: bool = False):
+    """
+    allow_existing_cnpj=False (padrão): guardrail LIGADO — pula linhas cujo CNPJ já
+      existe no CRM (evita negócio duplicado em listas frias, ex.: transportadoras).
+    allow_existing_cnpj=True: guardrail DESLIGADO — cria o card mesmo para CNPJ já
+      cadastrado, reaproveitando o cliente existente (ex.: cross-sell da base / Phoebus).
+      Ative com a flag de linha de comando --allow-existing-cnpj.
+    """
     script_dir = os.path.dirname(os.path.abspath(__file__))
     # Aceita arquivo via argumento ou usa o nome passado como parâmetro
     if filename is None:
-        filename = sys.argv[1] if len(sys.argv) > 1 else "Planilha_Importacao_CRM_JOAO_VICTOR.xlsx"
+        filename = "Planilha_Importacao_CRM_JOAO_VICTOR.xlsx"
     sheet_path = os.path.join(script_dir, filename)
 
     print("=" * 70)
@@ -581,6 +588,7 @@ def import_from_sheet(filename: str | None = None):
     print("=" * 70)
     print(f"Arquivo : {sheet_path}")
     print(f"Lista   : Lead Novo / Prospecção (id={TARGET_LIST_ID}, board={TARGET_BOARD_ID})")
+    print(f"Guardrail CNPJ no CRM: {'DESLIGADO (cria mesmo se já existe)' if allow_existing_cnpj else 'LIGADO (pula duplicados)'}")
 
     if not os.path.exists(sheet_path):
         print(f"\nERRO: Arquivo não encontrado.")
@@ -634,11 +642,13 @@ def import_from_sheet(filename: str | None = None):
 
             try:
                 # --- Guardrail anti-duplicata: pula se o CNPJ já existe no CRM ---
-                cnpj_digits = clean_cnpj(reader.get(row_num, "CNPJ *"))
-                if find_existing_client_id(db, cnpj_digits):
-                    print(f"    PULADO  : CNPJ ...{cnpj_digits[-4:]} já cadastrado no CRM — negócio não criado")
-                    stats["skipped_existing_cnpj"] += 1
-                    continue
+                # (desligável via allow_existing_cnpj p/ cross-sell da base)
+                if not allow_existing_cnpj:
+                    cnpj_digits = clean_cnpj(reader.get(row_num, "CNPJ *"))
+                    if find_existing_client_id(db, cnpj_digits):
+                        print(f"    PULADO  : CNPJ ...{cnpj_digits[-4:]} já cadastrado no CRM — negócio não criado")
+                        stats["skipped_existing_cnpj"] += 1
+                        continue
 
                 # --- SDR ---
                 sdr_name = clean_str(reader.get(row_num, "SDR_Responsavel *"))
@@ -732,8 +742,13 @@ def import_from_sheet(filename: str | None = None):
 
 
 if __name__ == "__main__":
+    # Separa flags (--...) do caminho do arquivo
+    _args  = [a for a in sys.argv[1:] if not a.startswith("--")]
+    _flags = {a for a in sys.argv[1:] if a.startswith("--")}
+    _fname = _args[0] if _args else None
+    _allow_existing = "--allow-existing-cnpj" in _flags
     try:
-        import_from_sheet()
+        import_from_sheet(_fname, allow_existing_cnpj=_allow_existing)
     except KeyboardInterrupt:
         print("\n\nImportacao cancelada pelo usuario.")
         sys.exit(1)
