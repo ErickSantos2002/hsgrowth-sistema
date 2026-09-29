@@ -69,6 +69,28 @@ class ServiceDashboardService:
             cards = [c for c in cards if (c.business_info or {}).get("collection_type") == collection_type]
         card_ids = [c.id for c in cards]
 
+        # Cards cujo ÚLTIMO motivo de perda é "Unificado em outro card" (esvaziados ao
+        # mover aparelhos para outro card do mesmo CNPJ): não são perda real.
+        from app.services.service_board_service import UNIFIED_LOSS_REASON
+        unified_ids: set = set()
+        if card_ids:
+            vistos: set = set()
+            for cid, desc in (
+                db.query(ServiceCardActivity.service_card_id, ServiceCardActivity.description)
+                .filter(
+                    ServiceCardActivity.service_card_id.in_(card_ids),
+                    ServiceCardActivity.category == "anotacao",
+                    ServiceCardActivity.description.like("Motivo da perda:%"),
+                )
+                .order_by(ServiceCardActivity.created_at.desc(), ServiceCardActivity.id.desc())
+                .all()
+            ):
+                if cid in vistos:
+                    continue
+                vistos.add(cid)
+                if (desc or "").replace("Motivo da perda:", "").strip().startswith(UNIFIED_LOSS_REASON):
+                    unified_ids.add(cid)
+
         # ── Filtro por usuário (opcional) ────────────────────────────────────
         # collab_ids = cards onde o usuário tem >=1 atividade (colaborador).
         # None = sem filtro (comportamento atual). O Ranking de colaboradores
@@ -166,7 +188,8 @@ class ServiceDashboardService:
         #  - com filtro: só os cards que ESSE usuário marcou (atribuição).
         if user_id is None:
             won_cards = [c for c in cards if c.list_id in done_ids and c.updated_at and start <= c.updated_at <= end]
-            lost_cards = [c for c in cards if c.list_id in lost_ids and c.updated_at and start <= c.updated_at <= end]
+            lost_cards = [c for c in cards if c.list_id in lost_ids and c.id not in unified_ids
+                          and c.updated_at and start <= c.updated_at <= end]
         else:
             _byid = {c.id: c for c in cards}
             won_cards = [_byid[cid] for cid in won_ids_u if cid in _byid]
@@ -347,6 +370,8 @@ class ServiceDashboardService:
             )
             for (desc,) in notes:
                 r = (desc or "").replace("Motivo da perda:", "").strip().split(".")[0].strip()
+                if r.startswith(UNIFIED_LOSS_REASON):
+                    continue  # unificação não é perda real
                 if r:
                     reason_counter[r] += 1
         loss_reasons = [NameCount(name=r, count=c) for r, c in reason_counter.most_common()]
@@ -394,7 +419,7 @@ class ServiceDashboardService:
                     key = (c.updated_at.year, c.updated_at.month)
                     if c.list_id in done_ids:
                         won_by_month[key] += 1
-                    elif c.list_id in lost_ids:
+                    elif c.list_id in lost_ids and c.id not in unified_ids:
                         lost_by_month[key] += 1
         elif card_ids:
             # Atribuição: card_won/card_lost registrados pelo usuário nos 6 meses.
