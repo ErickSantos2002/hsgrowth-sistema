@@ -798,10 +798,18 @@ const KanbanBoard: React.FC = () => {
     return cardsToFilter.filter((card) => {
       // Filtro de busca por termo
       if (searchTerm.trim()) {
-        const term = searchTerm.toLowerCase();
+        const term = searchTerm.trim().toLowerCase();
+        // CNPJ/CPF do cliente vinculado: compara só os dígitos (com ou sem pontuação).
+        const termDigits = term.replace(/\D/g, "");
+        const doc = card.client_document || "";
+        const matchesDocumento =
+          doc.toLowerCase().includes(term) ||
+          (termDigits.length >= 4 && doc.replace(/\D/g, "").includes(termDigits));
         const matchesSearch =
           card.title?.toLowerCase().includes(term) ||
           card.description?.toLowerCase().includes(term) ||
+          card.client_name?.toLowerCase().includes(term) ||
+          matchesDocumento ||
           card.contact_info?.name?.toLowerCase().includes(term) ||
           card.contact_info?.email?.toLowerCase().includes(term) ||
           card.contact_info?.company?.toLowerCase().includes(term);
@@ -1157,7 +1165,7 @@ const KanbanBoard: React.FC = () => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar cards..."
+                  placeholder="Buscar por título, cliente, CNPJ ou contato..."
                   className="min-w-0 flex-1 bg-transparent text-slate-900 placeholder-slate-400 outline-none dark:text-white sm:w-64"
                   autoFocus
                   onBlur={() => {

@@ -501,6 +501,14 @@ class CardService:
                 stuck_card_ids -= ahead_ids
                 stuck_7d_card_ids -= ahead_ids
 
+            # Nome e CNPJ/CPF do cliente (busca do kanban) — uma consulta só para a página.
+            from app.models.client import Client as _Client
+            _client_ids = {c.client_id for c in cards if c.client_id}
+            clients_by_id = (
+                {cl.id: cl for cl in self.db.query(_Client).filter(_Client.id.in_(_client_ids)).all()}
+                if _client_ids else {}
+            )
+
             for card in cards:
                 # Usa o usuário já carregado via eager loading (sem query adicional)
                 assigned_to_name = None
@@ -549,6 +557,8 @@ class CardService:
                         updated_at=card.updated_at,
                         is_stuck_3d=card.id in stuck_card_ids,
                         is_stuck_7d=card.id in stuck_7d_card_ids,
+                        client_name=clients_by_id[card.client_id].name if card.client_id in clients_by_id else None,
+                        client_document=clients_by_id[card.client_id].document if card.client_id in clients_by_id else None,
                     )
                 )
 

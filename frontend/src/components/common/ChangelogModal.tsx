@@ -41,6 +41,14 @@ const CHANGELOG: ChangelogVersion[] = [
         text: "Serviço/Cobrança — a busca do board (lupa) agora também encontra pelo CNPJ/CPF do cliente, com ou sem pontuação.",
       },
       {
+        type: "feature",
+        text: "Vendas — a busca do board (lupa) agora também encontra pelo nome do cliente vinculado e pelo CNPJ/CPF, com ou sem pontuação.",
+      },
+      {
+        type: "feature",
+        text: "Busca geral (Ctrl+K) — agora traz cards de Vendas e de Serviço/Cobrança, separados, buscando por título, cliente, CNPJ/CPF e contato (e, no Serviço, nº de série/módulo). Cada resultado mostra por onde bateu. Os cards de Serviço só aparecem para quem acessa o módulo.",
+      },
+      {
         type: "fix",
         text: "Serviço/Cobrança — a busca por nº de série/módulo passou a olhar os aparelhos reais do card (Produtos): aparelho movido para outro card é encontrado no card novo, e cards criados à mão também são achados por série.",
       },
