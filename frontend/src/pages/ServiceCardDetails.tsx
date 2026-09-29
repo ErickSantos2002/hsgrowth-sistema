@@ -50,6 +50,7 @@ import ActionButton from "../components/cardDetails/ActionButton";
 import ServiceDevicesSection from "../components/service/ServiceDevicesSection";
 import ServiceProductSection from "../components/service/ServiceProductSection";
 import ServiceServicesSection from "../components/service/ServiceServicesSection";
+import ServiceRelatedCardsSection from "../components/service/ServiceRelatedCardsSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ClientModal from "../components/clients/ClientModal";
 import PersonModal from "../components/persons/PersonModal";
@@ -940,6 +941,8 @@ const ServiceCardDetails: React.FC = () => {
   const [isMoving, setIsMoving] = useState(false);
   // null = ainda não carregou; usado para o fallback de aparelhos não convertidos
   const [productCount, setProductCount] = useState<number | null>(null);
+  // Força recarregar a seção de Produtos após puxar aparelhos de outro card
+  const [productsRefresh, setProductsRefresh] = useState(0);
   const [activities, setActivities] = useState<ServiceCardActivity[]>([]);
   const [contactPerson, setContactPerson] = useState<Person | null>(null);
   const [isQuickCalling, setIsQuickCalling] = useState(false);
@@ -1333,6 +1336,7 @@ const ServiceCardDetails: React.FC = () => {
             cardId={numCardId}
             onChange={reloadActivities}
             onCountChange={setProductCount}
+            refreshKey={productsRefresh}
           />
           <ServiceServicesSection
             boardId={numBoardId}
@@ -1340,6 +1344,12 @@ const ServiceCardDetails: React.FC = () => {
             card={card}
             onChange={reloadActivities}
             onCardSaved={setCard}
+          />
+          <ServiceRelatedCardsSection
+            boardId={numBoardId}
+            cardId={numCardId}
+            hasClient={!!card.client_id}
+            onMoved={() => { setProductsRefresh((k) => k + 1); reloadActivities(); }}
           />
         </div>
 

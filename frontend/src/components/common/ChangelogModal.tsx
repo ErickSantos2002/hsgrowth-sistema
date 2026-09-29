@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.10",
+    date: "29/09/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Serviço/Cobrança — nova seção 'Outros cards do mesmo CNPJ' no card: lista os cards em aberto do mesmo cliente e board e permite puxar aparelhos (selecionados ou a linha inteira) para o card atual, sem recadastrar. O movimento fica no histórico dos dois cards; serviços e valor não mudam.",
+      },
+      {
+        type: "feature",
+        text: "Se o card de origem ficar sem aparelhos, ele é fechado automaticamente como Perdido — 'Unificado em outro card' (com aviso antes). Esse motivo aparece no filtro de motivo de perda e não conta nas métricas de perda da dashboard de Serviço.",
+      },
+    ],
+  },
+  {
     version: "1.10.9",
     date: "24/09/2026",
     entries: [

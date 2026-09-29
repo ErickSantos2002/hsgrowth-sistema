@@ -14,6 +14,8 @@ interface ServiceProductSectionProps {
   onChange?: () => void;
   /** Informa quantos itens o card tem, para o pai decidir o fallback de aparelhos. */
   onCountChange?: (n: number) => void;
+  /** Muda para forçar o recarregamento dos produtos (ex.: após puxar aparelhos). */
+  refreshKey?: number;
 }
 
 /**
@@ -138,6 +140,7 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
   cardId,
   onChange,
   onCountChange,
+  refreshKey,
 }) => {
   const { confirm } = useConfirm();
 
@@ -160,7 +163,7 @@ const ServiceProductSection: React.FC<ServiceProductSectionProps> = ({
 
   useEffect(() => {
     loadProducts();
-  }, [boardId, cardId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [boardId, cardId, refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (showProductSearch) loadAvailableProducts();

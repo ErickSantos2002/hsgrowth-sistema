@@ -209,6 +209,10 @@ export const SERVICE_LOSS_REASONS = [
 // Motivo exclusivo do Admin — descarte de cards criados errados (sem apagar).
 export const SERVICE_ADMIN_LOSS_REASON = "Descarte administrativo — erro de cadastro";
 
+// Motivo de sistema: card esvaziado ao mover aparelhos para outro card do mesmo CNPJ.
+// Não entra no modal de perda manual; aparece só no filtro. Não conta como perda na dashboard.
+export const SERVICE_UNIFIED_LOSS_REASON = "Unificado em outro card";
+
 export const BOOLEAN_OPTIONS = [
   { value: "true", label: "Sim" },
   { value: "false", label: "Não" },

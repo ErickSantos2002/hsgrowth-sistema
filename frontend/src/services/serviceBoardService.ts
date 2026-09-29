@@ -163,6 +163,27 @@ export interface UpdateServiceCardProductRequest {
   aparelhos?: ServiceAparelho[];
 }
 
+// Outro card EM ABERTO do mesmo CNPJ (mesmo board), com seus produtos/aparelhos
+export interface RelatedDevicesCard {
+  id: number;
+  title: string;
+  list_name?: string | null;
+  products: ServiceCardProduct[];
+}
+
+// Uma linha (modelo) a puxar: a linha inteira (all) ou aparelhos por índice
+export interface PullDevicesItem {
+  product_id: number;
+  all?: boolean;
+  indices?: number[];
+}
+
+export interface PullDevicesResult {
+  message: string;
+  moved: string[];
+  origin_closed: boolean; // origem ficou sem aparelhos e foi fechada como "Unificado em outro card"
+}
+
 // ─── Serviço vinculado ao card (catálogo de Serviços) ──────────────────────────
 
 export interface ServiceCardService {
@@ -410,6 +431,18 @@ class ServiceBoardService {
 
   async removeCardProduct(boardId: number, cardId: number, itemId: number): Promise<void> {
     await api.delete(`${BASE}/${boardId}/cards/${cardId}/products/${itemId}`);
+  }
+
+  // Outros cards em aberto do mesmo CNPJ (mesmo board) com seus aparelhos
+  async getRelatedDevices(boardId: number, cardId: number): Promise<RelatedDevicesCard[]> {
+    const r = await api.get<RelatedDevicesCard[]>(`${BASE}/${boardId}/cards/${cardId}/related-devices`);
+    return r.data;
+  }
+
+  // Puxa aparelhos de outro card para este (cardId = destino)
+  async pullDevices(boardId: number, cardId: number, fromCardId: number, items: PullDevicesItem[]): Promise<PullDevicesResult> {
+    const r = await api.post<PullDevicesResult>(`${BASE}/${boardId}/cards/${cardId}/pull-devices`, { from_card_id: fromCardId, items });
+    return r.data;
   }
 
   // Card Services (catálogo de Serviços)

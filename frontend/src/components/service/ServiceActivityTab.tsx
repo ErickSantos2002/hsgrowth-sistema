@@ -449,7 +449,10 @@ const changeIcon = (type?: string): React.ReactNode => {
     case "card_won": return <CheckCircle size={16} className="text-emerald-400" />;
     case "card_lost": return <XCircle size={16} className="text-red-400" />;
     case "product_added":
-    case "product_removed": return <Package size={16} className="text-violet-400" />;
+    case "product_removed":
+    case "devices_moved_in":
+    case "devices_moved_out": return <Package size={16} className="text-violet-400" />;
+    case "card_unified": return <XCircle size={16} className="text-slate-400" />;
     case "client_linked":
     case "client_unlinked":
     case "person_linked":

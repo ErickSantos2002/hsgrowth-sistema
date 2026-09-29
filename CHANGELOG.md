@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.10] — 29/09/2026
+
+### Adicionado
+- **Serviço/Cobrança — mover aparelhos entre cards do mesmo CNPJ:** no card, a nova seção **"Outros cards do mesmo CNPJ"** lista os cards **em aberto** do mesmo cliente e do mesmo board; dá para **puxar aparelhos** (selecionados ou a linha inteira do modelo) para o card atual, sem recadastrar nada. O movimento fica registrado no **histórico dos dois cards**. Serviços e valor não são alterados.
+- **Card esvaziado vira "Unificado em outro card":** se o card de origem ficar sem aparelhos, ele é fechado automaticamente como **Perdido** com o motivo **"Unificado em outro card"** (com aviso antes). Esse motivo aparece no filtro "Motivo de perda" do kanban e **não conta** nas métricas de perda da dashboard de Serviço (Perdidos, Taxa de ganho, Motivos de perda e Evolução).
+
+---
+
 ## [1.10.9] — 24/09/2026
 
 ### Corrigido

@@ -16,7 +16,7 @@ import serviceBoardService, {
 import { showSuccess, showError } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
 import { BaseModal, FormField, Input, Textarea, Button, LoadingSpinner, SelectMenu } from "../components/common";
-import { SERVICE_LOSS_REASONS, SERVICE_ADMIN_LOSS_REASON } from "../constants/blueprintOptions";
+import { SERVICE_LOSS_REASONS, SERVICE_ADMIN_LOSS_REASON, SERVICE_UNIFIED_LOSS_REASON } from "../constants/blueprintOptions";
 import { useAuth } from "../hooks/useAuth";
 import { COLORS } from "../constants/colors";
 import ServiceCardModal from "../components/service/ServiceCardModal";
@@ -1280,7 +1280,7 @@ const ServiceKanban: React.FC = () => {
               <div className="min-w-[190px]">
                 <SelectMenu size="sm" value={fLossReason} onChange={setFLossReason} options={[
                   { value: "", label: "Todos os motivos" },
-                  ...[...SERVICE_LOSS_REASONS, SERVICE_ADMIN_LOSS_REASON].map((r) => ({ value: r, label: r })),
+                  ...[...SERVICE_LOSS_REASONS, SERVICE_ADMIN_LOSS_REASON, SERVICE_UNIFIED_LOSS_REASON].map((r) => ({ value: r, label: r })),
                 ]} />
               </div>
             )}
