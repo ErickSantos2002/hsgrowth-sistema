@@ -212,6 +212,26 @@ class ServiceCardProductResponse(ServiceCardProductBase):
     model_config = {"from_attributes": True}
 
 
+class PullDevicesItem(BaseModel):
+    """Uma linha de produto (modelo) a puxar do card de origem."""
+    product_id: int
+    all: bool = False               # True = linha inteira (todos os aparelhos + quantity)
+    indices: List[int] = []         # índices em `aparelhos` da linha de origem (quando all=False)
+
+
+class PullDevicesRequest(BaseModel):
+    from_card_id: int
+    items: List[PullDevicesItem]
+
+
+class RelatedDevicesCard(BaseModel):
+    """Outro card em aberto do mesmo CNPJ e board, com seus produtos/aparelhos."""
+    id: int
+    title: str
+    list_name: Optional[str] = None
+    products: List[ServiceCardProductResponse] = []
+
+
 class ServiceCardProductSummary(BaseModel):
     items: List[ServiceCardProductResponse]
     total_items: int

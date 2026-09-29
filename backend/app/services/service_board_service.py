@@ -22,6 +22,7 @@ from app.schemas.service_board import (
     ServiceCardCreate, ServiceCardUpdate, ServiceCardResponse, ServiceCardListResponse,
     ServiceCardProductCreate, ServiceCardProductUpdate,
     ServiceCardProductResponse, ServiceCardProductSummary,
+    PullDevicesRequest, RelatedDevicesCard,
     ServiceCardActivityCreate, ServiceCardActivityUpdate, ServiceCardActivityResponse,
 )
 from app.schemas.service import (
@@ -38,6 +39,10 @@ from app.models.user import User
 
 # Funil oficial de serviço (board 1) — usado pela dashboard principal de Serviço.
 SERVICE_FUNNEL_BOARD_IDS = {1}
+
+# Motivo de sistema para cards esvaziados ao mover aparelhos para outro card do
+# mesmo CNPJ. Não é perda real: a dashboard exclui esses cards das métricas de perda.
+UNIFIED_LOSS_REASON = "Unificado em outro card"
 
 # Boards que possuem regras de avanço + comportamento de Ganho/Perdido:
 #   1 = Serviços (funil oficial) · 2 = Cobrança (Serviços - Atrasados).
@@ -914,6 +919,171 @@ class ServiceBoardService:
         self.log_event(card_id, user, "product_removed", f"Produto removido: {product_name}",
                        {"product_id": item.product_id})
         return {"message": "Produto removido do card com sucesso"}
+
+    # ─── Mover aparelhos entre cards do mesmo CNPJ ───────────────────────────────
+
+    @staticmethod
+    def _is_closed_list(lst) -> bool:
+        """Ganho/Perdido por flag OU por nome (as listas nem sempre têm a flag)."""
+        if not lst:
+            return False
+        nome = (lst.name or "").lower()
+        return bool(lst.is_done_stage or lst.is_lost_stage or "ganho" in nome or "perdido" in nome)
+
+    def list_related_devices(self, board_id: int, card_id: int) -> List[RelatedDevicesCard]:
+        """Outros cards EM ABERTO do mesmo CNPJ (client_id) e do mesmo board, com aparelhos."""
+        card = self.get_card_in_board(board_id, card_id)
+        if not card.client_id:
+            return []
+        outros = (
+            self.db.query(ServiceCard)
+            .join(ServiceList, ServiceCard.list_id == ServiceList.id)
+            .filter(
+                ServiceList.board_id == board_id,
+                ServiceCard.client_id == card.client_id,
+                ServiceCard.id != card.id,
+                ServiceCard.is_deleted == False,  # noqa: E712
+            )
+            .order_by(ServiceCard.created_at.desc())
+            .all()
+        )
+        result: List[RelatedDevicesCard] = []
+        for o in outros:
+            if self._is_closed_list(o.list):
+                continue
+            items = self.repo.list_card_products(o.id)
+            result.append(RelatedDevicesCard(
+                id=o.id,
+                title=o.title,
+                list_name=o.list.name if o.list else None,
+                products=[self._build_card_product_response(i) for i in items],
+            ))
+        return result
+
+    def _lost_list_for_board(self, board_id: int) -> ServiceList:
+        """Lista de Perdido do board (flag ou nome); cria 'Negócio Perdido' se não existir."""
+        listas = self.repo.list_lists_by_board(board_id)
+        for lst in listas:
+            if lst.is_lost_stage or "perdido" in (lst.name or "").lower():
+                return lst
+        nova = ServiceList(
+            board_id=board_id, name="Negócio Perdido", color="#EF4444", is_lost_stage=True,
+            position=max((lst.position or 0 for lst in listas), default=0) + 1,
+        )
+        self.db.add(nova)
+        self.db.commit()
+        self.db.refresh(nova)
+        return nova
+
+    def _fechar_como_unificado(self, origem: ServiceCard, destino: ServiceCard, user: Optional[User]) -> None:
+        """Fecha a origem esvaziada como Perdido — 'Unificado em outro card'.
+
+        Grava evento `card_unified` (e NÃO `card_lost`) para não contar como perda.
+        """
+        lost = self._lost_list_for_board(origem.list.board_id)
+        self.repo.move_card(origem.id, lost.id, self.repo.top_position(lost.id))
+        self._complete_pending_activities(origem.id)
+        self.repo.create_activity(
+            service_card_id=origem.id,
+            user_id=user.id if user else None,
+            category="anotacao",
+            activity_type="note",
+            description=f"Motivo da perda: {UNIFIED_LOSS_REASON}",
+        )
+        self.log_event(origem.id, user, "card_unified",
+                       f"Card unificado no card #{destino.id} — {destino.title} (ficou sem aparelhos)",
+                       {"to_card_id": destino.id, "to_list_id": lost.id})
+
+    def pull_devices(self, board_id: int, card_id: int, data: PullDevicesRequest, user: Optional[User]) -> dict:
+        """Puxa aparelhos de outro card (mesmo CNPJ/board, ambos em aberto) para `card_id`.
+
+        Move só aparelhos: serviços e valor não são alterados. Se a origem ficar sem
+        nenhum produto, é fechada como 'Unificado em outro card'.
+        """
+        import copy
+
+        def erro(msg: str):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+
+        destino = self.get_card_in_board(board_id, card_id)
+        origem = self.get_card_in_board(board_id, data.from_card_id)
+        if origem.id == destino.id:
+            erro("Origem e destino são o mesmo card")
+        if not destino.client_id or origem.client_id != destino.client_id:
+            erro("Os cards precisam ser do mesmo CNPJ")
+        if self._is_closed_list(origem.list) or self._is_closed_list(destino.list):
+            erro("Só é possível mover aparelhos entre cards em aberto")
+        if not data.items:
+            erro("Nenhum aparelho selecionado")
+        pids = [it.product_id for it in data.items]
+        if len(pids) != len(set(pids)):
+            erro("Produto repetido no pedido")
+
+        resumos: List[str] = []
+        for it in data.items:
+            src = self.repo.get_card_product_by_card_and_product(origem.id, it.product_id)
+            if not src:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail=f"Produto {it.product_id} não está no card de origem")
+            src_aps = list(src.aparelhos or [])
+            if it.all:
+                mover = src_aps
+                qtd = int(src.quantity or 0)
+                resto_aps: list = []
+                resto_qtd = 0
+            else:
+                idxs = sorted(set(it.indices or []))
+                if not idxs:
+                    erro("Selecione ao menos um aparelho")
+                if any(i < 0 or i >= len(src_aps) for i in idxs):
+                    erro("Aparelho selecionado não existe mais no card de origem — recarregue a página")
+                sel = set(idxs)
+                mover = [src_aps[i] for i in idxs]
+                qtd = len(mover)
+                resto_aps = [a for i, a in enumerate(src_aps) if i not in sel]
+                resto_qtd = max(int(src.quantity or 0) - qtd, 0)
+
+            nome = src.product.name if src.product else f"Produto {it.product_id}"
+            dst = self.repo.get_card_product_by_card_and_product(destino.id, it.product_id)
+            if dst:
+                dst.aparelhos = list(dst.aparelhos or []) + copy.deepcopy(mover)
+                dst.quantity = int(dst.quantity or 0) + qtd
+            else:
+                self.db.add(ServiceCardProduct(
+                    service_card_id=destino.id,
+                    product_id=it.product_id,
+                    quantity=qtd,
+                    unit_price=src.unit_price,
+                    discount=0,
+                    aparelhos=copy.deepcopy(mover) or None,
+                ))
+
+            if resto_qtd <= 0 and not resto_aps:
+                self.db.delete(src)
+            else:
+                src.aparelhos = resto_aps or None
+                src.quantity = resto_qtd
+
+            series = [a.get("serial_number") for a in mover if isinstance(a, dict) and a.get("serial_number")]
+            resumos.append(f"{nome} ({qtd} aparelho(s)" + (f": {', '.join(series)}" if series else "") + ")")
+
+        self.db.commit()
+
+        resumo = "; ".join(resumos)
+        por = user.name if user else "sistema"
+        self.log_event(origem.id, user, "devices_moved_out",
+                       f"Aparelho(s) movido(s) para o card #{destino.id} — {destino.title}: {resumo} · por {por}",
+                       {"to_card_id": destino.id})
+        self.log_event(destino.id, user, "devices_moved_in",
+                       f"Aparelho(s) recebido(s) do card #{origem.id} — {origem.title}: {resumo} · por {por}",
+                       {"from_card_id": origem.id})
+
+        origin_closed = False
+        if not self.repo.list_card_products(origem.id):
+            self._fechar_como_unificado(origem, destino, user)
+            origin_closed = True
+
+        return {"message": "Aparelhos movidos com sucesso", "moved": resumos, "origin_closed": origin_closed}
 
     # ─── Card Services (mirror de Card Products, sem aparelhos) ──────────────────
 
