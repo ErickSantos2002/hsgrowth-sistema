@@ -20,6 +20,7 @@ from app.schemas.service_board import (
     ServiceCardListResponse, ServiceCardMoveRequest,
     ServiceCardProductCreate, ServiceCardProductUpdate,
     ServiceCardProductResponse, ServiceCardProductSummary,
+    PullDevicesRequest, RelatedDevicesCard,
     ServiceCardActivityCreate, ServiceCardActivityUpdate,
     ServiceCardActivityResponse, ServiceCardActivityComplete,
 )
@@ -570,6 +571,29 @@ async def remove_service_card_product(
 ) -> Any:
     svc = ServiceBoardService(db)
     return svc.remove_card_product(item_id, current_user)
+
+
+@router.get("/{board_id}/cards/{card_id}/related-devices", response_model=List[RelatedDevicesCard])
+async def list_related_devices(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Outros cards em aberto do mesmo CNPJ e board, com seus aparelhos."""
+    return ServiceBoardService(db).list_related_devices(board_id, card_id)
+
+
+@router.post("/{board_id}/cards/{card_id}/pull-devices")
+async def pull_devices(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    data: PullDevicesRequest = ...,
+    current_user: User = Depends(require_not_viewer()),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Puxa aparelhos de outro card do mesmo CNPJ para este card (card_id = destino)."""
+    return ServiceBoardService(db).pull_devices(board_id, card_id, data, current_user)
 
 
 # ─── Card Services (mirror de Card Products, sem aparelhos) ───────────────────────
