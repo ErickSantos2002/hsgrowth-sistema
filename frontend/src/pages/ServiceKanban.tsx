@@ -1060,17 +1060,30 @@ const ServiceKanban: React.FC = () => {
   const filteredCards = cards.filter((c) => {
     // Busca
     if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase();
-      // Também busca no nº de série e no nº do módulo dos aparelhos do card.
-      const eq = c.business_info?.equipamentos || [];
-      const emAparelhos = eq.some((d) =>
-        (d?.serial_number || "").toLowerCase().includes(q) ||
-        (d?.alcohol_module || "").toLowerCase().includes(q)
-      );
+      const q = searchTerm.trim().toLowerCase();
+      // Nº de série / nº do módulo: vem dos aparelhos REAIS do card (Produtos), que
+      // acompanham o aparelho quando ele é movido para outro card. O registro da
+      // integração (business_info.equipamentos) só vale para card sem nenhum produto.
+      const series = c.device_serials || [];
+      const usaRegistroIntegracao = (c.products?.length || 0) === 0;
+      const eq = usaRegistroIntegracao ? (c.business_info?.equipamentos || []) : [];
+      const emAparelhos =
+        series.some((s) => s.toLowerCase().includes(q)) ||
+        eq.some((d) =>
+          (d?.serial_number || "").toLowerCase().includes(q) ||
+          (d?.alcohol_module || "").toLowerCase().includes(q)
+        );
+      // CNPJ/CPF: compara só os dígitos (com ou sem pontuação).
+      const qDigits = q.replace(/\D/g, "");
+      const doc = c.client_document || "";
+      const emDocumento =
+        doc.toLowerCase().includes(q) ||
+        (qDigits.length >= 4 && doc.replace(/\D/g, "").includes(qDigits));
       if (!(
         c.title.toLowerCase().includes(q) ||
         (c.client_name || "").toLowerCase().includes(q) ||
         (c.person_name || "").toLowerCase().includes(q) ||
+        emDocumento ||
         emAparelhos
       )) return false;
     }
@@ -1187,7 +1200,7 @@ const ServiceKanban: React.FC = () => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar por nome, série ou módulo..."
+                  placeholder="Buscar por nome, CNPJ, série ou módulo..."
                   autoFocus
                   className="min-w-0 flex-1 bg-transparent text-slate-900 placeholder-slate-400 outline-none dark:text-white sm:w-64"
                   onBlur={() => { if (!searchTerm) setShowSearch(false); }}

@@ -302,14 +302,24 @@ class ServiceBoardService:
         # Catálogo de Serviços (service_products), não o de Vendas.
         from app.models.service_product import ServiceProduct
         prod_rows = (
-            db.query(ServiceCardProduct.service_card_id, ServiceProduct.id, ServiceProduct.name)
+            db.query(ServiceCardProduct.service_card_id, ServiceProduct.id, ServiceProduct.name,
+                     ServiceCardProduct.aparelhos)
             .join(ServiceProduct, ServiceCardProduct.product_id == ServiceProduct.id)
             .filter(ServiceCardProduct.service_card_id.in_(card_ids))
             .all()
         )
         products_by_card: dict = {}
-        for cid, pid, pname in prod_rows:
+        # Séries/módulos dos aparelhos reais do card (busca do kanban por série/módulo).
+        serials_by_card: dict = {}
+        for cid, pid, pname, aparelhos in prod_rows:
             products_by_card.setdefault(cid, []).append({"id": pid, "name": pname or ""})
+            for ap in aparelhos or []:
+                if not isinstance(ap, dict):
+                    continue
+                for campo in ("serial_number", "alcohol_module"):
+                    v = str(ap.get(campo) or "").strip()
+                    if v:
+                        serials_by_card.setdefault(cid, []).append(v)
 
         # Atividades pendentes (category=atividade, não concluída)
         pending_rows = (
@@ -395,6 +405,7 @@ class ServiceBoardService:
                 "recent_activity": cid in recent_activity,
                 "recent_activity_7d": cid in recent_activity_7d,
                 "products": products_by_card.get(cid, []),
+                "device_serials": serials_by_card.get(cid, []),
                 "loss_reason": loss_reason_by_card.get(cid),
                 "collaborators": [{"id": uid, "name": nm} for uid, nm in (collab_map.get(cid) or {}).items()],
             }
@@ -444,6 +455,7 @@ class ServiceBoardService:
                 client_id=c.client_id,
                 person_id=c.person_id,
                 client_name=c.client.name if c.client else None,
+                client_document=c.client.document if c.client else None,
                 person_name=c.person.name if c.person else None,
                 position=float(c.position or 0),
                 is_deleted=c.is_deleted,
@@ -456,6 +468,7 @@ class ServiceBoardService:
                 is_stuck_7d=is_stuck_7d,
                 collaborators=a.get("collaborators", []),
                 products=a.get("products", []),
+                device_serials=a.get("device_serials", []),
                 loss_reason=a.get("loss_reason"),
             ))
 

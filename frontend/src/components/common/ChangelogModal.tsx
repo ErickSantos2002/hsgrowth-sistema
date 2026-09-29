@@ -36,6 +36,14 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "feature",
         text: "Se o card de origem ficar sem aparelhos, ele é fechado automaticamente como Perdido — 'Unificado em outro card' (com aviso antes). Esse motivo aparece no filtro de motivo de perda e não conta nas métricas de perda da dashboard de Serviço.",
       },
+      {
+        type: "feature",
+        text: "Serviço/Cobrança — a busca do board (lupa) agora também encontra pelo CNPJ/CPF do cliente, com ou sem pontuação.",
+      },
+      {
+        type: "fix",
+        text: "Serviço/Cobrança — a busca por nº de série/módulo passou a olhar os aparelhos reais do card (Produtos): aparelho movido para outro card é encontrado no card novo, e cards criados à mão também são achados por série.",
+      },
     ],
   },
   {

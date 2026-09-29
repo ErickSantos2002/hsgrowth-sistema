@@ -155,6 +155,10 @@ class ServiceCardResponse(ServiceCardBase):
     collaborators: Optional[List[dict]] = None  # [{id, name}] — quem agiu no card
     products: Optional[List[dict]] = None  # [{id, name}] — produtos do card (p/ filtro)
     loss_reason: Optional[str] = None  # motivo da perda (derivado da anotação) — p/ filtro do kanban
+    client_document: Optional[str] = None  # CNPJ/CPF do cliente — p/ busca do kanban
+    # Nº de série e nº do módulo dos aparelhos REAIS do card (Produtos) — p/ busca do kanban.
+    # Acompanham os aparelhos quando são movidos entre cards.
+    device_serials: Optional[List[str]] = None
 
     model_config = {"from_attributes": True}
 

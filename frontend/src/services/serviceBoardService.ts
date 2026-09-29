@@ -107,6 +107,8 @@ export interface ServiceCard {
   collaborators?: { id: number; name: string }[];
   products?: { id: number; name: string }[];
   loss_reason?: string | null;  // motivo da perda (derivado) — p/ filtro do kanban
+  client_document?: string | null; // CNPJ/CPF do cliente — p/ busca do kanban
+  device_serials?: string[];       // séries/módulos dos aparelhos reais (Produtos) — p/ busca do kanban
   position: number;
   is_deleted: boolean;
   created_at: string;
