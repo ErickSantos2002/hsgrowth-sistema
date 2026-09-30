@@ -16,6 +16,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Busca geral (Ctrl+K) com Vendas e Serviço:** passou a trazer também os cards de **Serviço/Cobrança**, separados em "Vendas" e "Serviço", e a buscar por **título, cliente, CNPJ/CPF e contato** — e, no Serviço, pelo **nº de série / nº do módulo** dos aparelhos. Cada resultado mostra por onde bateu (ex.: "CNPJ/CPF", "Nº de série/módulo"). Os cards de Serviço só aparecem para quem acessa o módulo (admin, gerente e serviço). Antes a busca geral olhava só o título dos cards de Vendas.
 
 ### Corrigido
+- **Vendas — filtro "parecia" não ficar salvo:** os filtros dos boards de Vendas já continuavam aplicados ao sair e voltar, mas o botão do funil voltava cinza e o painel fechado, sem nenhum sinal de que havia filtro ligado. Agora o funil fica **destacado sempre que há filtro ativo**, igual ao board de Serviço.
 - **Serviço/Cobrança — busca por nº de série / módulo:** passou a olhar os **aparelhos reais do card** (Produtos). Antes olhava só o registro que a integração mandou na criação, então um aparelho **movido para outro card** continuava sendo achado no card antigo — e cards criados à mão não eram encontrados por série.
 
 ---

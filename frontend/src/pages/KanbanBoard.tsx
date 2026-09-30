@@ -1197,15 +1197,17 @@ const KanbanBoard: React.FC = () => {
               </button>
             )}
 
-            {/* Botão de filtros */}
+            {/* Botão de filtros — fica destacado também quando há filtro ativo com o
+                painel fechado (os filtros persistem ao sair/voltar; sem o destaque
+                parecia que tinham sumido). Mesmo comportamento do board de Serviço. */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50 ${
-                showFilters ? "bg-blue-500/20" : ""
+                showFilters || hasActiveFilters ? "bg-blue-500/20" : ""
               }`}
-              title="Filtrar cards"
+              title={hasActiveFilters ? "Filtros ativos — clique para ver" : "Filtrar cards"}
             >
-              <Filter size={20} className={showFilters ? "text-blue-400" : "text-slate-500 dark:text-slate-400"} />
+              <Filter size={20} className={showFilters || hasActiveFilters ? "text-blue-400" : "text-slate-500 dark:text-slate-400"} />
             </button>
 
             {/* Botão Nova Lista - Apenas Admin e Manager */}

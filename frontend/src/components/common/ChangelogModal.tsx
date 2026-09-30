@@ -54,6 +54,10 @@ const CHANGELOG: ChangelogVersion[] = [
       },
       {
         type: "fix",
+        text: "Vendas — o botão de filtro (funil) agora fica destacado sempre que há filtro ativo, igual ao board de Serviço. Os filtros já continuavam aplicados ao sair e voltar, mas o funil voltava cinza e parecia que tinham sumido.",
+      },
+      {
+        type: "fix",
         text: "Serviço/Cobrança — a busca por nº de série/módulo passou a olhar os aparelhos reais do card (Produtos): aparelho movido para outro card é encontrado no card novo, e cards criados à mão também são achados por série.",
       },
     ],
