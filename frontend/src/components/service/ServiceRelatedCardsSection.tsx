@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Building2, ChevronDown, ChevronRight, ExternalLink, ArrowDownToLine } from "lucide-react";
+import { Building2, ChevronDown, ChevronRight, ExternalLink, ArrowDownToLine, Search, X } from "lucide-react";
 import ExpandableSection from "../cardDetails/ExpandableSection";
 import serviceBoardService, { RelatedDevicesCard, PullDevicesItem } from "../../services/serviceBoardService";
 import { showError, showSuccess } from "../../utils/toast";
@@ -31,6 +31,8 @@ const ServiceRelatedCardsSection: React.FC<Props> = ({ boardId, cardId, hasClien
   // Seleção: chave `${productId}:${index}`
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [moving, setMoving] = useState(false);
+  // Filtro dos aparelhos do card expandido (nº de série, modelo ou módulo)
+  const [filtro, setFiltro] = useState("");
 
   const load = async () => {
     if (!hasClient) { setCards([]); return; }
@@ -41,7 +43,7 @@ const ServiceRelatedCardsSection: React.FC<Props> = ({ boardId, cardId, hasClien
     }
   };
 
-  useEffect(() => { load(); setOpen(null); setSel(new Set()); }, [boardId, cardId, hasClient]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); setOpen(null); setSel(new Set()); setFiltro(""); }, [boardId, cardId, hasClient]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!hasClient) return null;
 
@@ -98,6 +100,24 @@ const ServiceRelatedCardsSection: React.FC<Props> = ({ boardId, cardId, hasClien
 
   const totalAparelhos = (c: RelatedDevicesCard) => c.products.reduce((s, p) => s + (p.quantity || 0), 0);
 
+  // Aparelhos visíveis de uma linha, mantendo o ÍNDICE ORIGINAL (é ele que vai pro backend).
+  const termo = filtro.trim().toLowerCase();
+  const visiveis = (aparelhos: RelatedDevicesCard["products"][number]["aparelhos"]) =>
+    (aparelhos || [])
+      .map((a, i) => ({ a, i }))
+      .filter(({ a }) =>
+        !termo ||
+        [a.serial_number, a.model, a.alcohol_module].some((v) => (v || "").toLowerCase().includes(termo))
+      );
+
+  // Marca todos os aparelhos que batem com o filtro, no card expandido
+  const marcarFiltrados = (c: RelatedDevicesCard) =>
+    setSel((prev) => {
+      const n = new Set(prev);
+      c.products.forEach((p) => visiveis(p.aparelhos).forEach(({ i }) => n.add(`${p.product_id}:${i}`)));
+      return n;
+    });
+
   return (
     <ExpandableSection title="Outros cards do mesmo CNPJ" defaultExpanded={false}
       icon={<Building2 size={18} />} badge={cards.length > 0 ? cards.length : undefined}>
@@ -111,7 +131,7 @@ const ServiceRelatedCardsSection: React.FC<Props> = ({ boardId, cardId, hasClien
             return (
               <div key={c.id} className="rounded-lg border border-gray-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 p-2">
-                  <button onClick={() => { setOpen(isOpen ? null : c.id); setSel(new Set()); }}
+                  <button onClick={() => { setOpen(isOpen ? null : c.id); setSel(new Set()); setFiltro(""); }}
                     className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
                     {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     <span className="truncate text-sm font-medium text-slate-900 dark:text-white">{c.title}</span>
@@ -125,34 +145,79 @@ const ServiceRelatedCardsSection: React.FC<Props> = ({ boardId, cardId, hasClien
                 {isOpen && (
                   <div className="space-y-3 border-t border-gray-200 p-2 dark:border-slate-700">
                     {c.products.length === 0 && <p className="text-xs text-slate-400">Sem produtos neste card.</p>}
-                    {c.products.map((p) => (
-                      <div key={p.id}>
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-                            {p.product_name || `Produto ${p.product_id}`} · {p.quantity} ap.
-                          </span>
-                          {canEdit && (
-                            <button disabled={moving} onClick={() => pull(c, [{ product_id: p.product_id, all: true }])}
-                              className="text-[11px] text-blue-400 hover:text-blue-300 disabled:opacity-50">
-                              Mover todos
-                            </button>
+
+                    {/* Busca dos aparelhos deste card */}
+                    {c.products.length > 0 && (() => {
+                      const achados = c.products.reduce((s, p) => s + visiveis(p.aparelhos).length, 0);
+                      return (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1 dark:border-slate-700 dark:bg-slate-900/50">
+                            <Search size={13} className="flex-shrink-0 text-slate-400" />
+                            <input
+                              value={filtro}
+                              onChange={(e) => setFiltro(e.target.value)}
+                              placeholder="Buscar nº de série, modelo ou módulo..."
+                              className="min-w-0 flex-1 bg-transparent text-xs text-slate-900 placeholder-slate-400 outline-none dark:text-white"
+                            />
+                            {filtro && (
+                              <button onClick={() => setFiltro("")} title="Limpar busca" className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                                <X size={13} />
+                              </button>
+                            )}
+                          </div>
+                          {termo && (
+                            <div className="flex items-center justify-between text-[11px] text-slate-400">
+                              <span>{achados} aparelho(s) encontrado(s)</span>
+                              {canEdit && achados > 0 && (
+                                <button onClick={() => marcarFiltrados(c)} className="text-blue-400 hover:text-blue-300">
+                                  Marcar encontrados
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
-                        {(p.aparelhos || []).map((a, i) => {
-                          const key = `${p.product_id}:${i}`;
-                          return (
-                            <label key={key} className="flex items-center gap-2 py-0.5 text-xs text-slate-600 dark:text-slate-300">
-                              {canEdit && <input type="checkbox" checked={sel.has(key)} onChange={() => toggle(key)} />}
-                              <span>{a.serial_number || "Sem série"}</span>
-                              {a.model && <span className="text-slate-400">· {a.model}</span>}
-                              {a.next_recalibration_date && (
-                                <span className="text-slate-400">· próx. {new Date(a.next_recalibration_date + "T00:00:00").toLocaleDateString("pt-BR")}</span>
-                              )}
-                            </label>
-                          );
-                        })}
-                      </div>
-                    ))}
+                      );
+                    })()}
+
+                    {c.products.map((p) => {
+                      const lista = visiveis(p.aparelhos);
+                      // Com busca ativa, esconde a linha de produto sem nenhum aparelho encontrado
+                      if (termo && lista.length === 0) return null;
+                      return (
+                        <div key={p.id}>
+                          <div className="mb-1 flex items-center justify-between gap-2">
+                            <span className="truncate text-xs font-semibold text-slate-700 dark:text-slate-200">
+                              {p.product_name || `Produto ${p.product_id}`} · {p.quantity} ap.
+                            </span>
+                            {/* "Mover todos" move a linha inteira — escondido durante a busca para não confundir */}
+                            {canEdit && !termo && (
+                              <button disabled={moving} onClick={() => pull(c, [{ product_id: p.product_id, all: true }])}
+                                className="flex-shrink-0 text-[11px] text-blue-400 hover:text-blue-300 disabled:opacity-50">
+                                Mover todos
+                              </button>
+                            )}
+                          </div>
+                          {lista.map(({ a, i }) => {
+                            const key = `${p.product_id}:${i}`;
+                            return (
+                              <label key={key} title={[a.serial_number || "Sem série", a.model].filter(Boolean).join(" · ")}
+                                className="flex items-center gap-2 py-0.5 text-xs text-slate-600 dark:text-slate-300">
+                                {canEdit && <input type="checkbox" checked={sel.has(key)} onChange={() => toggle(key)} className="flex-shrink-0" />}
+                                <span className={`flex-shrink-0 whitespace-nowrap ${a.serial_number ? "" : "italic text-slate-400"}`}>
+                                  {a.serial_number || "Sem série"}
+                                </span>
+                                {a.model && <span className="min-w-0 flex-1 truncate text-slate-400">· {a.model}</span>}
+                                {a.next_recalibration_date && (
+                                  <span className="flex-shrink-0 whitespace-nowrap text-slate-400">
+                                    · próx. {new Date(a.next_recalibration_date + "T00:00:00").toLocaleDateString("pt-BR")}
+                                  </span>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
                     {canEdit && (
                       <button disabled={moving || selCount === 0} onClick={() => pullSelected(c)}
                         className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-500/20 py-1.5 text-xs font-medium text-emerald-500 hover:bg-emerald-500/30 disabled:opacity-50">

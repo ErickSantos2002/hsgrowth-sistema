@@ -34,6 +34,10 @@ const CHANGELOG: ChangelogVersion[] = [
       },
       {
         type: "feature",
+        text: "Em 'Outros cards do mesmo CNPJ', ao expandir um card há uma lupa para achar aparelhos por nº de série, modelo ou módulo, e o botão 'Marcar encontrados' seleciona de uma vez o que a busca achou.",
+      },
+      {
+        type: "feature",
         text: "Se o card de origem ficar sem aparelhos, ele é fechado automaticamente como Perdido — 'Unificado em outro card' (com aviso antes). Esse motivo aparece no filtro de motivo de perda e não conta nas métricas de perda da dashboard de Serviço.",
       },
       {
