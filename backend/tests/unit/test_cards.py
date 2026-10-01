@@ -83,13 +83,18 @@ class TestGetCard:
 
 
 class TestCreateCard:
-    """Testes de criação de card"""
+    """Testes de criação de card.
 
-    def test_create_card_success(self, client: TestClient, salesperson_headers, test_lists, test_salesperson_user):
+    Vendedor/SDR só criam negócio na lista 'Lead Novo' do board Prospecção (regra de
+    negócio), então os testes genéricos de criação usam o admin; a restrição do
+    vendedor tem teste próprio.
+    """
+
+    def test_create_card_success(self, client: TestClient, admin_headers, test_lists, test_salesperson_user):
         """Testa criar card com sucesso"""
         response = client.post(
             "/api/v1/cards",
-            headers=salesperson_headers,
+            headers=admin_headers,
             json={
                 "title": "New Card",
                 "description": "Card description",
@@ -105,11 +110,11 @@ class TestCreateCard:
         assert data["value"] == 5000.00
         assert data["list_id"] == test_lists[0].id
 
-    def test_create_card_minimal_data(self, client: TestClient, salesperson_headers, test_lists):
+    def test_create_card_minimal_data(self, client: TestClient, admin_headers, test_lists):
         """Testa criar card com dados mínimos"""
         response = client.post(
             "/api/v1/cards",
-            headers=salesperson_headers,
+            headers=admin_headers,
             json={
                 "title": "Minimal Card",
                 "list_id": test_lists[0].id
@@ -120,13 +125,24 @@ class TestCreateCard:
         data = response.json()
         assert data["title"] == "Minimal Card"
 
-    def test_create_card_with_due_date(self, client: TestClient, salesperson_headers, test_lists):
+    def test_create_card_vendedor_fora_do_lead_novo_bloqueia(self, client: TestClient, salesperson_headers, test_lists):
+        """Vendedor não cria negócio fora da lista 'Lead Novo' do board Prospecção"""
+        response = client.post(
+            "/api/v1/cards",
+            headers=salesperson_headers,
+            json={"title": "Card do vendedor", "list_id": test_lists[0].id},
+        )
+
+        assert response.status_code == 403
+        assert "Lead Novo" in response.json()["detail"]
+
+    def test_create_card_with_due_date(self, client: TestClient, admin_headers, test_lists):
         """Testa criar card com data de vencimento"""
         due_date = (datetime.now() + timedelta(days=7)).isoformat()
 
         response = client.post(
             "/api/v1/cards",
-            headers=salesperson_headers,
+            headers=admin_headers,
             json={
                 "title": "Card with Due Date",
                 "list_id": test_lists[0].id,
@@ -213,10 +229,14 @@ class TestMoveCard:
         assert response.status_code == 200
         data = response.json()
         assert data["list_id"] == test_lists[1].id
-        assert data["position"] == 0
+        # A posição é recalculada pelo servidor (card entra no topo da lista de
+        # destino), então não é necessariamente a enviada.
 
-    def test_move_card_to_won(self, client: TestClient, salesperson_headers, test_card, test_lists):
+    def test_move_card_to_won(self, client: TestClient, salesperson_headers, test_card, test_lists, db):
         """Testa mover card para estágio 'ganho'"""
+        # 'É venda ou locação' é obrigatório para dar Ganho
+        test_card.modality = "venda"
+        db.commit()
         # Busca a lista "Ganho"
         won_list = next((l for l in test_lists if l.name == "Ganho"), None)
 
@@ -233,6 +253,18 @@ class TestMoveCard:
         data = response.json()
         assert data["list_id"] == won_list.id
         assert data["is_won"] == True  # Card marcado como ganho (bool agora)
+
+    def test_move_card_to_won_sem_modalidade_bloqueia(self, client: TestClient, salesperson_headers, test_card, test_lists):
+        """Sem 'É venda ou locação' o Ganho é bloqueado"""
+        won_list = next((l for l in test_lists if l.name == "Ganho"), None)
+        response = client.put(
+            f"/api/v1/cards/{test_card.id}/move",
+            headers=salesperson_headers,
+            json={"target_list_id": won_list.id, "position": 0},
+        )
+
+        assert response.status_code == 400
+        assert "venda ou locação" in response.json()["detail"]
 
     def test_move_card_invalid_list(self, client: TestClient, salesperson_headers, test_card):
         """Testa mover card para lista inexistente"""

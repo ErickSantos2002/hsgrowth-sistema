@@ -41,9 +41,19 @@ def test_sem_numero_proposta_bloqueia(board1):
 
 def test_com_numero_proposta_passa(board1):
     db = board1["db"]
-    card = _mk(db, board1["origem"], {"proposal_number": 7})
+    # Vindo de "Aguardando Pedido" (caminho Pedido) o Nº do pedido também é exigido;
+    # com os dois preenchidos o Ganho passa.
+    card = _mk(db, board1["origem"], {"proposal_number": 7, "order_number": "PED-123"})
     # Não deve levantar.
     ServiceBoardService(db)._validate_advance(card, board1["origem"], board1["ganho"])
+
+
+def test_sem_numero_pedido_bloqueia_vindo_de_aguardando_pedido(board1):
+    db = board1["db"]
+    card = _mk(db, board1["origem"], {"proposal_number": 7})
+    with pytest.raises(HTTPException) as exc:
+        ServiceBoardService(db)._validate_advance(card, board1["origem"], board1["ganho"])
+    assert "pedido" in exc.value.detail.lower()
 
 
 def test_numero_zero_ou_vazio_bloqueia(board1):

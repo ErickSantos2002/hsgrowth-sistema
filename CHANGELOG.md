@@ -5,6 +5,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.11] — 01/10/2026
+
+### Adicionado
+- **Serviço/Cobrança — "Mostrar mais" no histórico do card:** o histórico passa a mostrar **10 itens por vez**, com **"Mostrar mais (N restantes)"** e **"Mostrar todos"**, igual ao card de Vendas. Antes carregava o histórico inteiro de uma vez.
+
+### Segurança
+- **Cadastro de usuários pela API restrito a admin:** a rota `POST /auth/register` aceitava pedidos **sem login** e deixava escolher o cargo da conta — dava para criar uma conta de administrador de fora do sistema. Agora exige login de **admin**. As contas continuam sendo criadas normalmente pela tela de **Usuários**. Não havia sinal de uso indevido: os 3 admins existentes são conhecidos e nenhuma conta foi criada nos 60 dias anteriores.
+- **Recuperação de senha não devolve mais o código de redefinição:** a rota `POST /auth/forgot-password` retornava o token na própria resposta (resto de desenvolvimento), o que permitia redefinir a senha de qualquer conta sabendo só o e-mail. O envio do link por e-mail ainda não está ligado — enquanto isso, a senha é redefinida pelo admin na tela de Usuários.
+
+### Corrigido
+- **Vendas — filtro "parecia" não ficar salvo:** os filtros dos boards de Vendas já continuavam aplicados ao sair e voltar, mas o botão do funil voltava cinza e o painel fechado, sem nenhum sinal de que havia filtro ligado. Agora o funil fica **destacado sempre que há filtro ativo**, igual ao board de Serviço.
+- **Relatório de vendas (API) dava erro 500:** a consulta usava campos calculados do card (`won_at`, `lost_at`, `is_lost`) como se fossem colunas do banco. Passou a usar `is_won` + `closed_at`, e o "novos cards" agora respeita o fim do período.
+- **Salvar campo customizado pela rota `/cards/{id}/fields` dava erro 500** (variáveis usadas sem definição). A tela usa outra rota e não era afetada.
+- **Atribuição manual de pontos (gamificação) dava erro 500** a cada atribuição bem-sucedida e era **liberada para qualquer usuário** — agora só admin e gerente.
+- **Cadastro pela API:** recusava usuário sem *username* sempre que já existia outro sem *username*, e o cargo padrão caía em **gerente** — agora é **vendedor**.
+
+### Interno
+- **Testes automáticos atualizados para as regras atuais:** a suíte ficou **100% verde (687 testes)** — eram 20 falhando, todos testes de janeiro que tinham ficado para trás das regras novas (criação de card pelo vendedor, "É venda ou locação" no Ganho, nº do pedido, gamificação por board, rotas atuais). Foram incluídos testes que travam as correções de segurança acima.
+
+---
+
 ## [1.10.10] — 29/09/2026
 
 ### Adicionado
@@ -16,7 +37,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Busca geral (Ctrl+K) com Vendas e Serviço:** passou a trazer também os cards de **Serviço/Cobrança**, separados em "Vendas" e "Serviço", e a buscar por **título, cliente, CNPJ/CPF e contato** — e, no Serviço, pelo **nº de série / nº do módulo** dos aparelhos. Cada resultado mostra por onde bateu (ex.: "CNPJ/CPF", "Nº de série/módulo"). Os cards de Serviço só aparecem para quem acessa o módulo (admin, gerente e serviço). Antes a busca geral olhava só o título dos cards de Vendas.
 
 ### Corrigido
-- **Vendas — filtro "parecia" não ficar salvo:** os filtros dos boards de Vendas já continuavam aplicados ao sair e voltar, mas o botão do funil voltava cinza e o painel fechado, sem nenhum sinal de que havia filtro ligado. Agora o funil fica **destacado sempre que há filtro ativo**, igual ao board de Serviço.
 - **Serviço/Cobrança — busca por nº de série / módulo:** passou a olhar os **aparelhos reais do card** (Produtos). Antes olhava só o registro que a integração mandou na criação, então um aparelho **movido para outro card** continuava sendo achado no card antigo — e cards criados à mão não eram encontrados por série.
 
 ---

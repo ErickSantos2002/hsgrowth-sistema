@@ -175,11 +175,14 @@ async def award_points(
     action_type: str = Body(..., description="Tipo de ação (ex: card_won, meeting_completed)"),
     board_type: str = Body(..., description="Board da ação: prospecting ou acquisition"),
     description: str = Body(None, description="Descrição da ação"),
-    current_user: User = Depends(get_current_active_user),
+    # Só admin/gerente: é atribuição MANUAL de pontos. Antes qualquer usuário logado
+    # conseguia dar pontos a si mesmo pela API.
+    current_user: User = Depends(require_manager_or_admin()),
     db: Session = Depends(get_db)
 ) -> Any:
     """
     Atribui pontos a um usuário por uma ação (manual, para testes e correções).
+    Restrito a admin e gerente.
 
     - **user_id**: ID do usuário que receberá os pontos
     - **action_type**: Tipo de ação (card_created, card_won, etc.)
@@ -207,7 +210,7 @@ async def award_points(
         action="POINTS_AWARDED",
         entity_type="GamificationPoint",
         entity_id=points_record.id,
-        description=f"Pontos atribuídos: {points_record.points} pts → {user_name} ({reason})",
+        description=f"Pontos atribuídos: {points_record.points} pts → {user_name} ({action_type} / {board_type})",
         ip_address=client_ip,
         user_agent=user_agent
     )

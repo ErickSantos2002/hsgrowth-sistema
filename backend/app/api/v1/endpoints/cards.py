@@ -1098,13 +1098,24 @@ async def add_or_update_field(
     card = service.get_card_by_id(card_id)
     custom_fields = service.get_card_field_values(card_id, current_user)
 
-    # Busca informações relacionadas
+    # Busca informações relacionadas (vendedor e SDR com avatar). Antes só o nome do
+    # vendedor era buscado e os demais campos eram usados sem definição → 500 sempre.
+    from app.models.user import User as UserModel
     assigned_to_name = None
+    assigned_to_avatar_url = None
     if card.assigned_to_id:
-        from app.models.user import User as UserModel
         assigned_user = db.query(UserModel).filter(UserModel.id == card.assigned_to_id).first()
         if assigned_user:
             assigned_to_name = assigned_user.name
+            assigned_to_avatar_url = assigned_user.avatar_url
+
+    sdr_name = None
+    sdr_avatar_url = None
+    if card.sdr_id:
+        sdr_user = db.query(UserModel).filter(UserModel.id == card.sdr_id).first()
+        if sdr_user:
+            sdr_name = sdr_user.name
+            sdr_avatar_url = sdr_user.avatar_url
 
     from app.repositories.list_repository import ListRepository
     list_repo = ListRepository(db)

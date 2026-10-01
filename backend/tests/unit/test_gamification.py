@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
 from app.models.gamification_point import GamificationPoint
+from app.models.gamification_action_points import GamificationActionPoints
 from app.models.gamification_badge import GamificationBadge
 from app.models.user_badge import UserBadge
 
@@ -35,8 +36,10 @@ class TestGamificationSummary:
         assert response.status_code == 200
         data = response.json()
         assert "total_points" in data
-        assert "current_week_points" in data
-        assert "current_month_points" in data
+        # Desde a reformulação (mar/2026) os pontos são separados por board
+        assert "prospecting" in data
+        assert "acquisition" in data
+        assert "month_points" in data["acquisition"]
         assert data["user_id"] == test_salesperson_user.id
 
     def test_get_user_gamification(self, client: TestClient, manager_headers, test_salesperson_user, db):
@@ -62,17 +65,32 @@ class TestGamificationSummary:
         assert "total_points" in data
 
 
-class TestPoints:
-    """Testes de pontos"""
+@pytest.fixture
+def acao_card_won(db):
+    """Configura a ação card_won no board de Aquisição (os pontos vêm do banco)."""
+    acao = GamificationActionPoints(board_type="acquisition", action_type="card_won",
+                                    points=100, is_active=True, description="Card ganho")
+    db.add(acao)
+    db.commit()
+    return acao
 
-    def test_award_points_success(self, client: TestClient, manager_headers, test_salesperson_user):
-        """Testa atribuir pontos a um usuário"""
+
+class TestPoints:
+    """Atribuição MANUAL de pontos (POST /gamification/points) — só admin/gerente.
+
+    Desde a reformulação (mar/2026) a quantidade de pontos vem da configuração da
+    ação por board (gamification_action_points); não existe mais "pontos customizados".
+    """
+
+    def test_award_points_success(self, client: TestClient, manager_headers, test_salesperson_user, acao_card_won):
+        """Gerente atribui os pontos configurados da ação"""
         response = client.post(
             "/api/v1/gamification/points",
             headers=manager_headers,
             json={
                 "user_id": test_salesperson_user.id,
-                "reason": "card_won",
+                "action_type": "card_won",
+                "board_type": "acquisition",
                 "description": "Venda realizada"
             }
         )
@@ -80,40 +98,36 @@ class TestPoints:
         assert response.status_code == 201
         data = response.json()
         assert data["user_id"] == test_salesperson_user.id
-        assert data["points"] > 0
+        assert data["points"] == 100
 
-    def test_award_custom_points(self, client: TestClient, manager_headers, test_salesperson_user):
-        """Testa atribuir pontos customizados"""
+    def test_award_points_acao_nao_configurada(self, client: TestClient, manager_headers, test_salesperson_user):
+        """Ação sem configuração no board não pontua → 400"""
         response = client.post(
             "/api/v1/gamification/points",
             headers=manager_headers,
             json={
                 "user_id": test_salesperson_user.id,
-                "reason": "card_created",
-                "description": "Teste",
-                "custom_points": 50
+                "action_type": "acao_inexistente",
+                "board_type": "acquisition",
             }
         )
 
-        assert response.status_code == 201
-        data = response.json()
-        assert data["points"] == 50
+        assert response.status_code == 400
 
-    def test_award_points_unauthorized(self, client: TestClient, salesperson_headers, test_manager_user):
-        """Testa atribuir pontos sem permissão (vendedor não pode)"""
+    def test_award_points_unauthorized(self, client: TestClient, salesperson_headers, test_salesperson_user, acao_card_won):
+        """Vendedor não pode atribuir pontos (nem a si mesmo)"""
         response = client.post(
             "/api/v1/gamification/points",
             headers=salesperson_headers,
             json={
-                "user_id": test_manager_user.id,
-                "reason": "card_won",
+                "user_id": test_salesperson_user.id,
+                "action_type": "card_won",
+                "board_type": "acquisition",
                 "description": "Teste"
             }
         )
 
-        # Dependendo da implementação, pode retornar 403 ou permitir
-        # Ajuste conforme a lógica do sistema
-        assert response.status_code in [201, 403]
+        assert response.status_code == 403
 
 
 class TestBadges:
@@ -287,7 +301,7 @@ class TestRankings:
         db.commit()
 
         response = client.get(
-            "/api/v1/gamification/rankings?period_type=weekly",
+            "/api/v1/gamification/rankings?board_type=acquisition&period_type=weekly",
             headers=salesperson_headers
         )
 
@@ -298,7 +312,7 @@ class TestRankings:
     def test_get_rankings_monthly(self, client: TestClient, salesperson_headers):
         """Testa buscar ranking mensal"""
         response = client.get(
-            "/api/v1/gamification/rankings?period_type=monthly",
+            "/api/v1/gamification/rankings?board_type=acquisition&period_type=monthly",
             headers=salesperson_headers
         )
 
@@ -311,7 +325,7 @@ class TestRankings:
         response = client.post(
             "/api/v1/gamification/rankings/calculate",
             headers=admin_headers,
-            json={"period_type": "weekly"}
+            json={"board_type": "acquisition", "period_type": "weekly"}
         )
 
         # Pode retornar 200 ou 201 dependendo da implementação
@@ -322,7 +336,7 @@ class TestRankings:
         response = client.post(
             "/api/v1/gamification/rankings/calculate",
             headers=salesperson_headers,
-            json={"period_type": "weekly"}
+            json={"board_type": "acquisition", "period_type": "weekly"}
         )
 
         # Vendedores não podem recalcular rankings

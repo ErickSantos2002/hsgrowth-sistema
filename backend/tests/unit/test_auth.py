@@ -75,12 +75,43 @@ class TestLogin:
 
 
 class TestRegister:
-    """Testes de registro de usuário"""
+    """Testes de registro de usuário — restrito a admin (era público: falha de segurança)."""
 
-    def test_register_success(self, client: TestClient):
+    def test_register_sem_login_bloqueia(self, client: TestClient):
+        """SEGURANÇA: sem login não cria conta (antes qualquer pessoa criava até admin)."""
+        response = client.post(
+            "/api/v1/auth/register",
+            json={"name": "Invasor", "email": "x@evil.com", "password": "senha123", "role_id": 1},
+        )
+
+        assert response.status_code == 401
+
+    def test_register_vendedor_bloqueia(self, client: TestClient, salesperson_headers):
+        """SEGURANÇA: vendedor não cria conta."""
+        response = client.post(
+            "/api/v1/auth/register",
+            headers=salesperson_headers,
+            json={"name": "Outro", "email": "outro@test.com", "password": "senha123"},
+        )
+
+        assert response.status_code == 403
+
+    def test_register_sem_username_e_cargo_padrao_vendedor(self, client: TestClient, admin_headers, test_roles):
+        """Sem username não é confundido com usuários sem username; cargo padrão = vendedor."""
+        response = client.post(
+            "/api/v1/auth/register",
+            headers=admin_headers,
+            json={"name": "Sem Username", "email": "semuser@test.com", "password": "senha123"},
+        )
+
+        assert response.status_code == 201
+        assert response.json()["user"]["role_id"] == test_roles["salesperson"].id
+
+    def test_register_success(self, client: TestClient, admin_headers):
         """Testa registro de novo usuário com sucesso"""
         response = client.post(
             "/api/v1/auth/register",
+            headers=admin_headers,
             json={
                 "name": "New User",
                 "email": "newuser@test.com",
@@ -96,10 +127,11 @@ class TestRegister:
         assert data["user"]["email"] == "newuser@test.com"
         assert data["user"]["name"] == "New User"
 
-    def test_register_duplicate_email(self, client: TestClient, test_salesperson_user):
+    def test_register_duplicate_email(self, client: TestClient, admin_headers, test_salesperson_user):
         """Testa registro com email já existente"""
         response = client.post(
             "/api/v1/auth/register",
+            headers=admin_headers,
             json={
                 "name": "Another User",
                 "email": "sales@test.com",  # Email já existe
@@ -111,10 +143,11 @@ class TestRegister:
         assert response.status_code == 400
         assert "Email já cadastrado" in response.json()["detail"]
 
-    def test_register_invalid_email(self, client: TestClient):
+    def test_register_invalid_email(self, client: TestClient, admin_headers):
         """Testa registro com email inválido"""
         response = client.post(
             "/api/v1/auth/register",
+            headers=admin_headers,
             json={
                 "name": "Invalid Email User",
                 "email": "emailinvalido",  # Sem @
@@ -125,10 +158,11 @@ class TestRegister:
 
         assert response.status_code == 422  # Validation error
 
-    def test_register_weak_password(self, client: TestClient):
+    def test_register_weak_password(self, client: TestClient, admin_headers):
         """Testa registro com senha fraca"""
         response = client.post(
             "/api/v1/auth/register",
+            headers=admin_headers,
             json={
                 "name": "Weak Pass User",
                 "email": "weak@test.com",
@@ -209,6 +243,9 @@ class TestForgotPassword:
 
         assert response.status_code == 200
         assert "receberá" in response.json()["message"].lower()
+        # SEGURANÇA: o token de redefinição nunca pode voltar na resposta
+        # (antes voltava e permitia trocar a senha de qualquer conta só com o e-mail).
+        assert "reset_token" not in response.json()
 
     def test_forgot_password_nonexistent_email(self, client: TestClient):
         """Testa recuperação com email inexistente"""

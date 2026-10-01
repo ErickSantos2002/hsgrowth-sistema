@@ -955,32 +955,24 @@ class ReportService:
         if request.user_id:
             user_filter.append(Card.assigned_to_id == request.user_id)
 
-        # Agrupa por vendedor
+        # Agrupa por vendedor.
+        # won_at / lost_at / is_lost são @property do model (não colunas) — usá-los
+        # dentro da query quebrava a rota com 500. O equivalente em coluna é
+        # is_won (1 = ganho, -1 = perdido) + closed_at (data do fechamento).
+        no_periodo = lambda col: and_(func.date(col) >= start_date, func.date(col) <= end_date)  # noqa: E731
         sales_data = self.db.query(
             User.name,
             func.count(
-                case((func.date(Card.created_at) >= start_date, Card.id))
+                case((no_periodo(Card.created_at), Card.id))
             ).label('new_cards'),
             func.count(
-                case((and_(
-                    Card.is_won == True,
-                    func.date(Card.won_at) >= start_date,
-                    func.date(Card.won_at) <= end_date
-                ), Card.id))
+                case((and_(Card.is_won == 1, no_periodo(Card.closed_at)), Card.id))
             ).label('won_cards'),
             func.count(
-                case((and_(
-                    Card.is_lost == True,
-                    func.date(Card.lost_at) >= start_date,
-                    func.date(Card.lost_at) <= end_date
-                ), Card.id))
+                case((and_(Card.is_won == -1, no_periodo(Card.closed_at)), Card.id))
             ).label('lost_cards'),
             func.sum(
-                case((and_(
-                    Card.is_won == True,
-                    func.date(Card.won_at) >= start_date,
-                    func.date(Card.won_at) <= end_date
-                ), Card.value), else_=0)
+                case((and_(Card.is_won == 1, no_periodo(Card.closed_at)), Card.value), else_=0)
             ).label('won_value')
         ).join(
             Card, Card.assigned_to_id == User.id

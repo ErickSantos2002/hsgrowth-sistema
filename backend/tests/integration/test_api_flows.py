@@ -1,56 +1,47 @@
 """
 Testes de integração - Fluxos completos da API.
-Testa fluxos end-to-end como: registro -> login -> criar board -> criar card -> mover -> ganhar venda.
+Fluxos ponta a ponta: cadastro (admin) -> login -> board -> card -> mover -> ganhar venda.
+
+Atualizado em 01/10/2026 para o contrato atual da API (os testes eram de jan/2026):
+- Criação devolve 201; card não tem mais `stage`; mover usa `target_list_id`.
+- Cadastro (/auth/register) é restrito a admin (era público — falha de segurança).
+- Ganho exige 'É venda ou locação' (modality); automação usa actions[].type/params;
+  transferência usa reason do enum; relatório de conversão exige board_id.
 """
-import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
 
 class TestCompleteUserFlow:
     """Testa fluxo completo de usuário"""
 
-    def test_full_user_registration_and_login_flow(self, client: TestClient):
+    def test_full_user_registration_and_login_flow(self, client: TestClient, admin_headers):
         """
-        Testa fluxo completo:
-        1. Registrar usuário
-        2. Fazer login
-        3. Buscar dados do usuário autenticado
+        1. Admin cadastra o usuário
+        2. Usuário faz login
+        3. Busca os próprios dados autenticado
         """
-        # 1. Registrar
         register_response = client.post(
             "/api/v1/auth/register",
+            headers=admin_headers,
             json={
                 "name": "Integration Test User",
                 "email": "integration@test.com",
                 "password": "integration123",
-                "role": "salesperson"
             }
         )
+        assert register_response.status_code == 201
 
-        assert register_response.status_code == 200
-        register_data = register_response.json()
-        assert "access_token" in register_data
-
-        # 2. Fazer login
         login_response = client.post(
             "/api/v1/auth/login",
-            json={
-                "email": "integration@test.com",
-                "password": "integration123"
-            }
+            json={"email": "integration@test.com", "password": "integration123"}
         )
-
         assert login_response.status_code == 200
-        login_data = login_response.json()
-        access_token = login_data["access_token"]
+        access_token = login_response.json()["access_token"]
 
-        # 3. Buscar dados do usuário autenticado
         me_response = client.get(
-            "/api/v1/auth/me",
+            "/api/v1/users/me",
             headers={"Authorization": f"Bearer {access_token}"}
         )
-
         assert me_response.status_code == 200
         me_data = me_response.json()
         assert me_data["email"] == "integration@test.com"
@@ -69,78 +60,52 @@ class TestCompleteSalesFlow:
         test_salesperson_user
     ):
         """
-        Testa fluxo completo de venda:
-        1. Criar card (lead)
-        2. Mover para "Em Contato"
-        3. Mover para "Proposta"
-        4. Mover para "Ganho"
-        5. Verificar se pontos foram atribuídos
+        Lead -> Em Contato -> Proposta -> Ganho, e consulta da gamificação do vendedor.
         """
-        # 1. Criar card como lead
         create_response = client.post(
             "/api/v1/cards",
             headers=manager_headers,
             json={
                 "title": "Cliente Potencial",
                 "description": "Lead qualificado",
-                "list_id": test_lists[0].id,  # Lista "Leads"
+                "list_id": test_lists[0].id,  # "Leads"
                 "assigned_to_id": test_salesperson_user.id,
                 "value": 10000.00,
-                "stage": "lead"
             }
         )
+        assert create_response.status_code == 201
+        card_id = create_response.json()["id"]
 
-        assert create_response.status_code == 200
-        card = create_response.json()
-        card_id = card["id"]
-        assert card["stage"] == "lead"
+        for lista in (test_lists[1], test_lists[2]):  # "Em Contato", "Proposta"
+            move_response = client.put(
+                f"/api/v1/cards/{card_id}/move",
+                headers=manager_headers,
+                json={"target_list_id": lista.id, "position": 0}
+            )
+            assert move_response.status_code == 200
+            assert move_response.json()["list_id"] == lista.id
 
-        # 2. Mover para "Em Contato"
+        # 'É venda ou locação' é obrigatório para dar Ganho
+        update_response = client.put(
+            f"/api/v1/cards/{card_id}",
+            headers=manager_headers,
+            json={"modality": "venda"}
+        )
+        assert update_response.status_code == 200
+
         move_response = client.put(
             f"/api/v1/cards/{card_id}/move",
             headers=manager_headers,
-            json={
-                "list_id": test_lists[1].id,  # "Em Contato"
-                "position": 0
-            }
+            json={"target_list_id": test_lists[3].id, "position": 0}  # "Ganho"
         )
-
         assert move_response.status_code == 200
+        assert move_response.json()["is_won"] is True
 
-        # 3. Mover para "Proposta"
-        move_response = client.put(
-            f"/api/v1/cards/{card_id}/move",
-            headers=manager_headers,
-            json={
-                "list_id": test_lists[2].id,  # "Proposta"
-                "position": 0
-            }
-        )
-
-        assert move_response.status_code == 200
-
-        # 4. Mover para "Ganho"
-        move_response = client.put(
-            f"/api/v1/cards/{card_id}/move",
-            headers=manager_headers,
-            json={
-                "list_id": test_lists[3].id,  # "Ganho"
-                "position": 0
-            }
-        )
-
-        assert move_response.status_code == 200
-        final_card = move_response.json()
-        assert final_card["stage"] == "won"
-
-        # 5. Verificar se pontos foram atribuídos (se gamificação automática estiver ativa)
         gamification_response = client.get(
             f"/api/v1/gamification/users/{test_salesperson_user.id}",
             headers=manager_headers
         )
-
         assert gamification_response.status_code == 200
-        # Pode ter pontos ou não dependendo da implementação de automação
 
 
 class TestBoardAndCardsFlow:
@@ -152,47 +117,26 @@ class TestBoardAndCardsFlow:
         manager_headers,
         test_salesperson_user
     ):
-        """
-        Testa fluxo completo:
-        1. Criar board
-        2. Criar listas no board
-        3. Criar cards nas listas
-        4. Mover cards entre listas
-        """
-        # 1. Criar board
+        """Cria board, listas e card, e move o card entre listas."""
         board_response = client.post(
             "/api/v1/boards",
             headers=manager_headers,
-            json={
-                "name": "Pipeline de Vendas 2024",
-                "description": "Board para vendas"
-            }
+            json={"name": "Pipeline de Vendas 2024", "description": "Board para vendas"}
         )
+        assert board_response.status_code == 201
+        board_id = board_response.json()["id"]
 
-        assert board_response.status_code == 200
-        board = board_response.json()
-        board_id = board["id"]
-
-        # 2. Criar listas
-        lists_to_create = ["Novos Leads", "Qualificados", "Negociação", "Fechados"]
         created_lists = []
-
-        for i, list_name in enumerate(lists_to_create):
+        for i, list_name in enumerate(["Novos Leads", "Qualificados", "Negociação", "Fechados"]):
             list_response = client.post(
                 f"/api/v1/boards/{board_id}/lists",
                 headers=manager_headers,
-                json={
-                    "name": list_name,
-                    "position": i
-                }
+                json={"name": list_name, "position": i, "board_id": board_id}
             )
-
-            assert list_response.status_code == 200
+            assert list_response.status_code in (200, 201)
             created_lists.append(list_response.json())
-
         assert len(created_lists) == 4
 
-        # 3. Criar cards
         card_response = client.post(
             "/api/v1/cards",
             headers=manager_headers,
@@ -203,21 +147,16 @@ class TestBoardAndCardsFlow:
                 "value": 5000.00
             }
         )
-
-        assert card_response.status_code == 200
+        assert card_response.status_code == 201
         card = card_response.json()
 
-        # 4. Mover card
         move_response = client.put(
             f"/api/v1/cards/{card['id']}/move",
             headers=manager_headers,
-            json={
-                "list_id": created_lists[1]["id"],  # Move para "Qualificados"
-                "position": 0
-            }
+            json={"target_list_id": created_lists[1]["id"], "position": 0}  # "Qualificados"
         )
-
         assert move_response.status_code == 200
+        assert move_response.json()["list_id"] == created_lists[1]["id"]
 
 
 class TestAutomationFlow:
@@ -231,13 +170,7 @@ class TestAutomationFlow:
         test_lists,
         test_salesperson_user
     ):
-        """
-        Testa fluxo de automação:
-        1. Criar automação de trigger
-        2. Criar card que dispara a automação
-        3. Verificar se automação foi executada
-        """
-        # 1. Criar automação
+        """Cria automação de gatilho 'card criado', cria um card e consulta as execuções."""
         automation_response = client.post(
             "/api/v1/automations",
             headers=manager_headers,
@@ -249,40 +182,27 @@ class TestAutomationFlow:
                 "is_active": True,
                 "actions": [
                     {
-                        "action_type": "notify_user",
-                        "config": {
-                            "user_id": test_salesperson_user.id,
-                            "message": "Novo lead criado!"
-                        }
+                        "type": "send_notification",
+                        "params": {"user_id": test_salesperson_user.id, "message": "Novo lead criado!"}
                     }
                 ]
             }
         )
-
-        assert automation_response.status_code == 200
+        assert automation_response.status_code in (200, 201)
         automation = automation_response.json()
 
-        # 2. Criar card (deve disparar automação)
         card_response = client.post(
             "/api/v1/cards",
             headers=manager_headers,
-            json={
-                "title": "Lead que dispara automação",
-                "list_id": test_lists[0].id,
-                "stage": "lead"
-            }
+            json={"title": "Lead que dispara automação", "list_id": test_lists[0].id}
         )
+        assert card_response.status_code == 201
 
-        assert card_response.status_code == 200
-
-        # 3. Verificar execuções da automação
         executions_response = client.get(
             f"/api/v1/automations/{automation['id']}/executions",
             headers=manager_headers
         )
-
         assert executions_response.status_code == 200
-        # Pode ou não ter execuções dependendo da implementação de triggers
 
 
 class TestTransferFlow:
@@ -294,84 +214,66 @@ class TestTransferFlow:
         manager_headers,
         test_card,
         test_salesperson_user,
-        test_manager_user
+        test_admin_user
     ):
+        """Gerente transfere o card do vendedor para outro usuário e confere o novo responsável.
+
+        (Transferir para si mesmo é bloqueado pela regra de negócio — o teste antigo
+        fazia o gerente transferir para ele próprio.)
         """
-        Testa fluxo de transferência:
-        1. Vendedor 1 tem um card
-        2. Transfere para Vendedor 2
-        3. Verifica que card mudou de responsável
-        """
-        # Card inicial pertence a test_salesperson_user
         assert test_card.assigned_to_id == test_salesperson_user.id
 
-        # Transferir para manager
         transfer_response = client.post(
             "/api/v1/transfers",
             headers=manager_headers,
             json={
                 "card_id": test_card.id,
-                "to_user_id": test_manager_user.id,
-                "reason": "Melhor fit para o manager"
+                "to_user_id": test_admin_user.id,
+                "reason": "reassignment",
+                "notes": "Melhor fit"
             }
         )
+        assert transfer_response.status_code in (200, 201)
 
-        assert transfer_response.status_code == 200
+        card_response = client.get(f"/api/v1/cards/{test_card.id}", headers=manager_headers)
+        assert card_response.json()["assigned_to_id"] == test_admin_user.id
 
-        # Verificar se card mudou de responsável
-        card_response = client.get(
-            f"/api/v1/cards/{test_card.id}",
-            headers=manager_headers
+    def test_transferir_para_si_mesmo_bloqueia(self, client: TestClient, manager_headers, test_card, test_manager_user):
+        """Não é possível transferir um card para si mesmo."""
+        response = client.post(
+            "/api/v1/transfers",
+            headers=manager_headers,
+            json={"card_id": test_card.id, "to_user_id": test_manager_user.id, "reason": "reassignment"}
         )
-
-        card_data = card_response.json()
-        assert card_data["assigned_to_id"] == test_manager_user.id
+        assert response.status_code == 400
 
 
 class TestReportsFlow:
     """Testa fluxo de relatórios"""
 
-    def test_generate_sales_report(
-        self,
-        client: TestClient,
-        manager_headers
-    ):
-        """
-        Testa geração de relatórios:
-        1. Buscar dashboard KPIs
-        2. Gerar relatório de vendas
-        3. Gerar relatório de conversão
-        """
-        # 1. Dashboard KPIs
+    def test_generate_sales_report(self, client: TestClient, manager_headers, test_board, test_card):
+        """KPIs do dashboard, relatório de vendas e de conversão."""
         dashboard_response = client.get(
             "/api/v1/reports/dashboard",
             headers=manager_headers,
             params={"period": "this_month"}
         )
-
         assert dashboard_response.status_code == 200
         dashboard = dashboard_response.json()
-        assert "total_cards_created" in dashboard
-        assert "total_cards_won" in dashboard
+        assert "total_cards" in dashboard
+        assert "won_cards_this_month" in dashboard
 
-        # 2. Relatório de vendas
+        # O relatório de vendas dava 500 (usava @property do model dentro da query)
         sales_report_response = client.post(
             "/api/v1/reports/sales",
             headers=manager_headers,
-            json={
-                "period": "this_month"
-            }
+            json={"period": "this_month"}
         )
-
         assert sales_report_response.status_code == 200
 
-        # 3. Relatório de conversão
         conversion_report_response = client.post(
             "/api/v1/reports/conversion",
             headers=manager_headers,
-            json={
-                "period": "this_month"
-            }
+            json={"board_id": test_board.id, "period": "this_month"}
         )
-
         assert conversion_report_response.status_code == 200

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_user, get_current_active_user
+from app.api.deps import get_db, get_current_user, get_current_active_user, require_role
 from app.core.security import (
     verify_password,
     create_access_token,
@@ -434,10 +434,15 @@ async def logout(
 )
 async def register(
     user_data: RegisterRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    # SEGURANÇA: só admin. A rota era pública e aceitava role_id no corpo — qualquer
+    # pessoa na internet criava uma conta de administrador (role_id=1) ou, sem
+    # role_id, de gerente. O CRM não tem tela de auto-cadastro: contas são criadas
+    # pelo admin (tela de Usuários / POST /users).
+    current_user: User = Depends(require_role("admin")),
 ) -> Any:
     """
-    Endpoint de registro de usuário.
+    Endpoint de registro de usuário (restrito a admin).
     """
     # Verifica se email já existe
     existing_email = db.query(User).filter(
@@ -450,16 +455,30 @@ async def register(
             detail="Email já cadastrado"
         )
 
-    # Verifica se username já existe
-    existing_username = db.query(User).filter(
-        User.username == user_data.username,
-        User.is_deleted == False
-    ).first()
-    if existing_username:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nome de usuário já cadastrado"
-        )
+    # Verifica se username já existe — só quando informado. Sem esse cuidado,
+    # username vazio virava "existe usuário SEM username?" e o cadastro era recusado.
+    if user_data.username:
+        existing_username = db.query(User).filter(
+            User.username == user_data.username,
+            User.is_deleted == False
+        ).first()
+        if existing_username:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Nome de usuário já cadastrado"
+            )
+
+    # Cargo padrão: vendedor, buscado pelo NOME (o id 2 fixo de antes é "manager").
+    role_id = user_data.role_id
+    if not role_id:
+        from app.models.role import Role
+        vendedor = db.query(Role).filter(Role.name == "salesperson").first()
+        role_id = vendedor.id if vendedor else None
+        if not role_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Informe o role_id (cargo 'salesperson' não encontrado)"
+            )
 
     # Hash da senha
     password_hash = hash_password(user_data.password)
@@ -470,7 +489,7 @@ async def register(
         username=user_data.username,
         password_hash=password_hash,
         name=user_data.name,
-        role_id=user_data.role_id or 2,  # Padrão: salesperson
+        role_id=role_id,
         is_active=True
     )
 
@@ -565,12 +584,14 @@ async def forgot_password(
     user.reset_token_expires_at = datetime.utcnow() + timedelta(minutes=30)
     db.commit()
 
-    # TODO: Enviar email com o token
-    # Exemplo de URL: http://frontend.com/reset-password?token={reset_token}
-    # Por enquanto, apenas retorna o token (REMOVER EM PRODUÇÃO)
+    # SEGURANÇA: o token NUNCA volta na resposta. Antes ele era devolvido aqui
+    # ("apenas para desenvolvimento") e qualquer pessoa conseguia redefinir a senha de
+    # qualquer conta só com o e-mail. O token só pode chegar ao dono por e-mail.
+    # TODO: enviar o e-mail com o link {FRONTEND_URL}/reset-password?token=...
+    # (EmailService.send_password_reset_email). Enquanto não houver envio, a senha
+    # é redefinida pelo admin na tela de Usuários.
     return {
-        "message": "Se o email existir, você receberá instruções para reset de senha.",
-        "reset_token": reset_token  # REMOVER EM PRODUÇÃO - apenas para desenvolvimento
+        "message": "Se o email existir, você receberá instruções para reset de senha."
     }
 
 

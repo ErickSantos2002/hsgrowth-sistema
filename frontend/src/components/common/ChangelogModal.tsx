@@ -25,6 +25,28 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.11",
+    date: "01/10/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Serviço/Cobrança — o histórico do card agora mostra 10 itens por vez, com 'Mostrar mais' e 'Mostrar todos', igual ao card de Vendas.",
+      },
+      {
+        type: "fix",
+        text: "Vendas — o botão de filtro (funil) agora fica destacado sempre que há filtro ativo, igual ao board de Serviço. Os filtros já continuavam aplicados ao sair e voltar, mas o funil voltava cinza e parecia que tinham sumido.",
+      },
+      {
+        type: "fix",
+        text: "Segurança — correções no cadastro de usuários e na recuperação de senha. As contas continuam sendo criadas pelo admin na tela de Usuários.",
+      },
+      {
+        type: "fix",
+        text: "Correções internas em relatórios e na gamificação, que podiam dar erro em situações específicas.",
+      },
+    ],
+  },
+  {
     version: "1.10.10",
     date: "29/09/2026",
     entries: [
@@ -51,10 +73,6 @@ const CHANGELOG: ChangelogVersion[] = [
       {
         type: "feature",
         text: "Busca geral (Ctrl+K) — agora traz cards de Vendas e de Serviço/Cobrança, separados, buscando por título, cliente, CNPJ/CPF e contato (e, no Serviço, nº de série/módulo). Cada resultado mostra por onde bateu. Os cards de Serviço só aparecem para quem acessa o módulo.",
-      },
-      {
-        type: "fix",
-        text: "Vendas — o botão de filtro (funil) agora fica destacado sempre que há filtro ativo, igual ao board de Serviço. Os filtros já continuavam aplicados ao sair e voltar, mas o funil voltava cinza e parecia que tinham sumido.",
       },
       {
         type: "fix",

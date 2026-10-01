@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import {
   Plus, Check, Trash2, Clock, Phone, CheckSquare, Mail, Users, FileText,
@@ -463,6 +463,9 @@ const changeIcon = (type?: string): React.ReactNode => {
   }
 };
 
+/** Quantidade de itens exibidos por vez no histórico (botão "Mostrar mais") — igual ao de Vendas. */
+const HIST_PAGE_SIZE = 10;
+
 // ─── Aba Atividade (Adicionar + Foco + Histórico) ────────────────────────────────
 
 type HistoryFilter = "todos" | "atividade" | "anotacao" | "arquivo" | "alteracao";
@@ -477,6 +480,13 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
   const [histFilter, setHistFilter] = useState<HistoryFilter>("todos");
   const [search, setSearch] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  // Quantos itens do histórico exibir (botão "Mostrar mais" revela de HIST_PAGE_SIZE em HIST_PAGE_SIZE)
+  const [visibleCount, setVisibleCount] = useState(HIST_PAGE_SIZE);
+
+  // Ao trocar de aba ou buscar, volta a exibir a primeira página
+  useEffect(() => {
+    setVisibleCount(HIST_PAGE_SIZE);
+  }, [histFilter, search]);
   const [expandedFoco, setExpandedFoco] = useState<Set<number>>(new Set());
 
   const toggleGroup = (key: string) =>
@@ -720,9 +730,12 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
               {search ? "Nenhum evento encontrado" : "Nenhum evento nesta categoria"}
             </p>
           </div>
-        ) : (
+        ) : (() => {
+          const groups = buildHistoryGroups(history);
+          return (
+          <>
           <div className="space-y-2">
-            {buildHistoryGroups(history).map((group) => {
+            {groups.slice(0, visibleCount).map((group) => {
               const expanded = expandedGroups.has(group.key);
               return (
                 <div key={group.key} className="overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700/60 bg-white/40 dark:bg-slate-900/40 p-3">
@@ -748,7 +761,34 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
               );
             })}
           </div>
-        )}
+
+          {/* Paginação do histórico — mesmo padrão do card de Vendas */}
+          <div className="mt-4 space-y-2 text-center">
+            {groups.length > visibleCount && (
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((c) => c + HIST_PAGE_SIZE)}
+                  className="rounded-lg border border-gray-200 bg-gray-100/50 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-gray-200/50 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-700/50"
+                >
+                  Mostrar mais ({groups.length - visibleCount} restantes)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount(groups.length)}
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-violet-500 transition-colors hover:bg-violet-500/10"
+                >
+                  Mostrar todos
+                </button>
+              </div>
+            )}
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Mostrando {Math.min(visibleCount, groups.length)} de {groups.length} {groups.length === 1 ? "item" : "itens"}
+            </p>
+          </div>
+          </>
+          );
+        })()}
       </div>
     </div>
   );
