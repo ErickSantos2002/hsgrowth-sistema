@@ -394,28 +394,31 @@ async def delete_client(
 @router.get(
     "/cnpj/{cnpj}",
     summary="Buscar dados de CNPJ na Receita Federal",
-    description="Consulta os dados públicos de um CNPJ via BrasilAPI. Retorna razão social, endereço, CNAE, etc."
+    description=(
+        "Consulta os dados públicos de um CNPJ. Tenta BrasilAPI → OpenCNPJ → ReceitaWS "
+        "(reservas para quando a BrasilAPI cai). Resposta no formato da BrasilAPI + `fonte`."
+    )
 )
 async def lookup_cnpj(
     cnpj: str,
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
-    import httpx
     import re
+    from app.services.cnpj_lookup_service import (
+        consultar_cnpj, CnpjNaoEncontrado, ConsultaIndisponivel,
+    )
 
     digits = re.sub(r"\D", "", cnpj)
     if len(digits) != 14:
         raise HTTPException(status_code=400, detail="CNPJ deve ter 14 dígitos.")
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        try:
-            response = await client.get(f"https://brasilapi.com.br/api/cnpj/v1/{digits}")
-        except httpx.RequestError:
-            raise HTTPException(status_code=503, detail="Não foi possível conectar à BrasilAPI.")
-
-    if response.status_code == 404:
+    try:
+        return await consultar_cnpj(digits)
+    except CnpjNaoEncontrado:
         raise HTTPException(status_code=404, detail="CNPJ não encontrado na Receita Federal.")
-    if response.status_code != 200:
-        raise HTTPException(status_code=502, detail="Erro ao consultar a Receita Federal.")
-
-    return response.json()
+    except ConsultaIndisponivel as e:
+        print(f"[CNPJ] todas as fontes indisponíveis para {digits}: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Os serviços de consulta de CNPJ estão fora do ar no momento. Preencha os dados manualmente.",
+        )

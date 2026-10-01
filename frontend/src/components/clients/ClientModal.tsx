@@ -127,6 +127,8 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cnpjError, setCnpjError] = useState("");
   const [cnpjSuccess, setCnpjSuccess] = useState(false);
+  // De qual serviço vieram os dados (BrasilAPI, ou a reserva OpenCNPJ/ReceitaWS)
+  const [cnpjFonte, setCnpjFonte] = useState("");
 
   /**
    * Preenche o formulário quando estiver editando
@@ -353,6 +355,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
         country:      "Brasil",
       }));
 
+      setCnpjFonte(data.fonte || "");
       setCnpjSuccess(true);
       setTimeout(() => setCnpjSuccess(false), 4000);
     } catch (err: any) {
@@ -406,7 +409,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
               }
               hint={
                 cnpjSuccess
-                  ? <span className="text-emerald-500 flex items-center gap-1"><CheckCircle size={12} /> Dados preenchidos com sucesso!</span>
+                  ? <span className="text-emerald-500 flex items-center gap-1"><CheckCircle size={12} /> Dados preenchidos com sucesso!{cnpjFonte ? ` (via ${cnpjFonte})` : ""}</span>
                   : cnpjError
                   ? <span className="text-red-400">{cnpjError}</span>
                   : "Documento de identificação (obrigatório)"

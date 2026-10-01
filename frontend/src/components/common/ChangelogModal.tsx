@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.12",
+    date: "01/10/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Clientes — a busca por CNPJ agora tem fontes reserva: se a BrasilAPI estiver fora do ar, o CRM tenta a OpenCNPJ e a ReceitaWS e preenche o cadastro do mesmo jeito. A mensagem de sucesso mostra de onde vieram os dados.",
+      },
+    ],
+  },
+  {
     version: "1.10.11",
     date: "01/10/2026",
     entries: [

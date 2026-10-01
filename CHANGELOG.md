@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.12] — 01/10/2026
+
+### Adicionado
+- **Clientes — busca de CNPJ com fontes reserva:** quando a **BrasilAPI** está fora do ar, a busca tenta automaticamente a **OpenCNPJ** e, por último, a **ReceitaWS**, e preenche o cadastro do mesmo jeito. A mensagem de sucesso mostra de onde vieram os dados (ex.: "via OpenCNPJ"). Se todas estiverem fora, a mensagem orienta a preencher manualmente. Motivo: em 01/10 a BrasilAPI passou a responder erro 500/504 para qualquer CNPJ, e a busca deixou de funcionar.
+
+### Alterado
+- **Tempo de espera da busca de CNPJ:** cada serviço agora espera no máximo 6–8 s antes de passar para o próximo (antes a BrasilAPI sozinha podia segurar 10 s e falhar).
+
+---
+
 ## [1.10.11] — 01/10/2026
 
 ### Adicionado
