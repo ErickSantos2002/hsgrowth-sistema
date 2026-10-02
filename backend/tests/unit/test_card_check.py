@@ -208,3 +208,76 @@ class TestBolinhaNoDetalhe:
         c.card.list_id = c.perdido.id
         db.commit()
         assert client.get(url, headers=admin_headers).json()["checked_by_me"] is False  # perdido desmarca
+
+
+# ─── Desmarcar todos os meus concluídos de uma lista ──────────────────────────
+from app.models.card import Card  # noqa: E402
+
+
+class TestLimparConcluidosDaLista:
+    def test_vendas_limpa_so_os_meus_e_so_da_lista(
+        self, client, manager_headers, salesperson_headers, db, test_card, test_lists, test_board, test_salesperson_user
+    ):
+        outro = Card(title="Outra lista", list_id=test_lists[1].id,
+                     assigned_to_id=test_salesperson_user.id, position=0)
+        db.add(outro); db.commit()
+        for cid in (test_card.id, outro.id):
+            client.put(f"/api/v1/cards/{cid}/check", headers=manager_headers)
+        client.put(f"/api/v1/cards/{test_card.id}/check", headers=salesperson_headers)
+
+        r = client.delete(f"/api/v1/boards/{test_board.id}/lists/{test_lists[0].id}/checks", headers=manager_headers)
+        assert r.status_code == 200 and r.json() == {"removed": 1}
+        assert _marcado(client, manager_headers, test_board.id, test_card.id) is False
+        assert _marcado(client, manager_headers, test_board.id, outro.id) is True          # outra lista
+        assert _marcado(client, salesperson_headers, test_board.id, test_card.id) is True  # do colega
+
+    def test_vendas_vendedor_pode_limpar_os_seus(self, client, salesperson_headers, test_card, test_lists, test_board):
+        client.put(f"/api/v1/cards/{test_card.id}/check", headers=salesperson_headers)
+        r = client.delete(f"/api/v1/boards/{test_board.id}/lists/{test_lists[0].id}/checks", headers=salesperson_headers)
+        assert r.status_code == 200 and r.json() == {"removed": 1}
+
+    def test_vendas_lista_de_outro_board_404(self, client, manager_headers, db, test_lists):
+        outro = Board(name="Outro")
+        db.add(outro); db.commit()
+        r = client.delete(f"/api/v1/boards/{outro.id}/lists/{test_lists[0].id}/checks", headers=manager_headers)
+        assert r.status_code == 404
+
+    def test_servico_limpa_a_lista(self, client, admin_headers, db, test_admin_user):
+        c = TestBolinhaServico()._cenario(db)
+        client.put(f"/api/v1/service-boards/{c.b.id}/cards/{c.card.id}/check", headers=admin_headers)
+        r = client.delete(f"/api/v1/service-boards/{c.b.id}/lists/{c.entrada.id}/checks", headers=admin_headers)
+        assert r.status_code == 200 and r.json() == {"removed": 1}
+        assert _sv_marcado(db, c.b.id, test_admin_user.id, c.card.id) is False
+        r = client.delete(f"/api/v1/service-boards/{c.cob.id}/lists/{c.entrada.id}/checks", headers=admin_headers)
+        assert r.status_code == 404
+
+
+# ─── Editar/excluir lista: só admin e gerente ─────────────────────────────────
+
+class TestListaSoAdminEGerente:
+    def test_vendedor_nao_edita_nem_exclui_lista_de_vendas(self, client, salesperson_headers, sdr_headers, test_board, test_lists):
+        url = f"/api/v1/boards/{test_board.id}/lists/{test_lists[0].id}"
+        for h in (salesperson_headers, sdr_headers):
+            assert client.put(url, json={"name": "X"}, headers=h).status_code == 403
+            assert client.delete(url, headers=h).status_code == 403
+
+    def test_gerente_edita_lista_de_vendas(self, client, manager_headers, test_board, test_lists):
+        r = client.put(f"/api/v1/boards/{test_board.id}/lists/{test_lists[0].id}", json={"name": "Novo nome"}, headers=manager_headers)
+        assert r.status_code == 200
+
+    def test_usuario_de_servico_nao_edita_nem_exclui_lista_de_servico(self, client, db, test_roles):
+        from app.core.security import create_access_token, hash_password
+        from app.models.user import User
+        from app.models.role import Role
+        papel = Role(name="service", display_name="Serviço", description="Serviço", permissions=[])
+        db.add(papel); db.commit()
+        u = User(email="servico@test.com", name="Serviço", password_hash=hash_password("x12345678"),
+                 role_id=papel.id, is_active=True, is_deleted=False)
+        db.add(u); db.commit()
+        h = {"Authorization": f"Bearer {create_access_token({'sub': str(u.id)})}"}
+        c = TestBolinhaServico()._cenario(db)
+        url = f"/api/v1/service-boards/{c.b.id}/lists/{c.entrada.id}"
+        assert client.put(url, json={"name": "X"}, headers=h).status_code == 403
+        assert client.delete(url, headers=h).status_code == 403
+        # mas pode limpar os próprios concluídos
+        assert client.delete(f"{url}/checks", headers=h).status_code == 200

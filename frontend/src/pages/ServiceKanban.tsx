@@ -6,7 +6,7 @@ import {
   Grid3x3, Target, TrendingUp, Users, Briefcase, FolderKanban,
   Lightbulb, Rocket, Star, Heart, LucideIcon,
   Settings, Hammer, Gauge, Package, ClipboardList, Cog, FlaskConical,
-  Microscope, Archive, Copy, CheckSquare, AlarmClock, Calendar, Filter,
+  Microscope, Archive, Copy, CheckSquare, AlarmClock, Calendar, Filter, CheckCircle2,
 } from "lucide-react";
 import serviceBoardService, {
   ServiceBoard,
@@ -602,12 +602,14 @@ interface KanbanColumnProps {
   onOpenCard: (card: ServiceCard) => void;
   getCardHref?: (card: ServiceCard) => string;
   onToggleCheck?: (card: ServiceCard) => void; // bolinha "concluído" pessoal
+  checkedCount?: number; // quantos cards desta lista o usuário marcou (inclui os escondidos por filtro)
+  onClearChecks?: () => void; // desmarca todos os concluídos do usuário nesta lista
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
   list, cards, allLists, canManage, isFirst, isLast,
   onAddCard, onEditList, onDeleteList, onMoveLeft, onMoveRight,
-  onOpenCard, getCardHref, onToggleCheck,
+  onOpenCard, getCardHref, onToggleCheck, checkedCount = 0, onClearChecks,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -641,7 +643,8 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
           </span>
         </div>
 
-        {canManage && (
+        {/* Editar/Excluir só para admin e gerente; "Desmarcar meus concluídos" para todos quando há card marcado */}
+        {(canManage || (onClearChecks && checkedCount > 0)) && (
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
@@ -652,16 +655,27 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
             {showMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700/50 dark:bg-slate-900">
-                  <button onClick={() => { setShowMenu(false); onEditList(); }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                    <Edit size={14} /> Editar lista
-                  </button>
-                  <div className="border-t border-gray-200 dark:border-slate-700/50" />
-                  <button onClick={() => { setShowMenu(false); onDeleteList(); }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10">
-                    <Trash2 size={14} /> Deletar lista
-                  </button>
+                <div className="absolute right-0 z-20 mt-2 w-60 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700/50 dark:bg-slate-900">
+                  {onClearChecks && checkedCount > 0 && (
+                    <button onClick={() => { setShowMenu(false); onClearChecks(); }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                      <CheckCircle2 size={14} className="text-green-500" /> Desmarcar meus concluídos ({checkedCount})
+                    </button>
+                  )}
+                  {canManage && (
+                    <>
+                      {onClearChecks && checkedCount > 0 && <div className="border-t border-gray-200 dark:border-slate-700/50" />}
+                      <button onClick={() => { setShowMenu(false); onEditList(); }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                        <Edit size={14} /> Editar lista
+                      </button>
+                      <div className="border-t border-gray-200 dark:border-slate-700/50" />
+                      <button onClick={() => { setShowMenu(false); onDeleteList(); }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10">
+                        <Trash2 size={14} /> Deletar lista
+                      </button>
+                    </>
+                  )}
                 </div>
               </>
             )}
@@ -866,6 +880,26 @@ const ServiceKanban: React.FC = () => {
   );
 
   useEffect(() => { loadData(); }, [numId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Desmarca todos os concluídos do usuário numa lista (menu dos 3 pontinhos).
+  // O servidor limpa a lista inteira, inclusive cards escondidos por filtro.
+  const handleClearListChecks = async (list: ServiceList) => {
+    const marcados = cards.filter((c) => c.list_id === list.id && !c.is_deleted && c.checked_by_me).length;
+    const ok = await confirm({
+      title: "Desmarcar concluídos",
+      message: `Desmarcar ${marcados} card(s) concluído(s) por você na lista "${list.name}"? As marcações dos colegas não mudam.`,
+      confirmText: "Desmarcar",
+      isDanger: false,
+    });
+    if (!ok) return;
+    try {
+      const removidas = await serviceBoardService.clearMyListChecks(numId, list.id);
+      setCards((prev) => prev.map((c) => (c.list_id === list.id ? { ...c, checked_by_me: false } : c)));
+      showSuccess(`${removidas} card(s) desmarcado(s).`);
+    } catch {
+      showError("Não foi possível desmarcar os concluídos da lista.");
+    }
+  };
 
   // Bolinha "concluído" pessoal: atualiza na hora e desfaz se a API falhar
   const checkInFlight = useRef<Set<number>>(new Set());
@@ -1491,6 +1525,8 @@ const ServiceKanban: React.FC = () => {
                   onOpenCard={handleOpenDetail}
                   getCardHref={(card) => `/servicos/${numId}/cards/${card.id}`}
                   onToggleCheck={handleToggleCheck}
+                  checkedCount={cards.filter((c) => c.list_id === list.id && !c.is_deleted && c.checked_by_me).length}
+                  onClearChecks={() => handleClearListChecks(list)}
                 />
               );
             })

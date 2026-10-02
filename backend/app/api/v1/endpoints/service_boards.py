@@ -9,7 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Query, Path, HTTPExcept
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user, require_not_viewer, require_service_access
+from app.api.deps import get_db, get_current_active_user, require_manager_or_admin, require_not_viewer, require_service_access
 from app.core import realtime
 from app.services.service_board_service import ServiceBoardService, deal_value_by_card
 from app.schemas.service_board import (
@@ -253,7 +253,7 @@ async def update_service_list(
     board_id: int = Path(...),
     list_id: int = Path(...),
     data: ServiceListUpdate = ...,
-    current_user: User = Depends(require_not_viewer()),
+    current_user: User = Depends(require_manager_or_admin()),  # editar lista: só admin e gerente
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
@@ -272,11 +272,29 @@ async def update_service_list(
     )
 
 
+@router.delete("/{board_id}/lists/{list_id}/checks")
+async def desmarcar_concluidos_da_lista_servico(
+    board_id: int = Path(...),
+    list_id: int = Path(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Tira a bolinha "concluído" do usuário logado de todos os cards da lista.
+    Só mexe nas marcações de quem chamou — as dos colegas ficam."""
+    from app.services.card_check_service import CardCheckService
+
+    lst = ServiceBoardService(db).get_list(list_id)
+    if lst.board_id != board_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lista não encontrada neste board")
+    removidas = CardCheckService(db).desmarcar_lista(current_user.id, "service_card_id", list_id)
+    return {"removed": removidas}
+
+
 @router.delete("/{board_id}/lists/{list_id}")
 async def delete_service_list(
     board_id: int = Path(...),
     list_id: int = Path(...),
-    current_user: User = Depends(require_not_viewer()),
+    current_user: User = Depends(require_manager_or_admin()),  # excluir lista: só admin e gerente
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)

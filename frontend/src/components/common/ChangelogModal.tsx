@@ -36,6 +36,14 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "feature",
         text: "Filtro \"Concluídos por mim\" no funil dos boards: esconda o que já fez ou veja só os concluídos.",
       },
+      {
+        type: "feature",
+        text: "Nos 3 pontinhos da lista: \"Desmarcar meus concluídos\" limpa de uma vez as suas bolinhas daquela lista. Editar e excluir lista continuam só para admin e gerente.",
+      },
+      {
+        type: "fix",
+        text: "Segurança: editar e excluir lista agora são bloqueados também no servidor para quem não é admin ou gerente.",
+      },
     ],
   },
   {

@@ -7,6 +7,7 @@ A marcação vale enquanto o card estiver no MESMO board e na MESMA situação
 from typing import Dict, Optional, Set, Tuple
 
 from loguru import logger
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
@@ -66,6 +67,22 @@ class CardCheckService:
             CardCheck.user_id == user_id, getattr(CardCheck, coluna) == card_id
         ).delete(synchronize_session=False)
         self.db.commit()
+
+    def desmarcar_lista(self, user_id: int, coluna: str, list_id: int) -> int:
+        """Desmarca todas as marcações do usuário nos cards de uma lista. Devolve quantas apagou.
+        Vale para a lista inteira, inclusive cards escondidos por filtro na tela."""
+        from app.models.card import Card
+        from app.models.service_card import ServiceCard
+
+        modelo = Card if coluna == "card_id" else ServiceCard
+        ids_da_lista = select(modelo.id).where(modelo.list_id == list_id)
+        removidas = (
+            self.db.query(CardCheck)
+            .filter(CardCheck.user_id == user_id, getattr(CardCheck, coluna).in_(ids_da_lista))
+            .delete(synchronize_session=False)
+        )
+        self.db.commit()
+        return removidas
 
     def ids_validos(self, user_id: int, coluna: str, contextos: Dict[int, Contexto]) -> Set[int]:
         """Ids marcados pelo usuário cuja foto bate com o contexto atual.

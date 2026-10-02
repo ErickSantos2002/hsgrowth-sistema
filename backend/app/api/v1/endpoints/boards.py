@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException, sta
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user, require_not_viewer
+from app.api.deps import get_db, get_current_active_user, require_not_viewer, require_manager_or_admin
 from app.services.board_service import BoardService
 from app.services.list_service import ListService
 from app.core import realtime
@@ -730,7 +730,7 @@ async def update_list(
     board_id: int = Path(..., description="ID do board"),
     list_id: int = Path(..., description="ID da lista"),
     list_data: ListUpdate = ...,
-    current_user: User = Depends(require_not_viewer()),
+    current_user: User = Depends(require_manager_or_admin()),  # editar/arquivar lista: só admin e gerente
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -755,6 +755,27 @@ async def update_list(
 
 
 @router.delete(
+    "/{board_id}/lists/{list_id}/checks",
+    summary="Desmarcar todos os meus concluídos da lista (bolinha pessoal)",
+)
+async def desmarcar_concluidos_da_lista(
+    board_id: int = Path(..., description="ID do board"),
+    list_id: int = Path(..., description="ID da lista"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """Tira a bolinha "concluído" do usuário logado de todos os cards da lista.
+    Só mexe nas marcações de quem chamou — as dos colegas ficam."""
+    from app.services.card_check_service import CardCheckService
+
+    list_obj = ListService(db).get_list_by_id(list_id)
+    if list_obj.board_id != board_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lista não encontrada neste board")
+    removidas = CardCheckService(db).desmarcar_lista(current_user.id, "card_id", list_id)
+    return {"removed": removidas}
+
+
+@router.delete(
     "/{board_id}/lists/{list_id}",
     summary="Deletar lista",
     responses={
@@ -772,7 +793,7 @@ async def update_list(
 async def delete_list(
     board_id: int = Path(..., description="ID do board"),
     list_id: int = Path(..., description="ID da lista"),
-    current_user: User = Depends(require_not_viewer()),
+    current_user: User = Depends(require_manager_or_admin()),  # excluir lista: só admin e gerente
     db: Session = Depends(get_db)
 ) -> Any:
     """

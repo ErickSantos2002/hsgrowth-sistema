@@ -72,6 +72,15 @@ const listService = {
     });
     return response.data;
   },
+
+  /**
+   * Desmarca todas as bolinhas "concluído" do usuário logado nos cards da lista.
+   * Devolve quantas foram desmarcadas.
+   */
+  clearMyChecks: async (boardId: number, listId: number): Promise<number> => {
+    const response = await api.delete<{ removed: number }>(`/api/v1/boards/${boardId}/lists/${listId}/checks`);
+    return response.data.removed;
+  },
 };
 
 export default listService;

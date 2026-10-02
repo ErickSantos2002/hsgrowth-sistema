@@ -356,6 +356,12 @@ class ServiceBoardService {
     await api.delete(`${BASE}/${boardId}/lists/${listId}`);
   }
 
+  /** Desmarca todas as bolinhas "concluído" do usuário logado nos cards da lista. Devolve quantas. */
+  async clearMyListChecks(boardId: number, listId: number): Promise<number> {
+    const r = await api.delete<{ removed: number }>(`${BASE}/${boardId}/lists/${listId}/checks`);
+    return r.data.removed;
+  }
+
   async moveList(boardId: number, listId: number, newPosition: number): Promise<ServiceList> {
     const r = await api.put<ServiceList>(`${BASE}/${boardId}/lists/${listId}/move`, { new_position: newPosition });
     return r.data;

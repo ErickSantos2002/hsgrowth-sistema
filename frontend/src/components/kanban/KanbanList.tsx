@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Plus, MoreVertical, Edit, Archive, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, MoreVertical, Edit, Archive, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 import { List, Card } from "../../types";
 import { COLORS, getChartColors } from "../../constants/colors";
 import { useTheme } from "../../context/ThemeContext";
@@ -21,6 +21,8 @@ interface KanbanListProps {
   isLastList?: boolean; // Se é a última lista (não pode ir mais para direita)
   canManageLists?: boolean; // Permissão para gerenciar listas (Admin/Manager)
   onToggleCheck?: (card: Card) => void; // Bolinha "concluído" pessoal
+  checkedCount?: number; // Quantos cards desta lista o usuário marcou (inclui os escondidos por filtro)
+  onClearChecks?: () => void; // Desmarca todos os concluídos do usuário nesta lista
 }
 
 const KanbanList: React.FC<KanbanListProps> = ({
@@ -38,6 +40,8 @@ const KanbanList: React.FC<KanbanListProps> = ({
   isLastList = false,
   canManageLists = true, // Default true para compatibilidade
   onToggleCheck,
+  checkedCount = 0,
+  onClearChecks,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [cardLimit, setCardLimit] = useState(3);
@@ -92,8 +96,9 @@ const KanbanList: React.FC<KanbanListProps> = ({
           </span>
         </div>
 
-        {/* Menu de ações - oculto quando nenhum handler de edição foi fornecido (ex: viewer) */}
-        {(onEditList || onArchiveList || onDeleteList) && <div className="relative">
+        {/* Menu de ações — Editar/Arquivar/Excluir só para admin e gerente (handlers fornecidos);
+            "Desmarcar meus concluídos" aparece para todos quando há card marcado na lista */}
+        {(onEditList || onArchiveList || onDeleteList || (onClearChecks && checkedCount > 0)) && <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
             className="rounded p-1 transition-colors hover:bg-gray-200 dark:hover:bg-slate-800/60"
@@ -111,41 +116,66 @@ const KanbanList: React.FC<KanbanListProps> = ({
               />
 
               {/* Menu */}
-              <div className="absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700/50 dark:bg-slate-900">
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onEditList?.();
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  <Edit size={14} />
-                  Editar lista
-                </button>
+              <div className="absolute right-0 z-20 mt-2 w-60 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700/50 dark:bg-slate-900">
+                {onClearChecks && checkedCount > 0 && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onClearChecks();
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    <CheckCircle2 size={14} className="text-green-500" />
+                    Desmarcar meus concluídos ({checkedCount})
+                  </button>
+                )}
 
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onArchiveList?.();
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  <Archive size={14} />
-                  Arquivar lista
-                </button>
+                {onClearChecks && checkedCount > 0 && (onEditList || onArchiveList || onDeleteList) && (
+                  <div className="border-t border-gray-200 dark:border-slate-700/50"></div>
+                )}
 
-                <div className="border-t border-gray-200 dark:border-slate-700/50"></div>
+                {onEditList && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onEditList();
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    <Edit size={14} />
+                    Editar lista
+                  </button>
+                )}
 
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onDeleteList?.();
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10"
-                >
-                  <Trash2 size={14} />
-                  Deletar lista
-                </button>
+                {onArchiveList && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onArchiveList();
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    <Archive size={14} />
+                    Arquivar lista
+                  </button>
+                )}
+
+                {onDeleteList && (
+                  <>
+                    <div className="border-t border-gray-200 dark:border-slate-700/50"></div>
+
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        onDeleteList();
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10"
+                    >
+                      <Trash2 size={14} />
+                      Deletar lista
+                    </button>
+                  </>
+                )}
               </div>
             </>
           )}

@@ -13,6 +13,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   - **Desmarca sozinho** quando o card vai para outro board, é dado como ganho ou perdido (inclui "Unificado") ou é reaberto. Marcado depois de ganho/perdido, fica até a pessoa desmarcar.
   - **Também no detalhe do card** (Vendas e Serviço): a mesma bolinha fica no topo, antes do botão "Clonar". Marcar em um lugar aparece no outro.
 - **Filtro "Concluídos por mim"** no funil dos boards: mostrar todos, esconder os concluídos ou ver só os concluídos. Fica salvo como os demais filtros.
+- **"Desmarcar meus concluídos (N)" nos 3 pontinhos da lista:** limpa de uma vez as suas bolinhas daquela lista (inclusive de cards escondidos pelo filtro), com confirmação. As marcações dos colegas não mudam. Os 3 pontinhos agora aparecem para todos quando há card marcado; **Editar, Arquivar e Excluir lista continuam só para admin e gerente**.
+
+### Segurança
+- **Editar e excluir lista agora são bloqueados também no servidor** para quem não é admin ou gerente (Vendas e Serviço). Antes só a tela escondia os botões: qualquer usuário (exceto visualizador) conseguia, chamando a API direto, editar ou apagar uma lista inteira com todos os cards.
 
 ### Deploy
 - **1 migration nova** (`d8e9f0a1b2c3`, tabela `card_checks`). Se o backend subir antes da migration, os boards abrem normalmente, só sem as bolinhas, até ela ser rodada.

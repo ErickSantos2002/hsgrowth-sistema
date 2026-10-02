@@ -1080,6 +1080,28 @@ const KanbanBoard: React.FC = () => {
   };
 
   /**
+   * Desmarca todos os concluídos do usuário numa lista (menu dos 3 pontinhos).
+   * O servidor limpa a lista inteira, inclusive cards escondidos por filtro.
+   */
+  const handleClearListChecks = async (list: List) => {
+    const marcados = cards.filter((c) => c.list_id === list.id && c.checked_by_me).length;
+    const confirmed = await confirm({
+      title: "Desmarcar concluídos",
+      message: `Desmarcar ${marcados} card(s) concluído(s) por você na lista "${list.name}"? As marcações dos colegas não mudam.`,
+      confirmText: "Desmarcar",
+      isDanger: false,
+    });
+    if (!confirmed) return;
+    try {
+      const removidas = await listService.clearMyChecks(Number(boardId), list.id);
+      setCards((prev) => prev.map((c) => (c.list_id === list.id ? { ...c, checked_by_me: false } : c)));
+      showSuccess(`${removidas} card(s) desmarcado(s).`);
+    } catch {
+      showError("Não foi possível desmarcar os concluídos da lista.");
+    }
+  };
+
+  /**
    * Bolinha "concluído" pessoal: atualiza na hora e desfaz se a API falhar.
    */
   const checkInFlight = useRef<Set<number>>(new Set());
@@ -1660,6 +1682,8 @@ const KanbanBoard: React.FC = () => {
                   onDeleteList={canCreateList ? () => handleDeleteListClick(list) : undefined}
                   onCardClick={(card) => handleViewCard(card)}
                   onToggleCheck={handleToggleCheck}
+                  checkedCount={listCards.filter((c) => c.checked_by_me).length}
+                  onClearChecks={() => handleClearListChecks(list)}
                   getCardHref={(card) => `/cards/${card.id}`}
                   onMoveLeft={isViewer ? undefined : () => handleMoveListLeft(list)}
                   onMoveRight={isViewer ? undefined : () => handleMoveListRight(list)}
