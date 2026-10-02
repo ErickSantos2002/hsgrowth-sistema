@@ -418,6 +418,7 @@ class CardResponse(CardBase):
     board_id: Optional[int] = Field(None, description="ID do board")
     board_has_done_stage: Optional[bool] = Field(None, description="Indica se o board possui uma lista de 'Negócio Ganho' (is_done_stage=True)")
     reopened_from_card_id: Optional[int] = Field(None, description="ID do card original que gerou esta reabertura (None = criado do zero)")
+    checked_by_me: bool = Field(False, description="Bolinha 'concluído' marcada pelo usuário logado (pessoal)")
     client_name: Optional[str] = Field(None, description="Nome do cliente/organização")
     client_document: Optional[str] = Field(None, description="CNPJ ou CPF da empresa vinculada")
     person_id: Optional[int] = Field(None, description="ID da pessoa vinculada")

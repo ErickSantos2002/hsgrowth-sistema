@@ -11,6 +11,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Boards de Vendas, Serviço e Cobrança — bolinha "concluído" pessoal (como no Trello):** ao passar o mouse no card aparece uma bolinha à esquerda do título; clicando, o card fica com um ✅ verde. A marcação é **só de quem marcou** — se o SDR marca e depois vincula um vendedor, o card continua marcado para o SDR e aparece em branco para o vendedor.
   - **Continua marcado** quando o card muda de lista dentro do mesmo board.
   - **Desmarca sozinho** quando o card vai para outro board, é dado como ganho ou perdido (inclui "Unificado") ou é reaberto. Marcado depois de ganho/perdido, fica até a pessoa desmarcar.
+  - **Também no detalhe do card** (Vendas e Serviço): a mesma bolinha fica no topo, antes do botão "Clonar". Marcar em um lugar aparece no outro.
 - **Filtro "Concluídos por mim"** no funil dos boards: mostrar todos, esconder os concluídos ou ver só os concluídos. Fica salvo como os demais filtros.
 
 ### Deploy

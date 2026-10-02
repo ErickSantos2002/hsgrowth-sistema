@@ -30,7 +30,7 @@ const CHANGELOG: ChangelogVersion[] = [
     entries: [
       {
         type: "feature",
-        text: "Boards — bolinha \"concluído\" pessoal, como no Trello: passe o mouse no card e clique na bolinha ao lado do título. Só você vê a sua marcação. Ela continua quando o card muda de lista no mesmo board e desmarca sozinha quando o card vai para outro board ou é dado como ganho/perdido.",
+        text: "Boards — bolinha \"concluído\" pessoal, como no Trello: passe o mouse no card e clique na bolinha ao lado do título. Só você vê a sua marcação. Ela continua quando o card muda de lista no mesmo board e desmarca sozinha quando o card vai para outro board ou é dado como ganho/perdido. Também dá para marcar no detalhe do card, na bolinha antes do botão \"Clonar\".",
       },
       {
         type: "feature",

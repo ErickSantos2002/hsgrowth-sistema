@@ -55,6 +55,7 @@ import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ClientModal from "../components/clients/ClientModal";
 import PersonModal from "../components/persons/PersonModal";
 import { showSuccess, showError } from "../utils/toast";
+import CardCheckButton from "../components/kanban/CardCheckButton";
 import { convertUTCToBrazil } from "../utils/timezone";
 import { useConfirm } from "../contexts/ConfirmContext";
 import { useAuth } from "../hooks/useAuth";
@@ -996,7 +997,8 @@ const ServiceCardDetails: React.FC = () => {
 
   const updateCard = async (data: Parameters<typeof serviceBoardService.updateCard>[2]) => {
     const updated = await serviceBoardService.updateCard(numBoardId, numCardId, data);
-    setCard((prev) => (prev ? { ...prev, ...updated } : updated));
+    // A resposta do update não traz a bolinha "concluído" — mantém a que está na tela
+    setCard((prev) => (prev ? { ...prev, ...updated, checked_by_me: prev.checked_by_me } : updated));
     reloadActivities();
     return updated;
   };
@@ -1020,12 +1022,48 @@ const ServiceCardDetails: React.FC = () => {
     }
   };
 
+  /** aberto | ganho | perdido — por flag OU nome da lista (mesma detecção do backend). */
+  const situacaoDaLista = (listId: number) => {
+    const l = lists.find((x) => x.id === listId);
+    if (!l) return "aberto";
+    if (l.is_done_stage || /ganho/i.test(l.name)) return "ganho";
+    if (l.is_lost_stage || /perdido/i.test(l.name)) return "perdido";
+    return "aberto";
+  };
+
+  // Bolinha "concluído" pessoal: atualiza na hora e desfaz se a API falhar
+  const [checkSaving, setCheckSaving] = useState(false);
+  const handleToggleCheck = async () => {
+    if (!card || checkSaving) return;
+    const novo = !card.checked_by_me;
+    setCheckSaving(true);
+    setCard((prev) => (prev ? { ...prev, checked_by_me: novo } : prev));
+    try {
+      await serviceBoardService.setCardChecked(numBoardId, numCardId, novo);
+    } catch {
+      setCard((prev) => (prev ? { ...prev, checked_by_me: !novo } : prev));
+      showError("Não foi possível atualizar a marcação do card.");
+    } finally {
+      setCheckSaving(false);
+    }
+  };
+
   const handleMove = async (newListId: number) => {
     if (newListId === card?.list_id) return;
     setIsMoving(true);
     try {
       await serviceBoardService.moveCard(numBoardId, numCardId, newListId);
-      setCard((prev) => (prev ? { ...prev, list_id: newListId } : prev));
+      setCard((prev) =>
+        prev
+          ? {
+              ...prev,
+              list_id: newListId,
+              // Bolinha "concluído": desmarca se mudou entre aberto/ganho/perdido (regra do backend)
+              checked_by_me:
+                situacaoDaLista(prev.list_id) === situacaoDaLista(newListId) ? prev.checked_by_me : false,
+            }
+          : prev
+      );
       reloadActivities();
       showSuccess("Card movido!");
     } catch (e: any) {
@@ -1176,7 +1214,7 @@ const ServiceCardDetails: React.FC = () => {
       // Registra o motivo da perda como anotação (fica no histórico)
       await serviceActivityService.create(numBoardId, numCardId, { category: "anotacao", description: `Motivo da perda: ${reason}` });
       await serviceBoardService.moveCard(numBoardId, numCardId, lostList.id);
-      setCard((prev) => (prev ? { ...prev, list_id: lostList!.id } : prev));
+      setCard((prev) => (prev ? { ...prev, list_id: lostList!.id, checked_by_me: false } : prev));
       reloadActivities();
       setShowLossModal(false);
       showSuccess("Card marcado como perdido!");
@@ -1275,6 +1313,7 @@ const ServiceCardDetails: React.FC = () => {
             )}
           </div>
           <div className="flex flex-shrink-0 items-center gap-2">
+            <CardCheckButton variant="detail" checked={!!card.checked_by_me} onToggle={handleToggleCheck} />
             {isLost ? (
               <>
                 <div className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-3 py-2 text-sm font-medium text-red-500 dark:text-red-400">

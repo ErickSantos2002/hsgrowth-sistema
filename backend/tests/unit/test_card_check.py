@@ -184,3 +184,27 @@ class TestBolinhaServico:
         r = client.get(f"/api/v1/service-boards/{c.b.id}/cards", headers=admin_headers)
         assert r.status_code == 200
         assert next(x for x in r.json()["cards"] if x["id"] == c.card.id)["checked_by_me"] is True
+
+
+# ─── Detalhe do card (bolinha no topo da tela do card) ────────────────────────
+
+class TestBolinhaNoDetalhe:
+    def test_detalhe_de_vendas_traz_a_marcacao(self, client, manager_headers, salesperson_headers, db, test_card):
+        url = f"/api/v1/cards/{test_card.id}"
+        assert client.get(url, headers=manager_headers).json()["checked_by_me"] is False
+        client.put(f"{url}/check", headers=manager_headers)
+        assert client.get(url, headers=manager_headers).json()["checked_by_me"] is True
+        assert client.get(url, headers=salesperson_headers).json()["checked_by_me"] is False  # pessoal
+        test_card.is_won = 1
+        db.commit()
+        assert client.get(url, headers=manager_headers).json()["checked_by_me"] is False  # ganho desmarca
+
+    def test_detalhe_de_servico_traz_a_marcacao(self, client, admin_headers, db):
+        c = TestBolinhaServico()._cenario(db)
+        url = f"/api/v1/service-boards/{c.b.id}/cards/{c.card.id}"
+        assert client.get(url, headers=admin_headers).json()["checked_by_me"] is False
+        client.put(f"{url}/check", headers=admin_headers)
+        assert client.get(url, headers=admin_headers).json()["checked_by_me"] is True
+        c.card.list_id = c.perdido.id
+        db.commit()
+        assert client.get(url, headers=admin_headers).json()["checked_by_me"] is False  # perdido desmarca

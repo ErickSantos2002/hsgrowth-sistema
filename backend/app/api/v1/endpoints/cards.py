@@ -271,7 +271,7 @@ async def get_card(
             person_phone_whatsapp = person.phone_whatsapp
             person_phone_commercial = person.phone_commercial
 
-    return card_to_response(
+    response = card_to_response(
         card,
         assigned_to_name,
         assigned_to_avatar_url,
@@ -285,6 +285,13 @@ async def get_card(
         person_phone_whatsapp=person_phone_whatsapp,
         person_phone_commercial=person_phone_commercial,
     )
+
+    # Bolinha "concluído" do usuário logado (mesma regra do board)
+    from app.services.card_check_service import CardCheckService, situacao_card
+    response.checked_by_me = card.id in CardCheckService(db).ids_validos(
+        current_user.id, "card_id", {card.id: (board_id or 0, situacao_card(card))}
+    )
+    return response
 
 
 @router.post(

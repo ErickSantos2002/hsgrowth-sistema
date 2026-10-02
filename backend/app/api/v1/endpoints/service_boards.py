@@ -405,8 +405,17 @@ async def get_service_card(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> Any:
+    from app.models.service_list import ServiceList
+    from app.services.card_check_service import CardCheckService, situacao_lista_servico
+
     svc = ServiceBoardService(db)
     card = svc.get_card(card_id)
+    # Bolinha "concluído" do usuário logado (mesma regra do board)
+    lista = db.get(ServiceList, card.list_id)
+    checked = card.id in CardCheckService(db).ids_validos(
+        current_user.id, "service_card_id",
+        {card.id: (lista.board_id if lista else 0, situacao_lista_servico(lista))},
+    )
     return ServiceCardResponse(
         id=card.id,
         list_id=card.list_id,
@@ -429,6 +438,7 @@ async def get_service_card(
         is_deleted=card.is_deleted,
         created_at=card.created_at,
         updated_at=card.updated_at,
+        checked_by_me=checked,
     )
 
 

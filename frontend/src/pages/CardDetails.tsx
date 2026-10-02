@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Card } from "../types";
 import cardService from "../services/cardService";
+import CardCheckButton from "../components/kanban/CardCheckButton";
 import userService from "../services/userService";
 import automationService from "../services/automationService";
 import cardTaskService from "../services/cardTaskService";
@@ -298,6 +299,25 @@ const CardDetails: React.FC = () => {
   /**
    * Clona o card atual na mesma lista e navega para o novo card
    */
+  /**
+   * Bolinha "concluído" pessoal: atualiza na hora e desfaz se a API falhar
+   */
+  const [checkSaving, setCheckSaving] = useState(false);
+  const handleToggleCheck = async () => {
+    if (!card || checkSaving) return;
+    const novo = !card.checked_by_me;
+    setCheckSaving(true);
+    setCard((prev) => (prev ? { ...prev, checked_by_me: novo } : prev));
+    try {
+      await cardService.setChecked(card.id, novo);
+    } catch {
+      setCard((prev) => (prev ? { ...prev, checked_by_me: !novo } : prev));
+      showError("Não foi possível atualizar a marcação do card.");
+    } finally {
+      setCheckSaving(false);
+    }
+  };
+
   const handleClone = async () => {
     if (!card) return;
     const confirmed = await confirm({
@@ -885,6 +905,9 @@ const CardDetails: React.FC = () => {
               )}
 
               {/* Botões de ação - ocultos para visualizadores */}
+
+              {/* Bolinha "concluído" pessoal — vale para todos, até visualizador */}
+              <CardCheckButton variant="detail" checked={!!card.checked_by_me} onToggle={handleToggleCheck} />
 
               {/* Botão Clonar */}
               {!isReadOnly && !card.is_lost && (
