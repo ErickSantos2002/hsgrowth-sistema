@@ -269,6 +269,7 @@ O gerador de lote decide a coluna por nome (conjunto `VENDEDORES = {"Miguel", "K
 | Transp. Lote 13 | 24/08/2026 | 200 | Claudia (100), Karolaine (100) | 10612–10824 | ✅ Importado |
 | Transp. Lote 14 | 10/09/2026 | 200 | Miguel (100, Vendedor), Karolaine (100, Vendedor) | 10961–11160 (re-subido) | ✅ Importado |
 | Transp. Lote 15 | 24/09/2026 | 100 | Claudia (SDR) | 11344–11443 | ✅ Importado |
+| Transp. Lote 16 | 02/10/2026 | 200 | Miguel (100, Vendedor), Karolaine (100, Vendedor) | 11730–11929 | ✅ Importado |
 | ... | — | ... | ... | ... | ... |
 
 **Obs. Transp. Lote 2:** o range 8804–9006 inclui 1 card orgânico de Karolaine (Lista fria) criado por SDR na janela; o lote em si é 100/100 (200 linhas, 0 erros).
@@ -303,7 +304,9 @@ O gerador de lote decide a coluna por nome (conjunto `VENDEDORES = {"Miguel", "K
 
 **Obs. Transp. Lote 15:** 100/100 com site, 100 clientes novos, 0 pulados. Claudia atribuída em `sdr_id` (SDR); `assigned_to_id` vazio nos 100. IDs 11344–11443.
 
-**Total Transportadoras importado:** 2200 | **Pendentes novos:** 1.687 de 4.056 | **Separados (CNPJ já no CRM):** 169.
+**Obs. Transp. Lote 16:** Miguel/Karolaine como Vendedores (`assigned_to_id`), `sdr_id` vazio. 200/200 com site, 200 clientes novos, 0 pulados. Consumiu quase todos os pendentes com site — restam ~22.
+
+**Total Transportadoras importado:** 2400 | **Pendentes novos:** 1.487 de 4.056 | **Separados (CNPJ já no CRM):** 169.
 
 ---
 
