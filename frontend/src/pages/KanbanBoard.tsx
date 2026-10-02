@@ -93,6 +93,7 @@ const KanbanBoard: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("open"); // Filtro de status (padrão: apenas abertos)
   const [lossReasonFilter, setLossReasonFilter] = useState(""); // Filtro de motivo de perda (só em "Apenas Perdidos", boards 6/7/8)
   const [cardTagFilter, setCardTagFilter] = useState(""); // Filtro por etiqueta: "" | "nutricao" | "parado" | "cross-sell" | ...
+  const [checkFilter, setCheckFilter] = useState(""); // Bolinha "concluído" pessoal: "" | "esconder" | "so"
   const [enteredPeriod, setEnteredPeriod] = useState(""); // Período de criação do card
   const [enteredCustomStart, setEnteredCustomStart] = useState("");
   const [enteredCustomEnd, setEnteredCustomEnd] = useState("");
@@ -142,6 +143,7 @@ const KanbanBoard: React.FC = () => {
         setAcquisitionChannelFilter(saved.acquisitionChannelFilter ?? "");
         setAcquisitionChannelDetailFilter(saved.acquisitionChannelDetailFilter ?? "");
         setCardTagFilter(saved.cardTagFilter ?? "");
+        setCheckFilter(saved.checkFilter ?? "");
         setEnteredPeriod(saved.enteredPeriod ?? "");
         setEnteredCustomStart(saved.enteredCustomStart ?? "");
         setEnteredCustomEnd(saved.enteredCustomEnd ?? "");
@@ -180,6 +182,7 @@ const KanbanBoard: React.FC = () => {
         acquisitionChannelFilter,
         acquisitionChannelDetailFilter,
         cardTagFilter,
+        checkFilter,
         enteredPeriod,
         enteredCustomStart,
         enteredCustomEnd,
@@ -203,6 +206,7 @@ const KanbanBoard: React.FC = () => {
     acquisitionChannelFilter,
     acquisitionChannelDetailFilter,
     cardTagFilter,
+    checkFilter,
     enteredPeriod,
     enteredCustomStart,
     enteredCustomEnd,
@@ -768,6 +772,7 @@ const KanbanBoard: React.FC = () => {
     setAcquisitionChannelFilter("");
     setAcquisitionChannelDetailFilter("");
     setCardTagFilter("");
+    setCheckFilter("");
     setEnteredAtPeriod("");
     setEnteredAtCustomStart("");
     setEnteredAtCustomEnd("");
@@ -791,6 +796,7 @@ const KanbanBoard: React.FC = () => {
     acquisitionChannelFilter !== "" ||
     acquisitionChannelDetailFilter !== "" ||
     cardTagFilter !== "" ||
+    checkFilter !== "" ||
     enteredAtPeriod !== "" ||
     enteredPeriod !== "";
 
@@ -996,6 +1002,10 @@ const KanbanBoard: React.FC = () => {
         }
       }
 
+      // Bolinha "concluído" pessoal
+      if (checkFilter === "esconder" && card.checked_by_me) return false;
+      if (checkFilter === "so" && !card.checked_by_me) return false;
+
       return true;
     });
   };
@@ -1067,6 +1077,27 @@ const KanbanBoard: React.FC = () => {
    */
   const handleViewCard = (card: Card) => {
     navigate(`/cards/${card.id}`);
+  };
+
+  /**
+   * Bolinha "concluído" pessoal: atualiza na hora e desfaz se a API falhar.
+   */
+  const checkInFlight = useRef<Set<number>>(new Set());
+  const handleToggleCheck = async (card: Card) => {
+    if (checkInFlight.current.has(card.id)) return;
+    checkInFlight.current.add(card.id);
+    const novo = !card.checked_by_me;
+    const aplicar = (v: boolean) =>
+      setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, checked_by_me: v } : c)));
+    aplicar(novo);
+    try {
+      await cardService.setChecked(card.id, novo);
+    } catch {
+      aplicar(!novo);
+      showError("Não foi possível atualizar a marcação do card.");
+    } finally {
+      checkInFlight.current.delete(card.id);
+    }
   };
 
   /**
@@ -1424,6 +1455,20 @@ const KanbanBoard: React.FC = () => {
               />
             </div>
 
+            {/* Filtro pela bolinha "concluído" pessoal */}
+            <div className="min-w-[165px]">
+              <SelectMenu
+                size="sm"
+                value={checkFilter}
+                options={[
+                  { value: "", label: "Concluídos: mostrar" },
+                  { value: "esconder", label: "Esconder concluídos por mim" },
+                  { value: "so", label: "Só concluídos por mim" },
+                ]}
+                onChange={setCheckFilter}
+              />
+            </div>
+
             {/* Filtro: Entrou na etapa (entered_at) */}
             <SelectMenu
               size="sm"
@@ -1614,6 +1659,7 @@ const KanbanBoard: React.FC = () => {
                   onArchiveList={canCreateList ? () => handleArchiveList(list) : undefined}
                   onDeleteList={canCreateList ? () => handleDeleteListClick(list) : undefined}
                   onCardClick={(card) => handleViewCard(card)}
+                  onToggleCheck={handleToggleCheck}
                   getCardHref={(card) => `/cards/${card.id}`}
                   onMoveLeft={isViewer ? undefined : () => handleMoveListLeft(list)}
                   onMoveRight={isViewer ? undefined : () => handleMoveListRight(list)}

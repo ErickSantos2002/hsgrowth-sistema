@@ -319,7 +319,7 @@ async def list_service_cards(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.list_cards(board_id, page=page, page_size=page_size)
+    return svc.list_cards(board_id, page=page, page_size=page_size, user_id=current_user.id)
 
 
 def _card_value(db, card) -> float:
@@ -521,6 +521,41 @@ async def move_service_card(
         created_at=card.created_at,
         updated_at=card.updated_at,
     )
+
+
+@router.put("/{board_id}/cards/{card_id}/check")
+async def marcar_service_card_concluido(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Marca o card como concluído só para o usuário logado (organização pessoal)."""
+    from app.models.service_list import ServiceList
+    from app.services.card_check_service import CardCheckService, situacao_lista_servico
+
+    card = ServiceBoardService(db).get_card_in_board(board_id, card_id)
+    lista = db.get(ServiceList, card.list_id)  # pelo list_id atual, não pela relação em cache
+    CardCheckService(db).marcar(
+        current_user.id, "service_card_id", card.id,
+        board_id=board_id, situacao=situacao_lista_servico(lista),
+    )
+    return {"checked": True}
+
+
+@router.delete("/{board_id}/cards/{card_id}/check")
+async def desmarcar_service_card_concluido(
+    board_id: int = Path(...),
+    card_id: int = Path(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Tira a marcação de concluído do usuário logado."""
+    from app.services.card_check_service import CardCheckService
+
+    card = ServiceBoardService(db).get_card_in_board(board_id, card_id)
+    CardCheckService(db).desmarcar(current_user.id, "service_card_id", card.id)
+    return {"checked": False}
 
 
 # ─── Card Products ──────────────────────────────────────────────────────────────

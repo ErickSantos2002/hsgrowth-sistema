@@ -649,6 +649,39 @@ async def move_card(
     return card_to_response(card)
 
 
+@router.put("/{card_id}/check", summary="Marcar card como concluído (bolinha pessoal)")
+async def marcar_card_concluido(
+    card_id: int = Path(..., description="ID do card"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Marca o card como concluído só para o usuário logado (organização pessoal)."""
+    from app.repositories.list_repository import ListRepository
+    from app.services.card_check_service import CardCheckService, situacao_card
+
+    card = CardService(db).get_card_by_id(card_id, current_user)
+    lista = ListRepository(db).find_by_id(card.list_id)
+    CardCheckService(db).marcar(
+        current_user.id, "card_id", card.id,
+        board_id=lista.board_id if lista else 0, situacao=situacao_card(card),
+    )
+    return {"checked": True}
+
+
+@router.delete("/{card_id}/check", summary="Desmarcar card como concluído (bolinha pessoal)")
+async def desmarcar_card_concluido(
+    card_id: int = Path(..., description="ID do card"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Tira a marcação de concluído do usuário logado."""
+    from app.services.card_check_service import CardCheckService
+
+    card = CardService(db).get_card_by_id(card_id, current_user)
+    CardCheckService(db).desmarcar(current_user.id, "card_id", card.id)
+    return {"checked": False}
+
+
 @router.put("/{card_id}/assign", response_model=CardResponse, summary="Atribuir card a usuário")
 async def assign_card(
     request: Request,

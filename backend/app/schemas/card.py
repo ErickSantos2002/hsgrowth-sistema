@@ -521,6 +521,7 @@ class CardMinimalResponse(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="Data da última atualização")
     is_stuck_3d: bool = Field(False, description="True se o card está parado há mais de 3 dias (sem movimentação)")
     is_stuck_7d: bool = Field(False, description="True se o card está parado há mais de 7 dias (subconjunto de is_stuck_3d)")
+    checked_by_me: bool = Field(False, description="Bolinha 'concluído' marcada pelo usuário logado (pessoal)")
     client_name: Optional[str] = Field(None, description="Nome do cliente/organização (busca do kanban)")
     client_document: Optional[str] = Field(None, description="CNPJ/CPF do cliente (busca do kanban)")
     is_won: bool = Field(..., description="Card ganho")

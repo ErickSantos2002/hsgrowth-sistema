@@ -3,15 +3,18 @@ import { Calendar, CheckSquare, RefreshCw, Mail, AlarmClock } from "lucide-react
 import { Card } from "../../types";
 import { UserAvatar } from "../common";
 import CardActivitiesModal from "./CardActivitiesModal";
+import CardCheckButton from "./CardCheckButton";
 
 interface KanbanCardProps {
   card: Card;
   onClick?: () => void;
   /** URL do card — habilita abrir em nova guia (clique do meio ou Ctrl/Cmd+clique). */
   href?: string;
+  /** Marca/desmarca a bolinha "concluído" pessoal (sem ela, a bolinha não aparece). */
+  onToggleCheck?: () => void;
 }
 
-const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick, href }) => {
+const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick, href, onToggleCheck }) => {
   const [showActivitiesModal, setShowActivitiesModal] = useState(false);
 
   /** Abre o card em uma nova guia do navegador. */
@@ -129,10 +132,15 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick, href }) => {
         </button>
       )}
 
-      {/* Título */}
-      <h4 className="mb-2 line-clamp-2 pr-14 text-[15px] leading-snug text-slate-900 dark:text-white">
-        {card.title}
-      </h4>
+      {/* Título com a bolinha "concluído" pessoal */}
+      <div className="mb-2 flex items-start pr-14">
+        {onToggleCheck && (
+          <CardCheckButton checked={!!card.checked_by_me} onToggle={onToggleCheck} />
+        )}
+        <h4 className="line-clamp-2 text-[15px] leading-snug text-slate-900 dark:text-white">
+          {card.title}
+        </h4>
+      </div>
 
       {/* Badges compactos no topo (só mostrar se relevante) */}
       <div className="mb-2 flex flex-wrap items-center gap-1.5">

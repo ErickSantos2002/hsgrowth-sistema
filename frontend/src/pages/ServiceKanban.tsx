@@ -20,6 +20,7 @@ import { SERVICE_LOSS_REASONS, SERVICE_ADMIN_LOSS_REASON, SERVICE_UNIFIED_LOSS_R
 import { useAuth } from "../hooks/useAuth";
 import { COLORS } from "../constants/colors";
 import ServiceCardModal from "../components/service/ServiceCardModal";
+import CardCheckButton from "../components/kanban/CardCheckButton";
 import userService from "../services/userService";
 import { User as UserType } from "../types";
 import { useBoardStream } from "../hooks/useBoardStream";
@@ -462,6 +463,8 @@ interface KanbanCardProps {
   onOpenDetail: () => void;
   /** URL do card — habilita abrir em nova guia (clique do meio ou Ctrl/Cmd+clique). */
   href?: string;
+  /** Marca/desmarca a bolinha "concluído" pessoal (sem ela, a bolinha não aparece). */
+  onToggleCheck?: () => void;
 }
 
 const CardBadge: React.FC<{ cls: string; icon: React.ReactNode; label: string; title?: string }> = ({ cls, icon, label, title }) => (
@@ -493,7 +496,7 @@ const CollaboratorStack: React.FC<{ people: { id: number; name: string }[] }> = 
   );
 };
 
-const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail, href }) => {
+const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail, href, onToggleCheck }) => {
   const openInNewTab = () => {
     if (href) window.open(href, "_blank", "noopener,noreferrer");
   };
@@ -525,7 +528,7 @@ const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail, href
       onMouseDown={(e) => {
         if (href && e.button === 1) e.preventDefault();
       }}
-      className={`relative cursor-pointer rounded-lg border p-3.5 shadow-sm transition-all hover:shadow-md ${
+      className={`group relative cursor-pointer rounded-lg border p-3.5 shadow-sm transition-all hover:shadow-md ${
         stuck7d ? "border-red-700/50 bg-white dark:border-red-600/40 dark:bg-red-950/40"
         : stuck ? "border-red-500/40 bg-white dark:border-red-500/30 dark:bg-red-950/20"
         : "border-gray-200 bg-white dark:border-slate-700/30 dark:bg-white/5"
@@ -544,7 +547,13 @@ const KanbanServiceCard: React.FC<KanbanCardProps> = ({ card, onOpenDetail, href
         <CheckSquare size={13} />
       </div>
 
-      <h4 className="mb-2 line-clamp-2 pr-9 text-sm font-medium leading-snug text-slate-900 dark:text-white">{card.title}</h4>
+      {/* Título com a bolinha "concluído" pessoal */}
+      <div className="mb-2 flex items-start pr-9">
+        {onToggleCheck && (
+          <CardCheckButton checked={!!card.checked_by_me} onToggle={onToggleCheck} />
+        )}
+        <h4 className="line-clamp-2 text-sm font-medium leading-snug text-slate-900 dark:text-white">{card.title}</h4>
+      </div>
 
       {card.client_name && <p className="mb-1 truncate text-xs text-slate-500 dark:text-slate-400">{card.client_name}</p>}
 
@@ -592,12 +601,13 @@ interface KanbanColumnProps {
   onMoveRight: () => void;
   onOpenCard: (card: ServiceCard) => void;
   getCardHref?: (card: ServiceCard) => string;
+  onToggleCheck?: (card: ServiceCard) => void; // bolinha "concluído" pessoal
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
   list, cards, allLists, canManage, isFirst, isLast,
   onAddCard, onEditList, onDeleteList, onMoveLeft, onMoveRight,
-  onOpenCard, getCardHref,
+  onOpenCard, getCardHref, onToggleCheck,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -668,6 +678,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
               card={card}
               onOpenDetail={() => onOpenCard(card)}
               href={getCardHref?.(card)}
+              onToggleCheck={onToggleCheck ? () => onToggleCheck(card) : undefined}
             />
           ))
         ) : (
@@ -793,6 +804,7 @@ const ServiceKanban: React.FC = () => {
   const [fVencAno, setFVencAno] = useState<string[]>([]); // anos de vencimento "2026" (só board 2)
   const [fValue, setFValue] = useState("");
   const [fTag, setFTag] = useState("");
+  const [fCheck, setFCheck] = useState(""); // bolinha "concluído" pessoal: "" | "esconder" | "so"
   const [fCriacao, setFCriacao] = useState("");
   const [fCriacaoStart, setFCriacaoStart] = useState("");
   const [fCriacaoEnd, setFCriacaoEnd] = useState("");
@@ -802,11 +814,11 @@ const ServiceKanban: React.FC = () => {
   const [filtersReady, setFiltersReady] = useState(false);
 
   const clearFilters = () => {
-    setFStatus("abertos"); setFLossReason(""); setFAssignee(""); setFProduct([]); setFCollection(""); setFVencMes([]); setFVencAno([]); setFValue(""); setFTag("");
+    setFStatus("abertos"); setFLossReason(""); setFAssignee(""); setFProduct([]); setFCollection(""); setFVencMes([]); setFVencAno([]); setFValue(""); setFTag(""); setFCheck("");
     setFCriacao(""); setFCriacaoStart(""); setFCriacaoEnd("");
     setFFechamento(""); setFFechamentoStart(""); setFFechamentoEnd("");
   };
-  const filtersActive = fStatus !== "abertos" || !!fLossReason || !!fAssignee || fProduct.length > 0 || !!fCollection || fVencMes.length > 0 || fVencAno.length > 0 || !!fValue || !!fTag || !!fCriacao || !!fFechamento;
+  const filtersActive = fStatus !== "abertos" || !!fLossReason || !!fAssignee || fProduct.length > 0 || !!fCollection || fVencMes.length > 0 || fVencAno.length > 0 || !!fValue || !!fTag || !!fCheck || !!fCriacao || !!fFechamento;
 
   const numId = Number(boardId);
 
@@ -855,6 +867,25 @@ const ServiceKanban: React.FC = () => {
 
   useEffect(() => { loadData(); }, [numId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Bolinha "concluído" pessoal: atualiza na hora e desfaz se a API falhar
+  const checkInFlight = useRef<Set<number>>(new Set());
+  const handleToggleCheck = async (card: ServiceCard) => {
+    if (checkInFlight.current.has(card.id)) return;
+    checkInFlight.current.add(card.id);
+    const novo = !card.checked_by_me;
+    const aplicar = (v: boolean) =>
+      setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, checked_by_me: v } : c)));
+    aplicar(novo);
+    try {
+      await serviceBoardService.setCardChecked(numId, card.id, novo);
+    } catch {
+      aplicar(!novo);
+      showError("Não foi possível atualizar a marcação do card.");
+    } finally {
+      checkInFlight.current.delete(card.id);
+    }
+  };
+
   // Carrega usuários para o filtro "Pós Vendas"
   useEffect(() => {
     userService.listActive().then(setUsers).catch(() => {});
@@ -877,6 +908,7 @@ const ServiceKanban: React.FC = () => {
         setFVencAno(Array.isArray(s.fVencAno) ? s.fVencAno : (s.fVencAno ? [s.fVencAno] : []));
         setFValue(s.fValue ?? "");
         setFTag(s.fTag ?? "");
+        setFCheck(s.fCheck ?? "");
         setFCriacao(s.fCriacao ?? "");
         setFCriacaoStart(s.fCriacaoStart ?? "");
         setFCriacaoEnd(s.fCriacaoEnd ?? "");
@@ -891,9 +923,9 @@ const ServiceKanban: React.FC = () => {
   // Salva filtros quando mudam
   useEffect(() => {
     if (!numId || !filtersReady) return;
-    const s = { fStatus, fLossReason, fAssignee, fProduct, fCollection, fVencMes, fVencAno, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
+    const s = { fStatus, fLossReason, fAssignee, fProduct, fCollection, fVencMes, fVencAno, fValue, fTag, fCheck, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd };
     try { localStorage.setItem(`service_kanban_filters_${numId}`, JSON.stringify(s)); } catch { /* ignora */ }
-  }, [numId, filtersReady, fStatus, fLossReason, fAssignee, fProduct, fCollection, fVencMes, fVencAno, fValue, fTag, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
+  }, [numId, filtersReady, fStatus, fLossReason, fAssignee, fProduct, fCollection, fVencMes, fVencAno, fValue, fTag, fCheck, fCriacao, fCriacaoStart, fCriacaoEnd, fFechamento, fFechamentoStart, fFechamentoEnd]);
 
   // O filtro de motivo só faz sentido em "Apenas Perdidos" — zera ao sair de lá.
   useEffect(() => {
@@ -1135,6 +1167,9 @@ const ServiceKanban: React.FC = () => {
       if (fTag === "parado" && !c.is_stuck_3d) return false;
       if (fTag === "parado7" && !c.is_stuck_7d) return false;
     }
+    // Bolinha "concluído" pessoal
+    if (fCheck === "esconder" && c.checked_by_me) return false;
+    if (fCheck === "so" && !c.checked_by_me) return false;
     // Criação (created_at)
     if (fCriacao === "custom") {
       if (fCriacaoStart && fCriacaoEnd) {
@@ -1369,6 +1404,13 @@ const ServiceKanban: React.FC = () => {
                 { value: "parado7", label: "🟥 Parado 7d+" },
               ]} />
             </div>
+            <div className="min-w-[165px]">
+              <SelectMenu size="sm" value={fCheck} onChange={setFCheck} options={[
+                { value: "", label: "Concluídos: mostrar" },
+                { value: "esconder", label: "Esconder concluídos por mim" },
+                { value: "so", label: "Só concluídos por mim" },
+              ]} />
+            </div>
             <div className="min-w-[160px]">
               <SelectMenu size="sm" value={fCriacao} onChange={(v) => { setFCriacao(v); if (v !== "custom") { setFCriacaoStart(""); setFCriacaoEnd(""); } }} options={[
                 { value: "", label: "Qualquer criação" },
@@ -1448,6 +1490,7 @@ const ServiceKanban: React.FC = () => {
                   onMoveRight={() => handleMoveListRight(list)}
                   onOpenCard={handleOpenDetail}
                   getCardHref={(card) => `/servicos/${numId}/cards/${card.id}`}
+                  onToggleCheck={handleToggleCheck}
                 />
               );
             })

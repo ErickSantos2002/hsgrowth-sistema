@@ -509,6 +509,17 @@ class CardService:
                 if _client_ids else {}
             )
 
+            # Bolinha "concluído" do usuário logado — vale só se o card segue no
+            # mesmo board e na mesma situação de quando foi marcado.
+            from app.services.card_check_service import CardCheckService, situacao_card
+            checked_ids = (
+                CardCheckService(self.db).ids_validos(
+                    current_user.id, "card_id",
+                    {c.id: (board_id, situacao_card(c)) for c in cards},
+                )
+                if current_user else set()
+            )
+
             for card in cards:
                 # Usa o usuário já carregado via eager loading (sem query adicional)
                 assigned_to_name = None
@@ -557,6 +568,7 @@ class CardService:
                         updated_at=card.updated_at,
                         is_stuck_3d=card.id in stuck_card_ids,
                         is_stuck_7d=card.id in stuck_7d_card_ids,
+                        checked_by_me=card.id in checked_ids,
                         client_name=clients_by_id[card.client_id].name if card.client_id in clients_by_id else None,
                         client_document=clients_by_id[card.client_id].document if card.client_id in clients_by_id else None,
                     )

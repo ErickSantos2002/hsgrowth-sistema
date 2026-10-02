@@ -99,6 +99,7 @@ export interface Card {
   value: number | null;
   is_stuck_3d: boolean;
   is_stuck_7d?: boolean;
+  checked_by_me?: boolean; // bolinha "concluído" do usuário logado (pessoal)
   due_date: string | null;
   contact_info: Record<string, any> | null;
   payment_info: {

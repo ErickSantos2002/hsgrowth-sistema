@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.13",
+    date: "01/10/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Boards — bolinha \"concluído\" pessoal, como no Trello: passe o mouse no card e clique na bolinha ao lado do título. Só você vê a sua marcação. Ela continua quando o card muda de lista no mesmo board e desmarca sozinha quando o card vai para outro board ou é dado como ganho/perdido.",
+      },
+      {
+        type: "feature",
+        text: "Filtro \"Concluídos por mim\" no funil dos boards: esconda o que já fez ou veja só os concluídos.",
+      },
+    ],
+  },
+  {
     version: "1.10.12",
     date: "01/10/2026",
     entries: [

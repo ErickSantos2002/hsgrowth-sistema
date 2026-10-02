@@ -104,6 +104,7 @@ export interface ServiceCard {
   pending_count?: number;
   is_stuck_3d?: boolean;
   is_stuck_7d?: boolean;
+  checked_by_me?: boolean; // bolinha "concluído" do usuário logado (pessoal)
   collaborators?: { id: number; name: string }[];
   products?: { id: number; name: string }[];
   loss_reason?: string | null;  // motivo da perda (derivado) — p/ filtro do kanban
@@ -413,6 +414,12 @@ class ServiceBoardService {
       position,
     });
     return r.data;
+  }
+
+  /** Marca/desmarca a bolinha "concluído" pessoal do card. */
+  async setCardChecked(boardId: number, cardId: number, checked: boolean): Promise<void> {
+    if (checked) await api.put(`${BASE}/${boardId}/cards/${cardId}/check`);
+    else await api.delete(`${BASE}/${boardId}/cards/${cardId}/check`);
   }
 
   // Card Products

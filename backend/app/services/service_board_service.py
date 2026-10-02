@@ -411,7 +411,9 @@ class ServiceBoardService:
             }
         return result
 
-    def list_cards(self, board_id: int, page: int = 1, page_size: int = 200) -> ServiceCardListResponse:
+    def list_cards(
+        self, board_id: int, page: int = 1, page_size: int = 200, user_id: Optional[int] = None
+    ) -> ServiceCardListResponse:
         self.get_board(board_id)
         skip = (page - 1) * page_size
         cards = self.repo.list_cards_by_board(board_id, skip=skip, limit=page_size)
@@ -425,11 +427,23 @@ class ServiceBoardService:
         # Cards em Ganho/Perdido não mostram "Parado 3d+/7d+" (negócio fechado).
         # Detecta por flag E por nome (a lista "Negócio Perdido" nem sempre tem
         # is_lost_stage setado — cai no fallback por nome, como no resto do código).
+        listas = self.repo.list_lists_by_board(board_id)
         closed_list_ids = {
-            l.id for l in self.repo.list_lists_by_board(board_id)
+            l.id for l in listas
             if l.is_done_stage or l.is_lost_stage
             or "ganho" in (l.name or "").lower() or "perdido" in (l.name or "").lower()
         }
+
+        # Bolinha "concluído" do usuário logado — vale só no mesmo board e situação.
+        from app.services.card_check_service import CardCheckService, situacao_lista_servico
+        listas_por_id = {l.id: l for l in listas}
+        checked_ids = (
+            CardCheckService(self.db).ids_validos(
+                user_id, "service_card_id",
+                {c.id: (board_id, situacao_lista_servico(listas_por_id.get(c.list_id))) for c in cards},
+            )
+            if user_id else set()
+        )
 
         items = []
         for c in cards:
@@ -466,6 +480,7 @@ class ServiceBoardService:
                 pending_count=a.get("pending_count", 0),
                 is_stuck_3d=is_stuck,
                 is_stuck_7d=is_stuck_7d,
+                checked_by_me=c.id in checked_ids,
                 collaborators=a.get("collaborators", []),
                 products=a.get("products", []),
                 device_serials=a.get("device_serials", []),

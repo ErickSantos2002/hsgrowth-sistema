@@ -20,6 +20,7 @@ interface KanbanListProps {
   isFirstList?: boolean; // Se é a primeira lista (não pode ir mais para esquerda)
   isLastList?: boolean; // Se é a última lista (não pode ir mais para direita)
   canManageLists?: boolean; // Permissão para gerenciar listas (Admin/Manager)
+  onToggleCheck?: (card: Card) => void; // Bolinha "concluído" pessoal
 }
 
 const KanbanList: React.FC<KanbanListProps> = ({
@@ -36,6 +37,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
   isFirstList = false,
   isLastList = false,
   canManageLists = true, // Default true para compatibilidade
+  onToggleCheck,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [cardLimit, setCardLimit] = useState(3);
@@ -164,6 +166,7 @@ const KanbanList: React.FC<KanbanListProps> = ({
               card={card}
               onClick={() => onCardClick?.(card)}
               href={getCardHref?.(card)}
+              onToggleCheck={onToggleCheck ? () => onToggleCheck(card) : undefined}
             />
           ))
         ) : (

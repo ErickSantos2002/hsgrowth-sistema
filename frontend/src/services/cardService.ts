@@ -74,6 +74,14 @@ class CardService {
   }
 
   /**
+   * Marca/desmarca a bolinha "concluído" pessoal do card
+   */
+  async setChecked(cardId: number, checked: boolean): Promise<void> {
+    if (checked) await api.put(`/api/v1/cards/${cardId}/check`);
+    else await api.delete(`/api/v1/cards/${cardId}/check`);
+  }
+
+  /**
    * Atribui um card a um usuário
    */
   async assign(id: number, userId: number): Promise<Card> {

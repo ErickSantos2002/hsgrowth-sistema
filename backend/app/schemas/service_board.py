@@ -152,6 +152,7 @@ class ServiceCardResponse(ServiceCardBase):
     pending_count: Optional[int] = None
     is_stuck_3d: Optional[bool] = None
     is_stuck_7d: Optional[bool] = None  # parado 7d+ (subconjunto de is_stuck_3d)
+    checked_by_me: bool = False  # bolinha "concluído" do usuário logado (pessoal)
     collaborators: Optional[List[dict]] = None  # [{id, name}] — quem agiu no card
     products: Optional[List[dict]] = None  # [{id, name}] — produtos do card (p/ filtro)
     loss_reason: Optional[str] = None  # motivo da perda (derivado da anotação) — p/ filtro do kanban

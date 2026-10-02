@@ -95,6 +95,9 @@ from app.models.proposal_version import ProposalVersion  # noqa
 from app.models.external_client_ref import ExternalClientRef  # noqa
 from app.models.service_product import ServiceProduct  # noqa
 
+# Bolinha "concluído" pessoal nos cards (Vendas e Serviço)
+from app.models.card_check import CardCheck  # noqa
+
 # Lista de todos os modelos (útil para imports)
 __all__ = [
     "Base",
@@ -154,4 +157,5 @@ __all__ = [
     "ProposalVersion",
     "ExternalClientRef",
     "ServiceProduct",
+    "CardCheck",
 ]
