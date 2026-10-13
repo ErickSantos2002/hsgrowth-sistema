@@ -2079,6 +2079,14 @@ def avaliar_reuniao(
             detail="Esta reunião ainda não tem transcrição para avaliar.",
         )
 
+    # A mesma régua da avaliação automática: em 08/10 o clique avaliou uma
+    # transcrição vazia, e a nota 0 entrou nos indicadores do time.
+    from app.services.avaliacao_reuniao.conversa import motivo_para_nao_avaliar
+
+    motivo = motivo_para_nao_avaliar(task.transcript_raw)
+    if motivo:
+        raise HTTPException(status_code=422, detail=f"Não dá para avaliar: {motivo}")
+
     if not settings.OPENAI_API_KEY:
         raise HTTPException(
             status_code=503,

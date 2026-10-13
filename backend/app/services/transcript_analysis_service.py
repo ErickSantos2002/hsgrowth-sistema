@@ -85,89 +85,108 @@ Transcrição:
 {transcript}"""
 
 
+# Quanto da conversa a análise lê. Era 12 mil caracteres, herança de quando o
+# modelo tinha pouco contexto: numa reunião de 40 minutos isso é o primeiro
+# terço, e o resumo, as objeções e os próximos passos saíam só do começo da
+# conversa. O gpt-4o aceita ~128 mil tokens; 150 mil caracteres são ~40 mil
+# tokens, umas quatro horas de conversa.
+LIMITE_CARACTERES_ANALISE = 150_000
+
+
+def vtt_em_turnos(vtt_content: str) -> list[tuple[str | None, list[str]]]:
+    """
+    Quebra o VTT (WebVTT) em turnos de fala: (quem falou, [o que falou]).
+
+    Precisa dar conta de dois formatos, porque o CRM usa os dois:
+
+    Teams:
+        00:00:01.000 --> 00:00:04.000
+        <v João Silva>Olá, como vai?
+
+    Daily:
+        transcript:357
+        00:00:01.000 --> 00:00:04.000
+        <v>Maria:</v>Bom dia, tudo bem?
+
+    O do Daily traz identificadores de trecho e fecha a tag de voz. Sem
+    tratar isso, o texto sai com números e marcação no meio das frases — e
+    a IA analisa uma conversa que ninguém teve.
+
+    Falas seguidas da mesma pessoa são juntadas: o Daily quebra a fala em
+    trechos curtos, e repetir o nome a cada linha polui a leitura e gasta
+    contexto do modelo à toa.
+
+    Fica fora da classe porque a avaliação pela régua também precisa medir a
+    conversa inteira — sem o corte que `_parse_vtt` aplica para a análise.
+    """
+    normalized = (vtt_content or "").replace("\r\n", "\n").replace("\r", "\n")
+
+    turnos: list[tuple[str | None, list[str]]] = []
+
+    for line in normalized.split("\n"):
+        trimmed = line.strip()
+
+        if not trimmed:
+            continue
+        if trimmed == "WEBVTT" or trimmed.startswith("NOTE"):
+            continue
+        if "-->" in trimmed:
+            continue
+        if re.match(r"^\d+$", trimmed):
+            continue
+        # Identificador de trecho do Daily: "transcript:357"
+        if re.match(r"^[A-Za-z_][A-Za-z0-9_-]*:\d+$", trimmed):
+            continue
+
+        falante = None
+        texto = trimmed
+
+        # Daily: "<v>Maria:</v>Bom dia" (formato real, sem espaço depois do
+        # <v) e "<v Maria:</v>Bom dia". O `>?` cobre os dois; sem ele, o
+        # nome de quem falou se perdia e a conversa virava um monólogo.
+        daily = re.match(r"^<v\s*>?\s*([^<>]*?)\s*:?\s*</v>\s*(.*)$", trimmed)
+        if daily:
+            falante = (daily.group(1) or "").strip() or None
+            texto = daily.group(2)
+        else:
+            # Teams: <v João Silva>Olá
+            teams = re.match(r"^<v\s+([^>]+)>(.*)$", trimmed)
+            if teams:
+                falante = teams.group(1).strip().rstrip(":") or None
+                texto = teams.group(2)
+
+        texto = re.sub(r"</?[^>]+>", "", texto).strip()
+        if not texto:
+            continue
+
+        atual = turnos[-1] if turnos else None
+        if atual and atual[0] == falante:
+            atual[1].append(texto)
+        else:
+            turnos.append((falante, [texto]))
+
+    return turnos
+
+
 class TranscriptAnalysisService:
 
     def _parse_vtt(self, vtt_content: str) -> str:
         """
-        Converte VTT (WebVTT) em texto legível, com o nome de quem falou.
-
-        Precisa dar conta de dois formatos, porque o CRM usa os dois:
-
-        Teams:
-            00:00:01.000 --> 00:00:04.000
-            <v João Silva>Olá, como vai?
-
-        Daily:
-            transcript:357
-            00:00:01.000 --> 00:00:04.000
-            <v>Maria:</v>Bom dia, tudo bem?
-
-        O do Daily traz identificadores de trecho e fecha a tag de voz. Sem
-        tratar isso, o texto sai com números e marcação no meio das frases — e
-        a IA analisa uma conversa que ninguém teve.
-
-        Falas seguidas da mesma pessoa são juntadas: o Daily quebra a fala em
-        trechos curtos, e repetir o nome a cada linha polui a leitura e gasta
-        contexto do modelo à toa.
+        Converte VTT em texto legível, com o nome de quem falou.
 
         Saída:
             João Silva: Olá, como vai?
         """
-        normalized = vtt_content.replace("\r\n", "\n").replace("\r", "\n")
-
-        # Cada turno é (quem falou, [o que falou])
-        turnos: list[tuple[str | None, list[str]]] = []
-
-        for line in normalized.split("\n"):
-            trimmed = line.strip()
-
-            if not trimmed:
-                continue
-            if trimmed == "WEBVTT" or trimmed.startswith("NOTE"):
-                continue
-            if "-->" in trimmed:
-                continue
-            if re.match(r"^\d+$", trimmed):
-                continue
-            # Identificador de trecho do Daily: "transcript:357"
-            if re.match(r"^[A-Za-z_][A-Za-z0-9_-]*:\d+$", trimmed):
-                continue
-
-            falante = None
-            texto = trimmed
-
-            # Daily: "<v>Maria:</v>Bom dia" (formato real, sem espaço depois do
-            # <v) e "<v Maria:</v>Bom dia". O `>?` cobre os dois; sem ele, o
-            # nome de quem falou se perdia e a conversa virava um monólogo.
-            daily = re.match(r"^<v\s*>?\s*([^<>]*?)\s*:?\s*</v>\s*(.*)$", trimmed)
-            if daily:
-                falante = (daily.group(1) or "").strip() or None
-                texto = daily.group(2)
-            else:
-                # Teams: <v João Silva>Olá
-                teams = re.match(r"^<v\s+([^>]+)>(.*)$", trimmed)
-                if teams:
-                    falante = teams.group(1).strip().rstrip(":") or None
-                    texto = teams.group(2)
-
-            texto = re.sub(r"</?[^>]+>", "", texto).strip()
-            if not texto:
-                continue
-
-            atual = turnos[-1] if turnos else None
-            if atual and atual[0] == falante:
-                atual[1].append(texto)
-            else:
-                turnos.append((falante, [texto]))
+        turnos = vtt_em_turnos(vtt_content)
 
         result = "\n".join(
             f"{falante}: {' '.join(falas)}" if falante else " ".join(falas)
             for falante, falas in turnos
         )
 
-        # Limita a 12.000 caracteres para não estourar o contexto do GPT
-        if len(result) > 12000:
-            result = result[:12000] + "\n[... transcrição truncada ...]"
+        # Teto só contra transcrição fora do comum — não para resumir a conversa.
+        if len(result) > LIMITE_CARACTERES_ANALISE:
+            result = result[:LIMITE_CARACTERES_ANALISE] + "\n[... transcrição truncada ...]"
         return result
 
     def analyze(self, transcript_vtt: str) -> dict:

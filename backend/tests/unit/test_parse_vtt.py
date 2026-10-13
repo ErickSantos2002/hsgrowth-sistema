@@ -137,15 +137,34 @@ class TestCasosDeBorda:
 
     def test_texto_longo_e_truncado(self):
         """Transcrição gigante não pode estourar o contexto do modelo."""
+        from app.services.transcript_analysis_service import LIMITE_CARACTERES_ANALISE
+
         falas = "".join(
             f"00:00:0{i%10}.000 --> 00:00:0{(i+1)%10}.000\n<v Ana>Fala numero {i} " + "x" * 200 + "\n\n"
-            for i in range(200)
+            for i in range(1000)
         )
 
         texto = transcript_analysis_service._parse_vtt("WEBVTT\n\n" + falas)
 
-        assert len(texto) <= 12100
+        assert len(texto) <= LIMITE_CARACTERES_ANALISE + 100
         assert "truncada" in texto
+
+    def test_reuniao_de_quarenta_minutos_chega_inteira(self):
+        """
+        Até 13/10 o corte era de 12 mil caracteres: a análise de uma reunião
+        de 40 minutos lia só o primeiro terço da conversa.
+        """
+        falas = "".join(
+            f"00:{i // 60:02d}:{i % 60:02d}.000 --> 00:{i // 60:02d}:{i % 60:02d}.500\n"
+            f"<v {'Ana' if i % 2 else 'Miguel'}>Fala numero {i} sobre o processo de calibração "
+            "dos equipamentos e o prazo da auditoria\n\n"
+            for i in range(800)
+        )
+
+        texto = transcript_analysis_service._parse_vtt("WEBVTT\n\n" + falas)
+
+        assert "truncada" not in texto
+        assert "Fala numero 799" in texto
 
 
 class TestFormatoRealDoDaily:

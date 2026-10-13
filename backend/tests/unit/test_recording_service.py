@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.models.card_task import CardTask
 from app.services.recording_service import donos_da_reuniao, processar_gravacao
+from tests.unit.conversas import APRESENTACAO
 
 
 class _StreamFalso:
@@ -553,8 +554,9 @@ AVALIACAO_DA_IA = {
 
 class TestAvaliacaoAutomatica:
     """
-    Reunião do CRM gravada, do tipo Apresentação Phoebus, já chega avaliada
-    pelo roteiro junto com a análise.
+    Reunião do CRM do tipo Apresentação Phoebus já chega avaliada pelo
+    roteiro — gravada ou não. A transcrição começa sozinha quando alguém entra
+    na sala; o vídeo só se o vendedor clicar.
 
     O vendedor recebe o retorno sem precisar lembrar de clicar — e se
     discordar, "Reavaliar" continua no card (decisão de 21/09).
@@ -564,7 +566,8 @@ class TestAvaliacaoAutomatica:
     falha nela não desfaz a transcrição.
     """
 
-    VTT = "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\n<v Ana>Bom dia\n"
+    # Uma apresentação de verdade: desde 13/10 a régua não avalia "Bom dia"
+    VTT = APRESENTACAO
 
     @pytest.fixture(autouse=True)
     def ambiente(self, monkeypatch):
@@ -614,15 +617,60 @@ class TestAvaliacaoAutomatica:
         db.refresh(task)
         assert task.evaluation.avaliado_por_id is None
 
-    def test_reuniao_sem_gravacao_nao_e_avaliada(self, db, task):
-        """Sem gravação não roda nem a análise — e nem a avaliação."""
+    def test_reuniao_sem_gravacao_tambem_e_avaliada(self, db, task):
+        """
+        Gravar o vídeo não decide nada: o tipo já diz que a conversa importa.
+
+        Até 13/10 a avaliação esperava a gravação, e 6 apresentações feitas no
+        CRM ficaram sem nota — 9 das 15 reuniões nem tinham sido gravadas.
+        """
         task.meeting_kind = "apresentacao_phoebus"
         db.commit()
-        avaliar = MagicMock(return_value=AVALIACAO_DA_IA)
 
-        self._processar(task, avaliar)
+        self._processar(task, MagicMock(return_value=AVALIACAO_DA_IA))
 
-        avaliar.assert_not_called()
+        db.refresh(task)
+        assert task.evaluation is not None
+        assert task.evaluation.avaliado_por_id is None
+
+    def test_sem_gravacao_a_analise_continua_de_fora(self, db, task):
+        """A análise antiga segue a regra dela: só quando o vendedor gravou."""
+        from app.services.recording_service import processar_transcricao
+
+        task.meeting_kind = "apresentacao_phoebus"
+        db.commit()
+        analisar = MagicMock(return_value={"resumo": "Conversa breve"})
+        resposta = MagicMock()
+        resposta.status_code = 200
+        resposta.text = self.VTT
+
+        with patch("httpx.get", return_value=resposta), \
+             patch("app.services.transcript_analysis_service.transcript_analysis_service.analyze",
+                   analisar), \
+             patch("app.services.avaliacao_reuniao.servico.avaliar",
+                   MagicMock(return_value=AVALIACAO_DA_IA)):
+            processar_transcricao(task_id=task.id, transcript_id="t-1")
+
+        analisar.assert_not_called()
+        db.refresh(task)
+        assert task.transcript_analysis is None
+
+    def test_sem_gravacao_o_aviso_fala_so_da_avaliacao(
+        self, db, task, test_card, test_salesperson_user
+    ):
+        """O aviso não promete a análise que não rodou."""
+        from app.models.notification import Notification
+
+        test_card.assigned_to_id = test_salesperson_user.id
+        task.meeting_kind = "apresentacao_phoebus"
+        db.commit()
+
+        self._processar(task, MagicMock(return_value=AVALIACAO_DA_IA))
+
+        aviso = db.query(Notification).filter(
+            Notification.user_id == test_salesperson_user.id
+        ).one()
+        assert "a transcricao e a avaliacao pelo roteiro" in aviso.message.lower()
 
     def test_falha_na_avaliacao_nao_desfaz_a_analise(self, db, task):
         self._gravada(db, task)

@@ -5,9 +5,14 @@ Uma regra só para os dois fluxos:
 
     chegou transcrição  +  tipo avaliado  →  avalia
 
-No CRM a transcrição chega sozinha depois da reunião gravada. No Teams ela
-chega com o clique em "Analisar Reunião", porque a transcrição pertence a quem
-organizou a reunião — e a avaliação sai no mesmo clique.
+No CRM a transcrição chega sozinha ao fim de toda reunião — ela começa quando
+alguém entra na sala, com ou sem gravação de vídeo. No Teams ela chega com o
+clique em "Analisar Reunião", porque a transcrição pertence a quem organizou a
+reunião — e a avaliação sai no mesmo clique.
+
+Gravar não entra na conta: o tipo da reunião já diz que a conversa importa.
+Até 13/10 a avaliação esperava a gravação, e 6 apresentações sem vídeo ficaram
+sem nota. O que entra é ter havido conversa (`conversa.py`).
 
 Duas regras, uma por tecnologia, ninguém decora; e duplicar a decisão em dois
 lugares significaria que um dia elas divergiriam.
@@ -31,10 +36,14 @@ def avaliar_se_for_o_caso(db: Session, task: CardTask, transcricao: str) -> bool
     from app.models.meeting_evaluation import MeetingEvaluation
     from app.services.reunioes.tipos import e_avaliado
 
+    from app.services.avaliacao_reuniao.conversa import motivo_para_nao_avaliar
+
     if not e_avaliado(task.meeting_kind):
         return False
 
-    if not (transcricao or "").strip():
+    motivo = motivo_para_nao_avaliar(transcricao)
+    if motivo:
+        print(f"[AVALIACAO] Reuniao {task.id} nao avaliada: {motivo}")
         return False
 
     if not settings.OPENAI_API_KEY:

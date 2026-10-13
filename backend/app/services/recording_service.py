@@ -338,25 +338,29 @@ def processar_transcricao(
         # Reuniao interna, teste ou conversa de tres minutos nao viram analise
         # (e nao geram custo). Para os demais casos, o botao "Analisar Reuniao"
         # continua disponivel no card.
+        #
+        # A avaliacao pela regua NAO depende disso: o tipo da reuniao ja diz que
+        # a conversa importa, e a transcricao chega mesmo sem gravacao. Ate 13/10
+        # ela ficava atras deste teste e 6 apresentacoes sem video ficaram sem nota.
         houve_gravacao = task.recording_status in ("ready", "processing", "external_link")
-        if not houve_gravacao:
-            print(f"[RECORDING] Tarefa {task_id} sem gravacao — analise nao disparada.")
-            return
 
         # Falhar aqui nao desfaz a transcricao — ela fica salva e da para
         # reanalisar depois pelo botao.
         analisada = False
-        try:
-            from app.services.transcript_analysis_service import transcript_analysis_service
-            import json as _json
+        if not houve_gravacao:
+            print(f"[RECORDING] Tarefa {task_id} sem gravacao — analise nao disparada.")
+        else:
+            try:
+                from app.services.transcript_analysis_service import transcript_analysis_service
+                import json as _json
 
-            analise = transcript_analysis_service.analyze(vtt)
-            task.transcript_analysis = _json.dumps(analise, ensure_ascii=False)
-            db.commit()
-            analisada = True
-            print(f"[RECORDING] Analise da tarefa {task_id} concluida")
-        except Exception as e:
-            print(f"[RECORDING] Transcricao salva, mas a analise falhou na tarefa {task_id}: {e}")
+                analise = transcript_analysis_service.analyze(vtt)
+                task.transcript_analysis = _json.dumps(analise, ensure_ascii=False)
+                db.commit()
+                analisada = True
+                print(f"[RECORDING] Analise da tarefa {task_id} concluida")
+            except Exception as e:
+                print(f"[RECORDING] Transcricao salva, mas a analise falhou na tarefa {task_id}: {e}")
 
         from app.services.avaliacao_reuniao.automatica import avaliar_se_for_o_caso
 

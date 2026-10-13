@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.card_task import CardTask
+from tests.unit.conversas import APRESENTACAO, MONOLOGO
 
 AVALIACAO_DA_IA = {
     "itens": [
@@ -47,7 +48,7 @@ def reuniao(db: Session, test_card, test_salesperson_user) -> CardTask:
         title="Reunião com transcrição",
         task_type="meeting",
         assigned_to_id=test_salesperson_user.id,
-        transcript_raw="WEBVTT\n\n<v Cliente>Nosso processo hoje é manual</v>",
+        transcript_raw=APRESENTACAO,
     )
     db.add(t)
     db.commit()
@@ -96,6 +97,25 @@ class TestAvaliar:
         r = client.post(f"/api/v1/card-tasks/{t.id}/avaliacao", headers=salesperson_headers)
 
         assert r.status_code == 422
+
+    def test_transcricao_sem_conversa_e_recusada_com_o_motivo(
+        self, client: TestClient, salesperson_headers, reuniao, db
+    ):
+        """
+        Em 08/10 o clique avaliou uma transcrição vazia e a nota 0 entrou nos
+        indicadores. Agora quem clica fica sabendo por que não dá.
+        """
+        reuniao.transcript_raw = MONOLOGO
+        db.commit()
+
+        with patch("app.services.avaliacao_reuniao.servico.avaliar") as avaliar:
+            r = client.post(
+                f"/api/v1/card-tasks/{reuniao.id}/avaliacao", headers=salesperson_headers
+            )
+
+        assert r.status_code == 422
+        assert "uma pessoa" in r.json()["detail"]
+        avaliar.assert_not_called()
 
     def test_reuniao_inexistente(self, client: TestClient, salesperson_headers):
         r = client.post("/api/v1/card-tasks/99999999/avaliacao", headers=salesperson_headers)

@@ -5,6 +5,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.14] — 13/10/2026
+
+### Corrigido
+- **Reunião no CRM — "Apresentação Phoebus" é avaliada mesmo sem gravar o vídeo:** a avaliação pelo roteiro esperava a gravação, mas a transcrição chega sozinha em toda reunião (ela começa quando alguém entra na sala; o vídeo só se o vendedor clicar em gravar). Com isso, apresentações sem vídeo ficavam sem nota. Agora o tipo da reunião basta. A análise antiga continua rodando só quando a reunião é gravada.
+- **Análise da reunião lê a conversa inteira:** a análise (resumo, objeções, próximos passos) cortava a transcrição em 12 mil caracteres — numa reunião de 40 minutos, só o primeiro terço da conversa. O teto foi para 150 mil caracteres (~4 horas de conversa). Vale para o CRM e para o Teams; a avaliação pela régua já recebia a transcrição inteira.
+
+### Alterado
+- **Avaliação só de conversa de verdade:** a régua passa a exigir pelo menos **500 palavras** na transcrição e **duas pessoas falando** (o vendedor e o cliente). Vale para a avaliação automática e para o botão "Avaliar", que agora explica por que não dá. Antes, reuniões em que só o vendedor falou (esperando o cliente, ajustando a câmera) ou com transcrição vazia podiam receber nota — e a nota 0 entrava nos indicadores do time.
+
+---
+
 ## [1.10.13] — 01/10/2026
 
 ### Adicionado

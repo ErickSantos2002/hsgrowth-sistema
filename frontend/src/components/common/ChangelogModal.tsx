@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.14",
+    date: "13/10/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Reunião no CRM — a \"Apresentação Phoebus\" agora é avaliada pelo roteiro mesmo sem gravar o vídeo. Antes, sem clicar em gravar, a reunião ficava sem nota.",
+      },
+      {
+        type: "fix",
+        text: "Análise da reunião (resumo, objeções, próximos passos) agora lê a conversa inteira. Antes ela via só o começo — numa reunião de 40 minutos, mais ou menos o primeiro terço.",
+      },
+      {
+        type: "improvement",
+        text: "Avaliação só de conversa de verdade: é preciso ter pelo menos 500 palavras na transcrição e duas pessoas falando. Reunião em que só o vendedor falou, ou com transcrição vazia, não recebe nota — e o botão \"Avaliar\" explica o motivo.",
+      },
+    ],
+  },
+  {
     version: "1.10.13",
     date: "01/10/2026",
     entries: [

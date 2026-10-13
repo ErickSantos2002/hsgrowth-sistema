@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.models.card_task import CardTask
 from app.services.avaliacao_reuniao.automatica import avaliar_se_for_o_caso
+from tests.unit.conversas import APRESENTACAO, CONVERSA_CURTA, MONOLOGO
 
 RESULTADO = {
     "itens": [
@@ -44,7 +45,7 @@ def _reuniao(db, card, responsavel, tipo=None) -> CardTask:
         task_type="meeting",
         assigned_to_id=responsavel.id,
         meeting_kind=tipo,
-        transcript_raw="WEBVTT\n\nconversa",
+        transcript_raw=APRESENTACAO,
     )
     db.add(task)
     db.commit()
@@ -97,6 +98,31 @@ class TestQuandoAvalia:
 
         with patch("app.services.avaliacao_reuniao.servico.avaliar", avaliar):
             assert avaliar_se_for_o_caso(db, task, "   ") is False
+
+        avaliar.assert_not_called()
+
+    def test_conversa_curta_nao_avalia(self, db: Session, test_card, test_salesperson_user):
+        """"Está me ouvindo?", "estou", e caiu: não houve apresentação."""
+        task = _reuniao(db, test_card, test_salesperson_user, "apresentacao_phoebus")
+        avaliar = MagicMock(return_value=RESULTADO)
+
+        with patch("app.services.avaliacao_reuniao.servico.avaliar", avaliar):
+            assert avaliar_se_for_o_caso(db, task, CONVERSA_CURTA) is False
+
+        avaliar.assert_not_called()
+
+    def test_vendedor_falando_sozinho_nao_avalia(
+        self, db: Session, test_card, test_salesperson_user
+    ):
+        """
+        Em 30/09 e 08/10 três "apresentações" foram só o vendedor esperando o
+        cliente, arrumando a câmera — nota ali diria algo que não aconteceu.
+        """
+        task = _reuniao(db, test_card, test_salesperson_user, "apresentacao_phoebus")
+        avaliar = MagicMock(return_value=RESULTADO)
+
+        with patch("app.services.avaliacao_reuniao.servico.avaliar", avaliar):
+            assert avaliar_se_for_o_caso(db, task, MONOLOGO) is False
 
         avaliar.assert_not_called()
 
