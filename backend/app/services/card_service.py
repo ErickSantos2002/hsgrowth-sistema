@@ -866,6 +866,9 @@ class CardService:
         elif board.id == 8:  # Expansão (Pós Venda)
             card.expansion_entry_date = now
 
+        # Quem criou: usuário de integração = lead que chegou sozinho
+        card.created_by_id = current_user.id
+
         self.db.commit()
         self.db.refresh(card)
 
@@ -883,42 +886,14 @@ class CardService:
         except Exception as e:
             print(f"[CARD_LIST_HISTORY] Erro ao registrar entrada inicial: {e}")
 
-        # Notifica responsável e SDR se já vieram definidos na criação do card
-        if card.assigned_to_id:
-            try:
-                self.notification_repository.create({
-                    "user_id": card.assigned_to_id,
-                    "notification_type": "card_assigned",
-                    "title": "Card atribuído a você",
-                    "message": f"O card '{card.title}' foi atribuído a você",
-                    "icon": "bell",
-                    "color": "info",
-                    "notification_metadata": {
-                        "card_id": card.id,
-                        "card_title": card.title,
-                        "url": f"/cards/{card.id}"
-                    }
-                })
-            except Exception as e:
-                print(f"[NOTIFICATION] Erro ao notificar responsável na criação do card: {e}")
+        # Avisa vendedor e SDR definidos na criação. Lead do site sai como
+        # "Novo lead do site"; quem se colocou no próprio card não é avisado.
+        from app.services.notificacoes.atribuicao import avisar_atribuicao
 
+        if card.assigned_to_id:
+            avisar_atribuicao(self.db, card, card.assigned_to_id, "vendedor", autor_id=current_user.id)
         if card.sdr_id:
-            try:
-                self.notification_repository.create({
-                    "user_id": card.sdr_id,
-                    "notification_type": "card_assigned",
-                    "title": "Card atribuído a você",
-                    "message": f"O card '{card.title}' foi atribuído a você como SDR",
-                    "icon": "bell",
-                    "color": "info",
-                    "notification_metadata": {
-                        "card_id": card.id,
-                        "card_title": card.title,
-                        "url": f"/cards/{card.id}"
-                    }
-                })
-            except Exception as e:
-                print(f"[NOTIFICATION] Erro ao notificar SDR na criação do card: {e}")
+            avisar_atribuicao(self.db, card, card.sdr_id, "sdr", autor_id=current_user.id)
 
         # Dispara automações do tipo "card_created"
         try:
@@ -1076,51 +1051,24 @@ class CardService:
             event = "card.automacao01_ativado" if new_automacao01 else "card.automacao01_desativado"
             self._send_automacao01_webhook(updated_card, event, current_user)
 
-        # Envia notificação ao novo responsável se o vendedor foi alterado
+        # Avisa o novo vendedor e o novo SDR (não quando foi a própria pessoa)
+        from app.services.notificacoes.atribuicao import avisar_atribuicao
+
         if (
             "assigned_to_id" in update_data_fields
             and old_assigned_to_id != updated_card.assigned_to_id
             and updated_card.assigned_to_id is not None
         ):
-            try:
-                self.notification_repository.create({
-                    "user_id": updated_card.assigned_to_id,
-                    "notification_type": "card_assigned",
-                    "title": "Card atribuído a você",
-                    "message": f"O card '{updated_card.title}' foi atribuído a você",
-                    "icon": "bell",
-                    "color": "info",
-                    "notification_metadata": {
-                        "card_id": updated_card.id,
-                        "card_title": updated_card.title,
-                        "url": f"/cards/{updated_card.id}"
-                    }
-                })
-            except Exception as e:
-                print(f"[NOTIFICATION] Erro ao notificar novo responsável: {e}")
+            avisar_atribuicao(self.db, updated_card, updated_card.assigned_to_id, "vendedor",
+                              autor_id=current_user.id)
 
-        # Envia notificação ao novo SDR se o sdr_id foi alterado
         if (
             "sdr_id" in update_data_fields
             and old_sdr_id != updated_card.sdr_id
             and updated_card.sdr_id is not None
         ):
-            try:
-                self.notification_repository.create({
-                    "user_id": updated_card.sdr_id,
-                    "notification_type": "card_assigned",
-                    "title": "Card atribuído a você",
-                    "message": f"O card '{updated_card.title}' foi atribuído a você como SDR",
-                    "icon": "bell",
-                    "color": "info",
-                    "notification_metadata": {
-                        "card_id": updated_card.id,
-                        "card_title": updated_card.title,
-                        "url": f"/cards/{updated_card.id}"
-                    }
-                })
-            except Exception as e:
-                print(f"[NOTIFICATION] Erro ao notificar novo SDR: {e}")
+            avisar_atribuicao(self.db, updated_card, updated_card.sdr_id, "sdr",
+                              autor_id=current_user.id)
 
         # Registra no histórico as alterações realizadas nos campos do card
         try:
@@ -2270,23 +2218,10 @@ class CardService:
             except Exception as e:
                 print(f"[ACTIVITY] Erro ao registrar atribuição no histórico: {e}")
 
-            # Notifica o novo responsável
-            try:
-                self.notification_repository.create({
-                    "user_id": user_id,
-                    "notification_type": "card_assigned",
-                    "title": "Card atribuído a você",
-                    "message": f"O card '{assigned_card.title}' foi atribuído a você",
-                    "icon": "bell",
-                    "color": "info",
-                    "notification_metadata": {
-                        "card_id": assigned_card.id,
-                        "card_title": assigned_card.title,
-                        "url": f"/cards/{assigned_card.id}"
-                    }
-                })
-            except Exception as e:
-                print(f"[NOTIFICATION] Erro ao notificar atribuição de card: {e}")
+            # Notifica o novo responsável (não quando foi ele mesmo)
+            from app.services.notificacoes.atribuicao import avisar_atribuicao
+
+            avisar_atribuicao(self.db, assigned_card, user_id, "vendedor", autor_id=current_user.id)
 
         return assigned_card
 
