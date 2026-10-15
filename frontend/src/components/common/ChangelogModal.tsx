@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.15",
+    date: "15/10/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Notificações — o lead que chega pelo site agora aparece em destaque no sino (\"Novo lead do site\"), e chegam dois lembretes novos: o resumo do dia às 8h e o aviso 15 minutos antes de cada reunião.",
+      },
+      {
+        type: "feature",
+        text: "Serviço recebe aviso de card novo nos boards que acompanha (agrupado quando chegam vários), e a tela Configurações > Notificações passou a funcionar de verdade: cada botão salva ao clicar.",
+      },
+      {
+        type: "fix",
+        text: "Você não recebe mais aviso do que você mesmo fez (como criar um card para si), e o sino não mostra mais notificações falsas quando o servidor não responde. As notificações antigas foram marcadas como lidas.",
+      },
+    ],
+  },
+  {
     version: "1.10.14",
     date: "13/10/2026",
     entries: [

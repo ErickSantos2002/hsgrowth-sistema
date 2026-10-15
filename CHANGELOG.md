@@ -5,6 +5,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.15] — 15/10/2026
+
+### Adicionado
+- **Novo lead do site em destaque:** o lead que chega pelo site sai como "Novo lead do site: <nome>", verde e com ícone próprio no sino — antes vinha com o mesmo título genérico de "Card atribuído" e era lido em 0–22% das vezes.
+- **Resumo da manhã:** às 8h, de segunda a sexta, um aviso com o dia de cada um ("Hoje: 4 ligações, 1 reunião · 12 atrasadas"). Vale para Vendas e Serviço.
+- **Reunião em 15 minutos:** aviso antes de cada reunião agendada.
+- **Serviço recebe avisos:** card novo nos boards acompanhados, agrupado quando chegam vários ("101 cards novos em Cobrança").
+- **Configurações > Notificações funcionando:** cada botão salva ao clicar; "Novo lead do site" e "Card atribuído" são obrigatórios; dá para escolher quais boards de Serviço acompanhar e desligar o pop-up do navegador.
+
+### Corrigido
+- **Fim do aviso da própria ação:** criar um card para si mesmo, se atribuir ou mexer no próprio card não gera mais aviso — era a maior parte do que chegava no sino.
+- **Lembretes que nunca funcionaram** (card vencido, tarefa vencendo) saíram; os novos rodam no próprio servidor.
+- **O sino não mostra mais notificações falsas** quando o servidor não responde.
+
+### Alterado
+- **Sino limpo na atualização:** as notificações antigas foram marcadas como lidas. Lidas somem depois de 30 dias.
+
+---
+
 ## [1.10.14] — 13/10/2026
 
 ### Corrigido
