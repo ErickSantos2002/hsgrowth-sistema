@@ -779,15 +779,18 @@ async def change_password(
     response_model=UserNotificationSettingResponse,
     summary="Configurações de notificação do usuário logado",
     description="""
-    Retorna as configurações de notificação in-app do usuário autenticado.
-    Se o usuário ainda não configurou as preferências, cria automaticamente com todos os tipos ativos.
+    Preferências de notificação do usuário logado. Cria com tudo ligado no
+    primeiro acesso; os boards de Serviço acompanhados começam pelo histórico.
 
-    **Tipos de notificação disponíveis:**
-    - `task_assigned`: Tarefa atribuída ao usuário
-    - `task_due_soon`: Tarefa com prazo próximo (< 24h)
-    - `card_moved`: Card movido para outra lista
-    - `card_product_changed`: Produto do card alterado
-    - `achievement_unlocked`: Conquista/badge desbloqueada (gamificação)
+    Obrigatórios, fora daqui: novo lead do site e card atribuído a mim.
+
+    - `task_assigned`: tarefa criada por outra pessoa para mim
+    - `card_product_changed`: produto no meu card
+    - `reuniao_pronta`: gravação e análise da reunião
+    - `resumo_manha`: resumo das 8h (seg a sex)
+    - `reuniao_15min`: aviso 15 min antes de reunião
+    - `popup_navegador`: pop-up do navegador além do sino
+    - `quadros_servico`: ids dos boards de Serviço acompanhados
     """,
     responses={
         200: {
@@ -798,12 +801,14 @@ async def change_password(
                         "id": 1,
                         "user_id": 1,
                         "task_assigned": True,
-                        "task_due_soon": True,
-                        "card_moved": False,
                         "card_product_changed": True,
-                        "achievement_unlocked": True,
-                        "created_at": "2026-03-05T10:00:00",
-                        "updated_at": "2026-03-05T14:30:00"
+                        "reuniao_pronta": True,
+                        "resumo_manha": True,
+                        "reuniao_15min": True,
+                        "popup_navegador": True,
+                        "quadros_servico": [2],
+                        "created_at": "2026-10-14T10:00:00",
+                        "updated_at": "2026-10-14T10:00:00"
                     }
                 }
             }
@@ -829,10 +834,12 @@ async def get_notification_settings(
     Atualiza as preferências de notificação in-app do usuário autenticado.
     Apenas os campos enviados serão alterados (demais permanecem com valor atual).
 
-    **Exemplo:** Para desativar apenas notificações de card movido:
+    **Exemplo:** para desligar só o resumo da manhã:
     ```json
-    { "card_moved": false }
+    { "resumo_manha": false }
     ```
+
+    Tentar desligar um aviso obrigatório (`lead_site`, `card_atribuido`) devolve 422.
     """,
     responses={
         200: {
@@ -843,12 +850,14 @@ async def get_notification_settings(
                         "id": 1,
                         "user_id": 1,
                         "task_assigned": True,
-                        "task_due_soon": True,
-                        "card_moved": False,
                         "card_product_changed": True,
-                        "achievement_unlocked": True,
-                        "created_at": "2026-03-05T10:00:00",
-                        "updated_at": "2026-03-05T15:00:00"
+                        "reuniao_pronta": True,
+                        "resumo_manha": False,
+                        "reuniao_15min": True,
+                        "popup_navegador": True,
+                        "quadros_servico": [2],
+                        "created_at": "2026-10-14T10:00:00",
+                        "updated_at": "2026-10-14T15:00:00"
                     }
                 }
             }
