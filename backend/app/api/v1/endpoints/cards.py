@@ -6,7 +6,6 @@ from typing import Any, Optional, List
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from app.repositories.notification_repository import NotificationRepository
 
 from app.api.deps import get_db, get_current_active_user, require_not_viewer, require_role
 from app.core import realtime
@@ -1401,28 +1400,6 @@ async def desativar_automacao01(
     # Envia webhook de desativação
     service = CardService(db)
     service._send_automacao01_webhook(card, "card.automacao01_desativado", current_user)
-
-    # Notifica o SDR e/ou Vendedor do card
-    notification_repo = NotificationRepository(db)
-    recipients = []
-    if card.assigned_to_id:
-        recipients.append(card.assigned_to_id)
-    if card.sdr_id and card.sdr_id not in recipients:
-        recipients.append(card.sdr_id)
-
-    for user_id in recipients:
-        try:
-            notification_repo.create({
-                "user_id": user_id,
-                "notification_type": "info",
-                "title": "Cliente demonstrou interesse!",
-                "message": f"A automação de nutrição do card '{card.title}' foi desligada — o cliente respondeu ao e-mail e pode estar pronto para contato.",
-                "icon": "bell",
-                "color": "success",
-                "notification_metadata": {"card_id": card.id},
-            })
-        except Exception as e:
-            print(f"[AUTOMACAO01] Erro ao notificar usuário {user_id}: {e}")
 
     return service.get_card_by_id(card_id, current_user)
 

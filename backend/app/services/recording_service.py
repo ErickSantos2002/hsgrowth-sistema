@@ -66,28 +66,17 @@ def _ids_admins(db) -> List[int]:
     ]
 
 
-def _notificar(db, user_ids: List[int], titulo: str, mensagem: str, task: CardTask, cor: str = "info") -> None:
-    """Aviso no sino. Falha aqui não pode derrubar o processamento."""
-    from app.repositories.notification_repository import NotificationRepository
+def _notificar(db, user_ids: List[int], titulo: str, mensagem: str, task: CardTask,
+               tipo: str = "reuniao_pronta") -> None:
+    """Aviso no sino. Falha aqui não pode derrubar o processamento (notificar não levanta)."""
+    from app.services.notificacoes.enviar import notificar
 
-    repo = NotificationRepository(db)
     for user_id in user_ids:
-        try:
-            repo.create({
-                "user_id": user_id,
-                "notification_type": "meeting_recording",
-                "title": titulo,
-                "message": mensagem,
-                "icon": "video",
-                "color": cor,
-                "notification_metadata": {
-                    "card_id": task.card_id,
-                    "card_task_id": task.id,
-                    "url": f"/cards/{task.card_id}",
-                },
-            })
-        except Exception as e:
-            print(f"[RECORDING] Aviso: falha ao notificar usuário {user_id}: {e}")
+        notificar(
+            db, user_id, tipo, titulo, mensagem,
+            link=f"/cards/{task.card_id}",
+            metadata={"card_id": task.card_id, "card_task_id": task.id},
+        )
 
 
 def _marcar_falha(db, task: CardTask, motivo: str, gravacao=None) -> None:
@@ -109,7 +98,7 @@ def _marcar_falha(db, task: CardTask, motivo: str, gravacao=None) -> None:
         "Falha ao processar a gravação",
         f"A gravação da reunião \"{task.title}\" não pôde ser processada. {motivo[:200]}",
         task,
-        cor="danger",
+        tipo="reuniao_falha",
     )
 
 

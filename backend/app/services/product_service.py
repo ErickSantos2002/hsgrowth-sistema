@@ -207,27 +207,20 @@ class ProductService:
         except Exception as e:
             print(f"[ACTIVITY] Erro ao registrar adição de produto no histórico: {e}")
 
-        # Notifica o responsável do card se for diferente de quem adicionou o produto
-        try:
-            card = CardRepository(self.db).find_by_id(card_id)
-            if card and card.assigned_to_id and card.assigned_to_id != current_user.id:
-                self.notification_repo.create({
-                    "user_id": card.assigned_to_id,
-                    "notification_type": "product_added",
-                    "title": "Produto adicionado ao card",
-                    "message": f"{current_user.name} adicionou \"{product.name}\" ao card \"{card.title}\"",
-                    "icon": "package",
-                    "color": "info",
-                    "notification_metadata": {
-                        "card_id": card_id,
-                        "product_id": product.id,
-                        "product_name": product.name,
-                        "added_by_id": current_user.id,
-                        "added_by_name": current_user.name
-                    }
-                })
-        except Exception as e:
-            print(f"[NOTIFICATION] Erro ao notificar produto adicionado: {e}")
+        # Notifica o vendedor do card (não quando foi ele mesmo)
+        card = CardRepository(self.db).find_by_id(card_id)
+        if card and card.assigned_to_id:
+            from app.services.notificacoes.enviar import notificar
+
+            notificar(
+                self.db, card.assigned_to_id, "produto_no_card",
+                "Produto adicionado ao card",
+                f"{current_user.name} adicionou \"{product.name}\" ao card \"{card.title}\"",
+                link=f"/cards/{card_id}",
+                metadata={"card_id": card_id, "product_id": product.id, "product_name": product.name,
+                          "added_by_id": current_user.id, "added_by_name": current_user.name},
+                autor_id=current_user.id,
+            )
 
         # Atualiza o valor total do card
         self._sync_card_value_with_products(card_id)
@@ -319,26 +312,20 @@ class ProductService:
         except Exception as e:
             print(f"[ACTIVITY] Erro ao registrar remoção de produto no histórico: {e}")
 
-        # Notifica o responsável do card se for diferente de quem removeu o produto
-        try:
-            card = CardRepository(self.db).find_by_id(card_id)
-            if card and card.assigned_to_id and card.assigned_to_id != current_user.id:
-                self.notification_repo.create({
-                    "user_id": card.assigned_to_id,
-                    "notification_type": "product_removed",
-                    "title": "Produto removido do card",
-                    "message": f"{current_user.name} removeu \"{product_name_for_log}\" do card \"{card.title}\"",
-                    "icon": "package",
-                    "color": "warning",
-                    "notification_metadata": {
-                        "card_id": card_id,
-                        "product_name": product_name_for_log,
-                        "removed_by_id": current_user.id,
-                        "removed_by_name": current_user.name
-                    }
-                })
-        except Exception as e:
-            print(f"[NOTIFICATION] Erro ao notificar produto removido: {e}")
+        # Notifica o vendedor do card (não quando foi ele mesmo)
+        card = CardRepository(self.db).find_by_id(card_id)
+        if card and card.assigned_to_id:
+            from app.services.notificacoes.enviar import notificar
+
+            notificar(
+                self.db, card.assigned_to_id, "produto_no_card",
+                "Produto removido do card",
+                f"{current_user.name} removeu \"{product_name_for_log}\" do card \"{card.title}\"",
+                link=f"/cards/{card_id}",
+                metadata={"card_id": card_id, "product_name": product_name_for_log,
+                          "removed_by_id": current_user.id, "removed_by_name": current_user.name},
+                autor_id=current_user.id,
+            )
 
         # Atualiza o valor total do card
         self._sync_card_value_with_products(card_id)

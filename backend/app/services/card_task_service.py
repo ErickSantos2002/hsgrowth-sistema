@@ -184,25 +184,19 @@ class CardTaskService:
             except Exception as e:
                 print(f"[GAMIFICATION] Erro ao pontuar meeting_created: {e}")
 
-        # Notifica o responsável se for diferente de quem criou a tarefa
-        if task.assigned_to_id and task.assigned_to_id != current_user.id:
-            try:
-                self.notification_repo.create({
-                    "user_id": task.assigned_to_id,
-                    "notification_type": "task_assigned",
-                    "title": "Nova tarefa atribuída a você",
-                    "message": f"{current_user.name} atribuiu a você: \"{task.title}\"",
-                    "icon": "check-square",
-                    "color": "info",
-                    "notification_metadata": {
-                        "task_id": task.id,
-                        "card_id": task.card_id,
-                        "assigned_by_id": current_user.id,
-                        "assigned_by_name": current_user.name
-                    }
-                })
-            except Exception as e:
-                print(f"[NOTIFICATION] Erro ao notificar tarefa atribuída: {e}")
+        # Notifica o responsável (não quando foi ele mesmo que criou)
+        if task.assigned_to_id:
+            from app.services.notificacoes.enviar import notificar
+
+            notificar(
+                self.db, task.assigned_to_id, "tarefa_para_mim",
+                "Nova tarefa atribuída a você",
+                f"{current_user.name} atribuiu a você: \"{task.title}\"",
+                link=f"/cards/{task.card_id}",
+                metadata={"task_id": task.id, "card_id": task.card_id,
+                          "assigned_by_id": current_user.id, "assigned_by_name": current_user.name},
+                autor_id=current_user.id,
+            )
 
         return self._build_response(task)
 
@@ -283,26 +277,20 @@ class CardTaskService:
             }
         )
 
-        # Notifica o novo responsável se o assigned_to mudou e é diferente de quem editou
+        # Notifica o novo responsável se a tarefa mudou de mãos
         new_assigned_to_id = task_data.assigned_to_id if task_data.assigned_to_id is not None else old_assigned_to_id
-        if new_assigned_to_id and new_assigned_to_id != old_assigned_to_id and new_assigned_to_id != current_user.id:
-            try:
-                self.notification_repo.create({
-                    "user_id": new_assigned_to_id,
-                    "notification_type": "task_assigned",
-                    "title": "Nova tarefa atribuída a você",
-                    "message": f"{current_user.name} atribuiu a você: \"{updated_task.title}\"",
-                    "icon": "check-square",
-                    "color": "info",
-                    "notification_metadata": {
-                        "task_id": updated_task.id,
-                        "card_id": updated_task.card_id,
-                        "assigned_by_id": current_user.id,
-                        "assigned_by_name": current_user.name
-                    }
-                })
-            except Exception as e:
-                print(f"[NOTIFICATION] Erro ao notificar reatribuição de tarefa: {e}")
+        if new_assigned_to_id and new_assigned_to_id != old_assigned_to_id:
+            from app.services.notificacoes.enviar import notificar
+
+            notificar(
+                self.db, new_assigned_to_id, "tarefa_para_mim",
+                "Nova tarefa atribuída a você",
+                f"{current_user.name} atribuiu a você: \"{updated_task.title}\"",
+                link=f"/cards/{updated_task.card_id}",
+                metadata={"task_id": updated_task.id, "card_id": updated_task.card_id,
+                          "assigned_by_id": current_user.id, "assigned_by_name": current_user.name},
+                autor_id=current_user.id,
+            )
 
         return self._build_response(updated_task)
 

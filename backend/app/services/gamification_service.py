@@ -61,22 +61,11 @@ class GamificationService:
         metadata: Optional[dict] = None
     ) -> None:
         """
-        Cria uma notificação de gamificação para um usuário.
-        Falhas são silenciosas — não interrompem o fluxo principal.
+        Gamificação não avisa mais no sino (decisão de 14/10/2026): pontos e
+        badges pararam em 11/03 e o aviso não está no catálogo de tipos.
+        Os chamadores continuam; o método só não faz nada.
         """
-        try:
-            notification_data = {
-                "user_id": user_id,
-                "notification_type": notification_type,
-                "title": title,
-                "message": message,
-                "icon": "trophy",
-                "color": "success",
-                "notification_metadata": metadata or {}
-            }
-            self.notification_repository.create(notification_data)
-        except Exception as e:
-            print(f"[GAMIFICATION] Erro ao criar notificação: {e}")
+        return None
 
     def _get_period_dates(self, period_type: str) -> Tuple[datetime, datetime]:
         """
