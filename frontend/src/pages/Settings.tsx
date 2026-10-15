@@ -17,6 +17,7 @@ import { LoadingSpinner } from "../components/common";
 import avatarService from "../services/avatarService";
 import emailTemplateService, { EmailTemplate } from "../services/emailTemplateService";
 import CadenceTemplateManager from "../components/settings/CadenceTemplateManager";
+import NotificacoesConfig from "../components/settings/NotificacoesConfig";
 
 type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs" | "email_templates" | "cadence_templates";
 
@@ -54,21 +55,6 @@ const Settings: React.FC = () => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-
-  // Estados das Notificações
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    inAppNotifications: true,
-    cardAssigned: true,
-    transferReceived: true,
-    transferApproved: true,
-    cardWon: true,
-    badgeEarned: true,
-    automationFailed: true,
-    doNotDisturbStart: "22:00",
-    doNotDisturbEnd: "08:00",
-  });
 
   // Estados das Badges (Admin)
   const [badges, setBadges] = useState<Badge[]>([]);
@@ -498,12 +484,6 @@ const Settings: React.FC = () => {
     } finally {
       setUploadingAvatar(false);
     }
-  };
-
-  const handleSaveNotifications = () => {
-    // TODO: Salvar notificações no backend (endpoint não existe ainda)
-    showWarning("Preferências de notificações salvas (Mock - endpoint não implementado)");
-    console.log("Notificações:", notificationSettings);
   };
 
   // Funções para gerenciar badges (Admin)
@@ -1397,258 +1377,8 @@ const Settings: React.FC = () => {
             )}
 
             {/* Tab: Notificações */}
-            {activeTab === "notifications" && (
-              <div className="space-y-6">
-                <h2 className="mb-6 text-xl font-semibold text-slate-900 dark:text-white">Notificações</h2>
+            {activeTab === "notifications" && <NotificacoesConfig />}
 
-                {/* Canais de Notificação */}
-                <div>
-                  <h3 className="mb-4 text-lg font-medium text-slate-900 dark:text-white">Canais de Notificação</h3>
-                  <div className="space-y-4">
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">Notificações por Email</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Receber notificações importantes por email
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.emailNotifications}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            emailNotifications: e.target.checked,
-                          })
-                        }
-                        className="h-5 w-5 rounded border-slate-500 bg-slate-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </label>
-
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">Notificações Push</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Receber notificações no navegador
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.pushNotifications}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            pushNotifications: e.target.checked,
-                          })
-                        }
-                        className="h-5 w-5 rounded border-slate-500 bg-slate-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </label>
-
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">Notificações no App</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Mostrar notificações dentro do sistema
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.inAppNotifications}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            inAppNotifications: e.target.checked,
-                          })
-                        }
-                        className="h-5 w-5 rounded border-slate-500 bg-slate-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                {/* Tipos de Notificação */}
-                <div>
-                  <h3 className="mb-4 text-lg font-medium text-slate-900 dark:text-white">Tipos de Notificação</h3>
-                  <div className="space-y-4">
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">Card Atribuído a Mim</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Quando um card for atribuído para você
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.cardAssigned}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            cardAssigned: e.target.checked,
-                          })
-                        }
-                        className="h-5 w-5 rounded border-slate-500 bg-slate-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </label>
-
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">Transferência Recebida</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Quando você receber uma transferência de card
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.transferReceived}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            transferReceived: e.target.checked,
-                          })
-                        }
-                        className="h-5 w-5 rounded border-slate-500 bg-slate-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </label>
-
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">Transferência Aprovada/Rejeitada</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Quando sua transferência for aprovada ou rejeitada
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.transferApproved}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            transferApproved: e.target.checked,
-                          })
-                        }
-                        className="h-5 w-5 rounded border-slate-500 bg-slate-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </label>
-
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">Card Ganho pela Equipe</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Quando um card for marcado como ganho
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.cardWon}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            cardWon: e.target.checked,
-                          })
-                        }
-                        className="h-5 w-5 rounded border-slate-500 bg-slate-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </label>
-
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">Badge Conquistado</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Quando você conquistar um novo badge
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.badgeEarned}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            badgeEarned: e.target.checked,
-                          })
-                        }
-                        className="h-5 w-5 rounded border-slate-500 bg-slate-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </label>
-
-                    <label className="flex cursor-pointer items-center justify-between rounded-lg bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-700">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">Automação Falhou</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Quando uma automação apresentar erro
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.automationFailed}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            automationFailed: e.target.checked,
-                          })
-                        }
-                        className="h-5 w-5 rounded border-slate-500 bg-slate-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                {/* Não Perturbe */}
-                <div>
-                  <h3 className="mb-4 text-lg font-medium text-slate-900 dark:text-white">Não Perturbe</h3>
-                  <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-                    Defina um horário em que você não deseja receber notificações
-                  </p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Início
-                      </label>
-                      <input
-                        type="time"
-                        value={notificationSettings.doNotDisturbStart}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            doNotDisturbStart: e.target.value,
-                          })
-                        }
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Fim
-                      </label>
-                      <input
-                        type="time"
-                        value={notificationSettings.doNotDisturbEnd}
-                        onChange={(e) =>
-                          setNotificationSettings({
-                            ...notificationSettings,
-                            doNotDisturbEnd: e.target.value,
-                          })
-                        }
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Botão Salvar */}
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={handleSaveNotifications}
-                    className="flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-medium text-white transition-colors hover:bg-emerald-700"
-                  >
-                    <Save size={20} />
-                    Salvar Preferências
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Tab: Segurança */}
             {activeTab === "security" && (
               <>
                 {/* Seção: Sessões Ativas (Redis) — somente admin/manager */}
