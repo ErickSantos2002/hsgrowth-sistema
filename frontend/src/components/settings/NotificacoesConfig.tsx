@@ -37,9 +37,11 @@ function Interruptor({ ligado, onChange }: { ligado: boolean; onChange: (v: bool
       role="switch"
       aria-checked={ligado}
       onClick={() => onChange(!ligado)}
-      className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${ligado ? "bg-emerald-500" : "bg-gray-300 dark:bg-slate-600"}`}
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full p-0 transition-colors focus:outline-none ${ligado ? "bg-emerald-500" : "bg-gray-300 dark:bg-slate-600"}`}
     >
-      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${ligado ? "translate-x-5" : "translate-x-0.5"}`} />
+      {/* Mesmo padrão dos outros interruptores (AutomacoesSection): a bolinha
+          no fluxo do inline-flex, não absoluta — absoluta, ela vazava da trilha. */}
+      <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${ligado ? "translate-x-5" : "translate-x-0.5"}`} />
     </button>
   );
 }
