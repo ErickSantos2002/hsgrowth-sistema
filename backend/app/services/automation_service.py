@@ -614,24 +614,9 @@ class AutomationService:
                     self.card_repository.assign_to_user(card, user_id)
                     # Notifica o novo responsável se a atribuição realmente mudou
                     if old_assigned_id != user_id:
-                        try:
-                            from app.repositories.notification_repository import NotificationRepository
-                            notification_repo = NotificationRepository(self.db)
-                            notification_repo.create({
-                                "user_id": user_id,
-                                "notification_type": "card_assigned",
-                                "title": "Card atribuído a você",
-                                "message": f"O card '{card.title}' foi atribuído a você",
-                                "icon": "bell",
-                                "color": "info",
-                                "notification_metadata": {
-                                    "card_id": card.id,
-                                    "card_title": card.title,
-                                    "url": f"/cards/{card.id}"
-                                }
-                            })
-                        except Exception as e:
-                            print(f"[NOTIFICATION] Erro ao notificar atribuição via automação: {e}")
+                        from app.services.notificacoes.atribuicao import avisar_atribuicao
+
+                        avisar_atribuicao(self.db, card, user_id, "vendedor", autor_id=None)
 
             elif action_type == "mark_won" and card:
                 card.is_won = True
@@ -768,25 +753,10 @@ class AutomationService:
         except Exception as e:
             print(f"[ACTIVITY] Erro ao registrar atribuição via round-robin: {e}")
 
-        # Notifica o vendedor atribuído pelo rodízio
-        try:
-            from app.repositories.notification_repository import NotificationRepository
-            notification_repo = NotificationRepository(self.db)
-            notification_repo.create({
-                "user_id": next_user.id,
-                "notification_type": "card_assigned",
-                "title": "Card atribuído a você",
-                "message": f"O card '{card.title}' foi atribuído a você",
-                "icon": "bell",
-                "color": "info",
-                "notification_metadata": {
-                    "card_id": card.id,
-                    "card_title": card.title,
-                    "url": f"/cards/{card.id}"
-                }
-            })
-        except Exception as e:
-            print(f"[NOTIFICATION] Erro ao notificar atribuição via round-robin: {e}")
+        # Notifica o vendedor atribuído pelo rodízio (lead do site sai como lead)
+        from app.services.notificacoes.atribuicao import avisar_atribuicao
+
+        avisar_atribuicao(self.db, card, next_user.id, "vendedor", autor_id=None)
 
         # Atualiza o estado da automação
         from sqlalchemy.orm.attributes import flag_modified
@@ -894,24 +864,9 @@ class AutomationService:
             print(f"[ACTIVITY] Erro ao registrar atribuição de SDR via round-robin: {e}")
 
         # Notifica o SDR atribuído pelo rodízio
-        try:
-            from app.repositories.notification_repository import NotificationRepository
-            notification_repo = NotificationRepository(self.db)
-            notification_repo.create({
-                "user_id": next_sdr.id,
-                "notification_type": "card_assigned",
-                "title": "Card atribuído a você",
-                "message": f"O card '{card.title}' foi atribuído a você como SDR",
-                "icon": "bell",
-                "color": "info",
-                "notification_metadata": {
-                    "card_id": card.id,
-                    "card_title": card.title,
-                    "url": f"/cards/{card.id}"
-                }
-            })
-        except Exception as e:
-            print(f"[NOTIFICATION] Erro ao notificar atribuição SDR via round-robin: {e}")
+        from app.services.notificacoes.atribuicao import avisar_atribuicao
+
+        avisar_atribuicao(self.db, card, next_sdr.id, "sdr", autor_id=None)
 
         # Atualiza o estado da automação
         from sqlalchemy.orm.attributes import flag_modified
@@ -975,10 +930,6 @@ class AutomationService:
             card: Card relacionado (pode ser None para automações agendadas)
             params: Parâmetros com 'user_ids' (lista), 'title' e 'message'
         """
-        from app.repositories.notification_repository import NotificationRepository
-
-        notification_repo = NotificationRepository(self.db)
-
         user_ids = params.get("user_ids", [])
         title = params.get("title", "Notificação de Automação")
         message = params.get("message", "")
@@ -991,17 +942,14 @@ class AutomationService:
             print(f"[AUTOMATION] send_notification: nenhum destinatário definido")
             return
 
+        from app.services.notificacoes.enviar import notificar
+
         for user_id in user_ids:
-            try:
-                notification_repo.create({
-                    "user_id": user_id,
-                    "notification_type": "automation",
-                    "title": title,
-                    "message": message,
-                    "notification_metadata": {"card_id": card.id if card else None}
-                })
-            except Exception as e:
-                print(f"[AUTOMATION] Erro ao notificar usuário {user_id}: {e}")
+            notificar(
+                self.db, user_id, "automacao", title, message,
+                link=f"/cards/{card.id}" if card else None,
+                metadata={"card_id": card.id if card else None},
+            )
 
         print(f"[AUTOMATION] Notificação enviada para {len(user_ids)} usuário(s)")
 
