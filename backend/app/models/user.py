@@ -28,6 +28,10 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
 
     # Status
     is_active = Column(Boolean, default=True, nullable=False)
+
+    # Usuário técnico das integrações (site, GestorHS). Card criado por ele
+    # é lead que chegou sozinho, e ele nunca recebe aviso.
+    is_integracao = Column(Boolean, default=False, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
 
     # Datas importantes

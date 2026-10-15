@@ -3,7 +3,7 @@ Modelo de configurações de notificação por usuário.
 Permite que cada usuário escolha quais notificações deseja receber.
 Armazenado no PostgreSQL (não no Redis) para persistir mesmo com restart do Redis.
 """
-from sqlalchemy import Column, Integer, Boolean, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, Boolean, ForeignKey, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -33,21 +33,30 @@ class UserNotificationSetting(Base, TimestampMixin):
     )
 
     # --- Configurações de notificação ---
+    # Os avisos obrigatórios (lead do site, card atribuído) não têm coluna:
+    # não existe como desligar. Ver app/services/notificacoes/tipos.py.
 
-    # Tarefa atribuída ao usuário
+    # Tarefa criada por outra pessoa para o usuário
     task_assigned = Column(Boolean, default=True, nullable=False)
 
-    # Tarefa com prazo próximo (ex: vence em menos de 24h)
-    task_due_soon = Column(Boolean, default=True, nullable=False)
-
-    # Card movido para outra lista
-    card_moved = Column(Boolean, default=True, nullable=False)
-
-    # Produto do card alterado
+    # Produto adicionado/removido por outra pessoa num card do usuário
     card_product_changed = Column(Boolean, default=True, nullable=False)
 
-    # Badge/conquista desbloqueada (gamificação)
-    achievement_unlocked = Column(Boolean, default=True, nullable=False)
+    # Gravação ou análise de reunião pronta
+    reuniao_pronta = Column(Boolean, default=True, nullable=False)
+
+    # Resumo das 8h (seg a sex)
+    resumo_manha = Column(Boolean, default=True, nullable=False)
+
+    # Aviso 15 minutos antes de reunião
+    reuniao_15min = Column(Boolean, default=True, nullable=False)
+
+    # Pop-up do navegador além do sino
+    popup_navegador = Column(Boolean, default=True, nullable=False)
+
+    # Boards de Serviço acompanhados (ids). None = ainda não calculado: o
+    # padrão sai do histórico de atividades (UserNotificationService).
+    quadros_servico = Column(JSON, nullable=True)
 
     # Relacionamento com o usuário (back-reference)
     user = relationship("User", back_populates="notification_setting")

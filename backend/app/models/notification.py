@@ -2,7 +2,7 @@
 Modelo de Notification (Notificação In-App).
 Gerencia notificações exibidas no sistema para os usuários.
 """
-from sqlalchemy import Column, Integer, ForeignKey, String, Text, Boolean, JSON, DateTime
+from sqlalchemy import Column, Integer, ForeignKey, String, Text, Boolean, JSON, DateTime, Index
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -40,6 +40,14 @@ class Notification(Base, TimestampMixin):
     # Status
     is_read = Column(Boolean, default=False, nullable=False, index=True)
     read_at = Column(DateTime, nullable=True)
+
+    # A que o aviso se refere ("resumo:2026-10-15", "reuniao:41973"). O
+    # agendador confere antes de criar: reiniciar a API não repete aviso.
+    referencia = Column(String(120), nullable=True)
+
+    __table_args__ = (
+        Index("ix_notifications_dedupe", "user_id", "notification_type", "referencia"),
+    )
 
     # Relacionamentos
     user = relationship("User", back_populates="notifications")

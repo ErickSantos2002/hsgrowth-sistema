@@ -33,6 +33,10 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     # Relacionamento com SDR (Sales Development Representative)
     sdr_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
+    # Quem criou o card. Usuário de integração = lead que chegou sozinho
+    # (site, RD Station). Cards anteriores a 14/10/2026 ficam nulos.
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # Informações básicas
     title = Column(String(500), nullable=False, index=True)  # Título do cartão
     description = Column(Text, nullable=True)  # Descrição detalhada

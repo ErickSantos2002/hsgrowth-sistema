@@ -53,6 +53,9 @@ class ServiceCard(Base, TimestampMixin, SoftDeleteMixin):
     # Data prevista de conclusão
     due_date = Column(DateTime, nullable=True)
 
+    # Quando o time foi avisado de que o card chegou. Nulo = ainda não avisado.
+    avisado_em = Column(DateTime, nullable=True)
+
     # Identidade da entidade de origem, quando o card veio de um sistema externo.
     # Ex: ("gestorhs.os", "1234") ou ("gestorhs.calibracao", "500:2027-03-14").
     # Ambas NULL em cards criados por humanos.
