@@ -5,6 +5,7 @@ import {
   NotificationType,
   MarkAsReadRequest,
 } from "../types";
+import { infoDoAviso } from "../utils/avisos";
 
 /**
  * Serviço de Notificações
@@ -106,63 +107,14 @@ class NotificationService {
    * Formata o tipo de notificação para exibição
    */
   formatType(type: NotificationType): string {
-    const types: Record<NotificationType, string> = {
-      card_assigned: "Card Atribuído",
-      card_updated: "Card Atualizado",
-      card_won: "Card Ganho",
-      card_lost: "Card Perdido",
-      transfer_received: "Transferência Recebida",
-      transfer_approved: "Transferência Aprovada",
-      transfer_rejected: "Transferência Rejeitada",
-      badge_earned: "Badge Conquistado",
-      level_up: "Subiu de Nível",
-      automation_failed: "Automação Falhou",
-      system: "Sistema",
-      other: "Outros",
-    };
-    return types[type] || type;
-  }
-
-  /**
-   * Retorna ícone do lucide-react para cada tipo
-   */
-  getTypeIcon(type: NotificationType): string {
-    const icons: Record<NotificationType, string> = {
-      card_assigned: "FileText",
-      card_updated: "Edit",
-      card_won: "CheckCircle",
-      card_lost: "XCircle",
-      transfer_received: "ArrowDownCircle",
-      transfer_approved: "CheckCircle",
-      transfer_rejected: "XCircle",
-      badge_earned: "Award",
-      level_up: "TrendingUp",
-      automation_failed: "AlertCircle",
-      system: "Bell",
-      other: "Info",
-    };
-    return icons[type] || "Bell";
+    return infoDoAviso(type).rotulo;
   }
 
   /**
    * Retorna cor para cada tipo de notificação
    */
   getTypeColor(type: NotificationType): string {
-    const colors: Record<NotificationType, string> = {
-      card_assigned: "text-blue-400",
-      card_updated: "text-purple-400",
-      card_won: "text-emerald-400",
-      card_lost: "text-red-400",
-      transfer_received: "text-cyan-400",
-      transfer_approved: "text-emerald-400",
-      transfer_rejected: "text-red-400",
-      badge_earned: "text-yellow-400",
-      level_up: "text-purple-400",
-      automation_failed: "text-orange-400",
-      system: "text-slate-400",
-      other: "text-slate-400",
-    };
-    return colors[type] || "text-slate-400";
+    return infoDoAviso(type).cor;
   }
 
   /**

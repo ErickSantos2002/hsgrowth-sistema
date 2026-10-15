@@ -1,22 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Bell,
-  Check,
-  CheckCheck,
-  FileText,
-  Edit,
-  CheckCircle,
-  XCircle,
-  ArrowDownCircle,
-  Award,
-  TrendingUp,
-  AlertCircle,
-  Info,
-} from "lucide-react";
+import { Bell, Check, CheckCheck } from "lucide-react";
 import notificationService from "../services/notificationService";
-import { Notification as AppNotification, NotificationType } from "../types";
+import userService from "../services/userService";
+import { Notification as AppNotification } from "../types";
 import { showError } from "../utils/toast";
+import { IconeDoAviso, avisoEmDestaque } from "../utils/avisos";
 import logo from "../assets/logo.png";
 
 const NotificationDropdown: React.FC = () => {
@@ -34,11 +23,25 @@ const NotificationDropdown: React.FC = () => {
   // Controla se o próximo disparo do useEffect de contagem é a carga inicial
   const isInitialCountLoad = useRef(true);
 
+  // Pop-up do navegador só para quem deixou ligado em Configurações
+  const popupLigado = useRef(true);
+  const [erroAoCarregar, setErroAoCarregar] = useState(false);
+
+  useEffect(() => {
+    userService
+      .getNotificationSettings()
+      .then((p) => {
+        popupLigado.current = p.popup_navegador;
+      })
+      .catch(() => {});
+  }, []);
+
   /**
    * Exibe uma notificação nativa do browser para cada notificação nova recebida.
    * Ao clicar, foca a aba e navega para o card correspondente.
    */
   const showBrowserNotifications = useCallback((newNotifications: AppNotification[]) => {
+    if (!popupLigado.current) return;
     if (!("Notification" in window) || Notification.permission !== "granted") return;
 
     newNotifications.forEach((notification) => {
@@ -79,6 +82,7 @@ const NotificationDropdown: React.FC = () => {
       const response = await notificationService.list(1, 10, true); // Últimas 10 não lidas
       setNotifications(response.notifications);
       setUnreadCount(response.unread_count);
+      setErroAoCarregar(false);
 
       // Dispara browser notifications apenas quando chamada por nova detecção de contagem
       if (triggerBrowserNotification) {
@@ -86,10 +90,8 @@ const NotificationDropdown: React.FC = () => {
       }
     } catch (error) {
       console.error("Erro ao carregar notificações:", error);
-      // Mock de notificações para demonstração (filtra apenas não lidas)
-      const mockData = getMockNotifications().filter(n => !n.is_read);
-      setNotifications(mockData);
-      setUnreadCount(mockData.length);
+      setErroAoCarregar(true);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
@@ -187,24 +189,6 @@ const NotificationDropdown: React.FC = () => {
     }
   };
 
-  const getNotificationIcon = (type: NotificationType) => {
-    const iconMap: Record<NotificationType, React.ReactNode> = {
-      card_assigned: <FileText size={18} />,
-      card_updated: <Edit size={18} />,
-      card_won: <CheckCircle size={18} />,
-      card_lost: <XCircle size={18} />,
-      transfer_received: <ArrowDownCircle size={18} />,
-      transfer_approved: <CheckCircle size={18} />,
-      transfer_rejected: <XCircle size={18} />,
-      badge_earned: <Award size={18} />,
-      level_up: <TrendingUp size={18} />,
-      automation_failed: <AlertCircle size={18} />,
-      system: <Bell size={18} />,
-      other: <Info size={18} />,
-    };
-    return iconMap[type] || <Bell size={18} />;
-  };
-
   return (
     <div ref={dropdownRef} className="relative">
       {/* Botão de Notificações */}
@@ -260,6 +244,10 @@ const NotificationDropdown: React.FC = () => {
               <div className="p-8 text-center text-slate-400 dark:text-slate-400">
                 Carregando...
               </div>
+            ) : erroAoCarregar ? (
+              <div className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                Não foi possível carregar as notificações.
+              </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center">
                 <Bell size={48} className="mx-auto mb-3 text-slate-600" />
@@ -273,12 +261,16 @@ const NotificationDropdown: React.FC = () => {
                     onClick={() => handleNotificationClick(notification)}
                     className={`p-4 transition-colors ${
                       (notification.link || notification.metadata?.url) ? "cursor-pointer hover:bg-gray-200/50 dark:hover:bg-slate-700/50" : ""
-                    } ${!notification.is_read ? "bg-gray-200/30 dark:bg-slate-700/30" : ""}`}
+                    } ${!notification.is_read ? "bg-gray-200/30 dark:bg-slate-700/30" : ""} ${
+                      avisoEmDestaque(notification.type)
+                        ? "border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10"
+                        : ""
+                    }`}
                   >
                     <div className="flex items-start gap-3">
                       {/* Ícone */}
                       <div className={`flex-shrink-0 ${notificationService.getTypeColor(notification.type)}`}>
-                        {getNotificationIcon(notification.type)}
+                        <IconeDoAviso tipo={notification.type} />
                       </div>
 
                       {/* Conteúdo */}
@@ -317,70 +309,6 @@ const NotificationDropdown: React.FC = () => {
       )}
     </div>
   );
-};
-
-// Mock de notificações para demonstração (backend ainda não implementado)
-const getMockNotifications = (): AppNotification[] => {
-  const now = new Date();
-  const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-
-  return [
-    {
-      id: 1,
-      user_id: 1,
-      type: "card_assigned",
-      title: "Novo card atribuído",
-      message: "O card 'Proposta Cliente XYZ' foi atribuído para você",
-      link: "/cards/123",
-      is_read: false,
-      created_at: fiveMinutesAgo.toISOString(),
-    },
-    {
-      id: 2,
-      user_id: 1,
-      type: "transfer_approved",
-      title: "Transferência aprovada",
-      message: "Sua transferência do card 'Lead ABC' foi aprovada pelo gerente",
-      link: "/transfers",
-      is_read: false,
-      created_at: oneHourAgo.toISOString(),
-    },
-    {
-      id: 3,
-      user_id: 1,
-      type: "badge_earned",
-      title: "Novo badge conquistado!",
-      message: "Parabéns! Você conquistou o badge 'Vendedor do Mês'",
-      link: "/gamification",
-      is_read: false,
-      created_at: oneHourAgo.toISOString(),
-    },
-    {
-      id: 4,
-      user_id: 1,
-      type: "card_won",
-      title: "Card ganho",
-      message: "O card 'Negociação Empresa Y' foi marcado como ganho!",
-      link: "/cards/456",
-      is_read: true,
-      created_at: oneDayAgo.toISOString(),
-      read_at: now.toISOString(),
-    },
-    {
-      id: 5,
-      user_id: 1,
-      type: "level_up",
-      title: "Subiu de nível!",
-      message: "Você alcançou o nível 5 - Continue assim!",
-      link: "/gamification",
-      is_read: true,
-      created_at: twoDaysAgo.toISOString(),
-      read_at: now.toISOString(),
-    },
-  ];
 };
 
 export default NotificationDropdown;

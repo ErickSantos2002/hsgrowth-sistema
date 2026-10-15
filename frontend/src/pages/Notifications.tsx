@@ -9,19 +9,11 @@ import {
   Trash2,
   Filter,
   X,
-  FileText,
-  Edit,
-  CheckCircle,
-  XCircle,
-  ArrowDownCircle,
-  Award,
-  TrendingUp,
-  AlertCircle,
-  Info,
 } from "lucide-react";
 import notificationService from "../services/notificationService";
 import { Pagination } from "../components/common";
 import { Notification, NotificationType } from "../types";
+import { IconeDoAviso } from "../utils/avisos";
 
 const Notifications: React.FC = () => {
   const { confirm } = useConfirm();
@@ -55,12 +47,10 @@ const Notifications: React.FC = () => {
       setTotalPages(response.total_pages);
     } catch (error) {
       console.error("Erro ao carregar notificações:", error);
-      // Mock de notificações para demonstração
-      const mockData = getMockNotifications();
-      setNotifications(mockData);
-      setTotal(mockData.length);
-      setUnreadCount(mockData.filter(n => !n.is_read).length);
-      setTotalPages(Math.ceil(mockData.length / pageSize));
+      showError("Não foi possível carregar as notificações");
+      setNotifications([]);
+      setTotal(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -136,24 +126,6 @@ const Notifications: React.FC = () => {
     if (notification.link) {
       navigate(notification.link);
     }
-  };
-
-  const getNotificationIcon = (type: NotificationType) => {
-    const iconMap: Record<NotificationType, React.ReactNode> = {
-      card_assigned: <FileText size={20} />,
-      card_updated: <Edit size={20} />,
-      card_won: <CheckCircle size={20} />,
-      card_lost: <XCircle size={20} />,
-      transfer_received: <ArrowDownCircle size={20} />,
-      transfer_approved: <CheckCircle size={20} />,
-      transfer_rejected: <XCircle size={20} />,
-      badge_earned: <Award size={20} />,
-      level_up: <TrendingUp size={20} />,
-      automation_failed: <AlertCircle size={20} />,
-      system: <Bell size={20} />,
-      other: <Info size={20} />,
-    };
-    return iconMap[type] || <Bell size={20} />;
   };
 
   // Filtra por tipo se selecionado
@@ -296,7 +268,7 @@ const Notifications: React.FC = () => {
                 <div className="flex items-start gap-4">
                   {/* Ícone */}
                   <div className={`flex-shrink-0 ${notificationService.getTypeColor(notification.type)}`}>
-                    {getNotificationIcon(notification.type)}
+                    <IconeDoAviso tipo={notification.type} size={20} />
                   </div>
 
                   {/* Conteúdo */}
@@ -372,89 +344,6 @@ const Notifications: React.FC = () => {
       )}
     </div>
   );
-};
-
-// Mock de notificações para demonstração (backend ainda não implementado)
-const getMockNotifications = (): Notification[] => {
-  const now = new Date();
-  const baseTime = now.getTime();
-
-  return [
-    {
-      id: 1,
-      user_id: 1,
-      type: "card_assigned",
-      title: "Novo card atribuído",
-      message: "O card 'Proposta Cliente XYZ' foi atribuído para você por João Silva",
-      link: "/cards/123",
-      is_read: false,
-      created_at: new Date(baseTime - 5 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 2,
-      user_id: 1,
-      type: "transfer_approved",
-      title: "Transferência aprovada",
-      message: "Sua transferência do card 'Lead ABC' foi aprovada pelo gerente",
-      link: "/transfers",
-      is_read: false,
-      created_at: new Date(baseTime - 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 3,
-      user_id: 1,
-      type: "badge_earned",
-      title: "Novo badge conquistado!",
-      message: "Parabéns! Você conquistou o badge 'Vendedor do Mês'",
-      link: "/gamification",
-      is_read: false,
-      created_at: new Date(baseTime - 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 4,
-      user_id: 1,
-      type: "card_won",
-      title: "Card ganho",
-      message: "O card 'Negociação Empresa Y' foi marcado como ganho!",
-      link: "/cards/456",
-      is_read: true,
-      created_at: new Date(baseTime - 24 * 60 * 60 * 1000).toISOString(),
-      read_at: new Date(baseTime - 23 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 5,
-      user_id: 1,
-      type: "level_up",
-      title: "Subiu de nível!",
-      message: "Você alcançou o nível 5 - Continue assim!",
-      link: "/gamification",
-      is_read: true,
-      created_at: new Date(baseTime - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      read_at: new Date(baseTime - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 6,
-      user_id: 1,
-      type: "card_updated",
-      title: "Card atualizado",
-      message: "O card 'Proposta XYZ' foi atualizado por Maria Santos",
-      link: "/cards/789",
-      is_read: true,
-      created_at: new Date(baseTime - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      read_at: new Date(baseTime - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 7,
-      user_id: 1,
-      type: "transfer_received",
-      title: "Transferência recebida",
-      message: "Você recebeu a transferência do card 'Lead 456' de Pedro Costa",
-      link: "/transfers",
-      is_read: true,
-      created_at: new Date(baseTime - 4 * 24 * 60 * 60 * 1000).toISOString(),
-      read_at: new Date(baseTime - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
 };
 
 export default Notifications;

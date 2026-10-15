@@ -831,21 +831,21 @@ export interface NotificationSettings {
   id: number;
   user_id: number;
   task_assigned: boolean;
-  task_due_soon: boolean;
-  card_moved: boolean;
   card_product_changed: boolean;
-  achievement_unlocked: boolean;
+  reuniao_pronta: boolean;
+  resumo_manha: boolean;
+  reuniao_15min: boolean;
+  popup_navegador: boolean;
+  quadros_servico: number[];
   created_at: string;
   updated_at: string;
 }
 
-export interface NotificationSettingsUpdate {
-  task_assigned?: boolean;
-  task_due_soon?: boolean;
-  card_moved?: boolean;
-  card_product_changed?: boolean;
-  achievement_unlocked?: boolean;
-}
+export type NotificationSettingsUpdate = Partial<
+  Pick<NotificationSettings,
+    "task_assigned" | "card_product_changed" | "reuniao_pronta" |
+    "resumo_manha" | "reuniao_15min" | "popup_navegador" | "quadros_servico">
+>;
 
 export interface CreateBoardRequest {
   name: string;
@@ -1017,19 +1017,8 @@ export interface UpdateClientRequest {
 
 // ==================== NOTIFICATIONS ====================
 
-export type NotificationType =
-  | "card_assigned"           // Card atribuído a você
-  | "card_updated"            // Card atualizado
-  | "card_won"                // Card ganho
-  | "card_lost"               // Card perdido
-  | "transfer_received"       // Transferência recebida
-  | "transfer_approved"       // Transferência aprovada
-  | "transfer_rejected"       // Transferência rejeitada
-  | "badge_earned"            // Badge conquistado
-  | "level_up"                // Subiu de nível
-  | "automation_failed"       // Automação falhou
-  | "system"                  // Notificação do sistema
-  | "other";                  // Outros tipos
+// Tipos de aviso — ver src/utils/avisos.tsx e o catálogo do backend
+export type NotificationType = string;
 
 export interface Notification {
   id: number;
