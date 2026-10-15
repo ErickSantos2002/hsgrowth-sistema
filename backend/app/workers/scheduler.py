@@ -13,9 +13,6 @@ from app.db.session import SessionLocal
 from app.core.config import settings
 from app.workers.tasks import (
     check_scheduled_automations_task,
-    cleanup_old_data_task,
-    send_email_task,
-    send_notification_task
 )
 
 
@@ -139,190 +136,6 @@ def job_verify_badges():
         db.close()
 
 
-def job_check_overdue_cards():
-    """
-    Job: Verifica cards vencidos e notifica responsáveis.
-    Frequência: Diariamente às 08:00
-    """
-    db = SessionLocal()
-    try:
-        logger.info("[CRON] Verificando cards vencidos...")
-
-        from app.models.card import Card
-        from datetime import date
-
-        today = date.today()
-
-        # Busca cards vencidos que ainda não foram ganhos/perdidos
-        overdue_cards = db.query(Card).filter(
-            Card.due_date < today,
-            Card.stage.notin_(["won", "lost"]),
-            Card.assigned_to_id.isnot(None)
-        ).all()
-
-        # Notifica para cada card vencido
-        notified_count = 0
-        for card in overdue_cards:
-            try:
-                # Envia notificação
-                send_notification_task.delay(
-                    user_ids=[card.assigned_to_id],
-                    notification_type="card_overdue",
-                    title="Card Vencido",
-                    message=f"O card '{card.title}' está vencido desde {card.due_date}",
-                    entity_id=card.id,
-                    entity_type="card"
-                )
-                notified_count += 1
-            except Exception as e:
-                logger.warning(f"[CRON] Erro ao notificar card vencido {card.id}: {e}")
-
-        logger.success(f"[CRON] {notified_count} notificações de cards vencidos enviadas")
-
-    except Exception as e:
-        logger.error(f"[CRON] Erro ao verificar cards vencidos: {e}")
-    finally:
-        db.close()
-
-
-def job_check_overdue_tasks():
-    """
-    Job: Verifica tarefas próximas do vencimento e notifica os responsáveis.
-    Frequência: Diariamente às 07:00
-    """
-    db = SessionLocal()
-    try:
-        logger.info("[CRON] Verificando tarefas próximas do vencimento...")
-
-        from app.repositories.card_task_repository import CardTaskRepository
-
-        repo = CardTaskRepository(db)
-        tasks = repo.get_tasks_due_soon(hours_ahead=24)
-
-        notified_count = 0
-        for task in tasks:
-            try:
-                send_notification_task.delay(
-                    user_ids=[task.assigned_to_id],
-                    notification_type="task_due_soon",
-                    title="Tarefa próxima do vencimento",
-                    message=f"A tarefa \"{task.title}\" vence em menos de 24 horas",
-                    entity_id=task.id,
-                    entity_type="task",
-                    metadata={"card_id": task.card_id, "due_date": str(task.due_date)}
-                )
-                notified_count += 1
-            except Exception as e:
-                logger.warning(f"[CRON] Erro ao notificar tarefa {task.id}: {e}")
-
-        logger.success(f"[CRON] {notified_count} notificações de tarefas próximas do vencimento enviadas")
-
-    except Exception as e:
-        logger.error(f"[CRON] Erro ao verificar tarefas próximas do vencimento: {e}")
-    finally:
-        db.close()
-
-
-def job_report_failed_automations():
-    """
-    Job: Envia relatório de automações que falharam nas últimas 24h.
-    Frequência: Diariamente às 09:00
-    """
-    db = SessionLocal()
-    try:
-        logger.info("[CRON] Gerando relatório de automações falhadas...")
-
-        from app.models.automation_execution import AutomationExecution
-        from app.models.automation import Automation
-        from app.models.user import User
-        from sqlalchemy import func, and_
-
-        yesterday = datetime.utcnow() - timedelta(days=1)
-
-        # Busca execuções falhadas nas últimas 24h
-        failed_executions = db.query(
-            AutomationExecution,
-            Automation
-        ).join(
-            Automation,
-            AutomationExecution.automation_id == Automation.id
-        ).filter(
-            and_(
-                AutomationExecution.status == "failed",
-                AutomationExecution.executed_at >= yesterday
-            )
-        ).all()
-
-        if not failed_executions:
-            logger.info("[CRON] Nenhuma automação falhada nas últimas 24h")
-            return
-
-        # Prepara lista de falhas
-        failures = []
-        for execution, automation in failed_executions:
-            failures.append({
-                "automation_name": automation.name,
-                "automation_id": automation.id,
-                "error_message": execution.error_message or "Erro desconhecido",
-                "executed_at": execution.executed_at.isoformat()
-            })
-
-        # Busca todos os admins do sistema
-        admins = db.query(User).filter(
-            User.role == "admin",
-            User.is_active == True,
-            User.is_deleted == False
-        ).all()
-
-        # Envia email para cada admin
-        emails_sent = 0
-        if admins:
-
-            for admin in admins:
-                try:
-                    if len(failures) >= settings.EMAIL_GROUP_THRESHOLD:
-                        # Envia email agrupado
-                        send_email_task.delay(
-                            email_type="automation_failures_grouped",
-                            to_email=admin.email,
-                            user_name=admin.name,
-                            failures=failures
-                        )
-                    else:
-                        # Envia email individual para cada falha
-                        for failure in failures:
-                            send_email_task.delay(
-                                email_type="automation_failure",
-                                to_email=admin.email,
-                                automation_name=failure["automation_name"],
-                                error_message=failure["error_message"],
-                                automation_id=failure["automation_id"]
-                            )
-                    emails_sent += 1
-                except Exception as e:
-                    logger.warning(f"[CRON] Erro ao enviar relatório para {admin.email}: {e}")
-
-        logger.success(f"[CRON] Relatório de falhas enviado para {emails_sent} admins")
-
-    except Exception as e:
-        logger.error(f"[CRON] Erro ao gerar relatório de automações falhadas: {e}")
-    finally:
-        db.close()
-
-
-def job_cleanup_notifications():
-    """
-    Job: Limpa notificações antigas já lidas.
-    Frequência: Semanalmente aos domingos às 03:00
-    """
-    try:
-        logger.info("[CRON] Limpando notificações antigas...")
-        result = cleanup_old_data_task.delay(retention_days=settings.LOG_RETENTION_DAYS)
-        logger.success(f"[CRON] Task de limpeza disparada: {result}")
-    except Exception as e:
-        logger.error(f"[CRON] Erro ao disparar limpeza: {e}")
-
-
 def job_update_gamification_stats():
     """
     Job: Atualiza estatísticas de gamificação.
@@ -368,57 +181,6 @@ def job_update_gamification_stats():
 
     except Exception as e:
         logger.error(f"[CRON] Erro ao atualizar estatísticas de gamificação: {e}")
-        db.rollback()
-    finally:
-        db.close()
-
-
-def job_check_pending_transfers():
-    """
-    Job: Verifica transferências pendentes que expiraram.
-    Frequência: Diariamente às 10:00
-    """
-    db = SessionLocal()
-    try:
-        logger.info("[CRON] Verificando transferências pendentes...")
-
-        from app.models.card_transfer import CardTransfer, TransferStatus
-
-        # Busca transferências pendentes que expiraram
-        expiration_date = datetime.utcnow() - timedelta(hours=settings.TRANSFER_APPROVAL_EXPIRATION_HOURS)
-
-        expired_transfers = db.query(CardTransfer).filter(
-            CardTransfer.status == TransferStatus.PENDING,
-            CardTransfer.created_at < expiration_date
-        ).all()
-
-        # Cancela transferências expiradas
-        cancelled_count = 0
-        for transfer in expired_transfers:
-            try:
-                transfer.status = TransferStatus.REJECTED
-                transfer.rejection_reason = "Transferência expirou (sem aprovação no prazo)"
-
-                # Notifica usuário de origem
-                send_notification_task.delay(
-                    user_ids=[transfer.from_user_id],
-                    notification_type="transfer_rejected",
-                    title="Transferência Expirada",
-                    message=f"A transferência do card '{transfer.card.title}' expirou",
-                    entity_id=transfer.id,
-                    entity_type="transfer"
-                )
-
-                cancelled_count += 1
-
-            except Exception as e:
-                logger.warning(f"[CRON] Erro ao cancelar transferência {transfer.id}: {e}")
-
-        db.commit()
-        logger.success(f"[CRON] {cancelled_count} transferências expiradas canceladas")
-
-    except Exception as e:
-        logger.error(f"[CRON] Erro ao verificar transferências pendentes: {e}")
         db.rollback()
     finally:
         db.close()
@@ -478,6 +240,43 @@ def job_backup_audit_logs():
         db.close()
 
 
+# ── Avisos (sem Celery: gravam direto no banco) ──────────────────────────────
+# Os lembretes antigos iam para a fila do Celery, e produção não tem worker:
+# nunca chegaram a ninguém. Estes rodam aqui mesmo, dentro da API.
+
+def _rodar_aviso(nome: str, funcao) -> None:
+    db = SessionLocal()
+    try:
+        quantos = funcao(db, datetime.utcnow())
+        if quantos:
+            logger.info(f"[AVISOS] {nome}: {quantos}")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[AVISOS] {nome} falhou: {e}")
+    finally:
+        db.close()
+
+
+def job_resumo_manha():
+    from app.services.notificacoes.resumo import enviar_resumos_da_manha
+    _rodar_aviso("resumo da manhã", enviar_resumos_da_manha)
+
+
+def job_reuniao_15min():
+    from app.services.notificacoes.reunioes import avisar_reunioes_proximas
+    _rodar_aviso("reunião em 15 minutos", avisar_reunioes_proximas)
+
+
+def job_cards_novos_servico():
+    from app.services.notificacoes.servico import avisar_cards_novos_de_servico
+    _rodar_aviso("card novo de Serviço", avisar_cards_novos_de_servico)
+
+
+def job_limpar_notificacoes():
+    from app.services.notificacoes.limpeza import limpar_notificacoes_lidas
+    _rodar_aviso("limpeza de notificações", limpar_notificacoes_lidas)
+
+
 # ===================== SCHEDULER CONFIGURATION =====================
 
 
@@ -527,50 +326,16 @@ def configure_jobs():
         replace_existing=True
     )
 
-    # 4. Verificar cards vencidos - Diariamente às 08:00
-    sched.add_job(
-        job_check_overdue_cards,
-        trigger=CronTrigger(hour=8, minute=0),
-        id="check_overdue_cards",
-        name="Verificar Cards Vencidos",
-        replace_existing=True
-    )
-
-    # 4b. Verificar tarefas próximas do vencimento - Diariamente às 07:00
-    sched.add_job(
-        job_check_overdue_tasks,
-        trigger=CronTrigger(hour=7, minute=0),
-        id="check_overdue_tasks",
-        name="Verificar Tarefas Próximas do Vencimento",
-        replace_existing=True
-    )
-
-    # 5. Relatório de automações falhadas - Diariamente às 09:00
-    sched.add_job(
-        job_report_failed_automations,
-        trigger=CronTrigger(hour=9, minute=0),
-        id="report_failed_automations",
-        name="Relatório de Automações Falhadas",
-        replace_existing=True
-    )
-
-    # 6. Verificar transferências pendentes - Diariamente às 10:00
-    sched.add_job(
-        job_check_pending_transfers,
-        trigger=CronTrigger(hour=10, minute=0),
-        id="check_pending_transfers",
-        name="Verificar Transferências Pendentes",
-        replace_existing=True
-    )
-
-    # 8. Limpar notificações antigas - Semanalmente aos domingos às 03:00
-    sched.add_job(
-        job_cleanup_notifications,
-        trigger=CronTrigger(day_of_week="sun", hour=3, minute=0),
-        id="cleanup_notifications",
-        name="Limpar Notificações Antigas",
-        replace_existing=True
-    )
+    # 4. Avisos: resumo da manhã, reunião em 15 min, card novo de Serviço e
+    # limpeza das lidas. Gravam direto no banco, sem Celery.
+    sched.add_job(job_resumo_manha, trigger=CronTrigger(day_of_week="mon-fri", hour=8, minute=0),
+                  id="resumo_manha", name="Resumo da manhã", replace_existing=True)
+    sched.add_job(job_reuniao_15min, trigger=IntervalTrigger(minutes=1),
+                  id="reuniao_15min", name="Reunião em 15 minutos", replace_existing=True)
+    sched.add_job(job_cards_novos_servico, trigger=IntervalTrigger(minutes=5),
+                  id="cards_novos_servico", name="Card novo de Serviço", replace_existing=True)
+    sched.add_job(job_limpar_notificacoes, trigger=CronTrigger(hour=3, minute=30),
+                  id="limpar_notificacoes", name="Limpar notificações lidas", replace_existing=True)
 
     # 9. Backup de logs de auditoria - Semanalmente aos domingos às 04:00
     sched.add_job(
