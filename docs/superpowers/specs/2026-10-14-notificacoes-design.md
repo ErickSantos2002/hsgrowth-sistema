@@ -50,6 +50,8 @@ Por que só reuniões no aviso de 15 min: no último mês foram 65 ligações ag
 
 **Card novo no board, agrupado a cada 5 min:** um card → "Novo card em Serviços: TRANSPORTES SILVA — OS 1234"; vários → "101 cards novos em Cobrança". Em 01/10/2026 chegaram 101 cards de Cobrança de uma vez.
 
+**Continuam, obrigatórios e fora da tela de Configurações:** `reuniao_falha` (falha ao processar gravação — donos da reunião e admins, como hoje) e `automacao` (ação "enviar notificação" de uma automação, configurada de propósito por alguém).
+
 **Deixam de existir:** `card_overdue`, `task_due_soon`, `transfer_*`, `automation_failed`, `badge_earned`, `points_awarded`, `card_moved` e o aviso "Cliente demonstrou interesse" (tipo `info`, `cards.py`), que nunca disparou.
 
 ## Ponto central de envio
@@ -79,6 +81,8 @@ Passam a usar `notificar`: `card_service` (criação, atualização e `assign_ca
 
 **`users.is_integracao`** (nova, boolean, padrão `false`): `true` para os usuários de integração, marcados pelo e-mail na migration: `integracao@healthsafetytech.com` (cria os leads do site) e `gestorhs.integracao@healthsafetytech.com` (cria os cards de Serviço). Pelo e-mail, e não pelo id, porque o homo é cópia de produção mas um ambiente novo não teria os mesmos ids.
 
+**`notifications.referencia`** (nova, String, índice com `user_id` e tipo) e **`service_cards.avisado_em`** (nova, DateTime): controle de "já avisei". Os cards de Serviço existentes nascem marcados, senão o primeiro ciclo avisaria 1.300 cards.
+
 **Lançamento:** a migration marca todas as notificações existentes como lidas (`is_read = true`, `read_at = agora`).
 
 ## Agendador
@@ -92,7 +96,7 @@ APScheduler que já roda na API (`app/workers/scheduler.py`, fuso `America/Sao_P
 | `cards_novos_servico` | A cada 5 min | Cards de Serviço criados e ainda não avisados, agrupados por board |
 | `limpar_notificacoes` | Diário, 03:00 | Apaga as lidas com `read_at` há mais de 30 dias |
 
-**Nunca duas vezes:** cada aviso guarda no `notification_metadata` a que se refere (`resumo_de` = data; `task_id`; `service_card_ids`). Antes de criar, o job confere se já existe aviso daquele tipo para aquela referência. Reiniciar a API ou rodar o job de novo não duplica.
+**Nunca duas vezes:** cada aviso guarda a que se refere em `notifications.referencia` (`resumo:2026-10-15`, `reuniao:41973`, `lead:12730`), e o card de Serviço guarda `service_cards.avisado_em`. Antes de criar, `notificar` confere se já existe aviso daquele tipo com a mesma referência. Reiniciar a API ou rodar o job de novo não duplica. (Colunas simples em vez de `notification_metadata`: os testes rodam em SQLite, onde consulta em JSON difere do Postgres.)
 
 **Saem do agendador** os jobs que dependem do Celery para avisar: `check_overdue_cards`, `check_overdue_tasks`, `check_pending_transfers`, `report_failed_automations` e `cleanup_notifications` (este substituído por `limpar_notificacoes`).
 
