@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.16",
+    date: "15/10/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Reunião no CRM — gravações grandes (30 minutos ou mais) não se perdem mais quando a conexão cai no meio da cópia: o sistema tenta de novo continuando de onde parou.",
+      },
+    ],
+  },
+  {
     version: "1.10.15",
     date: "15/10/2026",
     entries: [

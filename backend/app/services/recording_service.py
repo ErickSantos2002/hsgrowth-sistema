@@ -7,9 +7,10 @@ silenciosa é melhor investigada pelo campo `recording_error` do que por um
 erro perdido no log.
 
 O download acontece em blocos: o arquivo passa pelo servidor em pedaços
-pequenos e é montado no bucket, resultando em um vídeo único. Assim uma
-gravação de uma hora (500 MB ou mais) é guardada sem que o servidor precise
-segurá-la inteira na memória.
+pequenos e é montado no bucket, resultando em um vídeo único — nada vai para
+o disco. Assim uma gravação de uma hora (500 MB a 1 GB) é guardada sem que o
+servidor precise segurá-la inteira. Se a conexão com o Daily cair no meio, a
+leitura retoma de onde parou (download_retomavel).
 
 Depois de guardada, a cópia no Daily é apagada. Lá o arquivo fica para sempre
 e cobra armazenamento — manter os dois sairia bem mais caro sem nenhum ganho.
@@ -23,8 +24,6 @@ from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.card_task import CardTask
 from app.services.storage_service import montar_chave_gravacao, storage_service
-
-TIMEOUT_DOWNLOAD = 600.0  # vídeo é grande e vem em blocos; vale esperar
 
 
 def donos_da_reuniao(db, task: CardTask) -> List[int]:
@@ -155,16 +154,14 @@ def processar_gravacao(
             db.commit()
 
         from app.services.daily_service import DailyService
+        from app.services.download_retomavel import ErroDeDownload, blocos_com_retomada
 
-        try:
-            download_url = DailyService(db).link_download_gravacao(recording_id)
-        except Exception as e:
-            _marcar_falha(db, task, f"Nao foi possivel obter o link da gravacao: {e}", gravacao)
-            return
-
-        if not download_url:
-            _marcar_falha(db, task, "Daily nao devolveu link para a gravacao.", gravacao)
-            return
+        def obter_link() -> str:
+            # O link expira em minutos: cada tentativa pede um novo.
+            link = DailyService(db).link_download_gravacao(recording_id)
+            if not link:
+                raise httpx.HTTPError("Daily nao devolveu link para a gravacao.")
+            return link
 
         chave = montar_chave_gravacao(
             titulo=task.title,
@@ -173,23 +170,18 @@ def processar_gravacao(
             parte=gravacao.ordem,
         )
 
+        # O video passa em blocos pela memoria e segue direto para o bucket —
+        # nada no disco. Se a conexao com o Daily cair, a leitura retoma do
+        # byte onde parou e o envio continua no mesmo arquivo. Ate 15/10/2026
+        # a primeira queda perdia tudo: uma gravacao de 951 MB morreu aos
+        # 723 MB.
         try:
-            with httpx.stream(
-                "GET", download_url, timeout=TIMEOUT_DOWNLOAD, follow_redirects=True
-            ) as resposta:
-                if resposta.status_code >= 400:
-                    _marcar_falha(
-                        db, task,
-                        f"Daily devolveu {resposta.status_code} ao baixar a gravacao.",
-                        gravacao,
-                    )
-                    return
-
-                # O gerador entrega o arquivo em blocos; o storage monta no
-                # bucket. Em nenhum momento o video inteiro fica na memoria.
-                tamanho = storage_service.upload_em_partes(
-                    resposta.iter_bytes(), chave, "video/mp4"
-                )
+            tamanho = storage_service.upload_em_partes(
+                blocos_com_retomada(obter_link), chave, "video/mp4"
+            )
+        except ErroDeDownload as e:
+            _marcar_falha(db, task, f"Erro ao baixar a gravacao: {e}", gravacao)
+            return
         except Exception as e:
             _marcar_falha(db, task, f"Erro ao guardar a gravacao: {e}", gravacao)
             return

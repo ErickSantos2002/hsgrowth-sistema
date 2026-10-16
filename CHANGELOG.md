@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.16] — 15/10/2026
+
+### Corrigido
+- **Gravação de reunião grande não se perde mais no meio do caminho:** a gravação de uma reunião de 30 minutos (951 MB) falhou aos 76% porque o Daily fechou a conexão. O sistema desistia na primeira queda. Agora, se a conexão cair, ele tenta de novo (até 4 vezes, com link novo do Daily a cada uma) continuando do ponto onde parou, e o envio segue no mesmo arquivo. A gravação continua passando em pedaços pela memória, sem ocupar disco do servidor.
+
+---
+
 ## [1.10.15] — 15/10/2026
 
 ### Adicionado

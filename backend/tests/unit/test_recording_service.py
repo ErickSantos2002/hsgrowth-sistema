@@ -60,6 +60,12 @@ def task(db: Session, test_card, test_salesperson_user) -> CardTask:
 
 
 @pytest.fixture(autouse=True)
+def sem_pausa_entre_tentativas(monkeypatch):
+    """O download espera entre tentativas; no teste isso só atrasaria."""
+    monkeypatch.setattr("app.services.download_retomavel.time.sleep", lambda s: None)
+
+
+@pytest.fixture(autouse=True)
 def sessao_do_teste(db, monkeypatch):
     """
     O serviço roda em segundo plano e abre a própria sessão, fechando no fim —
@@ -233,6 +239,53 @@ class TestLimpezaNoDaily:
 
         db.refresh(task)
         assert task.recording_status == "ready"
+
+
+class _StreamQueCai(_StreamFalso):
+    """Entrega parte do arquivo e a conexão cai — como o Daily fez em 15/10."""
+
+    def iter_bytes(self, chunk_size=None):
+        import httpx
+
+        yield b"x" * 4096
+        raise httpx.RemoteProtocolError("peer closed connection without sending complete message body")
+
+
+class TestConexaoQueCai:
+    """
+    Em 15/10/2026 a gravação de 951 MB da tarefa 41638 se perdeu aos 723 MB:
+    o Daily fechou a conexão e o sistema desistiu na primeira queda.
+    """
+
+    def test_queda_no_meio_ainda_guarda_a_gravacao_inteira(self, db, task):
+        recebido = {}
+
+        def capturar(blocos, chave, content_type="video/mp4"):
+            recebido["bytes"] = sum(len(b) for b in blocos)
+            return recebido["bytes"]
+
+        with patch("httpx.stream", side_effect=[_StreamQueCai(10240), _StreamFalso(10240)]), \
+             patch("app.services.storage_service.storage_service.upload_em_partes", capturar), \
+             patch("app.services.daily_service.DailyService.apagar_gravacao"):
+            processar_gravacao(task_id=task.id, recording_id="rec-1")
+
+        db.refresh(task)
+        assert task.recording_status == "ready"
+        assert recebido["bytes"] == 10240  # nada duplicado, nada faltando
+
+    def test_queda_em_todas_as_tentativas_registra_a_falha(self, db, task):
+        def consumir(blocos, chave, content_type="video/mp4"):
+            return sum(len(b) for b in blocos)
+
+        with patch("httpx.stream", side_effect=lambda *a, **k: _StreamQueCai(10240)), \
+             patch("app.services.storage_service.storage_service.upload_em_partes", consumir), \
+             patch("app.services.daily_service.DailyService.apagar_gravacao") as apagar:
+            processar_gravacao(task_id=task.id, recording_id="rec-1")
+
+        db.refresh(task)
+        assert task.recording_status == "failed"
+        assert "tentativas" in task.recording_error
+        apagar.assert_not_called()  # a cópia no Daily fica para tentar de novo
 
 
 class TestFalhas:
