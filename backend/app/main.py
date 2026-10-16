@@ -28,6 +28,17 @@ configure_logging()
 
 
 # Lifespan event handler para inicializar/finalizar recursos
+def agendador_ligado() -> bool:
+    """
+    Se esta API roda o agendador.
+
+    Fora nos testes e onde `SCHEDULER_ENABLED=false` — no Docker local, que
+    aponta para o banco de produção: dois agendadores no mesmo banco duplicam
+    os avisos. O tempo real (SSE) não depende disto.
+    """
+    return settings.ENVIRONMENT != "testing" and settings.SCHEDULER_ENABLED
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -45,26 +56,28 @@ async def lifespan(app: FastAPI):
     # Inicializar conexão Redis de rate limiting de IA (graceful — não falha se Redis cair)
     await connect_redis_ai_rate()
 
-    # Inicializar scheduler (APScheduler) - exceto durante testes
-    if settings.ENVIRONMENT != "testing":
+    # Inicializar scheduler (APScheduler) - exceto durante testes e onde foi desligado
+    if agendador_ligado():
         await start_scheduler()
         logger.success("Scheduler iniciado")
+    else:
+        logger.info("Scheduler desligado (testes ou SCHEDULER_ENABLED=false)")
 
+    if settings.ENVIRONMENT != "testing":
         realtime.start_realtime_consumer()
         logger.success("Realtime consumer iniciado")
-    else:
-        logger.info("Scheduler desabilitado durante testes")
 
     yield
 
     # Shutdown
     logger.info("Encerrando HSGrowth CRM API...")
 
-    # Finalizar scheduler - exceto durante testes
-    if settings.ENVIRONMENT != "testing":
+    # Finalizar scheduler - só se foi ligado
+    if agendador_ligado():
         await stop_scheduler()
         logger.success("Scheduler finalizado")
 
+    if settings.ENVIRONMENT != "testing":
         await realtime.stop_realtime_consumer()
         logger.success("Realtime consumer finalizado")
 

@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     # (já aconteceu na limpeza da VPS em 11/09), o sistema fecha o que é
     # sensível em vez de abrir.
     ENVIRONMENT: str = "production"
+
+    # Liga o agendador (lembretes, resumo da manhã, card novo de Serviço,
+    # limpezas). Desligar no .env.local: o Docker local aponta para o banco de
+    # produção, e com dois agendadores no mesmo banco os avisos duplicam.
+    SCHEDULER_ENABLED: bool = True
     DEBUG: bool = True
 
     # Server
