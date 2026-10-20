@@ -5,6 +5,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.17] — 20/10/2026
+
+### Alterado
+- **Parados da dashboard abrem a lista:** clicar em "Parados +3 dias" (SDR) ou "Negócios Parados (7d)" (Vendedor) mostra os cards, com board, lista, vendedor, SDR e há quantos dias estão parados; cada linha abre o card. Antes era só o número — em 16/10 foi preciso consultar o banco para achar o card parado de uma SDR, que estava em Aquisição e não em Prospecção.
+- **Mesma regra do board:** o número passou a tirar os cards com tarefa agendada para hoje ou depois, como o filtro "Parado 3d+" do board já fazia desde a v1.10.5. Por isso ele pode diminuir.
+- **Estados das reuniões:** "gravada" passa a ser só reunião com vídeo. Entram "cliente não entrou" (reunião do CRM encerrada sem o cliente; o motivo sugere marcar no-show), "conversa curta" (transcrição abaixo do mínimo da régua, com o motivo) e "transcrita" (conversa transcrita sem vídeo e sem avaliação). Antes, toda reunião aberta no CRM aparecia como gravada, porque a transcrição começa sozinha.
+
+### Corrigido
+- **Login:** senha errada mostra "Email ou senha incorretos" em vez de "Request failed with status code 401", e o sistema não tenta mais renovar uma sessão antiga quando o erro vem do próprio login.
+
+---
+
 ## [1.10.16] — 15/10/2026
 
 ### Corrigido

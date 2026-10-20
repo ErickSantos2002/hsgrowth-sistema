@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.17",
+    date: "20/10/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Dashboard — clique em \"Parados +3 dias\" ou \"Negócios Parados (7d)\" para ver quais são os cards, com board, lista e há quantos dias estão parados. O número agora segue a mesma regra do filtro do board: card com atividade agendada para hoje ou depois não conta como parado, então ele pode diminuir.",
+      },
+      {
+        type: "improvement",
+        text: "Reuniões — o estado de cada reunião ficou mais claro: \"gravada\" só quando tem vídeo, e entram \"cliente não entrou\", \"conversa curta\" e \"transcrita\". Passe o mouse para ver o motivo.",
+      },
+      {
+        type: "fix",
+        text: "Login — senha errada mostra \"Email ou senha incorretos\" em vez de uma mensagem técnica.",
+      },
+    ],
+  },
+  {
     version: "1.10.16",
     date: "15/10/2026",
     entries: [
