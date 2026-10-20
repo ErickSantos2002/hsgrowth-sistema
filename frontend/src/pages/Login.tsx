@@ -28,7 +28,16 @@ export default function Login() {
             // Força reload completo da página para limpar todo o estado anterior
             window.location.href = "/";
         } catch (error: any) {
-            setError(error.message || "Email ou senha incorretos.");
+            // A mensagem do servidor ("Email ou senha incorretos"), não a do
+            // axios ("Request failed with status code 401").
+            const detalhe = error?.response?.data?.detail;
+            setError(
+                typeof detalhe === "string"
+                    ? detalhe
+                    : error?.response
+                        ? "Email ou senha incorretos."
+                        : "Não foi possível conectar ao servidor."
+            );
         } finally {
             setIsLoading(false);
         }

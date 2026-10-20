@@ -50,8 +50,14 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
 
+    // 401 no próprio login (ou no refresh) é credencial errada, não sessão
+    // vencida: tentar renovar ali jogava a pessoa de volta para /login.
+    const urlDaRequisicao = originalRequest?.url || "";
+    const eRotaDeAutenticacao =
+      urlDaRequisicao.includes("/auth/login") || urlDaRequisicao.includes("/auth/refresh");
+
     // Se o erro for 401 (não autorizado) e não for uma tentativa de retry
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !eRotaDeAutenticacao) {
       originalRequest._retry = true;
 
       try {
