@@ -18,7 +18,17 @@ export interface ReuniaoDaLista {
   quando: string | null;
   duracao_minutos: number | null;
   avaliada: boolean;
-  selo: "sem gravação" | "gravada" | "avaliada" | "no-show";
+  /** "gravada" é só com vídeo; só transcrição que passa na régua é "transcrita". */
+  selo:
+    | "no-show"
+    | "avaliada"
+    | "cliente não entrou"
+    | "conversa curta"
+    | "gravada"
+    | "transcrita"
+    | "sem gravação";
+  /** Explica "cliente não entrou" e "conversa curta" (aparece ao passar o mouse). */
+  motivo: string | null;
   score: number | null;
   veredito: string | null;
 }

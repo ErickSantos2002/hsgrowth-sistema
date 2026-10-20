@@ -28,8 +28,12 @@ const estiloDoSelo = (selo: string) => {
     return "border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400";
   if (selo === "gravada")
     return "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400";
+  if (selo === "transcrita")
+    return "border-sky-500/30 bg-sky-500/5 text-sky-600 dark:text-sky-400";
   if (selo === "no-show")
     return "border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-400";
+  if (selo === "cliente não entrou" || selo === "conversa curta")
+    return "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400";
   return "border-gray-300 bg-gray-100 text-slate-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400";
 };
 
@@ -402,9 +406,10 @@ const ReunioesPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-3">
                         <span
+                          title={r.motivo || undefined}
                           className={`inline-block rounded-lg border px-2 py-0.5 text-xs font-medium ${estiloDoSelo(
                             r.selo
-                          )}`}
+                          )}${r.motivo ? " cursor-help" : ""}`}
                         >
                           {r.selo === "avaliada" && r.score !== null
                             ? `${r.score} · ${r.veredito}`

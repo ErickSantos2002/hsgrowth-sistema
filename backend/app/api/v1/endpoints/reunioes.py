@@ -17,7 +17,7 @@ nomes em texto, o que erra com homônimo e nome composto.
 """
 import math
 from datetime import date, datetime, time
-from typing import Optional
+from typing import Optional, Tuple
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, or_
@@ -28,6 +28,7 @@ from app.models.card import Card
 from app.models.card_task import CardTask
 from app.models.meeting_evaluation import MeetingEvaluation
 from app.models.user import User
+from app.services.avaliacao_reuniao.conversa import motivo_para_nao_avaliar
 from app.services.reunioes.tipos import TIPOS, tipo_por_id
 
 router = APIRouter()
@@ -63,14 +64,34 @@ def _tipo(task: CardTask) -> str:
     return "—"
 
 
-def _selo(task: CardTask, avaliacao: Optional[MeetingEvaluation]) -> str:
+def _selo(task: CardTask, avaliacao: Optional[MeetingEvaluation]) -> Tuple[str, Optional[str]]:
+    """
+    O estado da reunião na lista, e um motivo curto quando ajuda a entender.
+
+    Até 20/10/2026 "gravada" valia para vídeo OU transcrição — e a transcrição
+    começa sozinha quando alguém entra na sala, mesmo que ninguém fale. A U&m
+    Mineração (cliente nunca entrou) e a Monsanto (12 palavras) apareciam como
+    gravadas sem ter vídeo. Agora "gravada" é só vídeo.
+
+    Returns:
+        (estado, motivo ou None)
+    """
     if task.is_noshow:
-        return "no-show"
+        return "no-show", None
     if avaliacao:
-        return "avaliada"
-    if task.recording_status == "ready" or task.transcript_raw:
-        return "gravada"
-    return "sem gravação"
+        return "avaliada", None
+    # Só no CRM sabemos quem entrou; no Teams não há esse registro.
+    if task.meeting_provider == "daily" and task.meeting_ended_at and not task.contact_joined_at:
+        return "cliente não entrou", "O cliente não entrou na sala. Marque como no-show no card."
+    if task.transcript_raw:
+        motivo = motivo_para_nao_avaliar(task.transcript_raw)
+        if motivo:
+            return "conversa curta", motivo
+    if task.recording_status == "ready":
+        return "gravada", None
+    if task.transcript_raw:
+        return "transcrita", None
+    return "sem gravação", None
 
 
 def _agrupar(reunioes: list, pessoa_da_reuniao, rotulo: str) -> list:
@@ -304,6 +325,7 @@ def listar_reunioes(
     items = []
     for t in pagina:
         responsavel = _responsavel(t)
+        selo, motivo = _selo(t, t.evaluation)
         items.append({
             "task_id": t.id,
             "card_id": t.card_id,
@@ -324,7 +346,8 @@ def listar_reunioes(
                 else None
             ),
             "avaliada": t.evaluation is not None,
-            "selo": _selo(t, t.evaluation),
+            "selo": selo,
+            "motivo": motivo,
             "score": t.evaluation.score if t.evaluation else None,
             "veredito": t.evaluation.veredito if t.evaluation else None,
         })
