@@ -12,6 +12,7 @@ import { DashboardKPIs } from "../../types";
 import { getChartColors } from "../../constants/colors";
 import { useTheme } from "../../context/ThemeContext";
 import KpiCard from "./KpiCard";
+import ParadosModal from "./ParadosModal";
 
 interface DashboardVendedorProps {
   kpis: DashboardKPIs;
@@ -26,6 +27,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
   const { darkMode } = useTheme();
   const chartColors = getChartColors(darkMode);
   const [pipelineBoard, setPipelineBoard] = useState<"aquisicao" | "prospeccao">("aquisicao");
+  const [verParados, setVerParados] = useState(false);
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -486,14 +488,20 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
             </p>
           </div>
 
-          <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-5">
+          <button
+            type="button"
+            onClick={() => setVerParados(true)}
+            title="Ver os cards parados"
+            className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-5 text-left transition-colors hover:bg-orange-500/10"
+          >
             <div className="mb-3 flex items-center gap-2">
               <Clock size={16} className="text-orange-400" />
               <h3 className="text-sm font-semibold text-orange-400">Negócios Parados (7d)</h3>
             </div>
             <p className="text-3xl font-bold text-orange-400">{kpis.negocios_parados_7d}</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Sem movimentação de etapa</p>
-          </div>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Sem movimentação · clique para ver</p>
+          </button>
+          <ParadosModal janela={7} view="vendedor" isOpen={verParados} onClose={() => setVerParados(false)} />
 
           <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5">
             <div className="mb-3 flex items-center gap-2">

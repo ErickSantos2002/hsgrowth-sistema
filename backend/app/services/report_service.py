@@ -180,6 +180,163 @@ class ReportService:
 
         return []
 
+    def _filtro_da_dashboard(
+        self,
+        current_user: Optional[User],
+        user_id: Optional[int],
+        view: Optional[str],
+    ) -> list:
+        """
+        Filtro de pessoa e de visão da dashboard: salesperson/sdr veem só os
+        próprios dados; admin/manager podem filtrar por user_id. Sem user_id, a
+        dashboard SDR só conta cards com SDR vinculado e a Vendedor só cards
+        com vendedor vinculado.
+        """
+        uf = self._build_dashboard_user_filter(current_user, user_id, view)
+        role_name = current_user.role.name if current_user and current_user.role else ""
+        if not user_id and role_name in ("admin", "manager"):
+            if view == "sdr":
+                uf = uf + [Card.sdr_id.isnot(None)]
+            elif view == "vendedor":
+                uf = uf + [Card.assigned_to_id.isnot(None)]
+        return uf
+
+    def _parados(self, uf: list, dias_uteis: int):
+        """
+        Cards parados há mais de `dias_uteis` dias úteis — a mesma regra do
+        filtro "Parado 3d+/7d+" do board (card_service):
+
+        - card aberto que já teve tarefa ou anotação (lead novo sem contato
+          fica em "Leads sem Contato");
+        - sem tarefa criada/concluída, anotação ou mudança de etapa na janela
+          (sábado e domingo não contam, RN-144);
+        - sem tarefa não concluída vencendo de hoje em diante (dia em UTC):
+          com próximo passo marcado não está parado. O board tira esses cards
+          desde a v1.10.5; a dashboard só passou a tirar na v1.10.17.
+
+        Returns:
+            Query de Card, ainda sem .count()/.all().
+        """
+        from datetime import timezone
+
+        limite = business_days_ago(dias_uteis)
+        hoje_utc = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0, tzinfo=None
+        )
+        com_tarefa = self.db.query(CardTask.card_id).distinct()
+        com_nota = self.db.query(CardNote.card_id).distinct()
+        tarefa_recente = self.db.query(CardTask.card_id).filter(
+            or_(CardTask.created_at > limite, CardTask.completed_at > limite)
+        )
+        nota_recente = self.db.query(CardNote.card_id).filter(CardNote.created_at > limite)
+        etapa_recente = self.db.query(CardListHistory.card_id).filter(
+            CardListHistory.entered_at > limite
+        )
+        agendado = self.db.query(CardTask.card_id).filter(
+            CardTask.is_completed == False,  # noqa: E712
+            CardTask.due_date >= hoje_utc,
+        )
+        return (
+            self.db.query(Card)
+            .join(BoardList, Card.list_id == BoardList.id)
+            .filter(
+                Card.is_won == 0,
+                or_(Card.id.in_(com_tarefa), Card.id.in_(com_nota)),
+                ~Card.id.in_(tarefa_recente),
+                ~Card.id.in_(nota_recente),
+                ~Card.id.in_(etapa_recente),
+                ~Card.id.in_(agendado),
+                *uf,
+            )
+        )
+
+    def listar_parados(
+        self,
+        current_user: User,
+        dias_uteis: int,
+        user_id: Optional[int] = None,
+        view: Optional[str] = None,
+        limite: int = 200,
+    ) -> List[Dict[str, Any]]:
+        """
+        A lista por trás dos números de parados da dashboard, do parado há
+        mais tempo para o mais recente.
+
+        Em 16/10/2026 foi preciso consultar o banco para achar o card parado
+        da Claudia — estava em Aquisição, e ela procurava em Prospecção. Por
+        isso cada card vem com board e lista.
+        """
+        uf = self._filtro_da_dashboard(current_user, user_id, view)
+        cards = self._parados(uf, dias_uteis).all()
+        if not cards:
+            return []
+
+        # Última movimentação: o mais recente entre tarefa criada/concluída,
+        # anotação e entrada na etapa.
+        ids = [c.id for c in cards]
+        ultimas: Dict[int, datetime] = {}
+        for consulta in (
+            self.db.query(CardTask.card_id, func.max(CardTask.created_at))
+            .filter(CardTask.card_id.in_(ids)).group_by(CardTask.card_id),
+            self.db.query(CardTask.card_id, func.max(CardTask.completed_at))
+            .filter(CardTask.card_id.in_(ids)).group_by(CardTask.card_id),
+            self.db.query(CardNote.card_id, func.max(CardNote.created_at))
+            .filter(CardNote.card_id.in_(ids)).group_by(CardNote.card_id),
+            self.db.query(CardListHistory.card_id, func.max(CardListHistory.entered_at))
+            .filter(CardListHistory.card_id.in_(ids)).group_by(CardListHistory.card_id),
+        ):
+            for card_id, quando in consulta:
+                if quando is None:
+                    continue
+                quando = quando.replace(tzinfo=None)
+                if card_id not in ultimas or quando > ultimas[card_id]:
+                    ultimas[card_id] = quando
+
+        listas = {
+            l.id: l for l in self.db.query(BoardList).filter(
+                BoardList.id.in_({c.list_id for c in cards})
+            )
+        }
+        boards = {
+            b.id: b for b in self.db.query(Board).filter(
+                Board.id.in_({l.board_id for l in listas.values()})
+            )
+        }
+        pessoas_ids = {c.assigned_to_id for c in cards if c.assigned_to_id} | {
+            c.sdr_id for c in cards if c.sdr_id
+        }
+        pessoas = {
+            u.id: u.name for u in self.db.query(User).filter(User.id.in_(pessoas_ids))
+        } if pessoas_ids else {}
+
+        agora = datetime.utcnow()
+        itens = []
+        for c in cards:
+            lista = listas.get(c.list_id)
+            board = boards.get(lista.board_id) if lista else None
+            ultima = ultimas.get(c.id)
+            itens.append({
+                "card_id": c.id,
+                "titulo": c.title,
+                "board": board.name if board else None,
+                # Card de Serviço abre em outra página.
+                "link": (
+                    f"/servicos/{board.id}/cards/{c.id}"
+                    if board and board.category == "servicos"
+                    else f"/cards/{c.id}"
+                ),
+                "lista": lista.name if lista else None,
+                "vendedor": pessoas.get(c.assigned_to_id),
+                "sdr": pessoas.get(c.sdr_id),
+                "ultima_movimentacao": ultima.isoformat() if ultima else None,
+                "dias_parado": (agora - ultima).days if ultima else None,
+            })
+        itens.sort(
+            key=lambda i: i["dias_parado"] if i["dias_parado"] is not None else -1,
+            reverse=True,
+        )
+        return itens[:limite]
+
     # Mapeamento dos valores de período do frontend para PeriodEnum
     _DASHBOARD_PERIOD_MAP = {
         "today":      PeriodEnum.TODAY,
@@ -225,17 +382,7 @@ class ReportService:
             period_enum = self._DASHBOARD_PERIOD_MAP.get(period_key, PeriodEnum.THIS_MONTH)
             start_of_period, end_of_period = self._get_date_range(period_enum)
 
-        # Filtro de usuário: salesperson/sdr veem só os próprios dados; admin/manager podem filtrar por user_id
-        uf = self._build_dashboard_user_filter(current_user, user_id, view)
-
-        # Filtro de visão: garante que a dashboard SDR só conta cards com SDR vinculado
-        # e a dashboard Vendedor só conta cards com vendedor vinculado
-        role_name = current_user.role.name if current_user and current_user.role else ""
-        if not user_id and role_name in ("admin", "manager"):
-            if view == "sdr":
-                uf = uf + [Card.sdr_id.isnot(None)]
-            elif view == "vendedor":
-                uf = uf + [Card.assigned_to_id.isnot(None)]
+        uf = self._filtro_da_dashboard(current_user, user_id, view)
 
         # Busca todos os boards do sistema
         boards = self.db.query(Board).all()
@@ -381,70 +528,12 @@ class ReportService:
             *uf
         ).scalar() or 0
 
-        # Cards parados há mais de 3 dias ÚTEIS (sem atividade, anotação ou mudança de etapa no período)
-        # Sábado/domingo não contam — mesma regra dos badges do board (RN-144).
-        # Apenas cards que já tiveram ao menos 1 task ou nota entram na contagem
-        three_days_ago = business_days_ago(3)
-        _has_task = self.db.query(CardTask.card_id).distinct().subquery()
-        _has_note = self.db.query(CardNote.card_id).distinct().subquery()
-        _active_task_3d = self.db.query(CardTask.card_id).filter(
-            or_(
-                CardTask.created_at > three_days_ago,
-                CardTask.completed_at > three_days_ago,
-            )
-        ).subquery()
-        _active_note_3d = self.db.query(CardNote.card_id).filter(
-            CardNote.created_at > three_days_ago,
-        ).subquery()
-        _active_stage_3d = self.db.query(CardListHistory.card_id).filter(
-            CardListHistory.entered_at > three_days_ago,
-        ).subquery()
-        cards_parados = self.db.query(func.count(func.distinct(Card.id))).join(
-            BoardList, Card.list_id == BoardList.id
-        ).filter(
-            BoardList.board_id.in_(board_ids),
-            Card.is_won == 0,
-            # Exige que o card tenha ao menos 1 task ou nota (atividade deliberada)
-            or_(
-                Card.id.in_(self.db.query(_has_task.c.card_id)),
-                Card.id.in_(self.db.query(_has_note.c.card_id)),
-            ),
-            ~Card.id.in_(self.db.query(_active_task_3d.c.card_id)),
-            ~Card.id.in_(self.db.query(_active_note_3d.c.card_id)),
-            ~Card.id.in_(self.db.query(_active_stage_3d.c.card_id)),
-            *uf
+        # Mesma regra do filtro "Parado 3d+/7d+" do board: ver _parados.
+        cards_parados = self._parados(uf, 3).with_entities(
+            func.count(func.distinct(Card.id))
         ).scalar() or 0
-
-        # Negócios parados há mais de 7 dias ÚTEIS (sem atividade, anotação ou mudança de etapa no período)
-        # Sábado/domingo não contam — mesma regra dos badges do board (RN-144).
-        # Apenas cards que já tiveram ao menos 1 task ou nota entram na contagem
-        seven_days_ago = business_days_ago(7)
-        _active_task_7d = self.db.query(CardTask.card_id).filter(
-            or_(
-                CardTask.created_at > seven_days_ago,
-                CardTask.completed_at > seven_days_ago,
-            )
-        ).subquery()
-        _active_note_7d = self.db.query(CardNote.card_id).filter(
-            CardNote.created_at > seven_days_ago,
-        ).subquery()
-        _active_stage_7d = self.db.query(CardListHistory.card_id).filter(
-            CardListHistory.entered_at > seven_days_ago,
-        ).subquery()
-        negocios_parados_7d = self.db.query(func.count(func.distinct(Card.id))).join(
-            BoardList, Card.list_id == BoardList.id
-        ).filter(
-            BoardList.board_id.in_(board_ids),
-            Card.is_won == 0,
-            # Exige que o card tenha ao menos 1 task ou nota (atividade deliberada)
-            or_(
-                Card.id.in_(self.db.query(_has_task.c.card_id)),
-                Card.id.in_(self.db.query(_has_note.c.card_id)),
-            ),
-            ~Card.id.in_(self.db.query(_active_task_7d.c.card_id)),
-            ~Card.id.in_(self.db.query(_active_note_7d.c.card_id)),
-            ~Card.id.in_(self.db.query(_active_stage_7d.c.card_id)),
-            *uf
+        negocios_parados_7d = self._parados(uf, 7).with_entities(
+            func.count(func.distinct(Card.id))
         ).scalar() or 0
 
         # Propostas em aberto — cards ativos atualmente na lista Diagnóstico e Proposta (id=30)

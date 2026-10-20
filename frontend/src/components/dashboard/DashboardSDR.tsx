@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   UserPlus, Users, CalendarCheck, TrendingUp, TrendingDown,
   AlertTriangle, Clock, Activity, Trophy, Medal, Award, RotateCcw, Info,
@@ -11,6 +11,7 @@ import { DashboardKPIs } from "../../types";
 import { getChartColors } from "../../constants/colors";
 import { useTheme } from "../../context/ThemeContext";
 import KpiCard from "./KpiCard";
+import ParadosModal from "./ParadosModal";
 
 interface DashboardSDRProps {
   kpis: DashboardKPIs;
@@ -22,6 +23,7 @@ const STAGE_COLORS = ["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#0
 const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
   const { darkMode } = useTheme();
   const chartColors = getChartColors(darkMode);
+  const [verParados, setVerParados] = useState(false);
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -396,15 +398,21 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Nenhuma atividade registrada</p>
           </div>
 
-          <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5">
+          <button
+            type="button"
+            onClick={() => setVerParados(true)}
+            title="Ver os cards parados"
+            className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5 text-left transition-colors hover:bg-yellow-500/10"
+          >
             <div className="mb-3 flex items-center gap-2">
               <Users size={16} className="text-yellow-500" />
               <h3 className="text-sm font-semibold text-yellow-500">Parados +3 dias</h3>
             </div>
             <p className="text-3xl font-bold text-yellow-500">{kpis.cards_parados}</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Sem movimentação de etapa</p>
-          </div>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Sem movimentação · clique para ver</p>
+          </button>
         </div>
+        <ParadosModal janela={3} view="sdr" isOpen={verParados} onClose={() => setVerParados(false)} />
       </section>
     </div>
   );

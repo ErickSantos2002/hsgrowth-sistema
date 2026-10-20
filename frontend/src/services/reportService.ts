@@ -11,6 +11,20 @@ import type {
   GlobalFilter,
 } from "../components/reports/reportTypes";
 
+/** Card parado listado ao clicar nos números de parados da dashboard. */
+export interface CardParado {
+  card_id: number;
+  titulo: string;
+  board: string | null;
+  lista: string | null;
+  /** /cards/:id, ou /servicos/:board/cards/:id para card de Serviço */
+  link: string;
+  vendedor: string | null;
+  sdr: string | null;
+  ultima_movimentacao: string | null;
+  dias_parado: number | null;
+}
+
 /**
  * Enums e Types para Relatórios
  */
@@ -164,6 +178,23 @@ class ReportService {
     if (view) params.view = view;
 
     const response = await api.get("/api/v1/reports/dashboard", { params });
+    return response.data;
+  }
+
+  /**
+   * Lista por trás de "Parados +3 dias" (janela 3) e "Negócios Parados (7d)"
+   * (janela 7), com os mesmos filtros de pessoa e visão da dashboard.
+   */
+  async getParados(
+    janela: 3 | 7,
+    user_id?: number | null,
+    view?: "sdr" | "vendedor",
+  ): Promise<{ janela: number; cards: CardParado[] }> {
+    const params: Record<string, any> = { janela };
+    if (user_id) params.user_id = user_id;
+    if (view) params.view = view;
+
+    const response = await api.get("/api/v1/reports/dashboard/parados", { params });
     return response.data;
   }
 

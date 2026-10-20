@@ -3,7 +3,7 @@ Endpoints de Relatórios.
 Rotas para dashboards, KPIs e relatórios de vendas/conversão/transferências.
 """
 from typing import Any, Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user
@@ -94,6 +94,29 @@ async def get_dashboard_kpis(
         custom_end=end_date,
         view=view,
     )
+
+
+@router.get(
+    "/dashboard/parados",
+    summary="Cards parados por trás dos números da dashboard",
+    description="""
+    A lista dos cards contados em "Parados +3 dias" (janela=3) e "Negócios
+    Parados (7d)" (janela=7), com a mesma regra do filtro do board e os mesmos
+    filtros de pessoa e visão da dashboard. Do parado há mais tempo para o mais
+    recente, até 200 cards.
+    """,
+)
+async def get_dashboard_parados(
+    janela: int = Query(3, description="Dias úteis sem movimentação: 3 ou 7"),
+    user_id: Optional[int] = Query(None, description="[Admin/Gerente] Filtrar por usuário específico"),
+    view: Optional[str] = Query(None, description="Visão ativa: sdr ou vendedor"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    if janela not in (3, 7):
+        raise HTTPException(status_code=422, detail="A janela é de 3 ou 7 dias úteis.")
+    cards = ReportService(db).listar_parados(current_user, janela, user_id=user_id, view=view)
+    return {"janela": janela, "cards": cards}
 
 
 @router.post(
