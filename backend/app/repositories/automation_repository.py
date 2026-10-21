@@ -147,6 +147,11 @@ class AutomationRepository:
                 for action in update_data['actions']
             ]
 
+        # Reativar recomeça a contagem: senão a primeira falha depois de
+        # religar já desliga de novo (failure_count continuava no limite).
+        if update_data.get("is_active") is True and not automation.is_active:
+            automation.failure_count = 0
+
         for field, value in update_data.items():
             setattr(automation, field, value)
 
@@ -173,6 +178,10 @@ class AutomationRepository:
         """
         automation.execution_count += 1
         automation.last_run_at = datetime.utcnow()
+        # O limite de auto-desligamento vale para falhas SEGUIDAS. Antes o
+        # contador nunca zerava: o "Webhook - Reunião agendada" juntou 5
+        # falhas espalhadas de março a agosto e desligou sozinho em 17/08.
+        automation.failure_count = 0
         self.db.commit()
 
     def increment_failure_count(self, automation: Automation) -> None:

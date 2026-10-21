@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.18",
+    date: "21/10/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Card — novo campo \"Gclid Google\" no Rastreamento de Origem (o código do clique do anúncio do Google). Chega pela integração de leads, junto com os UTMs, e vai no webhook de Reunião Agendada.",
+      },
+      {
+        type: "fix",
+        text: "Automações — uma automação só se desliga sozinha depois de 5 falhas seguidas. Antes, falhas espalhadas ao longo de meses somavam e desligavam a automação sem aviso.",
+      },
+    ],
+  },
+  {
     version: "1.10.17",
     date: "20/10/2026",
     entries: [

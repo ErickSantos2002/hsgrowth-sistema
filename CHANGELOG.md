@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.18] — 21/10/2026
+
+### Adicionado
+- **Gclid Google no card:** campo novo no Rastreamento de Origem com o ID do clique do Google Ads (`gclid`), pedido pelo time de leads. Chega pela integração de criação de card junto com os UTMs (campo `gclid` no payload), aparece no Resumo (somente leitura), sai no webhook das automações (`card.gclid`) e entra nos Relatórios personalizados. Migration `f0a1b2c3d4e5`.
+
+### Corrigido
+- **Automação desligando sozinha por falhas antigas:** o limite de 5 falhas para auto-desligar passa a valer só para falhas seguidas — cada execução com sucesso zera o contador, e reativar a automação também. Antes ele nunca zerava: o "Webhook - Reunião agendada" juntou 5 falhas de março a agosto (as duas últimas por certificado vencido no destino) e ficou desligado de 17/08 a 21/10, sem enviar os cards que chegaram em Reunião Agendada nesse período.
+
+---
+
 ## [1.10.17] — 20/10/2026
 
 ### Alterado
