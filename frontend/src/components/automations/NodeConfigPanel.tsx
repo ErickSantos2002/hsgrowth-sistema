@@ -656,6 +656,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onSave
     "utm_campaign": "webinar",
     "utm_source": "google",
     "utm_term": "crm",
+    "gclid": "Cj0KCQjw...",
     "client": { "name": "Empresa X", ... },
     "person": { "name": "João", ... },
     "assigned_to": { "name": "Maria" }

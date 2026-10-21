@@ -100,6 +100,7 @@ def card_to_response(
         utm_campaign=card.utm_campaign,
         utm_source=card.utm_source,
         utm_term=card.utm_term,
+        gclid=card.gclid,
         reopened_from_card_id=card.reopened_from_card_id,
     )
 
@@ -428,6 +429,7 @@ async def create_card(
         "utm_campaign": card.utm_campaign,
         "utm_source": card.utm_source,
         "utm_term": card.utm_term,
+        "gclid": card.gclid,
     }
 
     audit_log = AuditLog(

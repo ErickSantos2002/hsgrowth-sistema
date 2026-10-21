@@ -77,6 +77,7 @@ class Card(Base, TimestampMixin, SoftDeleteMixin):
     utm_campaign = Column(String(200), nullable=True)  # Parâmetro UTM: campanha
     utm_source = Column(String(200), nullable=True)  # Parâmetro UTM: fonte
     utm_term = Column(String(200), nullable=True)  # Parâmetro UTM: termo
+    gclid = Column(String(500), nullable=True)  # ID do clique do Google Ads
 
     loss_reason = Column(String(200), nullable=True)  # Motivo da perda
 

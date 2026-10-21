@@ -720,10 +720,23 @@ const SummarySection: React.FC<SummarySectionProps> = ({ card, onUpdate, readOnl
             </div>
           </div>
 
+          {/* Gclid Google — somente leitura (preenchido via API externa) */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <LinkIcon size={14} className="text-slate-400 dark:text-slate-400" />
+              <span>Gclid Google</span>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2">
+              <span className={`break-all text-sm ${card.gclid ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
+                {card.gclid || "Não informado"}
+              </span>
+            </div>
+          </div>
+
           <div className="flex items-start gap-2 rounded-lg border border-gray-200/50 dark:border-slate-700/50 bg-gray-100/30 dark:bg-slate-800/30 p-2">
             <Info size={14} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-400" />
             <p className="text-xs text-slate-400 dark:text-slate-400">
-              Os campos UTM são preenchidos automaticamente via integração com sistemas externos.
+              Os campos UTM e o Gclid são preenchidos automaticamente via integração com sistemas externos.
             </p>
           </div>
         </div>

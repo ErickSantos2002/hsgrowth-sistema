@@ -2682,6 +2682,7 @@ const Settings: React.FC = () => {
                               utm_campaign: "UTM Campaign",
                               utm_source: "UTM Source",
                               utm_term: "UTM Term",
+                              gclid: "Gclid Google",
                               // board
                               name: "Nome",
                               color: "Cor",

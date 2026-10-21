@@ -137,6 +137,7 @@ export interface Card {
   utm_campaign?: string | null;
   utm_source?: string | null;
   utm_term?: string | null;
+  gclid?: string | null;
 
   // Campos relacionados (retornados pelo backend)
   assigned_to_name: string | null;
@@ -939,6 +940,7 @@ export interface UpdateCardRequest {
   utm_campaign?: string | null;
   utm_source?: string | null;
   utm_term?: string | null;
+  gclid?: string | null;
 }
 
 export interface MoveCardRequest {

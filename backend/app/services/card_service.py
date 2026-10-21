@@ -2489,6 +2489,7 @@ class CardService:
             "utm_campaign": card.utm_campaign,
             "utm_source": card.utm_source,
             "utm_term": card.utm_term,
+            "gclid": card.gclid,
 
             # Informações relacionadas
             "assigned_to_name": card.assigned_to.name if card.assigned_to else None,
@@ -2888,6 +2889,7 @@ class CardService:
             utm_campaign=original_card.utm_campaign,
             utm_source=original_card.utm_source,
             utm_term=original_card.utm_term,
+            gclid=original_card.gclid,
             has_implementation=original_card.has_implementation,
             has_personnel=original_card.has_personnel,
             automacao01=original_card.automacao01,

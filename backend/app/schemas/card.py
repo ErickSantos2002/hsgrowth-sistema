@@ -224,6 +224,7 @@ class CardCreate(CardBase):
     utm_campaign: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: campanha (preenchido via API externa)")
     utm_source: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: fonte (preenchido via API externa)")
     utm_term: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: termo (preenchido via API externa)")
+    gclid: Optional[str] = Field(None, max_length=500, description="ID do clique do Google Ads (preenchido via API externa)")
 
     model_config = {
         "json_schema_extra": {
@@ -291,6 +292,7 @@ class CardUpdate(BaseModel):
     utm_campaign: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: campanha (preenchido via API externa)")
     utm_source: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: fonte (preenchido via API externa)")
     utm_term: Optional[str] = Field(None, max_length=500, description="Parâmetro UTM: termo (preenchido via API externa)")
+    gclid: Optional[str] = Field(None, max_length=500, description="ID do clique do Google Ads (preenchido via API externa)")
 
     model_config = {
         "json_schema_extra": {
@@ -405,6 +407,7 @@ class CardResponse(CardBase):
     utm_campaign: Optional[str] = Field(None, description="Parâmetro UTM: campanha")
     utm_source: Optional[str] = Field(None, description="Parâmetro UTM: fonte")
     utm_term: Optional[str] = Field(None, description="Parâmetro UTM: termo")
+    gclid: Optional[str] = Field(None, description="ID do clique do Google Ads")
 
     # Campos relacionados (opcional)
     assigned_to_name: Optional[str] = Field(None, description="Nome do responsável")

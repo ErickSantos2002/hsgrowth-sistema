@@ -1105,6 +1105,7 @@ class AutomationService:
                 "utm_campaign": card_loaded.utm_campaign,
                 "utm_source": card_loaded.utm_source,
                 "utm_term": card_loaded.utm_term,
+                "gclid": card_loaded.gclid,
                 # Cliente vinculado
                 "client": {
                     "id": card_loaded.client.id,

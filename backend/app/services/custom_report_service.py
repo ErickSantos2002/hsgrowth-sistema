@@ -311,6 +311,7 @@ class CustomReportService:
                 field('utm_source', 'UTM Source', 'category', True, False),
                 field('utm_campaign', 'UTM Campaign', 'category', True, False),
                 field('utm_term', 'UTM Term', 'category', True, False),
+                field('gclid', 'Gclid Google', 'category', True, False),
                 # Dimensões de usuário (groupáveis)
                 field('assigned_to', 'Vendedor', 'user', True, False),
                 field('sdr', 'SDR', 'user', True, False),
@@ -451,6 +452,7 @@ class CustomReportService:
                 'utm_source': Card.utm_source,
                 'utm_campaign': Card.utm_campaign,
                 'utm_term': Card.utm_term,
+                'gclid': Card.gclid,
                 # list_name requer JOIN com BoardList — tratado separadamente
             }
             return cols.get(key)

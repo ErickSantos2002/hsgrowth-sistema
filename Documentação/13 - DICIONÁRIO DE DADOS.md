@@ -284,7 +284,8 @@ ORDER BY l.position;
 | `acquisition_channel_detail` | VARCHAR(200) | NULL | Detalhamento do canal | - |
 | `utm_params` | TEXT | NULL | UTM (legado) | - |
 | `origin` | VARCHAR(200) | NULL | Origem do lead | - Editável pelo frontend |
-| `utm_campaign` / `utm_source` / `utm_term` | VARCHAR(200) | NULL | Parâmetros UTM | - |
+| `utm_campaign` / `utm_source` / `utm_term` | VARCHAR(500) | NULL | Parâmetros UTM | - |
+| `gclid` | VARCHAR(500) | NULL | ID do clique do Google Ads (via integração; vai no webhook de automação) | - |
 | `loss_reason` | VARCHAR(200) | NULL | Motivo da perda | - |
 | `reopened_from_card_id` | INTEGER | FK (cards, SET NULL) | Card original (reabertura) | - |
 | `has_implementation` | INTEGER | NULL | Tem implementação? | - 0=false, 1=true, NULL=não informado |
