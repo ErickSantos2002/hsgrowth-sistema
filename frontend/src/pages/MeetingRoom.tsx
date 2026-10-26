@@ -21,6 +21,7 @@ import { ChevronLeft, ChevronRight, Loader2, VideoOff } from "lucide-react";
 
 import cardTaskService from "../services/cardTaskService";
 import RecordingBanner from "../components/meeting/RecordingBanner";
+import ReconexaoAutomatica from "../components/meeting/ReconexaoAutomatica";
 import LiveAssistPanel from "../components/meeting/LiveAssistPanel";
 
 const IFRAME_ALLOW =
@@ -31,6 +32,9 @@ const MeetingRoom: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const callRef = useRef<DailyCall | null>(null);
+  // Durante a reconexão automática o Daily dispara "left-meeting": não é a
+  // pessoa saindo, então a tela de "Reunião encerrada" não pode aparecer.
+  const reconectandoRef = useRef(false);
 
   // A chamada vai para o estado (além do ref) porque a faixa de gravação
   // precisa reagir aos eventos dela.
@@ -93,7 +97,9 @@ const MeetingRoom: React.FC = () => {
         callRef.current = call;
         setCall(call);
 
-        call.on("left-meeting", () => setEncerrada(true));
+        call.on("left-meeting", () => {
+          if (!reconectandoRef.current) setEncerrada(true);
+        });
 
         // A transcrição sustenta a análise depois da reunião e a IA ao vivo.
         // Precisa ser pedida em pt-BR: o padrão do Daily é inglês, e uma
@@ -146,6 +152,23 @@ const MeetingRoom: React.FC = () => {
     };
   }, [taskId]);
 
+  // Sai e entra de novo, com token novo — o da entrada pode ter vencido.
+  const reconectar = async () => {
+    const call = callRef.current;
+    if (!call || !taskId) return;
+    reconectandoRef.current = true;
+    try {
+      const { token, room_url } = await cardTaskService.getDailyHostToken(Number(taskId));
+      const joinUrl = new URL(room_url);
+      joinUrl.searchParams.set("t", token);
+      joinUrl.searchParams.set("lang", "pt-BR");
+      await call.leave();
+      await call.join({ url: joinUrl.toString() });
+    } finally {
+      reconectandoRef.current = false;
+    }
+  };
+
   return (
     <div className="flex h-screen flex-col bg-slate-900">
       <div className="flex items-center gap-3 border-b border-slate-700/50 px-4 py-3">
@@ -155,6 +178,7 @@ const MeetingRoom: React.FC = () => {
       {/* Quem já saiu não está mais gravando: o contador ficava subindo na
           tela de "reunião encerrada", parecendo que a gravação continuava. */}
       {!encerrada && <RecordingBanner call={call} />}
+      {!encerrada && <ReconexaoAutomatica call={call} reconectar={reconectar} />}
 
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">

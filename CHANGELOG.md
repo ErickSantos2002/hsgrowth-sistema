@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.19] — 23/10/2026
+
+### Alterado
+- **Reunião reconecta sozinha:** quando a conexão de alguém com o Daily cai e não volta em 15 segundos, a tela sai e entra de novo na sala automaticamente (até 2 tentativas; depois aparece o botão "Recarregar"). Uma faixa acima do vídeo avisa "Sua conexão caiu", "Reconectando…" e "Conexão restabelecida", com o botão "Reconectar agora". O cliente volta para a sala de espera e o anfitrião libera de novo. Motivo: em 22/10 a conexão de recebimento de um participante caiu no meio de uma apresentação; o Daily tentou reconectar uma vez e desistiu, e para ele a tela ficou travada até apertar F5 — o cliente não sabe disso. Análise das 27 reuniões desde 30/09: foi o único caso confirmado.
+
+---
+
 ## [1.10.18] — 21/10/2026
 
 ### Adicionado

@@ -14,6 +14,7 @@ import { useParams } from "react-router-dom";
 import DailyIframe, { DailyCall } from "@daily-co/daily-js";
 
 import RecordingBanner from "../components/meeting/RecordingBanner";
+import ReconexaoAutomatica from "../components/meeting/ReconexaoAutomatica";
 import { Loader2, Video, CalendarX, Clock } from "lucide-react";
 
 import publicMeetingService, { PublicMeetingInfo } from "../services/publicMeetingService";
@@ -28,6 +29,9 @@ const MeetingGate: React.FC = () => {
   const callRef = useRef<DailyCall | null>(null);
   const urlDaSalaRef = useRef<string | null>(null);
   const nomeDoConvidadoRef = useRef<string>("Convidado");
+  // Durante a reconexão automática o Daily dispara "left-meeting": não é o
+  // cliente saindo, então a tela de "Você saiu" não pode aparecer.
+  const reconectandoRef = useRef(false);
 
   const [info, setInfo] = useState<PublicMeetingInfo | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -76,7 +80,9 @@ const MeetingGate: React.FC = () => {
     callRef.current = call;
     setCall(call);
 
-    call.on("left-meeting", () => setSaiu(true));
+    call.on("left-meeting", () => {
+      if (!reconectandoRef.current) setSaiu(true);
+    });
 
     // wrap() só monta o iframe; quem entra de fato na sala é o join().
     // userName vai junto para o anfitrião ver quem está pedindo para entrar.
@@ -103,6 +109,20 @@ const MeetingGate: React.FC = () => {
       containerRef.current?.replaceChildren();
     };
   }, []);
+
+  // Sai e entra de novo. Sem token, o cliente volta para a sala de espera e o
+  // anfitrião libera de novo — a faixa avisa isso.
+  const reconectar = async () => {
+    const call = callRef.current;
+    if (!call || !urlDaSalaRef.current) return;
+    reconectandoRef.current = true;
+    try {
+      await call.leave();
+      await call.join({ url: urlDaSalaRef.current, userName: nomeDoConvidadoRef.current });
+    } finally {
+      reconectandoRef.current = false;
+    }
+  };
 
   const entrar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,6 +161,13 @@ const MeetingGate: React.FC = () => {
     return (
       <div className="relative flex h-screen w-screen flex-col bg-slate-900">
         <RecordingBanner call={call} />
+        {!saiu && (
+          <ReconexaoAutomatica
+            call={call}
+            reconectar={reconectar}
+            avisoAoReconectar="Aguarde: a entrada será liberada de novo."
+          />
+        )}
         <div className="relative flex-1">
           <div ref={containerRef} className="absolute inset-0" />
         </div>

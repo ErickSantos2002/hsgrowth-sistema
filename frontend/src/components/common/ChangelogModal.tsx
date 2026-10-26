@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.19",
+    date: "23/10/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Reunião no CRM — se a conexão de alguém cair e não voltar em 15 segundos, a reunião reconecta sozinha, sem precisar sair e entrar de novo. Uma faixa avisa o que está acontecendo.",
+      },
+    ],
+  },
+  {
     version: "1.10.18",
     date: "21/10/2026",
     entries: [
