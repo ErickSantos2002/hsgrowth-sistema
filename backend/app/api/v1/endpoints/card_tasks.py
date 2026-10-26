@@ -1051,6 +1051,8 @@ async def create_teams_meeting(
     task.teams_meeting_id = result["meeting_id"]
     task.teams_join_url = result["join_url"]
     task.teams_event_id = result.get("event_id", "")
+    # O lembrete por e-mail sai da mesma conta que enviou o convite
+    task.invite_organizer_id = current_user.id
     db.commit()
     db.refresh(task)
 
@@ -1466,6 +1468,8 @@ def _agendar_evento_daily_no_outlook(
     # Sem guardar o id, remarcar a reunião não teria como alterar o evento — o
     # cliente ficaria com o horário antigo na agenda e ninguém perceberia.
     task.teams_event_id = resultado_do_convite.get("event_id", "")
+    # O lembrete por e-mail sai da mesma conta que enviou o convite
+    task.invite_organizer_id = current_user.id
     db.commit()
 
     return resultado_do_convite.get("convidados_removidos", 0)

@@ -109,6 +109,16 @@ class CardTask(Base, TimestampMixin):
     # Texto que o vendedor escreveu para o convite. Os blocos de data,
     # duração e link continuam sendo montados pelo sistema.
     invite_message = Column(Text, nullable=True)
+
+    # Lembrete por e-mail aos convidados (8h do dia e 1 hora antes). O lembrete
+    # sai da conta de quem enviou o convite. As colunas *_sent_for guardam o
+    # horário da reunião para o qual o lembrete já saiu: remarcou, vale de novo.
+    invite_organizer_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True,
+                                 comment="Quem enviou o convite (remetente do lembrete)")
+    reminder_day_sent_for = Column(DateTime, nullable=True,
+                                   comment="Horário da reunião para o qual o lembrete do dia saiu")
+    reminder_1h_sent_for = Column(DateTime, nullable=True,
+                                  comment="Horário da reunião para o qual o lembrete de 1 hora saiu")
     daily_room_name = Column(String(255), nullable=True, comment="Nome único da sala no Daily")
     daily_room_url = Column(String(1000), nullable=True, comment="URL da sala no Daily")
     public_access_token = Column(String(64), nullable=True, index=True, unique=True,

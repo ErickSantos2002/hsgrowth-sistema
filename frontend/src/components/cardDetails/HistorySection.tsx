@@ -22,6 +22,7 @@ import {
   UserMinus,
   ChevronDown,
   ChevronUp,
+  Mail,
 } from "lucide-react";
 import { convertUTCToBrazil } from "../../utils/timezone";
 import ExpandableText from "../common/ExpandableText";
@@ -54,7 +55,8 @@ type EventType =
   | "organization_changed"
   | "due_date_changed"
   | "tag_added"
-  | "tag_removed";
+  | "tag_removed"
+  | "meeting_reminder";
 
 interface HistoryEvent {
   id: number;
@@ -137,6 +139,8 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
       due_date_changed: "due_date_changed",
       tag_added: "tag_added",
       tag_removed: "tag_removed",
+      // Lembrete por e-mail aos convidados: linha própria, fora do grupo da reunião
+      meeting_reminder: "meeting_reminder",
     };
     return typeMap[backendType] || "activity_created";
   };
@@ -210,6 +214,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ activities, notes = [] 
       due_date_changed: <Calendar size={size} className="text-yellow-400" />,
       tag_added: <Tag size={size} className="text-pink-400" />,
       tag_removed: <Tag size={size} className="text-red-400" />,
+      meeting_reminder: <Mail size={size} className="text-sky-400" />,
     };
     return iconMap[type] || <MoreHorizontal size={size} className="text-slate-400" />;
   };

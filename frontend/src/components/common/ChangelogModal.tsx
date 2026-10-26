@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.20",
+    date: "26/10/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Vendas — lembrete de reunião por e-mail: os convidados recebem um lembrete às 8h do dia da reunião e outro 1 hora antes, saindo do seu Outlook. Vale para Daily e Teams; remarcou, os lembretes seguem o novo horário. Cada envio aparece no histórico do card.",
+      },
+    ],
+  },
+  {
     version: "1.10.19",
     date: "23/10/2026",
     entries: [

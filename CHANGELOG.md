@@ -5,6 +5,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.20] — 26/10/2026
+
+### Adicionado
+- **Vendas — lembrete de reunião por e-mail aos convidados:** além do convite, os participantes (clientes e colegas) recebem dois lembretes, saindo da conta Outlook de quem enviou o convite:
+  - **às 8h do dia da reunião** ("Lembrete: … — hoje às 14:00"), para reuniões a partir das 9h;
+  - **1 hora antes** ("Começa em 1 hora: … — às 14:00"), exceto quando a reunião foi criada a menos de 1 hora do início.
+  - Vale para reuniões pelo **Daily e pelo Teams** criadas no CRM, com o link certo de cada uma. Não sai para reunião cancelada ou concluída; **remarcou, os lembretes passam a valer para o novo horário**. Cada envio (ou falha, como conta Microsoft desconectada) fica no **histórico do card**.
+
+### Deploy
+- **1 migration nova** (`0a1b2c3d4e5f`, 3 colunas em `card_tasks`).
+
+---
+
 ## [1.10.19] — 23/10/2026
 
 ### Alterado

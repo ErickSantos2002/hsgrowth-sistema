@@ -267,6 +267,11 @@ def job_reuniao_15min():
     _rodar_aviso("reunião em 15 minutos", avisar_reunioes_proximas)
 
 
+def job_lembrete_reuniao_email():
+    from app.services.notificacoes.lembrete_reuniao import enviar_lembretes_de_reuniao
+    _rodar_aviso("lembrete de reunião por e-mail", enviar_lembretes_de_reuniao)
+
+
 def job_cards_novos_servico():
     from app.services.notificacoes.servico import avisar_cards_novos_de_servico
     _rodar_aviso("card novo de Serviço", avisar_cards_novos_de_servico)
@@ -332,6 +337,9 @@ def configure_jobs():
                   id="resumo_manha", name="Resumo da manhã", replace_existing=True)
     sched.add_job(job_reuniao_15min, trigger=IntervalTrigger(minutes=1),
                   id="reuniao_15min", name="Reunião em 15 minutos", replace_existing=True)
+    # E-mail aos convidados da reunião: 8h do dia e 1 hora antes
+    sched.add_job(job_lembrete_reuniao_email, trigger=IntervalTrigger(minutes=1),
+                  id="lembrete_reuniao_email", name="Lembrete de reunião por e-mail", replace_existing=True)
     sched.add_job(job_cards_novos_servico, trigger=IntervalTrigger(minutes=5),
                   id="cards_novos_servico", name="Card novo de Serviço", replace_existing=True)
     sched.add_job(job_limpar_notificacoes, trigger=CronTrigger(hour=3, minute=30),
