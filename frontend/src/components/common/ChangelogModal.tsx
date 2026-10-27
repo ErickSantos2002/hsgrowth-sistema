@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.21",
+    date: "27/10/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Anotação de lead do site não mostra mais \"\\n\" no meio do texto: chega com quebras de linha de verdade e links como texto.",
+      },
+      {
+        type: "fix",
+        text: "Segurança: anotações e histórico do card passam a limpar o HTML antes de mostrar, para nenhum código vindo do formulário do site rodar no CRM.",
+      },
+    ],
+  },
+  {
     version: "1.10.20",
     date: "26/10/2026",
     entries: [

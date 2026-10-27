@@ -28,11 +28,18 @@ class CardNoteService:
         Returns:
             CardNoteResponse
         """
+        # Anotação da integração (formulário do site): chega em HTML, com "\n"
+        # escrito por extenso. Grava texto limpo — o formulário é público.
+        content = note_data.content
+        if getattr(current_user, "is_integracao", False):
+            from app.utils.texto_integracao import limpar_texto_da_integracao
+            content = limpar_texto_da_integracao(content)
+
         # Cria a anotação
         note = self.repository.create(
             card_id=note_data.card_id,
             user_id=current_user.id,
-            content=note_data.content,
+            content=content,
             note_type=note_data.note_type
         )
 

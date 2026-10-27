@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.21] — 27/10/2026
+
+### Corrigido
+- **Anotação de lead do site com "\n" no texto:** a mensagem do formulário chega do RD Station em HTML, com `<br />` seguido de um `\n` escrito por extenso — na tela aparecia o "\n" no meio do texto. Agora a anotação da integração é gravada como texto limpo: quebras de linha de verdade, sem tags, e link como "texto (endereço)".
+
+### Segurança
+- **Anotações e histórico agora limpam HTML antes de mostrar (DOMPurify).** O histórico do card exibia o HTML das anotações sem nenhuma limpeza, e parte das telas usava uma limpeza por regex fácil de contornar. Como as anotações dos leads vêm do formulário público do site, alguém poderia mandar um código que rodaria no navegador de quem abrisse o card, com o login dessa pessoa. Verificado em 27/10: nenhuma anotação com código malicioso no banco. Efeito colateral: anotações coladas com página incorporada (iframe) ou estilo próprio passam a mostrar só o conteúdo.
+
+---
+
 ## [1.10.20] — 26/10/2026
 
 ### Adicionado

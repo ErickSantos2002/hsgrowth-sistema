@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 interface ExpandableTextProps {
   content?: string;
@@ -44,7 +45,8 @@ const ExpandableText: React.FC<ExpandableTextProps> = ({
         } : {}}
       >
         {htmlContent ? (
-          <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+          // Sempre limpo: o HTML pode vir de anotação externa (formulário do site)
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }} />
         ) : (
           <p className="whitespace-pre-wrap">{content}</p>
         )}

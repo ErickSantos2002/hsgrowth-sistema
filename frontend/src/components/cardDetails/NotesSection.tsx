@@ -4,6 +4,7 @@ import cardNoteService, { CardNote } from "../../services/cardNoteService";
 import NoteRenderer from "./NoteRenderer";
 import { showError, showWarning } from "../../utils/toast";
 import { useConfirm } from "../../contexts/ConfirmContext";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 interface Note {
   id: number;
@@ -64,7 +65,8 @@ const NotesSection: React.FC<NotesSectionProps> = ({ cardId, notes: initialNotes
     if (editingNoteId !== null && editNoteRef.current) {
       const note = notes.find((n) => n.id === editingNoteId);
       if (note) {
-        editNoteRef.current.innerHTML = note.content;
+        // Limpo: a anotação pode ter vindo do formulário do site
+        editNoteRef.current.innerHTML = sanitizeHtml(note.content);
       }
     }
   }, [editingNoteId]);

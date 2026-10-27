@@ -33,6 +33,7 @@ import {
   getActivityStatusBrazil,
 } from "../../utils/timezone";
 import { TYPE_CONFIG, PRIORITY_CONFIG } from "../../constants/cardTaskConfig";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 interface FocusModeCardProps {
   task: CardTask;
@@ -406,7 +407,7 @@ const FocusModeCard: React.FC<FocusModeCardProps> = ({
                   >
                     <div
                       className="prose prose-sm max-w-none text-slate-700 dark:prose-invert dark:text-slate-300 [&>p]:mb-2 [&>p:last-child]:mb-0"
-                      dangerouslySetInnerHTML={{ __html: note.content }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(note.content) }}
                     />
                     <p className="mt-1.5 text-xs text-slate-400">
                       {note.user_name && <span className="font-medium">{note.user_name} · </span>}

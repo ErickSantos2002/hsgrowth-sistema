@@ -1,6 +1,7 @@
 import React from "react";
 import { MessageCircle, Image as ImageIcon } from "lucide-react";
 import ExpandableText from "../common/ExpandableText";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 interface ParsedMessage {
   author: string;
@@ -206,20 +207,10 @@ function parseWhatsAppHTML(html: string): ParsedMessage[] {
 }
 
 /**
- * Sanitiza HTML para prevenir XSS
- * Remove scripts, eventos inline e tags perigosas
+ * Limpeza anti-XSS (DOMPurify). O ExpandableText também limpa — aqui fica
+ * explícito, para quem ler este arquivo não achar que o HTML vai cru.
+ * Substitui a limpeza por regex, que deixava passar `onerror=` sem aspas.
  */
-function sanitizeHTML(html: string): string {
-  // Remove scripts
-  let clean = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
-
-  // Remove event handlers (onclick, onerror, etc)
-  clean = clean.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, "");
-
-  // Remove javascript: URIs
-  clean = clean.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, "");
-
-  return clean;
-}
+const sanitizeHTML = sanitizeHtml;
 
 export default NoteRenderer;
