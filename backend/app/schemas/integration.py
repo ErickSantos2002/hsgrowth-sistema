@@ -73,3 +73,36 @@ class IntegrationServiceCardResponse(BaseModel):
     created: bool = Field(..., description="True se o card foi criado agora; False se já existia.")
 
     model_config = {"from_attributes": True}
+
+
+# ==================== AGENDAMENTO (MarketingHS) ====================
+# Ver docs/superpowers/specs/2026-10-28-agendamento-integracao.md
+
+
+class IntegrationVendedor(BaseModel):
+    id: int
+    nome: str
+    email: str
+    ativo: bool
+
+
+class IntegrationBlocoOcupado(BaseModel):
+    inicio: datetime = Field(..., description="Início do bloco, em UTC")
+    fim: datetime = Field(..., description="Fim do bloco, em UTC")
+    status: str = Field(..., description="Status do Graph: busy, tentative, oof, workingElsewhere")
+
+
+class IntegrationAgendaVendedor(BaseModel):
+    user_id: int
+    email: str
+    ocupado: List[IntegrationBlocoOcupado]
+
+
+class IntegrationAgendaErro(BaseModel):
+    user_id: int
+    motivo: str
+
+
+class IntegrationAgendaResponse(BaseModel):
+    vendedores: List[IntegrationAgendaVendedor]
+    erros: List[IntegrationAgendaErro]

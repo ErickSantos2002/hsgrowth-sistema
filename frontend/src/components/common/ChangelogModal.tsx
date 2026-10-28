@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.22",
+    date: "28/10/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Reunião marcada pelo site: a landing do MarketingHS consulta a agenda dos vendedores e agenda a apresentação sozinha — o convite sai da agenda do vendedor, com ele como organizador.",
+      },
+    ],
+  },
+  {
     version: "1.10.21",
     date: "27/10/2026",
     entries: [

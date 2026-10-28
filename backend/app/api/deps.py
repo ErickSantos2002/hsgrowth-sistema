@@ -266,6 +266,27 @@ def require_service_access():
     return checker
 
 
+def require_integracao():
+    """
+    Dependency que restringe a rota a usuários de integração (`is_integracao`).
+
+    Usada pelas rotas que outros sistemas chamam com o token do client-credentials
+    (`POST /auth/client-credentials`), que resolve para o usuário de impersonação
+    do integration client. Usuário humano recebe 403.
+    """
+    async def checker(
+        current_user: User = Depends(get_current_active_user)
+    ) -> User:
+        if not current_user.is_integracao:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Rota exclusiva de integrações."
+            )
+        return current_user
+
+    return checker
+
+
 def require_not_viewer():
     """
     Dependency que bloqueia acesso de usuários com role 'viewer' a endpoints de escrita.
