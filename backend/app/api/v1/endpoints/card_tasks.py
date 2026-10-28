@@ -1,7 +1,7 @@
 """
 Endpoints da API para CardTask (Tarefas/Atividades dos Cards).
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, status, Request, HTTPException
 from sqlalchemy.orm import Session
@@ -1412,6 +1412,49 @@ def _verificar_acesso_reuniao(db: Session, task: CardTask, current_user: User) -
     )
 
 
+def _agendar_evento_daily_na_agenda_do_vendedor(
+    db: Session,
+    task: CardTask,
+    public_link: str,
+) -> int:
+    """
+    Variante do convite para quem chama pela API de integração.
+
+    O usuário de integração não tem conta Microsoft — o convite sairia de lugar
+    nenhum. Aqui o evento nasce na agenda do responsável pela tarefa, com token
+    de aplicativo: o vendedor é o organizador e o cliente recebe o convite em
+    nome dele. Como o evento é do vendedor, remarcar pela tela continua
+    funcionando com o token delegado dele.
+
+    Levanta ValueError quando o Graph recusa (vendedor fora do grupo com
+    permissão, caixa inexistente, credencial do aplicativo ausente).
+    """
+    from app.services.microsoft_graph_service import microsoft_graph_service
+
+    vendedor = task.assigned_to
+    inicio = task.due_date or datetime.utcnow()
+    # Fim explícito: o MarketingHS ofereceu um horário com duração, e o bloco
+    # na agenda do vendedor tem de ser esse — não a 1 h padrão.
+    fim = inicio + timedelta(minutes=task.duration_minutes or 60)
+
+    resultado = microsoft_graph_service.create_calendar_event_como_aplicativo(
+        organizador_email=vendedor.email.strip(),
+        title=task.title,
+        start_dt=inicio,
+        end_dt=fim,
+        attendee_emails=[
+            e.strip() for e in (task.invited_emails or [])
+            if e and e.strip() and e.strip().lower() != vendedor.email.strip().lower()
+        ] or None,
+        body_html=_montar_corpo_convite(task, vendedor, public_link=public_link),
+    )
+
+    task.teams_event_id = resultado.get("event_id", "")
+    db.commit()
+
+    return resultado.get("convidados_removidos", 0)
+
+
 def _agendar_evento_daily_no_outlook(
     db: Session,
     task: CardTask,
@@ -1502,6 +1545,19 @@ async def create_daily_room(
 
     _verificar_acesso_reuniao(db, task, current_user)
 
+    # Integração: o convite sai da agenda do responsável pela tarefa, então
+    # sem ele não há de onde mandar. Barra antes de criar a sala.
+    if current_user.is_integracao and not (
+        task.assigned_to and (task.assigned_to.email or "").strip()
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "A tarefa precisa de um responsável (assigned_to_id) com e-mail — "
+                "o convite é criado na agenda dele."
+            ),
+        )
+
     service = DailyService(db)
 
     try:
@@ -1519,10 +1575,15 @@ async def create_daily_room(
     public_link = f"{settings.FRONTEND_URL}/entrar/{task.public_access_token}"
 
     try:
-        convidados_removidos = _agendar_evento_daily_no_outlook(
-            db, task, current_user, public_link
-        )
-    except ValueError:
+        if current_user.is_integracao:
+            convidados_removidos = _agendar_evento_daily_na_agenda_do_vendedor(
+                db, task, public_link
+            )
+        else:
+            convidados_removidos = _agendar_evento_daily_no_outlook(
+                db, task, current_user, public_link
+            )
+    except ValueError as e:
         # Sem conta Microsoft: a decisão é bloquear (o convite é parte do fluxo).
         # Desfaz a sala para não deixar reunião pela metade.
         service.delete_room(task)
@@ -1531,6 +1592,13 @@ async def create_daily_room(
         task.public_access_token = None
         task.meeting_provider = None
         db.commit()
+        if current_user.is_integracao:
+            # 503: falha do lado da Microsoft/permissão — quem integra pode
+            # tentar de novo (ou avisar), a tarefa continua intacta.
+            raise HTTPException(
+                status_code=503,
+                detail=f"Não foi possível criar o convite na agenda do vendedor. {e}",
+            )
         raise HTTPException(
             status_code=400,
             detail=(

@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.22] — 28/10/2026
+
+### Adicionado
+- **Agendamento de reunião pelo MarketingHS (API de integração):** três rotas para a landing marcar reunião com um vendedor livre, todas restritas a usuário de integração (`is_integracao`, token do `client-credentials`). `GET /integration/vendedores` lista os vendedores; `GET /integration/agenda` devolve o livre/ocupado deles (só os blocos ocupados, sem assunto nem local, em UTC, até 15 dias); e `POST /card-tasks/{id}/daily-room` chamado por integração cria o convite **na agenda do vendedor da tarefa**, que vira o organizador, com o horário de fim pela duração da tarefa. Antes a integração caía sempre no 400 "Conecte sua conta Microsoft". Usa token de aplicativo da Microsoft, que só alcança as caixas do grupo de vendedores liberado no Exchange (RBAC para aplicativos). Usuário humano continua igual.
+
+---
+
 ## [1.10.21] — 27/10/2026
 
 ### Corrigido

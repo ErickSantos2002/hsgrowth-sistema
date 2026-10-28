@@ -669,5 +669,189 @@ class MicrosoftGraphService:
         except Exception as e:
             raise ValueError(f"Erro ao buscar disponibilidade: {e}")
 
+    # ==================== TOKEN DE APLICATIVO (integrações) ====================
+    #
+    # Os métodos acima agem como o usuário logado (token delegado). Os abaixo
+    # agem como o próprio GrowthHS, para quem chama pela API de integração e não
+    # tem conta Microsoft. O alcance não vem do Entra ID: é o RBAC para
+    # aplicativos do Exchange, restrito ao grupo dos vendedores. Caixa fora do
+    # grupo responde 403 — e isso é o esperado, não um erro de código.
+
+    _app_token: Optional[str] = None
+    _app_token_expira_em: Optional[datetime] = None
+
+    def _get_app_token(self) -> str:
+        """
+        Token client-credentials do Graph, reaproveitado até perto de expirar.
+
+        Raises:
+            ValueError: credenciais ausentes ou recusadas pela Microsoft
+        """
+        agora = datetime.now(timezone.utc)
+        if self._app_token and self._app_token_expira_em and self._app_token_expira_em > agora:
+            return self._app_token
+
+        if not (settings.MS_CLIENT_ID and settings.MS_CLIENT_SECRET and settings.MS_TENANT_ID):
+            raise ValueError("Credenciais Microsoft do aplicativo não configuradas.")
+
+        try:
+            result = microsoft_auth_service._get_msal_app().acquire_token_for_client(
+                scopes=["https://graph.microsoft.com/.default"]
+            )
+        except Exception as e:
+            raise ValueError(f"Erro ao obter token do aplicativo na Microsoft: {e}")
+
+        if "access_token" not in result:
+            raise ValueError(
+                "Microsoft recusou o token do aplicativo: "
+                f"{result.get('error_description') or result.get('error')}"
+            )
+
+        token: str = result["access_token"]
+        self._app_token = token
+        self._app_token_expira_em = agora + timedelta(seconds=result.get("expires_in", 3600) - 120)
+        return token
+
+    @staticmethod
+    def _erro_do_graph(resp: httpx.Response) -> str:
+        try:
+            return resp.json().get("error", {}).get("message") or f"HTTP {resp.status_code}"
+        except Exception:
+            return f"HTTP {resp.status_code}"
+
+    def get_ocupado_como_aplicativo(
+        self,
+        email: str,
+        start_dt: datetime,
+        end_dt: datetime,
+    ) -> list[dict]:
+        """
+        Blocos não-livres da agenda de UMA caixa, lidos como aplicativo.
+
+        Uma chamada por caixa, com ela mesma no caminho: assim o resultado não
+        depende da política de compartilhamento de livre/ocupado entre caixas,
+        e a falha de uma (sem caixa, fora do grupo) não contamina as outras.
+
+        Sem assunto nem local — só o intervalo e o status do Graph (busy,
+        tentative, oof, workingElsewhere).
+
+        Returns:
+            [{"inicio": datetime UTC, "fim": datetime UTC, "status": str}]
+
+        Raises:
+            ValueError: com a mensagem do Graph, para quem chama pôr em `erros`
+        """
+        access_token = self._get_app_token()
+
+        def to_graph_dt(dt: datetime) -> dict:
+            dt = dt.astimezone(timezone.utc) if dt.tzinfo else dt
+            return {"dateTime": dt.strftime("%Y-%m-%dT%H:%M:%S"), "timeZone": "UTC"}
+
+        def de_graph_dt(valor: dict) -> datetime:
+            # O Graph devolve "2026-10-29T13:00:00.0000000" no fuso do Prefer
+            texto = (valor or {}).get("dateTime", "")[:19]
+            return datetime.strptime(texto, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+
+        payload = {
+            "schedules": [email],
+            "startTime": to_graph_dt(start_dt),
+            "endTime": to_graph_dt(end_dt),
+            "availabilityViewInterval": 30,
+        }
+        headers = self._auth_headers(access_token)
+        headers["Prefer"] = 'outlook.timezone="UTC"'
+
+        try:
+            with httpx.Client(timeout=15) as client:
+                resp = client.post(
+                    f"{GRAPH_BASE}/users/{email}/calendar/getSchedule",
+                    json=payload,
+                    headers=headers,
+                )
+        except Exception as e:
+            raise ValueError(f"Erro ao consultar a agenda: {e}")
+
+        if resp.status_code != 200:
+            raise ValueError(self._erro_do_graph(resp))
+
+        ocupado = []
+        for schedule in resp.json().get("value", []):
+            if schedule.get("error"):
+                raise ValueError(schedule["error"].get("message") or "agenda indisponível")
+            for item in schedule.get("scheduleItems", []):
+                status_item = item.get("status", "busy")
+                if status_item == "free":
+                    continue
+                ocupado.append({
+                    "inicio": de_graph_dt(item.get("start")),
+                    "fim": de_graph_dt(item.get("end")),
+                    "status": status_item,
+                })
+        return ocupado
+
+    def create_calendar_event_como_aplicativo(
+        self,
+        organizador_email: str,
+        title: str,
+        start_dt: datetime,
+        end_dt: datetime,
+        attendee_emails: Optional[list[str]] = None,
+        body_html: Optional[str] = None,
+    ) -> dict:
+        """
+        Cria o evento direto na agenda de `organizador_email`, que vira o
+        organizador — o convite sai em nome dele, e não de quem chamou a API.
+
+        Usado pela reunião do Daily criada por integração. Só agenda o horário
+        (sem Teams): o link da sala vai no corpo. A trava de ambiente
+        (`DAILY_DEV_MODE`) vale igual ao fluxo delegado.
+
+        Returns:
+            dict com event_id e convidados_removidos
+
+        Raises:
+            ValueError: token do aplicativo indisponível ou o Graph recusou
+        """
+        access_token = self._get_app_token()
+
+        def to_iso(dt: datetime) -> str:
+            dt = dt.astimezone(timezone.utc) if dt.tzinfo else dt
+            return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+        attendee_emails, convidados_removidos = self._filtrar_convidados(attendee_emails)
+
+        payload: dict = {
+            "subject": title,
+            "start": {"dateTime": to_iso(start_dt), "timeZone": "UTC"},
+            "end": {"dateTime": to_iso(end_dt), "timeZone": "UTC"},
+            "isOnlineMeeting": False,
+        }
+        if body_html:
+            payload["body"] = {"contentType": "HTML", "content": body_html}
+        if attendee_emails:
+            payload["attendees"] = [
+                {"emailAddress": {"address": email.strip()}, "type": "required"}
+                for email in attendee_emails
+                if email and email.strip()
+            ]
+
+        try:
+            with httpx.Client(timeout=15) as client:
+                resp = client.post(
+                    f"{GRAPH_BASE}/users/{organizador_email}/events",
+                    json=payload,
+                    headers=self._auth_headers(access_token),
+                )
+        except Exception as e:
+            raise ValueError(f"Erro ao criar evento no calendário: {e}")
+
+        if resp.status_code not in (200, 201):
+            raise ValueError(f"Erro ao criar evento no calendário: {self._erro_do_graph(resp)}")
+
+        return {
+            "event_id": resp.json().get("id", ""),
+            "convidados_removidos": convidados_removidos,
+        }
+
 
 microsoft_graph_service = MicrosoftGraphService()

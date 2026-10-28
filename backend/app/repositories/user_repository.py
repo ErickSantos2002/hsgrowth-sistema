@@ -249,6 +249,21 @@ class UserRepository:
 
         return query.first() is not None
 
+    def list_by_role_name(self, role_name: str) -> List[User]:
+        """
+        Todos os usuários não excluídos de um papel, ativos e inativos, por nome.
+
+        Diferente de list_all(role_name=...), não pagina — usado pelas
+        integrações, que precisam da lista inteira.
+        """
+        return (
+            self.db.query(User)
+            .join(User.role)
+            .filter(Role.name == role_name, User.is_deleted == False)
+            .order_by(User.name.asc())
+            .all()
+        )
+
     def find_all_active(self) -> List[User]:
         """
         Busca todos os usuários ativos do sistema.
