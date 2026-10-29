@@ -197,7 +197,7 @@ const MeetingGate: React.FC = () => {
         {/* Marca */}
         <div className="mb-6 text-center">
           <h2 className="text-lg font-semibold text-white">HSGrowth</h2>
-          <p className="text-xs text-slate-500">Health &amp; Safety Tech</p>
+          <p className="text-xs text-slate-500">Health &amp; Safety</p>
         </div>
 
         <div className="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-8">

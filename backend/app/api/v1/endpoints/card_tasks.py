@@ -30,7 +30,7 @@ router = APIRouter()
 
 # Saudação do convite. Fica aqui, e não na tela, para o texto ser o mesmo na
 # prévia e no que o cliente recebe quando ninguém edita.
-MENSAGEM_PADRAO_DO_CONVITE = 'Olá!\n\nSua reunião com a Health & Safety Tech está agendada.'
+MENSAGEM_PADRAO_DO_CONVITE = 'Olá!\n\nSua reunião com a Health & Safety está agendada.'
 
 
 @router.get(
@@ -595,12 +595,16 @@ def update_task(
     if mudou_o_convite and task.teams_event_id:
         try:
             from app.services.microsoft_graph_service import microsoft_graph_service
+            from app.services.notificacoes.lembrete_reuniao import organizador_do_convite
             from datetime import timedelta
 
             duration = task.duration_minutes or 60
             end_dt = task.due_date + timedelta(minutes=duration) if task.due_date else None
+            # O evento está no Outlook de quem enviou o convite: é por essa
+            # conta que se altera, não pela de quem está editando.
+            reuniao = db.query(CardTask).filter(CardTask.id == task_id).first()
             microsoft_graph_service.update_calendar_event(
-                user=current_user,
+                user=organizador_do_convite(db, reuniao) or current_user,
                 db=db,
                 event_id=task.teams_event_id,
                 start_dt=task.due_date,
@@ -608,9 +612,8 @@ def update_task(
                 title=task.title,
             )
         except Exception as e:
-            # Não bloqueia a edição, mas a tela avisa: o evento pertence a quem
-            # criou a reunião, então o Microsoft recusa a alteração de outra
-            # pessoa — e antes isso ficava só no log do servidor.
+            # Não bloqueia a edição, mas a tela avisa (ex.: quem convidou perdeu
+            # a conexão com o Microsoft) — antes isso ficava só no log do servidor.
             calendario_desatualizado = True
             print(f"[CardTask] Aviso: não foi possível atualizar o evento no calendário: {e}")
 
@@ -937,6 +940,13 @@ def delete_task(
     task_title = task.title if task else f"ID {task_id}"
 
     service = CardTaskService(db)
+
+    # Excluir só no CRM deixava o convite na agenda do cliente e a sala do
+    # Daily aberta. Confere a permissão antes de mexer no Outlook.
+    if task and (task.teams_event_id or task.daily_room_name):
+        service._check_task_permission(task, current_user)
+        _desfazer_convite_e_sala(db, task, current_user, "excluída")
+
     result = service.delete_task(task_id, current_user)
 
     # Registra no audit log
@@ -1063,32 +1073,22 @@ async def create_teams_meeting(
     return resposta
 
 
-@router.post(
-    "/{task_id}/cancel-teams",
-    response_model=CardTaskResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Cancelar evento Teams da reunião",
-)
-def cancel_teams_meeting(
-    task_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-    _: None = Depends(require_not_viewer),
-):
-    """Remove o evento do calendário do Outlook e limpa os campos Teams da tarefa."""
-    from app.services.microsoft_graph_service import microsoft_graph_service
+def _desfazer_convite_e_sala(db: Session, task: CardTask, current_user: User, motivo: str) -> None:
+    """
+    Cancela o convite no Outlook (os convidados recebem o aviso) e apaga a sala
+    do Daily. Vale para cancelar e para excluir a reunião.
 
-    task = db.query(CardTask).filter(CardTask.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
-
+    Raises:
+        HTTPException 400: o Outlook recusou — nada é desfeito, para o cliente
+            não ficar com convite de reunião que não vai acontecer.
+    """
     if task.teams_event_id:
+        from app.services.notificacoes.cancelamento_reuniao import cancelar_convite_da_reuniao
+
+        # O evento está no Outlook de quem enviou o convite. Pela conta de quem
+        # está cancelando, o Microsoft responde "not found in the store" (29/10).
         try:
-            microsoft_graph_service.delete_calendar_event(
-                user=current_user,
-                db=db,
-                event_id=task.teams_event_id,
-            )
+            cancelar_convite_da_reuniao(db, task, current_user, motivo)
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
@@ -1102,10 +1102,36 @@ def cancel_teams_meeting(
         task.daily_room_url = None
         task.public_access_token = None
 
-    task.is_cancelled = True
     task.teams_meeting_id = None
     task.teams_join_url = None
     task.teams_event_id = None
+    db.commit()
+
+
+@router.post(
+    "/{task_id}/cancel-teams",
+    response_model=CardTaskResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Cancelar evento Teams da reunião",
+)
+def cancel_teams_meeting(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_not_viewer),
+):
+    """Remove o evento do calendário do Outlook e limpa os campos Teams da tarefa."""
+    task = db.query(CardTask).filter(CardTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+    # Antes, o Outlook de quem clicava recusava o evento alheio e isso segurava
+    # o cancelamento por acaso. Cancelando pela conta de quem convidou, a
+    # regra de quem pode tem de estar aqui.
+    _verificar_acesso_reuniao(db, task, current_user)
+
+    _desfazer_convite_e_sala(db, task, current_user, "cancelada")
+
+    task.is_cancelled = True
     db.commit()
     db.refresh(task)
 
@@ -1327,7 +1353,7 @@ def _montar_corpo_convite(
     else:
         linhas = [
             "<p>Olá!</p>",
-            "<p>Sua reunião com a <strong>Health &amp; Safety Tech</strong> está agendada.</p>",
+            "<p>Sua reunião com a <strong>Health &amp; Safety</strong> está agendada.</p>",
         ]
 
     detalhes = [f"<strong>Assunto:</strong> {escape(task.title or '')}"]
@@ -1372,7 +1398,7 @@ def _montar_corpo_convite(
         linhas.append(f"<p>Até lá!</p>{assinatura}")
     else:
         linhas.append(
-            f"<p>Até lá!<br>{escape(organizador.name or '')}<br>Health &amp; Safety Tech</p>"
+            f"<p>Até lá!<br>{escape(organizador.name or '')}<br>Health &amp; Safety</p>"
         )
 
     return "".join(linhas)
@@ -1450,6 +1476,9 @@ def _agendar_evento_daily_na_agenda_do_vendedor(
     )
 
     task.teams_event_id = resultado.get("event_id", "")
+    # O evento é do vendedor: lembrete e cancelamento saem da conta dele, não
+    # da do usuário de integração (que não tem Microsoft).
+    task.invite_organizer_id = vendedor.id
     db.commit()
 
     return resultado.get("convidados_removidos", 0)

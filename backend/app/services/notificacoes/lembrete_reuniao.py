@@ -84,17 +84,21 @@ def _reunioes_em_1_hora(db: Session, agora_utc: datetime) -> List[CardTask]:
     return [t for t in candidatas if not t.created_at or t.created_at <= t.due_date - UMA_HORA]
 
 
-def _organizador(db: Session, task: CardTask) -> Optional[User]:
-    """Quem enviou o convite. Reuniões de antes do lembrete não guardavam isso."""
+def organizador_do_convite(db: Session, task: CardTask) -> Optional[User]:
+    """Quem enviou o convite: o evento está no Outlook dessa pessoa, então o
+    lembrete sai da conta dela e é por ela que se altera ou cancela o evento.
+    Reuniões de antes do lembrete não guardavam isso.
+    O usuário de integração nunca é o organizador: a reunião que o site marca
+    nasce na agenda do vendedor."""
     for uid in (task.invite_organizer_id, task.created_by_id, task.assigned_to_id):
         if uid:
             user = db.query(User).filter(User.id == uid).first()
-            if user:
+            if user and not getattr(user, "is_integracao", False):
                 return user
     return None
 
 
-def _convidados(db: Session, task: CardTask, organizador: User) -> List[str]:
+def convidados_do_convite(db: Session, task: CardTask, organizador: User) -> List[str]:
     """Os convidados do convite, sem o próprio organizador e sem repetição.
     Sem lista gravada (reunião antiga), o mesmo critério do convite: vendedor do
     card e e-mails do contato."""
@@ -160,7 +164,7 @@ def montar_corpo_lembrete(task: CardTask, organizador: User, tipo: str) -> str:
     if assinatura:
         linhas.append(f"<p>Até lá!</p>{assinatura}")
     else:
-        linhas.append(f"<p>Até lá!<br>{escape(organizador.name or '')}<br>Health &amp; Safety Tech</p>")
+        linhas.append(f"<p>Até lá!<br>{escape(organizador.name or '')}<br>Health &amp; Safety</p>")
     return "".join(linhas)
 
 
@@ -199,12 +203,12 @@ def _enviar(db: Session, task: CardTask, tipo: str) -> bool:
         rotulo = f"Lembrete de 1 hora da reunião (às {hora_em_brasilia(horario)})"
     db.commit()
 
-    organizador = _organizador(db, task)
+    organizador = organizador_do_convite(db, task)
     if not organizador:
         _registrar(db, task, f"{rotulo} não enviado: reunião sem organizador.", tipo, {"ok": False})
         return False
 
-    para = _convidados(db, task, organizador)
+    para = convidados_do_convite(db, task, organizador)
     if not para:
         return False
 

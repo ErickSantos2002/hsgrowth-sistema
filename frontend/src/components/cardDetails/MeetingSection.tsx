@@ -508,10 +508,16 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (meeting: CardTask) => {
+    const id = meeting.id;
+    // Com convite enviado, excluir também cancela o convite: os convidados
+    // recebem o aviso e a reunião sai da agenda deles.
+    const temConvite = !!meeting.teams_event_id;
     const ok = await confirm({
       title: "Excluir reunião?",
-      message: "Esta ação apaga o registro permanentemente. Não pode ser desfeita.",
+      message: temConvite
+        ? "O convite será cancelado — os convidados recebem o aviso por e-mail — e o registro é apagado permanentemente. Não pode ser desfeita."
+        : "Esta ação apaga o registro permanentemente. Não pode ser desfeita.",
       confirmText: "Excluir",
       isDanger: true,
     });
@@ -521,8 +527,8 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
       await cardTaskService.delete(id);
       showSuccess("Reunião excluída.");
       await loadMeetings();
-    } catch {
-      showError("Erro ao excluir reunião");
+    } catch (error: any) {
+      showError(error.response?.data?.detail || "Erro ao excluir reunião");
     } finally {
       setActionLoadingId(null);
     }
@@ -532,9 +538,9 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
     const ok = await confirm({
       title: "Cancelar reunião?",
       message: meeting.meeting_provider === "daily"
-        ? "A sala será apagada e o link do cliente deixa de funcionar. Esta ação não pode ser desfeita."
+        ? "A sala será apagada, o link do cliente deixa de funcionar e os convidados recebem o aviso de cancelamento por e-mail. Esta ação não pode ser desfeita."
         : meeting.teams_join_url
-        ? "O evento será removido da agenda do Teams/Outlook. Esta ação não pode ser desfeita."
+        ? "O evento será removido da agenda do Teams/Outlook e os convidados recebem o aviso de cancelamento por e-mail. Esta ação não pode ser desfeita."
         : "A reunião não possui evento no Teams. Deseja apenas remover os dados de reunião?",
       confirmText: "Sim, cancelar",
       isDanger: true,
@@ -600,11 +606,11 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
       });
       showSuccess("Reunião atualizada!");
       if (atualizada?.calendario_desatualizado) {
-        // O evento pertence a quem criou a reunião: o Microsoft recusa a
-        // alteração de outra pessoa, e o cliente fica com os dados antigos.
+        // O Outlook de quem enviou o convite recusou a alteração (ex.: perdeu a
+        // conexão com o Microsoft): o cliente fica com os dados antigos.
         showError(
           "A reunião foi atualizada no CRM, mas o convite do cliente não mudou — " +
-            "quem criou a reunião precisa fazer essa alteração."
+            "a conta Microsoft de quem enviou o convite precisa ser reconectada."
         );
       }
       setEditingMeeting(null);
@@ -1334,7 +1340,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
                 )}
                 {isAdmin && !meeting.is_completed && !meeting.is_cancelled && (
                   <button
-                    onClick={() => handleDelete(meeting.id)}
+                    onClick={() => handleDelete(meeting)}
                     disabled={isActioning}
                     className="ml-auto flex items-center gap-1.5 rounded border border-red-500/30 bg-red-500/5 px-2.5 py-1 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-50"
                   >

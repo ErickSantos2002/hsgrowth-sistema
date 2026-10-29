@@ -355,33 +355,51 @@ class MicrosoftGraphService:
         except Exception as e:
             raise ValueError(f"Erro ao atualizar evento no calendário: {e}")
 
-    def delete_calendar_event(
+    def cancel_calendar_event(
         self,
         user: User,
         db: Session,
         event_id: str,
-    ) -> None:
+        comentario: str = "",
+    ) -> bool:
         """
-        Cancela/exclui um evento do calendário do Outlook via DELETE.
+        Cancela a reunião no Outlook de `user`, que precisa ser o organizador.
+
+        Diferente do DELETE, o cancelamento leva uma mensagem: os convidados
+        recebem o aviso com o nosso texto, e a reunião sai da agenda deles.
+
+        Sem conta Microsoft conectada (ex.: reunião que o site marcou na agenda
+        do vendedor), cancela como aplicativo, direto na caixa dele.
+
+        Returns:
+            False quando o evento já não existia (apagado direto pelo Outlook):
+            o que se queria — tirar da agenda — já aconteceu, mas ninguém foi avisado.
 
         Raises:
-            ValueError: Se o usuário não tiver token MS válido ou a chamada falhar
+            ValueError: sem token nenhum ou o Graph recusou
         """
-        access_token = self._require_token(user, db)
+        token = self._get_valid_token(user, db)
+        if token:
+            url = f"{GRAPH_EVENTS_URL}/{event_id}/cancel"
+        else:
+            if not (user.email or "").strip():
+                raise ValueError("Quem enviou o convite não tem conta Microsoft nem e-mail.")
+            token = self._get_app_token()
+            url = f"{GRAPH_BASE}/users/{user.email.strip()}/events/{event_id}/cancel"
 
         try:
             with httpx.Client(timeout=15) as client:
-                resp = client.delete(
-                    f"{GRAPH_EVENTS_URL}/{event_id}",
-                    headers=self._auth_headers(access_token),
+                resp = client.post(
+                    url, json={"comment": comentario}, headers=self._auth_headers(token)
                 )
-            if resp.status_code not in (204, 200):
-                error_msg = resp.json().get("error", {}).get("message", f"HTTP {resp.status_code}")
-                raise ValueError(f"Erro ao cancelar evento no calendário: {error_msg}")
-        except ValueError:
-            raise
         except Exception as e:
             raise ValueError(f"Erro ao cancelar evento no calendário: {e}")
+
+        if resp.status_code == 404:
+            return False
+        if resp.status_code not in (200, 202, 204):
+            raise ValueError(f"Erro ao cancelar evento no calendário: {self._erro_do_graph(resp)}")
+        return True
 
     def _resolve_meeting_id_by_join_url(self, access_token: str, join_url: str) -> str:
         """

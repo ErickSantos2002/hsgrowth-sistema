@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.10.23",
+    date: "29/10/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Cancelar ou remarcar uma reunião criada por outra pessoa agora funciona: o convite é alterado na agenda de quem convidou. Antes dava \"The specified object was not found in the store\".",
+      },
+      {
+        type: "feature",
+        text: "Reunião cancelada ou excluída avisa os convidados por e-mail e sai da agenda deles. Excluir também cancela o convite e apaga a sala, como o cancelar.",
+      },
+      {
+        type: "fix",
+        text: "E-mails de reunião assinam \"Health & Safety\" (sem o \"Tech\").",
+      },
+    ],
+  },
+  {
     version: "1.10.22",
     date: "28/10/2026",
     entries: [

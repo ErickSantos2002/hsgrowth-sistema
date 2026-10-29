@@ -5,6 +5,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.10.23] — 29/10/2026
+
+### Corrigido
+- **Cancelar reunião criada por outra pessoa dava "The specified object was not found in the store":** o evento do Outlook mora no calendário de quem enviou o convite, mas cancelar e remarcar usavam a conta de quem clicou — e na agenda dessa pessoa o evento não existe. Agora cancelar e remarcar usam a conta de quem enviou o convite (`invite_organizer_id`; em reunião antiga, quem criou ou o responsável), a mesma regra do lembrete por e-mail. Evento que já tinha sido apagado direto pelo Outlook conta como apagado e o cancelamento segue.
+- **Excluir reunião deixava o convite na agenda do cliente e a sala do Daily aberta:** excluir só apagava o registro no CRM. Agora, com convite enviado, excluir cancela o convite e apaga a sala antes — se o Outlook recusar, nada é excluído.
+- **Reunião marcada pelo site (1.10.22) não guardava o vendedor como quem convidou:** lembrete e cancelamento cairiam no usuário de integração, que não tem Microsoft. Agora fica gravado o vendedor, e o usuário de integração nunca é tratado como organizador.
+- **Nome da empresa nos e-mails:** convite, lembrete, aviso de cancelamento e a tela de entrada do cliente diziam "Health & Safety Tech"; agora "Health & Safety".
+
+### Adicionado
+- **Aviso de cancelamento aos convidados:** quem recebeu o convite e os lembretes (8h do dia e 1 hora antes) agora recebe um e-mail quando a reunião é cancelada ou excluída. É o cancelamento do próprio Outlook (ação `cancel` do Graph) com o nosso texto — título, data e hora da reunião e a assinatura — então é um e-mail só, que também tira a reunião da agenda do convidado. Sai da conta de quem enviou o convite; se essa pessoa não tem conta Microsoft conectada, cancela como aplicativo direto na caixa dela. O histórico do card registra "Reunião … cancelada/excluída — aviso de cancelamento enviado para …".
+
+### Segurança
+- **Cancelar reunião agora confere quem pode:** a rota `cancel-teams` não verificava o vínculo com o negócio — quem segurava, por acaso, era o Outlook recusando o evento alheio. Agora vale a mesma regra das outras ações da reunião (RN-037): admin e gerente, o responsável pela reunião, o vendedor ou o SDR do card.
+
+---
+
 ## [1.10.22] — 28/10/2026
 
 ### Adicionado
