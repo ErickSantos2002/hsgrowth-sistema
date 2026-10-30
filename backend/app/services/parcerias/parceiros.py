@@ -41,6 +41,8 @@ def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -
     acesso.exigir_escrita(user)
     p = acesso.buscar_parceiro(db, user, partner_id)
     campos = dados.model_dump(exclude_unset=True)
+    if "name" in campos and campos["name"] is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "O nome do parceiro é obrigatório.")
     if not acesso.eh_gestao(user):
         # O responsável H&S é escolha da H&S.
         campos.pop("hs_owner_id", None)

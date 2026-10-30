@@ -198,3 +198,13 @@ def test_proposta_conta_como_evidencia(client, db):
     db.refresh(p)
     assert p.activation_evidence == "proposta_enviada"
     assert p.stage == "ativado"
+
+
+def test_apagar_campo_obrigatorio_responde_422(client, db):
+    p = parceiro(db)
+    op = oportunidade(db, p)
+
+    resposta = client.put(f"{URL}/{op.id}", json={"title": None}, headers=_login_parceiro(db, p))
+
+    assert resposta.status_code == 422
+    assert "Título" in resposta.json()["detail"]

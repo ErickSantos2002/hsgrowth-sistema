@@ -27,6 +27,12 @@ from app.services.parcerias.etapas import (
 )
 
 ELEGIBILIDADE = {"em_analise": "Em análise", "validada": "Validada", "rejeitada": "Rejeitada"}
+# Campos que não podem ficar vazios na edição (a tela manda campo apagado como null).
+OBRIGATORIOS = {
+    "title": "Título", "deal_type": "Tipo de negócio", "sector": "Setor",
+    "relationship_type": "Tipo de relacionamento", "context": "Contexto da indicação",
+    "cnpj": "CNPJ", "company_name": "Razão social / nome",
+}
 # Etapas que contam como "proposta enviada" para a ativação do parceiro.
 ETAPAS_COM_PROPOSTA = ("proposta", "negociacao", "aguardando_pedido")
 
@@ -86,6 +92,9 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
     acesso.exigir_escrita(user)
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
     campos = dados.model_dump(exclude_unset=True)
+    for campo, nome in OBRIGATORIOS.items():
+        if campo in campos and campos[campo] is None:
+            raise _422(f"{nome} é obrigatório.")
     if "seller_member_id" in campos:
         _conferir_vendedor(db, op.partner_id, campos["seller_member_id"])
     novo_cnpj = campos.get("cnpj")

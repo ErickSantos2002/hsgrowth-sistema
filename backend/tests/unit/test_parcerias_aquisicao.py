@@ -133,3 +133,11 @@ def test_parceiro_nao_cria_acesso(client, db):
     dados = {"name": "X", "email": "x@dmap.com", "password": "Senha@12345"}
 
     assert client.post(f"{URL}/parceiros/{p.id}/acessos", json=dados, headers=h).status_code == 403
+
+
+def test_apagar_o_nome_do_parceiro_responde_422(client, db, admin_headers):
+    p = parceiro(db)
+
+    resposta = client.put(f"{URL}/parceiros/{p.id}", json={"name": None}, headers=admin_headers)
+
+    assert resposta.status_code == 422
