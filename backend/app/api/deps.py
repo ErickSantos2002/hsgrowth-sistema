@@ -290,6 +290,25 @@ def require_service_access():
     return checker
 
 
+def require_parcerias_access():
+    """
+    Dependency do Programa de Parceiros: admin, gerente, Financeiro e parceiro.
+    Vendedor, SDR, serviço e visualizador não acessam (403).
+    """
+    async def checker(
+        current_user: User = Depends(get_current_active_user)
+    ) -> User:
+        allowed_roles = ("admin", "manager", "finance", "partner")
+        if not current_user.role or current_user.role.name not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso restrito ao Programa de Parceiros."
+            )
+        return current_user
+
+    return checker
+
+
 def require_integracao():
     """
     Dependency que restringe a rota a usuários de integração (`is_integracao`).
