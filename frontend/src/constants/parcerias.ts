@@ -30,11 +30,11 @@ export const BOARDS_PARCERIAS: BoardParceria[] = [
   },
 ];
 
-/** Cor da coluna/etapa: verde no fim do funil, vermelho no Perdido, roxo no resto (como as listas de Serviço). */
+/** Cor da coluna/etapa: verde no fim do funil, vermelho no Perdido, azul no resto. */
 export const corDaEtapa = (codigo: string) =>
   ["ativado", "ganho"].includes(codigo) ? COLORS.board.green
   : codigo === "perdido" ? COLORS.board.red
-  : COLORS.board.purple;
+  : COLORS.board.blue;
 
 // Perfis presos à seção Parcerias — o backend nega o resto do CRM a eles.
 export const PERFIS_TRANCADOS = ["partner", "finance"];

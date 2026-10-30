@@ -345,7 +345,7 @@ export default function ParceiroDetalhe() {
                 onClick={() => setAba(a.chave)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
                   aba === a.chave
-                    ? "border-violet-500 text-violet-500 dark:text-violet-400"
+                    ? "border-blue-500 text-blue-500 dark:text-blue-400"
                     : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >

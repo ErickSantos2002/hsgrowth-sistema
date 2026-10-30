@@ -65,10 +65,10 @@ export default function CabecalhoBoard({ board, busca, onBusca, placeholderBusca
           ) : (
             <button
               onClick={() => setMostrarBusca(true)}
-              className={`rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50 ${busca ? "bg-violet-500/20" : ""}`}
+              className={`rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50 ${busca ? "bg-blue-500/20" : ""}`}
               title="Buscar cards"
             >
-              <Search size={20} className={busca ? "text-violet-400" : "text-slate-500 dark:text-slate-400"} />
+              <Search size={20} className={busca ? "text-blue-400" : "text-slate-500 dark:text-slate-400"} />
             </button>
           )}
           {children}
@@ -78,12 +78,12 @@ export default function CabecalhoBoard({ board, busca, onBusca, placeholderBusca
   );
 }
 
-/** Botão roxo em degradê do cabeçalho (o "Nova Lista" dos boards de Serviço). */
+/** Botão verde de adicionar do cabeçalho. */
 export function BotaoNovo({ rotulo, onClick }: { rotulo: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex h-10 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 text-white shadow-lg transition-all hover:from-violet-600 hover:to-purple-600"
+      className="flex h-10 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 px-4 text-white shadow-lg transition-all hover:from-emerald-600 hover:to-green-600"
     >
       <Plus size={20} />
       <span className="hidden sm:inline">{rotulo}</span>

@@ -123,7 +123,7 @@ export default function KanbanParcerias<T>({
                 <div className="mt-3 flex flex-shrink-0">
                   <button
                     onClick={onAdicionar}
-                    className="group flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm text-slate-500 transition-colors hover:bg-gray-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white"
+                    className="group flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium text-emerald-600 transition-colors hover:bg-emerald-500/10 dark:text-emerald-400"
                   >
                     <Plus size={16} className="transition-transform group-hover:scale-110" />
                     Adicionar card

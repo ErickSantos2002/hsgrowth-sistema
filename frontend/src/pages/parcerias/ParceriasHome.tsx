@@ -30,7 +30,7 @@ function CardBoard({ board, contagem, onAbrir }: { board: BoardParceria; contage
             <Icone size={24} style={{ color: board.cor }} />
           </div>
           <h3
-            className="flex-1 cursor-pointer text-xl font-bold text-slate-900 transition-colors group-hover:text-violet-400 dark:text-white"
+            className="flex-1 cursor-pointer text-xl font-bold text-slate-900 transition-colors group-hover:text-blue-400 dark:text-white"
             onClick={onAbrir}
           >
             {board.nome}
@@ -49,7 +49,7 @@ function CardBoard({ board, contagem, onAbrir }: { board: BoardParceria; contage
         <div className="flex items-center justify-between">
           <button
             onClick={onAbrir}
-            className="flex items-center gap-2 rounded-lg bg-violet-500/10 px-4 py-2 text-violet-500 transition-colors hover:bg-violet-500/20 dark:text-violet-400"
+            className="flex items-center gap-2 rounded-lg bg-blue-500/10 px-4 py-2 text-blue-500 transition-colors hover:bg-blue-500/20 dark:text-blue-400"
           >
             <Eye size={16} />
             Visualizar
@@ -119,7 +119,7 @@ export default function ParceriasHome() {
             placeholder="Buscar boards..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="h-11 w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400"
+            className="h-11 w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400"
           />
         </div>
         <button

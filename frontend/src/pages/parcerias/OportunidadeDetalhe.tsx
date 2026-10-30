@@ -336,13 +336,13 @@ export default function OportunidadeDetalhe() {
                 onClick={() => setAba(a.chave)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
                   aba === a.chave
-                    ? "border-violet-500 text-violet-500 dark:text-violet-400"
+                    ? "border-blue-500 text-blue-500 dark:text-blue-400"
                     : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
                 {a.icone}
                 {a.rotulo}
-                {!!a.badge && <span className="rounded-full bg-violet-500/20 px-1.5 text-xs text-violet-400">{a.badge}</span>}
+                {!!a.badge && <span className="rounded-full bg-blue-500/20 px-1.5 text-xs text-blue-400">{a.badge}</span>}
               </button>
             ))}
           </div>

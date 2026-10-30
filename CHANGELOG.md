@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.3] — 30/10/2026
+
+### Alterado
+- **Cores de Parcerias:** sai o roxo. O "Visualizar" e o título dos boards, a busca, as abas do detalhe e as colunas do kanban ficam em azul (Ativado/Ganho seguem verdes e Perdido vermelho). Os botões de adicionar (Novo Parceiro, Nova Oportunidade e Adicionar card) ficam verdes.
+
+---
+
 ## [1.11.2] — 30/10/2026
 
 ### Alterado

@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.3",
+    date: "30/10/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Parcerias sem roxo: botões, abas e colunas em azul, e os botões de adicionar (Novo Parceiro, Nova Oportunidade e Adicionar card) em verde.",
+      },
+    ],
+  },
+  {
     version: "1.11.2",
     date: "30/10/2026",
     entries: [
