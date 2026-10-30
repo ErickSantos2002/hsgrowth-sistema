@@ -214,6 +214,10 @@ const Users: React.FC = () => {
         return "bg-amber-500/20 text-slate-900 dark:text-amber-400";
       case "service":
         return "bg-violet-500/20 text-slate-900 dark:text-violet-400";
+      case "finance":
+        return "bg-cyan-500/20 text-slate-900 dark:text-cyan-400";
+      case "partner":
+        return "bg-orange-500/20 text-slate-900 dark:text-orange-400";
       default:
         return "bg-slate-500/20 text-slate-900 dark:text-slate-400";
     }
@@ -300,6 +304,8 @@ const Users: React.FC = () => {
               { value: "salesperson", label: "Vendedor" },
               { value: "sdr", label: "SDR" },
               { value: "service", label: "Serviço" },
+              { value: "finance", label: "Financeiro" },
+              { value: "partner", label: "Parceiro" },
             ]}
             onChange={(value) => setCustomFilter("role", value)}
           />

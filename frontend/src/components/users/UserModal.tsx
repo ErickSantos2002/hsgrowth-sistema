@@ -35,6 +35,17 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
 
   const isEditing = !!user;
 
+  // O id da role Financeiro depende do banco; vem da API.
+  const [idFinanceiro, setIdFinanceiro] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    userService
+      .listarPerfis()
+      .then((perfis) => setIdFinanceiro(perfis.find((p) => p.name === "finance")?.id ?? null))
+      .catch(() => setIdFinanceiro(null));
+  }, [isOpen]);
+
   useEffect(() => {
     if (isEditing && user) {
       setEmail(user.email);
@@ -436,6 +447,9 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                   { value: "4", label: "SDR" },
                   { value: "5", label: "Visualizador" },
                   { value: "6", label: "Serviço" },
+                  ...(idFinanceiro ? [{ value: String(idFinanceiro), label: "Financeiro" }] : []),
+                  // Login de parceiro nasce no card do parceiro; aqui só aparece na edição.
+                  ...(user?.role === "partner" ? [{ value: String(user.role_id), label: "Parceiro" }] : []),
                 ]}
                 onChange={(value) => setRoleId(Number(value))}
               />
@@ -446,6 +460,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                 {roleId === 4 && "Gerencia prospecção e qualificação de leads"}
                 {roleId === 5 && "Acesso somente leitura a boards, clientes, pessoas e produtos"}
                 {roleId === 6 && "Acesso ao módulo de serviços (boards, atividades, clientes, pessoas e produtos)"}
+                {idFinanceiro !== null && roleId === idFinanceiro && "Acompanha Parcerias e valida a elegibilidade das oportunidades"}
+                {user?.role === "partner" && roleId === user.role_id && "Acesso só à seção Parcerias (login criado no card do parceiro)"}
               </p>
             </FormField>
 
