@@ -4,7 +4,7 @@ Funções reutilizáveis como dependencies em rotas.
 """
 from datetime import datetime, timezone
 from typing import Generator, Optional
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session, joinedload
 
@@ -18,6 +18,20 @@ from app.models.integration_client import IntegrationClient
 # Security scheme para JWT (Bearer token)
 # auto_error=False para permitir tratamento manual e retornar 401 ao invés de 403
 security = HTTPBearer(auto_error=False)
+
+# Perfis presos ao Programa de Parceiros. Para eles o CRM é negado por padrão:
+# só os caminhos abaixo respondem. Rota nova fica trancada sozinha.
+PERFIS_TRANCADOS = ("partner", "finance")
+CAMINHOS_DOS_TRANCADOS = (
+    "/api/v1/auth/",
+    "/api/v1/users/me",
+    "/api/v1/notifications",
+    "/api/v1/parcerias",
+)
+
+
+def caminho_liberado_para_trancado(path: str) -> bool:
+    return path.startswith(CAMINHOS_DOS_TRANCADOS)
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -164,25 +178,35 @@ async def get_current_user(
 
 
 async def get_current_active_user(
+    request: Request,
     current_user: User = Depends(get_current_user)
 ) -> User:
     """
     Dependency para obter usuário autenticado e ativo.
-    Verifica se o usuário está com status is_active=True.
+    Verifica se o usuário está com status is_active=True e aplica a tranca
+    geral dos perfis do Programa de Parceiros (PERFIS_TRANCADOS).
 
     Args:
+        request: Request atual (o caminho decide a tranca)
         current_user: Usuário autenticado (obtido de get_current_user)
 
     Returns:
         Usuário autenticado e ativo
 
     Raises:
-        HTTPException: Se o usuário estiver inativo
+        HTTPException: Se o usuário estiver inativo ou fora da área liberada
     """
     if not current_user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuário inativo"
+        )
+
+    papel = current_user.role.name if current_user.role else None
+    if papel in PERFIS_TRANCADOS and not caminho_liberado_para_trancado(request.url.path):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito ao Programa de Parceiros."
         )
     return current_user
 
