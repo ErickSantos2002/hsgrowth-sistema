@@ -42,7 +42,7 @@ const menuItems = [
     { path: "/ligacoes", icon: Phone, label: "Ligações", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/boards", icon: Trello, label: "Boards (Vendas)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/servicos", icon: Wrench, label: "Boards (Serviços)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
-    { path: "/parcerias", icon: Handshake, label: "Parcerias", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
+    { path: "/parcerias", icon: Handshake, label: "Boards (Parcerias)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -306,7 +306,7 @@ export default function MainLayout() {
                                     className="text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                                     title="Ver o que há de novo nessa versão"
                                 >
-                                    HSGrowth CRM v1.11.1
+                                    HSGrowth CRM v1.11.2
                                 </button>
                                 <p className="text-[10px] text-slate-300 dark:text-slate-600">
                                     © 2026 Health & Safety Tech

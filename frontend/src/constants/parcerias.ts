@@ -1,3 +1,41 @@
+import { Handshake, Trello, type LucideIcon } from "lucide-react";
+import { COLORS } from "./colors";
+
+// Os dois boards de Parcerias (fixos, mesma cara dos boards de Vendas e de Serviços).
+export interface BoardParceria {
+  chave: "aquisicao" | "oportunidades";
+  nome: string;
+  descricao: string;
+  cor: string;
+  icone: LucideIcon;
+  caminho: string;
+}
+
+export const BOARDS_PARCERIAS: BoardParceria[] = [
+  {
+    chave: "aquisicao",
+    nome: "Aquisição de Parceiros",
+    descricao: "Da prospecção até a ativação de cada parceiro.",
+    cor: COLORS.board.green,
+    icone: Handshake,
+    caminho: "/parcerias/aquisicao",
+  },
+  {
+    chave: "oportunidades",
+    nome: "Pipeline de Parceiros",
+    descricao: "As oportunidades que os parceiros registram.",
+    cor: COLORS.board.blue,
+    icone: Trello,
+    caminho: "/parcerias/oportunidades",
+  },
+];
+
+/** Cor da coluna/etapa: verde no fim do funil, vermelho no Perdido, roxo no resto (como as listas de Serviço). */
+export const corDaEtapa = (codigo: string) =>
+  ["ativado", "ganho"].includes(codigo) ? COLORS.board.green
+  : codigo === "perdido" ? COLORS.board.red
+  : COLORS.board.purple;
+
 // Perfis presos à seção Parcerias — o backend nega o resto do CRM a eles.
 export const PERFIS_TRANCADOS = ["partner", "finance"];
 export const PERFIS_PARCERIAS = ["admin", "manager", "finance", "partner"];

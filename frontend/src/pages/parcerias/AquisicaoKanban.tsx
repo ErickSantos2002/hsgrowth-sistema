@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
-import { Button, LoadingSpinner } from "../../components/common";
-import KanbanParcerias from "../../components/parcerias/KanbanParcerias";
+import { CheckCircle2, User } from "lucide-react";
+import { LoadingSpinner } from "../../components/common";
+import CabecalhoBoard, { BotaoNovo } from "../../components/parcerias/CabecalhoBoard";
+import KanbanParcerias, { CardBadge } from "../../components/parcerias/KanbanParcerias";
 import ModalTrava from "../../components/parcerias/ModalTrava";
 import NovoParceiroModal from "../../components/parcerias/NovoParceiroModal";
 import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
-import { EVIDENCIA_LABEL, PERFIS_GESTAO } from "../../constants/parcerias";
+import { BOARDS_PARCERIAS, EVIDENCIA_LABEL, PERFIS_GESTAO } from "../../constants/parcerias";
 import parceriasService, { Etapa, MoverPayload, Parceiro, mensagemDeErro } from "../../services/parceriasService";
+
+const BOARD = BOARDS_PARCERIAS.find((b) => b.chave === "aquisicao")!;
 
 export default function AquisicaoKanban() {
   const { user } = useAuth();
@@ -19,6 +22,7 @@ export default function AquisicaoKanban() {
   const [etapas, setEtapas] = useState<Etapa[]>([]);
   const [parceiros, setParceiros] = useState<Parceiro[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [busca, setBusca] = useState("");
   const [novo, setNovo] = useState(false);
   const [perdendo, setPerdendo] = useState<Parceiro | null>(null);
 
@@ -47,42 +51,53 @@ export default function AquisicaoKanban() {
     await carregar();
   };
 
+  const aoMover = (parceiro: Parceiro, destino: string) => {
+    if (destino === "ativado") return showError("O parceiro vai para Ativado sozinho, na primeira evidência de uso do canal.");
+    if (destino === "perdido") {
+      if (!gestao) return showError("Só admin ou gerente marcam o parceiro como Perdido.");
+      return setPerdendo(parceiro);
+    }
+    mover(parceiro, destino);
+  };
+
   if (carregando) return <LoadingSpinner />;
 
-  return (
-    <div className="flex h-full flex-col p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Aquisição de Parceiros</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Da prospecção até a ativação do parceiro.</p>
-        </div>
-        {gestao && (
-          <Button icon={<Plus size={16} />} onClick={() => setNovo(true)}>Novo parceiro</Button>
-        )}
-      </div>
+  const termo = busca.trim().toLowerCase();
+  const visiveis = parceiros.filter(
+    (p) => !termo || [p.name, p.main_contact_name, p.cnpj].some((v) => v?.toLowerCase().includes(termo))
+  );
 
-      <div className="min-h-0 flex-1">
-        <KanbanParcerias
-          etapas={etapas}
-          itens={parceiros}
-          idDe={(p) => p.id}
-          etapaDe={(p) => p.stage}
-          onAbrir={(p) => navigate(`/parcerias/aquisicao/${p.id}`)}
-          onMover={podeMover ? (p, destino) => (destino === "perdido" ? setPerdendo(p) : mover(p, destino)) : undefined}
-          renderCard={(p) => (
-            <>
-              <p className="text-sm font-medium text-slate-900 dark:text-white">{p.name}</p>
-              {p.main_contact_name && <p className="text-xs text-slate-500">{p.main_contact_name}</p>}
-              {p.hs_owner_name && <p className="mt-1 text-xs text-slate-400">H&S: {p.hs_owner_name}</p>}
-              {p.activation_evidence && (
-                <span className="mt-2 inline-block rounded bg-emerald-500/15 px-1.5 py-0.5 text-[11px] text-emerald-700 dark:text-emerald-400">
-                  {EVIDENCIA_LABEL[p.activation_evidence]}
-                </span>
+  return (
+    <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <CabecalhoBoard board={BOARD} busca={busca} onBusca={setBusca} placeholderBusca="Buscar por parceiro, contato ou CNPJ...">
+        {gestao && <BotaoNovo rotulo="Novo Parceiro" onClick={() => setNovo(true)} />}
+      </CabecalhoBoard>
+
+      <KanbanParcerias
+        etapas={etapas}
+        itens={visiveis}
+        idDe={(p) => p.id}
+        etapaDe={(p) => p.stage}
+        onAbrir={(p) => navigate(`/parcerias/aquisicao/${p.id}`)}
+        onMover={podeMover ? aoMover : undefined}
+        onAdicionar={gestao ? () => setNovo(true) : undefined}
+        renderCard={(p) => (
+          <>
+            <h4 className="mb-2 line-clamp-2 text-sm font-medium leading-snug text-slate-900 dark:text-white">{p.name}</h4>
+            {p.main_contact_name && (
+              <p className="mb-1 truncate text-xs text-slate-500 dark:text-slate-400">{p.main_contact_name}</p>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              {p.hs_owner_name && (
+                <CardBadge cls="bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400" icon={<User size={11} />} label={p.hs_owner_name} />
               )}
-            </>
-          )}
-        />
-      </div>
+              {p.activation_evidence && (
+                <CardBadge cls="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" icon={<CheckCircle2 size={11} />} label={EVIDENCIA_LABEL[p.activation_evidence]} />
+              )}
+            </div>
+          </>
+        )}
+      />
 
       <NovoParceiroModal
         isOpen={novo}

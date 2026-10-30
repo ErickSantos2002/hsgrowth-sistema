@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.2] — 30/10/2026
+
+### Alterado
+- **Parcerias com a cara dos boards de Vendas e de Serviços:** o menu passa a se chamar **Boards (Parcerias)**, e a página inicial lista os dois boards (Aquisição de Parceiros e Pipeline de Parceiros) no mesmo cartão colorido da página Boards (Serviços), com contagem de listas e cards. Os kanbans ganham o cabeçalho dos boards de Serviço (voltar, ícone, busca e botão roxo de novo card), as colunas coloridas com contador, os cards com selos, o "Adicionar card" na primeira coluna, o valor total no pé das colunas do Pipeline e o arrastar do fundo para rolar o quadro. O arrastar de cards entre colunas continua. O detalhe do parceiro e o da oportunidade seguem o card de Serviço: trilha de etapas no topo, botões Perdido/Ganho (ou o selo e o Reabrir), seções recolhíveis à esquerda e abas à direita (Atividades e Oportunidades no parceiro; Atividades e Produtos na oportunidade).
+- **Etapas do parceiro:** o botão Perdido só aparece para admin e gerente, e Ativado não se escolhe na mão, nem na trilha nem arrastando o card, porque o parceiro vai para Ativado sozinho. Antes, o parceiro escolhia Perdido, preenchia o motivo e só então recebia a recusa do backend.
+
+---
+
 ## [1.11.1] — 30/10/2026
 
 ### Segurança

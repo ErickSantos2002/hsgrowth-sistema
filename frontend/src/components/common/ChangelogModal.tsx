@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.2",
+    date: "30/10/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Parcerias com a mesma cara dos boards de Vendas e de Serviços: menu \"Boards (Parcerias)\", página de boards, colunas e cards do kanban, e o detalhe com a trilha de etapas, as seções à esquerda e as abas à direita.",
+      },
+      {
+        type: "improvement",
+        text: "No detalhe do parceiro, o botão Perdido aparece só para admin e gerente, e a etapa Ativado não se escolhe na mão (o parceiro vai para Ativado sozinho).",
+      },
+    ],
+  },
+  {
     version: "1.11.1",
     date: "30/10/2026",
     entries: [

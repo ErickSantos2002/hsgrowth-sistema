@@ -1,17 +1,35 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
-import { Button, LoadingSpinner, SelectMenu } from "../../components/common";
-import KanbanParcerias from "../../components/parcerias/KanbanParcerias";
+import { Calendar, ShieldCheck, User } from "lucide-react";
+import { LoadingSpinner, SelectMenu } from "../../components/common";
+import CabecalhoBoard, { BotaoNovo } from "../../components/parcerias/CabecalhoBoard";
+import KanbanParcerias, { CardBadge } from "../../components/parcerias/KanbanParcerias";
 import ModalTrava, { faltasParaMover, temFalta } from "../../components/parcerias/ModalTrava";
 import NovaOportunidadeModal from "../../components/parcerias/NovaOportunidadeModal";
 import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
 import { LOSS_REASONS_ACQUISITION } from "../../constants/blueprintOptions";
-import { ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_GESTAO, formatarMoeda } from "../../constants/parcerias";
+import {
+  BOARDS_PARCERIAS, ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_GESTAO, formatarMoeda,
+} from "../../constants/parcerias";
 import parceriasService, {
   Etapa, MoverPayload, Oportunidade, Parceiro, mensagemDeErro,
 } from "../../services/parceriasService";
+
+const BOARD = BOARDS_PARCERIAS.find((b) => b.chave === "oportunidades")!;
+
+/** Valor total da coluna, no mesmo quadrinho do rodapé dos boards de Serviço. */
+function ValorDaColuna({ ops }: { ops: Oportunidade[] }) {
+  const total = ops.reduce((soma, o) => soma + (Number(o.total_value) || 0), 0);
+  return (
+    <div className="mt-3 flex-shrink-0 rounded-lg border border-gray-200 bg-white/60 px-3 py-2 dark:border-slate-700/40 dark:bg-slate-900/30">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-slate-500 dark:text-slate-400">Valor total</span>
+        <span className="font-semibold text-slate-700 dark:text-slate-200">{formatarMoeda(total)}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function OportunidadesKanban() {
   const { user } = useAuth();
@@ -24,6 +42,7 @@ export default function OportunidadesKanban() {
   const [ops, setOps] = useState<Oportunidade[]>([]);
   const [parceiros, setParceiros] = useState<Parceiro[]>([]);
   const [filtro, setFiltro] = useState("");
+  const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [nova, setNova] = useState(false);
   const [pendente, setPendente] = useState<{ op: Oportunidade; destino: string } | null>(null);
@@ -65,55 +84,64 @@ export default function OportunidadesKanban() {
 
   if (carregando) return <LoadingSpinner />;
 
-  return (
-    <div className="flex h-full flex-col p-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Pipeline de Parceiros</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Oportunidades registradas pelos parceiros.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {!ehParceiro && (
-            <div className="w-56">
-              <SelectMenu
-                value={filtro}
-                options={[{ value: "", label: "Todos os parceiros" }, ...parceiros.map((p) => ({ value: String(p.id), label: p.name }))]}
-                onChange={setFiltro}
-              />
-            </div>
-          )}
-          {podeMover && (
-            <Button icon={<Plus size={16} />} onClick={() => setNova(true)}>Nova oportunidade</Button>
-          )}
-        </div>
-      </div>
+  const termo = busca.trim().toLowerCase();
+  const digitos = termo.replace(/\D/g, "");
+  const visiveis = ops.filter(
+    (o) =>
+      !termo ||
+      [o.title, o.company_name, o.partner_name, o.seller_name].some((v) => v?.toLowerCase().includes(termo)) ||
+      (digitos.length >= 3 && o.cnpj?.includes(digitos))
+  );
 
-      <div className="min-h-0 flex-1">
-        <KanbanParcerias
-          etapas={etapas}
-          itens={ops}
-          idDe={(o) => o.id}
-          etapaDe={(o) => o.stage}
-          onAbrir={(o) => navigate(`/parcerias/oportunidades/${o.id}`)}
-          onMover={podeMover ? aoMover : undefined}
-          renderCard={(o) => (
-            <>
-              <p className="text-sm font-medium text-slate-900 dark:text-white">{o.title}</p>
-              <p className="text-xs text-slate-500">{o.company_name}</p>
-              {!ehParceiro && <p className="text-xs text-slate-400">{o.partner_name}</p>}
-              {o.seller_name && <p className="text-xs text-slate-400">Vendedor: {o.seller_name}</p>}
-              <div className="mt-2 flex items-center justify-between">
-                <span className={`rounded px-1.5 py-0.5 text-[11px] ${ELEGIBILIDADE_COR[o.eligibility_status]}`}>
-                  {ELEGIBILIDADE_LABEL[o.eligibility_status]}
-                </span>
-                {o.total_value > 0 && (
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{formatarMoeda(o.total_value)}</span>
-                )}
-              </div>
-            </>
-          )}
-        />
-      </div>
+  return (
+    <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <CabecalhoBoard board={BOARD} busca={busca} onBusca={setBusca} placeholderBusca="Buscar por título, empresa ou CNPJ...">
+        {!ehParceiro && (
+          <div className="w-56">
+            <SelectMenu
+              size="sm"
+              value={filtro}
+              options={[{ value: "", label: "Todos os parceiros" }, ...parceiros.map((p) => ({ value: String(p.id), label: p.name }))]}
+              onChange={setFiltro}
+            />
+          </div>
+        )}
+        {podeMover && <BotaoNovo rotulo="Nova Oportunidade" onClick={() => setNova(true)} />}
+      </CabecalhoBoard>
+
+      <KanbanParcerias
+        etapas={etapas}
+        itens={visiveis}
+        idDe={(o) => o.id}
+        etapaDe={(o) => o.stage}
+        onAbrir={(o) => navigate(`/parcerias/oportunidades/${o.id}`)}
+        onMover={podeMover ? aoMover : undefined}
+        onAdicionar={podeMover ? () => setNova(true) : undefined}
+        rodapeColuna={(daColuna) => <ValorDaColuna ops={daColuna} />}
+        renderCard={(o) => (
+          <>
+            <h4 className="mb-2 line-clamp-2 text-sm font-medium leading-snug text-slate-900 dark:text-white">{o.title}</h4>
+            <p className="mb-1 truncate text-xs text-slate-500 dark:text-slate-400">{o.company_name}</p>
+            {!ehParceiro && <p className="mb-1 truncate text-xs text-slate-400 dark:text-slate-500">{o.partner_name}</p>}
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              <CardBadge cls={ELEGIBILIDADE_COR[o.eligibility_status]} icon={<ShieldCheck size={11} />} label={ELEGIBILIDADE_LABEL[o.eligibility_status]} />
+              {o.seller_name && (
+                <CardBadge cls="bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400" icon={<User size={11} />} label={o.seller_name} />
+              )}
+              {o.expected_close_date && (
+                <CardBadge
+                  cls="bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400"
+                  icon={<Calendar size={11} />}
+                  label={new Date(`${o.expected_close_date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                />
+              )}
+            </div>
+            {o.total_value > 0 && (
+              <div className="text-xs font-medium text-green-500 dark:text-green-400">{formatarMoeda(o.total_value)}</div>
+            )}
+          </>
+        )}
+      />
 
       <NovaOportunidadeModal
         isOpen={nova}

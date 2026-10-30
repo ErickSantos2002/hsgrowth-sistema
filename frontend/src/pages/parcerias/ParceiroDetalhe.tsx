@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import {
+  Activity, ArrowLeft, Building2, CheckCircle2, ClipboardCheck, KeyRound, RefreshCw, Trello, Users, XCircle,
+} from "lucide-react";
 import { Button, FormField, Input, LoadingSpinner, SelectMenu } from "../../components/common";
+import ExpandableSection from "../../components/cardDetails/ExpandableSection";
 import AtividadesParceria from "../../components/parcerias/AtividadesParceria";
+import EtapasParceria from "../../components/parcerias/EtapasParceria";
 import ModalTrava from "../../components/parcerias/ModalTrava";
 import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
@@ -24,6 +28,8 @@ const CAMPOS_TEXTO: { nome: keyof ParceiroForm; label: string }[] = [
   { nome: "region", label: "Região" },
 ];
 
+type Aba = "atividades" | "oportunidades";
+
 export default function ParceiroDetalhe() {
   const { partnerId } = useParams();
   const id = Number(partnerId);
@@ -42,6 +48,7 @@ export default function ParceiroDetalhe() {
   const [novoMembro, setNovoMembro] = useState({ name: "", email: "", phone: "" });
   const [novoAcesso, setNovoAcesso] = useState({ name: "", email: "", password: "" });
   const [perdendo, setPerdendo] = useState(false);
+  const [aba, setAba] = useState<Aba>("atividades");
 
   const preencher = (p: Parceiro) => {
     setParceiro(p);
@@ -83,6 +90,11 @@ export default function ParceiroDetalhe() {
   }, [carregar]);
 
   if (!parceiro) return <LoadingSpinner />;
+
+  const perdido = parceiro.stage === "perdido";
+  const ativado = parceiro.stage === "ativado";
+  // De Ativado e de Perdido só a gestão tira o parceiro.
+  const podeMover = podeEditar && (gestao || (!perdido && !ativado));
 
   const salvar = async () => {
     try {
@@ -147,42 +159,75 @@ export default function ParceiroDetalhe() {
     }
   };
 
-  const caixa = "rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700/50 dark:bg-slate-800/40";
-  const titulo = "mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200";
+  const linhaLista = "flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50/30 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/30";
+  const abas: { chave: Aba; rotulo: string; icone: ReactNode }[] = [
+    { chave: "atividades", rotulo: "Atividades", icone: <Activity size={16} /> },
+    { chave: "oportunidades", rotulo: "Oportunidades", icone: <Trello size={16} /> },
+  ];
 
   return (
-    <div className="p-6">
-      <button onClick={() => navigate("/parcerias/aquisicao")} className="mb-4 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 dark:hover:text-white">
-        <ArrowLeft size={16} /> Aquisição de Parceiros
-      </button>
-
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{parceiro.name}</h1>
-          {parceiro.activation_evidence && (
-            <p className="text-sm text-emerald-600">
-              Critério de ativação: {EVIDENCIA_LABEL[parceiro.activation_evidence]}
-              {parceiro.activated_at && ` em ${new Date(parceiro.activated_at).toLocaleDateString("pt-BR")}`}
-            </p>
-          )}
-          {parceiro.stage === "perdido" && parceiro.loss_reason && (
-            <p className="text-sm text-red-500">Perdido: {parceiro.loss_reason}</p>
-          )}
+    <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      {/* Cabeçalho */}
+      <div className="flex-shrink-0 border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700/50 dark:bg-slate-900/50">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate("/parcerias/aquisicao")}
+            className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50"
+            title="Voltar para o board"
+          >
+            <ArrowLeft size={20} className="text-slate-500 dark:text-slate-400" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-2xl font-bold text-slate-900 dark:text-white">{parceiro.name}</h1>
+            {parceiro.activation_evidence && (
+              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                Critério de ativação: {EVIDENCIA_LABEL[parceiro.activation_evidence]}
+                {parceiro.activated_at && ` em ${new Date(parceiro.activated_at).toLocaleDateString("pt-BR")}`}
+              </p>
+            )}
+            {perdido && parceiro.loss_reason && (
+              <p className="text-sm text-red-500">Motivo: {parceiro.loss_reason}{parceiro.loss_detail && ` — ${parceiro.loss_detail}`}</p>
+            )}
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-2">
+            {perdido ? (
+              <>
+                <div className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-3 py-2 text-sm font-medium text-red-500 dark:text-red-400">
+                  <XCircle size={16} /> Parceiro Perdido
+                </div>
+                {gestao && (
+                  <button onClick={() => mover("potencial")} title="Volta para Potencial Parceiro" className="flex items-center gap-2 rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600">
+                    <RefreshCw size={16} /> Reabrir
+                  </button>
+                )}
+              </>
+            ) : ativado ? (
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-3 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 size={16} /> Parceiro Ativado
+              </div>
+            ) : (
+              gestao && (
+                <button onClick={() => setPerdendo(true)} className="flex items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600">
+                  <XCircle size={16} /> Perdido
+                </button>
+              )
+            )}
+          </div>
         </div>
-        <div className="w-56">
-          <SelectMenu
-            value={parceiro.stage}
-            disabled={!podeEditar}
-            options={etapas.map((e) => ({ value: e.codigo, label: e.nome }))}
-            onChange={(destino) => (destino === "perdido" ? setPerdendo(true) : mover(destino))}
+        <div className="mt-3">
+          <EtapasParceria
+            etapas={etapas}
+            atual={parceiro.stage}
+            fixas={["ativado"]}
+            onMover={podeMover ? (destino) => mover(destino) : undefined}
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6">
-          <div className={caixa}>
-            <h2 className={titulo}>Dados do parceiro</h2>
+      {/* Conteúdo: 30/70 */}
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <div className="w-full flex-shrink-0 space-y-3 overflow-y-auto border-b border-gray-200 p-4 dark:border-slate-700/50 lg:w-[30%] lg:border-b-0 lg:border-r">
+          <ExpandableSection title="Dados do parceiro" defaultExpanded icon={<Building2 size={18} />}>
             <div className="space-y-3">
               {CAMPOS_TEXTO.map(({ nome, label }) => (
                 <FormField key={nome} label={label} required={nome === "name"}>
@@ -193,6 +238,12 @@ export default function ParceiroDetalhe() {
                   />
                 </FormField>
               ))}
+              {podeEditar && <Button onClick={salvar} fullWidth>Salvar</Button>}
+            </div>
+          </ExpandableSection>
+
+          <ExpandableSection title="Qualificação" icon={<ClipboardCheck size={18} />}>
+            <div className="space-y-3">
               <FormField label="Responsável H&S">
                 {gestao ? (
                   <SelectMenu
@@ -224,81 +275,100 @@ export default function ParceiroDetalhe() {
               </FormField>
               {podeEditar && <Button onClick={salvar} fullWidth>Salvar</Button>}
             </div>
-          </div>
+          </ExpandableSection>
 
-          <div className={caixa}>
-            <h2 className={titulo}>Equipe</h2>
-            <ul className="mb-3 space-y-2">
-              {equipe.map((m) => (
-                <li key={m.id} className="flex items-center justify-between text-sm">
-                  <span className={m.is_active ? "text-slate-800 dark:text-slate-200" : "text-slate-400 line-through"}>
-                    {m.name} {m.email && <span className="text-xs text-slate-500">· {m.email}</span>}
-                  </span>
-                  {podeEditar && (
-                    <button onClick={() => alternarMembro(m)} className="text-xs text-slate-500 hover:text-emerald-600">
-                      {m.is_active ? "Desativar" : "Reativar"}
-                    </button>
-                  )}
-                </li>
-              ))}
-              {equipe.length === 0 && <li className="text-sm text-slate-500">Nenhum vendedor cadastrado.</li>}
-            </ul>
-            {podeEditar && (
+          <ExpandableSection title="Equipe" icon={<Users size={18} />} badge={equipe.filter((m) => m.is_active).length}>
+            <div className="space-y-3">
               <div className="space-y-2">
-                <Input placeholder="Nome" value={novoMembro.name} onChange={(e) => setNovoMembro({ ...novoMembro, name: e.target.value })} />
-                <Input placeholder="E-mail" value={novoMembro.email} onChange={(e) => setNovoMembro({ ...novoMembro, email: e.target.value })} />
-                <Input placeholder="Telefone" value={novoMembro.phone} onChange={(e) => setNovoMembro({ ...novoMembro, phone: e.target.value })} />
-                <Button size="sm" onClick={adicionarMembro} disabled={!novoMembro.name.trim()}>Adicionar vendedor</Button>
+                {equipe.map((m) => (
+                  <div key={m.id} className={linhaLista}>
+                    <span className={m.is_active ? "text-slate-900 dark:text-white" : "text-slate-400 line-through"}>
+                      {m.name} {m.email && <span className="text-xs text-slate-500">· {m.email}</span>}
+                    </span>
+                    {podeEditar && (
+                      <button onClick={() => alternarMembro(m)} className="text-xs text-slate-500 hover:text-emerald-500">
+                        {m.is_active ? "Desativar" : "Reativar"}
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {equipe.length === 0 && <p className="py-2 text-center text-sm text-slate-400">Nenhum vendedor cadastrado</p>}
               </div>
-            )}
-          </div>
+              {podeEditar && (
+                <div className="space-y-2 border-t border-gray-200/50 pt-3 dark:border-slate-700/50">
+                  <Input placeholder="Nome" value={novoMembro.name} onChange={(e) => setNovoMembro({ ...novoMembro, name: e.target.value })} />
+                  <Input placeholder="E-mail" value={novoMembro.email} onChange={(e) => setNovoMembro({ ...novoMembro, email: e.target.value })} />
+                  <Input placeholder="Telefone" value={novoMembro.phone} onChange={(e) => setNovoMembro({ ...novoMembro, phone: e.target.value })} />
+                  <Button size="sm" fullWidth onClick={adicionarMembro} disabled={!novoMembro.name.trim()}>Adicionar vendedor</Button>
+                </div>
+              )}
+            </div>
+          </ExpandableSection>
 
           {gestao && (
-            <div className={caixa}>
-              <h2 className={titulo}>Acessos ao CRM</h2>
-              <ul className="mb-3 space-y-2">
-                {acessos.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between text-sm">
-                    <span className={a.is_active ? "text-slate-800 dark:text-slate-200" : "text-slate-400 line-through"}>
-                      {a.email}
-                    </span>
-                    <button onClick={() => alternarAcesso(a)} className="text-xs text-slate-500 hover:text-emerald-600">
-                      {a.is_active ? "Desativar" : "Reativar"}
-                    </button>
-                  </li>
-                ))}
-                {acessos.length === 0 && <li className="text-sm text-slate-500">Nenhum acesso criado.</li>}
-              </ul>
-              <div className="space-y-2">
-                <Input placeholder="Nome" value={novoAcesso.name} onChange={(e) => setNovoAcesso({ ...novoAcesso, name: e.target.value })} />
-                <Input placeholder="E-mail" type="email" value={novoAcesso.email} onChange={(e) => setNovoAcesso({ ...novoAcesso, email: e.target.value })} />
-                <Input placeholder="Senha inicial (mín. 8)" type="password" value={novoAcesso.password} onChange={(e) => setNovoAcesso({ ...novoAcesso, password: e.target.value })} />
-                <Button
-                  size="sm"
-                  onClick={criarAcesso}
-                  disabled={!novoAcesso.name.trim() || !novoAcesso.email.trim() || novoAcesso.password.length < 8}
-                >
-                  Criar acesso
-                </Button>
+            <ExpandableSection title="Acessos ao CRM" icon={<KeyRound size={18} />} badge={acessos.filter((a) => a.is_active).length}>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  {acessos.map((a) => (
+                    <div key={a.id} className={linhaLista}>
+                      <span className={a.is_active ? "text-slate-900 dark:text-white" : "text-slate-400 line-through"}>{a.email}</span>
+                      <button onClick={() => alternarAcesso(a)} className="text-xs text-slate-500 hover:text-emerald-500">
+                        {a.is_active ? "Desativar" : "Reativar"}
+                      </button>
+                    </div>
+                  ))}
+                  {acessos.length === 0 && <p className="py-2 text-center text-sm text-slate-400">Nenhum acesso criado</p>}
+                </div>
+                <div className="space-y-2 border-t border-gray-200/50 pt-3 dark:border-slate-700/50">
+                  <Input placeholder="Nome" value={novoAcesso.name} onChange={(e) => setNovoAcesso({ ...novoAcesso, name: e.target.value })} />
+                  <Input placeholder="E-mail" type="email" value={novoAcesso.email} onChange={(e) => setNovoAcesso({ ...novoAcesso, email: e.target.value })} />
+                  <Input placeholder="Senha inicial (mín. 8)" type="password" value={novoAcesso.password} onChange={(e) => setNovoAcesso({ ...novoAcesso, password: e.target.value })} />
+                  <Button
+                    size="sm"
+                    fullWidth
+                    onClick={criarAcesso}
+                    disabled={!novoAcesso.name.trim() || !novoAcesso.email.trim() || novoAcesso.password.length < 8}
+                  >
+                    Criar acesso
+                  </Button>
+                </div>
               </div>
-            </div>
+            </ExpandableSection>
           )}
         </div>
 
-        <div className="space-y-6 lg:col-span-2">
-          <div className={caixa}>
-            <h2 className={titulo}>Oportunidades do parceiro</h2>
-            <div className="flex flex-wrap gap-2">
-              {etapasOp.map((e) => (
-                <span key={e.codigo} className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs text-slate-700 dark:bg-slate-700/50 dark:text-slate-300">
-                  {e.nome}: <strong>{parceiro.oportunidades_por_etapa[e.codigo] ?? 0}</strong>
-                </span>
-              ))}
-            </div>
+        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
+          <div className="flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-900/30">
+            {abas.map((a) => (
+              <button
+                key={a.chave}
+                onClick={() => setAba(a.chave)}
+                className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  aba === a.chave
+                    ? "border-violet-500 text-violet-500 dark:text-violet-400"
+                    : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                }`}
+              >
+                {a.icone}
+                {a.rotulo}
+              </button>
+            ))}
           </div>
-          <div className={caixa}>
-            <h2 className={titulo}>Atividades e histórico</h2>
-            <AtividadesParceria alvo={{ tipo: "parceiro", id }} somenteLeitura={!podeEditar} />
+
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
+            {aba === "atividades" && (
+              <AtividadesParceria alvo={{ tipo: "parceiro", id }} somenteLeitura={!podeEditar} />
+            )}
+            {aba === "oportunidades" && (
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {etapasOp.map((e) => (
+                  <div key={e.codigo} className="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-slate-700/50 dark:bg-slate-800/30">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{e.nome}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{parceiro.oportunidades_por_etapa[e.codigo] ?? 0}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
