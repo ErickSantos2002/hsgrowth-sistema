@@ -17,6 +17,9 @@ from app.schemas.parcerias import (
     AcessoCreate,
     AcessoResponse,
     AcessoUpdate,
+    AtividadeCreate,
+    AtividadeResponse,
+    ConcluirRequest,
     ElegibilidadeRequest,
     EtapaOut,
     EtapasResponse,
@@ -35,7 +38,7 @@ from app.schemas.parcerias import (
     ProdutoItemResponse,
     ProdutoItemUpdate,
 )
-from app.services.parcerias import acesso, oportunidades, parceiros, respostas
+from app.services.parcerias import acesso, atividades, oportunidades, parceiros, respostas
 from app.services.parcerias.etapas import ETAPAS_AQUISICAO, ETAPAS_OPORTUNIDADE
 
 router = APIRouter()
@@ -189,3 +192,46 @@ def catalogo(busca: str = Query("", max_length=100), db: Session = Depends(get_d
         ProdutoCatalogo(id=p.id, name=p.name, sku=p.sku, unit_price=float(p.unit_price or 0))
         for p in oportunidades.catalogo(db, busca)
     ]
+
+
+# ─── Atividades (os dois boards) ─────────────────────────────────────────────
+
+@router.get("/parceiros/{partner_id}/atividades", response_model=List[AtividadeResponse])
+def atividades_do_parceiro(partner_id: int, db: Session = Depends(get_db),
+                           current_user: User = Depends(get_current_active_user)):
+    p = acesso.buscar_parceiro(db, current_user, partner_id)
+    return [respostas.atividade_out(a) for a in atividades.listar(db, partner_id=p.id)]
+
+
+@router.post("/parceiros/{partner_id}/atividades", response_model=AtividadeResponse, status_code=201)
+def criar_atividade_do_parceiro(partner_id: int, dados: AtividadeCreate, db: Session = Depends(get_db),
+                                current_user: User = Depends(get_current_active_user)):
+    p = acesso.buscar_parceiro(db, current_user, partner_id)
+    return respostas.atividade_out(atividades.criar(db, current_user, dados, partner_id=p.id))
+
+
+@router.get("/oportunidades/{opportunity_id}/atividades", response_model=List[AtividadeResponse])
+def atividades_da_oportunidade(opportunity_id: int, db: Session = Depends(get_db),
+                               current_user: User = Depends(get_current_active_user)):
+    op = acesso.buscar_oportunidade(db, current_user, opportunity_id)
+    return [respostas.atividade_out(a) for a in atividades.listar(db, opportunity_id=op.id)]
+
+
+@router.post("/oportunidades/{opportunity_id}/atividades", response_model=AtividadeResponse, status_code=201)
+def criar_atividade_da_oportunidade(opportunity_id: int, dados: AtividadeCreate, db: Session = Depends(get_db),
+                                    current_user: User = Depends(get_current_active_user)):
+    op = acesso.buscar_oportunidade(db, current_user, opportunity_id)
+    return respostas.atividade_out(atividades.criar(db, current_user, dados, oportunidade=op))
+
+
+@router.patch("/atividades/{atividade_id}/concluir", response_model=AtividadeResponse)
+def concluir_atividade(atividade_id: int, req: ConcluirRequest, db: Session = Depends(get_db),
+                       current_user: User = Depends(get_current_active_user)):
+    return respostas.atividade_out(atividades.concluir(db, current_user, atividade_id, req.is_completed))
+
+
+@router.delete("/atividades/{atividade_id}")
+def excluir_atividade(atividade_id: int, db: Session = Depends(get_db),
+                      current_user: User = Depends(get_current_active_user)):
+    atividades.excluir(db, current_user, atividade_id)
+    return {"ok": True}
