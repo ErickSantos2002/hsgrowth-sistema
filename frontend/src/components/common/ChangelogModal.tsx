@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.1",
+    date: "30/10/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Só o admin muda o perfil ou o status (ativo/inativo) de um usuário. Antes, qualquer usuário conseguia trocar o próprio perfil por fora da tela.",
+      },
+    ],
+  },
+  {
     version: "1.11.0",
     date: "30/10/2026",
     entries: [

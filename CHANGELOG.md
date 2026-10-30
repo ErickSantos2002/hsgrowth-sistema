@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.1] — 30/10/2026
+
+### Segurança
+- **Usuário comum conseguia virar admin:** o `PUT /api/v1/users/{id}` só conferia se a pessoa estava editando a si mesma, e gravava qualquer campo enviado. Assim, qualquer usuário logado (vendedor, SDR, serviço, visualizador) podia mandar o próprio `role_id` de admin ou mudar o próprio status. Agora só o admin altera o perfil (`role_id`) e o status (`is_active`) de um usuário; para os demais, a rota responde 403 se esses campos mudarem. Mandar o mesmo valor atual continua aceito, e a edição do próprio perfil em Configurações segue igual.
+
+---
+
 ## [1.11.0] — 30/10/2026
 
 Marco de versão: chega a seção **Parcerias** (Programa de Parceiros), Entrega 1.

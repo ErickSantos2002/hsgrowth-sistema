@@ -178,6 +178,16 @@ class UserService:
                 detail="Você não tem permissão para atualizar este usuário"
             )
 
+        # Perfil e status só o admin muda (senão o próprio usuário viraria admin)
+        if not is_admin:
+            muda_perfil = user_data.role_id is not None and user_data.role_id != user.role_id
+            muda_status = user_data.is_active is not None and user_data.is_active != user.is_active
+            if muda_perfil or muda_status:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Só o admin altera o perfil ou o status de um usuário"
+                )
+
         # Valida email se fornecido
         if user_data.email and user_data.email != user.email:
             if self.repository.exists_email(user_data.email, exclude_user_id=user.id):

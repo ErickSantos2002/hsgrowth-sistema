@@ -197,6 +197,52 @@ class TestUpdateUser:
         # Vendedores não podem atualizar outros usuários
         assert response.status_code == 403
 
+    def test_update_own_role_forbidden(self, client: TestClient, db, salesperson_headers, test_salesperson_user,
+                                       test_roles):
+        """Testa que o próprio usuário não troca o perfil (não vira admin)"""
+        response = client.put(
+            f"/api/v1/users/{test_salesperson_user.id}",
+            headers=salesperson_headers,
+            json={"role_id": test_roles["admin"].id}
+        )
+
+        assert response.status_code == 403
+        db.refresh(test_salesperson_user)
+        assert test_salesperson_user.role_id == test_roles["salesperson"].id
+
+    def test_update_own_status_forbidden(self, client: TestClient, manager_headers, test_manager_user):
+        """Testa que o próprio usuário não muda o status ativo/inativo"""
+        response = client.put(
+            f"/api/v1/users/{test_manager_user.id}",
+            headers=manager_headers,
+            json={"is_active": False}
+        )
+
+        assert response.status_code == 403
+
+    def test_update_own_profile_with_same_role(self, client: TestClient, salesperson_headers,
+                                               test_salesperson_user):
+        """Testa que mandar o mesmo perfil e status junto com o perfil continua funcionando"""
+        response = client.put(
+            f"/api/v1/users/{test_salesperson_user.id}",
+            headers=salesperson_headers,
+            json={"name": "Novo Nome", "role_id": test_salesperson_user.role_id, "is_active": True}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "Novo Nome"
+
+    def test_admin_changes_role(self, client: TestClient, admin_headers, test_salesperson_user, test_roles):
+        """Testa que o admin continua trocando o perfil de outro usuário"""
+        response = client.put(
+            f"/api/v1/users/{test_salesperson_user.id}",
+            headers=admin_headers,
+            json={"role_id": test_roles["manager"].id}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["role_id"] == test_roles["manager"].id
+
 
 class TestDeleteUser:
     """Testes de deleção de usuário"""
