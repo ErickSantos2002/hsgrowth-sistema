@@ -1,5 +1,5 @@
 """Tela de Usuários: Financeiro entra pelo cadastro normal; parceiro só pelo card dele."""
-from tests.unit.apoio_parcerias import role, usuario
+from tests.unit.apoio_parcerias import parceiro, role, usuario
 
 
 def test_lista_os_perfis(client, db, admin_headers):
@@ -40,3 +40,14 @@ def test_cria_financeiro(client, db, admin_headers):
     dados = {"name": "Fin", "email": "fin@hs.com", "password": "Senha@12345", "role_id": papel.id}
 
     assert client.post("/api/v1/users", json=dados, headers=admin_headers).status_code == 201
+
+
+def test_edita_login_de_parceiro_sem_trocar_o_perfil(client, db, admin_headers):
+    # A tela de Usuários sempre manda o role_id atual junto.
+    p = parceiro(db)
+    login = usuario(db, "partner", "contato@dmap.com", p)
+
+    resposta = client.put(f"/api/v1/users/{login.id}", json={"name": "Contato Dmap", "role_id": login.role_id},
+                          headers=admin_headers)
+
+    assert resposta.status_code == 200

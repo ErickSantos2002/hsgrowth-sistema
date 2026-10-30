@@ -447,9 +447,12 @@ async def listar_perfis(
     return [{"id": r.id, "name": r.name, "display_name": r.display_name} for r in perfis]
 
 
-def _recusar_login_de_parceiro(db: Session, role_id: Optional[int]) -> None:
-    """Login de parceiro nasce no card do parceiro, que liga o usuário ao partner_id."""
-    if role_id is None:
+def _recusar_login_de_parceiro(db: Session, role_id: Optional[int], role_atual: Optional[int] = None) -> None:
+    """
+    Login de parceiro nasce no card do parceiro, que liga o usuário ao partner_id.
+    Na edição, manter o perfil atual passa (a tela de Usuários sempre manda o role_id).
+    """
+    if role_id is None or role_id == role_atual:
         return
     papel = db.query(Role).filter(Role.id == role_id).first()
     if papel and papel.name == "partner":
@@ -631,10 +634,9 @@ async def update_user(
     - **user_id**: ID do usuário
     - Todos os campos são opcionais
     """
-    _recusar_login_de_parceiro(db, user_data.role_id)
-
     # Captura estado anterior ANTES de atualizar
     user_before_obj = db.query(User).filter(User.id == user_id).first()
+    _recusar_login_de_parceiro(db, user_data.role_id, user_before_obj.role_id if user_before_obj else None)
     data_before = None
     if user_before_obj:
         data_before = {
