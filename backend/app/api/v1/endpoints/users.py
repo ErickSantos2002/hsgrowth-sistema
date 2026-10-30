@@ -14,6 +14,7 @@ from app.schemas.user_notification_setting import (
     UserNotificationSettingResponse,
     UserNotificationSettingUpdate,
 )
+from app.models.role import Role
 from app.models.user import User
 from app.models.audit_log import AuditLog
 
@@ -437,6 +438,27 @@ async def get_online_users_route(
     return {"total": len(result), "users": result}
 
 
+@router.get("/roles", summary="Perfis disponíveis para o cadastro de usuários")
+async def listar_perfis(
+    current_user: User = Depends(require_manager_or_admin()),
+    db: Session = Depends(get_db)
+) -> Any:
+    perfis = db.query(Role).order_by(Role.id).all()
+    return [{"id": r.id, "name": r.name, "display_name": r.display_name} for r in perfis]
+
+
+def _recusar_login_de_parceiro(db: Session, role_id: Optional[int]) -> None:
+    """Login de parceiro nasce no card do parceiro, que liga o usuário ao partner_id."""
+    if role_id is None:
+        return
+    papel = db.query(Role).filter(Role.id == role_id).first()
+    if papel and papel.name == "partner":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Login de parceiro se cria no card do parceiro, em Parcerias > Aquisição de Parceiros.",
+        )
+
+
 @router.get("/{user_id}", response_model=UserResponse, summary="Buscar usuário")
 async def get_user(
     user_id: int,
@@ -546,6 +568,7 @@ async def create_user(
     """
     Endpoint de criação de usuário.
     """
+    _recusar_login_de_parceiro(db, user_data.role_id)
     service = UserService(db)
     user = service.create_user(user_data)
 
@@ -608,6 +631,8 @@ async def update_user(
     - **user_id**: ID do usuário
     - Todos os campos são opcionais
     """
+    _recusar_login_de_parceiro(db, user_data.role_id)
+
     # Captura estado anterior ANTES de atualizar
     user_before_obj = db.query(User).filter(User.id == user_id).first()
     data_before = None
