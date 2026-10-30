@@ -36,6 +36,12 @@ import CallEvaluationsPage from './pages/CallEvaluationsPage';
 import ReunioesPage from './pages/ReunioesPage';
 import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
+import ParceriasHome from './pages/parcerias/ParceriasHome';
+import AquisicaoKanban from './pages/parcerias/AquisicaoKanban';
+import ParceiroDetalhe from './pages/parcerias/ParceiroDetalhe';
+import OportunidadesKanban from './pages/parcerias/OportunidadesKanban';
+import OportunidadeDetalhe from './pages/parcerias/OportunidadeDetalhe';
+import { PERFIS_PARCERIAS } from './constants/parcerias';
 // Módulo de Propostas descontinuado (migrado p/ sistema externo). Página e API
 // preservadas no repo (dormentes); rota removida da navegação.
 
@@ -74,6 +80,18 @@ const ServiceTeamGuard: React.FC<{ children: React.ReactNode }> = ({ children })
     const { user } = useAuth();
     if (user && !["admin", "manager", "service"].includes(user.role)) {
         return <Navigate to="/boards" replace />;
+    }
+    return <>{children}</>;
+};
+
+/**
+ * Protege a seção Parcerias: admin, gerente, Financeiro e parceiro.
+ * Os demais perfis voltam para a Dashboard.
+ */
+const ParceriasGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    if (user && !PERFIS_PARCERIAS.includes(user.role)) {
+        return <Navigate to="/" replace />;
     }
     return <>{children}</>;
 };
@@ -149,6 +167,11 @@ const AppRoutes: React.FC = () => (
       <Route path="/servicos/calendario" element={<ServiceTeamGuard><ServiceCalendar /></ServiceTeamGuard>} />
       <Route path="/servicos/:boardId" element={<ServiceTeamGuard><ServiceKanban /></ServiceTeamGuard>} />
       <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceTeamGuard><ServiceCardDetails /></ServiceTeamGuard>} />
+      <Route path="/parcerias" element={<ParceriasGuard><ParceriasHome /></ParceriasGuard>} />
+      <Route path="/parcerias/aquisicao" element={<ParceriasGuard><AquisicaoKanban /></ParceriasGuard>} />
+      <Route path="/parcerias/aquisicao/:partnerId" element={<ParceriasGuard><ParceiroDetalhe /></ParceriasGuard>} />
+      <Route path="/parcerias/oportunidades" element={<ParceriasGuard><OportunidadesKanban /></ParceriasGuard>} />
+      <Route path="/parcerias/oportunidades/:opportunityId" element={<ParceriasGuard><OportunidadeDetalhe /></ParceriasGuard>} />
       <Route path="/cards/:cardId" element={<ServiceGuard><CardDetails /></ServiceGuard>} />
       <Route path="/activities" element={<ActivitiesPage />} />
       <Route path="/clients" element={<Clients />} />

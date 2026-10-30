@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
     LayoutDashboard,
     Users,
@@ -22,6 +22,7 @@ import {
     CheckSquare,
     Phone,
   Video,
+    Handshake,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -32,6 +33,7 @@ import GlobalSearch from "../components/GlobalSearch";
 import { UserAvatar } from "../components/common";
 import ChangelogModal from "../components/common/ChangelogModal";
 import { AgentGrowthWidget } from "../components/agentGrowth";
+import { PERFIS_PARCERIAS, PERFIS_TRANCADOS } from "../constants/parcerias";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -40,6 +42,7 @@ const menuItems = [
     { path: "/ligacoes", icon: Phone, label: "Ligações", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/boards", icon: Trello, label: "Boards (Vendas)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/servicos", icon: Wrench, label: "Boards (Serviços)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
+    { path: "/parcerias", icon: Handshake, label: "Parcerias", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -59,6 +62,8 @@ export default function MainLayout() {
     const { darkMode, toggleDarkMode } = useTheme();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [changelogOpen, setChangelogOpen] = useState(false);
+    // Parceiro e Financeiro: só Parcerias e Configurações (o backend tranca o resto).
+    const trancado = PERFIS_TRANCADOS.includes(user?.role ?? "");
 
     // Depois de entrar, mostra o que mudou. A marca é consumida na abertura,
     // então recarregar a página não reabre o modal.
@@ -116,6 +121,10 @@ export default function MainLayout() {
         // Força reload completo da página para limpar todo o estado
         window.location.href = "/login";
     };
+
+    if (trancado && !location.pathname.startsWith("/parcerias") && location.pathname !== "/settings") {
+        return <Navigate to="/parcerias" replace />;
+    }
 
     return (
         <div className="h-screen overflow-hidden bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -196,6 +205,14 @@ export default function MainLayout() {
                                     return null;
                                 }
 
+                                // "Parcerias": admin, gerente, Financeiro e parceiro.
+                                if (item.path === "/parcerias" && !PERFIS_PARCERIAS.includes(user?.role ?? "")) {
+                                    return null;
+                                }
+                                if (trancado && !["/parcerias", "/settings"].includes(item.path)) {
+                                    return null;
+                                }
+
                                 // Role "service": só vê o módulo de serviços + cadastros básicos
                                 // (Dashboard, Atividades, Boards Serviços, Clientes, Pessoas,
                                 //  Produtos, Propostas e Configurações — esta com abas limitadas).
@@ -219,7 +236,9 @@ export default function MainLayout() {
                                       location.pathname.startsWith("/cards/")) &&
                                      !location.pathname.startsWith("/servicos")) ||
                                     (item.path === "/servicos" &&
-                                     location.pathname.startsWith("/servicos/"));
+                                     location.pathname.startsWith("/servicos/")) ||
+                                    (item.path === "/parcerias" &&
+                                     location.pathname.startsWith("/parcerias/"));
 
                                 return (
                                     <li key={item.path}>
@@ -340,6 +359,10 @@ export default function MainLayout() {
                                             ? "SDR"
                                             : user?.role === "viewer"
                                             ? "Visualizador"
+                                            : user?.role === "partner"
+                                            ? "Parceiro"
+                                            : user?.role === "finance"
+                                            ? "Financeiro"
                                             : "Usuário"}
                                     </span>
                                 </div>
@@ -370,7 +393,7 @@ export default function MainLayout() {
                         {/* Busca Global */}
                         <div className="order-3 mt-4 w-full sm:mt-0 sm:order-2 sm:flex-1 sm:px-4 flex justify-center items-center">
                             <div className="w-full max-w-2xl">
-                                <GlobalSearch />
+                                {!trancado && <GlobalSearch />}
                             </div>
                         </div>
                     </div>
@@ -416,7 +439,7 @@ export default function MainLayout() {
             />
 
             {/* Agent Growth — widget flutuante de chat com IA, não exibido para viewer */}
-            {user?.role !== "viewer" && <AgentGrowthWidget />}
+            {user?.role !== "viewer" && !trancado && <AgentGrowthWidget />}
         </div>
     );
 }
