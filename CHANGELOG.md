@@ -5,6 +5,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.0] — 30/10/2026
+
+Marco de versão: chega a seção **Parcerias** (Programa de Parceiros), Entrega 1.
+
+### Adicionado
+- **Seção Parcerias, com dois boards separados de Vendas e de Serviço:**
+  - **Aquisição de Parceiros** (Potencial Parceiro → Qualificação → Proposta → Formalização → Onboarding → Ativação → Ativado, e Perdido): um card por parceiro, com a Equipe (vendedores do parceiro) e os acessos ao CRM, que a H&S cria no card. O parceiro vai para Ativado sozinho na primeira evidência de uso do canal: oportunidade validada, proposta ou venda. Para sair de Potencial é preciso contato principal e Responsável H&S; para passar da Qualificação, estar Aderente ou Parcialmente aderente; para Ativação, a data de onboarding. Perdido só admin ou gerente, com motivo.
+  - **Pipeline de Parceiros** (Novo Lead → Oportunidade → Proposta → Negociação → Aguardando Pedido → Ganho/Perdido): título, tipo de negócio, setor, tipo de relacionamento, CNPJ, empresa e contexto da indicação são obrigatórios. Só sai de Novo Lead com a elegibilidade Validada; pede a data esperada de fechamento a partir de Negociação, venda ou locação no Ganho e motivo no Perdido. Produtos do catálogo, atividades e histórico em cada card. Só admin ou gerente reabrem oportunidade ganha ou perdida.
+  - As etapas são fixas no código, e pular etapa não fura a trava: para estar numa etapa, o card cumpre as exigências de todas as anteriores.
+- **Perfis Parceiro e Financeiro:** o parceiro vê só o próprio card e as oportunidades do próprio canal, e é ele quem dá sequência ao processo. O Financeiro acompanha tudo em Parcerias e valida ou rejeita a elegibilidade (rejeitar pede justificativa). O Financeiro se cadastra pela tela de Usuários; o login de parceiro nasce no card do parceiro, e a tela de Usuários recusa criar um.
+
+### Segurança
+- **Tranca geral para Parceiro e Financeiro:** no backend, esses perfis só alcançam Parcerias, login, o próprio perfil e as próprias notificações. Qualquer outra rota responde 403, inclusive as que forem criadas depois. Um parceiro nunca recebe dado de outro parceiro: o filtro é feito no backend, e card de outro parceiro responde como inexistente. Na tela, esses perfis só veem Parcerias e Configurações.
+
+### Banco
+- Migration `1b2c3d4e5f6a`: tabelas `partners`, `partner_team_members`, `partner_opportunities`, `partner_opportunity_products`, `partner_activities`, coluna `users.partner_id` e roles `partner`/`finance`. Só acrescenta; rodar antes de subir o backend.
+
+---
+
 ## [1.10.23] — 29/10/2026
 
 ### Corrigido

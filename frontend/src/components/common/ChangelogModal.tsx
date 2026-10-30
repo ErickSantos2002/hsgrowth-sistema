@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.0",
+    date: "30/10/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Nova seção Parcerias, com dois boards: Aquisição de Parceiros (do primeiro contato até a ativação do parceiro, com a equipe dele) e Pipeline de Parceiros (as oportunidades que os parceiros indicam).",
+      },
+      {
+        type: "feature",
+        text: "O parceiro passa para Ativado sozinho quando a primeira oportunidade dele é validada, vira proposta ou é ganha.",
+      },
+      {
+        type: "feature",
+        text: "Novos perfis Parceiro e Financeiro: o parceiro vê só as próprias oportunidades; o Financeiro acompanha Parcerias e valida a elegibilidade de cada oportunidade.",
+      },
+    ],
+  },
+  {
     version: "1.10.23",
     date: "29/10/2026",
     entries: [
