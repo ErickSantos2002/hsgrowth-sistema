@@ -48,5 +48,5 @@ def promover_se_ativo(db: Session, parceiro: Partner, user: Optional[User]) -> b
     except TravaError:
         return False
     parceiro.stage = "ativado"
-    atividades.registrar_evento(db, user, "Parceiro ativado automaticamente", partner_id=parceiro.id)
+    atividades.registrar_evento(db, user, "Parceiro ativado automaticamente", partner_id=parceiro.id, tipo="card_won")
     return True

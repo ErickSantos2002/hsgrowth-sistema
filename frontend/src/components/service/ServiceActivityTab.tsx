@@ -7,8 +7,7 @@ import {
   MoreHorizontal, Save, Edit, ChevronDown, ChevronRight, ChevronUp, Loader2, MailX,
   CheckCircle, XCircle,
 } from "lucide-react";
-import serviceActivityService, { ServiceCardActivity } from "../../services/serviceActivityService";
-import api4comService from "../../services/api4comService";
+import { AtividadeCard, AtividadesApi, apiDoCardDeServico } from "../../services/serviceActivityService";
 import { Person } from "../../services/personService";
 import { SelectMenu } from "../common";
 import NoteRenderer from "../cardDetails/NoteRenderer";
@@ -18,15 +17,21 @@ import { convertUTCToBrazil } from "../../utils/timezone";
 import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface TabProps {
-  boardId: number;
-  cardId: number;
-  activities: ServiceCardActivity[];
+  /** Card de Serviço: as operações saem de board/card. */
+  boardId?: number;
+  cardId?: number;
+  /** Outros cards (Parcerias) entregam as próprias operações. */
+  api?: AtividadesApi;
+  activities: AtividadeCard[];
   reload: () => Promise<void> | void;
   /** Pessoa vinculada ao card — usada para a ligação e exibição do telefone no Foco. */
   contact?: Person | null;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
+
+const apiDasProps = (props: TabProps): AtividadesApi =>
+  props.api ?? apiDoCardDeServico(props.boardId ?? 0, props.cardId ?? 0);
 
 const TYPE_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   call: { label: "Ligação", icon: <Phone size={14} />, color: "text-blue-400" },
@@ -125,14 +130,13 @@ const GRAY_BTN = `${BTN_BASE} border-slate-400/40 bg-slate-400/10 text-slate-400
 // ─── Item do Foco (estilo board de vendas) ───────────────────────────────────────
 
 const FocoItem: React.FC<{
-  activity: ServiceCardActivity;
-  boardId: number;
-  cardId: number;
+  activity: AtividadeCard;
+  api: AtividadesApi;
   contact?: Person | null;
   expanded: boolean;
   onToggle: () => void;
   onChanged: () => Promise<void> | void;
-}> = ({ activity, boardId, cardId, contact, expanded, onToggle, onChanged }) => {
+}> = ({ activity, api, contact, expanded, onToggle, onChanged }) => {
   const { confirm } = useConfirm();
   const [calling, setCalling] = useState(false);
   const [showPhones, setShowPhones] = useState(false);
@@ -161,7 +165,8 @@ const FocoItem: React.FC<{
     setShowPhones(false);
     setCalling(true);
     try {
-      const r = await api4comService.makeCall({ phone, service_card_id: cardId });
+      if (!api.call) return;
+      const r = await api.call(phone);
       if (r.success) showSuccess("Chamada iniciada! O webphone abrirá automaticamente.");
       else showError(`Erro ao iniciar chamada: ${r.error || r.message}`);
     } catch (e: any) {
@@ -180,19 +185,19 @@ const FocoItem: React.FC<{
   const isCall = activity.activity_type === "call";
 
   const markResult = async (isValid: boolean) => {
-    try { await serviceActivityService.complete(boardId, cardId, activity.id, true, isValid); await onChanged(); }
+    try { await api.complete(activity.id, true, isValid); await onChanged(); }
     catch { showError("Erro ao registrar resultado"); }
   };
 
   const conclude = async () => {
-    try { await serviceActivityService.complete(boardId, cardId, activity.id, true); await onChanged(); }
+    try { await api.complete(activity.id, true); await onChanged(); }
     catch { showError("Erro ao concluir"); }
   };
 
   const saveEdit = async () => {
     if (!editForm.title.trim()) { showWarning("Informe um título"); return; }
     try {
-      await serviceActivityService.update(boardId, cardId, activity.id, {
+      await api.update(activity.id, {
         title: editForm.title.trim(),
         description: editForm.description.trim(),
         activity_type: editForm.type,
@@ -209,7 +214,7 @@ const FocoItem: React.FC<{
   const saveReschedule = async () => {
     if (!reForm.date) { showWarning("Selecione a data"); return; }
     try {
-      await serviceActivityService.update(boardId, cardId, activity.id, { due_date: `${reForm.date}T${reForm.time || "09:00"}:00` });
+      await api.update(activity.id, { due_date: `${reForm.date}T${reForm.time || "09:00"}:00` });
       setRescheduling(false); await onChanged();
     } catch { showError("Erro ao reagendar"); }
   };
@@ -217,7 +222,7 @@ const FocoItem: React.FC<{
   const handleDelete = async () => {
     const ok = await confirm({ title: "Remover atividade", message: "Deseja remover esta atividade?", confirmText: "Remover", isDanger: true });
     if (!ok) return;
-    try { await serviceActivityService.remove(boardId, cardId, activity.id); await onChanged(); }
+    try { await api.remove(activity.id); await onChanged(); }
     catch { showError("Erro ao remover"); }
   };
 
@@ -330,7 +335,7 @@ const FocoItem: React.FC<{
             /* Ações — confirmação específica por tipo de atividade */
             <div className="flex items-center gap-2">
               {/* Ação principal por tipo (ligar / e-mail / whatsapp) */}
-              {isCall && (
+              {isCall && api.call && (
                 <button onClick={handleCall} disabled={calling} title="Ligar"
                   className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white transition-colors hover:bg-emerald-600 disabled:opacity-60">
                   {calling ? <Loader2 size={16} className="animate-spin" /> : <Phone size={16} />}
@@ -470,7 +475,9 @@ const HIST_PAGE_SIZE = 10;
 
 type HistoryFilter = "todos" | "atividade" | "anotacao" | "arquivo" | "alteracao";
 
-export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activities, reload, contact }) => {
+export const ServiceActivityTab: React.FC<TabProps> = (props) => {
+  const { activities, reload, contact } = props;
+  const api = apiDasProps(props);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -539,7 +546,7 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
       if (form.notes.trim()) meta.notes = form.notes.trim();
       if (form.location.trim()) meta.location = form.location.trim();
       if (form.video_link.trim()) meta.video_link = form.video_link.trim();
-      await serviceActivityService.create(boardId, cardId, {
+      await api.create({
         category: "atividade",
         activity_type: form.type || "other",
         title: form.title.trim(),
@@ -699,7 +706,7 @@ export const ServiceActivityTab: React.FC<TabProps> = ({ boardId, cardId, activi
         ) : (
           <div className="space-y-2">
             {foco.map((a) => (
-              <FocoItem key={a.id} activity={a} boardId={boardId} cardId={cardId} contact={contact}
+              <FocoItem key={a.id} activity={a} api={api} contact={contact}
                 expanded={expandedFoco.has(a.id)} onToggle={() => toggleFoco(a.id)} onChanged={reload} />
             ))}
           </div>
@@ -818,7 +825,7 @@ interface HistGroup {
  * de vida (criada → concluída) — a mais recente aparece e as anteriores ficam
  * ocultas num "X registro anterior", igual ao board de vendas.
  */
-const buildHistoryGroups = (items: ServiceCardActivity[]): HistGroup[] =>
+const buildHistoryGroups = (items: AtividadeCard[]): HistGroup[] =>
   items.map((a) => {
     if (a.category === "atividade") {
       const meta = TYPE_META[a.activity_type || "other"] || TYPE_META.other;
@@ -887,7 +894,9 @@ const HistoryRow: React.FC<{ ev: HistEvent; compact?: boolean }> = ({ ev, compac
 
 // ─── Aba Arquivos ────────────────────────────────────────────────────────────────
 
-export const ServiceFilesTab: React.FC<TabProps> = ({ boardId, cardId, activities, reload }) => {
+export const ServiceFilesTab: React.FC<TabProps> = (props) => {
+  const { activities, reload } = props;
+  const api = apiDasProps(props);
   const { confirm } = useConfirm();
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -899,22 +908,22 @@ export const ServiceFilesTab: React.FC<TabProps> = ({ boardId, cardId, activitie
     if (file.size > 10 * 1024 * 1024) { showError("Arquivo muito grande (máx. 10MB)"); return; }
     setUploading(true);
     try {
-      await serviceActivityService.uploadFile(boardId, cardId, file);
+      await api.uploadFile(file);
       await reload();
       showSuccess("Arquivo enviado!");
     } catch { showError("Erro ao enviar arquivo"); }
     finally { setUploading(false); if (inputRef.current) inputRef.current.value = ""; }
   };
 
-  const handleDownload = async (a: ServiceCardActivity) => {
-    try { await serviceActivityService.downloadFile(boardId, cardId, a.id, a.file_name || "arquivo"); }
+  const handleDownload = async (a: AtividadeCard) => {
+    try { await api.downloadFile(a.id, a.file_name || "arquivo"); }
     catch { showError("Erro ao baixar arquivo"); }
   };
 
   const handleDelete = async (id: number) => {
     const ok = await confirm({ title: "Remover arquivo", message: "Deseja remover este arquivo?", confirmText: "Remover", isDanger: true });
     if (!ok) return;
-    try { await serviceActivityService.remove(boardId, cardId, id); await reload(); }
+    try { await api.remove(id); await reload(); }
     catch { showError("Erro ao remover"); }
   };
 

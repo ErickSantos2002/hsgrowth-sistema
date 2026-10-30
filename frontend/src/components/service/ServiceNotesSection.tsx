@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FileText, Plus, Trash2, Edit, Save, X, Image } from "lucide-react";
-import serviceActivityService, { ServiceCardActivity } from "../../services/serviceActivityService";
+import { AtividadeCard, AtividadesApi, apiDoCardDeServico } from "../../services/serviceActivityService";
 import NoteRenderer from "../cardDetails/NoteRenderer";
 import { sanitizeNoteHTML } from "../../utils/sanitizeNote";
 import { showError, showWarning } from "../../utils/toast";
@@ -8,9 +8,12 @@ import { useConfirm } from "../../contexts/ConfirmContext";
 import { convertUTCToBrazil } from "../../utils/timezone";
 
 interface ServiceNotesSectionProps {
-  boardId: number;
-  cardId: number;
-  activities: ServiceCardActivity[];
+  /** Card de Serviço: as operações saem de board/card. */
+  boardId?: number;
+  cardId?: number;
+  /** Outros cards (Parcerias) entregam as próprias operações. */
+  api?: AtividadesApi;
+  activities: AtividadeCard[];
   reload: () => Promise<void> | void;
 }
 
@@ -26,7 +29,8 @@ interface Note {
  * Seção de Anotações do card de serviços — espelha o padrão do board de vendas.
  * Suporta texto livre e imagens coladas (Ctrl+V), comprimidas e salvas como base64.
  */
-const ServiceNotesSection: React.FC<ServiceNotesSectionProps> = ({ boardId, cardId, activities, reload }) => {
+const ServiceNotesSection: React.FC<ServiceNotesSectionProps> = ({ boardId, cardId, api: apiRecebida, activities, reload }) => {
+  const api = apiRecebida ?? apiDoCardDeServico(boardId ?? 0, cardId ?? 0);
   const { confirm } = useConfirm();
   const [isCreating, setIsCreating] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
@@ -143,7 +147,7 @@ const ServiceNotesSection: React.FC<ServiceNotesSectionProps> = ({ boardId, card
     if (!hasContent(newNoteRef)) { showWarning("Digite o conteúdo da anotação"); return; }
     try {
       setLoading(true);
-      await serviceActivityService.create(boardId, cardId, { category: "anotacao", description: getContent(newNoteRef) });
+      await api.create({ category: "anotacao", description: getContent(newNoteRef) });
       if (newNoteRef.current) newNoteRef.current.innerHTML = "";
       setIsCreating(false);
       await reload();
@@ -158,7 +162,7 @@ const ServiceNotesSection: React.FC<ServiceNotesSectionProps> = ({ boardId, card
     if (!hasContent(editNoteRef)) { showWarning("O conteúdo não pode estar vazio"); return; }
     try {
       setLoading(true);
-      await serviceActivityService.update(boardId, cardId, noteId, { description: getContent(editNoteRef) });
+      await api.update(noteId, { description: getContent(editNoteRef) });
       setEditingNoteId(null);
       await reload();
     } catch {
@@ -173,7 +177,7 @@ const ServiceNotesSection: React.FC<ServiceNotesSectionProps> = ({ boardId, card
     if (!ok) return;
     try {
       setLoading(true);
-      await serviceActivityService.remove(boardId, cardId, noteId);
+      await api.remove(noteId);
       await reload();
     } catch {
       showError("Erro ao deletar anotação");

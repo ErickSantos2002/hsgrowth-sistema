@@ -8,7 +8,8 @@ e parceiro); quem vê o quê fica em app/services/parcerias/acesso.py.
 """
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_active_user, get_db
@@ -19,6 +20,7 @@ from app.schemas.parcerias import (
     AcessoUpdate,
     AtividadeCreate,
     AtividadeResponse,
+    AtividadeUpdate,
     ConcluirRequest,
     ElegibilidadeRequest,
     EtapaOut,
@@ -194,7 +196,7 @@ def catalogo(busca: str = Query("", max_length=100), db: Session = Depends(get_d
     ]
 
 
-# ─── Atividades (os dois boards) ─────────────────────────────────────────────
+# ─── Atividades (os dois boards, no padrão dos cards de Serviço) ─────────────
 
 @router.get("/parceiros/{partner_id}/atividades", response_model=List[AtividadeResponse])
 def atividades_do_parceiro(partner_id: int, db: Session = Depends(get_db),
@@ -208,6 +210,13 @@ def criar_atividade_do_parceiro(partner_id: int, dados: AtividadeCreate, db: Ses
                                 current_user: User = Depends(get_current_active_user)):
     p = acesso.buscar_parceiro(db, current_user, partner_id)
     return respostas.atividade_out(atividades.criar(db, current_user, dados, partner_id=p.id))
+
+
+@router.post("/parceiros/{partner_id}/atividades/arquivos", response_model=AtividadeResponse, status_code=201)
+async def anexar_no_parceiro(partner_id: int, file: UploadFile = File(...), db: Session = Depends(get_db),
+                             current_user: User = Depends(get_current_active_user)):
+    p = acesso.buscar_parceiro(db, current_user, partner_id)
+    return respostas.atividade_out(await atividades.anexar(db, current_user, file, partner_id=p.id))
 
 
 @router.get("/oportunidades/{opportunity_id}/atividades", response_model=List[AtividadeResponse])
@@ -224,10 +233,23 @@ def criar_atividade_da_oportunidade(opportunity_id: int, dados: AtividadeCreate,
     return respostas.atividade_out(atividades.criar(db, current_user, dados, oportunidade=op))
 
 
+@router.post("/oportunidades/{opportunity_id}/atividades/arquivos", response_model=AtividadeResponse, status_code=201)
+async def anexar_na_oportunidade(opportunity_id: int, file: UploadFile = File(...), db: Session = Depends(get_db),
+                                 current_user: User = Depends(get_current_active_user)):
+    op = acesso.buscar_oportunidade(db, current_user, opportunity_id)
+    return respostas.atividade_out(await atividades.anexar(db, current_user, file, oportunidade=op))
+
+
+@router.put("/atividades/{atividade_id}", response_model=AtividadeResponse)
+def atualizar_atividade(atividade_id: int, dados: AtividadeUpdate, db: Session = Depends(get_db),
+                        current_user: User = Depends(get_current_active_user)):
+    return respostas.atividade_out(atividades.atualizar(db, current_user, atividade_id, dados))
+
+
 @router.patch("/atividades/{atividade_id}/concluir", response_model=AtividadeResponse)
 def concluir_atividade(atividade_id: int, req: ConcluirRequest, db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_active_user)):
-    return respostas.atividade_out(atividades.concluir(db, current_user, atividade_id, req.is_completed))
+    return respostas.atividade_out(atividades.concluir(db, current_user, atividade_id, req.is_completed, req.is_valid))
 
 
 @router.delete("/atividades/{atividade_id}")
@@ -235,3 +257,10 @@ def excluir_atividade(atividade_id: int, db: Session = Depends(get_db),
                       current_user: User = Depends(get_current_active_user)):
     atividades.excluir(db, current_user, atividade_id)
     return {"ok": True}
+
+
+@router.get("/atividades/{atividade_id}/arquivo")
+def baixar_arquivo(atividade_id: int, db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_active_user)):
+    caminho, nome, tipo = atividades.arquivo_para_baixar(db, current_user, atividade_id)
+    return FileResponse(path=str(caminho), filename=nome, media_type=tipo)

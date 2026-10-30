@@ -1,4 +1,5 @@
 import api from "./api";
+import type { AtividadeCard, AtividadesApi } from "./serviceActivityService";
 
 const BASE = "/api/v1/parcerias";
 
@@ -137,24 +138,14 @@ export interface ProdutoCatalogo {
   unit_price: number;
 }
 
-export interface Atividade {
-  id: number;
-  partner_id?: number | null;
-  opportunity_id?: number | null;
-  user_id?: number | null;
-  user_name?: string | null;
-  type: string;
-  description: string;
-  due_at?: string | null;
-  completed_at?: string | null;
-  created_at: string;
-}
+/** Atividade de parceiro ou oportunidade: mesmo formato do card de Serviço. */
+export type Atividade = AtividadeCard & { partner_id?: number | null; opportunity_id?: number | null };
 
-export interface NovaAtividade {
-  type: string;
-  description: string;
-  due_at?: string;
-}
+/** De quem são as atividades: o card do parceiro (board 1) ou a oportunidade (board 2). */
+export type AlvoAtividades = { tipo: "parceiro" | "oportunidade"; id: number };
+
+const rotaDoAlvo = (alvo: AlvoAtividades) =>
+  `${BASE}/${alvo.tipo === "parceiro" ? "parceiros" : "oportunidades"}/${alvo.id}/atividades`;
 
 export interface MoverPayload {
   stage: string;
@@ -250,24 +241,36 @@ const parceriasService = {
   },
 
   // Atividades
-  async atividadesDoParceiro(id: number) {
-    return (await api.get<Atividade[]>(`${BASE}/parceiros/${id}/atividades`)).data;
-  },
-  async criarAtividadeDoParceiro(id: number, dados: NovaAtividade) {
-    return (await api.post<Atividade>(`${BASE}/parceiros/${id}/atividades`, dados)).data;
-  },
-  async atividadesDaOportunidade(id: number) {
-    return (await api.get<Atividade[]>(`${BASE}/oportunidades/${id}/atividades`)).data;
-  },
-  async criarAtividadeDaOportunidade(id: number, dados: NovaAtividade) {
-    return (await api.post<Atividade>(`${BASE}/oportunidades/${id}/atividades`, dados)).data;
-  },
-  async concluirAtividade(id: number, isCompleted: boolean) {
-    return (await api.patch<Atividade>(`${BASE}/atividades/${id}/concluir`, { is_completed: isCompleted })).data;
-  },
-  async excluirAtividade(id: number) {
-    await api.delete(`${BASE}/atividades/${id}`);
+  async listarAtividades(alvo: AlvoAtividades) {
+    return (await api.get<Atividade[]>(rotaDoAlvo(alvo))).data;
   },
 };
 
 export default parceriasService;
+
+/** Operações das abas Atividade, Anotações e Arquivos (componentes de Serviço) para Parcerias. Sem ligação. */
+export const apiDeAtividades = (alvo: AlvoAtividades): AtividadesApi => ({
+  create: async (data) => (await api.post(rotaDoAlvo(alvo), data)).data,
+  update: async (id, data) => (await api.put(`${BASE}/atividades/${id}`, data)).data,
+  complete: async (id, isCompleted, isValid) =>
+    (await api.patch(`${BASE}/atividades/${id}/concluir`, { is_completed: isCompleted, is_valid: isValid ?? null })).data,
+  remove: async (id) => {
+    await api.delete(`${BASE}/atividades/${id}`);
+  },
+  uploadFile: async (file) => {
+    const form = new FormData();
+    form.append("file", file);
+    return (await api.post(`${rotaDoAlvo(alvo)}/arquivos`, form, { headers: { "Content-Type": "multipart/form-data" } })).data;
+  },
+  downloadFile: async (id, filename) => {
+    const r = await api.get(`${BASE}/atividades/${id}/arquivo`, { responseType: "blob" });
+    const url = window.URL.createObjectURL(new Blob([r.data]));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+});

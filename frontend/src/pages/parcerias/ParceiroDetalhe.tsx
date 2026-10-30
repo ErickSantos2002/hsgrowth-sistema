@@ -1,13 +1,14 @@
-import { ReactNode, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Activity, ArrowLeft, Building2, CheckCircle2, ClipboardCheck, KeyRound, RefreshCw, Trello, Users, XCircle,
+  ArrowLeft, Building2, CheckCircle2, ClipboardCheck, KeyRound, RefreshCw, Trello, Users, XCircle,
 } from "lucide-react";
 import { Button, FormField, Input, LoadingSpinner, SelectMenu } from "../../components/common";
 import ExpandableSection from "../../components/cardDetails/ExpandableSection";
-import AtividadesParceria from "../../components/parcerias/AtividadesParceria";
+import AbasDoCard from "../../components/parcerias/AbasDoCard";
 import EtapasParceria from "../../components/parcerias/EtapasParceria";
 import ModalTrava from "../../components/parcerias/ModalTrava";
+import { errosDoForm, paraTela, propsDeTexto } from "../../components/parcerias/campos";
 import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
 import userService from "../../services/userService";
@@ -28,8 +29,6 @@ const CAMPOS_TEXTO: { nome: keyof ParceiroForm; label: string }[] = [
   { nome: "region", label: "Região" },
 ];
 
-type Aba = "atividades" | "oportunidades";
-
 export default function ParceiroDetalhe() {
   const { partnerId } = useParams();
   const id = Number(partnerId);
@@ -48,13 +47,12 @@ export default function ParceiroDetalhe() {
   const [novoMembro, setNovoMembro] = useState({ name: "", email: "", phone: "" });
   const [novoAcesso, setNovoAcesso] = useState({ name: "", email: "", password: "" });
   const [perdendo, setPerdendo] = useState(false);
-  const [aba, setAba] = useState<Aba>("atividades");
 
   const preencher = (p: Parceiro) => {
     setParceiro(p);
     setForm({
-      name: p.name, cnpj: p.cnpj ?? "", main_contact_name: p.main_contact_name ?? "",
-      main_contact_phone: p.main_contact_phone ?? "", main_contact_email: p.main_contact_email ?? "",
+      name: p.name, cnpj: paraTela("cnpj", p.cnpj), main_contact_name: p.main_contact_name ?? "",
+      main_contact_phone: paraTela("main_contact_phone", p.main_contact_phone), main_contact_email: p.main_contact_email ?? "",
       partner_type: p.partner_type ?? "", origin: p.origin ?? "", segment: p.segment ?? "", region: p.region ?? "",
       hs_owner_id: p.hs_owner_id ?? null, qualification_status: p.qualification_status ?? null,
       onboarding_date: p.onboarding_date ?? "",
@@ -159,12 +157,12 @@ export default function ParceiroDetalhe() {
     }
   };
 
-  const linhaLista = "flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50/30 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/30";
-  const abas: { chave: Aba; rotulo: string; icone: ReactNode }[] = [
-    { chave: "atividades", rotulo: "Atividades", icone: <Activity size={16} /> },
-    { chave: "oportunidades", rotulo: "Oportunidades", icone: <Trello size={16} /> },
-  ];
+  const erros = errosDoForm(form);
+  const errosMembro = errosDoForm(novoMembro);
+  const errosAcesso = errosDoForm({ email: novoAcesso.email });
+  const temErro = (e: Record<string, string>) => Object.keys(e).length > 0;
 
+  const linhaLista = "flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50/30 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/30";
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Cabeçalho */}
@@ -230,15 +228,11 @@ export default function ParceiroDetalhe() {
           <ExpandableSection title="Dados do parceiro" defaultExpanded icon={<Building2 size={18} />}>
             <div className="space-y-3">
               {CAMPOS_TEXTO.map(({ nome, label }) => (
-                <FormField key={nome} label={label} required={nome === "name"}>
-                  <Input
-                    value={(form[nome] as string) ?? ""}
-                    disabled={!podeEditar}
-                    onChange={(e) => setForm({ ...form, [nome]: e.target.value })}
-                  />
+                <FormField key={nome} label={label} required={nome === "name"} error={erros[nome]}>
+                  <Input {...propsDeTexto(form, setForm, nome, !podeEditar)} />
                 </FormField>
               ))}
-              {podeEditar && <Button onClick={salvar} fullWidth>Salvar</Button>}
+              {podeEditar && <Button onClick={salvar} fullWidth disabled={!form.name?.trim() || temErro(erros)}>Salvar</Button>}
             </div>
           </ExpandableSection>
 
@@ -296,10 +290,18 @@ export default function ParceiroDetalhe() {
               </div>
               {podeEditar && (
                 <div className="space-y-2 border-t border-gray-200/50 pt-3 dark:border-slate-700/50">
-                  <Input placeholder="Nome" value={novoMembro.name} onChange={(e) => setNovoMembro({ ...novoMembro, name: e.target.value })} />
-                  <Input placeholder="E-mail" value={novoMembro.email} onChange={(e) => setNovoMembro({ ...novoMembro, email: e.target.value })} />
-                  <Input placeholder="Telefone" value={novoMembro.phone} onChange={(e) => setNovoMembro({ ...novoMembro, phone: e.target.value })} />
-                  <Button size="sm" fullWidth onClick={adicionarMembro} disabled={!novoMembro.name.trim()}>Adicionar vendedor</Button>
+                  <FormField label="Nome" required>
+                    <Input {...propsDeTexto(novoMembro, setNovoMembro, "name")} />
+                  </FormField>
+                  <FormField label="E-mail" error={errosMembro.email}>
+                    <Input type="email" placeholder="nome@empresa.com.br" {...propsDeTexto(novoMembro, setNovoMembro, "email")} />
+                  </FormField>
+                  <FormField label="Telefone" error={errosMembro.phone}>
+                    <Input placeholder="(00) 00000-0000" {...propsDeTexto(novoMembro, setNovoMembro, "phone")} />
+                  </FormField>
+                  <Button size="sm" fullWidth onClick={adicionarMembro} disabled={!novoMembro.name.trim() || temErro(errosMembro)}>
+                    Adicionar vendedor
+                  </Button>
                 </div>
               )}
             </div>
@@ -320,14 +322,20 @@ export default function ParceiroDetalhe() {
                   {acessos.length === 0 && <p className="py-2 text-center text-sm text-slate-400">Nenhum acesso criado</p>}
                 </div>
                 <div className="space-y-2 border-t border-gray-200/50 pt-3 dark:border-slate-700/50">
-                  <Input placeholder="Nome" value={novoAcesso.name} onChange={(e) => setNovoAcesso({ ...novoAcesso, name: e.target.value })} />
-                  <Input placeholder="E-mail" type="email" value={novoAcesso.email} onChange={(e) => setNovoAcesso({ ...novoAcesso, email: e.target.value })} />
-                  <Input placeholder="Senha inicial (mín. 8)" type="password" value={novoAcesso.password} onChange={(e) => setNovoAcesso({ ...novoAcesso, password: e.target.value })} />
+                  <FormField label="Nome" required>
+                    <Input {...propsDeTexto(novoAcesso, setNovoAcesso, "name")} />
+                  </FormField>
+                  <FormField label="E-mail de login" required error={errosAcesso.email}>
+                    <Input type="email" placeholder="nome@empresa.com.br" {...propsDeTexto(novoAcesso, setNovoAcesso, "email")} />
+                  </FormField>
+                  <FormField label="Senha inicial" required hint="Mínimo de 8 caracteres">
+                    <Input type="password" {...propsDeTexto(novoAcesso, setNovoAcesso, "password")} />
+                  </FormField>
                   <Button
                     size="sm"
                     fullWidth
                     onClick={criarAcesso}
-                    disabled={!novoAcesso.name.trim() || !novoAcesso.email.trim() || novoAcesso.password.length < 8}
+                    disabled={!novoAcesso.name.trim() || !novoAcesso.email.trim() || temErro(errosAcesso) || novoAcesso.password.length < 8}
                   >
                     Criar acesso
                   </Button>
@@ -337,29 +345,12 @@ export default function ParceiroDetalhe() {
           )}
         </div>
 
-        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
-          <div className="flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-900/30">
-            {abas.map((a) => (
-              <button
-                key={a.chave}
-                onClick={() => setAba(a.chave)}
-                className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-                  aba === a.chave
-                    ? "border-blue-500 text-blue-500 dark:text-blue-400"
-                    : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                }`}
-              >
-                {a.icone}
-                {a.rotulo}
-              </button>
-            ))}
-          </div>
-
-          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
-            {aba === "atividades" && (
-              <AtividadesParceria alvo={{ tipo: "parceiro", id }} somenteLeitura={!podeEditar} />
-            )}
-            {aba === "oportunidades" && (
+        <AbasDoCard
+          alvo={{ tipo: "parceiro", id }}
+          versao={parceiro.updated_at}
+          extras={[{
+            chave: "oportunidades", rotulo: "Oportunidades", icone: <Trello size={16} />,
+            conteudo: (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {etapasOp.map((e) => (
                   <div key={e.codigo} className="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-slate-700/50 dark:bg-slate-800/30">
@@ -368,9 +359,9 @@ export default function ParceiroDetalhe() {
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-        </div>
+            ),
+          }]}
+        />
       </div>
 
       <ModalTrava

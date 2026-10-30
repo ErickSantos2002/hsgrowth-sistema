@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.4",
+    date: "30/10/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Parcerias: o detalhe do parceiro e o da oportunidade ganham as mesmas abas do card de Serviço: Atividade (adicionar, Foco e Histórico), Anotações (com imagem colada) e Arquivos.",
+      },
+      {
+        type: "fix",
+        text: "Parcerias: os formulários conferem o que é digitado. CNPJ e telefone ganham máscara e só aceitam números, o e-mail precisa ser válido e todos os campos têm limite de caracteres.",
+      },
+    ],
+  },
+  {
     version: "1.11.3",
     date: "30/10/2026",
     entries: [

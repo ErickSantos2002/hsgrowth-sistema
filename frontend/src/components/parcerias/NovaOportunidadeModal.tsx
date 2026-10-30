@@ -5,6 +5,7 @@ import { DEAL_TYPES, RELATIONSHIP_TYPES, SECTORS } from "../../constants/bluepri
 import parceriasService, {
   Membro, Oportunidade, OportunidadeForm, Parceiro, mensagemDeErro,
 } from "../../services/parceriasService";
+import { errosDoForm, propsDeTexto } from "./campos";
 
 interface Props {
   isOpen: boolean;
@@ -42,13 +43,12 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
     parceriasService.listarEquipe(partnerId).then((m) => setEquipe(m.filter((x) => x.is_active))).catch(() => setEquipe([]));
   }, [isOpen, partnerId]);
 
-  const texto = (nome: keyof OportunidadeForm) => ({
-    value: (form[nome] as string) ?? "",
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm({ ...form, [nome]: e.target.value }),
-  });
+  const texto = (nome: keyof OportunidadeForm & string) => propsDeTexto(form, setForm, nome);
+  const erros = errosDoForm(form);
 
   const obrigatorios = [form.title, form.deal_type, form.sector, form.relationship_type, form.context, form.cnpj, form.company_name];
-  const pronto = obrigatorios.every((v) => (v ?? "").toString().trim() !== "") && (!escolheParceiro || !!form.partner_id);
+  const pronto = obrigatorios.every((v) => (v ?? "").toString().trim() !== "") && (!escolheParceiro || !!form.partner_id)
+    && Object.keys(erros).length === 0;
 
   const salvar = async () => {
     setSalvando(true);
@@ -108,17 +108,18 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
         <FormField label="Setor da empresa" required className="sm:col-span-2">
           <SelectMenu value={form.sector ?? ""} placeholder="Escolha" options={opcoes(SECTORS)} onChange={(v) => setForm({ ...form, sector: v })} />
         </FormField>
-        <FormField label="CNPJ" required><Input {...texto("cnpj")} placeholder="00.000.000/0000-00" /></FormField>
+        <FormField label="CNPJ" required error={erros.cnpj}><Input {...texto("cnpj")} placeholder="00.000.000/0000-00" /></FormField>
         <FormField label="Razão social / nome" required><Input {...texto("company_name")} /></FormField>
         <FormField label="Cidade"><Input {...texto("company_city")} /></FormField>
-        <FormField label="UF"><Input {...texto("company_state")} maxLength={2} /></FormField>
-        <FormField label="Contexto da indicação e necessidade" required className="sm:col-span-2">
+        <FormField label="UF" error={erros.company_state}><Input {...texto("company_state")} placeholder="SP" /></FormField>
+        <FormField label="Contexto da indicação e necessidade" required className="sm:col-span-2"
+          hint={`${(form.context ?? "").length}/2000`}>
           <Textarea {...texto("context")} rows={3} />
         </FormField>
         <FormField label="Contato"><Input {...texto("contact_name")} /></FormField>
         <FormField label="Cargo"><Input {...texto("contact_role")} /></FormField>
-        <FormField label="Telefone"><Input {...texto("contact_phone")} /></FormField>
-        <FormField label="E-mail"><Input type="email" {...texto("contact_email")} /></FormField>
+        <FormField label="Telefone" error={erros.contact_phone}><Input {...texto("contact_phone")} placeholder="(00) 00000-0000" /></FormField>
+        <FormField label="E-mail" error={erros.contact_email}><Input type="email" {...texto("contact_email")} placeholder="nome@empresa.com.br" /></FormField>
       </div>
     </BaseModal>
   );

@@ -1,4 +1,5 @@
 import api from "./api";
+import api4comService from "./api4comService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,24 @@ export interface ServiceCardActivity {
   mime_type?: string;
   created_at: string;
   updated_at: string;
+}
+
+/** Atividade de qualquer card que usa os componentes de Serviço (Serviço ou Parcerias). */
+export type AtividadeCard = Omit<ServiceCardActivity, "service_card_id">;
+
+/**
+ * Operações que as abas Atividade, Anotações e Arquivos precisam.
+ * Cada tipo de card entrega a sua (Serviço por board/card; Parcerias por parceiro/oportunidade).
+ */
+export interface AtividadesApi {
+  create(data: CreateServiceActivityRequest): Promise<unknown>;
+  update(id: number, data: UpdateServiceActivityRequest): Promise<unknown>;
+  complete(id: number, isCompleted: boolean, isValid?: boolean | null): Promise<unknown>;
+  remove(id: number): Promise<void>;
+  uploadFile(file: File, slot?: string): Promise<unknown>;
+  downloadFile(id: number, filename: string): Promise<void>;
+  /** Ligação pelo API4Com. Sem ela, o Foco não mostra o botão de ligar. */
+  call?(phone: string): Promise<{ success: boolean; error?: string; message?: string }>;
 }
 
 export interface CreateServiceActivityRequest {
@@ -122,4 +141,17 @@ class ServiceActivityService {
   }
 }
 
-export default new ServiceActivityService();
+const serviceActivityService = new ServiceActivityService();
+
+/** As operações de atividade de um card de Serviço, no formato que as abas usam. */
+export const apiDoCardDeServico = (boardId: number, cardId: number): AtividadesApi => ({
+  create: (data) => serviceActivityService.create(boardId, cardId, data),
+  update: (id, data) => serviceActivityService.update(boardId, cardId, id, data),
+  complete: (id, isCompleted, isValid) => serviceActivityService.complete(boardId, cardId, id, isCompleted, isValid),
+  remove: (id) => serviceActivityService.remove(boardId, cardId, id),
+  uploadFile: (file, slot) => serviceActivityService.uploadFile(boardId, cardId, file, slot),
+  downloadFile: (id, filename) => serviceActivityService.downloadFile(boardId, cardId, id, filename),
+  call: (phone) => api4comService.makeCall({ phone, service_card_id: cardId }),
+});
+
+export default serviceActivityService;

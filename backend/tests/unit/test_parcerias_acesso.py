@@ -58,5 +58,5 @@ def test_evento_vai_para_o_historico(db):
     db.commit()
 
     [evento] = db.query(PartnerActivity).filter(PartnerActivity.partner_id == p.id).all()
-    assert evento.type == "evento"
+    assert evento.category == "alteracao"
     assert evento.description == "Parceiro cadastrado"

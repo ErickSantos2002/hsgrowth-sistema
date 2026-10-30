@@ -31,7 +31,7 @@ def criar(db: Session, user: User, dados: ParceiroCreate) -> Partner:
     p = Partner(**dados.model_dump(), stage="potencial", position=0, created_by_id=user.id)
     db.add(p)
     db.flush()
-    atividades.registrar_evento(db, user, "Parceiro cadastrado", partner_id=p.id)
+    atividades.registrar_evento(db, user, "Parceiro cadastrado", partner_id=p.id, tipo="card_created")
     db.commit()
     db.refresh(p)
     return p
@@ -76,6 +76,7 @@ def mover(db: Session, user: User, partner_id: int, req: MoverRequest) -> Partne
             db, user,
             f"Etapa: {nome_da_etapa(ETAPAS_AQUISICAO, origem)} → {nome_da_etapa(ETAPAS_AQUISICAO, req.stage)}",
             partner_id=p.id,
+            tipo="card_lost" if req.stage == "perdido" else "stage_change",
         )
     if req.position is not None:
         p.position = req.position

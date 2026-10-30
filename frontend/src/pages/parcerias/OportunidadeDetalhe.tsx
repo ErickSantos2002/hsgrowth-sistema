@@ -1,26 +1,25 @@
-import { ReactNode, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Activity, ArrowLeft, Briefcase, Building2, CheckCircle2, DollarSign, Package, RefreshCw, ShieldCheck, Trash2, XCircle,
+  ArrowLeft, Briefcase, Building2, CheckCircle2, DollarSign, Package, RefreshCw, ShieldCheck, Trash2, XCircle,
 } from "lucide-react";
 import { Button, FormField, Input, LoadingSpinner, SelectMenu, Textarea } from "../../components/common";
 import ExpandableSection from "../../components/cardDetails/ExpandableSection";
-import AtividadesParceria from "../../components/parcerias/AtividadesParceria";
+import AbasDoCard from "../../components/parcerias/AbasDoCard";
 import EtapasParceria from "../../components/parcerias/EtapasParceria";
 import ModalTrava, { faltasParaMover, temFalta } from "../../components/parcerias/ModalTrava";
+import { errosDoForm, paraTela, propsDeTexto } from "../../components/parcerias/campos";
 import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
 import { DEAL_TYPES, LOSS_REASONS_ACQUISITION, RELATIONSHIP_TYPES, SECTORS } from "../../constants/blueprintOptions";
 import {
-  ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_GESTAO, formatarCnpj, formatarMoeda,
+  ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_GESTAO, formatarMoeda,
 } from "../../constants/parcerias";
 import parceriasService, {
   Etapa, ItemProduto, Membro, MoverPayload, Oportunidade, OportunidadeForm, ProdutoCatalogo, mensagemDeErro,
 } from "../../services/parceriasService";
 
 const opcoes = (lista: string[]) => lista.map((v) => ({ value: v, label: v }));
-
-type Aba = "atividades" | "produtos";
 
 export default function OportunidadeDetalhe() {
   const { opportunityId } = useParams();
@@ -40,16 +39,15 @@ export default function OportunidadeDetalhe() {
   const [catalogo, setCatalogo] = useState<ProdutoCatalogo[]>([]);
   const [nota, setNota] = useState("");
   const [destinoPendente, setDestinoPendente] = useState<string | null>(null);
-  const [aba, setAba] = useState<Aba>("atividades");
 
   const preencher = (o: Oportunidade) => {
     setOp(o);
     setForm({
       seller_member_id: o.seller_member_id ?? null, title: o.title, deal_type: o.deal_type, sector: o.sector,
-      relationship_type: o.relationship_type, context: o.context, cnpj: formatarCnpj(o.cnpj),
+      relationship_type: o.relationship_type, context: o.context, cnpj: paraTela("cnpj", o.cnpj),
       company_name: o.company_name, company_segment: o.company_segment ?? "", company_city: o.company_city ?? "",
       company_state: o.company_state ?? "", contact_name: o.contact_name ?? "", contact_role: o.contact_role ?? "",
-      contact_phone: o.contact_phone ?? "", contact_email: o.contact_email ?? "",
+      contact_phone: paraTela("contact_phone", o.contact_phone), contact_email: o.contact_email ?? "",
       expected_close_date: o.expected_close_date ?? "", modality: o.modality ?? null,
     });
   };
@@ -159,16 +157,9 @@ export default function OportunidadeDetalhe() {
     }
   };
 
-  const texto = (nome: keyof OportunidadeForm) => ({
-    value: (form[nome] as string) ?? "",
-    disabled: !podeEditar,
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm({ ...form, [nome]: e.target.value }),
-  });
-
-  const abas: { chave: Aba; rotulo: string; icone: ReactNode; badge?: number }[] = [
-    { chave: "atividades", rotulo: "Atividades", icone: <Activity size={16} /> },
-    { chave: "produtos", rotulo: "Produtos", icone: <Package size={16} />, badge: itens.length },
-  ];
+  const texto = (nome: keyof OportunidadeForm & string) => propsDeTexto(form, setForm, nome, !podeEditar);
+  const erros = errosDoForm(form);
+  const podeSalvar = Object.keys(erros).length === 0;
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -307,51 +298,35 @@ export default function OportunidadeDetalhe() {
                   onChange={(v) => setForm({ ...form, modality: v as "venda" | "locacao" })}
                 />
               </FormField>
-              <FormField label="Contexto da indicação" required><Textarea {...texto("context")} rows={3} /></FormField>
-              {podeEditar && <Button onClick={salvar} fullWidth>Salvar</Button>}
+              <FormField label="Contexto da indicação" required hint={`${(form.context ?? "").length}/2000`}>
+                <Textarea {...texto("context")} rows={3} />
+              </FormField>
+              {podeEditar && <Button onClick={salvar} fullWidth disabled={!podeSalvar}>Salvar</Button>}
             </div>
           </ExpandableSection>
 
           <ExpandableSection title="Empresa e contato" icon={<Building2 size={18} />}>
             <div className="space-y-3">
-              <FormField label="CNPJ" required><Input {...texto("cnpj")} /></FormField>
+              <FormField label="CNPJ" required error={erros.cnpj}><Input {...texto("cnpj")} placeholder="00.000.000/0000-00" /></FormField>
               <FormField label="Razão social / nome" required><Input {...texto("company_name")} /></FormField>
               <FormField label="Segmento"><Input {...texto("company_segment")} /></FormField>
               <FormField label="Cidade"><Input {...texto("company_city")} /></FormField>
-              <FormField label="UF"><Input {...texto("company_state")} maxLength={2} /></FormField>
+              <FormField label="UF" error={erros.company_state}><Input {...texto("company_state")} placeholder="SP" /></FormField>
               <FormField label="Contato"><Input {...texto("contact_name")} /></FormField>
               <FormField label="Cargo"><Input {...texto("contact_role")} /></FormField>
-              <FormField label="Telefone"><Input {...texto("contact_phone")} /></FormField>
-              <FormField label="E-mail"><Input {...texto("contact_email")} /></FormField>
-              {podeEditar && <Button onClick={salvar} fullWidth>Salvar</Button>}
+              <FormField label="Telefone" error={erros.contact_phone}><Input {...texto("contact_phone")} placeholder="(00) 00000-0000" /></FormField>
+              <FormField label="E-mail" error={erros.contact_email}><Input type="email" {...texto("contact_email")} placeholder="nome@empresa.com.br" /></FormField>
+              {podeEditar && <Button onClick={salvar} fullWidth disabled={!podeSalvar}>Salvar</Button>}
             </div>
           </ExpandableSection>
         </div>
 
-        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
-          <div className="flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b border-gray-200 bg-white px-4 dark:border-slate-700/50 dark:bg-slate-900/30">
-            {abas.map((a) => (
-              <button
-                key={a.chave}
-                onClick={() => setAba(a.chave)}
-                className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-                  aba === a.chave
-                    ? "border-blue-500 text-blue-500 dark:text-blue-400"
-                    : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                }`}
-              >
-                {a.icone}
-                {a.rotulo}
-                {!!a.badge && <span className="rounded-full bg-blue-500/20 px-1.5 text-xs text-blue-400">{a.badge}</span>}
-              </button>
-            ))}
-          </div>
-
-          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
-            {aba === "atividades" && (
-              <AtividadesParceria alvo={{ tipo: "oportunidade", id }} somenteLeitura={!podeEditar} />
-            )}
-            {aba === "produtos" && (
+        <AbasDoCard
+          alvo={{ tipo: "oportunidade", id }}
+          versao={op.updated_at}
+          extras={[{
+            chave: "produtos", rotulo: "Produtos", icone: <Package size={16} />, badge: itens.length,
+            conteudo: (
               <div className="space-y-4">
                 {podeEditar && (
                   <div className="relative">
@@ -412,9 +387,9 @@ export default function OportunidadeDetalhe() {
                   </table>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            ),
+          }]}
+        />
       </div>
 
       <ModalTrava

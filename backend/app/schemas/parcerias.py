@@ -1,14 +1,15 @@
 """Schemas Pydantic do Programa de Parceiros (boards Aquisição e Pipeline)."""
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
+
+import re
 
 from pydantic import BaseModel, Field, field_validator
 
 from app.services.parcerias.cnpj import cnpj_valido, so_digitos
 
 Qualificacao = Literal["aderente", "parcialmente_aderente", "nao_aderente"]
-TipoAtividade = Literal["nota", "ligacao", "whatsapp", "email", "reuniao", "tarefa"]
 
 
 def _cnpj_opcional(valor: Optional[str]) -> Optional[str]:
@@ -17,6 +18,40 @@ def _cnpj_opcional(valor: Optional[str]) -> Optional[str]:
     if not cnpj_valido(valor):
         raise ValueError("CNPJ inválido")
     return so_digitos(valor)
+
+
+_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _email_opcional(valor: Optional[str]) -> Optional[str]:
+    valor = (valor or "").strip().lower()
+    if not valor:
+        return None
+    if not _EMAIL.match(valor):
+        raise ValueError("E-mail inválido")
+    return valor
+
+
+def _telefone_opcional(valor: Optional[str]) -> Optional[str]:
+    """Guarda só os números; pede DDD (10 ou 11 dígitos) e recusa letras."""
+    valor = (valor or "").strip()
+    if not valor:
+        return None
+    if re.search(r"[^\d\s()+\-.]", valor):
+        raise ValueError("Telefone só aceita números")
+    digitos = so_digitos(valor)
+    if len(digitos) not in (10, 11):
+        raise ValueError("Telefone com DDD: 10 ou 11 números")
+    return digitos
+
+
+def _uf_opcional(valor: Optional[str]) -> Optional[str]:
+    valor = (valor or "").strip().upper()
+    if not valor:
+        return None
+    if not re.fullmatch(r"[A-Z]{2}", valor):
+        raise ValueError("UF com 2 letras")
+    return valor
 
 
 # ─── Etapas ──────────────────────────────────────────────────────────────────
@@ -35,7 +70,7 @@ class MoverRequest(BaseModel):
     stage: str
     position: Optional[float] = None
     loss_reason: Optional[str] = Field(None, max_length=255)
-    loss_detail: Optional[str] = None
+    loss_detail: Optional[str] = Field(None, max_length=1000)
     # Campos que a tela pede no modal da trava do board 2.
     expected_close_date: Optional[date] = None
     modality: Optional[Literal["venda", "locacao"]] = None
@@ -61,6 +96,16 @@ class ParceiroCreate(BaseModel):
     @classmethod
     def _validar_cnpj(cls, valor):
         return _cnpj_opcional(valor)
+
+    @field_validator("main_contact_phone")
+    @classmethod
+    def _validar_telefone(cls, valor):
+        return _telefone_opcional(valor)
+
+    @field_validator("main_contact_email")
+    @classmethod
+    def _validar_email(cls, valor):
+        return _email_opcional(valor)
 
 
 class ParceiroUpdate(ParceiroCreate):
@@ -102,12 +147,32 @@ class MembroCreate(BaseModel):
     email: Optional[str] = Field(None, max_length=255)
     phone: Optional[str] = Field(None, max_length=30)
 
+    @field_validator("phone")
+    @classmethod
+    def _validar_telefone(cls, valor):
+        return _telefone_opcional(valor)
+
+    @field_validator("email")
+    @classmethod
+    def _validar_email(cls, valor):
+        return _email_opcional(valor)
+
 
 class MembroUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     email: Optional[str] = Field(None, max_length=255)
     phone: Optional[str] = Field(None, max_length=30)
     is_active: Optional[bool] = None
+
+    @field_validator("phone")
+    @classmethod
+    def _validar_telefone(cls, valor):
+        return _telefone_opcional(valor)
+
+    @field_validator("email")
+    @classmethod
+    def _validar_email(cls, valor):
+        return _email_opcional(valor)
 
 
 class MembroResponse(BaseModel):
@@ -159,7 +224,7 @@ class OportunidadeCreate(BaseModel):
     deal_type: str = Field(..., min_length=1, max_length=100)
     sector: str = Field(..., min_length=1, max_length=100)
     relationship_type: str = Field(..., min_length=1, max_length=100)
-    context: str = Field(..., min_length=1)
+    context: str = Field(..., min_length=1, max_length=2000)
     cnpj: str
     company_name: str = Field(..., min_length=1, max_length=255)
     company_segment: Optional[str] = Field(None, max_length=255)
@@ -177,6 +242,21 @@ class OportunidadeCreate(BaseModel):
             raise ValueError("CNPJ inválido")
         return so_digitos(valor)
 
+    @field_validator("contact_phone")
+    @classmethod
+    def _validar_telefone(cls, valor):
+        return _telefone_opcional(valor)
+
+    @field_validator("contact_email")
+    @classmethod
+    def _validar_email(cls, valor):
+        return _email_opcional(valor)
+
+    @field_validator("company_state")
+    @classmethod
+    def _validar_uf(cls, valor):
+        return _uf_opcional(valor)
+
 
 class OportunidadeUpdate(BaseModel):
     seller_member_id: Optional[int] = None
@@ -184,7 +264,7 @@ class OportunidadeUpdate(BaseModel):
     deal_type: Optional[str] = Field(None, min_length=1, max_length=100)
     sector: Optional[str] = Field(None, min_length=1, max_length=100)
     relationship_type: Optional[str] = Field(None, min_length=1, max_length=100)
-    context: Optional[str] = Field(None, min_length=1)
+    context: Optional[str] = Field(None, min_length=1, max_length=2000)
     cnpj: Optional[str] = None
     company_name: Optional[str] = Field(None, min_length=1, max_length=255)
     company_segment: Optional[str] = Field(None, max_length=255)
@@ -202,10 +282,25 @@ class OportunidadeUpdate(BaseModel):
     def _validar_cnpj(cls, valor):
         return _cnpj_opcional(valor)
 
+    @field_validator("contact_phone")
+    @classmethod
+    def _validar_telefone(cls, valor):
+        return _telefone_opcional(valor)
+
+    @field_validator("contact_email")
+    @classmethod
+    def _validar_email(cls, valor):
+        return _email_opcional(valor)
+
+    @field_validator("company_state")
+    @classmethod
+    def _validar_uf(cls, valor):
+        return _uf_opcional(valor)
+
 
 class ElegibilidadeRequest(BaseModel):
     status: Literal["em_analise", "validada", "rejeitada"]
-    note: Optional[str] = None
+    note: Optional[str] = Field(None, max_length=1000)
 
 
 class OportunidadeResponse(BaseModel):
@@ -278,14 +373,34 @@ class ProdutoCatalogo(BaseModel):
 
 # ─── Atividades ──────────────────────────────────────────────────────────────
 
+Prioridade = Literal["normal", "high", "urgent"]
+
+
 class AtividadeCreate(BaseModel):
-    type: TipoAtividade
-    description: str = Field(..., min_length=1)
-    due_at: Optional[datetime] = None
+    """Mesmos campos da atividade do card de Serviço (Foco ou anotação)."""
+    category: Literal["atividade", "anotacao"]
+    activity_type: Optional[str] = Field(None, max_length=50)
+    title: Optional[str] = Field(None, max_length=500)
+    # Anotação guarda HTML com imagem colada (base64), por isso não tem limite curto.
+    description: Optional[str] = None
+    priority: Optional[Prioridade] = None
+    due_date: Optional[datetime] = None
+    activity_metadata: Optional[Dict[str, Any]] = None
+
+
+class AtividadeUpdate(BaseModel):
+    activity_type: Optional[str] = Field(None, max_length=50)
+    title: Optional[str] = Field(None, max_length=500)
+    description: Optional[str] = None
+    priority: Optional[Prioridade] = None
+    due_date: Optional[datetime] = None
+    activity_metadata: Optional[Dict[str, Any]] = None
 
 
 class ConcluirRequest(BaseModel):
     is_completed: bool
+    # Resultado do Foco: ligação válida, e-mail enviado, WhatsApp respondido, reunião realizada.
+    is_valid: Optional[bool] = None
 
 
 class AtividadeResponse(BaseModel):
@@ -294,10 +409,19 @@ class AtividadeResponse(BaseModel):
     opportunity_id: Optional[int] = None
     user_id: Optional[int] = None
     user_name: Optional[str] = None
-    type: str
-    description: str
-    due_at: Optional[datetime] = None
+    category: str
+    activity_type: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    activity_metadata: Optional[Dict[str, Any]] = None
+    priority: Optional[str] = None
+    due_date: Optional[datetime] = None
+    is_completed: bool = False
     completed_at: Optional[datetime] = None
+    file_name: Optional[str] = None
+    file_size: Optional[int] = None
+    mime_type: Optional[str] = None
     created_at: datetime
+    updated_at: datetime
 
     model_config = {"from_attributes": True}

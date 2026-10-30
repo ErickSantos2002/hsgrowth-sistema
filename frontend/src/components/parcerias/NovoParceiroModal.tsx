@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BaseModal, Button, FormField, Input } from "../common";
 import { showError } from "../../utils/toast";
 import parceriasService, { Parceiro, ParceiroForm, mensagemDeErro } from "../../services/parceriasService";
+import { errosDoForm, propsDeTexto } from "./campos";
 
 interface Props {
   isOpen: boolean;
@@ -22,10 +23,8 @@ export default function NovoParceiroModal({ isOpen, onClose, onCriado }: Props) 
     if (isOpen) setForm(VAZIO);
   }, [isOpen]);
 
-  const campo = (nome: keyof ParceiroForm) => ({
-    value: (form[nome] as string) ?? "",
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [nome]: e.target.value }),
-  });
+  const campo = (nome: keyof ParceiroForm & string) => propsDeTexto(form, setForm, nome);
+  const erros = errosDoForm(form);
 
   const salvar = async () => {
     setSalvando(true);
@@ -51,17 +50,21 @@ export default function NovoParceiroModal({ isOpen, onClose, onCriado }: Props) 
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button onClick={salvar} loading={salvando} disabled={!form.name?.trim()}>Cadastrar</Button>
+          <Button onClick={salvar} loading={salvando} disabled={!form.name?.trim() || Object.keys(erros).length > 0}>Cadastrar</Button>
         </div>
       }
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Parceiro / empresa" required className="sm:col-span-2"><Input {...campo("name")} /></FormField>
-        <FormField label="CNPJ"><Input {...campo("cnpj")} /></FormField>
+        <FormField label="CNPJ" error={erros.cnpj}><Input {...campo("cnpj")} placeholder="00.000.000/0000-00" /></FormField>
         <FormField label="Tipo de parceiro"><Input {...campo("partner_type")} /></FormField>
         <FormField label="Contato principal"><Input {...campo("main_contact_name")} /></FormField>
-        <FormField label="Telefone do contato"><Input {...campo("main_contact_phone")} /></FormField>
-        <FormField label="E-mail do contato"><Input type="email" {...campo("main_contact_email")} /></FormField>
+        <FormField label="Telefone do contato" error={erros.main_contact_phone}>
+          <Input {...campo("main_contact_phone")} placeholder="(00) 00000-0000" />
+        </FormField>
+        <FormField label="E-mail do contato" error={erros.main_contact_email}>
+          <Input type="email" {...campo("main_contact_email")} placeholder="nome@empresa.com.br" />
+        </FormField>
         <FormField label="Origem do parceiro"><Input {...campo("origin")} /></FormField>
         <FormField label="Segmento"><Input {...campo("segment")} /></FormField>
         <FormField label="Região"><Input {...campo("region")} /></FormField>

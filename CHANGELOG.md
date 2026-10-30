@@ -5,6 +5,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.4] — 30/10/2026
+
+### Alterado
+- **Atividades de Parcerias iguais às do card de Serviço:** o detalhe do parceiro e o da oportunidade usam os próprios componentes de Serviço, com as abas **Atividade** (Adicionar Atividade com tipo, data, hora, duração e prioridade; **Foco** com concluir, resultado, editar, reagendar e remover; **Histórico** com filtros e busca), **Anotações** (com imagem colada por Ctrl+V) e **Arquivos** (até 10MB). As mudanças de etapa, cadastro, elegibilidade e ativação aparecem no Histórico como Alterações. Em Parcerias não há botão de ligar pelo API4Com. Para isso, os componentes de Serviço passaram a receber as operações de fora; Serviço segue igual.
+
+### Corrigido
+- **Formulários de Parcerias aceitavam qualquer coisa:** CNPJ e telefone ganham máscara e só aceitam números, o telefone pede DDD (10 ou 11 números), o e-mail precisa ter formato válido, a UF tem 2 letras e todos os campos têm limite de caracteres (o contexto da indicação, 2000). Vale no cadastro e no detalhe do parceiro e da oportunidade, na Equipe e nos Acessos. O backend confere o mesmo e guarda telefone e CNPJ só com números.
+
+### Banco
+- Migration `2c3d4e5f6a7b` (depois de `1b2c3d4e5f6a`): `partner_activities` ganha as colunas da atividade de Serviço (categoria, título, prioridade, concluída e dados do anexo), `due_at` vira `due_date` e a coluna `type` sai, com os registros convertidos. Rodar logo depois de subir o backend. Os anexos ficam em `/app/uploads/parcerias`.
+
+---
+
 ## [1.11.3] — 30/10/2026
 
 ### Alterado

@@ -65,15 +65,6 @@ export const ELEGIBILIDADE_COR: Record<string, string> = {
   rejeitada: "bg-red-500/15 text-red-700 dark:text-red-400",
 };
 
-export const TIPOS_ATIVIDADE = [
-  { value: "nota", label: "Nota" },
-  { value: "ligacao", label: "Ligação" },
-  { value: "whatsapp", label: "WhatsApp" },
-  { value: "email", label: "E-mail" },
-  { value: "reuniao", label: "Reunião" },
-  { value: "tarefa", label: "Tarefa" },
-];
-
 export const formatarMoeda = (valor: number) =>
   valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 

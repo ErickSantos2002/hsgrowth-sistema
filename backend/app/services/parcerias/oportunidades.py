@@ -82,7 +82,7 @@ def criar(db: Session, user: User, dados: OportunidadeCreate) -> PartnerOpportun
     )
     db.add(op)
     db.flush()
-    atividades.registrar_evento(db, user, "Oportunidade cadastrada", opportunity_id=op.id)
+    atividades.registrar_evento(db, user, "Oportunidade cadastrada", opportunity_id=op.id, tipo="card_created")
     db.commit()
     db.refresh(op)
     return op
@@ -135,6 +135,7 @@ def mover(db: Session, user: User, opportunity_id: int, req: MoverRequest) -> Pa
             db, user,
             f"Etapa: {nome_da_etapa(ETAPAS_OPORTUNIDADE, origem)} → {nome_da_etapa(ETAPAS_OPORTUNIDADE, req.stage)}",
             opportunity_id=op.id,
+            tipo={"ganho": "card_won", "perdido": "card_lost"}.get(req.stage, "stage_change"),
         )
         atividades.tocar(op)
         if req.stage == "ganho":

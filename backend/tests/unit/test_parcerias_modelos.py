@@ -16,7 +16,7 @@ def test_parceiro_com_equipe_oportunidade_produto_e_historico(db):
     db.add(produto)
     db.commit()
     db.add(PartnerOpportunityProduct(opportunity_id=op.id, product_id=produto.id, quantity=2, unit_price=1500))
-    db.add(PartnerActivity(opportunity_id=op.id, type="nota", description="Primeiro contato"))
+    db.add(PartnerActivity(opportunity_id=op.id, category="anotacao", description="Primeiro contato"))
     db.commit()
     db.refresh(p)
     db.refresh(op)
