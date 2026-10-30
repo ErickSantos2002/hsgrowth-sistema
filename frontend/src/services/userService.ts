@@ -87,6 +87,14 @@ class UserService {
   }
 
   /**
+   * Perfis disponíveis no cadastro de usuários (inclui o Financeiro, que não tem ID fixo).
+   */
+  async listarPerfis(): Promise<{ id: number; name: string; display_name: string }[]> {
+    const response = await api.get("/api/v1/users/roles");
+    return response.data;
+  }
+
+  /**
    * Lista quem deve aparecer nos seletores de SDR: quem tem o cargo SDR hoje
    * + quem já é SDR de algum card (ex-SDR que virou vendedor). Ver RN-037.
    */

@@ -10,7 +10,7 @@ export interface User {
   phone: string | null;
   email_signature: string | null;
   role_id: number;
-  role: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service"; // Role do usuário
+  role: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service" | "partner" | "finance"; // Role do usuário
   role_name: string; // Nome formatado da role (Administrador, Gerente, Vendedor, SDR)
   is_active: boolean;
   last_login_at: string | null;
@@ -770,7 +770,7 @@ export interface CardFilters extends PaginationParams {
 }
 
 export interface UserFilters extends PaginationParams {
-  role?: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service";
+  role?: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service" | "partner" | "finance";
   is_active?: boolean;
   search?: string;
 }
