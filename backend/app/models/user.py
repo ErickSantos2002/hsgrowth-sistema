@@ -48,6 +48,15 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     # Telefone de contato
     phone = Column(String(20), nullable=True)
 
+    # Login de parceiro (role 'partner'): a qual parceiro do Programa de Parceiros pertence.
+    # use_alter: partners também aponta para users (hs_owner_id).
+    partner_id = Column(
+        Integer,
+        ForeignKey("partners.id", ondelete="SET NULL", use_alter=True, name="fk_users_partner_id"),
+        nullable=True,
+        index=True,
+    )
+
     # Microsoft 365 — tokens OAuth (SSO + Graph API)
     ms_access_token = Column(Text, nullable=True, comment="Access token Microsoft Graph — expira em ~1h")
     ms_refresh_token = Column(Text, nullable=True, comment="Refresh token Microsoft — usado para renovar o access token")

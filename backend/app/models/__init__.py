@@ -98,6 +98,11 @@ from app.models.service_product import ServiceProduct  # noqa
 # Bolinha "concluído" pessoal nos cards (Vendas e Serviço)
 from app.models.card_check import CardCheck  # noqa
 
+# Programa de Parceiros (tabelas independentes de Vendas e de Serviço)
+from app.models.partner import Partner, PartnerTeamMember  # noqa
+from app.models.partner_opportunity import PartnerOpportunity, PartnerOpportunityProduct  # noqa
+from app.models.partner_activity import PartnerActivity  # noqa
+
 # Lista de todos os modelos (útil para imports)
 __all__ = [
     "Base",
@@ -158,4 +163,9 @@ __all__ = [
     "ExternalClientRef",
     "ServiceProduct",
     "CardCheck",
+    "Partner",
+    "PartnerTeamMember",
+    "PartnerOpportunity",
+    "PartnerOpportunityProduct",
+    "PartnerActivity",
 ]
