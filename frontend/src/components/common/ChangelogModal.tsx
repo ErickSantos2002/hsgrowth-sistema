@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.7",
+    date: "03/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Boards de Parcerias: cards no padrão de Vendas e Serviço, com a situação das atividades (atrasada, para hoje, futura), mais informações e a mesma altura para todos.",
+      },
+      {
+        type: "improvement",
+        text: "Detalhe do parceiro e da oportunidade: as seções abrem fechadas.",
+      },
+    ],
+  },
+  {
     version: "1.11.6",
     date: "03/11/2026",
     entries: [

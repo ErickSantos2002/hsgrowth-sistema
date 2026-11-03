@@ -43,6 +43,9 @@ export interface Parceiro extends ParceiroForm {
   created_at: string;
   updated_at: string;
   oportunidades_por_etapa: Record<string, number>;
+  /** Só na lista do board: atividades em aberto. */
+  pending_status?: "overdue" | "today" | "future" | "none" | null;
+  pending_count?: number;
 }
 
 export interface Membro {
@@ -123,6 +126,9 @@ export interface Oportunidade {
   cnpj_motivo?: string | null;
   cnpj_justificativa?: string | null;
   cnpj_liberado_por_name?: string | null;
+  /** Só na lista do board: atividades em aberto. */
+  pending_status?: "overdue" | "today" | "future" | "none" | null;
+  pending_count?: number;
   created_at: string;
   updated_at: string;
 }

@@ -138,6 +138,9 @@ class ParceiroResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     oportunidades_por_etapa: Dict[str, int] = {}
+    # Só na lista do board: atividades pendentes (overdue | today | future | none).
+    pending_status: Optional[str] = None
+    pending_count: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -347,6 +350,9 @@ class OportunidadeResponse(BaseModel):
     won_at: Optional[datetime] = None
     lost_at: Optional[datetime] = None
     total_value: float = 0
+    # Só na lista do board: atividades pendentes (overdue | today | future | none).
+    pending_status: Optional[str] = None
+    pending_count: int = 0
     created_at: datetime
     updated_at: datetime
 

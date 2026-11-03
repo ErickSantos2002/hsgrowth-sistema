@@ -5,6 +5,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.7] — 03/11/2026
+
+### Alterado
+- **Boards de Parcerias (Aquisição e Pipeline):**
+  - os cards seguem o desenho dos boards de Vendas e Serviço: bolinha de atividade no canto, com o selo "Atrasada", "Para Hoje", "Futura" ou "Sem Atividade";
+  - todos os cards ficam com a mesma altura;
+  - o card do parceiro mostra o contato, o segmento e a região, a qualificação, quantas oportunidades ele tem e o avatar do Responsável H&S;
+  - o card da oportunidade mostra a empresa, o parceiro (para o parceiro, o CNPJ), a elegibilidade, a previsão de fechamento (em vermelho quando passou), o valor e o avatar do vendedor do parceiro.
+- **Detalhe do parceiro e da oportunidade:** as seções da esquerda abrem todas fechadas.
+
+---
+
 ## [1.11.6] — 03/11/2026
 
 ### Alterado

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, User } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Trello } from "lucide-react";
 import { LoadingSpinner } from "../../components/common";
 import CabecalhoBoard, { BotaoNovo } from "../../components/parcerias/CabecalhoBoard";
-import KanbanParcerias, { CardBadge } from "../../components/parcerias/KanbanParcerias";
+import KanbanParcerias, { CardBadge, CardPadrao } from "../../components/parcerias/KanbanParcerias";
 import ModalTrava from "../../components/parcerias/ModalTrava";
 import NovoParceiroModal from "../../components/parcerias/NovoParceiroModal";
 import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
-import { BOARDS_PARCERIAS, EVIDENCIA_LABEL, PERFIS_GESTAO, PERFIS_QUE_EDITAM } from "../../constants/parcerias";
+import { BOARDS_PARCERIAS, EVIDENCIA_LABEL, PERFIS_GESTAO, PERFIS_QUE_EDITAM, QUALIFICACAO_OPCOES } from "../../constants/parcerias";
 import parceriasService, { Etapa, MoverPayload, Parceiro, mensagemDeErro } from "../../services/parceriasService";
 
 const BOARD = BOARDS_PARCERIAS.find((b) => b.chave === "aquisicao")!;
@@ -81,22 +81,35 @@ export default function AquisicaoKanban() {
         onAbrir={(p) => navigate(`/parcerias/aquisicao/${p.id}`)}
         onMover={podeMover ? aoMover : undefined}
         onAdicionar={gestao ? () => setNovo(true) : undefined}
-        renderCard={(p) => (
-          <>
-            <h4 className="mb-2 line-clamp-2 text-sm font-medium leading-snug text-slate-900 dark:text-white">{p.name}</h4>
-            {p.main_contact_name && (
-              <p className="mb-1 truncate text-xs text-slate-500 dark:text-slate-400">{p.main_contact_name}</p>
-            )}
-            <div className="flex flex-wrap gap-1.5">
-              {p.hs_owner_name && (
-                <CardBadge cls="bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400" icon={<User size={11} />} label={p.hs_owner_name} />
-              )}
-              {p.activation_evidence && (
-                <CardBadge cls="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" icon={<CheckCircle2 size={11} />} label={EVIDENCIA_LABEL[p.activation_evidence]} />
-              )}
-            </div>
-          </>
-        )}
+        renderCard={(p) => {
+          const totalOps = Object.values(p.oportunidades_por_etapa ?? {}).reduce((a, b) => a + b, 0);
+          const qualificacao = QUALIFICACAO_OPCOES.find((q) => q.value === p.qualification_status)?.label;
+          return (
+            <CardPadrao
+              titulo={p.name}
+              linhas={[
+                p.main_contact_name ?? "Sem contato",
+                [p.segment, p.region].filter(Boolean).join(" · "),
+              ]}
+              pendencia={p.pending_status}
+              quantidade={p.pending_count}
+              badges={
+                <>
+                  {qualificacao && (
+                    <CardBadge cls="bg-blue-500/15 text-blue-600 dark:text-blue-400" icon={<ClipboardCheck size={11} />} label={qualificacao} />
+                  )}
+                  {totalOps > 0 && (
+                    <CardBadge cls="bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400" icon={<Trello size={11} />} label={`${totalOps} oportunidade${totalOps > 1 ? "s" : ""}`} />
+                  )}
+                  {p.activation_evidence && (
+                    <CardBadge cls="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" icon={<CheckCircle2 size={11} />} label={EVIDENCIA_LABEL[p.activation_evidence]} />
+                  )}
+                </>
+              }
+              pessoas={[p.hs_owner_name]}
+            />
+          );
+        }}
       />
 
       <NovoParceiroModal

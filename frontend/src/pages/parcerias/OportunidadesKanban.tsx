@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, ShieldCheck, User } from "lucide-react";
+import { Calendar, ShieldCheck } from "lucide-react";
 import { LoadingSpinner, SelectMenu } from "../../components/common";
 import CabecalhoBoard, { BotaoNovo } from "../../components/parcerias/CabecalhoBoard";
-import KanbanParcerias, { CardBadge } from "../../components/parcerias/KanbanParcerias";
+import KanbanParcerias, { CardBadge, CardPadrao } from "../../components/parcerias/KanbanParcerias";
 import ModalTrava, { faltasParaMover, temFalta } from "../../components/parcerias/ModalTrava";
 import NovaOportunidadeModal from "../../components/parcerias/NovaOportunidadeModal";
+import { mascarar } from "../../components/parcerias/campos";
 import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
 import { LOSS_REASONS_ACQUISITION } from "../../constants/blueprintOptions";
@@ -17,6 +18,7 @@ import parceriasService, {
 } from "../../services/parceriasService";
 
 const BOARD = BOARDS_PARCERIAS.find((b) => b.chave === "oportunidades")!;
+const FINAIS = ["ganho", "perdido"];
 
 /** Valor total da coluna, no mesmo quadrinho do rodapé dos boards de Serviço. */
 function ValorDaColuna({ ops }: { ops: Oportunidade[] }) {
@@ -117,29 +119,34 @@ export default function OportunidadesKanban() {
         onMover={podeMover ? aoMover : undefined}
         onAdicionar={podeMover ? () => setNova(true) : undefined}
         rodapeColuna={(daColuna) => <ValorDaColuna ops={daColuna} />}
-        renderCard={(o) => (
-          <>
-            <h4 className="mb-2 line-clamp-2 text-sm font-medium leading-snug text-slate-900 dark:text-white">{o.title}</h4>
-            <p className="mb-1 truncate text-xs text-slate-500 dark:text-slate-400">{o.company_name}</p>
-            {!ehParceiro && <p className="mb-1 truncate text-xs text-slate-400 dark:text-slate-500">{o.partner_name}</p>}
-            <div className="mb-2 flex flex-wrap gap-1.5">
-              <CardBadge cls={ELEGIBILIDADE_COR[o.eligibility_status]} icon={<ShieldCheck size={11} />} label={ELEGIBILIDADE_LABEL[o.eligibility_status]} />
-              {o.seller_name && (
-                <CardBadge cls="bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400" icon={<User size={11} />} label={o.seller_name} />
-              )}
-              {o.expected_close_date && (
-                <CardBadge
-                  cls="bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400"
-                  icon={<Calendar size={11} />}
-                  label={new Date(`${o.expected_close_date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-                />
-              )}
-            </div>
-            {o.total_value > 0 && (
-              <div className="text-xs font-medium text-green-500 dark:text-green-400">{formatarMoeda(o.total_value)}</div>
-            )}
-          </>
-        )}
+        renderCard={(o) => {
+          const fechamento = o.expected_close_date ? new Date(`${o.expected_close_date}T00:00:00`) : null;
+          const hoje = new Date();
+          hoje.setHours(0, 0, 0, 0);
+          const fechamentoVencido = !!fechamento && fechamento < hoje && !FINAIS.includes(o.stage);
+          return (
+            <CardPadrao
+              titulo={o.title}
+              linhas={[o.company_name, ehParceiro ? mascarar("cnpj", o.cnpj) : o.partner_name]}
+              pendencia={o.pending_status}
+              quantidade={o.pending_count}
+              badges={
+                <>
+                  <CardBadge cls={ELEGIBILIDADE_COR[o.eligibility_status]} icon={<ShieldCheck size={11} />} label={ELEGIBILIDADE_LABEL[o.eligibility_status]} />
+                  {fechamento && (
+                    <CardBadge
+                      cls={fechamentoVencido ? "bg-red-500/20 font-medium text-red-400" : "bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400"}
+                      icon={<Calendar size={11} />}
+                      label={fechamento.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                    />
+                  )}
+                </>
+              }
+              valor={o.total_value > 0 ? formatarMoeda(o.total_value) : undefined}
+              pessoas={[o.seller_name]}
+            />
+          );
+        }}
       />
 
       <NovaOportunidadeModal

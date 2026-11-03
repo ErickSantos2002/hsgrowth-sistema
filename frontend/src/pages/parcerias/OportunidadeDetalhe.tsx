@@ -225,7 +225,7 @@ export default function OportunidadeDetalhe() {
       {/* Conteúdo: 30/70 */}
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="w-full flex-shrink-0 space-y-3 overflow-y-auto border-b border-gray-200 p-4 dark:border-slate-700/50 lg:w-[30%] lg:border-b-0 lg:border-r">
-          <ExpandableSection title="Elegibilidade" defaultExpanded icon={<ShieldCheck size={18} />}>
+          <ExpandableSection title="Elegibilidade" icon={<ShieldCheck size={18} />}>
             <div className="space-y-3">
               <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5">
                 <div className="flex items-center justify-between">

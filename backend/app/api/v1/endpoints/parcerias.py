@@ -58,7 +58,7 @@ def etapas_dos_boards():
 
 @router.get("/parceiros", response_model=List[ParceiroResponse])
 def listar_parceiros(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    return [respostas.parceiro_out(db, p) for p in parceiros.listar(db, current_user)]
+    return respostas.parceiros_out(db, parceiros.listar(db, current_user))
 
 
 @router.post("/parceiros", response_model=ParceiroResponse, status_code=201)

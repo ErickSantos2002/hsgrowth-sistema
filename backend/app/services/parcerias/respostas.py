@@ -1,5 +1,6 @@
 """Montagem das respostas da API de Parcerias (nomes e totais que a tela mostra)."""
-from typing import Dict, Iterable, List, Optional
+from datetime import datetime, timedelta
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -27,11 +28,48 @@ def contagem_por_etapa(db: Session, partner_id: int) -> Dict[str, int]:
     return {etapa: total for etapa, total in linhas}
 
 
+def pendencias(db: Session, campo, ids: Iterable[int]) -> Dict[int, Tuple[str, int]]:
+    """Situação das atividades em aberto de cada card, como nos boards de Serviço:
+    a pior vence (atrasada > hoje > futura). Sem atividade em aberto, "none"."""
+    ids = list(ids)
+    if not ids:
+        return {}
+    q = db.query(campo, PartnerActivity.due_date).filter(
+        campo.in_(ids),
+        PartnerActivity.category == "atividade",
+        PartnerActivity.is_completed.is_(False),
+    )
+    if campo is PartnerActivity.partner_id:
+        q = q.filter(PartnerActivity.opportunity_id.is_(None))
+    agora = datetime.utcnow()
+    inicio = datetime(agora.year, agora.month, agora.day)
+    fim = inicio + timedelta(days=1)
+    ordem = {"none": 0, "future": 1, "today": 2, "overdue": 3}
+    saida: Dict[int, Tuple[str, int]] = {}
+    for card_id, prazo in q.all():
+        situacao, total = saida.get(card_id, ("none", 0))
+        if prazo:
+            desta = "overdue" if prazo < inicio else "today" if prazo < fim else "future"
+            if ordem[desta] > ordem[situacao]:
+                situacao = desta
+        saida[card_id] = (situacao, total + 1)
+    return saida
+
+
+def _com_pendencia(resposta, pendencia: Tuple[str, int]):
+    return resposta.model_copy(update={"pending_status": pendencia[0], "pending_count": pendencia[1]})
+
+
 def parceiro_out(db: Session, p: Partner) -> ParceiroResponse:
     return ParceiroResponse.model_validate(p).model_copy(update={
         "hs_owner_name": p.hs_owner.name if p.hs_owner else None,
         "oportunidades_por_etapa": contagem_por_etapa(db, p.id),
     })
+
+
+def parceiros_out(db: Session, lista: List[Partner]) -> List[ParceiroResponse]:
+    situacoes = pendencias(db, PartnerActivity.partner_id, [p.id for p in lista])
+    return [_com_pendencia(parceiro_out(db, p), situacoes.get(p.id, ("none", 0))) for p in lista]
 
 
 def valores_por_oportunidade(db: Session, ids: Iterable[int]) -> Dict[int, float]:
@@ -64,8 +102,13 @@ def oportunidade_out(op: PartnerOpportunity, total: float = 0, user: Optional[Us
 
 
 def oportunidades_out(db: Session, ops: List[PartnerOpportunity], user: Optional[User] = None) -> List[OportunidadeResponse]:
-    totais = valores_por_oportunidade(db, [op.id for op in ops])
-    return [oportunidade_out(op, totais.get(op.id, 0), user) for op in ops]
+    ids = [op.id for op in ops]
+    totais = valores_por_oportunidade(db, ids)
+    situacoes = pendencias(db, PartnerActivity.opportunity_id, ids)
+    return [
+        _com_pendencia(oportunidade_out(op, totais.get(op.id, 0), user), situacoes.get(op.id, ("none", 0)))
+        for op in ops
+    ]
 
 
 def item_out(item: PartnerOpportunityProduct) -> ProdutoItemResponse:

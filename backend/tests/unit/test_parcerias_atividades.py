@@ -128,3 +128,31 @@ def test_financeiro_so_le(client, db):
     assert client.get(f"{URL}/parceiros/{p.id}/atividades", headers=financeiro).status_code == 200
     assert client.post(f"{URL}/parceiros/{p.id}/atividades", json={"category": "anotacao", "description": "x"},
                        headers=financeiro).status_code == 403
+
+
+def test_board_mostra_a_situacao_das_atividades(client, db, admin_headers):
+    from app.models.partner_activity import PartnerActivity
+
+    agora = datetime.utcnow()
+    atrasado, hoje, futuro, sem = (parceiro(db, n) for n in ("Atrasado", "Hoje", "Futuro", "Sem"))
+    op = oportunidade(db, futuro)
+
+    def atividade(**campos):
+        db.add(PartnerActivity(category="atividade", title="Ligar", **campos))
+
+    atividade(partner_id=atrasado.id, due_date=agora - timedelta(days=2))
+    atividade(partner_id=atrasado.id, due_date=agora + timedelta(days=5))
+    atividade(partner_id=hoje.id, due_date=agora.replace(hour=23, minute=0))
+    atividade(partner_id=hoje.id, due_date=agora - timedelta(days=3), is_completed=True)
+    atividade(opportunity_id=op.id, due_date=agora + timedelta(days=30))
+    db.add(PartnerActivity(partner_id=sem.id, category="anotacao", description="só nota"))
+    db.commit()
+
+    lista = {p["name"]: p for p in client.get(f"{URL}/parceiros", headers=admin_headers).json()}
+    assert (lista["Atrasado"]["pending_status"], lista["Atrasado"]["pending_count"]) == ("overdue", 2)
+    assert (lista["Hoje"]["pending_status"], lista["Hoje"]["pending_count"]) == ("today", 1)
+    # A atividade da oportunidade não conta no card do parceiro.
+    assert (lista["Futuro"]["pending_status"], lista["Sem"]["pending_status"]) == ("none", "none")
+
+    [o] = client.get(f"{URL}/oportunidades", headers=admin_headers).json()
+    assert (o["pending_status"], o["pending_count"]) == ("future", 1)
