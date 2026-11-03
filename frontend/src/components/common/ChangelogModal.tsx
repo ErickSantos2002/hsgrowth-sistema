@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.8",
+    date: "03/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Aquisição de Parceiros: o card do parceiro conta só as oportunidades abertas (fora Ganho e Perdido).",
+      },
+    ],
+  },
+  {
     version: "1.11.7",
     date: "03/11/2026",
     entries: [

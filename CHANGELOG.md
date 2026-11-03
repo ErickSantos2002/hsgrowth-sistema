@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.8] — 03/11/2026
+
+### Alterado
+- **Aquisição de Parceiros:** o selo de oportunidades no card do parceiro conta só as abertas ("1 oportunidade aberta"); as que estão em Ganho ou Perdido ficam de fora.
+
+---
+
 ## [1.11.7] — 03/11/2026
 
 ### Alterado

@@ -82,7 +82,10 @@ export default function AquisicaoKanban() {
         onMover={podeMover ? aoMover : undefined}
         onAdicionar={gestao ? () => setNovo(true) : undefined}
         renderCard={(p) => {
-          const totalOps = Object.values(p.oportunidades_por_etapa ?? {}).reduce((a, b) => a + b, 0);
+          // Só as oportunidades ainda em negociação (fora Ganho e Perdido).
+          const totalOps = Object.entries(p.oportunidades_por_etapa ?? {})
+            .filter(([etapa]) => etapa !== "ganho" && etapa !== "perdido")
+            .reduce((soma, [, qtd]) => soma + qtd, 0);
           const qualificacao = QUALIFICACAO_OPCOES.find((q) => q.value === p.qualification_status)?.label;
           return (
             <CardPadrao
@@ -99,7 +102,7 @@ export default function AquisicaoKanban() {
                     <CardBadge cls="bg-blue-500/15 text-blue-600 dark:text-blue-400" icon={<ClipboardCheck size={11} />} label={qualificacao} />
                   )}
                   {totalOps > 0 && (
-                    <CardBadge cls="bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400" icon={<Trello size={11} />} label={`${totalOps} oportunidade${totalOps > 1 ? "s" : ""}`} />
+                    <CardBadge cls="bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400" icon={<Trello size={11} />} label={totalOps > 1 ? `${totalOps} oportunidades abertas` : "1 oportunidade aberta"} />
                   )}
                   {p.activation_evidence && (
                     <CardBadge cls="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" icon={<CheckCircle2 size={11} />} label={EVIDENCIA_LABEL[p.activation_evidence]} />
