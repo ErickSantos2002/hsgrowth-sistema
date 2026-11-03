@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.5",
+    date: "03/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Parcerias: o vendedor escolhido como Responsável H&S (quem treina e faz o onboarding) passa a ver no board os parceiros dele e as oportunidades desses parceiros. O Responsável H&S é opcional: com \"Nenhum\", o parceiro fica só com a gestão.",
+      },
+    ],
+  },
+  {
     version: "1.11.4",
     date: "30/10/2026",
     entries: [

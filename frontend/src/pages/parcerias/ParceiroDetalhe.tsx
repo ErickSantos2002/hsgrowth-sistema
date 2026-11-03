@@ -12,7 +12,7 @@ import { errosDoForm, paraTela, propsDeTexto } from "../../components/parcerias/
 import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
 import userService from "../../services/userService";
-import { EVIDENCIA_LABEL, PERFIS_GESTAO, QUALIFICACAO_OPCOES } from "../../constants/parcerias";
+import { EVIDENCIA_LABEL, PERFIS_GESTAO, PERFIS_QUE_EDITAM, PERFIS_RESPONSAVEL_HS, QUALIFICACAO_OPCOES } from "../../constants/parcerias";
 import parceriasService, {
   Acesso, Etapa, Membro, MoverPayload, Parceiro, ParceiroForm, mensagemDeErro,
 } from "../../services/parceriasService";
@@ -35,7 +35,7 @@ export default function ParceiroDetalhe() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
-  const podeEditar = gestao || user?.role === "partner";
+  const podeEditar = PERFIS_QUE_EDITAM.includes(user?.role ?? "");
 
   const [parceiro, setParceiro] = useState<Parceiro | null>(null);
   const [form, setForm] = useState<ParceiroForm>({});
@@ -73,9 +73,13 @@ export default function ParceiroDetalhe() {
       if (gestao) {
         setAcessos(await parceriasService.listarAcessos(id));
         const usuarios = await userService.listActive();
-        setUsuariosHs(
-          usuarios.filter((u) => u.role !== "partner").map((u) => ({ value: String(u.id), label: u.name }))
-        );
+        // Sem responsável: o parceiro que não precisa de treinamento fica só com a gestão.
+        setUsuariosHs([
+          { value: "", label: "Nenhum" },
+          ...usuarios
+            .filter((u) => PERFIS_RESPONSAVEL_HS.includes(u.role))
+            .map((u) => ({ value: String(u.id), label: u.name })),
+        ]);
       }
     } catch (err) {
       showError(mensagemDeErro(err, "Erro ao carregar o parceiro."));
@@ -244,10 +248,10 @@ export default function ParceiroDetalhe() {
                     value={form.hs_owner_id ? String(form.hs_owner_id) : ""}
                     placeholder="Escolha"
                     options={usuariosHs}
-                    onChange={(v) => setForm({ ...form, hs_owner_id: Number(v) })}
+                    onChange={(v) => setForm({ ...form, hs_owner_id: v ? Number(v) : null })}
                   />
                 ) : (
-                  <Input value={parceiro.hs_owner_name ?? ""} disabled />
+                  <Input value={parceiro.hs_owner_name ?? "Nenhum"} disabled />
                 )}
               </FormField>
               <FormField label="Status de qualificação">

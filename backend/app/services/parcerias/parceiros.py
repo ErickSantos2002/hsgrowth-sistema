@@ -28,6 +28,7 @@ def listar(db: Session, user: User) -> List[Partner]:
 
 def criar(db: Session, user: User, dados: ParceiroCreate) -> Partner:
     acesso.exigir_gestao(user)
+    acesso.conferir_responsavel(db, dados.hs_owner_id)
     p = Partner(**dados.model_dump(), stage="potencial", position=0, created_by_id=user.id)
     db.add(p)
     db.flush()
@@ -46,6 +47,8 @@ def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -
     if not acesso.eh_gestao(user):
         # O responsável H&S é escolha da H&S.
         campos.pop("hs_owner_id", None)
+    if "hs_owner_id" in campos:
+        acesso.conferir_responsavel(db, campos["hs_owner_id"])
     for campo, valor in campos.items():
         setattr(p, campo, valor)
     db.commit()

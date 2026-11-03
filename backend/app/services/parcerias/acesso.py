@@ -3,8 +3,11 @@ Quem enxerga o quê em Parcerias.
 
 Toda consulta de parceiro passa por aqui e filtra pelo partner_id do login no
 backend — nunca só na tela. Card de outro parceiro responde 404, como se não
-existisse.
+existisse. O vendedor da H&S só enxerga os parceiros dos quais é o Responsável
+H&S (quem treina e faz o onboarding) e as oportunidades desses parceiros.
 """
+from typing import Optional
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Query, Session
 
@@ -14,6 +17,8 @@ from app.models.user import User
 
 GESTAO = ("admin", "manager")
 VALIDAM_ELEGIBILIDADE = ("admin", "manager", "finance")
+# Quem pode ser escolhido como Responsável H&S do parceiro.
+RESPONSAVEIS_HS = ("admin", "manager", "salesperson")
 
 
 def perfil(user: User) -> str:
@@ -26,6 +31,10 @@ def eh_gestao(user: User) -> bool:
 
 def eh_parceiro(user: User) -> bool:
     return perfil(user) == "partner"
+
+
+def eh_vendedor(user: User) -> bool:
+    return perfil(user) == "salesperson"
 
 
 def exigir_gestao(user: User) -> None:
@@ -47,10 +56,24 @@ def parceiro_do_login(user: User) -> int:
     return user.partner_id
 
 
+def conferir_responsavel(db: Session, user_id: Optional[int]) -> None:
+    """Responsável H&S é opcional; quando vier, tem que ser admin, gerente ou vendedor ativo."""
+    if user_id is None:
+        return
+    escolhido = db.query(User).filter(User.id == user_id, User.is_deleted.is_(False)).first()
+    if not escolhido or not escolhido.is_active or perfil(escolhido) not in RESPONSAVEIS_HS:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "O Responsável H&S tem que ser um admin, gerente ou vendedor ativo.",
+        )
+
+
 def parceiros_visiveis(db: Session, user: User) -> Query:
     q = db.query(Partner).filter(Partner.is_deleted.is_(False))
     if eh_parceiro(user):
         q = q.filter(Partner.id == parceiro_do_login(user))
+    elif eh_vendedor(user):
+        q = q.filter(Partner.hs_owner_id == user.id)
     return q
 
 
@@ -65,6 +88,9 @@ def oportunidades_visiveis(db: Session, user: User) -> Query:
     q = db.query(PartnerOpportunity).filter(PartnerOpportunity.is_deleted.is_(False))
     if eh_parceiro(user):
         q = q.filter(PartnerOpportunity.partner_id == parceiro_do_login(user))
+    elif eh_vendedor(user):
+        dele = db.query(Partner.id).filter(Partner.hs_owner_id == user.id)
+        q = q.filter(PartnerOpportunity.partner_id.in_(dele))
     return q
 
 

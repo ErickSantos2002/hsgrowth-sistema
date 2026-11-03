@@ -13,7 +13,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
 import { DEAL_TYPES, LOSS_REASONS_ACQUISITION, RELATIONSHIP_TYPES, SECTORS } from "../../constants/blueprintOptions";
 import {
-  ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_GESTAO, formatarMoeda,
+  ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_GESTAO, PERFIS_QUE_EDITAM, formatarMoeda,
 } from "../../constants/parcerias";
 import parceriasService, {
   Etapa, ItemProduto, Membro, MoverPayload, Oportunidade, OportunidadeForm, ProdutoCatalogo, mensagemDeErro,
@@ -27,7 +27,7 @@ export default function OportunidadeDetalhe() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
-  const podeEditar = gestao || user?.role === "partner";
+  const podeEditar = PERFIS_QUE_EDITAM.includes(user?.role ?? "");
   const validaElegibilidade = gestao || user?.role === "finance";
 
   const [op, setOp] = useState<Oportunidade | null>(null);

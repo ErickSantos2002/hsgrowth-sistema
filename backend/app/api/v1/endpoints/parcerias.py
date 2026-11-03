@@ -3,8 +3,8 @@ Endpoints do Programa de Parceiros (seção Parcerias).
 
 Board 1 — Aquisição de Parceiros: /parceiros
 Board 2 — Pipeline de Parceiros: /oportunidades
-O router inteiro passa por require_parcerias_access (admin, gerente, Financeiro
-e parceiro); quem vê o quê fica em app/services/parcerias/acesso.py.
+O router inteiro passa por require_parcerias_access (admin, gerente, Financeiro,
+parceiro e vendedor); quem vê o quê fica em app/services/parcerias/acesso.py.
 """
 from typing import List, Optional
 

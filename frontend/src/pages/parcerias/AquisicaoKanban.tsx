@@ -8,7 +8,7 @@ import ModalTrava from "../../components/parcerias/ModalTrava";
 import NovoParceiroModal from "../../components/parcerias/NovoParceiroModal";
 import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
-import { BOARDS_PARCERIAS, EVIDENCIA_LABEL, PERFIS_GESTAO } from "../../constants/parcerias";
+import { BOARDS_PARCERIAS, EVIDENCIA_LABEL, PERFIS_GESTAO, PERFIS_QUE_EDITAM } from "../../constants/parcerias";
 import parceriasService, { Etapa, MoverPayload, Parceiro, mensagemDeErro } from "../../services/parceriasService";
 
 const BOARD = BOARDS_PARCERIAS.find((b) => b.chave === "aquisicao")!;
@@ -17,7 +17,7 @@ export default function AquisicaoKanban() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
-  const podeMover = gestao || user?.role === "partner";
+  const podeMover = PERFIS_QUE_EDITAM.includes(user?.role ?? "");
 
   const [etapas, setEtapas] = useState<Etapa[]>([]);
   const [parceiros, setParceiros] = useState<Parceiro[]>([]);

@@ -38,6 +38,19 @@ def test_financeiro_enxerga_todas(db):
     assert acesso.oportunidades_visiveis(db, financeiro).count() == 2
 
 
+def test_vendedor_so_enxerga_oportunidades_dos_parceiros_dele(db):
+    vendedor = usuario(db, "salesperson", "vend@hs.com")
+    dele = parceiro(db, "Dmap", hs_owner_id=vendedor.id)
+    outro = parceiro(db, "Outro")
+    op_dele = oportunidade(db, dele)
+    op_outro = oportunidade(db, outro)
+
+    assert [o.id for o in acesso.oportunidades_visiveis(db, vendedor)] == [op_dele.id]
+    with pytest.raises(HTTPException) as erro:
+        acesso.buscar_oportunidade(db, vendedor, op_outro.id)
+    assert erro.value.status_code == 404
+
+
 def test_login_de_parceiro_sem_vinculo_e_barrado(db):
     solto = usuario(db, "partner", "solto@x.com")
 

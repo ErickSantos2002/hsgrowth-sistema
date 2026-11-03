@@ -10,7 +10,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
 import { LOSS_REASONS_ACQUISITION } from "../../constants/blueprintOptions";
 import {
-  BOARDS_PARCERIAS, ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_GESTAO, formatarMoeda,
+  BOARDS_PARCERIAS, ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_QUE_EDITAM, formatarMoeda,
 } from "../../constants/parcerias";
 import parceriasService, {
   Etapa, MoverPayload, Oportunidade, Parceiro, mensagemDeErro,
@@ -34,9 +34,8 @@ function ValorDaColuna({ ops }: { ops: Oportunidade[] }) {
 export default function OportunidadesKanban() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
   const ehParceiro = user?.role === "partner";
-  const podeMover = gestao || ehParceiro;
+  const podeMover = PERFIS_QUE_EDITAM.includes(user?.role ?? "");
 
   const [etapas, setEtapas] = useState<Etapa[]>([]);
   const [ops, setOps] = useState<Oportunidade[]>([]);

@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.5] — 03/11/2026
+
+### Alterado
+- **Vendedor acompanha os parceiros dos quais é Responsável H&S:** o Responsável H&S é o vendedor da H&S que treina o parceiro e faz o onboarding. Esse vendedor passa a entrar em Boards (Parcerias) e vê só os parceiros dos quais é o responsável e as oportunidades desses parceiros; os outros respondem 404. No card ele preenche os dados, a qualificação e a data de onboarding, cadastra a Equipe, move as etapas e registra atividades, anotações e arquivos, como o parceiro. Não cadastra parceiro, não troca o Responsável H&S, não marca Perdido, não cria Acessos ao CRM e não valida elegibilidade: isso continua com admin, gerente e Financeiro. SDR, serviço e visualizador seguem sem acesso.
+- **Responsável H&S opcional:** o campo ganha a opção "Nenhum", para o parceiro que não precisa de treinamento; nesse caso nenhum vendedor vê o card, só a gestão e o Financeiro. A lista mostra só admin, gerente e vendedor ativos, e o backend recusa outros perfis. O campo deixa de ser exigido para sair de Potencial Parceiro; o contato principal continua obrigatório.
+
+---
+
 ## [1.11.4] — 30/10/2026
 
 ### Alterado

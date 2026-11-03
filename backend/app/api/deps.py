@@ -292,13 +292,14 @@ def require_service_access():
 
 def require_parcerias_access():
     """
-    Dependency do Programa de Parceiros: admin, gerente, Financeiro e parceiro.
-    Vendedor, SDR, serviço e visualizador não acessam (403).
+    Dependency do Programa de Parceiros: admin, gerente, Financeiro, parceiro e
+    vendedor (este só vê os parceiros dos quais é o Responsável H&S).
+    SDR, serviço e visualizador não acessam (403).
     """
     async def checker(
         current_user: User = Depends(get_current_active_user)
     ) -> User:
-        allowed_roles = ("admin", "manager", "finance", "partner")
+        allowed_roles = ("admin", "manager", "finance", "partner", "salesperson")
         if not current_user.role or current_user.role.name not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

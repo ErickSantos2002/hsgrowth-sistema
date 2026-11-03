@@ -73,9 +73,9 @@ def _exigencias_do_parceiro(p) -> Dict[str, Optional[str]]:
         (p.main_contact_phone or "").strip() or (p.main_contact_email or "").strip()
     )
     return {
-        "potencial": None if tem_contato and p.hs_owner_id else (
-            "Preencha o contato principal (nome e telefone ou e-mail) e o Responsável H&S "
-            "antes de ir para Qualificação."
+        # O Responsável H&S é opcional: tem parceiro que não precisa de treinamento.
+        "potencial": None if tem_contato else (
+            "Preencha o contato principal (nome e telefone ou e-mail) antes de ir para Qualificação."
         ),
         "qualificacao": None if p.qualification_status in ("aderente", "parcialmente_aderente") else (
             "O parceiro precisa estar Aderente ou Parcialmente aderente para seguir além da Qualificação."

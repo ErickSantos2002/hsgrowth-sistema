@@ -38,8 +38,13 @@ export const corDaEtapa = (codigo: string) =>
 
 // Perfis presos à seção Parcerias — o backend nega o resto do CRM a eles.
 export const PERFIS_TRANCADOS = ["partner", "finance"];
-export const PERFIS_PARCERIAS = ["admin", "manager", "finance", "partner"];
+// O vendedor entra, mas só vê os parceiros dos quais é o Responsável H&S (o backend filtra).
+export const PERFIS_PARCERIAS = ["admin", "manager", "finance", "partner", "salesperson"];
 export const PERFIS_GESTAO = ["admin", "manager"];
+// Quem mexe nos cards que enxerga (o Financeiro só acompanha).
+export const PERFIS_QUE_EDITAM = ["admin", "manager", "partner", "salesperson"];
+// Quem pode ser escolhido como Responsável H&S — é opcional.
+export const PERFIS_RESPONSAVEL_HS = ["admin", "manager", "salesperson"];
 
 export const QUALIFICACAO_OPCOES = [
   { value: "aderente", label: "Aderente" },

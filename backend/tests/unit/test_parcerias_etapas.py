@@ -49,11 +49,11 @@ def test_cnpj():
 
 # ── Board 1 ──────────────────────────────────────────────────────────────────
 
-def test_sair_de_potencial_pede_contato_e_responsavel():
+def test_sair_de_potencial_pede_contato_mas_nao_o_responsavel():
     with pytest.raises(TravaError, match="contato principal"):
         validar_mudanca_parceiro(_parceiro(), "qualificacao", "partner")
 
-    validar_mudanca_parceiro(_parceiro(**PRONTO), "qualificacao", "partner")
+    validar_mudanca_parceiro(_parceiro(**{**PRONTO, "hs_owner_id": None}), "qualificacao", "partner")
 
 
 def test_pular_etapa_nao_fura_a_trava_da_qualificacao():

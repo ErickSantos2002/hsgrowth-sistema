@@ -6,8 +6,61 @@ from tests.unit.apoio_parcerias import headers, parceiro, parceiro_pronto, role,
 URL = "/api/v1/parcerias"
 
 
-def test_vendedor_nao_entra_em_parcerias(client, salesperson_headers):
-    assert client.get(f"{URL}/etapas", headers=salesperson_headers).status_code == 403
+def test_sdr_nao_entra_em_parcerias(client, db):
+    h = headers(usuario(db, "sdr", "sdr@hs.com"))
+
+    assert client.get(f"{URL}/etapas", headers=h).status_code == 403
+
+
+def test_vendedor_so_ve_os_parceiros_dos_quais_e_responsavel(client, db):
+    vendedor = usuario(db, "salesperson", "vend@hs.com")
+    dele = parceiro(db, "Dmap", hs_owner_id=vendedor.id)
+    sem_responsavel = parceiro(db, "Outro")
+    h = headers(vendedor)
+
+    lista = client.get(f"{URL}/parceiros", headers=h).json()
+
+    assert [p["name"] for p in lista] == ["Dmap"]
+    assert client.get(f"{URL}/parceiros/{dele.id}", headers=h).status_code == 200
+    assert client.get(f"{URL}/parceiros/{sem_responsavel.id}", headers=h).status_code == 404
+
+
+def test_vendedor_acompanha_o_parceiro_mas_nao_cadastra_nem_cria_acesso(client, db):
+    vendedor = usuario(db, "salesperson", "vend@hs.com")
+    p = parceiro(db, hs_owner_id=vendedor.id)
+    h = headers(vendedor)
+
+    assert client.put(f"{URL}/parceiros/{p.id}", json={"onboarding_date": "2026-11-03"}, headers=h).status_code == 200
+    assert client.post(f"{URL}/parceiros/{p.id}/equipe", json={"name": "Ana"}, headers=h).status_code == 201
+    assert client.post(f"{URL}/parceiros", json={"name": "Novo"}, headers=h).status_code == 403
+    assert client.get(f"{URL}/parceiros/{p.id}/acessos", headers=h).status_code == 403
+    novo_acesso = {"name": "X", "email": "x@dmap.com", "password": "Senha@12345"}
+    assert client.post(f"{URL}/parceiros/{p.id}/acessos", json=novo_acesso, headers=h).status_code == 403
+
+
+def test_vendedor_nao_troca_o_responsavel_hs(client, db):
+    vendedor = usuario(db, "salesperson", "vend@hs.com")
+    outro = usuario(db, "salesperson", "outro@hs.com")
+    p = parceiro(db, hs_owner_id=vendedor.id)
+
+    resposta = client.put(f"{URL}/parceiros/{p.id}", json={"hs_owner_id": outro.id}, headers=headers(vendedor))
+
+    assert resposta.json()["hs_owner_id"] == vendedor.id
+
+
+def test_responsavel_hs_e_opcional_e_so_gestao_ou_vendedor(client, db, admin_headers):
+    vendedor = usuario(db, "salesperson", "vend@hs.com")
+    sdr = usuario(db, "sdr", "sdr@hs.com")
+    p = parceiro(db)
+
+    def trocar(dono):
+        return client.put(f"{URL}/parceiros/{p.id}", json={"hs_owner_id": dono}, headers=admin_headers)
+
+    assert trocar(vendedor.id).json()["hs_owner_id"] == vendedor.id
+    assert trocar(sdr.id).status_code == 422
+    assert trocar(None).json()["hs_owner_id"] is None
+    assert client.post(f"{URL}/parceiros", json={"name": "Novo", "hs_owner_id": sdr.id},
+                       headers=admin_headers).status_code == 422
 
 
 def test_etapas_dos_dois_boards(client, admin_headers):
@@ -41,7 +94,7 @@ def test_parceiro_so_ve_o_proprio_card(client, db):
     assert client.get(f"{URL}/parceiros/{b.id}", headers=h).status_code == 404
 
 
-def test_trava_ao_sair_de_potencial(client, db, admin_headers, test_admin_user):
+def test_trava_ao_sair_de_potencial(client, db, admin_headers):
     p = parceiro(db)
     h = headers(usuario(db, "partner", "a@dmap.com", p))
 
@@ -49,9 +102,9 @@ def test_trava_ao_sair_de_potencial(client, db, admin_headers, test_admin_user):
     assert barrado.status_code == 422
     assert "contato principal" in barrado.json()["detail"]
 
+    # Sem Responsável H&S: tem parceiro que não precisa de treinamento.
     client.put(f"{URL}/parceiros/{p.id}", json={
         "main_contact_name": "Carlos", "main_contact_phone": "11999990000",
-        "hs_owner_id": test_admin_user.id,
     }, headers=admin_headers)
     assert client.put(f"{URL}/parceiros/{p.id}/mover", json={"stage": "qualificacao"}, headers=h).status_code == 200
 
