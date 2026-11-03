@@ -123,6 +123,15 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
     campos = dados.model_dump(exclude_unset=True)
     justificativa = campos.pop("cnpj_justificativa", None)
+    for campo in ("global_discount", "shipping"):
+        if campo in campos and campos[campo] is None:
+            campos[campo] = 0
+    if "global_discount_type" in campos and campos["global_discount_type"] is None:
+        campos.pop("global_discount_type")
+    tipo = campos.get("global_discount_type", op.global_discount_type)
+    desconto = campos.get("global_discount", op.global_discount) or 0
+    if tipo == "percent" and desconto > 100:
+        raise _422("O desconto geral não pode passar de 100%.")
     for campo, nome in OBRIGATORIOS.items():
         if campo in campos and campos[campo] is None:
             raise _422(f"{nome} é obrigatório.")
@@ -211,12 +220,17 @@ def definir_elegibilidade(db: Session, user: User, opportunity_id: int,
 
 # ─── Produtos ────────────────────────────────────────────────────────────────
 
+def _liberados(db: Session):
+    """Produtos que o Pipeline de Parceiros aceita: ativos e liberados para parceiros."""
+    return db.query(Product).filter(
+        Product.is_active.is_(True), Product.is_deleted.is_(False), Product.partner_enabled.is_(True)
+    )
+
+
 def _produto_do_catalogo(db: Session, product_id: int) -> Product:
-    produto = db.query(Product).filter(
-        Product.id == product_id, Product.is_active.is_(True), Product.is_deleted.is_(False)
-    ).first()
+    produto = _liberados(db).filter(Product.id == product_id).first()
     if not produto:
-        raise _422("Produto não encontrado no catálogo.")
+        raise _422("Produto não liberado para parceiros.")
     return produto
 
 
@@ -241,6 +255,11 @@ def adicionar_produto(db: Session, user: User, opportunity_id: int,
     acesso.exigir_escrita(user)
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
     produto = _produto_do_catalogo(db, dados.product_id)
+    ja_tem = db.query(PartnerOpportunityProduct).filter(
+        PartnerOpportunityProduct.opportunity_id == op.id, PartnerOpportunityProduct.product_id == produto.id
+    ).first()
+    if ja_tem:
+        raise _422("Este produto já está na oportunidade. Mude a quantidade na linha dele.")
     item = PartnerOpportunityProduct(
         opportunity_id=op.id,
         product_id=produto.id,
@@ -259,7 +278,11 @@ def atualizar_produto(db: Session, user: User, opportunity_id: int, item_id: int
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
     item = _buscar_item(db, op, item_id)
     for campo, valor in dados.model_dump(exclude_unset=True).items():
-        setattr(item, campo, valor)
+        if valor is not None:
+            setattr(item, campo, valor)
+    if (item.discount or 0) > item.quantity * (item.unit_price or 0):
+        db.rollback()
+        raise _422("O desconto não pode ser maior que o valor da linha.")
     db.commit()
     db.refresh(item)
     return item
@@ -273,7 +296,7 @@ def remover_produto(db: Session, user: User, opportunity_id: int, item_id: int) 
 
 
 def catalogo(db: Session, busca: str = "", limite: int = 20) -> List[Product]:
-    q = db.query(Product).filter(Product.is_active.is_(True), Product.is_deleted.is_(False))
+    q = _liberados(db)
     termo = busca.strip()
     if termo:
         like = f"%{termo}%"

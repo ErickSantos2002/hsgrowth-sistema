@@ -25,6 +25,7 @@ interface ProductFormData {
   currency: string;
   category: string;
   is_active: boolean;
+  partner_enabled: boolean;
 }
 
 /**
@@ -57,6 +58,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
     currency: "BRL",
     category: "",
     is_active: true,
+    partner_enabled: false,
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -75,6 +77,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
         currency: product.currency || "BRL",
         category: product.category || "",
         is_active: product.is_active,
+        partner_enabled: !!product.partner_enabled,
       });
     } else {
       // Resetar formulário ao criar novo
@@ -86,6 +89,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
         currency: "BRL",
         category: "",
         is_active: true,
+        partner_enabled: false,
       });
     }
     setError(null);
@@ -133,6 +137,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
         currency: formData.currency,
         category: formData.category.trim() || undefined,
         is_active: formData.is_active,
+        partner_enabled: formData.partner_enabled,
       };
 
       if (isEditing) {
@@ -328,6 +333,30 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
             />
             <label htmlFor="is_active" className="cursor-pointer text-sm text-slate-700 dark:text-slate-300">
               Produto ativo (desmarque para inativar)
+            </label>
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="partner_enabled"
+              checked={formData.partner_enabled}
+              onChange={(e) => handleChange("partner_enabled", e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 bg-white text-emerald-600 focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800"
+            />
+            <label htmlFor="partner_enabled" className="cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+              Liberado para parceiros (aparece no Pipeline de Parceiros)
+            </label>
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="partner_enabled"
+              checked={formData.partner_enabled}
+              onChange={(e) => handleChange("partner_enabled", e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 bg-white text-emerald-600 focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800"
+            />
+            <label htmlFor="partner_enabled" className="cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+              Liberado para parceiros (aparece no Pipeline de Parceiros)
             </label>
           </div>
         </div>

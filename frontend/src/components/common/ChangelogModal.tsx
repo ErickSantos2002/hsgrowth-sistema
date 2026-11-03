@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.9",
+    date: "03/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Pipeline de Parceiros: seção Produtos na oportunidade, como a de Serviços — preço, desconto por linha em R$ ou %, desconto geral, frete e valor do negócio.",
+      },
+      {
+        type: "feature",
+        text: "Produtos: opção \"Liberado para parceiros\". Só os produtos marcados (hoje, o Phoebus) entram nas oportunidades dos parceiros.",
+      },
+    ],
+  },
+  {
     version: "1.11.8",
     date: "03/11/2026",
     entries: [

@@ -156,8 +156,8 @@ def test_produtos_e_valor(client, db):
     p = parceiro(db)
     op = oportunidade(db, p)
     h = _login_parceiro(db, p)
-    ativo = Product(name="Etilômetro", sku="ETL-1", unit_price=1500)
-    inativo = Product(name="Antigo", unit_price=10, is_active=False)
+    ativo = Product(name="Etilômetro", sku="ETL-1", unit_price=1500, partner_enabled=True)
+    inativo = Product(name="Antigo", unit_price=10, is_active=False, partner_enabled=True)
     db.add_all([ativo, inativo])
     db.commit()
 

@@ -85,6 +85,9 @@ export interface OportunidadeForm {
   expected_close_date?: string | null;
   modality?: "venda" | "locacao" | null;
   cnpj_justificativa?: string | null;
+  global_discount?: number;
+  global_discount_type?: "value" | "percent";
+  shipping?: number;
 }
 
 export interface Oportunidade {
@@ -122,6 +125,9 @@ export interface Oportunidade {
   won_at?: string | null;
   lost_at?: string | null;
   total_value: number;
+  global_discount: number;
+  global_discount_type: "value" | "percent";
+  shipping: number;
   cnpj_resultado?: "verde" | "amarelo" | "vermelho" | null;
   cnpj_motivo?: string | null;
   cnpj_justificativa?: string | null;
@@ -137,8 +143,12 @@ export interface ItemProduto {
   id: number;
   product_id: number;
   product_name: string;
+  product_sku?: string | null;
   quantity: number;
   unit_price: number;
+  /** Desconto da linha, sempre em R$. */
+  discount: number;
+  subtotal: number;
   total: number;
 }
 
@@ -291,7 +301,7 @@ const parceriasService = {
   async adicionarProduto(id: number, dados: { product_id: number; quantity: number; unit_price?: number }) {
     return (await api.post<ItemProduto>(`${BASE}/oportunidades/${id}/produtos`, dados)).data;
   },
-  async atualizarProduto(id: number, itemId: number, dados: { quantity?: number; unit_price?: number }) {
+  async atualizarProduto(id: number, itemId: number, dados: { quantity?: number; unit_price?: number; discount?: number }) {
     return (await api.put<ItemProduto>(`${BASE}/oportunidades/${id}/produtos/${itemId}`, dados)).data;
   },
   async removerProduto(id: number, itemId: number) {

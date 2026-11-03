@@ -13,6 +13,8 @@ export interface Product {
   currency: string;
   category?: string;
   is_active: boolean;
+  /** Pode ser vendido pelos parceiros (Pipeline de Parceiros). */
+  partner_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +28,7 @@ export interface CreateProductRequest {
   currency?: string;
   category?: string;
   is_active?: boolean;
+  partner_enabled?: boolean;
 }
 
 export interface UpdateProductRequest {
@@ -37,6 +40,7 @@ export interface UpdateProductRequest {
   currency?: string;
   category?: string;
   is_active?: boolean;
+  partner_enabled?: boolean;
 }
 
 export interface ProductListResponse {

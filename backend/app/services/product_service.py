@@ -374,6 +374,7 @@ class ProductService:
             currency=product.currency,
             category=product.category,
             is_active=product.is_active,
+            partner_enabled=bool(product.partner_enabled),
             created_at=product.created_at,
             updated_at=product.updated_at
         )

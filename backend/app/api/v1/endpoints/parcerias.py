@@ -124,7 +124,7 @@ def alterar_acesso(partner_id: int, user_id: int, dados: AcessoUpdate, db: Sessi
 # ─── Board 2: Pipeline de Parceiros ──────────────────────────────────────────
 
 def _uma(db: Session, op, user: User) -> OportunidadeResponse:
-    return respostas.oportunidade_out(op, respostas.valores_por_oportunidade(db, [op.id]).get(op.id, 0), user)
+    return respostas.oportunidade_out(op, respostas.valores_por_oportunidade(db, [op]).get(op.id, 0), user)
 
 
 @router.get("/oportunidades", response_model=List[OportunidadeResponse])

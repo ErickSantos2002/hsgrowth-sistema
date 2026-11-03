@@ -5,6 +5,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.9] — 03/11/2026
+
+### Adicionado
+- **Pipeline de Parceiros — seção Produtos:** no detalhe da oportunidade, os produtos ficam numa seção da coluna da esquerda, igual à de Serviços do card de Serviço:
+  - cada linha tem quantidade, preço (vem do cadastro e pode ser mudado), desconto em R$ ou % e o total da linha;
+  - no rodapé, subtotal, total dos produtos, desconto geral (R$ ou %), frete e o valor do negócio;
+  - o valor do card no board, o total da coluna e o quadro "Valor do negócio" usam essa conta.
+- **Produtos — "Liberado para parceiros":** nova opção no cadastro de Produtos. Só os produtos marcados entram nas oportunidades dos parceiros; o Phoebus já vem marcado.
+
+### Alterado
+- A aba "Produtos" da direita, no detalhe da oportunidade, saiu (os produtos foram para a seção nova).
+
+### Banco
+- Migration `4e5f6a7b8c9d`: `products.partner_enabled`, `partner_opportunity_products.discount` e `global_discount`, `global_discount_type` e `shipping` em `partner_opportunities`.
+
+---
+
 ## [1.11.8] — 03/11/2026
 
 ### Alterado

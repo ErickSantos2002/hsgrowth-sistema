@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Briefcase, Building2, CheckCircle2, DollarSign, Package, RefreshCw, ShieldCheck, Trash2, XCircle,
+  ArrowLeft, Briefcase, Building2, CheckCircle2, DollarSign, RefreshCw, ShieldCheck, XCircle,
 } from "lucide-react";
 import { Button, FormField, Input, LoadingSpinner, SelectMenu, Textarea } from "../../components/common";
 import ExpandableSection from "../../components/cardDetails/ExpandableSection";
 import AbasDoCard from "../../components/parcerias/AbasDoCard";
 import EtapasParceria from "../../components/parcerias/EtapasParceria";
 import ModalTrava, { faltasParaMover, temFalta } from "../../components/parcerias/ModalTrava";
+import ProdutosDaOportunidade from "../../components/parcerias/ProdutosDaOportunidade";
 import { errosDoForm, paraTela, propsDeTexto } from "../../components/parcerias/campos";
 import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
@@ -17,7 +18,7 @@ import {
   SEMAFORO_COR, SEMAFORO_LABEL, formatarMoeda,
 } from "../../constants/parcerias";
 import parceriasService, {
-  Etapa, ItemProduto, Membro, MoverPayload, Oportunidade, OportunidadeForm, ProdutoCatalogo, mensagemDeErro,
+  Etapa, Membro, MoverPayload, Oportunidade, OportunidadeForm, mensagemDeErro,
 } from "../../services/parceriasService";
 
 const opcoes = (lista: string[]) => lista.map((v) => ({ value: v, label: v }));
@@ -35,9 +36,6 @@ export default function OportunidadeDetalhe() {
   const [form, setForm] = useState<OportunidadeForm>({});
   const [etapas, setEtapas] = useState<Etapa[]>([]);
   const [equipe, setEquipe] = useState<Membro[]>([]);
-  const [itens, setItens] = useState<ItemProduto[]>([]);
-  const [busca, setBusca] = useState("");
-  const [catalogo, setCatalogo] = useState<ProdutoCatalogo[]>([]);
   const [nota, setNota] = useState("");
   const [destinoPendente, setDestinoPendente] = useState<string | null>(null);
 
@@ -55,14 +53,9 @@ export default function OportunidadeDetalhe() {
 
   const carregar = useCallback(async () => {
     try {
-      const [o, e, produtos] = await Promise.all([
-        parceriasService.buscarOportunidade(id),
-        parceriasService.etapas(),
-        parceriasService.listarProdutos(id),
-      ]);
+      const [o, e] = await Promise.all([parceriasService.buscarOportunidade(id), parceriasService.etapas()]);
       preencher(o);
       setEtapas(e.oportunidades);
-      setItens(produtos);
       setEquipe(await parceriasService.listarEquipe(o.partner_id));
     } catch (err) {
       showError(mensagemDeErro(err, "Erro ao carregar a oportunidade."));
@@ -73,15 +66,6 @@ export default function OportunidadeDetalhe() {
   useEffect(() => {
     carregar();
   }, [carregar]);
-
-  useEffect(() => {
-    if (!podeEditar || busca.trim().length < 2) {
-      setCatalogo([]);
-      return;
-    }
-    const t = setTimeout(() => parceriasService.catalogo(busca).then(setCatalogo).catch(() => setCatalogo([])), 300);
-    return () => clearTimeout(t);
-  }, [busca, podeEditar]);
 
   if (!op) return <LoadingSpinner />;
 
@@ -121,40 +105,6 @@ export default function OportunidadeDetalhe() {
       setNota("");
     } catch (err) {
       showError(mensagemDeErro(err, "Erro ao registrar a elegibilidade."));
-    }
-  };
-
-  const recarregarProdutos = async () => {
-    setItens(await parceriasService.listarProdutos(id));
-    setOp(await parceriasService.buscarOportunidade(id));
-  };
-
-  const adicionar = async (p: ProdutoCatalogo) => {
-    try {
-      await parceriasService.adicionarProduto(id, { product_id: p.id, quantity: 1 });
-      setBusca("");
-      await recarregarProdutos();
-    } catch (err) {
-      showError(mensagemDeErro(err, "Erro ao adicionar o produto."));
-    }
-  };
-
-  const mudarQuantidade = async (item: ItemProduto, quantidade: number) => {
-    if (quantidade < 1) return;
-    try {
-      await parceriasService.atualizarProduto(id, item.id, { quantity: quantidade });
-      await recarregarProdutos();
-    } catch (err) {
-      showError(mensagemDeErro(err, "Erro ao alterar a quantidade."));
-    }
-  };
-
-  const remover = async (item: ItemProduto) => {
-    try {
-      await parceriasService.removerProduto(id, item.id);
-      await recarregarProdutos();
-    } catch (err) {
-      showError(mensagemDeErro(err, "Erro ao remover o produto."));
     }
   };
 
@@ -235,7 +185,7 @@ export default function OportunidadeDetalhe() {
                   </div>
                   <span className="text-lg font-bold text-emerald-500">{formatarMoeda(op.total_value)}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-slate-400">Soma dos produtos da oportunidade.</p>
+                <p className="mt-0.5 text-xs text-slate-400">Produtos com descontos e frete.</p>
               </div>
               {op.cnpj_resultado && user?.role !== "partner" && (
                 <div className={`rounded-lg border px-3 py-2 text-xs ${SEMAFORO_COR[op.cnpj_resultado]}`}>
@@ -334,76 +284,13 @@ export default function OportunidadeDetalhe() {
               {podeEditar && <Button onClick={salvar} fullWidth disabled={!podeSalvar}>Salvar</Button>}
             </div>
           </ExpandableSection>
+
+          <ProdutosDaOportunidade op={op} podeEditar={podeEditar} onOportunidade={setOp} />
         </div>
 
         <AbasDoCard
           alvo={{ tipo: "oportunidade", id }}
           versao={op.updated_at}
-          extras={[{
-            chave: "produtos", rotulo: "Produtos", icone: <Package size={16} />, badge: itens.length,
-            conteudo: (
-              <div className="space-y-4">
-                {podeEditar && (
-                  <div className="relative">
-                    <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto por nome ou código" />
-                    {catalogo.length > 0 && (
-                      <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-                        {catalogo.map((p) => (
-                          <li key={p.id}>
-                            <button onClick={() => adicionar(p)} className="flex w-full justify-between px-3 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800">
-                              <span>{p.name}{p.sku && <span className="text-xs text-slate-500"> · {p.sku}</span>}</span>
-                              <span className="text-xs text-slate-500">{formatarMoeda(p.unit_price)}</span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/30">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 text-xs text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-medium">Produto</th>
-                        <th className="w-24 px-3 py-2 text-left font-medium">Qtd.</th>
-                        <th className="px-3 py-2 text-right font-medium">Unitário</th>
-                        <th className="px-3 py-2 text-right font-medium">Total</th>
-                        <th className="w-10" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {itens.map((item) => (
-                        <tr key={item.id} className="border-t border-gray-100 dark:border-slate-700/50">
-                          <td className="px-3 py-2 text-slate-900 dark:text-white">{item.product_name}</td>
-                          <td className="px-3 py-2">
-                            <Input
-                              type="number"
-                              min={1}
-                              defaultValue={item.quantity}
-                              disabled={!podeEditar}
-                              onBlur={(e) => Number(e.target.value) !== item.quantity && mudarQuantidade(item, Number(e.target.value))}
-                            />
-                          </td>
-                          <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-400">{formatarMoeda(item.unit_price)}</td>
-                          <td className="px-3 py-2 text-right font-medium text-slate-900 dark:text-white">{formatarMoeda(item.total)}</td>
-                          <td className="px-3 py-2 text-right">
-                            {podeEditar && (
-                              <button onClick={() => remover(item)} className="text-slate-400 hover:text-red-500" title="Remover">
-                                <Trash2 size={16} />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                      {itens.length === 0 && (
-                        <tr><td colSpan={5} className="px-3 py-8 text-center text-slate-400">Nenhum produto na oportunidade</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ),
-          }]}
         />
       </div>
 

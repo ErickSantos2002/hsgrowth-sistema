@@ -283,6 +283,10 @@ class OportunidadeUpdate(BaseModel):
     modality: Optional[Literal["venda", "locacao"]] = None
     # Só admin/gerente: cadastrar (ou trocar o CNPJ) mesmo com o semáforo vermelho.
     cnpj_justificativa: Optional[str] = Field(None, max_length=500)
+    # Valor do negócio (seção Produtos).
+    global_discount: Optional[Decimal] = Field(None, ge=0)
+    global_discount_type: Optional[Literal["value", "percent"]] = None
+    shipping: Optional[Decimal] = Field(None, ge=0)
 
     @field_validator("cnpj")
     @classmethod
@@ -350,6 +354,9 @@ class OportunidadeResponse(BaseModel):
     won_at: Optional[datetime] = None
     lost_at: Optional[datetime] = None
     total_value: float = 0
+    global_discount: float = 0
+    global_discount_type: str = "value"
+    shipping: float = 0
     # Só na lista do board: atividades pendentes (overdue | today | future | none).
     pending_status: Optional[str] = None
     pending_count: int = 0
@@ -368,14 +375,18 @@ class ProdutoItemCreate(BaseModel):
 class ProdutoItemUpdate(BaseModel):
     quantity: Optional[int] = Field(None, ge=1)
     unit_price: Optional[Decimal] = Field(None, ge=0)
+    discount: Optional[Decimal] = Field(None, ge=0)
 
 
 class ProdutoItemResponse(BaseModel):
     id: int
     product_id: int
     product_name: str
+    product_sku: Optional[str] = None
     quantity: int
     unit_price: float
+    discount: float = 0
+    subtotal: float
     total: float
 
 

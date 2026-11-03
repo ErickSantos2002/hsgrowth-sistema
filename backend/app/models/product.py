@@ -34,6 +34,10 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
 
     # Status
     is_active = Column(Boolean, default=True, nullable=False, index=True)  # Produto ativo
+    # Pode ser vendido pelos parceiros (Pipeline de Parceiros). Hoje, só o Phoebus.
+    partner_enabled = Column(Boolean, default=False, nullable=False)
+    # Pode ser vendido pelos parceiros (Pipeline de Parceiros). Hoje, só o Phoebus.
+    partner_enabled = Column(Boolean, default=False, nullable=False)
 
     # Relacionamentos
     card_products = relationship("CardProduct", back_populates="product", lazy="dynamic", cascade="all, delete-orphan")

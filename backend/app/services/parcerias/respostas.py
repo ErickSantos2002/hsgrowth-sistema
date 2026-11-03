@@ -72,20 +72,30 @@ def parceiros_out(db: Session, lista: List[Partner]) -> List[ParceiroResponse]:
     return [_com_pendencia(parceiro_out(db, p), situacoes.get(p.id, ("none", 0))) for p in lista]
 
 
-def valores_por_oportunidade(db: Session, ids: Iterable[int]) -> Dict[int, float]:
-    ids = list(ids)
-    if not ids:
+def valor_do_negocio(total_produtos: float, op: PartnerOpportunity) -> float:
+    """Como no card de Serviço: produtos − desconto geral (R$ ou %) + frete, nunca negativo."""
+    desconto = float(op.global_discount or 0)
+    if op.global_discount_type == "percent":
+        desconto = round(total_produtos * desconto / 100, 2)
+    return max(0.0, round(total_produtos - desconto + float(op.shipping or 0), 2))
+
+
+def valores_por_oportunidade(db: Session, ops: Iterable[PartnerOpportunity]) -> Dict[int, float]:
+    ops = list(ops)
+    if not ops:
         return {}
     linhas = (
         db.query(
             PartnerOpportunityProduct.opportunity_id,
-            func.sum(PartnerOpportunityProduct.quantity * PartnerOpportunityProduct.unit_price),
+            func.sum(PartnerOpportunityProduct.quantity * PartnerOpportunityProduct.unit_price
+                     - PartnerOpportunityProduct.discount),
         )
-        .filter(PartnerOpportunityProduct.opportunity_id.in_(ids))
+        .filter(PartnerOpportunityProduct.opportunity_id.in_([op.id for op in ops]))
         .group_by(PartnerOpportunityProduct.opportunity_id)
         .all()
     )
-    return {op_id: float(total or 0) for op_id, total in linhas}
+    produtos = {op_id: float(total or 0) for op_id, total in linhas}
+    return {op.id: valor_do_negocio(produtos.get(op.id, 0.0), op) for op in ops}
 
 
 def oportunidade_out(op: PartnerOpportunity, total: float = 0, user: Optional[User] = None) -> OportunidadeResponse:
@@ -103,7 +113,7 @@ def oportunidade_out(op: PartnerOpportunity, total: float = 0, user: Optional[Us
 
 def oportunidades_out(db: Session, ops: List[PartnerOpportunity], user: Optional[User] = None) -> List[OportunidadeResponse]:
     ids = [op.id for op in ops]
-    totais = valores_por_oportunidade(db, ids)
+    totais = valores_por_oportunidade(db, ops)
     situacoes = pendencias(db, PartnerActivity.opportunity_id, ids)
     return [
         _com_pendencia(oportunidade_out(op, totais.get(op.id, 0), user), situacoes.get(op.id, ("none", 0)))
@@ -113,13 +123,18 @@ def oportunidades_out(db: Session, ops: List[PartnerOpportunity], user: Optional
 
 def item_out(item: PartnerOpportunityProduct) -> ProdutoItemResponse:
     preco = float(item.unit_price or 0)
+    desconto = float(item.discount or 0)
+    subtotal = round(preco * item.quantity, 2)
     return ProdutoItemResponse(
         id=item.id,
         product_id=item.product_id,
         product_name=item.product.name if item.product else "",
+        product_sku=item.product.sku if item.product else None,
         quantity=item.quantity,
         unit_price=preco,
-        total=preco * item.quantity,
+        discount=desconto,
+        subtotal=subtotal,
+        total=round(subtotal - desconto, 2),
     )
 
 

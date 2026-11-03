@@ -24,6 +24,7 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     """Schema para criação de produto."""
     is_active: bool = Field(True, description="Produto ativo")
+    partner_enabled: bool = Field(False, description="Liberado para parceiros")
 
     model_config = {
         "json_schema_extra": {
@@ -52,12 +53,15 @@ class ProductUpdate(BaseModel):
     currency: Optional[str] = Field(None, max_length=3)
     category: Optional[str] = Field(None, max_length=100)
     is_active: Optional[bool] = None
+    partner_enabled: Optional[bool] = None
+    partner_enabled: Optional[bool] = None
 
 
 class ProductResponse(ProductBase):
     """Schema de resposta de produto."""
     id: int = Field(..., description="ID do produto")
     is_active: bool = Field(..., description="Produto ativo")
+    partner_enabled: bool = Field(False, description="Liberado para parceiros")
     created_at: datetime = Field(..., description="Data de criação")
     updated_at: datetime = Field(..., description="Data de atualização")
 
