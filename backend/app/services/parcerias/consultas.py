@@ -2,11 +2,12 @@
 Consulta de CNPJ (Entrega 2): limite diário do parceiro, histórico e a
 resposta filtrada por perfil. O semáforo em si fica em semaforo.py.
 """
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.cnpj_consulta import CnpjConsulta
@@ -15,6 +16,7 @@ from app.schemas.parcerias import (
     ConsultaCnpjResponse,
     ConsultaHistoricoItem,
     ConsultaHistoricoResponse,
+    ConsultasResumoResponse,
     RegistroSemaforo,
 )
 from app.services.parcerias import acesso, semaforo
@@ -69,6 +71,23 @@ def resposta(cnpj: str, s: semaforo.Situacao, user: User) -> ConsultaCnpjRespons
     return ConsultaCnpjResponse(
         cnpj=cnpj, resultado=s.resultado, motivo=s.motivo, frase=s.frase,
         libera_em=s.libera_em, registros=registros,
+    )
+
+
+def resumo(db: Session, user: User) -> ConsultasResumoResponse:
+    """Hoje e últimos 30 dias, por cor. Admin e gerente veem todos; os demais, só os seus."""
+    q = db.query(CnpjConsulta)
+    if not acesso.eh_gestao(user):
+        q = q.filter(CnpjConsulta.user_id == user.id)
+    hoje = q.filter(CnpjConsulta.created_at >= _inicio_do_dia_utc()).count()
+    por_cor = dict(
+        q.filter(CnpjConsulta.created_at >= datetime.utcnow() - timedelta(days=30))
+        .with_entities(CnpjConsulta.resultado, func.count(CnpjConsulta.id))
+        .group_by(CnpjConsulta.resultado).all()
+    )
+    return ConsultasResumoResponse(
+        hoje=hoje, limite=limite_de(user), ultimos_30_dias=sum(por_cor.values()),
+        verdes=por_cor.get("verde", 0), amarelos=por_cor.get("amarelo", 0), vermelhos=por_cor.get("vermelho", 0),
     )
 
 

@@ -87,3 +87,21 @@ def test_historico_so_para_gestao_e_com_filtro(client, db, admin_headers):
     [linha] = so_dmap["itens"]
     assert linha["partner_name"] == "Dmap" and linha["cnpj"] == CNPJ_A and linha["resultado"] == "verde"
     assert linha["perfil"] == "partner"
+
+
+def test_resumo_da_gestao_e_de_cada_um(client, db, admin_headers):
+    v = vendas(db)
+    card_de_vendas(db, v.lead_novo)
+    vendedor = usuario(db, "salesperson", "v@hs.com")
+    sdr = usuario(db, "sdr", "sdr@hs.com")
+    client.post(URL, json={"cnpj": CNPJ_A}, headers=headers(vendedor))
+    client.post(URL, json={"cnpj": CNPJ_B}, headers=headers(vendedor))
+    client.post(URL, json={"cnpj": CNPJ_B}, headers=headers(sdr))
+    db.add(CnpjConsulta(user_id=sdr.id, cnpj=CNPJ_B, resultado="verde", motivo="livre",
+                        created_at=datetime(2020, 1, 1)))
+    db.commit()
+
+    tudo = client.get(f"{URL}/resumo", headers=admin_headers).json()
+    assert tudo == {"hoje": 3, "limite": None, "ultimos_30_dias": 3, "verdes": 2, "amarelos": 0, "vermelhos": 1}
+    so_dele = client.get(f"{URL}/resumo", headers=headers(vendedor)).json()
+    assert (so_dele["hoje"], so_dele["vermelhos"], so_dele["verdes"]) == (2, 1, 1)

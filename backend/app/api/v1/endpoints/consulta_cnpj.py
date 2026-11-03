@@ -18,6 +18,7 @@ from app.schemas.parcerias import (
     ConsultaCnpjResponse,
     ConsultaHistoricoResponse,
     ConsultasHojeResponse,
+    ConsultasResumoResponse,
 )
 from app.services.parcerias import consultas
 
@@ -33,6 +34,11 @@ def consultar(req: ConsultaCnpjRequest, db: Session = Depends(get_db),
 @router.get("/hoje", response_model=ConsultasHojeResponse, summary="Consultas feitas hoje e o limite")
 def hoje(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     return ConsultasHojeResponse(feitas=consultas.feitas_hoje(db, current_user), limite=consultas.limite_de(current_user))
+
+
+@router.get("/resumo", response_model=ConsultasResumoResponse, summary="KPIs da Consulta de CNPJ")
+def resumo(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    return consultas.resumo(db, current_user)
 
 
 @router.get("/historico", response_model=ConsultaHistoricoResponse, summary="Histórico (admin e gerente)")

@@ -477,6 +477,16 @@ class ConsultasHojeResponse(BaseModel):
     limite: Optional[int] = None
 
 
+class ConsultasResumoResponse(BaseModel):
+    """KPIs da página: a gestão vê todo mundo; os demais, só as próprias consultas."""
+    hoje: int
+    limite: Optional[int] = None
+    ultimos_30_dias: int
+    verdes: int
+    amarelos: int
+    vermelhos: int
+
+
 class ConsultaHistoricoItem(BaseModel):
     id: int
     created_at: datetime

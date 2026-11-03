@@ -240,7 +240,8 @@ export default function OportunidadeDetalhe() {
               {op.cnpj_resultado && user?.role !== "partner" && (
                 <div className={`rounded-lg border px-3 py-2 text-xs ${SEMAFORO_COR[op.cnpj_resultado]}`}>
                   <div className="font-semibold">
-                    CNPJ no cadastro: {SEMAFORO_LABEL[op.cnpj_resultado]} · {MOTIVO_SEMAFORO[op.cnpj_motivo ?? ""] ?? ""}
+                    CNPJ no cadastro: {SEMAFORO_LABEL[op.cnpj_resultado]}
+                    {op.cnpj_motivo && op.cnpj_motivo !== "livre" && ` · ${MOTIVO_SEMAFORO[op.cnpj_motivo]}`}
                   </div>
                   {op.cnpj_resultado === "amarelo" && <p className="mt-0.5">Outra unidade em negociação — analisar.</p>}
                   {op.cnpj_justificativa && (

@@ -184,6 +184,15 @@ export interface ConsultaCnpj {
   registros: RegistroSemaforo[];
 }
 
+export interface ResumoConsultas {
+  hoje: number;
+  limite: number | null;
+  ultimos_30_dias: number;
+  verdes: number;
+  amarelos: number;
+  vermelhos: number;
+}
+
 export interface ConsultaHistoricoItem {
   id: number;
   created_at: string;
@@ -295,8 +304,8 @@ const parceriasService = {
   async consultarCnpj(cnpj: string) {
     return (await api.post<ConsultaCnpj>(`${BASE}/consulta-cnpj`, { cnpj })).data;
   },
-  async consultasHoje() {
-    return (await api.get<{ feitas: number; limite: number | null }>(`${BASE}/consulta-cnpj/hoje`)).data;
+  async resumoConsultas() {
+    return (await api.get<ResumoConsultas>(`${BASE}/consulta-cnpj/resumo`)).data;
   },
   async historicoConsultas(filtro: FiltroHistorico) {
     return (await api.get<{ total: number; itens: ConsultaHistoricoItem[] }>(`${BASE}/consulta-cnpj/historico`, { params: filtro })).data;

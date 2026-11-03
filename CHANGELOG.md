@@ -5,6 +5,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.6] — 03/11/2026
+
+### Alterado
+- **Consulta de CNPJ:**
+  - a página ganha 4 cards de KPI no topo, nos mesmos cartões do Dashboard: consultas de hoje (para o parceiro, "de 20 permitidas"), consultas dos últimos 30 dias, percentual de livres e bloqueadas, com as que foram para análise. Admin e gerente veem os números de todos; os demais perfis, só os próprios;
+  - o histórico usa a paginação padrão do sistema;
+  - os 4 filtros ficam com a mesma altura e largura;
+  - o resultado "Livre" não aparece mais repetido ("Livre · Livre"), nem no histórico nem no selo da oportunidade.
+
+---
+
 ## [1.11.5] — 03/11/2026
 
 ### Adicionado

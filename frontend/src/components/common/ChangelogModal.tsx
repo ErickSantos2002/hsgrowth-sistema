@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.6",
+    date: "03/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Consulta de CNPJ: cards de KPI no topo (consultas de hoje, últimos 30 dias, livres e bloqueadas), paginação padrão no histórico e filtros do mesmo tamanho.",
+      },
+    ],
+  },
+  {
     version: "1.11.5",
     date: "03/11/2026",
     entries: [
