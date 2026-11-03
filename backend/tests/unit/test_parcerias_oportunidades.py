@@ -208,3 +208,89 @@ def test_apagar_campo_obrigatorio_responde_422(client, db):
 
     assert resposta.status_code == 422
     assert "Título" in resposta.json()["detail"]
+
+
+# ── Semáforo de CNPJ no cadastro (Entrega 2) ─────────────────────────────────
+
+from tests.unit.apoio_parcerias import CNPJ_FILIAL_A, card_de_vendas, vendas  # noqa: E402
+
+
+def test_vermelho_barra_o_parceiro(client, db):
+    v = vendas(db)
+    card_de_vendas(db, v.lead_novo)
+    h = _login_parceiro(db, parceiro(db))
+
+    r = client.post(URL, json=NOVA, headers=h)
+
+    assert r.status_code == 422
+    assert r.json()["detail"] == "Esta empresa já está em negociação."
+
+
+def test_gestao_libera_o_vermelho_com_justificativa(client, db, admin_headers):
+    v = vendas(db)
+    card_de_vendas(db, v.lead_novo)
+    p = parceiro(db)
+
+    sem = client.post(URL, json={**NOVA, "partner_id": p.id}, headers=admin_headers)
+    assert sem.status_code == 422 and "justificativa" in sem.json()["detail"]
+
+    com = client.post(URL, headers=admin_headers,
+                      json={**NOVA, "partner_id": p.id, "cnpj_justificativa": "Cliente pediu o parceiro"})
+    assert com.status_code == 201
+    corpo = com.json()
+    assert (corpo["cnpj_resultado"], corpo["cnpj_motivo"]) == ("vermelho", "em_negociacao")
+    assert corpo["cnpj_justificativa"] == "Cliente pediu o parceiro"
+    assert corpo["cnpj_liberado_por_name"]
+
+
+def test_parceiro_nao_libera_com_justificativa(client, db):
+    v = vendas(db)
+    card_de_vendas(db, v.lead_novo)
+    h = _login_parceiro(db, parceiro(db))
+
+    r = client.post(URL, json={**NOVA, "cnpj_justificativa": "por favor"}, headers=h)
+
+    assert r.status_code == 422
+
+
+def test_amarelo_grava_o_motivo(client, db):
+    v = vendas(db)
+    card_de_vendas(db, v.lead_novo, documento=CNPJ_FILIAL_A)
+    h = _login_parceiro(db, parceiro(db))
+
+    r = client.post(URL, json=NOVA, headers=h)
+
+    assert r.status_code == 201
+    assert (r.json()["cnpj_resultado"], r.json()["cnpj_motivo"]) == ("amarelo", "outra_unidade")
+
+
+def test_cadastro_nao_gasta_consulta(client, db):
+    from app.models.cnpj_consulta import CnpjConsulta
+
+    h = _login_parceiro(db, parceiro(db))
+    assert client.post(URL, json=NOVA, headers=h).status_code == 201
+    assert db.query(CnpjConsulta).count() == 0
+
+
+def test_trocar_cnpj_confere_de_novo(client, db):
+    v = vendas(db)
+    card_de_vendas(db, v.lead_novo, documento=CNPJ_B)
+    h = _login_parceiro(db, parceiro(db))
+    op_id = client.post(URL, json=NOVA, headers=h).json()["id"]
+
+    r = client.put(f"{URL}/{op_id}", json={"cnpj": CNPJ_B}, headers=h)
+
+    assert r.status_code == 422
+
+
+def test_parceiro_nao_ve_justificativa(client, db, admin_headers):
+    v = vendas(db)
+    card_de_vendas(db, v.lead_novo)
+    p = parceiro(db)
+    op_id = client.post(URL, headers=admin_headers,
+                        json={**NOVA, "partner_id": p.id, "cnpj_justificativa": "Card do Miguel parado"}).json()["id"]
+
+    corpo = client.get(f"{URL}/{op_id}", headers=_login_parceiro(db, p)).json()
+
+    assert corpo["cnpj_resultado"] == "vermelho"
+    assert corpo["cnpj_justificativa"] is None and corpo["cnpj_liberado_por_name"] is None

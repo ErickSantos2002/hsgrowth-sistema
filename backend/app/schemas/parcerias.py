@@ -234,6 +234,8 @@ class OportunidadeCreate(BaseModel):
     contact_role: Optional[str] = Field(None, max_length=255)
     contact_phone: Optional[str] = Field(None, max_length=30)
     contact_email: Optional[str] = Field(None, max_length=255)
+    # Só admin/gerente: cadastrar (ou trocar o CNPJ) mesmo com o semáforo vermelho.
+    cnpj_justificativa: Optional[str] = Field(None, max_length=500)
 
     @field_validator("cnpj")
     @classmethod
@@ -276,6 +278,8 @@ class OportunidadeUpdate(BaseModel):
     contact_email: Optional[str] = Field(None, max_length=255)
     expected_close_date: Optional[date] = None
     modality: Optional[Literal["venda", "locacao"]] = None
+    # Só admin/gerente: cadastrar (ou trocar o CNPJ) mesmo com o semáforo vermelho.
+    cnpj_justificativa: Optional[str] = Field(None, max_length=500)
 
     @field_validator("cnpj")
     @classmethod
@@ -305,6 +309,11 @@ class ElegibilidadeRequest(BaseModel):
 
 class OportunidadeResponse(BaseModel):
     id: int
+    # Semáforo de CNPJ gravado no cadastro (a justificativa não vai para o parceiro).
+    cnpj_resultado: Optional[str] = None
+    cnpj_motivo: Optional[str] = None
+    cnpj_justificativa: Optional[str] = None
+    cnpj_liberado_por_name: Optional[str] = None
     partner_id: int
     partner_name: Optional[str] = None
     acquisition_channel: str = "Parceiros"
@@ -425,3 +434,65 @@ class AtividadeResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ─── Consulta de CNPJ (Entrega 2) ────────────────────────────────────────────
+
+class ConsultaCnpjRequest(BaseModel):
+    cnpj: str
+
+    @field_validator("cnpj")
+    @classmethod
+    def _validar_cnpj(cls, valor):
+        if not cnpj_valido(valor):
+            raise ValueError("CNPJ inválido")
+        return so_digitos(valor)
+
+
+class RegistroSemaforo(BaseModel):
+    tipo: str
+    id: int
+    titulo: str
+    onde: str
+    responsavel: Optional[str] = None
+    cnpj: str
+    motivo: str
+    libera_em: Optional[date] = None
+    parceiro: Optional[str] = None
+    desde: datetime
+
+
+class ConsultaCnpjResponse(BaseModel):
+    cnpj: str
+    resultado: Literal["verde", "amarelo", "vermelho"]
+    motivo: str
+    frase: str
+    libera_em: Optional[date] = None
+    # Vazio para o parceiro: ele vê só a cor e a frase.
+    registros: List[RegistroSemaforo] = []
+
+
+class ConsultasHojeResponse(BaseModel):
+    feitas: int
+    limite: Optional[int] = None
+
+
+class ConsultaHistoricoItem(BaseModel):
+    id: int
+    created_at: datetime
+    user_name: Optional[str] = None
+    perfil: Optional[str] = None
+    partner_name: Optional[str] = None
+    cnpj: str
+    resultado: str
+    motivo: str
+
+
+class ConsultaHistoricoResponse(BaseModel):
+    total: int
+    itens: List[ConsultaHistoricoItem]
+
+
+class AvisoParceriasItem(BaseModel):
+    parceiro: str
+    desde: datetime

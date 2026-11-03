@@ -4,7 +4,7 @@ from app.models.partner_activity import PartnerActivity
 from app.models.partner_opportunity import PartnerOpportunityProduct
 from app.models.product import Product
 
-from tests.unit.apoio_parcerias import oportunidade, parceiro, usuario
+from tests.unit.apoio_parcerias import CNPJ_A, oportunidade, parceiro, usuario
 
 
 def test_parceiro_com_equipe_oportunidade_produto_e_historico(db):
@@ -34,3 +34,17 @@ def test_login_fica_ligado_ao_parceiro(db):
     user = usuario(db, "partner", "contato@dmap.com", p)
 
     assert user.partner_id == p.id
+
+
+def test_consulta_de_cnpj_e_campos_do_semaforo(db):
+    from app.models.cnpj_consulta import CnpjConsulta
+
+    p = parceiro(db)
+    u = usuario(db, "partner", "a@dmap.com", p)
+    db.add(CnpjConsulta(user_id=u.id, partner_id=p.id, cnpj=CNPJ_A, resultado="verde", motivo="livre"))
+    op = oportunidade(db, p, cnpj_resultado="amarelo", cnpj_motivo="outra_unidade")
+    db.commit()
+
+    assert db.query(CnpjConsulta).one().created_at is not None
+    assert op.cnpj_resultado == "amarelo"
+    assert op.cnpj_justificativa is None

@@ -81,6 +81,7 @@ export interface OportunidadeForm {
   contact_email?: string | null;
   expected_close_date?: string | null;
   modality?: "venda" | "locacao" | null;
+  cnpj_justificativa?: string | null;
 }
 
 export interface Oportunidade {
@@ -118,6 +119,10 @@ export interface Oportunidade {
   won_at?: string | null;
   lost_at?: string | null;
   total_value: number;
+  cnpj_resultado?: "verde" | "amarelo" | "vermelho" | null;
+  cnpj_motivo?: string | null;
+  cnpj_justificativa?: string | null;
+  cnpj_liberado_por_name?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -157,6 +162,47 @@ export interface MoverPayload {
 }
 
 /** Mensagem do backend (trava 422, 403, validação do Pydantic) para o toast. */
+export interface RegistroSemaforo {
+  tipo: "card" | "oportunidade";
+  id: number;
+  titulo: string;
+  onde: string;
+  responsavel?: string | null;
+  cnpj: string;
+  motivo: string;
+  libera_em?: string | null;
+  parceiro?: string | null;
+  desde: string;
+}
+
+export interface ConsultaCnpj {
+  cnpj: string;
+  resultado: "verde" | "amarelo" | "vermelho";
+  motivo: string;
+  frase: string;
+  libera_em?: string | null;
+  registros: RegistroSemaforo[];
+}
+
+export interface ConsultaHistoricoItem {
+  id: number;
+  created_at: string;
+  user_name?: string | null;
+  perfil?: string | null;
+  partner_name?: string | null;
+  cnpj: string;
+  resultado: string;
+  motivo: string;
+}
+
+export interface FiltroHistorico {
+  user_id?: number;
+  partner_id?: number;
+  desde?: string;
+  ate?: string;
+  pagina?: number;
+}
+
 export function mensagemDeErro(err: any, padrao: string): string {
   const detail = err?.response?.data?.detail;
   if (typeof detail === "string") return detail;
@@ -243,6 +289,20 @@ const parceriasService = {
   // Atividades
   async listarAtividades(alvo: AlvoAtividades) {
     return (await api.get<Atividade[]>(rotaDoAlvo(alvo))).data;
+  },
+
+  // Consulta de CNPJ (Entrega 2)
+  async consultarCnpj(cnpj: string) {
+    return (await api.post<ConsultaCnpj>(`${BASE}/consulta-cnpj`, { cnpj })).data;
+  },
+  async consultasHoje() {
+    return (await api.get<{ feitas: number; limite: number | null }>(`${BASE}/consulta-cnpj/hoje`)).data;
+  },
+  async historicoConsultas(filtro: FiltroHistorico) {
+    return (await api.get<{ total: number; itens: ConsultaHistoricoItem[] }>(`${BASE}/consulta-cnpj/historico`, { params: filtro })).data;
+  },
+  async avisoParceriasDoCard(cardId: number) {
+    return (await api.get<{ parceiro: string; desde: string }[]>(`/api/v1/cards/${cardId}/aviso-parcerias`)).data;
   },
 };
 

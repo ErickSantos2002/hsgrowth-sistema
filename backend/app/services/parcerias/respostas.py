@@ -1,5 +1,5 @@
 """Montagem das respostas da API de Parcerias (nomes e totais que a tela mostra)."""
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from app.models.partner import Partner
 from app.models.partner_activity import PartnerActivity
 from app.models.partner_opportunity import PartnerOpportunity, PartnerOpportunityProduct
+from app.models.user import User
+from app.services.parcerias import acesso
 from app.schemas.parcerias import (
     AtividadeResponse,
     OportunidadeResponse,
@@ -48,18 +50,22 @@ def valores_por_oportunidade(db: Session, ids: Iterable[int]) -> Dict[int, float
     return {op_id: float(total or 0) for op_id, total in linhas}
 
 
-def oportunidade_out(op: PartnerOpportunity, total: float = 0) -> OportunidadeResponse:
+def oportunidade_out(op: PartnerOpportunity, total: float = 0, user: Optional[User] = None) -> OportunidadeResponse:
+    # O parceiro vê a cor e o motivo, não a justificativa da gestão nem quem liberou.
+    para_parceiro = user is not None and acesso.eh_parceiro(user)
     return OportunidadeResponse.model_validate(op).model_copy(update={
         "partner_name": op.partner.name if op.partner else None,
         "seller_name": op.seller.name if op.seller else None,
         "eligibility_by_name": op.eligibility_by.name if op.eligibility_by else None,
         "total_value": total,
+        "cnpj_justificativa": None if para_parceiro else op.cnpj_justificativa,
+        "cnpj_liberado_por_name": None if para_parceiro or not op.cnpj_liberado_por else op.cnpj_liberado_por.name,
     })
 
 
-def oportunidades_out(db: Session, ops: List[PartnerOpportunity]) -> List[OportunidadeResponse]:
+def oportunidades_out(db: Session, ops: List[PartnerOpportunity], user: Optional[User] = None) -> List[OportunidadeResponse]:
     totais = valores_por_oportunidade(db, [op.id for op in ops])
-    return [oportunidade_out(op, totais.get(op.id, 0)) for op in ops]
+    return [oportunidade_out(op, totais.get(op.id, 0), user) for op in ops]
 
 
 def item_out(item: PartnerOpportunityProduct) -> ProdutoItemResponse:

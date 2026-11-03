@@ -123,44 +123,44 @@ def alterar_acesso(partner_id: int, user_id: int, dados: AcessoUpdate, db: Sessi
 
 # ─── Board 2: Pipeline de Parceiros ──────────────────────────────────────────
 
-def _uma(db: Session, op) -> OportunidadeResponse:
-    return respostas.oportunidade_out(op, respostas.valores_por_oportunidade(db, [op.id]).get(op.id, 0))
+def _uma(db: Session, op, user: User) -> OportunidadeResponse:
+    return respostas.oportunidade_out(op, respostas.valores_por_oportunidade(db, [op.id]).get(op.id, 0), user)
 
 
 @router.get("/oportunidades", response_model=List[OportunidadeResponse])
 def listar_oportunidades(partner_id: Optional[int] = None, db: Session = Depends(get_db),
                          current_user: User = Depends(get_current_active_user)):
-    return respostas.oportunidades_out(db, oportunidades.listar(db, current_user, partner_id))
+    return respostas.oportunidades_out(db, oportunidades.listar(db, current_user, partner_id), current_user)
 
 
 @router.post("/oportunidades", response_model=OportunidadeResponse, status_code=201)
 def criar_oportunidade(dados: OportunidadeCreate, db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_active_user)):
-    return _uma(db, oportunidades.criar(db, current_user, dados))
+    return _uma(db, oportunidades.criar(db, current_user, dados), current_user)
 
 
 @router.get("/oportunidades/{opportunity_id}", response_model=OportunidadeResponse)
 def buscar_oportunidade(opportunity_id: int, db: Session = Depends(get_db),
                         current_user: User = Depends(get_current_active_user)):
-    return _uma(db, acesso.buscar_oportunidade(db, current_user, opportunity_id))
+    return _uma(db, acesso.buscar_oportunidade(db, current_user, opportunity_id), current_user)
 
 
 @router.put("/oportunidades/{opportunity_id}", response_model=OportunidadeResponse)
 def atualizar_oportunidade(opportunity_id: int, dados: OportunidadeUpdate, db: Session = Depends(get_db),
                            current_user: User = Depends(get_current_active_user)):
-    return _uma(db, oportunidades.atualizar(db, current_user, opportunity_id, dados))
+    return _uma(db, oportunidades.atualizar(db, current_user, opportunity_id, dados), current_user)
 
 
 @router.put("/oportunidades/{opportunity_id}/mover", response_model=OportunidadeResponse)
 def mover_oportunidade(opportunity_id: int, req: MoverRequest, db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_active_user)):
-    return _uma(db, oportunidades.mover(db, current_user, opportunity_id, req))
+    return _uma(db, oportunidades.mover(db, current_user, opportunity_id, req), current_user)
 
 
 @router.put("/oportunidades/{opportunity_id}/elegibilidade", response_model=OportunidadeResponse)
 def definir_elegibilidade(opportunity_id: int, req: ElegibilidadeRequest, db: Session = Depends(get_db),
                           current_user: User = Depends(get_current_active_user)):
-    return _uma(db, oportunidades.definir_elegibilidade(db, current_user, opportunity_id, req))
+    return _uma(db, oportunidades.definir_elegibilidade(db, current_user, opportunity_id, req), current_user)
 
 
 @router.get("/oportunidades/{opportunity_id}/produtos", response_model=List[ProdutoItemResponse])

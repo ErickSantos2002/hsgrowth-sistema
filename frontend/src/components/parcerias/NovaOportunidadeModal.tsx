@@ -3,9 +3,12 @@ import { BaseModal, Button, FormField, Input, SelectMenu, Textarea } from "../co
 import { showError } from "../../utils/toast";
 import { DEAL_TYPES, RELATIONSHIP_TYPES, SECTORS } from "../../constants/blueprintOptions";
 import parceriasService, {
-  Membro, Oportunidade, OportunidadeForm, Parceiro, mensagemDeErro,
+  ConsultaCnpj, Membro, Oportunidade, OportunidadeForm, Parceiro, mensagemDeErro,
 } from "../../services/parceriasService";
-import { errosDoForm, propsDeTexto } from "./campos";
+import { PERFIS_GESTAO } from "../../constants/parcerias";
+import { useAuth } from "../../hooks/useAuth";
+import { cnpjValido, errosDoForm, propsDeTexto } from "./campos";
+import ResultadoSemaforo from "./ResultadoSemaforo";
 
 interface Props {
   isOpen: boolean;
@@ -28,11 +31,18 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
   const [form, setForm] = useState<OportunidadeForm>(VAZIO);
   const [equipe, setEquipe] = useState<Membro[]>([]);
   const [salvando, setSalvando] = useState(false);
+  const { user } = useAuth();
+  const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
+  const [consulta, setConsulta] = useState<ConsultaCnpj | null>(null);
+  const [consultando, setConsultando] = useState(false);
 
   const partnerId = escolheParceiro ? form.partner_id : parceiros[0]?.id;
 
   useEffect(() => {
-    if (isOpen) setForm(VAZIO);
+    if (isOpen) {
+      setForm(VAZIO);
+      setConsulta(null);
+    }
   }, [isOpen]);
 
   useEffect(() => {
@@ -46,9 +56,26 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
   const texto = (nome: keyof OportunidadeForm & string) => propsDeTexto(form, setForm, nome);
   const erros = errosDoForm(form);
 
+  const consultar = async () => {
+    setConsultando(true);
+    try {
+      setConsulta(await parceriasService.consultarCnpj(form.cnpj ?? ""));
+    } catch (e) {
+      setConsulta(null);
+      showError(mensagemDeErro(e, "Erro ao consultar o CNPJ."));
+    } finally {
+      setConsultando(false);
+    }
+  };
+  // Passo 2 só com a consulta do CNPJ atual: verde/amarelo, ou vermelho para a gestão (com justificativa).
+  const consultaValida = !!consulta && consulta.cnpj === (form.cnpj ?? "").replace(/\D/g, "");
+  const liberado = consultaValida && (consulta.resultado !== "vermelho" || gestao);
+  const precisaJustificar = consultaValida && consulta.resultado === "vermelho" && gestao;
+
   const obrigatorios = [form.title, form.deal_type, form.sector, form.relationship_type, form.context, form.cnpj, form.company_name];
   const pronto = obrigatorios.every((v) => (v ?? "").toString().trim() !== "") && (!escolheParceiro || !!form.partner_id)
-    && Object.keys(erros).length === 0;
+    && Object.keys(erros).length === 0
+    && liberado && (!precisaJustificar || !!form.cnpj_justificativa?.trim());
 
   const salvar = async () => {
     setSalvando(true);
@@ -69,7 +96,7 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
       isOpen={isOpen}
       onClose={onClose}
       title="Nova oportunidade"
-      subtitle="Entra em Novo Lead com a elegibilidade Em análise."
+      subtitle="Consulte o CNPJ primeiro. Entra em Novo Lead com a elegibilidade Em análise."
       size="xl"
       footer={
         <div className="flex justify-end gap-2">
@@ -78,6 +105,27 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
         </div>
       }
     >
+      <div className="mb-4 space-y-3">
+        <div className="flex items-end gap-2">
+          <FormField label="CNPJ da empresa" required error={erros.cnpj} className="flex-1">
+            <Input {...texto("cnpj")} placeholder="00.000.000/0000-00" />
+          </FormField>
+          <Button onClick={consultar} loading={consultando} disabled={!cnpjValido(form.cnpj ?? "")}>Consultar</Button>
+        </div>
+        {consultaValida && consulta && <ResultadoSemaforo consulta={consulta} />}
+        {precisaJustificar && (
+          <FormField label="Justificativa para cadastrar mesmo assim" required hint={`${(form.cnpj_justificativa ?? "").length}/500`}>
+            <Textarea
+              value={form.cnpj_justificativa ?? ""}
+              maxLength={500}
+              rows={2}
+              onChange={(e) => setForm({ ...form, cnpj_justificativa: e.target.value })}
+            />
+          </FormField>
+        )}
+      </div>
+
+      {liberado && (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {escolheParceiro && (
           <FormField label="Parceiro" required>
@@ -108,7 +156,6 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
         <FormField label="Setor da empresa" required className="sm:col-span-2">
           <SelectMenu value={form.sector ?? ""} placeholder="Escolha" options={opcoes(SECTORS)} onChange={(v) => setForm({ ...form, sector: v })} />
         </FormField>
-        <FormField label="CNPJ" required error={erros.cnpj}><Input {...texto("cnpj")} placeholder="00.000.000/0000-00" /></FormField>
         <FormField label="Razão social / nome" required><Input {...texto("company_name")} /></FormField>
         <FormField label="Cidade"><Input {...texto("company_city")} /></FormField>
         <FormField label="UF" error={erros.company_state}><Input {...texto("company_state")} placeholder="SP" /></FormField>
@@ -121,6 +168,7 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
         <FormField label="Telefone" error={erros.contact_phone}><Input {...texto("contact_phone")} placeholder="(00) 00000-0000" /></FormField>
         <FormField label="E-mail" error={erros.contact_email}><Input type="email" {...texto("contact_email")} placeholder="nome@empresa.com.br" /></FormField>
       </div>
+      )}
     </BaseModal>
   );
 }

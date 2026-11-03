@@ -1066,9 +1066,10 @@ const KanbanBoard: React.FC = () => {
       }
       // Recarrega apenas os cards — board e listas não mudam ao criar/editar um card
       await loadCardsOnly(statusFilter);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar card:", error);
-      showError("Erro ao salvar card");
+      const detail = error?.response?.data?.detail;
+      showError(typeof detail === "string" ? detail : "Erro ao salvar card");
     }
   };
 

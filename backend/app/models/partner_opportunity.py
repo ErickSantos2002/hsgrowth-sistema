@@ -59,9 +59,17 @@ class PartnerOpportunity(Base, TimestampMixin, SoftDeleteMixin):
 
     created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
+    # Semáforo de CNPJ no cadastro (Entrega 2): cor e motivo, e quem liberou
+    # o vermelho (só admin/gerente) com a justificativa.
+    cnpj_resultado = Column(String(10), nullable=True)
+    cnpj_motivo = Column(String(30), nullable=True)
+    cnpj_liberado_por_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    cnpj_justificativa = Column(Text, nullable=True)
+
     partner = relationship("Partner")
     seller = relationship("PartnerTeamMember")
     eligibility_by = relationship("User", foreign_keys=[eligibility_by_id])
+    cnpj_liberado_por = relationship("User", foreign_keys=[cnpj_liberado_por_id])
     products = relationship(
         "PartnerOpportunityProduct",
         cascade="all, delete-orphan",

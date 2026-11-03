@@ -42,6 +42,7 @@ import EmailSection from "../components/cardDetails/EmailSection";
 import MeetingSection from "../components/cardDetails/MeetingSection";
 import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ReopenModal from "../components/cardDetails/ReopenModal";
+import AvisoParcerias from "../components/cardDetails/AvisoParcerias";
 import { showSuccess, showError } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
 import attachmentService from "../services/attachmentService";
@@ -332,8 +333,8 @@ const CardDetails: React.FC = () => {
       const result = await cardService.clone(card.id);
       showSuccess(`Card clonado com sucesso! Abrindo card #${result.new_card_id}…`);
       navigate(`/cards/${result.new_card_id}`);
-    } catch {
-      showError("Erro ao clonar o card. Tente novamente.");
+    } catch (error: any) {
+      showError(error?.response?.data?.detail || "Erro ao clonar o card. Tente novamente.");
     } finally {
       setIsCloning(false);
     }
@@ -660,6 +661,7 @@ const CardDetails: React.FC = () => {
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <AvisoParcerias cardId={card.id} clientId={card.client_id} />
       {/* ========== HEADER FIXO ========== */}
       <div className="relative z-20 flex-shrink-0 border-b border-gray-200 bg-white backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/95">
         <div className="px-6 py-4">

@@ -310,6 +310,25 @@ def require_parcerias_access():
     return checker
 
 
+def require_consulta_cnpj():
+    """
+    Consulta de CNPJ (Parcerias, Entrega 2): parceiro, vendedor, SDR, admin e
+    gerente. O Financeiro, o serviço e o visualizador não consultam (403).
+    """
+    async def checker(
+        current_user: User = Depends(get_current_active_user)
+    ) -> User:
+        allowed_roles = ("admin", "manager", "salesperson", "sdr", "partner")
+        if not current_user.role or current_user.role.name not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso restrito à Consulta de CNPJ."
+            )
+        return current_user
+
+    return checker
+
+
 def require_integracao():
     """
     Dependency que restringe a rota a usuários de integração (`is_integracao`).

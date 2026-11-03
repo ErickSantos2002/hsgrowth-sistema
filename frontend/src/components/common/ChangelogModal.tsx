@@ -29,6 +29,14 @@ const CHANGELOG: ChangelogVersion[] = [
     date: "03/11/2026",
     entries: [
       {
+        type: "feature",
+        text: "Parcerias: Consulta de CNPJ em semáforo. Antes de registrar uma oportunidade, o parceiro vê se a empresa está livre, com outra unidade em negociação ou bloqueada (em negociação, compra recente ou perdida há pouco). A página Consulta de CNPJ fica no menu para parceiros, vendedores e SDRs, com histórico para admin e gerente.",
+      },
+      {
+        type: "improvement",
+        text: "Vendas: o card cujo CNPJ está com um parceiro mostra uma faixa amarela, e vendedor e SDR não conseguem criar ou vincular um card com esse CNPJ sem o gerente.",
+      },
+      {
         type: "improvement",
         text: "Parcerias: o vendedor escolhido como Responsável H&S (quem treina e faz o onboarding) passa a ver no board os parceiros dele e as oportunidades desses parceiros. O Responsável H&S é opcional: com \"Nenhum\", o parceiro fica só com a gestão.",
       },

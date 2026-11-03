@@ -802,6 +802,10 @@ class CardService:
                     )
                 )
 
+        # CNPJ com um parceiro (Programa de Parceiros): bloqueia quem não é gestão.
+        from app.services.parcerias import vendas as parcerias_vendas
+        aviso_parcerias = parcerias_vendas.conferir(self.db, current_user, card_data.client_id)
+
         # Valida contato vinculado: deve ter pelo menos e-mail ou telefone
         if card_data.person_id:
             person = self.person_repository.find_by_id(card_data.person_id)
@@ -871,6 +875,7 @@ class CardService:
 
         self.db.commit()
         self.db.refresh(card)
+        parcerias_vendas.registrar(self.db, card.id, current_user, aviso_parcerias)
 
         # Registra entrada inicial na lista de histórico
         try:
@@ -949,6 +954,14 @@ class CardService:
 
         # Verifica permissão de escrita — salesperson/SDR só editam seus próprios cards
         self._check_write_permission(card, current_user)
+
+        # Vincular cliente com CNPJ de um parceiro (Programa de Parceiros)
+        if "client_id" in card_data.model_fields_set and card_data.client_id and card_data.client_id != card.client_id:
+            from app.services.parcerias import vendas as parcerias_vendas
+            parcerias_vendas.registrar(
+                self.db, card.id, current_user,
+                parcerias_vendas.conferir(self.db, current_user, card_data.client_id),
+            )
 
         # Guarda valores antigos para detectar mudanças
         old_is_won = card.is_won
@@ -2600,6 +2613,10 @@ class CardService:
         # Busca e valida o card original
         original_card = self.get_card_by_id(card_id)
 
+        # CNPJ com um parceiro (Programa de Parceiros): bloqueia quem não é gestão.
+        from app.services.parcerias import vendas as parcerias_vendas
+        aviso_parcerias = parcerias_vendas.conferir(self.db, current_user, original_card.client_id)
+
         if not original_card.is_lost:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -2658,6 +2675,7 @@ class CardService:
                 new_card.contact_info = original_card.contact_info
             self.db.commit()
             self.db.refresh(new_card)
+            parcerias_vendas.registrar(self.db, new_card.id, current_user, aviso_parcerias)
         except Exception as e:
             self.db.rollback()
             print(f"[REOPEN] Aviso: erro ao vincular client_id/person_id/contact_info: {e}")
@@ -2857,6 +2875,10 @@ class CardService:
 
         original_card = self.get_card_by_id(card_id)
 
+        # CNPJ com um parceiro (Programa de Parceiros): bloqueia quem não é gestão.
+        from app.services.parcerias import vendas as parcerias_vendas
+        aviso_parcerias = parcerias_vendas.conferir(self.db, current_user, original_card.client_id)
+
         target_list = self.list_repository.find_by_id(TARGET_LIST_ID)
         if not target_list:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Lista de destino (ID {TARGET_LIST_ID}) não encontrada")
@@ -2900,6 +2922,7 @@ class CardService:
         self.db.add(new_card)
         self.db.commit()
         self.db.refresh(new_card)
+        parcerias_vendas.registrar(self.db, new_card.id, current_user, aviso_parcerias)
 
         # Registra entrada inicial na lista de histórico
         try:

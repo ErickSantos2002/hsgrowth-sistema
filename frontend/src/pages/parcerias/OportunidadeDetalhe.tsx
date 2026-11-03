@@ -13,7 +13,8 @@ import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
 import { DEAL_TYPES, LOSS_REASONS_ACQUISITION, RELATIONSHIP_TYPES, SECTORS } from "../../constants/blueprintOptions";
 import {
-  ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_GESTAO, PERFIS_QUE_EDITAM, formatarMoeda,
+  ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, MOTIVO_SEMAFORO, PERFIS_GESTAO, PERFIS_QUE_EDITAM,
+  SEMAFORO_COR, SEMAFORO_LABEL, formatarMoeda,
 } from "../../constants/parcerias";
 import parceriasService, {
   Etapa, ItemProduto, Membro, MoverPayload, Oportunidade, OportunidadeForm, ProdutoCatalogo, mensagemDeErro,
@@ -236,6 +237,19 @@ export default function OportunidadeDetalhe() {
                 </div>
                 <p className="mt-0.5 text-xs text-slate-400">Soma dos produtos da oportunidade.</p>
               </div>
+              {op.cnpj_resultado && user?.role !== "partner" && (
+                <div className={`rounded-lg border px-3 py-2 text-xs ${SEMAFORO_COR[op.cnpj_resultado]}`}>
+                  <div className="font-semibold">
+                    CNPJ no cadastro: {SEMAFORO_LABEL[op.cnpj_resultado]} · {MOTIVO_SEMAFORO[op.cnpj_motivo ?? ""] ?? ""}
+                  </div>
+                  {op.cnpj_resultado === "amarelo" && <p className="mt-0.5">Outra unidade em negociação — analisar.</p>}
+                  {op.cnpj_justificativa && (
+                    <p className="mt-0.5 text-slate-600 dark:text-slate-300">
+                      Liberado por {op.cnpj_liberado_por_name}: {op.cnpj_justificativa}
+                    </p>
+                  )}
+                </div>
+              )}
               <div>
                 <span className={`rounded px-2 py-1 text-xs font-medium ${ELEGIBILIDADE_COR[op.eligibility_status]}`}>
                   {ELEGIBILIDADE_LABEL[op.eligibility_status]}

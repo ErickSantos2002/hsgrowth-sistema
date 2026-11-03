@@ -38,10 +38,11 @@ import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
 import ParceriasHome from './pages/parcerias/ParceriasHome';
 import AquisicaoKanban from './pages/parcerias/AquisicaoKanban';
+import ConsultaCnpj from './pages/parcerias/ConsultaCnpj';
 import ParceiroDetalhe from './pages/parcerias/ParceiroDetalhe';
 import OportunidadesKanban from './pages/parcerias/OportunidadesKanban';
 import OportunidadeDetalhe from './pages/parcerias/OportunidadeDetalhe';
-import { PERFIS_PARCERIAS } from './constants/parcerias';
+import { PERFIS_CONSULTA_CNPJ, PERFIS_PARCERIAS } from './constants/parcerias';
 // Módulo de Propostas descontinuado (migrado p/ sistema externo). Página e API
 // preservadas no repo (dormentes); rota removida da navegação.
 
@@ -91,6 +92,14 @@ const ServiceTeamGuard: React.FC<{ children: React.ReactNode }> = ({ children })
 const ParceriasGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     if (user && !PERFIS_PARCERIAS.includes(user.role)) {
+        return <Navigate to="/" replace />;
+    }
+    return <>{children}</>;
+};
+
+const ConsultaCnpjGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    if (user && !PERFIS_CONSULTA_CNPJ.includes(user.role)) {
         return <Navigate to="/" replace />;
     }
     return <>{children}</>;
@@ -168,6 +177,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/servicos/:boardId" element={<ServiceTeamGuard><ServiceKanban /></ServiceTeamGuard>} />
       <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceTeamGuard><ServiceCardDetails /></ServiceTeamGuard>} />
       <Route path="/parcerias" element={<ParceriasGuard><ParceriasHome /></ParceriasGuard>} />
+      <Route path="/parcerias/consulta-cnpj" element={<ConsultaCnpjGuard><ConsultaCnpj /></ConsultaCnpjGuard>} />
       <Route path="/parcerias/aquisicao" element={<ParceriasGuard><AquisicaoKanban /></ParceriasGuard>} />
       <Route path="/parcerias/aquisicao/:partnerId" element={<ParceriasGuard><ParceiroDetalhe /></ParceriasGuard>} />
       <Route path="/parcerias/oportunidades" element={<ParceriasGuard><OportunidadesKanban /></ParceriasGuard>} />

@@ -18,7 +18,7 @@ from app.schemas.parcerias import (
     ProdutoItemCreate,
     ProdutoItemUpdate,
 )
-from app.services.parcerias import acesso, ativacao, atividades
+from app.services.parcerias import acesso, ativacao, atividades, semaforo
 from app.services.parcerias.etapas import (
     ETAPAS_OPORTUNIDADE,
     TravaError,
@@ -53,6 +53,32 @@ def _conferir_vendedor(db: Session, partner_id: int, membro_id: Optional[int]) -
         raise _422("O vendedor escolhido não é da equipe deste parceiro.")
 
 
+def _liberacao(user: User, s: semaforo.Situacao, justificativa: Optional[str]) -> Optional[str]:
+    """No vermelho só a gestão passa, e com justificativa. Devolve o texto da justificativa."""
+    if s.resultado != "vermelho":
+        return None
+    if not acesso.eh_gestao(user):
+        raise _422(s.frase)
+    texto = (justificativa or "").strip()
+    if not texto:
+        raise _422(f"{s.frase} Para cadastrar mesmo assim, escreva a justificativa.")
+    return texto
+
+
+def _gravar_semaforo(db: Session, user: User, op: PartnerOpportunity,
+                     s: semaforo.Situacao, liberacao: Optional[str]) -> None:
+    op.cnpj_resultado, op.cnpj_motivo = s.resultado, s.motivo
+    op.cnpj_liberado_por_id = user.id if liberacao else None
+    op.cnpj_justificativa = liberacao
+    if liberacao:
+        atividades.registrar_evento(
+            db, user,
+            f"Cadastro liberado pela gestão com o CNPJ em vermelho ({semaforo.MOTIVOS[s.motivo]}). "
+            f"Justificativa: {liberacao}",
+            opportunity_id=op.id,
+        )
+
+
 def listar(db: Session, user: User, partner_id: Optional[int] = None) -> List[PartnerOpportunity]:
     q = acesso.oportunidades_visiveis(db, user)
     if partner_id is not None:
@@ -69,10 +95,13 @@ def criar(db: Session, user: User, dados: OportunidadeCreate) -> PartnerOpportun
             raise _422("Escolha o parceiro da oportunidade.")
         partner_id = acesso.buscar_parceiro(db, user, dados.partner_id).id
     _conferir_vendedor(db, partner_id, dados.seller_member_id)
+    # Semáforo de novo no servidor (não conta no limite nem entra no histórico).
+    s = semaforo.situacao(db, dados.cnpj)
+    liberacao = _liberacao(user, s, dados.cnpj_justificativa)
 
     agora = datetime.utcnow()
     op = PartnerOpportunity(
-        **dados.model_dump(exclude={"partner_id"}),
+        **dados.model_dump(exclude={"partner_id", "cnpj_justificativa"}),
         partner_id=partner_id,
         stage="novo_lead",
         eligibility_status="em_analise",
@@ -83,6 +112,7 @@ def criar(db: Session, user: User, dados: OportunidadeCreate) -> PartnerOpportun
     db.add(op)
     db.flush()
     atividades.registrar_evento(db, user, "Oportunidade cadastrada", opportunity_id=op.id, tipo="card_created")
+    _gravar_semaforo(db, user, op, s, liberacao)
     db.commit()
     db.refresh(op)
     return op
@@ -92,6 +122,7 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
     acesso.exigir_escrita(user)
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
     campos = dados.model_dump(exclude_unset=True)
+    justificativa = campos.pop("cnpj_justificativa", None)
     for campo, nome in OBRIGATORIOS.items():
         if campo in campos and campos[campo] is None:
             raise _422(f"{nome} é obrigatório.")
@@ -100,6 +131,9 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
     novo_cnpj = campos.get("cnpj")
     if novo_cnpj and novo_cnpj != op.cnpj and op.eligibility_status != "em_analise" and not acesso.eh_gestao(user):
         raise _422("O CNPJ não muda depois da validação da elegibilidade.")
+    if novo_cnpj and novo_cnpj != op.cnpj:
+        s = semaforo.situacao(db, novo_cnpj, ignorar_oportunidade_id=op.id)
+        _gravar_semaforo(db, user, op, s, _liberacao(user, s, justificativa))
     for campo, valor in campos.items():
         setattr(op, campo, valor)
     db.commit()

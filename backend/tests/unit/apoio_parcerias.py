@@ -74,3 +74,46 @@ def oportunidade(db, p: Partner, **campos) -> PartnerOpportunity:
     db.commit()
     db.refresh(op)
     return op
+
+
+CNPJ_FILIAL_A = "11222333000262"  # mesma raiz do CNPJ_A, outra unidade
+
+
+def vendas(db):
+    """Boards 6 (Prospecção, com a lista Lead Novo) e 7 (Aquisição), como em produção."""
+    from types import SimpleNamespace
+    from app.models.board import Board
+    from app.models.list import List
+
+    db.add_all([Board(id=6, name="Prospecção"), Board(id=7, name="Aquisição")])
+    db.commit()
+    lead_novo = List(board_id=6, name="Lead Novo", position=0)
+    proposta = List(board_id=7, name="Proposta", position=0)
+    db.add_all([lead_novo, proposta])
+    db.commit()
+    return SimpleNamespace(lead_novo=lead_novo, proposta=proposta)
+
+
+def cliente(db, documento: str = CNPJ_A):
+    from app.models.client import Client
+
+    c = Client(name="Empresa A", company_name="Empresa A", document=documento,
+               sector="Indústrias de Transformação", relationship_type="Prospect")
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    return c
+
+
+def card_de_vendas(db, lista, documento: str = CNPJ_A, **campos):
+    """Card de Vendas com cliente; `criado_ha` (dias) recua o created_at."""
+    from datetime import datetime, timedelta
+    from app.models.card import Card
+
+    criado_ha = campos.pop("criado_ha", 0)
+    c = Card(title="Card Empresa A", list_id=lista.id, client_id=cliente(db, documento).id, **campos)
+    c.created_at = datetime.utcnow() - timedelta(days=criado_ha)
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    return c

@@ -23,6 +23,7 @@ import {
     Phone,
   Video,
     Handshake,
+    ShieldCheck,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -33,7 +34,7 @@ import GlobalSearch from "../components/GlobalSearch";
 import { UserAvatar } from "../components/common";
 import ChangelogModal from "../components/common/ChangelogModal";
 import { AgentGrowthWidget } from "../components/agentGrowth";
-import { PERFIS_PARCERIAS, PERFIS_TRANCADOS } from "../constants/parcerias";
+import { PERFIS_CONSULTA_CNPJ, PERFIS_PARCERIAS, PERFIS_TRANCADOS } from "../constants/parcerias";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -43,6 +44,7 @@ const menuItems = [
     { path: "/boards", icon: Trello, label: "Boards (Vendas)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/servicos", icon: Wrench, label: "Boards (Serviços)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/parcerias", icon: Handshake, label: "Boards (Parcerias)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
+    { path: "/parcerias/consulta-cnpj", icon: ShieldCheck, label: "Consulta de CNPJ", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -209,7 +211,11 @@ export default function MainLayout() {
                                 if (item.path === "/parcerias" && !PERFIS_PARCERIAS.includes(user?.role ?? "")) {
                                     return null;
                                 }
-                                if (trancado && !["/parcerias", "/settings"].includes(item.path)) {
+                                // Consulta de CNPJ: parceiro, vendedor, SDR, admin e gerente.
+                                if (item.path === "/parcerias/consulta-cnpj" && !PERFIS_CONSULTA_CNPJ.includes(user?.role ?? "")) {
+                                    return null;
+                                }
+                                if (trancado && !["/parcerias", "/parcerias/consulta-cnpj", "/settings"].includes(item.path)) {
                                     return null;
                                 }
 
@@ -238,7 +244,8 @@ export default function MainLayout() {
                                     (item.path === "/servicos" &&
                                      location.pathname.startsWith("/servicos/")) ||
                                     (item.path === "/parcerias" &&
-                                     location.pathname.startsWith("/parcerias/"));
+                                     location.pathname.startsWith("/parcerias/") &&
+                                     !location.pathname.startsWith("/parcerias/consulta-cnpj"));
 
                                 return (
                                     <li key={item.path}>

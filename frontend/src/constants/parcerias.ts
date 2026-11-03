@@ -77,3 +77,21 @@ export const formatarCnpj = (cnpj?: string | null) =>
   cnpj && cnpj.length === 14
     ? cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")
     : cnpj || "";
+
+// Consulta de CNPJ: o SDR consulta mesmo sem ver os boards de Parcerias.
+export const PERFIS_CONSULTA_CNPJ = ["admin", "manager", "salesperson", "sdr", "partner"];
+
+export const SEMAFORO_COR: Record<string, string> = {
+  verde: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  amarelo: "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  vermelho: "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400",
+};
+
+export const SEMAFORO_LABEL: Record<string, string> = {
+  verde: "Livre", amarelo: "Para análise", vermelho: "Bloqueado",
+};
+
+export const MOTIVO_SEMAFORO: Record<string, string> = {
+  livre: "Livre", em_negociacao: "Em negociação", compra_recente: "Compra recente",
+  perdida_recente: "Perdida há pouco", outra_unidade: "Outra unidade",
+};

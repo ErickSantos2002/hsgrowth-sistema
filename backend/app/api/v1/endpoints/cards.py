@@ -208,6 +208,18 @@ async def list_cards(
     )
 
 
+@router.get("/{card_id}/aviso-parcerias", summary="Parceiros trabalhando o CNPJ do card")
+async def aviso_parcerias(
+    card_id: int = Path(..., description="ID do card"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Faixa amarela do card: oportunidades de parceiro que protegem o CNPJ do cliente."""
+    from app.services.parcerias import vendas as parcerias_vendas
+    card = CardService(db).get_card_by_id(card_id, current_user)
+    return parcerias_vendas.avisos(db, card.client_id)
+
+
 @router.get("/{card_id}", response_model=CardResponse, summary="Buscar card")
 async def get_card(
     card_id: int = Path(..., description="ID do card"),

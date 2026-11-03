@@ -152,9 +152,10 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
       setSearchTerm("");
       setShowModal(false);
       onUpdate();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao vincular cliente:", error);
-      showError("Erro ao vincular cliente");
+      const detail = error?.response?.data?.detail;
+      showError(typeof detail === "string" ? detail : "Erro ao vincular cliente");
     } finally {
       setLoading(false);
     }
@@ -215,9 +216,10 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
 
         onUpdate();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao vincular cliente recém-criado:", error);
-      showError("Cliente criado, mas houve erro ao vincular. Vincule manualmente");
+      const detail = error?.response?.data?.detail;
+      showError(typeof detail === "string" ? detail : "Cliente criado, mas houve erro ao vincular. Vincule manualmente");
     }
   };
 

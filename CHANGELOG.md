@@ -7,9 +7,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [1.11.5] — 03/11/2026
 
+### Adicionado
+- **Consulta de CNPJ (semáforo) do Programa de Parceiros:** antes de registrar uma oportunidade, o parceiro consulta o CNPJ e recebe uma cor.
+  - 🔴 **Em negociação:** card de Vendas ou oportunidade de parceiro aberta e protegida. A proteção cai quando a atividade em aberto fica atrasada há mais de 10 dias e nada aconteceu no card nesse tempo; atividade agendada para o futuro mantém a proteção.
+  - 🔴 **Compra recente:** ganho há menos de 30 dias.
+  - 🔴 **Perdida há pouco:** perdido há menos de 90 dias, com a data em que libera.
+  - 🟡 **Outra unidade:** outra filial da mesma empresa, com os 8 primeiros dígitos do CNPJ iguais, em negociação; entra para análise.
+  - 🟢 **Livre.**
+  - O parceiro vê só a cor e a frase. Vendedor, SDR, admin e gerente veem onde a empresa está.
+  - No cadastro da oportunidade, o CNPJ é o primeiro passo. O vermelho bloqueia; admin e gerente cadastram mesmo assim com justificativa, que fica no histórico. Serviço não entra na conta, e oportunidade Rejeitada não protege.
+- **Página "Consulta de CNPJ"** no menu, para parceiro, vendedor, SDR, admin e gerente. O parceiro tem limite de 20 consultas por dia. Admin e gerente veem o histórico de quem consultou, com filtros por pessoa, parceiro e período.
+- **Vendas:**
+  - o card cujo CNPJ está com um parceiro mostra uma faixa amarela ("CNPJ registrado pelo parceiro X em DD/MM");
+  - criar, vincular cliente, clonar ou reabrir um card com esse CNPJ é bloqueado para vendedor e SDR ("fale com o gerente");
+  - admin e gerente passam, e o card registra a liberação;
+  - leads do site e do RD Station e importação de planilha não são bloqueados.
+
 ### Alterado
 - **Vendedor acompanha os parceiros dos quais é Responsável H&S:** o Responsável H&S é o vendedor da H&S que treina o parceiro e faz o onboarding. Esse vendedor passa a entrar em Boards (Parcerias) e vê só os parceiros dos quais é o responsável e as oportunidades desses parceiros; os outros respondem 404. No card ele preenche os dados, a qualificação e a data de onboarding, cadastra a Equipe, move as etapas e registra atividades, anotações e arquivos, como o parceiro. Não cadastra parceiro, não troca o Responsável H&S, não marca Perdido, não cria Acessos ao CRM e não valida elegibilidade: isso continua com admin, gerente e Financeiro. SDR, serviço e visualizador seguem sem acesso.
 - **Responsável H&S opcional:** o campo ganha a opção "Nenhum", para o parceiro que não precisa de treinamento; nesse caso nenhum vendedor vê o card, só a gestão e o Financeiro. A lista mostra só admin, gerente e vendedor ativos, e o backend recusa outros perfis. O campo deixa de ser exigido para sair de Potencial Parceiro; o contato principal continua obrigatório.
+
+### Banco
+- Migration `3d4e5f6a7b8c` (depois de `2c3d4e5f6a7b`): tabela `cnpj_consultas` e as colunas `cnpj_resultado`, `cnpj_motivo`, `cnpj_liberado_por_id` e `cnpj_justificativa` em `partner_opportunities`. Rodar no homo depois de subir o backend.
 
 ---
 
