@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.12",
+    date: "04/11/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Aquisição de Parceiros: o Salvar da Qualificação não trava mais por causa de um dado antigo de outro campo (ex.: telefone curto).",
+      },
+      {
+        type: "improvement",
+        text: "Pipeline de Parceiros: a seção Elegibilidade já abre quando há elegibilidade em análise ou ganho a confirmar.",
+      },
+    ],
+  },
+  {
     version: "1.11.11",
     date: "04/11/2026",
     entries: [

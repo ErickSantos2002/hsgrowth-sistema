@@ -30,6 +30,15 @@ const CAMPOS_TEXTO: { nome: keyof ParceiroForm; label: string }[] = [
   { nome: "region", label: "Região" },
 ];
 
+/** O parceiro como fica no formulário (CNPJ e telefone com máscara, vazio como ""). */
+const formDoParceiro = (p: Parceiro): ParceiroForm => ({
+  name: p.name, cnpj: paraTela("cnpj", p.cnpj), main_contact_name: p.main_contact_name ?? "",
+  main_contact_phone: paraTela("main_contact_phone", p.main_contact_phone), main_contact_email: p.main_contact_email ?? "",
+  partner_type: p.partner_type ?? "", origin: p.origin ?? "", segment: p.segment ?? "", region: p.region ?? "",
+  hs_owner_id: p.hs_owner_id ?? null, qualification_status: p.qualification_status ?? null,
+  onboarding_date: p.onboarding_date ?? "",
+});
+
 export default function ParceiroDetalhe() {
   const { partnerId } = useParams();
   const id = Number(partnerId);
@@ -51,13 +60,7 @@ export default function ParceiroDetalhe() {
 
   const preencher = (p: Parceiro) => {
     setParceiro(p);
-    setForm({
-      name: p.name, cnpj: paraTela("cnpj", p.cnpj), main_contact_name: p.main_contact_name ?? "",
-      main_contact_phone: paraTela("main_contact_phone", p.main_contact_phone), main_contact_email: p.main_contact_email ?? "",
-      partner_type: p.partner_type ?? "", origin: p.origin ?? "", segment: p.segment ?? "", region: p.region ?? "",
-      hs_owner_id: p.hs_owner_id ?? null, qualification_status: p.qualification_status ?? null,
-      onboarding_date: p.onboarding_date ?? "",
-    });
+    setForm(formDoParceiro(p));
   };
 
   const carregar = useCallback(async () => {
@@ -100,9 +103,14 @@ export default function ParceiroDetalhe() {
   const podeMover = podeEditar && (gestao || (!perdido && !ativado));
 
   const salvar = async () => {
+    // Manda só o que mudou: um dado antigo fora da regra (ex.: telefone curto,
+    // de antes da validação) não pode travar o Salvar de outra seção.
+    const salvo = formDoParceiro(parceiro) as Record<string, unknown>;
     try {
       const dados = Object.fromEntries(
-        Object.entries(form).map(([k, v]) => [k, typeof v === "string" && v.trim() === "" ? null : v])
+        Object.entries(form)
+          .filter(([k, v]) => v !== salvo[k])
+          .map(([k, v]) => [k, typeof v === "string" && v.trim() === "" ? null : v])
       ) as ParceiroForm;
       preencher(await parceriasService.atualizarParceiro(id, dados));
       showSuccess("Parceiro salvo.");

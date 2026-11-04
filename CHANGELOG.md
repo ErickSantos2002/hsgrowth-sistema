@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.12] — 04/11/2026
+
+### Corrigido
+- **Aquisição de Parceiros — Salvar:** cada Salvar do detalhe do parceiro manda só o que mudou. Antes, um dado antigo fora da regra (ex.: telefone curto, cadastrado antes da validação) travava o Salvar da Qualificação com erro de outro campo.
+
+### Alterado
+- **Pipeline de Parceiros — seção Elegibilidade:** abre sozinha para admin, gerente e Financeiro quando há decisão pendente (elegibilidade em análise ou ganho a confirmar).
+
+---
+
 ## [1.11.11] — 04/11/2026
 
 ### Adicionado
