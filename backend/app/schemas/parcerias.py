@@ -1,17 +1,34 @@
 """Schemas Pydantic do Programa de Parceiros (boards Aquisição e Pipeline)."""
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Literal, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional
 
 import re
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AfterValidator, BaseModel, Field, field_validator
 
 from app.services.parcerias.cnpj import cnpj_valido, normalizar_cnpj, so_digitos
 
 # Maior valor que cabe nas colunas Numeric(12, 2); acima disso o Postgres recusa.
 VALOR_MAXIMO = Decimal("9999999999.99")
 QUANTIDADE_MAXIMA = 100_000
+
+
+def _valor_no_limite(valor: Optional[Decimal]) -> Optional[Decimal]:
+    if valor is not None and valor > VALOR_MAXIMO:
+        raise ValueError("Valor acima do limite de R$ 9.999.999.999,99.")
+    return valor
+
+
+def _quantidade_no_limite(valor: Optional[int]) -> Optional[int]:
+    if valor is not None and valor > QUANTIDADE_MAXIMA:
+        raise ValueError("Quantidade acima do limite de 100.000.")
+    return valor
+
+
+# Com a mensagem em português (o "le" do Field responde em inglês).
+Valor = Annotated[Optional[Decimal], AfterValidator(_valor_no_limite)]
+Quantidade = Annotated[Optional[int], AfterValidator(_quantidade_no_limite)]
 
 Qualificacao = Literal["aderente", "parcialmente_aderente", "nao_aderente"]
 
@@ -288,9 +305,9 @@ class OportunidadeUpdate(BaseModel):
     # Só admin/gerente: cadastrar (ou trocar o CNPJ) mesmo com o semáforo vermelho.
     cnpj_justificativa: Optional[str] = Field(None, max_length=500)
     # Valor do negócio (seção Produtos).
-    global_discount: Optional[Decimal] = Field(None, ge=0, le=VALOR_MAXIMO)
+    global_discount: Valor = Field(None, ge=0)
     global_discount_type: Optional[Literal["value", "percent"]] = None
-    shipping: Optional[Decimal] = Field(None, ge=0, le=VALOR_MAXIMO)
+    shipping: Valor = Field(None, ge=0)
 
     @field_validator("cnpj")
     @classmethod
@@ -372,14 +389,14 @@ class OportunidadeResponse(BaseModel):
 
 class ProdutoItemCreate(BaseModel):
     product_id: int
-    quantity: int = Field(1, ge=1, le=QUANTIDADE_MAXIMA)
-    unit_price: Optional[Decimal] = Field(None, ge=0, le=VALOR_MAXIMO)
+    quantity: Annotated[int, AfterValidator(_quantidade_no_limite)] = Field(1, ge=1)
+    unit_price: Valor = Field(None, ge=0)
 
 
 class ProdutoItemUpdate(BaseModel):
-    quantity: Optional[int] = Field(None, ge=1, le=QUANTIDADE_MAXIMA)
-    unit_price: Optional[Decimal] = Field(None, ge=0, le=VALOR_MAXIMO)
-    discount: Optional[Decimal] = Field(None, ge=0, le=VALOR_MAXIMO)
+    quantity: Quantidade = Field(None, ge=1)
+    unit_price: Valor = Field(None, ge=0)
+    discount: Valor = Field(None, ge=0)
 
 
 class ProdutoItemResponse(BaseModel):

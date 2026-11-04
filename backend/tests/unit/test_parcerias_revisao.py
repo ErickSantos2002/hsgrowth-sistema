@@ -95,7 +95,9 @@ def test_valor_gigante_da_422(client, db):
     db.add(produto)
     db.commit()
 
-    assert client.put(f"{URL}/oportunidades/{op.id}", json={"shipping": 1e11}, headers=h).status_code == 422
+    frete = client.put(f"{URL}/oportunidades/{op.id}", json={"shipping": 1e11}, headers=h)
+    assert frete.status_code == 422
+    assert frete.json()["detail"][0]["msg"] == "Value error, Valor acima do limite de R$ 9.999.999.999,99."
     assert client.post(f"{URL}/oportunidades/{op.id}/produtos", headers=h,
                        json={"product_id": produto.id, "unit_price": 1e11}).status_code == 422
     assert client.post(f"{URL}/oportunidades/{op.id}/produtos", headers=h,
