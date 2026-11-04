@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.11",
+    date: "04/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Aquisição de Parceiros: aba \"Contrato\" com a data e o contrato assinado, exigidos para passar de Formalização para Onboarding.",
+      },
+      {
+        type: "feature",
+        text: "Pipeline de Parceiros: o Ganho marcado pelo parceiro fica a confirmar até admin, gerente ou Financeiro confirmar; negado, volta para Aguardando Pedido.",
+      },
+      {
+        type: "improvement",
+        text: "Pipeline de Parceiros: a elegibilidade não trava mais o Novo Lead e pode ser validada em qualquer etapa, até depois do Ganho.",
+      },
+    ],
+  },
+  {
     version: "1.11.10",
     date: "04/11/2026",
     entries: [

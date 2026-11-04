@@ -80,6 +80,9 @@ def _exigencias_do_parceiro(p) -> Dict[str, Optional[str]]:
         "qualificacao": None if p.qualification_status in ("aderente", "parcialmente_aderente") else (
             "O parceiro precisa estar Aderente ou Parcialmente aderente para seguir além da Qualificação."
         ),
+        "formalizacao": None if p.contract_date and p.contract_activity_id is not None else (
+            "Anexe o contrato e preencha a data do contrato antes de ir para Onboarding."
+        ),
         "onboarding": None if p.onboarding_date else (
             "Preencha a data de onboarding antes de ir para Ativação."
         ),
@@ -87,10 +90,8 @@ def _exigencias_do_parceiro(p) -> Dict[str, Optional[str]]:
 
 
 def _exigencias_da_oportunidade(o) -> Dict[str, Optional[str]]:
+    # A elegibilidade não trava: a H&S valida quando quiser, até depois do Ganho.
     return {
-        "novo_lead": None if o.eligibility_status == "validada" else (
-            "A elegibilidade precisa estar Validada para sair de Novo Lead."
-        ),
         "proposta": None if o.expected_close_date else (
             "Preencha a data esperada de fechamento antes de ir para Negociação."
         ),

@@ -40,6 +40,11 @@ class Partner(Base, TimestampMixin, SoftDeleteMixin):
     # Sem FK de propósito: partner_opportunities já aponta para partners.
     activation_opportunity_id = Column(Integer, nullable=True)
 
+    # Contrato assinado (trava para sair de Formalização). O arquivo é um anexo
+    # do histórico (partner_activities); sem FK pelo mesmo motivo acima.
+    contract_date = Column(Date, nullable=True)
+    contract_activity_id = Column(Integer, nullable=True)
+
     # Código da etapa (app/services/parcerias/etapas.py) e ordem na coluna.
     stage = Column(String(30), nullable=False, default="potencial", index=True)
     position = Column(Numeric(12, 2), nullable=False, default=0)

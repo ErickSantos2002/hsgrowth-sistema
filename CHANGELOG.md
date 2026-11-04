@@ -5,6 +5,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.11] — 04/11/2026
+
+### Adicionado
+- **Aquisição de Parceiros — aba "Contrato":** no detalhe do parceiro, data do contrato e o contrato assinado anexado (o arquivo também fica no histórico). Os dois são exigidos para passar de Formalização para Onboarding.
+- **Pipeline de Parceiros — confirmação do ganho:** o Ganho marcado pelo parceiro fica "a confirmar" até admin, gerente ou Financeiro confirmar. Negado (com motivo), o card volta para Aguardando Pedido. O card do board mostra "Ganho a confirmar" ou "Ganho confirmado".
+
+### Alterado
+- **Pipeline de Parceiros — elegibilidade:** não trava mais a saída de Novo Lead. A oportunidade anda livre e a H&S valida ou rejeita a elegibilidade em qualquer etapa, até depois do Ganho.
+
+### Banco
+- Migration `5f6a7b8c9d0e`: `contract_date` e `contract_activity_id` em `partners`; `won_confirmed_at` e `won_confirmed_by_id` em `partner_opportunities`.
+
+---
+
 ## [1.11.10] — 04/11/2026
 
 ### Corrigido

@@ -37,6 +37,7 @@ export default function OportunidadeDetalhe() {
   const [etapas, setEtapas] = useState<Etapa[]>([]);
   const [equipe, setEquipe] = useState<Membro[]>([]);
   const [nota, setNota] = useState("");
+  const [motivoGanho, setMotivoGanho] = useState("");
   const [destinoPendente, setDestinoPendente] = useState<string | null>(null);
 
   const preencher = (o: Oportunidade) => {
@@ -105,6 +106,16 @@ export default function OportunidadeDetalhe() {
       setNota("");
     } catch (err) {
       showError(mensagemDeErro(err, "Erro ao registrar a elegibilidade."));
+    }
+  };
+
+  const decidirGanho = async (acao: "confirmar" | "negar") => {
+    try {
+      preencher(await parceriasService.confirmarGanho(id, acao, motivoGanho.trim() || undefined));
+      setMotivoGanho("");
+      showSuccess(acao === "confirmar" ? "Ganho confirmado." : "Ganho negado: a oportunidade voltou para Aguardando Pedido.");
+    } catch (err) {
+      showError(mensagemDeErro(err, "Erro ao registrar a confirmação do ganho."));
     }
   };
 
@@ -218,13 +229,38 @@ export default function OportunidadeDetalhe() {
                   Perdida: {op.loss_reason}{op.loss_detail && ` — ${op.loss_detail}`}
                 </div>
               )}
-              {validaElegibilidade && op.stage === "novo_lead" && (
+              {/* A elegibilidade não trava o board: a H&S valida em qualquer etapa, até depois do Ganho. */}
+              {validaElegibilidade && op.eligibility_status === "em_analise" && (
                 <div className="space-y-2 border-t border-gray-200/50 pt-3 dark:border-slate-700/50">
                   <Textarea value={nota} onChange={(e) => setNota(e.target.value)} rows={2} placeholder="Justificativa (obrigatória para rejeitar)" />
                   <div className="grid grid-cols-2 gap-2">
                     <Button size="sm" onClick={() => elegibilidade("validada")}>Validar</Button>
                     <Button size="sm" variant="danger" onClick={() => elegibilidade("rejeitada")} disabled={!nota.trim()}>Rejeitar</Button>
                   </div>
+                </div>
+              )}
+              {ganho && (
+                <div className="space-y-2 border-t border-gray-200/50 pt-3 dark:border-slate-700/50">
+                  {op.won_confirmed_at ? (
+                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-300">
+                      Ganho confirmado por {op.won_confirmed_by_name ?? "—"} em {new Date(op.won_confirmed_at).toLocaleDateString("pt-BR")}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-600 dark:text-amber-300">
+                        Ganho a confirmar pela H&S.
+                      </div>
+                      {validaElegibilidade && (
+                        <>
+                          <Textarea value={motivoGanho} onChange={(e) => setMotivoGanho(e.target.value)} rows={2} placeholder="Motivo (obrigatório para negar)" />
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button size="sm" onClick={() => decidirGanho("confirmar")}>Confirmar ganho</Button>
+                            <Button size="sm" variant="danger" onClick={() => decidirGanho("negar")} disabled={!motivoGanho.trim()}>Negar ganho</Button>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>

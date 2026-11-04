@@ -23,6 +23,7 @@ from app.schemas.parcerias import (
     AtividadeUpdate,
     ConcluirRequest,
     ElegibilidadeRequest,
+    GanhoRequest,
     EtapaOut,
     EtapasResponse,
     MembroCreate,
@@ -77,6 +78,12 @@ def buscar_parceiro(partner_id: int, db: Session = Depends(get_db),
 def atualizar_parceiro(partner_id: int, dados: ParceiroUpdate, db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_active_user)):
     return respostas.parceiro_out(db, parceiros.atualizar(db, current_user, partner_id, dados))
+
+
+@router.post("/parceiros/{partner_id}/contrato", response_model=ParceiroResponse)
+async def anexar_contrato(partner_id: int, file: UploadFile = File(...), db: Session = Depends(get_db),
+                          current_user: User = Depends(get_current_active_user)):
+    return respostas.parceiro_out(db, await parceiros.anexar_contrato(db, current_user, partner_id, file))
 
 
 @router.put("/parceiros/{partner_id}/mover", response_model=ParceiroResponse)
@@ -155,6 +162,12 @@ def atualizar_oportunidade(opportunity_id: int, dados: OportunidadeUpdate, db: S
 def mover_oportunidade(opportunity_id: int, req: MoverRequest, db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_active_user)):
     return _uma(db, oportunidades.mover(db, current_user, opportunity_id, req), current_user)
+
+
+@router.put("/oportunidades/{opportunity_id}/ganho", response_model=OportunidadeResponse)
+def confirmar_ganho(opportunity_id: int, req: GanhoRequest, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_active_user)):
+    return _uma(db, oportunidades.confirmar_ganho(db, current_user, opportunity_id, req), current_user)
 
 
 @router.put("/oportunidades/{opportunity_id}/elegibilidade", response_model=OportunidadeResponse)

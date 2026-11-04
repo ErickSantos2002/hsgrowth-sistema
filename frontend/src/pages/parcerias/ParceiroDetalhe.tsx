@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Building2, CheckCircle2, ClipboardCheck, KeyRound, RefreshCw, Trello, Users, XCircle,
+  ArrowLeft, Building2, CheckCircle2, ClipboardCheck, FileSignature, KeyRound, RefreshCw, Trello, Users, XCircle,
 } from "lucide-react";
 import { Button, FormField, Input, LoadingSpinner, SelectMenu } from "../../components/common";
 import ExpandableSection from "../../components/cardDetails/ExpandableSection";
 import AbasDoCard from "../../components/parcerias/AbasDoCard";
+import ContratoDoParceiro from "../../components/parcerias/ContratoDoParceiro";
 import EtapasParceria from "../../components/parcerias/EtapasParceria";
 import ModalTrava from "../../components/parcerias/ModalTrava";
 import { errosDoForm, paraTela, propsDeTexto } from "../../components/parcerias/campos";
@@ -364,6 +365,9 @@ export default function ParceiroDetalhe() {
                 ))}
               </div>
             ),
+          }, {
+            chave: "contrato", rotulo: "Contrato", icone: <FileSignature size={16} />,
+            conteudo: <ContratoDoParceiro parceiro={parceiro} podeEditar={podeEditar} onParceiro={preencher} />,
           }]}
         />
       </div>

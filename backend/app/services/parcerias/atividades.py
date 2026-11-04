@@ -13,6 +13,7 @@ from typing import List, Optional, Tuple
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.models.partner import Partner
 from app.models.partner_activity import PartnerActivity
 from app.models.partner_opportunity import PartnerOpportunity
 from app.models.user import User
@@ -150,6 +151,9 @@ def excluir(db: Session, user: User, atividade_id: int) -> None:
             (UPLOAD_DIR / atividade.file_path).unlink(missing_ok=True)
         except OSError:  # pragma: no cover
             pass
+        # Era o contrato do parceiro: ele volta a não ter contrato anexado.
+        for parceiro in db.query(Partner).filter(Partner.contract_activity_id == atividade.id):
+            parceiro.contract_activity_id = None
     db.delete(atividade)
     db.commit()
 

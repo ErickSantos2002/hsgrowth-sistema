@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, ShieldCheck } from "lucide-react";
+import { Calendar, CheckCircle2, ShieldCheck } from "lucide-react";
 import { LoadingSpinner, SelectMenu } from "../../components/common";
 import CabecalhoBoard, { BotaoNovo } from "../../components/parcerias/CabecalhoBoard";
 import KanbanParcerias, { CardBadge, CardPadrao } from "../../components/parcerias/KanbanParcerias";
@@ -133,6 +133,13 @@ export default function OportunidadesKanban() {
               badges={
                 <>
                   <CardBadge cls={ELEGIBILIDADE_COR[o.eligibility_status]} icon={<ShieldCheck size={11} />} label={ELEGIBILIDADE_LABEL[o.eligibility_status]} />
+                  {o.stage === "ganho" && (
+                    <CardBadge
+                      cls={o.won_confirmed_at ? "bg-emerald-500/20 text-emerald-500" : "bg-amber-500/20 text-amber-500"}
+                      icon={<CheckCircle2 size={11} />}
+                      label={o.won_confirmed_at ? "Ganho confirmado" : "Ganho a confirmar"}
+                    />
+                  )}
                   {fechamento && (
                     <CardBadge
                       cls={fechamentoVencido ? "bg-red-500/20 font-medium text-red-400" : "bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400"}

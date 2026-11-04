@@ -55,6 +55,9 @@ class PartnerOpportunity(Base, TimestampMixin, SoftDeleteMixin):
     # Criar/concluir atividade e mudar de etapa atualizam. A Entrega 2 usa no semáforo.
     last_activity_at = Column(DateTime, nullable=True, index=True)
     won_at = Column(DateTime, nullable=True)
+    # Ganho marcado pelo parceiro e confirmado por admin, gerente ou Financeiro.
+    won_confirmed_at = Column(DateTime, nullable=True)
+    won_confirmed_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     lost_at = Column(DateTime, nullable=True)
 
     created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -75,6 +78,7 @@ class PartnerOpportunity(Base, TimestampMixin, SoftDeleteMixin):
     seller = relationship("PartnerTeamMember")
     eligibility_by = relationship("User", foreign_keys=[eligibility_by_id])
     cnpj_liberado_por = relationship("User", foreign_keys=[cnpj_liberado_por_id])
+    won_confirmed_by = relationship("User", foreign_keys=[won_confirmed_by_id])
     products = relationship(
         "PartnerOpportunityProduct",
         cascade="all, delete-orphan",

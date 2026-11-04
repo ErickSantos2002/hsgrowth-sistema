@@ -26,6 +26,7 @@ export interface ParceiroForm {
   hs_owner_id?: number | null;
   qualification_status?: string | null;
   onboarding_date?: string | null;
+  contract_date?: string | null;
 }
 
 export interface Parceiro extends ParceiroForm {
@@ -35,6 +36,9 @@ export interface Parceiro extends ParceiroForm {
   activation_evidence?: string | null;
   activated_at?: string | null;
   activation_opportunity_id?: number | null;
+  /** Anexo do contrato (no histórico do card). */
+  contract_activity_id?: number | null;
+  contract_file_name?: string | null;
   stage: string;
   position: number;
   loss_reason?: string | null;
@@ -123,6 +127,9 @@ export interface Oportunidade {
   position: number;
   last_activity_at?: string | null;
   won_at?: string | null;
+  /** Ganho marcado pelo parceiro e confirmado por admin, gerente ou Financeiro. */
+  won_confirmed_at?: string | null;
+  won_confirmed_by_name?: string | null;
   lost_at?: string | null;
   total_value: number;
   global_discount: number;
@@ -294,6 +301,16 @@ const parceriasService = {
   },
   async definirElegibilidade(id: number, status: string, note?: string) {
     return (await api.put<Oportunidade>(`${BASE}/oportunidades/${id}/elegibilidade`, { status, note })).data;
+  },
+  async confirmarGanho(id: number, acao: "confirmar" | "negar", motivo?: string) {
+    return (await api.put<Oportunidade>(`${BASE}/oportunidades/${id}/ganho`, { acao, motivo })).data;
+  },
+  async anexarContrato(partnerId: number, arquivo: File) {
+    const form = new FormData();
+    form.append("file", arquivo);
+    return (await api.post<Parceiro>(`${BASE}/parceiros/${partnerId}/contrato`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })).data;
   },
   async listarProdutos(id: number) {
     return (await api.get<ItemProduto[]>(`${BASE}/oportunidades/${id}/produtos`)).data;

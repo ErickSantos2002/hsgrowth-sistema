@@ -16,7 +16,7 @@ def _parceiro(**campos):
     base = dict(
         stage="potencial", main_contact_name=None, main_contact_phone=None,
         main_contact_email=None, hs_owner_id=None, qualification_status=None,
-        onboarding_date=None, loss_reason=None,
+        onboarding_date=None, loss_reason=None, contract_date=None, contract_activity_id=None,
     )
     base.update(campos)
     return SimpleNamespace(**base)
@@ -25,6 +25,7 @@ def _parceiro(**campos):
 PRONTO = dict(
     main_contact_name="Carlos", main_contact_phone="11999990000", hs_owner_id=1,
     qualification_status="aderente", onboarding_date=date(2026, 10, 1),
+    contract_date=date(2026, 9, 20), contract_activity_id=1,
 )
 
 
@@ -60,6 +61,18 @@ def test_pular_etapa_nao_fura_a_trava_da_qualificacao():
     p = _parceiro(**{**PRONTO, "qualification_status": "nao_aderente"})
     with pytest.raises(TravaError, match="Aderente"):
         validar_mudanca_parceiro(p, "proposta", "admin")
+
+
+def test_onboarding_pede_contrato_anexado_e_data():
+    for falta in ({"contract_date": None}, {"contract_activity_id": None}):
+        p = _parceiro(**{**PRONTO, "stage": "formalizacao", **falta})
+        with pytest.raises(TravaError, match="contrato"):
+            validar_mudanca_parceiro(p, "onboarding", "partner")
+    # Pular a etapa também barra.
+    with pytest.raises(TravaError, match="contrato"):
+        validar_mudanca_parceiro(_parceiro(**{**PRONTO, "contract_date": None}), "ativacao", "admin")
+
+    validar_mudanca_parceiro(_parceiro(**{**PRONTO, "stage": "formalizacao"}), "onboarding", "partner")
 
 
 def test_ativacao_pede_data_de_onboarding():
@@ -98,11 +111,10 @@ def test_etapa_desconhecida():
 
 # ── Board 2 ──────────────────────────────────────────────────────────────────
 
-def test_sair_de_novo_lead_pede_elegibilidade_validada():
-    with pytest.raises(TravaError, match="Validada"):
-        validar_mudanca_oportunidade(_oportunidade(), "oportunidade", "partner")
-
-    validar_mudanca_oportunidade(_oportunidade(eligibility_status="validada"), "oportunidade", "partner")
+def test_novo_lead_anda_sem_elegibilidade():
+    # A H&S valida a elegibilidade quando quiser, até depois do Ganho.
+    validar_mudanca_oportunidade(_oportunidade(), "oportunidade", "partner")
+    validar_mudanca_oportunidade(_oportunidade(eligibility_status="rejeitada"), "proposta", "partner")
 
 
 def test_negociacao_pede_data_mesmo_pulando_proposta():

@@ -61,9 +61,13 @@ def _com_pendencia(resposta, pendencia: Tuple[str, int]):
 
 
 def parceiro_out(db: Session, p: Partner) -> ParceiroResponse:
+    contrato = None
+    if p.contract_activity_id is not None:
+        contrato = db.query(PartnerActivity.file_name).filter(PartnerActivity.id == p.contract_activity_id).scalar()
     return ParceiroResponse.model_validate(p).model_copy(update={
         "hs_owner_name": p.hs_owner.name if p.hs_owner else None,
         "oportunidades_por_etapa": contagem_por_etapa(db, p.id),
+        "contract_file_name": contrato,
     })
 
 
@@ -105,6 +109,7 @@ def oportunidade_out(op: PartnerOpportunity, total: float = 0, user: Optional[Us
         "partner_name": op.partner.name if op.partner else None,
         "seller_name": op.seller.name if op.seller else None,
         "eligibility_by_name": op.eligibility_by.name if op.eligibility_by else None,
+        "won_confirmed_by_name": op.won_confirmed_by.name if op.won_confirmed_by else None,
         "total_value": total,
         "cnpj_justificativa": None if para_parceiro else op.cnpj_justificativa,
         "cnpj_liberado_por_name": None if para_parceiro or not op.cnpj_liberado_por else op.cnpj_liberado_por.name,

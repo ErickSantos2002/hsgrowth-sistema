@@ -58,6 +58,7 @@ def parceiro_pronto(db, nome: str = "Dmap", stage: str = "ativacao") -> Partner:
         main_contact_name="Carlos", main_contact_phone="11999990000",
         hs_owner_id=dono.id, qualification_status="aderente",
         onboarding_date=date(2026, 10, 1),
+        contract_date=date(2026, 9, 20), contract_activity_id=0,
     )
 
 

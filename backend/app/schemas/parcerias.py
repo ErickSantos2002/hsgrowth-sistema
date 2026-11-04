@@ -112,6 +112,7 @@ class ParceiroCreate(BaseModel):
     hs_owner_id: Optional[int] = None
     qualification_status: Optional[Qualificacao] = None
     onboarding_date: Optional[date] = None
+    contract_date: Optional[date] = None
 
     @field_validator("cnpj")
     @classmethod
@@ -151,6 +152,9 @@ class ParceiroResponse(BaseModel):
     activation_evidence: Optional[str] = None
     activated_at: Optional[datetime] = None
     activation_opportunity_id: Optional[int] = None
+    contract_date: Optional[date] = None
+    contract_activity_id: Optional[int] = None
+    contract_file_name: Optional[str] = None
     stage: str
     position: float = 0
     loss_reason: Optional[str] = None
@@ -335,6 +339,12 @@ class ElegibilidadeRequest(BaseModel):
     note: Optional[str] = Field(None, max_length=1000)
 
 
+class GanhoRequest(BaseModel):
+    """Admin, gerente ou Financeiro confirmam ou negam o Ganho marcado pelo parceiro."""
+    acao: Literal["confirmar", "negar"]
+    motivo: Optional[str] = Field(None, max_length=1000)
+
+
 class OportunidadeResponse(BaseModel):
     id: int
     # Semáforo de CNPJ gravado no cadastro (a justificativa não vai para o parceiro).
@@ -373,6 +383,8 @@ class OportunidadeResponse(BaseModel):
     position: float = 0
     last_activity_at: Optional[datetime] = None
     won_at: Optional[datetime] = None
+    won_confirmed_at: Optional[datetime] = None
+    won_confirmed_by_name: Optional[str] = None
     lost_at: Optional[datetime] = None
     total_value: float = 0
     global_discount: float = 0

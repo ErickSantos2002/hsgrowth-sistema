@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import List
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -87,6 +87,17 @@ def mover(db: Session, user: User, partner_id: int, req: MoverRequest) -> Partne
     # Quem chega a Ativação vindo de Ativado ou Perdido foi posto ali pela gestão de propósito.
     if p.stage == "ativacao" and origem not in ("ativado", "perdido"):
         ativacao.promover_se_ativo(db, p, user)
+    db.commit()
+    db.refresh(p)
+    return p
+
+
+async def anexar_contrato(db: Session, user: User, partner_id: int, arquivo: UploadFile) -> Partner:
+    """O contrato entra no histórico como anexo; trocar aponta para o novo e o antigo fica lá."""
+    p = acesso.buscar_parceiro(db, user, partner_id)
+    anexo = await atividades.anexar(db, user, arquivo, partner_id=p.id)
+    anexo.activity_type = "contract"
+    p.contract_activity_id = anexo.id
     db.commit()
     db.refresh(p)
     return p

@@ -81,15 +81,14 @@ def test_isolamento_entre_parceiros(client, db):
                       headers=h).status_code == 404
 
 
-def test_novo_lead_so_sai_validado(client, db):
+def test_novo_lead_anda_sem_elegibilidade(client, db):
     p = parceiro(db)
     op = oportunidade(db, p)
     h = _login_parceiro(db, p)
 
-    barrado = client.put(f"{URL}/{op.id}/mover", json={"stage": "oportunidade"}, headers=h)
+    r = client.put(f"{URL}/{op.id}/mover", json={"stage": "oportunidade"}, headers=h)
 
-    assert barrado.status_code == 422
-    assert "Validada" in barrado.json()["detail"]
+    assert r.status_code == 200 and r.json()["eligibility_status"] == "em_analise"
 
 
 def test_elegibilidade(client, db):
@@ -107,14 +106,14 @@ def test_elegibilidade(client, db):
     assert validada.json()["eligibility_by_name"] == "fin"
 
 
-def test_elegibilidade_so_em_novo_lead(client, db):
-    op = oportunidade(db, parceiro(db), stage="oportunidade", eligibility_status="validada")
+def test_elegibilidade_em_qualquer_etapa_ate_depois_do_ganho(client, db):
+    op = oportunidade(db, parceiro(db), stage="ganho", modality="venda")
     financeiro = headers(usuario(db, "finance", "fin@hs.com"))
 
-    resposta = client.put(f"{URL}/{op.id}/elegibilidade", json={"status": "rejeitada", "note": "x"},
-                          headers=financeiro)
+    resposta = client.put(f"{URL}/{op.id}/elegibilidade", json={"status": "validada"}, headers=financeiro)
 
-    assert resposta.status_code == 422
+    assert resposta.status_code == 200
+    assert (resposta.json()["stage"], resposta.json()["eligibility_status"]) == ("ganho", "validada")
 
 
 def test_negociacao_pede_data_e_ganho_pede_modalidade(client, db):

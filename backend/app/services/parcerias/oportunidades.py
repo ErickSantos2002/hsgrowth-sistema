@@ -12,6 +12,7 @@ from app.models.product import Product
 from app.models.user import User
 from app.schemas.parcerias import (
     ElegibilidadeRequest,
+    GanhoRequest,
     MoverRequest,
     OportunidadeCreate,
     OportunidadeUpdate,
@@ -185,6 +186,8 @@ def mover(db: Session, user: User, opportunity_id: int, req: MoverRequest) -> Pa
         agora = datetime.utcnow()
         op.stage = req.stage
         op.won_at = agora if req.stage == "ganho" else None
+        # Ganho novo (ou reaberto) volta a esperar a confirmação da H&S.
+        op.won_confirmed_at = op.won_confirmed_by_id = None
         op.lost_at = agora if req.stage == "perdido" else None
         if origem == "perdido":
             op.loss_reason = op.loss_detail = None
@@ -210,9 +213,8 @@ def definir_elegibilidade(db: Session, user: User, opportunity_id: int,
                           req: ElegibilidadeRequest) -> PartnerOpportunity:
     if acesso.perfil(user) not in acesso.VALIDAM_ELEGIBILIDADE:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Só o Financeiro, admin ou gerente validam a elegibilidade.")
+    # Vale em qualquer etapa, até depois do Ganho: a elegibilidade não trava o board.
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
-    if op.stage != "novo_lead":
-        raise _422("A elegibilidade só muda enquanto a oportunidade está em Novo Lead.")
     nota = (req.note or "").strip() or None
     if req.status == "rejeitada" and not nota:
         raise _422("Explique por que a oportunidade foi rejeitada.")
@@ -227,6 +229,33 @@ def definir_elegibilidade(db: Session, user: User, opportunity_id: int,
     atividades.registrar_evento(db, user, descricao, opportunity_id=op.id)
     if req.status == "validada":
         ativacao.registrar_evidencia(db, op, "oportunidade_validada", user)
+    db.commit()
+    db.refresh(op)
+    return op
+
+
+def confirmar_ganho(db: Session, user: User, opportunity_id: int, req: GanhoRequest) -> PartnerOpportunity:
+    """
+    O parceiro marca Ganho; admin, gerente ou Financeiro confirmam. Negado, o
+    card volta para Aguardando Pedido com o motivo no histórico.
+    """
+    if acesso.perfil(user) not in acesso.VALIDAM_ELEGIBILIDADE:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Só o Financeiro, admin ou gerente confirmam o ganho.")
+    op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    if op.stage != "ganho":
+        raise _422("Só oportunidade em Ganho tem o ganho confirmado ou negado.")
+    if req.acao == "confirmar":
+        op.won_confirmed_at = datetime.utcnow()
+        op.won_confirmed_by_id = user.id
+        atividades.registrar_evento(db, user, "Ganho confirmado", opportunity_id=op.id)
+    else:
+        motivo = (req.motivo or "").strip()
+        if not motivo:
+            raise _422("Explique por que o ganho foi negado.")
+        op.stage = "aguardando_pedido"
+        op.won_at = op.won_confirmed_at = op.won_confirmed_by_id = None
+        atividades.registrar_evento(db, user, f"Ganho negado: {motivo}", opportunity_id=op.id,
+                                    tipo="stage_change")
     db.commit()
     db.refresh(op)
     return op
