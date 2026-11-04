@@ -60,7 +60,8 @@ def mover(db: Session, user: User, partner_id: int, req: MoverRequest) -> Partne
     acesso.exigir_escrita(user)
     p = acesso.buscar_parceiro(db, user, partner_id)
     origem = p.stage
-    if req.stage == "perdido":
+    # Reordenar dentro de Perdido não apaga o motivo já gravado.
+    if req.stage == "perdido" and origem != "perdido":
         p.loss_reason = (req.loss_reason or "").strip() or None
         p.loss_detail = req.loss_detail
     try:
@@ -83,7 +84,8 @@ def mover(db: Session, user: User, partner_id: int, req: MoverRequest) -> Partne
         )
     if req.position is not None:
         p.position = req.position
-    if p.stage == "ativacao":
+    # Quem chega a Ativação vindo de Ativado ou Perdido foi posto ali pela gestão de propósito.
+    if p.stage == "ativacao" and origem not in ("ativado", "perdido"):
         ativacao.promover_se_ativo(db, p, user)
     db.commit()
     db.refresh(p)

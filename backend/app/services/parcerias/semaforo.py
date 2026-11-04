@@ -126,16 +126,16 @@ def juntar(cnpj: str, registros: List[Registro]) -> Situacao:
 
 # ─── Consultas no banco ──────────────────────────────────────────────────────
 
-def _digitos_sql(col):
-    """Documento só com dígitos, em SQL portável (Postgres e SQLite)."""
-    expr = col
+def _cnpj_sql(col):
+    """Documento sem máscara e em maiúsculas (CNPJ com letras), em SQL portável (Postgres e SQLite)."""
+    expr = func.upper(col)
     for ch in (".", "/", "-", " "):
         expr = func.replace(expr, ch, "")
     return expr
 
 
 def _cards(db: Session, raiz: str, agora: datetime) -> List[Registro]:
-    doc = _digitos_sql(Client.document)
+    doc = _cnpj_sql(Client.document)
     linhas = (
         db.query(Card, doc, Lista.name, Board.name)
         .join(Client, Card.client_id == Client.id)
@@ -244,6 +244,10 @@ def situacao(db: Session, cnpj: str, ignorar_oportunidade_id: Optional[int] = No
 
 
 def protecao_de_parceiro(db: Session, cnpj: str, agora: Optional[datetime] = None) -> List[Registro]:
-    """Oportunidades de parceiro que protegem exatamente este CNPJ (faixa e bloqueio em Vendas)."""
+    """
+    Oportunidades de parceiro em negociação com exatamente este CNPJ (faixa e
+    bloqueio em Vendas). Oportunidade ganha ou perdida não segura o vendedor.
+    """
     agora = agora or datetime.utcnow()
-    return [r for r in _oportunidades(db, cnpj[:8], agora) if r.cnpj == cnpj]
+    return [r for r in _oportunidades(db, cnpj[:8], agora)
+            if r.cnpj == cnpj and r.motivo == "em_negociacao"]

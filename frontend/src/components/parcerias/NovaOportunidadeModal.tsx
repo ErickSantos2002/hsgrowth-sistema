@@ -7,7 +7,7 @@ import parceriasService, {
 } from "../../services/parceriasService";
 import { PERFIS_GESTAO } from "../../constants/parcerias";
 import { useAuth } from "../../hooks/useAuth";
-import { cnpjValido, errosDoForm, propsDeTexto } from "./campos";
+import { cnpjValido, errosDoForm, limparCnpj, propsDeTexto } from "./campos";
 import ResultadoSemaforo from "./ResultadoSemaforo";
 
 interface Props {
@@ -68,7 +68,7 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
     }
   };
   // Passo 2 só com a consulta do CNPJ atual: verde/amarelo, ou vermelho para a gestão (com justificativa).
-  const consultaValida = !!consulta && consulta.cnpj === (form.cnpj ?? "").replace(/\D/g, "");
+  const consultaValida = !!consulta && consulta.cnpj === limparCnpj(form.cnpj ?? "");
   const liberado = consultaValida && (consulta.resultado !== "vermelho" || gestao);
   const precisaJustificar = consultaValida && consulta.resultado === "vermelho" && gestao;
 

@@ -96,6 +96,9 @@ def _editavel(db: Session, user: User, atividade_id: int) -> Tuple[PartnerActivi
     atividade, oportunidade = _buscar_visivel(db, user, atividade_id)
     if atividade.category == "alteracao":
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Alteração do histórico não se edita nem se exclui.")
+    # O parceiro mexe só no que a equipe dele lançou; o que a H&S lançou fica com a H&S.
+    if acesso.eh_parceiro(user) and (atividade.user is None or atividade.user.partner_id != user.partner_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Lançado pela H&S. Só a H&S altera.")
     return atividade, oportunidade
 
 

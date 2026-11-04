@@ -5,6 +5,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.10] — 04/11/2026
+
+### Corrigido
+- **Notificações:** só o admin cria notificação na mão (antes qualquer login, inclusive o de parceiro, mandava aviso com link para qualquer pessoa).
+- **Parcerias — histórico:** o parceiro vê que a gestão liberou o CNPJ vermelho, mas não lê a justificativa interna.
+- **Parcerias — mover:**
+  - a gestão consegue voltar um parceiro de Ativado para Ativação (antes ele se ativava de novo na hora);
+  - reordenar um card dentro de Perdido não apaga mais o motivo da perda.
+- **Parcerias — valores:** frete, preço, desconto e quantidade gigantes dão mensagem clara em vez de erro no servidor.
+- **Parcerias — produtos:** a opção "Liberado para parceiros" aparecia duas vezes no cadastro de Produtos.
+- **Produtos:** mandar "ativo" ou "liberado para parceiros" vazio não dá mais erro no servidor.
+
+### Alterado
+- **Pipeline de Parceiros:**
+  - oportunidade ganha ou perdida: produtos, desconto geral e frete só a gestão altera;
+  - parceiro em Perdido não registra oportunidade nova (reabrir o parceiro antes);
+  - o parceiro não edita nem conclui atividade lançada pela H&S.
+- **Vendas:** a faixa e o bloqueio de CNPJ do parceiro valem só enquanto a oportunidade dele está em negociação (ganha ou perdida não segura mais o vendedor).
+- **Consulta de CNPJ e cadastros de Parcerias:** aceitam o CNPJ com letras que a Receita emite desde julho de 2026.
+
+---
+
 ## [1.11.9] — 03/11/2026
 
 ### Adicionado

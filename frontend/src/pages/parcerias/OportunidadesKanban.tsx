@@ -6,7 +6,7 @@ import CabecalhoBoard, { BotaoNovo } from "../../components/parcerias/CabecalhoB
 import KanbanParcerias, { CardBadge, CardPadrao } from "../../components/parcerias/KanbanParcerias";
 import ModalTrava, { faltasParaMover, temFalta } from "../../components/parcerias/ModalTrava";
 import NovaOportunidadeModal from "../../components/parcerias/NovaOportunidadeModal";
-import { mascarar } from "../../components/parcerias/campos";
+import { limparCnpj, mascarar } from "../../components/parcerias/campos";
 import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
 import { LOSS_REASONS_ACQUISITION } from "../../constants/blueprintOptions";
@@ -86,12 +86,12 @@ export default function OportunidadesKanban() {
   if (carregando) return <LoadingSpinner />;
 
   const termo = busca.trim().toLowerCase();
-  const digitos = termo.replace(/\D/g, "");
+  const documento = limparCnpj(termo);
   const visiveis = ops.filter(
     (o) =>
       !termo ||
       [o.title, o.company_name, o.partner_name, o.seller_name].some((v) => v?.toLowerCase().includes(termo)) ||
-      (digitos.length >= 3 && o.cnpj?.includes(digitos))
+      (documento.length >= 3 && o.cnpj?.includes(documento))
   );
 
   return (

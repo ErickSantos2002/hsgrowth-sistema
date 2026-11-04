@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.models.partner import PartnerTeamMember
+from app.models.partner import Partner, PartnerTeamMember
 from app.models.partner_opportunity import PartnerOpportunity, PartnerOpportunityProduct
 from app.models.product import Product
 from app.models.user import User
@@ -35,6 +35,8 @@ OBRIGATORIOS = {
 }
 # Etapas que contam como "proposta enviada" para a ativação do parceiro.
 ETAPAS_COM_PROPOSTA = ("proposta", "negociacao", "aguardando_pedido")
+# Campos do valor do negócio (fora os produtos), travados depois de encerrada.
+CAMPOS_DE_VALOR = ("global_discount", "global_discount_type", "shipping")
 
 
 def _422(mensagem: str) -> HTTPException:
@@ -51,6 +53,12 @@ def _conferir_vendedor(db: Session, partner_id: int, membro_id: Optional[int]) -
     ).first()
     if not membro:
         raise _422("O vendedor escolhido não é da equipe deste parceiro.")
+
+
+def _conferir_valor_aberto(user: User, op: PartnerOpportunity) -> None:
+    """Depois de Ganho ou Perdido, produtos e valores só a gestão corrige."""
+    if op.stage in ("ganho", "perdido") and not acesso.eh_gestao(user):
+        raise _422("Oportunidade encerrada: produtos e valores só a gestão altera.")
 
 
 def _liberacao(user: User, s: semaforo.Situacao, justificativa: Optional[str]) -> Optional[str]:
@@ -94,6 +102,9 @@ def criar(db: Session, user: User, dados: OportunidadeCreate) -> PartnerOpportun
         if not dados.partner_id:
             raise _422("Escolha o parceiro da oportunidade.")
         partner_id = acesso.buscar_parceiro(db, user, dados.partner_id).id
+    dono = db.query(Partner).filter(Partner.id == partner_id).first()
+    if not dono or dono.is_deleted or dono.stage == "perdido":
+        raise _422("Parceiro em Perdido não registra oportunidade. Reabra o parceiro antes.")
     _conferir_vendedor(db, partner_id, dados.seller_member_id)
     # Semáforo de novo no servidor (não conta no limite nem entra no histórico).
     s = semaforo.situacao(db, dados.cnpj)
@@ -123,6 +134,8 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
     campos = dados.model_dump(exclude_unset=True)
     justificativa = campos.pop("cnpj_justificativa", None)
+    if any(c in campos for c in CAMPOS_DE_VALOR):
+        _conferir_valor_aberto(user, op)
     for campo in ("global_discount", "shipping"):
         if campo in campos and campos[campo] is None:
             campos[campo] = 0
@@ -158,7 +171,8 @@ def mover(db: Session, user: User, opportunity_id: int, req: MoverRequest) -> Pa
         op.expected_close_date = req.expected_close_date
     if req.modality:
         op.modality = req.modality
-    if req.stage == "perdido":
+    # Reordenar dentro de Perdido não apaga o motivo já gravado.
+    if req.stage == "perdido" and origem != "perdido":
         op.loss_reason = (req.loss_reason or "").strip() or None
         op.loss_detail = req.loss_detail
     try:
@@ -254,6 +268,7 @@ def adicionar_produto(db: Session, user: User, opportunity_id: int,
                       dados: ProdutoItemCreate) -> PartnerOpportunityProduct:
     acesso.exigir_escrita(user)
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    _conferir_valor_aberto(user, op)
     produto = _produto_do_catalogo(db, dados.product_id)
     ja_tem = db.query(PartnerOpportunityProduct).filter(
         PartnerOpportunityProduct.opportunity_id == op.id, PartnerOpportunityProduct.product_id == produto.id
@@ -276,6 +291,7 @@ def atualizar_produto(db: Session, user: User, opportunity_id: int, item_id: int
                       dados: ProdutoItemUpdate) -> PartnerOpportunityProduct:
     acesso.exigir_escrita(user)
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    _conferir_valor_aberto(user, op)
     item = _buscar_item(db, op, item_id)
     for campo, valor in dados.model_dump(exclude_unset=True).items():
         if valor is not None:
@@ -291,6 +307,7 @@ def atualizar_produto(db: Session, user: User, opportunity_id: int, item_id: int
 def remover_produto(db: Session, user: User, opportunity_id: int, item_id: int) -> None:
     acesso.exigir_escrita(user)
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    _conferir_valor_aberto(user, op)
     db.delete(_buscar_item(db, op, item_id))
     db.commit()
 

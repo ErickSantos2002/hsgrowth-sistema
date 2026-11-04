@@ -7,7 +7,11 @@ import re
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.services.parcerias.cnpj import cnpj_valido, so_digitos
+from app.services.parcerias.cnpj import cnpj_valido, normalizar_cnpj, so_digitos
+
+# Maior valor que cabe nas colunas Numeric(12, 2); acima disso o Postgres recusa.
+VALOR_MAXIMO = Decimal("9999999999.99")
+QUANTIDADE_MAXIMA = 100_000
 
 Qualificacao = Literal["aderente", "parcialmente_aderente", "nao_aderente"]
 
@@ -17,7 +21,7 @@ def _cnpj_opcional(valor: Optional[str]) -> Optional[str]:
         return None
     if not cnpj_valido(valor):
         raise ValueError("CNPJ inválido")
-    return so_digitos(valor)
+    return normalizar_cnpj(valor)
 
 
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -245,7 +249,7 @@ class OportunidadeCreate(BaseModel):
     def _validar_cnpj(cls, valor):
         if not cnpj_valido(valor):
             raise ValueError("CNPJ inválido")
-        return so_digitos(valor)
+        return normalizar_cnpj(valor)
 
     @field_validator("contact_phone")
     @classmethod
@@ -284,9 +288,9 @@ class OportunidadeUpdate(BaseModel):
     # Só admin/gerente: cadastrar (ou trocar o CNPJ) mesmo com o semáforo vermelho.
     cnpj_justificativa: Optional[str] = Field(None, max_length=500)
     # Valor do negócio (seção Produtos).
-    global_discount: Optional[Decimal] = Field(None, ge=0)
+    global_discount: Optional[Decimal] = Field(None, ge=0, le=VALOR_MAXIMO)
     global_discount_type: Optional[Literal["value", "percent"]] = None
-    shipping: Optional[Decimal] = Field(None, ge=0)
+    shipping: Optional[Decimal] = Field(None, ge=0, le=VALOR_MAXIMO)
 
     @field_validator("cnpj")
     @classmethod
@@ -368,14 +372,14 @@ class OportunidadeResponse(BaseModel):
 
 class ProdutoItemCreate(BaseModel):
     product_id: int
-    quantity: int = Field(1, ge=1)
-    unit_price: Optional[Decimal] = Field(None, ge=0)
+    quantity: int = Field(1, ge=1, le=QUANTIDADE_MAXIMA)
+    unit_price: Optional[Decimal] = Field(None, ge=0, le=VALOR_MAXIMO)
 
 
 class ProdutoItemUpdate(BaseModel):
-    quantity: Optional[int] = Field(None, ge=1)
-    unit_price: Optional[Decimal] = Field(None, ge=0)
-    discount: Optional[Decimal] = Field(None, ge=0)
+    quantity: Optional[int] = Field(None, ge=1, le=QUANTIDADE_MAXIMA)
+    unit_price: Optional[Decimal] = Field(None, ge=0, le=VALOR_MAXIMO)
+    discount: Optional[Decimal] = Field(None, ge=0, le=VALOR_MAXIMO)
 
 
 class ProdutoItemResponse(BaseModel):
@@ -463,7 +467,7 @@ class ConsultaCnpjRequest(BaseModel):
     def _validar_cnpj(cls, valor):
         if not cnpj_valido(valor):
             raise ValueError("CNPJ inválido")
-        return so_digitos(valor)
+        return normalizar_cnpj(valor)
 
 
 class RegistroSemaforo(BaseModel):

@@ -54,7 +54,6 @@ class ProductUpdate(BaseModel):
     category: Optional[str] = Field(None, max_length=100)
     is_active: Optional[bool] = None
     partner_enabled: Optional[bool] = None
-    partner_enabled: Optional[bool] = None
 
 
 class ProductResponse(ProductBase):

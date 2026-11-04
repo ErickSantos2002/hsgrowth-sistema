@@ -71,7 +71,7 @@ export default function OportunidadeDetalhe() {
 
   const ganho = op.stage === "ganho";
   const perdido = op.stage === "perdido";
-  // Oportunidade ganha ou perdida só a gestão reabre.
+  // Oportunidade ganha ou perdida só a gestão reabre e só ela corrige produtos e valores.
   const podeMover = podeEditar && (gestao || (!ganho && !perdido));
 
   const salvar = async () => {
@@ -285,7 +285,7 @@ export default function OportunidadeDetalhe() {
             </div>
           </ExpandableSection>
 
-          <ProdutosDaOportunidade op={op} podeEditar={podeEditar} onOportunidade={setOp} />
+          <ProdutosDaOportunidade op={op} podeEditar={podeMover} onOportunidade={setOp} />
         </div>
 
         <AbasDoCard

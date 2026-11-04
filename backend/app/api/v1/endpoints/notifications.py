@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_active_user, require_role
 from app.services.notification_service import NotificationService
 from app.schemas.notification import (
     NotificationCreate,
@@ -114,7 +114,7 @@ async def get_notification(
 @router.post("", response_model=NotificationResponse, summary="Criar notificação")
 async def create_notification(
     data: NotificationCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -132,7 +132,7 @@ async def create_notification(
 @router.post("/bulk", response_model=BulkNotificationResponse, summary="Criar notificações em lote")
 async def create_bulk_notifications(
     data: BulkNotificationCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -300,7 +300,7 @@ async def helper_notify_card_assigned(
     card_id: int = Query(..., description="ID do card"),
     card_title: str = Query(..., description="Título do card"),
     board_id: int = Query(..., description="ID do board"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -323,7 +323,7 @@ async def helper_notify_card_overdue(
     card_id: int = Query(..., description="ID do card"),
     card_title: str = Query(..., description="Título do card"),
     board_id: int = Query(..., description="ID do board"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -345,7 +345,7 @@ async def helper_notify_badge_earned(
     user_id: int = Query(..., description="ID do usuário destinatário"),
     badge_id: int = Query(..., description="ID do badge"),
     badge_name: str = Query(..., description="Nome do badge"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """

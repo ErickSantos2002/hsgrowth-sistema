@@ -25,6 +25,32 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.10",
+    date: "04/11/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Notificações: só o admin cria aviso na mão.",
+      },
+      {
+        type: "fix",
+        text: "Parcerias: o parceiro não lê a justificativa da gestão no histórico; voltar de Ativado para Ativação funciona; reordenar em Perdido mantém o motivo; valores gigantes dão mensagem clara.",
+      },
+      {
+        type: "fix",
+        text: "Produtos: a opção \"Liberado para parceiros\" aparecia duas vezes.",
+      },
+      {
+        type: "improvement",
+        text: "Pipeline de Parceiros: oportunidade encerrada tem produtos e valores travados para quem não é da gestão; parceiro em Perdido não registra oportunidade; o parceiro não altera atividade lançada pela H&S.",
+      },
+      {
+        type: "improvement",
+        text: "CNPJ com letras (formato novo da Receita) aceito em Parcerias; em Vendas, o bloqueio pelo parceiro vale só enquanto ele está negociando.",
+      },
+    ],
+  },
+  {
     version: "1.11.9",
     date: "03/11/2026",
     entries: [

@@ -138,7 +138,10 @@ def item_out(item: PartnerOpportunityProduct) -> ProdutoItemResponse:
     )
 
 
-def atividade_out(a: PartnerActivity) -> AtividadeResponse:
-    return AtividadeResponse.model_validate(a).model_copy(update={
-        "user_name": a.user.name if a.user else None,
-    })
+def atividade_out(a: PartnerActivity, user: Optional[User] = None) -> AtividadeResponse:
+    extras = {"user_name": a.user.name if a.user else None}
+    texto = a.description or ""
+    if user is not None and acesso.eh_parceiro(user) and texto.startswith("Cadastro liberado pela gestão"):
+        # A justificativa é da gestão; o parceiro vê só que houve a liberação.
+        extras["description"] = texto.split(" Justificativa:")[0]
+    return AtividadeResponse.model_validate(a).model_copy(update=extras)

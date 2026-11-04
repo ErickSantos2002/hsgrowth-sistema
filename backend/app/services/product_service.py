@@ -115,6 +115,12 @@ class ProductService:
 
         # TODO: Verificar permissões
 
+        # Liga/desliga é NOT NULL no banco: mandar nulo significa não mexer.
+        nulos = {c for c in ("is_active", "partner_enabled")
+                 if c in product_data.model_fields_set and getattr(product_data, c) is None}
+        if nulos:
+            product_data = ProductUpdate(**product_data.model_dump(exclude_unset=True, exclude=nulos))
+
         # Se está mudando o SKU, verifica se já existe outro produto com esse SKU
         if product_data.sku and product_data.sku != product.sku:
             existing = self.repository.get_product_by_sku(product_data.sku)

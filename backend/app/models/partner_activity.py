@@ -27,7 +27,7 @@ class PartnerActivity(Base, TimestampMixin):
     # Autor. NULL = sistema.
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    category = Column(String(20), nullable=False, default="atividade")  # atividade|anotacao|arquivo|alteracao
+    category = Column(String(20), nullable=False, default="atividade", index=True)  # atividade|anotacao|arquivo|alteracao
     activity_type = Column(String(50), nullable=True)                    # call|task|whatsapp|stage_change|...
     title = Column(String(500), nullable=True)
     description = Column(Text, nullable=True)

@@ -71,11 +71,6 @@ class PartnerOpportunity(Base, TimestampMixin, SoftDeleteMixin):
     global_discount_type = Column(String(10), nullable=False, default="value")
     shipping = Column(Numeric(12, 2), nullable=False, default=0)
 
-    # Valor do negócio: desconto geral (value = R$, percent = %) e frete, como no card de Serviço.
-    global_discount = Column(Numeric(12, 2), nullable=False, default=0)
-    global_discount_type = Column(String(10), nullable=False, default="value")
-    shipping = Column(Numeric(12, 2), nullable=False, default=0)
-
     partner = relationship("Partner")
     seller = relationship("PartnerTeamMember")
     eligibility_by = relationship("User", foreign_keys=[eligibility_by_id])
@@ -100,7 +95,6 @@ class PartnerOpportunityProduct(Base, TimestampMixin):
     product_id = Column(Integer, ForeignKey("products.id", ondelete="RESTRICT"), nullable=False)
     quantity = Column(Integer, nullable=False, default=1)
     unit_price = Column(Numeric(12, 2), nullable=False, default=0)
-    discount = Column(Numeric(12, 2), nullable=False, default=0)  # sempre em R$
     discount = Column(Numeric(12, 2), nullable=False, default=0)  # sempre em R$
 
     product = relationship("Product")

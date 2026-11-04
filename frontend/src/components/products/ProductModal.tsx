@@ -347,18 +347,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
               Liberado para parceiros (aparece no Pipeline de Parceiros)
             </label>
           </div>
-          <div className="mt-3 flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="partner_enabled"
-              checked={formData.partner_enabled}
-              onChange={(e) => handleChange("partner_enabled", e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 bg-white text-emerald-600 focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800"
-            />
-            <label htmlFor="partner_enabled" className="cursor-pointer text-sm text-slate-700 dark:text-slate-300">
-              Liberado para parceiros (aparece no Pipeline de Parceiros)
-            </label>
-          </div>
         </div>
       </div>
     </BaseModal>

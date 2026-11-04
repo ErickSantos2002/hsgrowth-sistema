@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button, FormField, Input, Pagination, SelectMenu } from "../../components/common";
 import KpiCard from "../../components/dashboard/KpiCard";
 import ResultadoSemaforo from "../../components/parcerias/ResultadoSemaforo";
-import { cnpjValido, mascarar } from "../../components/parcerias/campos";
+import { cnpjValido, limparCnpj, mascarar } from "../../components/parcerias/campos";
 import { MOTIVO_SEMAFORO, PERFIS_GESTAO, SEMAFORO_COR, SEMAFORO_LABEL } from "../../constants/parcerias";
 import { useAuth } from "../../hooks/useAuth";
 import parceriasService, {
@@ -77,7 +77,7 @@ export default function ConsultaCnpj() {
     }
   };
 
-  const invalido = cnpj.replace(/\D/g, "").length === 14 && !cnpjValido(cnpj);
+  const invalido = limparCnpj(cnpj).length === 14 && !cnpjValido(cnpj);
   const pronto = cnpjValido(cnpj);
   const mudarFiltro = (parcial: FiltroHistorico) => setFiltro({ ...filtro, ...parcial, pagina: 1 });
 

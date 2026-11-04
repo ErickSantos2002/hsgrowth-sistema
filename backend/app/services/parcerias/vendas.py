@@ -14,14 +14,14 @@ from app.models.client import Client
 from app.models.user import User
 from app.schemas.parcerias import AvisoParceriasItem
 from app.services.parcerias import acesso, semaforo
-from app.services.parcerias.cnpj import so_digitos
+from app.services.parcerias.cnpj import normalizar_cnpj
 
 
 def _cnpj_do_cliente(db: Session, client_id: Optional[int]) -> Optional[str]:
     if not client_id:
         return None
     c = db.query(Client).filter(Client.id == client_id).first()
-    cnpj = so_digitos(c.document) if c else ""
+    cnpj = normalizar_cnpj(c.document) if c else ""
     return cnpj if len(cnpj) == 14 else None
 
 
