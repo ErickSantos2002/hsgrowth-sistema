@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Plus, Filter, Edit, Trash2, RefreshCw, Users, ChevronDown, Briefcase, Mail, User } from "lucide-react";
+import { Plus, Filter, Edit, Eye, Trash2, RefreshCw, Users, ChevronDown, Briefcase, Mail, User } from "lucide-react";
 import personService, { Person } from "../services/personService";
 import { Button, Alert, SearchInput, Pagination } from "../components/common";
 import { PageHeader } from "../components/layout";
@@ -13,6 +13,8 @@ const Persons: React.FC = () => {
 
   // Visualizadores têm acesso somente leitura
   const isViewer = user?.role === "viewer";
+  // Cadastro aberto pelo olhinho (só visualização).
+  const [visto, setVisto] = useState<Person | null>(null);
 
   // Estados locais
   const [showFilters, setShowFilters] = useState(false);
@@ -302,10 +304,18 @@ const Persons: React.FC = () => {
                       {formatDate(person.created_at)}
                     </td>
 
-                    {/* Ações - ocultas para visualizadores */}
+                    {/* Ações: ver para todos; editar e excluir ocultos para visualizadores */}
                     <td className="px-6 py-4">
-                      {!isViewer && (
-                        <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setVisto(person)}
+                          className="rounded-lg bg-blue-600/20 p-2 text-slate-900 dark:text-blue-400 transition-colors hover:bg-blue-600/30"
+                          title="Ver"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        {!isViewer && (
+                        <>
                           <button
                             onClick={() => handleEdit(person)}
                             className="rounded-lg bg-yellow-600/20 p-2 text-slate-900 dark:text-yellow-400 transition-colors hover:bg-yellow-600/30"
@@ -320,8 +330,9 @@ const Persons: React.FC = () => {
                           >
                             <Trash2 size={16} />
                           </button>
-                        </div>
-                      )}
+                        </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -344,6 +355,21 @@ const Persons: React.FC = () => {
         onSave={handleSaveSuccess}
         person={editingPerson}
       />
+
+      {/* Modal de visualização (olhinho) */}
+      {visto && (
+        <PersonModal
+          isOpen
+          onClose={() => setVisto(null)}
+          onSave={() => setVisto(null)}
+          person={visto}
+          somenteLeitura
+          onEditar={isViewer ? undefined : () => {
+            setVisto(null);
+            handleEdit(visto);
+          }}
+        />
+      )}
     </div>
   );
 };

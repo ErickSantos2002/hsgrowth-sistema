@@ -7,6 +7,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [1.11.15] — 05/11/2026
 
+### Adicionado
+- **Clientes, Pessoas, Produtos (inclusive a aba de equipamentos de Serviço) e Serviços — botão "Ver" (olhinho):** abre o cadastro só para consulta, com os campos travados e sem Salvar. Quem pode editar tem o botão "Editar" ali mesmo. Visualizadores também passam a ver o cadastro completo (antes não tinham ação nenhuma na lista).
+
 ### Corrigido
 - **Parcerias — Cliente ligado:** a razão social digitada pelo parceiro vai para o campo "Empresa" do Cliente (antes ia para "Nome Fantasia"). O histórico de alterações passa a chamar os campos de "Empresa" e "Nome fantasia", como na tela.
 - **Clientes — busca da tela:** acha o cliente pelo CPF/CNPJ digitado com ou sem pontuação (antes só achava se digitado igual ao gravado).

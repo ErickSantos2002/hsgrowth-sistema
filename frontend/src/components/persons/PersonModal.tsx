@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User, Mail, Phone, Briefcase, Linkedin, Instagram, Facebook, ChevronDown, Users } from "lucide-react";
 import BaseModal from "../common/BaseModal";
+import RodapeSoLeitura from "../common/RodapeSoLeitura";
 import HistoricoAlteracoes from "../common/HistoricoAlteracoes";
 import { FormField, Input, Textarea, Button } from "../common";
 import personService, { Person, CreatePersonRequest } from "../../services/personService";
@@ -20,6 +21,10 @@ interface PersonModalProps {
   /** Na criação, recebe a pessoa criada. Na edição, chamado sem argumento. */
   onSave: (person?: Person) => void;
   person: Person | null; // null = criar, objeto = editar
+  /** Só visualização (olhinho da lista): campos travados, sem Salvar. */
+  somenteLeitura?: boolean;
+  /** No modo visualização, botão para ir à edição (só para quem pode editar). */
+  onEditar?: () => void;
 }
 
 /**
@@ -67,7 +72,7 @@ interface PersonFormData {
  * - Redes sociais (LinkedIn, Instagram, Facebook)
  * - Status (ativo/inativo)
  */
-const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, person }) => {
+const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, person, somenteLeitura = false, onEditar }) => {
   const isEditing = !!person;
   const { user } = useAuth();
 
@@ -277,10 +282,12 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? "Editar Pessoa" : "Nova Pessoa"}
-      subtitle={isEditing ? "Atualize os dados da pessoa" : "Preencha os dados da nova pessoa"}
+      title={somenteLeitura ? "Ver Pessoa" : isEditing ? "Editar Pessoa" : "Nova Pessoa"}
+      subtitle={somenteLeitura ? "Dados da pessoa" : isEditing ? "Atualize os dados da pessoa" : "Preencha os dados da nova pessoa"}
       size="2xl"
-      footer={
+      footer={somenteLeitura ? (
+        <RodapeSoLeitura onClose={onClose} onEditar={onEditar} />
+      ) : (
         <div className="flex items-center justify-between">
           <div>
             {errors._api && (
@@ -296,9 +303,10 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
             </Button>
           </div>
         </div>
-      }
+      )}
     >
-      <div className="space-y-6">
+      {/* No modo visualização o fieldset trava todos os campos de uma vez. */}
+      <fieldset disabled={somenteLeitura} className="min-w-0 space-y-6">
         {/* Seção: Identificação */}
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
@@ -642,11 +650,14 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
                 Pessoa ativa (desmarque para inativar)
               </label>
             </div>
-
-            {person && <HistoricoAlteracoes tipo="persons" id={person.id} />}
           </div>
         </div>
-      </div>
+      </fieldset>
+      {person && (
+        <div className="mt-6">
+          <HistoricoAlteracoes tipo="persons" id={person.id} />
+        </div>
+      )}
     </BaseModal>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Building, User, Mail, Phone, FileText, MapPin, Globe, StickyNote, ChevronDown, Briefcase, Linkedin, Search, Loader2, CheckCircle } from "lucide-react";
 import BaseModal from "../common/BaseModal";
+import RodapeSoLeitura from "../common/RodapeSoLeitura";
 import HistoricoAlteracoes from "../common/HistoricoAlteracoes";
 import { FormField, Input, Select, Textarea, Button } from "../common";
 import clientService, { Client, CreateClientRequest, UpdateClientRequest } from "../../services/clientService";
@@ -23,6 +24,10 @@ interface ClientModalProps {
   /** Recebe o cliente criado/editado para permitir vínculo automático ao card */
   onSave: (client?: Client) => void;
   client: Client | null; // null = criar, objeto = editar
+  /** Só visualização (olhinho da lista): campos travados, sem Salvar. */
+  somenteLeitura?: boolean;
+  /** No modo visualização, botão para ir à edição (só para quem pode editar). */
+  onEditar?: () => void;
 }
 
 /**
@@ -95,7 +100,7 @@ const BRAZILIAN_STATES = [
  * - Informações adicionais (website, observações)
  * - Status (ativo/inativo)
  */
-const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, client }) => {
+const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, client, somenteLeitura = false, onEditar }) => {
   const isEditing = !!client;
 
   // Estado do formulário
@@ -372,10 +377,12 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? "Editar Cliente" : "Novo Cliente"}
-      subtitle={isEditing ? "Atualize os dados do cliente" : "Preencha os dados do novo cliente"}
+      title={somenteLeitura ? "Ver Cliente" : isEditing ? "Editar Cliente" : "Novo Cliente"}
+      subtitle={somenteLeitura ? "Dados do cliente" : isEditing ? "Atualize os dados do cliente" : "Preencha os dados do novo cliente"}
       size="2xl"
-      footer={
+      footer={somenteLeitura ? (
+        <RodapeSoLeitura onClose={onClose} onEditar={onEditar} />
+      ) : (
         <div className="flex items-center justify-between">
           <div>
             {errors._api && (
@@ -391,9 +398,10 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
             </Button>
           </div>
         </div>
-      }
+      )}
     >
-      <div className="space-y-6">
+      {/* No modo visualização o fieldset trava todos os campos de uma vez. */}
+      <fieldset disabled={somenteLeitura} className="min-w-0 space-y-6">
         {/* Seção: Dados Principais */}
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
@@ -772,11 +780,14 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 Cliente ativo (desmarque para inativar)
               </label>
             </div>
-
-            {client && <HistoricoAlteracoes tipo="clients" id={client.id} />}
           </div>
         </div>
-      </div>
+      </fieldset>
+      {client && (
+        <div className="mt-6">
+          <HistoricoAlteracoes tipo="clients" id={client.id} />
+        </div>
+      )}
     </BaseModal>
   );
 };

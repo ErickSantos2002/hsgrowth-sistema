@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Wrench, FileText, Tag } from "lucide-react";
 import BaseModal from "../common/BaseModal";
+import RodapeSoLeitura from "../common/RodapeSoLeitura";
 import { FormField, Input, Textarea, Button } from "../common";
 import serviceProductService, {
   ServiceProduct,
@@ -12,6 +13,10 @@ interface ServiceProductModalProps {
   onClose: () => void;
   onSave: () => void;
   product: ServiceProduct | null; // null = criar, objeto = editar
+  /** Só visualização (olhinho da lista): campos travados, sem Salvar. */
+  somenteLeitura?: boolean;
+  /** No modo visualização, botão para ir à edição (só para quem pode editar). */
+  onEditar?: () => void;
 }
 
 interface FormData {
@@ -29,7 +34,7 @@ interface FormData {
  * valor do negócio vem dos serviços do card, não do equipamento (ver
  * `app/models/service_product.py`).
  */
-const ServiceProductModal: React.FC<ServiceProductModalProps> = ({ isOpen, onClose, onSave, product }) => {
+const ServiceProductModal: React.FC<ServiceProductModalProps> = ({ isOpen, onClose, onSave, product, somenteLeitura = false, onEditar }) => {
   const isEditing = !!product;
 
   const [formData, setFormData] = useState<FormData>({
@@ -96,10 +101,12 @@ const ServiceProductModal: React.FC<ServiceProductModalProps> = ({ isOpen, onClo
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? "Editar Equipamento" : "Novo Equipamento de Serviço"}
-      subtitle={isEditing ? "Atualize os dados do equipamento" : "Cadastre um equipamento do catálogo de Serviços"}
+      title={somenteLeitura ? "Ver Equipamento" : isEditing ? "Editar Equipamento" : "Novo Equipamento de Serviço"}
+      subtitle={somenteLeitura ? "Dados do equipamento" : isEditing ? "Atualize os dados do equipamento" : "Cadastre um equipamento do catálogo de Serviços"}
       size="2xl"
-      footer={
+      footer={somenteLeitura ? (
+        <RodapeSoLeitura onClose={onClose} onEditar={onEditar} />
+      ) : (
         <div className="flex items-center justify-between">
           <div>{error && <p className="text-sm text-red-400">{error}</p>}</div>
           <div className="flex gap-3">
@@ -111,9 +118,10 @@ const ServiceProductModal: React.FC<ServiceProductModalProps> = ({ isOpen, onClo
             </Button>
           </div>
         </div>
-      }
+      )}
     >
-      <div className="space-y-6">
+      {/* No modo visualização o fieldset trava todos os campos de uma vez. */}
+      <fieldset disabled={somenteLeitura} className="min-w-0 space-y-6">
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
             <Wrench size={20} className="text-sky-400" />
@@ -196,7 +204,7 @@ const ServiceProductModal: React.FC<ServiceProductModalProps> = ({ isOpen, onClo
             </label>
           </div>
         </div>
-      </div>
+      </fieldset>
     </BaseModal>
   );
 };

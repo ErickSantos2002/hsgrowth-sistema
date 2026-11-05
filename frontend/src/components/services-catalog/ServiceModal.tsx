@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Cog, FileText, DollarSign, Tag } from "lucide-react";
 import BaseModal from "../common/BaseModal";
+import RodapeSoLeitura from "../common/RodapeSoLeitura";
 import { FormField, Input, Textarea, Button } from "../common";
 import serviceCatalogService, { Service, CreateServiceRequest } from "../../services/serviceCatalogService";
 
@@ -12,6 +13,10 @@ interface ServiceModalProps {
   onClose: () => void;
   onSave: () => void;
   service: Service | null; // null = criar, objeto = editar
+  /** Só visualização (olhinho da lista): campos travados, sem Salvar. */
+  somenteLeitura?: boolean;
+  /** No modo visualização, botão para ir à edição (só para quem pode editar). */
+  onEditar?: () => void;
 }
 
 /**
@@ -35,7 +40,7 @@ interface ServiceFormData {
  * - Categorização (categoria)
  * - Status (ativo/inativo)
  */
-const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave, service }) => {
+const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave, service, somenteLeitura = false, onEditar }) => {
   const isEditing = !!service;
 
   // Estado do formulário
@@ -163,10 +168,12 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave, se
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? "Editar Serviço" : "Novo Serviço"}
-      subtitle={isEditing ? "Atualize os dados do serviço" : "Preencha os dados do novo serviço"}
+      title={somenteLeitura ? "Ver Serviço" : isEditing ? "Editar Serviço" : "Novo Serviço"}
+      subtitle={somenteLeitura ? "Dados do serviço" : isEditing ? "Atualize os dados do serviço" : "Preencha os dados do novo serviço"}
       size="2xl"
-      footer={
+      footer={somenteLeitura ? (
+        <RodapeSoLeitura onClose={onClose} onEditar={onEditar} />
+      ) : (
         <div className="flex items-center justify-between">
           <div>
             {error && (
@@ -182,9 +189,10 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave, se
             </Button>
           </div>
         </div>
-      }
+      )}
     >
-      <div className="space-y-6">
+      {/* No modo visualização o fieldset trava todos os campos de uma vez. */}
+      <fieldset disabled={somenteLeitura} className="min-w-0 space-y-6">
         {/* Seção: Dados Principais */}
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
@@ -305,7 +313,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave, se
             </label>
           </div>
         </div>
-      </div>
+      </fieldset>
     </BaseModal>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
-import { Plus, Filter, Edit, Trash2, RefreshCw, Package, ChevronDown, Wrench } from "lucide-react";
+import { Plus, Filter, Edit, Eye, Trash2, RefreshCw, Package, ChevronDown, Wrench } from "lucide-react";
 import productService, { Product } from "../services/productService";
 import { Button, Alert, SearchInput, Pagination } from "../components/common";
 import { PageHeader } from "../components/layout";
@@ -14,6 +14,8 @@ const Products: React.FC = () => {
 
   // Visualizadores têm acesso somente leitura
   const isViewer = user?.role === "viewer";
+  // Cadastro aberto pelo olhinho (só visualização).
+  const [visto, setVisto] = useState<Product | null>(null);
 
   // Aba ativa: catálogo de Vendas (atual) ou de Serviço (equipamentos, leitura).
   const [activeTab, setActiveTab] = useState<"vendas" | "servico">("vendas");
@@ -341,10 +343,18 @@ const Products: React.FC = () => {
                       {formatDate(product.created_at)}
                     </td>
 
-                    {/* Ações - ocultas para visualizadores */}
+                    {/* Ações: ver para todos; editar e excluir ocultos para visualizadores */}
                     <td className="px-6 py-4">
-                      {!isViewer && (
-                        <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setVisto(product)}
+                          className="rounded-lg bg-blue-600/20 p-2 text-slate-900 dark:text-blue-400 transition-colors hover:bg-blue-600/30"
+                          title="Ver"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        {!isViewer && (
+                        <>
                           <button
                             onClick={() => handleEdit(product)}
                             className="rounded-lg bg-yellow-600/20 p-2 text-slate-900 dark:text-yellow-400 transition-colors hover:bg-yellow-600/30"
@@ -359,8 +369,9 @@ const Products: React.FC = () => {
                           >
                             <Trash2 size={16} />
                           </button>
-                        </div>
-                      )}
+                        </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -383,6 +394,21 @@ const Products: React.FC = () => {
         onSave={handleSaveSuccess}
         product={editingProduct}
       />
+
+      {/* Modal de visualização (olhinho) */}
+      {visto && (
+        <ProductModal
+          isOpen
+          onClose={() => setVisto(null)}
+          onSave={() => setVisto(null)}
+          product={visto}
+          somenteLeitura
+          onEditar={isViewer ? undefined : () => {
+            setVisto(null);
+            handleEdit(visto);
+          }}
+        />
+      )}
       </>
       )}
     </div>

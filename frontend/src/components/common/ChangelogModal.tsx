@@ -29,6 +29,10 @@ const CHANGELOG: ChangelogVersion[] = [
     date: "05/11/2026",
     entries: [
       {
+        type: "feature",
+        text: "Clientes, Pessoas, Produtos (Vendas e equipamentos de Serviço) e Serviços: botão \"Ver\" (olhinho) para consultar o cadastro sem precisar abrir a edição.",
+      },
+      {
         type: "fix",
         text: "Parcerias: a razão social do parceiro vai para o campo \"Empresa\" do Cliente ligado (antes ia para Nome Fantasia).",
       },

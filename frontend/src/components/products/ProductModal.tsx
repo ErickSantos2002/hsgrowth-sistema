@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Package, FileText, DollarSign, Tag, ChevronDown } from "lucide-react";
 import BaseModal from "../common/BaseModal";
+import RodapeSoLeitura from "../common/RodapeSoLeitura";
 import { FormField, Input, Textarea, Button } from "../common";
 import productService, { Product, CreateProductRequest } from "../../services/productService";
 
@@ -12,6 +13,10 @@ interface ProductModalProps {
   onClose: () => void;
   onSave: () => void;
   product: Product | null; // null = criar, objeto = editar
+  /** Só visualização (olhinho da lista): campos travados, sem Salvar. */
+  somenteLeitura?: boolean;
+  /** No modo visualização, botão para ir à edição (só para quem pode editar). */
+  onEditar?: () => void;
 }
 
 /**
@@ -46,7 +51,7 @@ const CURRENCIES = [
  * - Categorização (categoria)
  * - Status (ativo/inativo)
  */
-const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, product }) => {
+const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, product, somenteLeitura = false, onEditar }) => {
   const isEditing = !!product;
 
   // Estado do formulário
@@ -182,10 +187,12 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? "Editar Produto" : "Novo Produto"}
-      subtitle={isEditing ? "Atualize os dados do produto" : "Preencha os dados do novo produto"}
+      title={somenteLeitura ? "Ver Produto" : isEditing ? "Editar Produto" : "Novo Produto"}
+      subtitle={somenteLeitura ? "Dados do produto" : isEditing ? "Atualize os dados do produto" : "Preencha os dados do novo produto"}
       size="2xl"
-      footer={
+      footer={somenteLeitura ? (
+        <RodapeSoLeitura onClose={onClose} onEditar={onEditar} />
+      ) : (
         <div className="flex items-center justify-between">
           <div>
             {error && (
@@ -201,9 +208,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
             </Button>
           </div>
         </div>
-      }
+      )}
     >
-      <div className="space-y-6">
+      {/* No modo visualização o fieldset trava todos os campos de uma vez. */}
+      <fieldset disabled={somenteLeitura} className="min-w-0 space-y-6">
         {/* Seção: Dados Principais */}
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
@@ -348,7 +356,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
             </label>
           </div>
         </div>
-      </div>
+      </fieldset>
     </BaseModal>
   );
 };

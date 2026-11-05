@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Filter, RefreshCw, Wrench, Plus, Edit, Trash2 } from "lucide-react";
+import { Filter, RefreshCw, Wrench, Plus, Edit, Eye, Trash2 } from "lucide-react";
 import serviceProductService, { ServiceProduct } from "../../services/serviceProductService";
 import { Button, SearchInput, Pagination, SelectMenu } from "../common";
 import ServiceProductModal from "./ServiceProductModal";
@@ -28,6 +28,8 @@ const origemLabel = (source?: string | null) => {
 const ServiceProductsTab: React.FC = () => {
   const { user } = useAuth();
   const isViewer = user?.role === "viewer";
+  // Equipamento aberto pelo olhinho (só visualização).
+  const [visto, setVisto] = useState<ServiceProduct | null>(null);
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -169,9 +171,7 @@ const ServiceProductsTab: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Origem</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Cadastro</th>
-                  {!isViewer && (
-                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Ações</th>
-                  )}
+                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-slate-700/50">
@@ -206,9 +206,18 @@ const ServiceProductsTab: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{formatDate(p.created_at)}</td>
-                      {!isViewer && (
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-2">
+                      {/* Ações: ver para todos; editar e excluir ocultos para visualizadores */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setVisto(p)}
+                            className="rounded-lg bg-blue-600/20 p-2 text-slate-900 transition-colors hover:bg-blue-600/30 dark:text-blue-400"
+                            title="Ver"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          {!isViewer && (
+                          <>
                             <button
                               onClick={() => handleEdit(p)}
                               className="rounded-lg bg-yellow-600/20 p-2 text-slate-900 transition-colors hover:bg-yellow-600/30 dark:text-yellow-400"
@@ -223,9 +232,10 @@ const ServiceProductsTab: React.FC = () => {
                             >
                               <Trash2 size={16} />
                             </button>
-                          </div>
-                        </td>
-                      )}
+                          </>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -243,6 +253,21 @@ const ServiceProductsTab: React.FC = () => {
         onSave={handleSaveSuccess}
         product={editing}
       />
+
+      {/* Modal de visualização (olhinho) */}
+      {visto && (
+        <ServiceProductModal
+          isOpen
+          onClose={() => setVisto(null)}
+          onSave={() => setVisto(null)}
+          product={visto}
+          somenteLeitura
+          onEditar={isViewer ? undefined : () => {
+            setVisto(null);
+            handleEdit(visto);
+          }}
+        />
+      )}
     </div>
   );
 };
