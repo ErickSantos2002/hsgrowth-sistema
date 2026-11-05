@@ -10,7 +10,8 @@ from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.person_service import PersonService
 from app.schemas.person import PersonCreate, PersonUpdate, PersonResponse, PersonListResponse
 from app.models.user import User
-from app.models.audit_log import AuditLog
+from app.schemas.historico import HistoricoItem
+from app.services import historico_cadastro
 from app.models.person import Person
 
 router = APIRouter()
@@ -219,30 +220,7 @@ async def create_person(
     service = PersonService(db)
     person = service.create_person(person_data)
 
-    # Registra no audit log
-    client_ip = request.client.host if request.client else "unknown"
-    user_agent = request.headers.get("user-agent", "unknown")
-
-    data_after = {
-        "id": person.id,
-        "name": person.name,
-        "email_commercial": person.email_commercial,
-        "phone_whatsapp": person.phone_whatsapp,
-        "position": person.position,
-        "organization_id": person.organization_id,
-    }
-
-    audit_log = AuditLog(
-        user_id=current_user.id,
-        action="CREATE",
-        entity_type="Person",
-        entity_id=person.id,
-        description=f"Pessoa criada: {person.name}",
-        data_after=data_after,
-        ip_address=client_ip,
-        user_agent=user_agent
-    )
-    db.add(audit_log)
+    historico_cadastro.registrar(db, current_user, "Person", person, "CREATE", request=request)
     db.commit()
 
     # Converte para response schema
@@ -282,49 +260,14 @@ async def update_person(
     """
     Atualiza uma pessoa existente.
     """
-    # Captura estado anterior ANTES de atualizar
+    # Foto do cadastro ANTES de atualizar (o histórico mostra o que mudou)
     person_before_obj = db.query(Person).filter(Person.id == person_id).first()
-    data_before = None
-    if person_before_obj:
-        data_before = {
-            "name": person_before_obj.name,
-            "email_commercial": person_before_obj.email_commercial,
-            "phone_whatsapp": person_before_obj.phone_whatsapp,
-            "phone_commercial": person_before_obj.phone_commercial,
-            "position": person_before_obj.position,
-            "organization_id": person_before_obj.organization_id,
-            "is_active": person_before_obj.is_active,
-        }
+    data_before = historico_cadastro.foto(person_before_obj, "Person") if person_before_obj else None
 
     service = PersonService(db)
     person = service.update_person(person_id, person_data)
 
-    # Registra no audit log
-    client_ip = request.client.host if request.client else "unknown"
-    user_agent = request.headers.get("user-agent", "unknown")
-
-    data_after = {
-        "name": person.name,
-        "email_commercial": person.email_commercial,
-        "phone_whatsapp": person.phone_whatsapp,
-        "phone_commercial": person.phone_commercial,
-        "position": person.position,
-        "organization_id": person.organization_id,
-        "is_active": person.is_active,
-    }
-
-    audit_log = AuditLog(
-        user_id=current_user.id,
-        action="UPDATE",
-        entity_type="Person",
-        entity_id=person.id,
-        description=f"Pessoa atualizada: {person.name}",
-        data_before=data_before,
-        data_after=data_after,
-        ip_address=client_ip,
-        user_agent=user_agent
-    )
-    db.add(audit_log)
+    historico_cadastro.registrar(db, current_user, "Person", person, "UPDATE", antes=data_before, request=request)
     db.commit()
 
     # Converte para response schema
@@ -358,40 +301,16 @@ async def delete_person(
     """
     Deleta uma pessoa.
     """
-    # Captura estado da pessoa ANTES de deletar
+    # Foto do cadastro ANTES de deletar
     person_before_obj = db.query(Person).filter(Person.id == person_id).first()
-    person_name = person_before_obj.name if person_before_obj else f"ID {person_id}"
 
-    data_before = None
+    # Grava antes de excluir: a exclusão faz o commit e leva o registro junto.
     if person_before_obj:
-        data_before = {
-            "id": person_before_obj.id,
-            "name": person_before_obj.name,
-            "email_commercial": person_before_obj.email_commercial,
-            "phone_whatsapp": person_before_obj.phone_whatsapp,
-            "position": person_before_obj.position,
-            "organization_id": person_before_obj.organization_id,
-        }
+        historico_cadastro.registrar(db, current_user, "Person", person_before_obj, "DELETE",
+                                     antes=historico_cadastro.foto(person_before_obj, "Person"), request=request)
 
     service = PersonService(db)
     service.delete_person(person_id)
-
-    # Registra no audit log
-    client_ip = request.client.host if request.client else "unknown"
-    user_agent = request.headers.get("user-agent", "unknown")
-
-    audit_log = AuditLog(
-        user_id=current_user.id,
-        action="DELETE",
-        entity_type="Person",
-        entity_id=person_id,
-        description=f"Pessoa deletada: {person_name}",
-        data_before=data_before,
-        ip_address=client_ip,
-        user_agent=user_agent
-    )
-    db.add(audit_log)
-    db.commit()
 
     return {"message": "Pessoa deletada com sucesso"}
 
@@ -464,3 +383,19 @@ async def get_persons_by_organization(
 
     # Converte para response schema
     return [PersonResponse.model_validate(person) for person in persons]
+
+
+@router.get(
+    "/{person_id}/historico",
+    response_model=list[HistoricoItem],
+    summary="Histórico de alterações do pessoa",
+    description="O que mudou no cadastro, quem mudou e quando (inclusive pela Parceria), mais recente primeiro.",
+)
+async def historico_pessoa(
+    person_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    if not db.query(Person).filter(Person.id == person_id).first():
+        raise HTTPException(status_code=404, detail="Pessoa não encontrada")
+    return historico_cadastro.listar(db, "Person", person_id)

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User, Mail, Phone, Briefcase, Linkedin, Instagram, Facebook, ChevronDown, Users } from "lucide-react";
 import BaseModal from "../common/BaseModal";
+import HistoricoAlteracoes from "../common/HistoricoAlteracoes";
 import { FormField, Input, Textarea, Button } from "../common";
 import personService, { Person, CreatePersonRequest } from "../../services/personService";
 import userService from "../../services/userService";
@@ -641,6 +642,8 @@ const PersonModal: React.FC<PersonModalProps> = ({ isOpen, onClose, onSave, pers
                 Pessoa ativa (desmarque para inativar)
               </label>
             </div>
+
+            {person && <HistoricoAlteracoes tipo="persons" id={person.id} />}
           </div>
         </div>
       </div>

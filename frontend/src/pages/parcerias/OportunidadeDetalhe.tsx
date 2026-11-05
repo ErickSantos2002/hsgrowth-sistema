@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Briefcase, Building2, CheckCircle2, DollarSign, RefreshCw, ShieldCheck, XCircle,
+  ArrowLeft, Briefcase, Building2, CheckCircle2, DollarSign, ExternalLink, RefreshCw, ShieldCheck, XCircle,
 } from "lucide-react";
 import { Button, FormField, Input, LoadingSpinner, SelectMenu, Textarea } from "../../components/common";
 import ExpandableSection from "../../components/cardDetails/ExpandableSection";
+import ClientModal from "../../components/clients/ClientModal";
+import PersonModal from "../../components/persons/PersonModal";
 import AbasDoCard from "../../components/parcerias/AbasDoCard";
 import EtapasParceria from "../../components/parcerias/EtapasParceria";
 import ModalTrava, { faltasParaMover, temFalta } from "../../components/parcerias/ModalTrava";
@@ -20,6 +22,8 @@ import {
 import parceriasService, {
   Etapa, Membro, MoverPayload, Oportunidade, OportunidadeForm, mensagemDeErro,
 } from "../../services/parceriasService";
+import clientService, { Client } from "../../services/clientService";
+import personService, { Person } from "../../services/personService";
 
 const opcoes = (lista: string[]) => lista.map((v) => ({ value: v, label: v }));
 
@@ -39,6 +43,10 @@ export default function OportunidadeDetalhe() {
   const [nota, setNota] = useState("");
   const [motivoGanho, setMotivoGanho] = useState("");
   const [destinoPendente, setDestinoPendente] = useState<string | null>(null);
+  const [clienteAberto, setClienteAberto] = useState<Client | null>(null);
+  const [pessoaAberta, setPessoaAberta] = useState<Person | null>(null);
+  // Clientes e Pessoas são telas de Vendas: Financeiro e parceiro não abrem.
+  const abreCadastro = !["partner", "finance"].includes(user?.role ?? "");
 
   const preencher = (o: Oportunidade) => {
     setOp(o);
@@ -86,6 +94,24 @@ export default function OportunidadeDetalhe() {
       showSuccess("Oportunidade salva.");
     } catch (err) {
       showError(mensagemDeErro(err, "Erro ao salvar a oportunidade."));
+    }
+  };
+
+  const abrirCliente = async () => {
+    if (!op?.client_id) return;
+    try {
+      setClienteAberto(await clientService.getById(op.client_id));
+    } catch (err) {
+      showError(mensagemDeErro(err, "Erro ao abrir o cliente."));
+    }
+  };
+
+  const abrirPessoa = async () => {
+    if (!op?.person_id) return;
+    try {
+      setPessoaAberta(await personService.getById(op.person_id));
+    } catch (err) {
+      showError(mensagemDeErro(err, "Erro ao abrir a pessoa."));
     }
   };
 
@@ -310,6 +336,14 @@ export default function OportunidadeDetalhe() {
 
           <ExpandableSection title="Empresa e contato" icon={<Building2 size={18} />}>
             <div className="space-y-3">
+              {op.client_id && (
+                <div className="space-y-1 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
+                  <VinculoCrm rotulo="Cliente no CRM" nome={op.client_name} onAbrir={abreCadastro ? abrirCliente : undefined} />
+                  {op.person_id && (
+                    <VinculoCrm rotulo="Pessoa no CRM" nome={op.person_name} onAbrir={abreCadastro ? abrirPessoa : undefined} />
+                  )}
+                </div>
+              )}
               <FormField label="CNPJ" required error={erros.cnpj}><Input {...texto("cnpj")} placeholder="00.000.000/0000-00" /></FormField>
               <FormField label="Razão social / nome" required><Input {...texto("company_name")} /></FormField>
               <FormField label="Segmento"><Input {...texto("company_segment")} /></FormField>
@@ -325,6 +359,28 @@ export default function OportunidadeDetalhe() {
 
           <ProdutosDaOportunidade op={op} podeEditar={podeMover} onOportunidade={setOp} />
         </div>
+        {clienteAberto && (
+          <ClientModal
+            isOpen
+            client={clienteAberto}
+            onClose={() => setClienteAberto(null)}
+            onSave={() => {
+              setClienteAberto(null);
+              carregar();
+            }}
+          />
+        )}
+        {pessoaAberta && (
+          <PersonModal
+            isOpen
+            person={pessoaAberta}
+            onClose={() => setPessoaAberta(null)}
+            onSave={() => {
+              setPessoaAberta(null);
+              carregar();
+            }}
+          />
+        )}
 
         <AbasDoCard
           alvo={{ tipo: "oportunidade", id }}
@@ -344,6 +400,22 @@ export default function OportunidadeDetalhe() {
           if (destino) mover(destino, extras);
         }}
       />
+    </div>
+  );
+}
+
+/** Linha "Cliente no CRM: Nome" com o link para a ficha (só para quem abre Clientes/Pessoas). */
+function VinculoCrm({ rotulo, nome, onAbrir }: { rotulo: string; nome?: string | null; onAbrir?: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="min-w-0 truncate">
+        <span className="text-slate-500 dark:text-slate-400">{rotulo}:</span> {nome ?? "—"}
+      </span>
+      {onAbrir && (
+        <button type="button" onClick={onAbrir} title="Abrir o cadastro" className="flex-shrink-0 text-blue-500 hover:text-blue-400">
+          <ExternalLink size={14} />
+        </button>
+      )}
     </div>
   );
 }

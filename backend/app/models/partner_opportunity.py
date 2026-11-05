@@ -37,6 +37,9 @@ class PartnerOpportunity(Base, TimestampMixin, SoftDeleteMixin):
     contact_role = Column(String(255), nullable=True)
     contact_phone = Column(String(30), nullable=True)
     contact_email = Column(String(255), nullable=True)
+    # O mesmo Cliente e a mesma Pessoa de Vendas, achados (ou criados) pelo CNPJ e pelo contato.
+    client_id = Column(Integer, ForeignKey("clients.id", ondelete="SET NULL"), nullable=True, index=True)
+    person_id = Column(Integer, ForeignKey("persons.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # em_analise | validada | rejeitada — quem valida é o Financeiro (ou admin/gerente).
     eligibility_status = Column(String(20), nullable=False, default="em_analise")
@@ -79,6 +82,8 @@ class PartnerOpportunity(Base, TimestampMixin, SoftDeleteMixin):
     eligibility_by = relationship("User", foreign_keys=[eligibility_by_id])
     cnpj_liberado_por = relationship("User", foreign_keys=[cnpj_liberado_por_id])
     won_confirmed_by = relationship("User", foreign_keys=[won_confirmed_by_id])
+    client = relationship("Client")
+    person = relationship("Person")
     products = relationship(
         "PartnerOpportunityProduct",
         cascade="all, delete-orphan",

@@ -19,7 +19,7 @@ from app.schemas.parcerias import (
     ProdutoItemCreate,
     ProdutoItemUpdate,
 )
-from app.services.parcerias import acesso, ativacao, atividades, semaforo
+from app.services.parcerias import acesso, ativacao, atividades, clientes, semaforo
 from app.services.parcerias.etapas import (
     ETAPAS_OPORTUNIDADE,
     TravaError,
@@ -125,6 +125,7 @@ def criar(db: Session, user: User, dados: OportunidadeCreate) -> PartnerOpportun
     db.flush()
     atividades.registrar_evento(db, user, "Oportunidade cadastrada", opportunity_id=op.id, tipo="card_created")
     _gravar_semaforo(db, user, op, s, liberacao)
+    clientes.vincular(db, user, op)
     db.commit()
     db.refresh(op)
     return op
@@ -157,8 +158,12 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
     if novo_cnpj and novo_cnpj != op.cnpj:
         s = semaforo.situacao(db, novo_cnpj, ignorar_oportunidade_id=op.id)
         _gravar_semaforo(db, user, op, s, _liberacao(user, s, justificativa))
+    alterados = {c for c, v in campos.items() if getattr(op, c) != v}
     for campo, valor in campos.items():
         setattr(op, campo, valor)
+    # Oportunidade de antes da ligação (sem cliente) se liga na primeira edição.
+    if op.client_id is None or alterados & set(clientes.CAMPOS_DA_LIGACAO):
+        clientes.vincular(db, user, op, alterados)
     db.commit()
     db.refresh(op)
     return op

@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.13",
+    date: "05/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Pipeline de Parceiros: a empresa e o contato da oportunidade viram o mesmo Cliente e a mesma Pessoa de Vendas (achados pelo CNPJ ou criados), atualizados pela equipe do parceiro.",
+      },
+      {
+        type: "feature",
+        text: "Clientes e Pessoas: histórico de alterações no cadastro, com quem mudou, quando e o que era antes (inclusive o que veio pela Parceria).",
+      },
+    ],
+  },
+  {
     version: "1.11.12",
     date: "04/11/2026",
     entries: [

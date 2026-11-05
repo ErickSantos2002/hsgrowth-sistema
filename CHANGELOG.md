@@ -5,6 +5,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.13] — 05/11/2026
+
+### Adicionado
+- **Pipeline de Parceiros — Cliente e Pessoa do CRM:** a empresa e o contato da oportunidade passam a ser o mesmo Cliente e a mesma Pessoa de Vendas. O sistema acha o Cliente pelo CNPJ (ou cria, como Lead) e a Pessoa dentro dele pelo e-mail ou nome (ou cria). O que a equipe do parceiro preencher atualiza o cadastro; campo vazio não apaga. O parceiro não vê a base da H&S; a H&S vê "Cliente no CRM" e "Pessoa no CRM" no card, com atalho para o cadastro.
+- **Clientes e Pessoas — histórico de alterações:** cada cadastro mostra o que mudou, quem mudou e quando, com a marca "via Parceria" quando veio da oportunidade de parceiro. O histórico passa a guardar todos os campos do cadastro.
+
+### Banco
+- Migration `6a7b8c9d0e1f`: `client_id` e `person_id` em `partner_opportunities`. As oportunidades existentes se ligam na próxima vez que forem salvas.
+
+---
+
 ## [1.11.12] — 04/11/2026
 
 ### Corrigido

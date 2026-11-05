@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Building, User, Mail, Phone, FileText, MapPin, Globe, StickyNote, ChevronDown, Briefcase, Linkedin, Search, Loader2, CheckCircle } from "lucide-react";
 import BaseModal from "../common/BaseModal";
+import HistoricoAlteracoes from "../common/HistoricoAlteracoes";
 import { FormField, Input, Select, Textarea, Button } from "../common";
 import clientService, { Client, CreateClientRequest, UpdateClientRequest } from "../../services/clientService";
 import api from "../../services/api";
@@ -770,6 +771,8 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                 Cliente ativo (desmarque para inativar)
               </label>
             </div>
+
+            {client && <HistoricoAlteracoes tipo="clients" id={client.id} />}
           </div>
         </div>
       </div>

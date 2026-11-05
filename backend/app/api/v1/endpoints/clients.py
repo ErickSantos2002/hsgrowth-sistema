@@ -10,7 +10,8 @@ from app.api.deps import get_db, get_current_active_user, require_not_viewer
 from app.services.client_service import ClientService
 from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse, ClientListResponse
 from app.models.user import User
-from app.models.audit_log import AuditLog
+from app.schemas.historico import HistoricoItem
+from app.services import historico_cadastro
 from app.models.client import Client
 
 router = APIRouter()
@@ -206,32 +207,7 @@ async def create_client(
     service = ClientService(db)
     client = service.create_client(client_data)
 
-    # Registra no audit log
-    client_ip = request.client.host if request.client else "unknown"
-    user_agent = request.headers.get("user-agent", "unknown")
-
-    data_after = {
-        "id": client.id,
-        "name": client.name,
-        "email": client.email,
-        "phone": client.phone,
-        "company_name": client.company_name,
-        "document": client.document,
-        "city": client.city,
-        "state": client.state,
-    }
-
-    audit_log = AuditLog(
-        user_id=current_user.id,
-        action="CREATE",
-        entity_type="Client",
-        entity_id=client.id,
-        description=f"Cliente criado: {client.name}",
-        data_after=data_after,
-        ip_address=client_ip,
-        user_agent=user_agent
-    )
-    db.add(audit_log)
+    historico_cadastro.registrar(db, current_user, "Client", client, "CREATE", request=request)
     db.commit()
 
     # Converte para response schema (automaticamente pega todos os campos incluindo blueprint)
@@ -272,51 +248,14 @@ async def update_client(
     """
     Atualiza um cliente existente.
     """
-    # Captura estado anterior ANTES de atualizar
+    # Foto do cadastro ANTES de atualizar (o histórico mostra o que mudou)
     client_before_obj = db.query(Client).filter(Client.id == client_id).first()
-    data_before = None
-    if client_before_obj:
-        data_before = {
-            "name": client_before_obj.name,
-            "email": client_before_obj.email,
-            "phone": client_before_obj.phone,
-            "company_name": client_before_obj.company_name,
-            "document": client_before_obj.document,
-            "city": client_before_obj.city,
-            "state": client_before_obj.state,
-            "is_active": client_before_obj.is_active,
-        }
+    data_before = historico_cadastro.foto(client_before_obj, "Client") if client_before_obj else None
 
     service = ClientService(db)
     client = service.update_client(client_id, client_data)
 
-    # Registra no audit log
-    client_ip = request.client.host if request.client else "unknown"
-    user_agent = request.headers.get("user-agent", "unknown")
-
-    data_after = {
-        "name": client.name,
-        "email": client.email,
-        "phone": client.phone,
-        "company_name": client.company_name,
-        "document": client.document,
-        "city": client.city,
-        "state": client.state,
-        "is_active": client.is_active,
-    }
-
-    audit_log = AuditLog(
-        user_id=current_user.id,
-        action="UPDATE",
-        entity_type="Client",
-        entity_id=client.id,
-        description=f"Cliente atualizado: {client.name}",
-        data_before=data_before,
-        data_after=data_after,
-        ip_address=client_ip,
-        user_agent=user_agent
-    )
-    db.add(audit_log)
+    historico_cadastro.registrar(db, current_user, "Client", client, "UPDATE", antes=data_before, request=request)
     db.commit()
 
     # Converte para response schema (automaticamente pega todos os campos incluindo blueprint)
@@ -351,42 +290,16 @@ async def delete_client(
     """
     Deleta um cliente (soft delete).
     """
-    # Captura estado do cliente ANTES de deletar
+    # Foto do cadastro ANTES de deletar
     client_before_obj = db.query(Client).filter(Client.id == client_id).first()
-    client_name = client_before_obj.name if client_before_obj else f"ID {client_id}"
 
-    data_before = None
+    # Grava antes de excluir: a exclusão faz o commit e leva o registro junto.
     if client_before_obj:
-        data_before = {
-            "id": client_before_obj.id,
-            "name": client_before_obj.name,
-            "email": client_before_obj.email,
-            "phone": client_before_obj.phone,
-            "company_name": client_before_obj.company_name,
-            "document": client_before_obj.document,
-            "city": client_before_obj.city,
-            "state": client_before_obj.state,
-        }
+        historico_cadastro.registrar(db, current_user, "Client", client_before_obj, "DELETE",
+                                     antes=historico_cadastro.foto(client_before_obj, "Client"), request=request)
 
     service = ClientService(db)
     service.delete_client(client_id)
-
-    # Registra no audit log
-    client_ip = request.client.host if request.client else "unknown"
-    user_agent = request.headers.get("user-agent", "unknown")
-
-    audit_log = AuditLog(
-        user_id=current_user.id,
-        action="DELETE",
-        entity_type="Client",
-        entity_id=client_id,
-        description=f"Cliente deletado: {client_name}",
-        data_before=data_before,
-        ip_address=client_ip,
-        user_agent=user_agent
-    )
-    db.add(audit_log)
-    db.commit()
 
     return {"message": "Cliente deletado com sucesso"}
 
@@ -422,3 +335,19 @@ async def lookup_cnpj(
             status_code=503,
             detail="Os serviços de consulta de CNPJ estão fora do ar no momento. Preencha os dados manualmente.",
         )
+
+
+@router.get(
+    "/{client_id}/historico",
+    response_model=list[HistoricoItem],
+    summary="Histórico de alterações do cliente",
+    description="O que mudou no cadastro, quem mudou e quando (inclusive pela Parceria), mais recente primeiro.",
+)
+async def historico_cliente(
+    client_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    if not db.query(Client).filter(Client.id == client_id).first():
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    return historico_cadastro.listar(db, "Client", client_id)

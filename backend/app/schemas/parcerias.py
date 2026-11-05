@@ -385,6 +385,10 @@ class OportunidadeResponse(BaseModel):
     won_at: Optional[datetime] = None
     won_confirmed_at: Optional[datetime] = None
     won_confirmed_by_name: Optional[str] = None
+    client_id: Optional[int] = None
+    client_name: Optional[str] = None
+    person_id: Optional[int] = None
+    person_name: Optional[str] = None
     lost_at: Optional[datetime] = None
     total_value: float = 0
     global_discount: float = 0

@@ -113,6 +113,11 @@ def oportunidade_out(op: PartnerOpportunity, total: float = 0, user: Optional[Us
         "total_value": total,
         "cnpj_justificativa": None if para_parceiro else op.cnpj_justificativa,
         "cnpj_liberado_por_name": None if para_parceiro or not op.cnpj_liberado_por else op.cnpj_liberado_por.name,
+        # O parceiro não enxerga a base da H&S: o vínculo com Cliente/Pessoa é só para a H&S.
+        "client_id": None if para_parceiro else op.client_id,
+        "client_name": None if para_parceiro or not op.client else op.client.display_name,
+        "person_id": None if para_parceiro else op.person_id,
+        "person_name": None if para_parceiro or not op.person else op.person.name,
     })
 
 

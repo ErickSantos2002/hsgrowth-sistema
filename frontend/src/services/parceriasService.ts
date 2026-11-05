@@ -130,6 +130,11 @@ export interface Oportunidade {
   /** Ganho marcado pelo parceiro e confirmado por admin, gerente ou Financeiro. */
   won_confirmed_at?: string | null;
   won_confirmed_by_name?: string | null;
+  // Cliente e Pessoa do CRM ligados pela empresa/contato (só a H&S recebe).
+  client_id?: number | null;
+  client_name?: string | null;
+  person_id?: number | null;
+  person_name?: string | null;
   lost_at?: string | null;
   total_value: number;
   global_discount: number;
