@@ -19,12 +19,12 @@ class Client(Base, TimestampMixin, SoftDeleteMixin):
     id = Column(Integer, primary_key=True, index=True)
 
     # Informações básicas
-    name = Column(String(255), nullable=False, index=True)  # Nome do contato
+    name = Column(String(255), nullable=False, index=True)  # "Empresa" na tela: razão social ou nome
     email = Column(String(255), nullable=True, index=True)
     phone = Column(String(20), nullable=True)
 
     # Informações da empresa
-    company_name = Column(String(255), nullable=True)  # Razão social
+    company_name = Column(String(255), nullable=True)  # "Nome Fantasia" na tela
     document = Column(String(20), nullable=True, index=True)  # CPF ou CNPJ
 
     # Endereço

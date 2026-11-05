@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.15",
+    date: "05/11/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Parcerias: a razão social do parceiro vai para o campo \"Empresa\" do Cliente ligado (antes ia para Nome Fantasia).",
+      },
+      {
+        type: "fix",
+        text: "Clientes: a busca acha pelo CPF/CNPJ com ou sem pontuação, e o documento já abre com máscara ao editar.",
+      },
+    ],
+  },
+  {
     version: "1.11.14",
     date: "05/11/2026",
     entries: [

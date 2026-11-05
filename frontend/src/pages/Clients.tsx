@@ -5,8 +5,18 @@ import { Button, Alert, SearchInput, Pagination } from "../components/common";
 import { PageHeader } from "../components/layout";
 import ClientModal from "../components/clients/ClientModal";
 import { showError, showSuccess } from "../utils/toast";
+import { limparDocumento } from "../utils/formatters";
 import { usePagination, useFilter, filterHelpers, useCRUD } from "../hooks";
 import { useAuth } from "../hooks/useAuth";
+
+const buscaPorCampo = filterHelpers.searchInFields<Client>(["name", "company_name", "email", "phone", "document"]);
+
+/** Busca por texto e por CPF/CNPJ com ou sem pontuação (o documento é gravado sem máscara; CNPJ pode ter letras). */
+const buscaDeCliente = (client: Client, termo: string): boolean => {
+  if (buscaPorCampo(client, termo)) return true;
+  const doc = /\d/.test(termo) ? limparDocumento(termo) : "";
+  return doc.length >= 4 && limparDocumento(client.document || "").includes(doc);
+};
 
 const Clients: React.FC = () => {
   const { user } = useAuth();
@@ -60,7 +70,7 @@ const Clients: React.FC = () => {
     customFilters,
     setCustomFilter,
   } = useFilter<Client>(clients, {
-    search: filterHelpers.searchInFields(["name", "company_name", "email", "phone", "document"]),
+    search: buscaDeCliente,
     status: (client, status) =>
       status === "all" ||
       (status === "active" && client.is_active) ||

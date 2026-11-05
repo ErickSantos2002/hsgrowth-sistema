@@ -141,7 +141,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
         email: client.email || "",
         phone: client.phone || "",
         company_name: client.company_name || "",
-        document: client.document || "",
+        document: client.document ? maskDocument(client.document) : "",
         address: client.address || "",
         city: client.city || "",
         state: client.state || "",

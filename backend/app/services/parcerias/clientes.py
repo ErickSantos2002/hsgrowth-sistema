@@ -69,7 +69,9 @@ def _gravar(db: Session, user: User, entidade: str, existente: Optional[Any], no
 
 
 # Campo do cadastro ← campo da oportunidade.
-DO_CLIENTE = {"company_name": "company_name", "city": "company_city", "state": "company_state", "sector": "sector"}
+# Na tela de Cliente, "Empresa" é o name e "Nome Fantasia" é o company_name: a razão
+# social que o parceiro digita vai para "Empresa"; o nome fantasia ele não informa.
+DO_CLIENTE = {"name": "company_name", "city": "company_city", "state": "company_state", "sector": "sector"}
 DA_PESSOA = {"name": "contact_name", "position": "contact_role",
              "email_commercial": "contact_email", "phone_commercial": "contact_phone"}
 
@@ -82,7 +84,7 @@ def _cliente(db: Session, user: User, op: PartnerOpportunity, alterados: Optiona
         .first()
     )
     valores = _preenchidos({
-        "company_name": op.company_name,
+        "name": op.company_name,
         "city": (op.company_city or "")[:100],
         "state": op.company_state,
         "sector": op.sector,
@@ -90,7 +92,7 @@ def _cliente(db: Session, user: User, op: PartnerOpportunity, alterados: Optiona
     # O tipo de relacionamento não é tocado: toda empresa nasce Lead (regra da
     # consultoria) e Cliente não volta para Lead/Prospect.
     novo = None if existente else Client(
-        name=op.company_name, document=op.cnpj, relationship_type="Lead", source="parceria", **valores,
+        document=op.cnpj, relationship_type="Lead", source="parceria", **valores,
     )
     ligado = existente is not None and existente.id == op.client_id
     return _gravar(db, user, "Client", existente, novo, _da_oportunidade(DO_CLIENTE, valores, ligado, alterados))

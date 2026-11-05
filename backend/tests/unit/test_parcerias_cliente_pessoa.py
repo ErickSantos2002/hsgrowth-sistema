@@ -35,8 +35,8 @@ def test_cria_cliente_e_pessoa_novos(client, db, admin_headers):
     corpo = client.post(URL, json=NOVA, headers=h).json()
 
     c = db.query(Client).filter(Client.document == CNPJ_A).one()
-    assert (c.company_name, c.city, c.state, c.relationship_type, c.source) == (
-        "Empresa A", "Santos", "SP", "Lead", "parceria")
+    assert (c.name, c.company_name, c.city, c.state, c.relationship_type, c.source) == (
+        "Empresa A", None, "Santos", "SP", "Lead", "parceria")
     pessoa = db.query(Person).filter(Person.organization_id == c.id).one()
     assert (pessoa.name, pessoa.position, pessoa.email_commercial) == ("Ana Souza", "Compras", "ana@empresaa.com")
     # O parceiro não enxerga o vínculo; a H&S sim.
@@ -47,15 +47,18 @@ def test_cria_cliente_e_pessoa_novos(client, db, admin_headers):
 
 
 def test_liga_ao_cliente_existente_e_atualiza_o_preenchido(client, db):
-    existente = _cliente(db, company_name="Empresa A Ltda", document="11.222.333/0001-81",
+    existente = _cliente(db, company_name="Fantasia A", document="11.222.333/0001-81",
                          city="Campinas", website="empresaa.com", relationship_type="Cliente")
+    existente.name = "Empresa A Ltda"
+    db.commit()
     _, h = _parceiro_logado(db)
 
     client.post(URL, json={**NOVA, "company_state": None}, headers=h)
 
     assert db.query(Client).count() == 1
     db.refresh(existente)
-    assert existente.company_name == "Empresa A"      # sobrescreve o preenchido
+    assert existente.name == "Empresa A"              # sobrescreve o preenchido ("Empresa")
+    assert existente.company_name == "Fantasia A"     # nome fantasia o parceiro não informa
     assert existente.city == "Santos"
     assert existente.website == "empresaa.com"        # não mexe no que o parceiro não tem
     assert existente.relationship_type == "Cliente"   # Cliente não volta para Lead

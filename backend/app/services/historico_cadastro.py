@@ -19,7 +19,7 @@ from app.schemas.historico import HistoricoItem, HistoricoMudanca
 
 CAMPOS: Dict[str, Dict[str, str]] = {
     "Client": {
-        "company_name": "Razão social", "name": "Nome", "document": "CNPJ/CPF",
+        "name": "Empresa", "company_name": "Nome fantasia", "document": "CNPJ/CPF",
         "email": "E-mail", "phone": "Telefone", "address": "Endereço", "city": "Cidade",
         "state": "UF", "country": "País", "website": "Site", "notes": "Observações",
         "cnae": "CNAE", "linkedin_url": "LinkedIn", "relationship_type": "Tipo de relacionamento",

@@ -5,6 +5,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.15] — 05/11/2026
+
+### Corrigido
+- **Parcerias — Cliente ligado:** a razão social digitada pelo parceiro vai para o campo "Empresa" do Cliente (antes ia para "Nome Fantasia"). O histórico de alterações passa a chamar os campos de "Empresa" e "Nome fantasia", como na tela.
+- **Clientes — busca da tela:** acha o cliente pelo CPF/CNPJ digitado com ou sem pontuação (antes só achava se digitado igual ao gravado).
+- **Clientes — editar:** o CPF/CNPJ já abre com a máscara.
+
+---
+
 ## [1.11.14] — 05/11/2026
 
 ### Alterado

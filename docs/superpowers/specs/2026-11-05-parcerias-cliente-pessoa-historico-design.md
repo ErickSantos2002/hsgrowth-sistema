@@ -27,11 +27,11 @@ que forem salvas (no homo só há dados de teste).
 Roda ao criar a oportunidade e ao editar CNPJ, empresa ou contato.
 
 **Cliente**, pelo CNPJ (sem máscara, maiúsculo), ignorando excluídos:
-- não existe → cria com `company_name` e `name` = razão social, `document` = CNPJ,
+- não existe → cria com `name` (o campo "Empresa" da tela) = razão social, `document` = CNPJ,
   `city`, `state`, `sector`, `relationship_type` = "Lead" (regra da consultoria:
   toda empresa nasce Lead), `source` = "parceria";
 - existe → atualiza só os campos que o parceiro **preencheu** (vazio não apaga):
-  razão social, cidade, UF, setor. O CNPJ nunca muda por aqui. O tipo de
+  razão social ("Empresa"), cidade, UF, setor. O "Nome Fantasia" (`company_name`) o parceiro não informa. O CNPJ nunca muda por aqui. O tipo de
   relacionamento não é tocado (Cliente não volta para Lead/Prospect).
 
 **Pessoa**, dentro do Cliente (`organization_id`), só se houver nome do contato:
