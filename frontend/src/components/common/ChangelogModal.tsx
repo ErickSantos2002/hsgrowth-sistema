@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.14",
+    date: "05/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "CNPJ com letras (novo formato da Receita) aceito em todo o CRM: cadastro de Clientes, consulta na Receita, cards, buscas, importação e PDF da proposta.",
+      },
+      {
+        type: "fix",
+        text: "Parcerias: os e-mails seguem a mesma regra do cadastro de Pessoas; um e-mail de domínio reservado não trava mais a Pessoa ligada à oportunidade.",
+      },
+    ],
+  },
+  {
     version: "1.11.13",
     date: "05/11/2026",
     entries: [

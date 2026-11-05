@@ -12,7 +12,6 @@ acompanham o aparelho quando ele é movido entre cards. O registro da integraç�
 CNPJ/CPF compara só os dígitos quando o termo tem 4+ dígitos, então
 "19.235.340/0001-20" e "19235340000120" encontram o mesmo cliente.
 """
-import re
 from typing import Iterable, List, Optional, Set
 
 from sqlalchemy import String, cast, func, or_
@@ -29,6 +28,7 @@ from app.models.service_card_product import ServiceCardProduct
 from app.models.service_list import ServiceList
 from app.models.user import User
 from app.schemas.search import GlobalSearchResponse, SalesSearchResult, ServiceSearchResult
+from app.utils.cnpj import normalizar_cnpj
 
 # Mesmos papéis que acessam o módulo de Serviços (ver require_service_access).
 SERVICE_ROLES = ("admin", "manager", "service")
@@ -37,12 +37,16 @@ MIN_DOC_DIGITS = 4
 
 
 def _digits(s: Optional[str]) -> str:
-    return re.sub(r"\D", "", s or "")
+    """
+    Termo/documento sem pontuação e em maiúsculas (CNPJ pode ter letras).
+    Sem nenhum número não é documento: nome de empresa não casa com CNPJ.
+    """
+    return normalizar_cnpj(s) if s and any(c.isdigit() for c in s) else ""
 
 
 def _doc_digits_sql(col):
-    """Documento só com dígitos, em SQL portável (Postgres e SQLite)."""
-    expr = col
+    """Documento sem pontuação e em maiúsculas, em SQL portável (Postgres e SQLite)."""
+    expr = func.upper(col)
     for ch in (".", "/", "-", " "):
         expr = func.replace(expr, ch, "")
     return expr

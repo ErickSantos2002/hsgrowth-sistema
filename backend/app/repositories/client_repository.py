@@ -8,6 +8,12 @@ from sqlalchemy import and_, or_, func
 
 from app.models.client import Client
 from app.schemas.client import ClientCreate, ClientUpdate
+from app.utils.cnpj import normalizar_cnpj
+
+
+def _termo_documento(termo: str) -> str:
+    """Termo de busca como CPF/CNPJ (sem pontuação, letras do CNPJ em maiúsculas); sem número, vazio."""
+    return normalizar_cnpj(termo) if any(c.isdigit() for c in termo) else ""
 
 
 class ClientRepository:
@@ -99,8 +105,9 @@ class ClientRepository:
         # Busca por termo (nome, email, empresa, telefone, documento)
         if search:
             search_term = f"%{search}%"
-            # Extrai só os dígitos do termo para busca por CPF/CNPJ formatado (ex: "08.857" → "08857")
-            digits_only = "".join(c for c in search if c.isdigit())
+            # Termo sem pontuação para busca por CPF/CNPJ formatado (ex: "08.857" → "08857").
+            # CNPJ pode ter letras; o termo só vira documento se tiver número.
+            digits_only = _termo_documento(search)
             conditions = [
                 Client.name.ilike(search_term),
                 Client.email.ilike(search_term),
@@ -149,7 +156,7 @@ class ClientRepository:
         # Busca por termo
         if search:
             search_term = f"%{search}%"
-            digits_only = "".join(c for c in search if c.isdigit())
+            digits_only = _termo_documento(search)
             conditions = [
                 Client.name.ilike(search_term),
                 Client.email.ilike(search_term),
@@ -197,13 +204,13 @@ class ClientRepository:
         Returns:
             True se existe, False caso contrário
         """
-        import re
-        digits = re.sub(r"\D", "", document or "")
+        digits = normalizar_cnpj(document)
         if not digits:
             return False
 
-        # Normaliza o documento gravado para só dígitos direto no SQL (Postgres).
-        norm_stored = func.regexp_replace(Client.document, r"[^0-9]", "", "g")
+        # Normaliza o documento gravado direto no SQL (Postgres): sem pontuação e
+        # em maiúsculas, mantendo as letras do CNPJ novo.
+        norm_stored = func.regexp_replace(func.upper(Client.document), r"[^0-9A-Z]", "", "g")
         query = self.db.query(Client).filter(
             norm_stored == digits,
             Client.is_deleted == False

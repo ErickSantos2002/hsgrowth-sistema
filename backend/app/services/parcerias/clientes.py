@@ -17,6 +17,7 @@ from app.models.client import Client
 from app.models.partner_opportunity import PartnerOpportunity
 from app.models.person import Person
 from app.models.user import User
+from app.schemas.parcerias import email_aceito
 from app.services import historico_cadastro
 from app.services.parcerias.semaforo import _cnpj_sql
 
@@ -114,7 +115,8 @@ def _pessoa(db: Session, user: User, op: PartnerOpportunity, cliente: Client,
     valores = _preenchidos({
         "name": nome[:200],
         "position": op.contact_role,
-        "email_commercial": op.contact_email,
+        # E-mail gravado antes da regra nova pode não servir para Pessoas: fica só na oportunidade.
+        "email_commercial": op.contact_email if op.contact_email and email_aceito(op.contact_email) else None,
         "phone_commercial": _telefone(op.contact_phone),
     })
     novo = None if existente else Person(organization_id=cliente.id, **valores)

@@ -5,6 +5,7 @@ from typing import Annotated, Any, Dict, List, Literal, Optional
 
 import re
 
+from email_validator import EmailNotValidError, validate_email
 from pydantic import AfterValidator, BaseModel, Field, field_validator
 
 from app.services.parcerias.cnpj import cnpj_valido, normalizar_cnpj, so_digitos
@@ -44,11 +45,26 @@ def _cnpj_opcional(valor: Optional[str]) -> Optional[str]:
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
+def email_aceito(valor: str) -> bool:
+    """
+    A mesma regra do cadastro de Pessoas (EmailStr): além do formato, recusa
+    domínios reservados (.test, .local...). E-mail que passa aqui e falha lá
+    trava a leitura da Pessoa ligada à oportunidade.
+    """
+    if not _EMAIL.match(valor):
+        return False
+    try:
+        validate_email(valor, check_deliverability=False)
+    except EmailNotValidError:
+        return False
+    return True
+
+
 def _email_opcional(valor: Optional[str]) -> Optional[str]:
     valor = (valor or "").strip().lower()
     if not valor:
         return None
-    if not _EMAIL.match(valor):
+    if not email_aceito(valor):
         raise ValueError("E-mail inválido")
     return valor
 

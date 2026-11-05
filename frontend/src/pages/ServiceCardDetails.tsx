@@ -55,6 +55,7 @@ import LossReasonModal from "../components/cardDetails/LossReasonModal";
 import ClientModal from "../components/clients/ClientModal";
 import PersonModal from "../components/persons/PersonModal";
 import { showSuccess, showError } from "../utils/toast";
+import { ehCpf, formatarDocumento, limparDocumento } from "../utils/formatters";
 import CardCheckButton from "../components/kanban/CardCheckButton";
 import { convertUTCToBrazil } from "../utils/timezone";
 import { useConfirm } from "../contexts/ConfirmContext";
@@ -533,7 +534,7 @@ const ServiceClientSection: React.FC<{
         const r = await clientService.list({ page_size: 100, is_active: true, search: searchTerm.trim() });
         setResults(r.clients.filter((c) => {
           if (!c.document) return true;
-          const d = c.document.replace(/\D/g, "");
+          const d = limparDocumento(c.document);
           return d.length === 11 || d.length === 14 || d.length === 0;
         }));
       } catch { /* ignora */ } finally { setSearching(false); }
@@ -541,13 +542,7 @@ const ServiceClientSection: React.FC<{
     return () => clearTimeout(t);
   }, [searchTerm, showModal]);
 
-  const formatDocument = (doc?: string) => {
-    if (!doc) return "";
-    const c = doc.replace(/\D/g, "");
-    if (c.length === 11) return c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-    if (c.length === 14) return c.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
-    return doc;
-  };
+  const formatDocument = (doc?: string) => formatarDocumento(doc);
 
   const handleLink = async (id: number) => {
     await onLink(id);
@@ -634,7 +629,7 @@ const ServiceClientSection: React.FC<{
               <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2"><p className="text-slate-900 dark:text-white">{client?.company_name || client?.name || "Não informado"}</p></div>
             </div>
             <div className="space-y-1">
-              <div className="text-sm font-medium text-slate-600 dark:text-slate-300">{client?.document && client.document.replace(/\D/g, "").length === 11 ? "CPF" : "CNPJ"}</div>
+              <div className="text-sm font-medium text-slate-600 dark:text-slate-300">{ehCpf(client?.document) ? "CPF" : "CNPJ"}</div>
               <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2"><p className={client?.document ? "text-slate-900 dark:text-white" : "italic text-slate-400 dark:text-slate-500"}>{client?.document ? formatDocument(client.document) : "Não informado"}</p></div>
             </div>
             <div className="space-y-1">

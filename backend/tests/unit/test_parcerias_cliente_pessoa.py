@@ -130,6 +130,21 @@ def test_oportunidade_antiga_se_liga_na_primeira_edicao(client, db):
     assert op.client_id == db.query(Client).filter(Client.document == CNPJ_A).one().id
 
 
+def test_email_que_pessoas_recusa_nao_passa(client, db, admin_headers):
+    _, h = _parceiro_logado(db)
+
+    recusado = client.post(URL, json={**NOVA, "contact_email": "ana@empresa.test"}, headers=h)
+    assert recusado.status_code == 422 and "E-mail inválido" in str(recusado.json())
+
+    # E-mail antigo gravado antes da regra: a Pessoa é criada sem ele e continua legível.
+    from tests.unit.apoio_parcerias import oportunidade
+    op = oportunidade(db, parceiro(db, "Outro"), contact_name="Bia", contact_email="bia@empresa.local")
+    client.put(f"{URL}/{op.id}", json={"title": "Novo"}, headers=admin_headers)
+    pessoa = db.query(Person).filter(Person.name == "Bia").one()
+    assert pessoa.email_commercial is None
+    assert client.get(f"/api/v1/persons/{pessoa.id}", headers=admin_headers).status_code == 200
+
+
 # ─── Histórico ───────────────────────────────────────────────────────────────
 
 def test_historico_marca_a_parceria(client, db, admin_headers):

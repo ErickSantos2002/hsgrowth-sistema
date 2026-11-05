@@ -12,6 +12,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.proposal import Proposal
+from app.utils.cnpj import normalizar_cnpj
 
 # Mesmo UPLOAD_DIR usado por service_board_service.upload_file
 UPLOAD_DIR = Path("/app/uploads")
@@ -78,10 +79,12 @@ def _esc(text: Optional[str]) -> str:
 
 
 def _fmt_document(doc: Optional[str]) -> str:
-    """Formata CPF (11 díg.) ou CNPJ (14 díg.); mantém original se não bater."""
+    """Formata CPF (11 díg.) ou CNPJ (14, pode ter letras); mantém original se não bater."""
     if not doc:
         return ""
-    digits = re.sub(r"\D", "", str(doc))
+    digits = normalizar_cnpj(str(doc))
+    if len(digits) == 11 and not digits.isdigit():
+        return _esc(doc)
     if len(digits) == 14:
         return f"{digits[:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:]}"
     if len(digits) == 11:

@@ -9,6 +9,7 @@ import clientService from "../../services/clientService";
 import cardService from "../../services/cardService";
 import ClientModal from "../clients/ClientModal";
 import { showError } from "../../utils/toast";
+import { ehCpf, formatarDocumento, limparDocumento } from "../../utils/formatters";
 import { useConfirm } from "../../contexts/ConfirmContext";
 
 interface ClientSectionProps {
@@ -91,7 +92,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
         // Filtra clientes com documento (CPF ou CNPJ)
         const clientsWithDocument = response.clients.filter((client) => {
           if (!client.document) return false;
-          const cleanDoc = client.document.replace(/\D/g, "");
+          const cleanDoc = limparDocumento(client.document);
           // CPF tem 11 dígitos, CNPJ tem 14 dígitos
           return cleanDoc.length === 11 || cleanDoc.length === 14;
         });
@@ -237,23 +238,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
   /**
    * Formata CPF ou CNPJ
    */
-  const formatDocument = (document: string | undefined) => {
-    if (!document) return "";
-    const cleaned = document.replace(/\D/g, "");
-
-    // CPF: 000.000.000-00 (11 dígitos)
-    if (cleaned.length === 11) {
-      return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-    }
-
-    // CNPJ: 00.000.000/0000-00 (14 dígitos)
-    if (cleaned.length === 14) {
-      return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
-    }
-
-    // Retorna sem formatação se não for CPF nem CNPJ
-    return document;
-  };
+  const formatDocument = (document: string | undefined) => formatarDocumento(document);
 
   /**
    * Formata telefone
@@ -424,7 +409,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
           {/* CPF/CNPJ */}
           <div className="space-y-1">
             <div className="text-sm font-medium text-slate-600 dark:text-slate-300">
-              {client?.document && client.document.replace(/\D/g, "").length === 11 ? "CPF" : "CNPJ"}
+              {ehCpf(client?.document) ? "CPF" : "CNPJ"}
             </div>
             <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-900/30 px-3 py-2">
               <p className={client?.document ? "text-slate-900 dark:text-white" : "italic text-slate-400 dark:text-slate-500"}>

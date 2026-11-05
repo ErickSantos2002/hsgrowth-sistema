@@ -12,7 +12,7 @@ import {
   EMPLOYEE_COUNTS,
   ANNUAL_REVENUES,
 } from "../../constants/blueprintOptions";
-import { maskCPF, maskCNPJ, maskDocument, maskPhone } from "../../utils/formatters";
+import { maskCPF, maskCNPJ, maskDocument, maskPhone, limparDocumento } from "../../utils/formatters";
 
 /**
  * Props do componente ClientModal
@@ -198,9 +198,10 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
     if (!formData.document.trim()) {
       next.document = "CPF/CNPJ é obrigatório";
     } else {
-      const documentNumbers = formData.document.replace(/\D/g, "");
-      if (documentNumbers.length !== 11 && documentNumbers.length !== 14) {
-        next.document = "CPF/CNPJ inválido. CPF deve ter 11 dígitos e CNPJ 14 dígitos";
+      // CPF: 11 números. CNPJ: 14 caracteres, com letras nas 12 primeiras posições (desde jul/2026).
+      const doc = limparDocumento(formData.document);
+      if (!/^\d{11}$/.test(doc) && !/^[0-9A-Z]{12}\d{2}$/.test(doc)) {
+        next.document = "CPF/CNPJ inválido. CPF deve ter 11 números e CNPJ 14 caracteres";
       }
     }
 
@@ -244,7 +245,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
           email: formData.email.trim() || null,
           phone: formData.phone.replace(/\D/g, "") || null, // Remove máscara
           company_name: formData.company_name.trim() || null,
-          document: formData.document.replace(/\D/g, "") || null, // Remove máscara
+          document: limparDocumento(formData.document) || null, // Remove máscara (mantém letras do CNPJ)
           address: formData.address.trim() || null,
           city: formData.city.trim() || null,
           state: formData.state || null,
@@ -268,7 +269,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
           email: formData.email.trim() || undefined,
           phone: formData.phone.replace(/\D/g, "") || undefined, // Remove máscara
           company_name: formData.company_name.trim() || undefined,
-          document: formData.document.replace(/\D/g, "") || undefined, // Remove máscara
+          document: limparDocumento(formData.document) || undefined, // Remove máscara (mantém letras do CNPJ)
           address: formData.address.trim() || undefined,
           city: formData.city.trim() || undefined,
           state: formData.state || undefined,
@@ -316,7 +317,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
   };
 
   const lookupCnpj = async () => {
-    const digits = formData.document.replace(/\D/g, "");
+    const digits = limparDocumento(formData.document);
     if (digits.length !== 14 || cnpjLoading) return;
 
     setCnpjLoading(true);
@@ -423,13 +424,13 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, clie
                   value={formData.document}
                   onChange={(e) => handleChange("document", maskDocument(e.target.value))}
                   onBlur={() => {
-                    if (formData.document.replace(/\D/g, "").length === 14) lookupCnpj();
+                    if (limparDocumento(formData.document).length === 14) lookupCnpj();
                   }}
                   placeholder="000.000.000-00 ou 00.000.000/0000-00"
                   maxLength={18}
                   error={!!errors.document}
                 />
-                {formData.document.replace(/\D/g, "").length === 14 && (
+                {limparDocumento(formData.document).length === 14 && (
                   <button
                     type="button"
                     onClick={lookupCnpj}

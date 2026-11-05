@@ -22,6 +22,7 @@ import PersonModal from "../persons/PersonModal";
 import { User as UserType } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
+import { formatarDocumento } from "../../utils/formatters";
 import { DEAL_TYPES, ACQUISITION_CHANNELS } from "../../constants/blueprintOptions";
 
 interface CardModalProps {
@@ -376,13 +377,7 @@ const CardModal: React.FC<CardModalProps> = ({
 
   // ─── Helpers de exibição ──────────────────────────────────────────────────
 
-  const formatDocument = (doc?: string) => {
-    if (!doc) return "";
-    const n = doc.replace(/\D/g, "");
-    if (n.length === 14) return n.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
-    if (n.length === 11) return n.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-    return doc;
-  };
+  const formatDocument = (doc?: string) => formatarDocumento(doc);
 
   const getPersonContact = (p: Person) =>
     p.email || p.email_commercial || p.phone || p.phone_whatsapp || "";

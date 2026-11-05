@@ -33,6 +33,7 @@ import { COLORS } from "../constants/colors";
 import { ACQUISITION_CHANNELS, ACQUISITION_CHANNEL_DETAILS, LOSS_REASONS_BY_BOARD_ID } from "../constants/blueprintOptions";
 import KanbanList from "../components/kanban/KanbanList";
 import { showSuccess, showError, showWarning } from "../utils/toast";
+import { limparDocumento } from "../utils/formatters";
 import { useConfirm } from "../contexts/ConfirmContext";
 import { LoadingSpinner, SelectMenu } from "../components/common";
 import KanbanCard from "../components/kanban/KanbanCard";
@@ -805,12 +806,13 @@ const KanbanBoard: React.FC = () => {
       // Filtro de busca por termo
       if (searchTerm.trim()) {
         const term = searchTerm.trim().toLowerCase();
-        // CNPJ/CPF do cliente vinculado: compara só os dígitos (com ou sem pontuação).
-        const termDigits = term.replace(/\D/g, "");
+        // CNPJ/CPF do cliente vinculado, com ou sem pontuação (CNPJ pode ter letras).
+        // O termo só vira documento se tiver número: nome de empresa não casa com CNPJ.
+        const termDoc = /\d/.test(term) ? limparDocumento(term) : "";
         const doc = card.client_document || "";
         const matchesDocumento =
           doc.toLowerCase().includes(term) ||
-          (termDigits.length >= 4 && doc.replace(/\D/g, "").includes(termDigits));
+          (termDoc.length >= 4 && limparDocumento(doc).includes(termDoc));
         const matchesSearch =
           card.title?.toLowerCase().includes(term) ||
           card.description?.toLowerCase().includes(term) ||

@@ -16,6 +16,8 @@ from typing import Awaitable, Callable, List, Optional, Tuple
 
 import httpx
 
+from app.utils.cnpj import normalizar_cnpj
+
 
 class FonteIndisponivel(Exception):
     """A fonte não respondeu, deu erro ou limitou a consulta — tentar a próxima."""
@@ -77,7 +79,7 @@ def normalizar_opencnpj(o: dict) -> dict:
     tel = (o.get("telefones") or [{}])[0] or {}
     logradouro = " ".join(p for p in (_txt(o.get("tipo_logradouro")), _txt(o.get("logradouro"))) if p)
     return {
-        "cnpj": _digits(o.get("cnpj")),
+        "cnpj": normalizar_cnpj(o.get("cnpj")),
         "razao_social": _txt(o.get("razao_social")),
         "nome_fantasia": _txt(o.get("nome_fantasia")),
         "email": _txt(o.get("email")).lower() or None,
@@ -99,7 +101,7 @@ def normalizar_receitaws(r: dict) -> dict:
     # telefone vem como "(11) 4007-1507" ou vários separados por "/"
     primeiro_tel = str(r.get("telefone") or "").split("/")[0]
     return {
-        "cnpj": _digits(r.get("cnpj")),
+        "cnpj": normalizar_cnpj(r.get("cnpj")),
         "razao_social": _txt(r.get("nome")),
         "nome_fantasia": _txt(r.get("fantasia")),
         "email": _txt(r.get("email")).lower() or None,

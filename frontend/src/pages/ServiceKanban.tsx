@@ -14,6 +14,7 @@ import serviceBoardService, {
   ServiceCard,
 } from "../services/serviceBoardService";
 import { showSuccess, showError } from "../utils/toast";
+import { limparDocumento } from "../utils/formatters";
 import { useConfirm } from "../contexts/ConfirmContext";
 import { BaseModal, FormField, Input, Textarea, Button, LoadingSpinner, SelectMenu } from "../components/common";
 import { SERVICE_LOSS_REASONS, SERVICE_ADMIN_LOSS_REASON, SERVICE_UNIFIED_LOSS_REASON } from "../constants/blueprintOptions";
@@ -1139,12 +1140,12 @@ const ServiceKanban: React.FC = () => {
           (d?.serial_number || "").toLowerCase().includes(q) ||
           (d?.alcohol_module || "").toLowerCase().includes(q)
         );
-      // CNPJ/CPF: compara só os dígitos (com ou sem pontuação).
-      const qDigits = q.replace(/\D/g, "");
+      // CNPJ/CPF com ou sem pontuação (CNPJ pode ter letras); o termo só vira documento se tiver número.
+      const qDoc = /\d/.test(q) ? limparDocumento(q) : "";
       const doc = c.client_document || "";
       const emDocumento =
         doc.toLowerCase().includes(q) ||
-        (qDigits.length >= 4 && doc.replace(/\D/g, "").includes(qDigits));
+        (qDoc.length >= 4 && limparDocumento(doc).includes(qDoc));
       if (!(
         c.title.toLowerCase().includes(q) ||
         (c.client_name || "").toLowerCase().includes(q) ||

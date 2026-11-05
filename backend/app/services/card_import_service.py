@@ -17,6 +17,7 @@ from app.models.person import Person
 from app.models.user import User
 from app.models.card_list_history import CardListHistory
 from app.schemas.card import CardImportRowResult, CardImportResponse
+from app.utils.cnpj import normalizar_cnpj
 
 TARGET_LIST_ID = 22
 TARGET_BOARD_ID = 6
@@ -185,12 +186,13 @@ def _parse_date(val) -> datetime | None:
 
 
 def _clean_cnpj(val) -> str | None:
+    """Documento sem pontuação; só números ganha os zeros à esquerda (planilha come o zero)."""
     if val is None:
         return None
-    digits = "".join(c for c in str(val).strip() if c.isdigit())
-    if not digits:
+    doc = normalizar_cnpj(str(val))
+    if not doc:
         return None
-    return digits.zfill(14)
+    return doc.zfill(14) if doc.isdigit() else doc
 
 
 def _find_user(db: Session, name: str) -> int | None:
@@ -219,7 +221,7 @@ def _get_or_create_client(db: Session, row: dict) -> int | None:
     if cnpj_digits:
         for c in db.query(Client).filter(Client.is_deleted == False).all():
             if c.document:
-                doc_digits = "".join(ch for ch in c.document if ch.isdigit()).zfill(14)
+                doc_digits = _clean_cnpj(c.document)
                 if doc_digits == cnpj_digits:
                     return c.id
 

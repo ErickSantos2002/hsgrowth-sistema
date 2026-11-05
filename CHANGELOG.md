@@ -5,6 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.14] — 05/11/2026
+
+### Alterado
+- **CNPJ com letras em todo o CRM:** desde jul/2026 a Receita emite CNPJ com letras nas 12 primeiras posições. Clientes (cadastro, conferência de duplicado, busca e consulta na Receita), card de Vendas e de Serviço, busca dos boards e a busca geral (Ctrl+K), importação de cards e PDF da proposta passam a aceitar e mostrar o CNPJ com letras. Antes as letras eram apagadas ao digitar ou salvar o cliente.
+
+### Corrigido
+- **Parcerias — e-mail:** os e-mails de Parcerias (contato da oportunidade, equipe e acessos do parceiro) seguem a mesma regra do cadastro de Pessoas. Antes, um e-mail de domínio reservado (ex.: ".test", ".local") passava na oportunidade e, copiado para a Pessoa ligada, travava a abertura dela e as listas de Pessoas em que ela aparecia.
+
+---
+
 ## [1.11.13] — 05/11/2026
 
 ### Adicionado

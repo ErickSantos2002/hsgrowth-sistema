@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import { maskPhone } from "../../utils/formatters";
+import { limparDocumento, maskCNPJ, maskPhone } from "../../utils/formatters";
 
 /**
  * Regras dos campos de texto de Parcerias, iguais às do backend
@@ -22,7 +22,7 @@ const LIMITE: Record<string, number> = {
  * CNPJ sem máscara e em maiúsculas. Desde jul/2026 a Receita emite CNPJ com
  * letras nas 12 primeiras posições (os 2 verificadores seguem números).
  */
-export const limparCnpj = (valor: string) => valor.toUpperCase().replace(/[^0-9A-Z]/g, "");
+export const limparCnpj = limparDocumento;
 
 const PESOS_1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
 const PESOS_2 = [6, ...PESOS_1];
@@ -38,23 +38,12 @@ export function cnpjValido(valor: string): boolean {
   return Number(d[12]) === digito(d, PESOS_1) && Number(d[13]) === digito(d, PESOS_2);
 }
 
-/** Máscara 00.000.000/0000-00, aceitando letras. */
-function mascararCnpj(valor: string): string {
-  const d = limparCnpj(valor).slice(0, 14);
-  let v = d.slice(0, 2);
-  if (d.length > 2) v += `.${d.slice(2, 5)}`;
-  if (d.length > 5) v += `.${d.slice(5, 8)}`;
-  if (d.length > 8) v += `/${d.slice(8, 12)}`;
-  if (d.length > 12) v += `-${d.slice(12)}`;
-  return v;
-}
-
 export const emailValido = (valor: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(valor.trim());
 
 /** Aplica a máscara do campo e corta no tamanho máximo. */
 export function mascarar(nome: string, valor: string): string {
   let v = valor;
-  if (nome === "cnpj") v = mascararCnpj(v);
+  if (nome === "cnpj") v = maskCNPJ(v);
   else if (TELEFONE.includes(nome)) v = maskPhone(v);
   else if (nome === "company_state") v = v.replace(/[^a-zA-Z]/g, "").toUpperCase();
   const limite = LIMITE[nome];

@@ -316,14 +316,15 @@ async def lookup_cnpj(
     cnpj: str,
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
-    import re
     from app.services.cnpj_lookup_service import (
         consultar_cnpj, CnpjNaoEncontrado, ConsultaIndisponivel,
     )
+    from app.utils.cnpj import normalizar_cnpj
 
-    digits = re.sub(r"\D", "", cnpj)
+    # Desde jul/2026 o CNPJ pode ter letras nas 12 primeiras posições.
+    digits = normalizar_cnpj(cnpj)
     if len(digits) != 14:
-        raise HTTPException(status_code=400, detail="CNPJ deve ter 14 dígitos.")
+        raise HTTPException(status_code=400, detail="CNPJ deve ter 14 caracteres.")
 
     try:
         return await consultar_cnpj(digits)
