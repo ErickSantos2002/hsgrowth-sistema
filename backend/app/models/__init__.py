@@ -103,6 +103,7 @@ from app.models.partner import Partner, PartnerTeamMember  # noqa
 from app.models.partner_opportunity import PartnerOpportunity, PartnerOpportunityProduct  # noqa
 from app.models.partner_activity import PartnerActivity  # noqa
 from app.models.cnpj_consulta import CnpjConsulta  # noqa
+from app.models.user_access_token import UserAccessToken  # noqa
 
 # Lista de todos os modelos (útil para imports)
 __all__ = [
@@ -169,4 +170,5 @@ __all__ = [
     "PartnerOpportunity",
     "PartnerOpportunityProduct",
     "PartnerActivity",
+    "UserAccessToken",
 ]
