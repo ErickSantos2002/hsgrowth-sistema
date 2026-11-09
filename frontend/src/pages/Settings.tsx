@@ -35,6 +35,10 @@ const Settings: React.FC = () => {
     phone: user?.phone || "",
     email_signature: user?.email_signature || "",
   });
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [trocandoSenha, setTrocandoSenha] = useState(false);
   const [showSignaturePreview, setShowSignaturePreview] = useState(false);
   const [signatureText, setSignatureText] = useState(
     user?.email_signature
@@ -215,7 +219,7 @@ const Settings: React.FC = () => {
   const persistSignature = async (sigHtml: string) => {
     if (!user) return;
     try {
-      const updatedUser = await userService.update(user.id, { email_signature: sigHtml || null });
+      const updatedUser = await userService.updateMe({ email_signature: sigHtml || null });
       updateUser(updatedUser);
       showSuccess("Assinatura atualizada!");
     } catch (error: any) {
@@ -361,6 +365,33 @@ const Settings: React.FC = () => {
     setFilteredBadges(filtered);
   }, [badges, badgeFilter, badgeTypeFilter, badgeSearch]);
 
+  const handleTrocarSenha = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (novaSenha.length < 8) {
+      showError("A nova senha precisa ter pelo menos 8 caracteres.");
+      return;
+    }
+    if (novaSenha !== confirmarSenha) {
+      showError("As senhas não são iguais.");
+      return;
+    }
+    try {
+      setTrocandoSenha(true);
+      // trocarSenha guarda os tokens novos (os antigos são revogados) e devolve o usuário.
+      const atualizado = await authService.trocarSenha(senhaAtual, novaSenha);
+      updateUser(atualizado);
+      setSenhaAtual("");
+      setNovaSenha("");
+      setConfirmarSenha("");
+      showSuccess("Senha alterada com sucesso!");
+    } catch (error: any) {
+      const detalhe = error?.response?.data?.detail;
+      showError(typeof detalhe === "string" ? detalhe : "Erro ao alterar a senha");
+    } finally {
+      setTrocandoSenha(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!user) return;
 
@@ -375,10 +406,13 @@ const Settings: React.FC = () => {
       const email_signature = buildSignatureHtml(signatureText, signatureImageUrl);
 
       // Atualiza o perfil no backend
-      const updatedUser = await userService.update(user.id, {
+      // Só nome, telefone e assinatura: username e e-mail não mudam por aqui.
+      if (!profileData.name.trim()) {
+        showError("O nome não pode ficar vazio.");
+        return;
+      }
+      const updatedUser = await userService.updateMe({
         name: profileData.name,
-        username: profileData.username,
-        email: profileData.email,
         phone: profileData.phone,
         email_signature: email_signature || null,
       });
@@ -1212,8 +1246,8 @@ const Settings: React.FC = () => {
                     <input
                       type="text"
                       value={profileData.username}
-                      onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      disabled
+                      className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-4 py-2 text-slate-500 dark:border-slate-700 dark:bg-slate-800"
                       placeholder="Seu username"
                     />
                   </div>
@@ -1225,18 +1259,13 @@ const Settings: React.FC = () => {
                     <input
                       type="email"
                       value={profileData.email}
-                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                      disabled={user?.role === "salesperson"}
-                      className={`w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400 ${
-                        user?.role === "salesperson" ? "cursor-not-allowed opacity-60" : ""
-                      }`}
+                      disabled
+                      className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-4 py-2 text-slate-500 dark:border-slate-700 dark:bg-slate-800"
                       placeholder="seu@email.com"
                     />
-                    {user?.role === "salesperson" && (
-                      <p className="mt-1 text-xs text-slate-500">
-                        Apenas administradores podem alterar o email
-                      </p>
-                    )}
+                    <p className="mt-1 text-xs text-slate-500">
+                      Apenas administradores podem alterar o email
+                    </p>
                   </div>
 
                   <div>
@@ -1373,6 +1402,61 @@ const Settings: React.FC = () => {
                     {loading ? "Salvando..." : "Salvar Alterações"}
                   </button>
                 </div>
+
+                {/* Alterar senha */}
+                <form onSubmit={handleTrocarSenha} className="mt-10 border-t border-gray-200 pt-8 dark:border-slate-700">
+                  <h3 className="mb-1 text-lg font-semibold text-slate-900 dark:text-white">Alterar senha</h3>
+                  <p className="mb-4 text-xs text-slate-500">
+                    Vale para o login por e-mail e senha. Ao trocar, as outras sessões abertas são encerradas.
+                  </p>
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Senha atual
+                      </label>
+                      <input
+                        type="password"
+                        value={senhaAtual}
+                        onChange={(e) => setSenhaAtual(e.target.value)}
+                        autoComplete="current-password"
+                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Nova senha (mín. 8)
+                      </label>
+                      <input
+                        type="password"
+                        value={novaSenha}
+                        onChange={(e) => setNovaSenha(e.target.value)}
+                        autoComplete="new-password"
+                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Confirmar nova senha
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmarSenha}
+                        onChange={(e) => setConfirmarSenha(e.target.value)}
+                        autoComplete="new-password"
+                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={trocandoSenha || !senhaAtual || !novaSenha}
+                      className="rounded-lg bg-blue-600 px-5 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-600"
+                    >
+                      {trocandoSenha ? "Alterando..." : "Alterar senha"}
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
 
