@@ -22,6 +22,7 @@ from app.schemas.user_notification_setting import (
 from app.core.config import settings
 from app.core.redis_sessions import session_manager
 from app.core.security import create_access_token, create_refresh_token
+from app.repositories.user_repository import UserRepository
 from app.models.role import Role
 from app.models.user import User
 from app.models.audit_log import AuditLog
@@ -581,6 +582,8 @@ async def create_user(
     papel = db.query(Role).filter(Role.id == user_data.role_id).first()
     if not papel:
         raise HTTPException(status_code=422, detail="Perfil inválido.")
+    if user_data.username and UserRepository(db).exists_username(user_data.username):
+        raise HTTPException(status_code=400, detail="Nome de usuário já cadastrado")
     resultado = criacao_de_login.criar_login(
         db, current_user, nome=user_data.name, email=user_data.email, papel=papel.name,
         modo=user_data.modo, senha=user_data.password,

@@ -54,3 +54,11 @@ def test_login_de_parceiro_nao_nasce_na_tela_de_usuarios(client, db, admin_heade
     r2 = client.post("/api/v1/admin/users", headers=admin_headers, json={
         "email": "y@dmap.com", "name": "Y", "role_id": role(db, papel).id, "password": "Senha@123"})
     assert r2.status_code == 422
+
+
+def test_username_repetido_da_400(client, db, admin_headers, emails):
+    fin = role(db, "finance")
+    base = {"name": "Fin", "role_id": fin.id, "modo": "convite", "username": "fin_user"}
+    assert client.post(URL, headers=admin_headers, json={**base, "email": "a@hs.com"}).status_code == 201
+    r = client.post(URL, headers=admin_headers, json={**base, "email": "b@hs.com"})
+    assert r.status_code == 400 and "Nome de usuário" in r.json()["detail"]

@@ -243,3 +243,10 @@ def test_parceiro_salva_o_proprio_perfil(client, db):
     u = usuario(db, "partner", "p@dmap.com", parceiro(db))
     r = client.put("/api/v1/users/me", headers=headers(u), json={"name": "Paulo", "phone": "11999990000"})
     assert r.status_code == 200 and r.json()["name"] == "Paulo"
+
+
+@pytest.mark.parametrize("nome", [None, "", "   "])
+def test_perfil_proprio_recusa_nome_vazio(client, db, nome):
+    u = usuario(db, "salesperson", "v@hs.com")
+    r = client.put("/api/v1/users/me", headers=headers(u), json={"name": nome})
+    assert r.status_code == 422

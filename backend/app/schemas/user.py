@@ -4,7 +4,7 @@ Define os modelos de entrada/saída para operações com usuários.
 """
 from typing import Literal, Optional
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class UserBase(BaseModel):
@@ -138,6 +138,13 @@ class UserMeUpdate(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     avatar_url: Optional[str] = Field(None, max_length=500)
     email_signature: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def _nome_nao_nulo(cls, v):
+        if v is None or not v.strip():
+            raise ValueError("Nome não pode ficar vazio")
+        return v.strip()
 
 
 class UserListResponse(BaseModel):
