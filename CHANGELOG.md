@@ -5,6 +5,38 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.17] — 09/11/2026
+
+### Adicionado
+- **Parcerias — vendedor do parceiro:** novo perfil de acesso para os vendedores da equipe do parceiro, que veem só as próprias oportunidades.
+- **Parcerias — logins da equipe:** o dono do parceiro cadastra e dá acesso aos vendedores da própria equipe.
+- **Convite por e-mail:** o login novo pode ser criado por convite. A pessoa recebe um e-mail com o link para definir a senha; quem cadastra também pode usar "Copiar link" e enviar por outro meio. O convite pode ser reenviado.
+- **Senha inicial com troca obrigatória:** o login também pode ser criado com uma senha inicial; no primeiro acesso a pessoa é obrigada a trocá-la.
+- **Esqueci minha senha:** novo link na tela de login para pedir a redefinição por e-mail.
+- **Definir senha:** nova tela aberta pelo link do e-mail, usada no convite e na redefinição.
+
+### Corrigido
+- **Configurações — trocar senha:** a troca de senha funciona para todos os perfis.
+- **Configurações — perfil:** parceiro e Financeiro conseguem salvar o próprio perfil.
+- **Login:** o e-mail não diferencia mais maiúsculas de minúsculas.
+- **Esqueci minha senha:** agora realmente envia o e-mail.
+- **Login Microsoft:** os erros passam a aparecer na tela.
+
+### Segurança
+- Trocar ou redefinir a senha derruba as sessões antigas.
+- "Esqueci minha senha" tem limite de 3 pedidos por hora e responde igual exista ou não o e-mail cadastrado.
+
+### Banco
+- Migration `7b8c9d0e1f2a` (aditiva), aplicada só no homo: Parcerias vai somente para o homo por enquanto.
+
+### Configuração
+- `EMAIL_PROVIDER=resend`
+- `RESEND_API_KEY`
+- `EMAIL_FROM` (padrão `HSGrowth CRM <nao-responda@crm.healthsafetytech.com>`; o domínio crm.healthsafetytech.com precisa estar verificado no Resend)
+- `FRONTEND_URL`: vai dentro dos links dos e-mails; no homo = `https://homo-hsgrowth.healthsafetytech.com`
+
+---
+
 ## [1.11.16] — 09/11/2026
 
 ### Alterado
