@@ -73,49 +73,43 @@ class AuthService {
   }
 
   /**
-   * Solicita recuperação de senha (envia email)
+   * Confere um token de convite/redefinição de senha (rota pública)
    */
-  async forgotPassword(email: string): Promise<{ message: string }> {
-    const response = await api.post<{ message: string }>("/api/v1/auth/forgot-password", {
-      email,
-    });
-
-    return response.data;
+  async conferirToken(token: string) {
+    return (
+      await api.get<{ valido: boolean; kind?: "convite" | "redefinir"; nome?: string; email?: string }>(
+        `/api/v1/auth/token/${encodeURIComponent(token)}`
+      )
+    ).data;
   }
 
   /**
-   * Reseta a senha usando o token recebido por email
+   * Define a senha a partir do link recebido por e-mail (convite ou redefinição)
    */
-  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
-    const response = await api.post<{ message: string }>("/api/v1/auth/reset-password", {
-      token,
-      new_password: newPassword,
-    });
-
-    return response.data;
+  async definirSenha(token: string, novaSenha: string): Promise<void> {
+    await api.post("/api/v1/auth/definir-senha", { token, nova_senha: novaSenha });
   }
 
   /**
-   * Troca a senha do usuário logado
+   * Pede o link de redefinição de senha (a resposta é sempre a mesma)
    */
-  async changePassword(oldPassword: string, newPassword: string): Promise<{ message: string }> {
-    // Pega o ID do usuário logado
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      throw new Error("Usuário não está logado");
-    }
+  async esqueciSenha(email: string): Promise<void> {
+    await api.post("/api/v1/auth/forgot-password", { email });
+  }
 
-    const user: User = JSON.parse(userStr);
-
-    const response = await api.post<{ message: string }>(
-      `/api/v1/users/${user.id}/change-password`,
-      {
-        old_password: oldPassword,
-        new_password: newPassword,
-      }
+  /**
+   * Troca a senha de quem está logado. O backend revoga todos os tokens
+   * emitidos antes da troca e devolve um par novo: guardar antes de qualquer
+   * outra chamada, senão a sessão cai.
+   */
+  async trocarSenha(senhaAtual: string, novaSenha: string): Promise<User> {
+    const response = await api.post<{ message: string; access_token: string; refresh_token: string }>(
+      "/api/v1/users/me/change-password",
+      { current_password: senhaAtual, new_password: novaSenha }
     );
-
-    return response.data;
+    localStorage.setItem("access_token", response.data.access_token);
+    localStorage.setItem("refresh_token", response.data.refresh_token);
+    return this.getMe();
   }
 
   /**

@@ -6,7 +6,7 @@ type AuthContextType = {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   updateUser: (updatedUser: User) => void;
   error: string | null;
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Função de login
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     setLoading(true);
     setError(null);
 
@@ -65,6 +65,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch {
         // aba anônima ou armazenamento bloqueado: segue sem o aviso
       }
+
+      return response.user;
     } catch (err: any) {
       // Tratamento de erros HTTP
       if (err.response) {

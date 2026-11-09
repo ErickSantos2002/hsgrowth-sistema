@@ -10,8 +10,10 @@ export interface User {
   phone: string | null;
   email_signature: string | null;
   role_id: number;
-  role: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service" | "partner" | "finance"; // Role do usuário
+  role: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service" | "partner" | "finance" | "partner_member"; // Role do usuário
   role_name: string; // Nome formatado da role (Administrador, Gerente, Vendedor, SDR)
+  must_change_password?: boolean;
+  partner_id?: number | null;
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;
@@ -770,7 +772,7 @@ export interface CardFilters extends PaginationParams {
 }
 
 export interface UserFilters extends PaginationParams {
-  role?: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service" | "partner" | "finance";
+  role?: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service" | "partner" | "finance" | "partner_member";
   is_active?: boolean;
   search?: string;
 }
@@ -801,11 +803,6 @@ export interface UpdateUserRequest {
   role_id?: number; // 1=admin, 2=manager, 3=salesperson
   is_active?: boolean;
   email_signature?: string | null;
-}
-
-export interface ChangePasswordRequest {
-  old_password: string;
-  new_password: string;
 }
 
 // Usuário com sessão ativa no Redis

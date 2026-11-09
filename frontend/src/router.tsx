@@ -8,6 +8,9 @@ import { useAuth } from './hooks/useAuth';
 
 // Importação direta (sem lazy loading) para navegação instantânea
 import Login from './pages/Login';
+import DefinirSenha from './pages/DefinirSenha';
+import EsqueciSenha from './pages/EsqueciSenha';
+import TrocarSenha from './pages/TrocarSenha';
 import Dashboard from './pages/Dashboard';
 import Boards from './pages/Boards';
 import KanbanBoard from './pages/KanbanBoard';
@@ -117,6 +120,17 @@ const ActivitiesPage: React.FC = () => {
 const AppRoutes: React.FC = () => (
   <Routes>
     <Route path="/login" element={<Login />} />
+    <Route path="/definir-senha" element={<DefinirSenha />} />
+    <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+    {/* Troca obrigatória de senha: logado, mas fora do MainLayout */}
+    <Route
+      path="/trocar-senha"
+      element={
+        <ProtectedRoute>
+          <TrocarSenha />
+        </ProtectedRoute>
+      }
+    />
     <Route path="/auth/callback" element={<AuthCallback />} />
 
     {/* Entrada publica do convidado na reuniao por video — SEM autenticacao.

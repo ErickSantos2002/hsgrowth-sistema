@@ -124,6 +124,8 @@ export default function MainLayout() {
         window.location.href = "/login";
     };
 
+    if (user?.must_change_password) return <Navigate to="/trocar-senha" replace />;
+
     if (trancado && !location.pathname.startsWith("/parcerias") && location.pathname !== "/settings") {
         return <Navigate to="/parcerias" replace />;
     }
