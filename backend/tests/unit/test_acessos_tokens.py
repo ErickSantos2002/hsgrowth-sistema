@@ -55,3 +55,55 @@ def test_resend_status_de_erro_devolve_false(monkeypatch):
     monkeypatch.setattr(settings, "RESEND_API_KEY", "re_chave")
     monkeypatch.setattr(envio_email.httpx, "post", lambda *a, **k: Resp())
     assert envio_email.enviar_email("a@b.com", "x", "<p>x</p>") is False
+
+
+from datetime import datetime, timedelta
+
+from app.models.user_access_token import UserAccessToken
+from app.services import tokens_de_acesso as tokens
+from tests.unit.apoio_parcerias import usuario
+
+
+def test_token_guarda_so_o_hash_e_vale_uma_vez(db):
+    u = usuario(db, "salesperson", "v@hs.com")
+    t = tokens.criar(db, u, "convite")
+    db.commit()
+
+    salvo = db.query(UserAccessToken).one()
+    assert salvo.token_hash != t and len(salvo.token_hash) == 64
+    assert tokens.buscar_valido(db, t).user_id == u.id
+    tokens.usar(db, tokens.buscar_valido(db, t))
+    db.commit()
+    assert tokens.buscar_valido(db, t) is None
+
+
+def test_novo_token_invalida_o_anterior_do_mesmo_tipo(db):
+    u = usuario(db, "salesperson", "v@hs.com")
+    velho = tokens.criar(db, u, "convite"); db.commit()
+    novo = tokens.criar(db, u, "convite"); db.commit()
+    assert tokens.buscar_valido(db, velho) is None
+    assert tokens.buscar_valido(db, novo) is not None
+
+
+def test_expirado_ou_usuario_inativo_nao_vale(db):
+    u = usuario(db, "salesperson", "v@hs.com")
+    t = tokens.criar(db, u, "redefinir"); db.commit()
+    db.query(UserAccessToken).update({"expires_at": datetime.utcnow() - timedelta(minutes=1)})
+    db.commit()
+    assert tokens.buscar_valido(db, t) is None
+
+    t2 = tokens.criar(db, u, "redefinir"); u.is_active = False; db.commit()
+    assert tokens.buscar_valido(db, t2) is None
+
+
+def test_status_do_acesso(db):
+    u = usuario(db, "partner", "p@dmap.com")
+    assert tokens.status_do_acesso(db, u) == "ativo"
+    tokens.criar(db, u, "convite"); db.commit()
+    assert tokens.status_do_acesso(db, u) == "convite_pendente"
+    db.query(UserAccessToken).update({"expires_at": datetime.utcnow() - timedelta(days=1)}); db.commit()
+    assert tokens.status_do_acesso(db, u) == "convite_expirado"
+    u.last_login_at = datetime.utcnow(); db.commit()
+    assert tokens.status_do_acesso(db, u) == "ativo"
+    u.is_active = False; db.commit()
+    assert tokens.status_do_acesso(db, u) == "desativado"
