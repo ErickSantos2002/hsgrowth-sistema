@@ -237,3 +237,9 @@ def test_esqueci_senha_acima_do_limite_nao_cria_token(client, db, emails, monkey
     assert r.status_code == 200
     assert emails == []
     assert db.query(UserAccessToken).count() == 0
+
+
+def test_parceiro_salva_o_proprio_perfil(client, db):
+    u = usuario(db, "partner", "p@dmap.com", parceiro(db))
+    r = client.put("/api/v1/users/me", headers=headers(u), json={"name": "Paulo", "phone": "11999990000"})
+    assert r.status_code == 200 and r.json()["name"] == "Paulo"

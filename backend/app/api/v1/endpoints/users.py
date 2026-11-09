@@ -11,7 +11,7 @@ from app.services.user_service import UserService
 from app.services.user_notification_service import UserNotificationService
 from app.schemas.user import (
     UserCreate, UserUpdate, UserResponse, UserListResponse, ChangePasswordRequest,
-    UserCreateComModo, UsuarioCriadoResponse,
+    UserCreateComModo, UsuarioCriadoResponse, UserMeUpdate,
 )
 from app.schemas.acessos import ConviteRequest, ConviteResponse
 from app.services import criacao_de_login, tokens_de_acesso
@@ -620,6 +620,20 @@ async def create_user(
         status_acesso=tokens_de_acesso.status_do_acesso(db, user),
         email_enviado=resultado.email_enviado,
     )
+
+
+@router.put("/me", response_model=UserResponse, summary="Atualizar o próprio perfil")
+async def update_me(
+    dados: UserMeUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Any:
+    """Qualquer usuário (inclusive perfis restritos) salva o próprio perfil."""
+    for campo, valor in dados.model_dump(exclude_unset=True).items():
+        setattr(current_user, campo, valor)
+    db.commit()
+    db.refresh(current_user)
+    return _user_response(current_user)
 
 
 @router.post("/{user_id}/convite", response_model=ConviteResponse, summary="Reenviar convite ou copiar o link")
