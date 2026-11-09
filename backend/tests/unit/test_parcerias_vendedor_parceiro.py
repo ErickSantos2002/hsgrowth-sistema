@@ -1,0 +1,156 @@
+"""Vendedor do parceiro (partner_member): só as próprias oportunidades (Entrega 3)."""
+from app.models.partner import PartnerTeamMember
+from app.models.partner_activity import PartnerActivity
+from tests.unit.apoio_parcerias import CNPJ_B, headers, oportunidade, parceiro, usuario
+
+URL = "/api/v1/parcerias"
+NOVA = {
+    "title": "Etilômetros", "deal_type": "Nova Venda", "sector": "Indústrias de Transformação",
+    "relationship_type": "Prospect", "context": "Frota", "cnpj": CNPJ_B, "company_name": "Empresa B",
+}
+
+
+def _vendedor(db, p, email="v1@dmap.com"):
+    login = usuario(db, "partner_member", email, p)
+    membro = PartnerTeamMember(partner_id=p.id, name=email.split("@")[0], email=email, user_id=login.id)
+    db.add(membro); db.commit(); db.refresh(membro)
+    return login, membro
+
+
+def test_ve_so_as_proprias(client, db):
+    p = parceiro(db)
+    eu, meu = _vendedor(db, p)
+    _, outro = _vendedor(db, p, "v2@dmap.com")
+    minha = oportunidade(db, p, seller_member_id=meu.id)
+    dele = oportunidade(db, p, seller_member_id=outro.id, title="Outra")
+    oportunidade(db, p, title="Sem vendedor")
+    h = headers(eu)
+
+    ids = [o["id"] for o in client.get(f"{URL}/oportunidades", headers=h).json()]
+    assert ids == [minha.id]
+    assert client.get(f"{URL}/oportunidades?partner_id={p.id}", headers=h).json()[0]["id"] == minha.id
+    assert client.get(f"{URL}/oportunidades/{dele.id}", headers=h).status_code == 404
+
+
+def test_nao_ve_atividades_produtos_nem_mexe_na_de_outro(client, db):
+    p = parceiro(db)
+    eu, meu = _vendedor(db, p)
+    _, outro = _vendedor(db, p, "v2@dmap.com")
+    minha = oportunidade(db, p, seller_member_id=meu.id)
+    dele = oportunidade(db, p, seller_member_id=outro.id, title="Outra")
+    nota = PartnerActivity(opportunity_id=dele.id, category="anotacao", activity_type="note", description="x")
+    db.add(nota); db.commit(); db.refresh(nota)
+    h = headers(eu)
+
+    assert client.get(f"{URL}/oportunidades/{minha.id}/atividades", headers=h).status_code == 200
+    assert client.get(f"{URL}/oportunidades/{dele.id}/atividades", headers=h).status_code == 404
+    assert client.post(f"{URL}/oportunidades/{dele.id}/atividades", headers=h,
+                       json={"category": "anotacao", "description": "oi"}).status_code == 404
+    assert client.get(f"{URL}/oportunidades/{dele.id}/produtos", headers=h).status_code == 404
+    assert client.put(f"{URL}/atividades/{nota.id}", headers=h, json={"description": "y"}).status_code == 404
+    assert client.put(f"{URL}/oportunidades/{dele.id}/mover", headers=h,
+                      json={"stage": "qualificacao"}).status_code == 404
+    assert client.put(f"{URL}/oportunidades/{dele.id}", headers=h, json={"title": "Minha"}).status_code == 404
+
+
+def test_cria_e_nasce_como_vendedor(client, db):
+    p = parceiro(db)
+    eu, meu = _vendedor(db, p)
+    _, outro = _vendedor(db, p, "v2@dmap.com")
+    r = client.post(f"{URL}/oportunidades", headers=headers(eu), json={**NOVA, "seller_member_id": outro.id})
+    assert r.status_code == 201
+    assert (r.json()["partner_id"], r.json()["seller_member_id"]) == (p.id, meu.id)
+
+
+def test_edita_e_move_a_propria(client, db):
+    p = parceiro(db)
+    eu, meu = _vendedor(db, p)
+    op = oportunidade(db, p, seller_member_id=meu.id)
+    h = headers(eu)
+    assert client.put(f"{URL}/oportunidades/{op.id}", headers=h, json={"title": "Novo título"}).status_code == 200
+    assert client.put(f"{URL}/oportunidades/{op.id}", headers=h,
+                      json={"seller_member_id": meu.id}).status_code == 200
+
+
+def test_nao_troca_o_vendedor(client, db):
+    p = parceiro(db)
+    eu, meu = _vendedor(db, p)
+    _, outro = _vendedor(db, p, "v2@dmap.com")
+    op = oportunidade(db, p, seller_member_id=meu.id)
+    r = client.put(f"{URL}/oportunidades/{op.id}", headers=headers(eu), json={"seller_member_id": outro.id})
+    assert r.status_code == 422
+    r = client.put(f"{URL}/oportunidades/{op.id}", headers=headers(eu), json={"seller_member_id": None})
+    assert r.status_code == 422
+
+
+def test_dono_troca_o_vendedor_e_o_antigo_perde_a_visao(client, db):
+    p = parceiro(db)
+    dono = usuario(db, "partner", "dono@dmap.com", p)
+    eu, meu = _vendedor(db, p)
+    _, outro = _vendedor(db, p, "v2@dmap.com")
+    op = oportunidade(db, p, seller_member_id=meu.id)
+    assert client.put(f"{URL}/oportunidades/{op.id}", headers=headers(dono),
+                      json={"seller_member_id": outro.id}).status_code == 200
+    assert client.get(f"{URL}/oportunidades/{op.id}", headers=headers(eu)).status_code == 404
+
+
+def test_nao_valida_elegibilidade_nem_confirma_ganho(client, db):
+    p = parceiro(db)
+    eu, meu = _vendedor(db, p)
+    op = oportunidade(db, p, seller_member_id=meu.id)
+    h = headers(eu)
+    assert client.put(f"{URL}/oportunidades/{op.id}/elegibilidade", headers=h,
+                      json={"status": "validada"}).status_code == 403
+    assert client.put(f"{URL}/oportunidades/{op.id}/ganho", headers=h,
+                      json={"acao": "confirmar"}).status_code == 403
+
+
+def test_nao_ve_aquisicao_nem_equipe(client, db):
+    p = parceiro(db)
+    eu, meu = _vendedor(db, p)
+    h = headers(eu)
+    assert client.get(f"{URL}/parceiros/{p.id}", headers=h).status_code == 404
+    assert client.get(f"{URL}/parceiros/{p.id}/equipe", headers=h).status_code == 404
+    assert client.post(f"{URL}/parceiros/{p.id}/equipe", headers=h, json={"name": "X"}).status_code == 404
+    assert client.put(f"{URL}/parceiros/{p.id}/equipe/{meu.id}", headers=h, json={"name": "X"}).status_code == 404
+    assert client.get(f"{URL}/parceiros/{p.id}/atividades", headers=h).status_code == 404
+    assert client.put(f"{URL}/parceiros/{p.id}/mover", headers=h, json={"stage": "potencial"}).status_code == 404
+    assert client.put(f"{URL}/parceiros/{p.id}", headers=h, json={"name": "X"}).status_code == 404
+    assert client.get(f"{URL}/parceiros", headers=h).json() == []
+    # Acessos é só da gestão: 403 antes de olhar o parceiro (não revela nada).
+    assert client.get(f"{URL}/parceiros/{p.id}/acessos", headers=h).status_code == 403
+
+
+def test_nao_le_atividade_do_card_de_aquisicao(client, db):
+    p = parceiro(db)
+    eu, _ = _vendedor(db, p)
+    nota = PartnerActivity(partner_id=p.id, category="anotacao", activity_type="note", description="x")
+    db.add(nota); db.commit(); db.refresh(nota)
+    assert client.put(f"{URL}/atividades/{nota.id}", headers=headers(eu),
+                      json={"description": "y"}).status_code == 404
+
+
+def test_login_sem_cadastro_na_equipe_nao_entra(client, db):
+    p = parceiro(db)
+    solto = usuario(db, "partner_member", "solto@dmap.com", p)
+    assert client.get(f"{URL}/oportunidades", headers=headers(solto)).status_code == 403
+
+
+def test_membro_inativo_nao_ve_mesmo_com_login_ativo(client, db):
+    p = parceiro(db)
+    eu, meu = _vendedor(db, p)
+    oportunidade(db, p, seller_member_id=meu.id)
+    meu.is_active = False
+    db.commit()
+    assert client.get(f"{URL}/oportunidades", headers=headers(eu)).status_code == 403
+
+
+def test_trancado_fora_de_parcerias_e_usa_consulta_cnpj(client, db):
+    p = parceiro(db)
+    eu, _ = _vendedor(db, p)
+    h = headers(eu)
+    assert client.get("/api/v1/clients", headers=h).status_code == 403
+    r = client.get(f"{URL}/consulta-cnpj/resumo", headers=h)
+    assert r.status_code == 200 and r.json()["limite"] == 20
+    assert client.get(f"{URL}/consulta-cnpj/historico", headers=h).status_code == 403
+
