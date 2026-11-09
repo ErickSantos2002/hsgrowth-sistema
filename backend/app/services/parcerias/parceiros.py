@@ -6,7 +6,6 @@ from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_password
 from app.models.partner import Partner, PartnerTeamMember
 from app.models.role import Role
 from app.models.user import User
@@ -18,6 +17,7 @@ from app.schemas.parcerias import (
     ParceiroCreate,
     ParceiroUpdate,
 )
+from app.services import criacao_de_login
 from app.services.parcerias import acesso, ativacao, atividades
 from app.services.parcerias.etapas import ETAPAS_AQUISICAO, TravaError, nome_da_etapa, validar_mudanca_parceiro
 
@@ -142,31 +142,38 @@ def atualizar_membro(db: Session, user: User, partner_id: int, membro_id: int,
 def listar_acessos(db: Session, user: User, partner_id: int) -> List[User]:
     acesso.exigir_gestao(user)
     p = acesso.buscar_parceiro(db, user, partner_id)
-    return db.query(User).filter(User.partner_id == p.id, User.is_deleted.is_(False)).order_by(User.name).all()
+    return (
+        db.query(User).join(Role, User.role_id == Role.id)
+        .filter(User.partner_id == p.id, User.is_deleted.is_(False), Role.name == "partner")
+        .order_by(User.name).all()
+    )
 
 
-def criar_acesso(db: Session, user: User, partner_id: int, dados: AcessoCreate) -> User:
+def criar_acesso(db: Session, user: User, partner_id: int, dados: AcessoCreate) -> criacao_de_login.Resultado:
     acesso.exigir_gestao(user)
     p = acesso.buscar_parceiro(db, user, partner_id)
-    if db.query(User).filter(func.lower(User.email) == dados.email).first():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email já cadastrado")
-    papel = db.query(Role).filter(Role.name == "partner").first()
-    if not papel:
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Role 'partner' não existe. Rode as migrations.")
-    login = User(
-        name=dados.name.strip(),
-        email=dados.email,
-        password_hash=hash_password(dados.password),
-        role_id=papel.id,
-        partner_id=p.id,
-        is_active=True,
-        is_verified=True,
+    resultado = criacao_de_login.criar_login(
+        db, user, nome=dados.name, email=dados.email, papel="partner",
+        modo=dados.modo, senha=dados.password, partner_id=p.id,
     )
-    db.add(login)
+    # Só registra no histórico depois que o acesso foi de fato criado.
     atividades.registrar_evento(db, user, f"Acesso criado para {dados.email}", partner_id=p.id)
     db.commit()
-    db.refresh(login)
-    return login
+    return resultado
+
+
+def convidar_acesso(db: Session, user: User, partner_id: int, user_id: int,
+                    enviar: bool) -> criacao_de_login.Resultado:
+    acesso.exigir_gestao(user)
+    p = acesso.buscar_parceiro(db, user, partner_id)
+    login = (
+        db.query(User).join(Role, User.role_id == Role.id)
+        .filter(User.id == user_id, User.partner_id == p.id, User.is_deleted.is_(False), Role.name == "partner")
+        .first()
+    )
+    if not login:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Acesso não encontrado.")
+    return criacao_de_login.enviar_convite(db, user, login, enviar)
 
 
 def alterar_acesso(db: Session, user: User, partner_id: int, user_id: int, ativo: bool) -> User:

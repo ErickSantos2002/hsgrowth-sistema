@@ -9,8 +9,10 @@ from app.models.partner import Partner
 from app.models.partner_activity import PartnerActivity
 from app.models.partner_opportunity import PartnerOpportunity, PartnerOpportunityProduct
 from app.models.user import User
+from app.services import tokens_de_acesso
 from app.services.parcerias import acesso
 from app.schemas.parcerias import (
+    AcessoCriadoResponse,
     AtividadeResponse,
     OportunidadeResponse,
     ParceiroResponse,
@@ -155,3 +157,9 @@ def atividade_out(a: PartnerActivity, user: Optional[User] = None) -> AtividadeR
         # A justificativa é da gestão; o parceiro vê só que houve a liberação.
         extras["description"] = texto.split(" Justificativa:")[0]
     return AtividadeResponse.model_validate(a).model_copy(update=extras)
+
+
+def acesso_out(db: Session, login: User, email_enviado: bool = False) -> AcessoCriadoResponse:
+    return AcessoCriadoResponse.model_validate(login).model_copy(update={
+        "status_acesso": tokens_de_acesso.status_do_acesso(db, login), "email_enviado": email_enviado,
+    })
