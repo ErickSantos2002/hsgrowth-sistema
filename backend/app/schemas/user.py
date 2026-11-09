@@ -78,6 +78,9 @@ class UserResponse(UserBase):
     """
     Schema de resposta de usuário (sem senha).
     """
+    # Saída não revalida o que já está gravado: os cadastros novos aceitam nome de
+    # 1+ caractere ("Zé"), e o min_length=3 herdado dava 500 depois de salvar.
+    name: str = Field(..., max_length=255, description="Nome completo")
     id: int = Field(..., description="ID do usuário")
     role_id: int = Field(..., description="ID do role")
     is_active: bool = Field(..., description="Status ativo/inativo")
@@ -92,6 +95,7 @@ class UserResponse(UserBase):
     must_change_password: bool = Field(False, description="Precisa trocar a senha no próximo acesso")
     partner_id: Optional[int] = Field(None, description="ID do parceiro (perfis de parceiro)")
     status_acesso: Optional[str] = Field(None, description="ativo | convite_pendente | convite_expirado | desativado")
+    convite_expira_em: Optional[datetime] = Field(None, description="Validade do último convite (só com convite pendente/expirado)")
 
     model_config = {
         "from_attributes": True,  # Permite criar a partir de modelos SQLAlchemy

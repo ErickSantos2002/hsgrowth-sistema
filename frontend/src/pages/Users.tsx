@@ -450,7 +450,7 @@ const Users: React.FC = () => {
                       </span>
                       {user.status_acesso && user.status_acesso !== "ativo" && user.status_acesso !== "desativado" && (
                         <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <StatusDoAcesso status={user.status_acesso} />
+                          <StatusDoAcesso status={user.status_acesso} expiraEm={user.convite_expira_em} />
                           <AcoesDoConvite url={`/api/v1/users/${user.id}/convite`} status={user.status_acesso} onFeito={loadUsers} />
                         </div>
                       )}

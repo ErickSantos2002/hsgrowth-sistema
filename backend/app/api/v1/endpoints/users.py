@@ -126,7 +126,7 @@ async def list_users(
     for item in resultado.users:
         alvo = por_id.get(item.id)
         if alvo:
-            item.status_acesso = tokens_de_acesso.status_do_acesso(db, alvo)
+            item.status_acesso, item.convite_expira_em = tokens_de_acesso.situacao_do_acesso(db, alvo)
     return resultado
 
 
@@ -569,7 +569,7 @@ async def get_user(
         }
     }
 )
-async def create_user(
+def create_user(
     request: Request,
     user_data: UserCreateComModo,
     current_user: User = Depends(require_role("admin")),
@@ -619,8 +619,8 @@ async def create_user(
 
     # Converte para response schema
     return UsuarioCriadoResponse(
-        **_user_response(user).model_dump(exclude={"status_acesso"}),
-        status_acesso=tokens_de_acesso.status_do_acesso(db, user),
+        **_user_response(user).model_dump(exclude={"status_acesso", "convite_expira_em"}),
+        **tokens_de_acesso.campos_do_acesso(db, user),
         email_enviado=resultado.email_enviado,
     )
 
@@ -640,7 +640,7 @@ async def update_me(
 
 
 @router.post("/{user_id}/convite", response_model=ConviteResponse, summary="Reenviar convite ou copiar o link")
-async def convite_usuario(
+def convite_usuario(
     user_id: int,
     dados: ConviteRequest,
     current_user: User = Depends(require_role("admin")),
@@ -650,7 +650,7 @@ async def convite_usuario(
     if not alvo:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     r = criacao_de_login.enviar_convite(db, current_user, alvo, enviar=dados.enviar)
-    return ConviteResponse(status_acesso=tokens_de_acesso.status_do_acesso(db, alvo),
+    return ConviteResponse(**tokens_de_acesso.campos_do_acesso(db, alvo),
                            link=r.link, email_enviado=r.email_enviado)
 
 

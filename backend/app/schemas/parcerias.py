@@ -229,6 +229,7 @@ class MembroResponse(BaseModel):
     is_active: bool
     user_id: Optional[int] = None
     status_acesso: Optional[str] = None  # None = sem login
+    convite_expira_em: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
@@ -261,6 +262,7 @@ class AcessoResponse(BaseModel):
     is_active: bool
     last_login_at: Optional[datetime] = None
     status_acesso: str = "ativo"
+    convite_expira_em: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

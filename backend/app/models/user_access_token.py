@@ -10,7 +10,7 @@ from app.db.base import Base
 class UserAccessToken(Base):
     __tablename__ = "user_access_tokens"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     kind = Column(String(20), nullable=False)  # "convite" | "redefinir"
     token_hash = Column(String(64), nullable=False, unique=True, index=True)

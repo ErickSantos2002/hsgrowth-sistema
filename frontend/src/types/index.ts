@@ -15,6 +15,7 @@ export interface User {
   must_change_password?: boolean;
   partner_id?: number | null;
   status_acesso?: "ativo" | "convite_pendente" | "convite_expirado" | "desativado" | null;
+  convite_expira_em?: string | null; // validade do último convite (pendente/expirado)
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;

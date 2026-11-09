@@ -13,6 +13,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import hash_password
 from app.models.role import Role
 from app.models.user import User
@@ -31,6 +32,11 @@ def criar_login(db: Session, autor: Optional[User], *, nome: str, email: str, pa
                 senha: Optional[str] = None, partner_id: Optional[int] = None,
                 extras: Optional[Dict[str, Any]] = None) -> Resultado:
     email = email.strip().lower()
+    dominio_interno = (settings.DAILY_INTERNAL_EMAIL_DOMAIN or "").strip().lower()
+    if papel in ("partner", "partner_member") and dominio_interno and email.endswith("@" + dominio_interno):
+        # O SSO da Microsoft casa por e-mail: a pessoa da H&S cairia na conta do parceiro.
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            "E-mail da Health & Safety não pode ser usado em login de parceiro.")
     if db.query(User).filter(func.lower(User.email) == email).first():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email já cadastrado")
     role = db.query(Role).filter(Role.name == papel).first()

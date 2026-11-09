@@ -118,7 +118,7 @@ def atualizar_membro(partner_id: int, membro_id: int, dados: MembroUpdate, db: S
 def dar_acesso_ao_membro(partner_id: int, membro_id: int, dados: AcessoMembroCreate,
                          db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     r = parceiros.dar_acesso_ao_membro(db, current_user, partner_id, membro_id, dados)
-    return ConviteResponse(status_acesso=tokens_de_acesso.status_do_acesso(db, r.user),
+    return ConviteResponse(**tokens_de_acesso.campos_do_acesso(db, r.user),
                            link=r.link, email_enviado=r.email_enviado)
 
 
@@ -126,7 +126,7 @@ def dar_acesso_ao_membro(partner_id: int, membro_id: int, dados: AcessoMembroCre
 def convidar_membro(partner_id: int, membro_id: int, dados: ConviteRequest,
                     db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     r = parceiros.convidar_membro(db, current_user, partner_id, membro_id, dados.enviar)
-    return ConviteResponse(status_acesso=tokens_de_acesso.status_do_acesso(db, r.user),
+    return ConviteResponse(**tokens_de_acesso.campos_do_acesso(db, r.user),
                            link=r.link, email_enviado=r.email_enviado)
 
 
@@ -147,7 +147,7 @@ def criar_acesso(partner_id: int, dados: AcessoCreate, db: Session = Depends(get
 def convidar_acesso(partner_id: int, user_id: int, dados: ConviteRequest, db: Session = Depends(get_db),
                     current_user: User = Depends(get_current_active_user)):
     r = parceiros.convidar_acesso(db, current_user, partner_id, user_id, dados.enviar)
-    return ConviteResponse(status_acesso=tokens_de_acesso.status_do_acesso(db, r.user),
+    return ConviteResponse(**tokens_de_acesso.campos_do_acesso(db, r.user),
                            link=r.link, email_enviado=r.email_enviado)
 
 

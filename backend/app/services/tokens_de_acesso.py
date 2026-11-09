@@ -7,7 +7,7 @@ token novo invalida os pendentes do mesmo tipo. Quem chama faz o commit.
 import hashlib
 import secrets
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
@@ -66,13 +66,26 @@ def ultimo_convite(db: Session, user: User) -> Optional[UserAccessToken]:
     return (_pendentes(db, user, "convite").order_by(UserAccessToken.id.desc()).first())
 
 
-def status_do_acesso(db: Session, user: User) -> str:
-    """ativo | convite_pendente | convite_expirado | desativado"""
+def situacao_do_acesso(db: Session, user: User) -> Tuple[str, Optional[datetime]]:
+    """(status, validade do convite). Status: ativo | convite_pendente | convite_expirado | desativado.
+    A validade só vem com convite pendente ou expirado."""
     if not user.is_active:
-        return "desativado"
+        return "desativado", None
     if user.last_login_at:
-        return "ativo"
+        return "ativo", None
     convite = ultimo_convite(db, user)
     if convite is None:
-        return "ativo"
-    return "convite_pendente" if convite.expires_at >= datetime.utcnow() else "convite_expirado"
+        return "ativo", None
+    status = "convite_pendente" if convite.expires_at >= datetime.utcnow() else "convite_expirado"
+    return status, convite.expires_at
+
+
+def status_do_acesso(db: Session, user: User) -> str:
+    """ativo | convite_pendente | convite_expirado | desativado"""
+    return situacao_do_acesso(db, user)[0]
+
+
+def campos_do_acesso(db: Session, user: User) -> Dict[str, Any]:
+    """status_acesso + convite_expira_em, prontos para ir na resposta."""
+    status, expira_em = situacao_do_acesso(db, user)
+    return {"status_acesso": status, "convite_expira_em": expira_em}

@@ -162,13 +162,14 @@ def atividade_out(a: PartnerActivity, user: Optional[User] = None) -> AtividadeR
 
 def acesso_out(db: Session, login: User, email_enviado: bool = False) -> AcessoCriadoResponse:
     return AcessoCriadoResponse.model_validate(login).model_copy(update={
-        "status_acesso": tokens_de_acesso.status_do_acesso(db, login), "email_enviado": email_enviado,
+        **tokens_de_acesso.campos_do_acesso(db, login), "email_enviado": email_enviado,
     })
 
 
 def membro_out(db: Session, m: PartnerTeamMember) -> MembroResponse:
-    status_acesso = None
+    campos = {"status_acesso": None, "convite_expira_em": None}
     if m.user_id:
         login = db.query(User).filter(User.id == m.user_id).first()
-        status_acesso = tokens_de_acesso.status_do_acesso(db, login) if login else None
-    return MembroResponse.model_validate(m).model_copy(update={"status_acesso": status_acesso})
+        if login:
+            campos = tokens_de_acesso.campos_do_acesso(db, login)
+    return MembroResponse.model_validate(m).model_copy(update=campos)

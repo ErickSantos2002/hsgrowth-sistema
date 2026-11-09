@@ -63,6 +63,8 @@ export interface Membro {
   /** Login do vendedor (null = sem login). */
   user_id?: number | null;
   status_acesso?: StatusAcesso | null;
+  /** Validade do último convite (só com convite pendente ou expirado). */
+  convite_expira_em?: string | null;
 }
 
 export interface Acesso {
@@ -72,6 +74,7 @@ export interface Acesso {
   is_active: boolean;
   last_login_at?: string | null;
   status_acesso: StatusAcesso;
+  convite_expira_em?: string | null;
 }
 
 export interface OportunidadeForm {

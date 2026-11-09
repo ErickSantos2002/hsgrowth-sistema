@@ -1,4 +1,5 @@
 """Schemas de acesso (convite por e-mail, senha inicial, definir senha) usados no CRM todo."""
+from datetime import datetime
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, model_validator
@@ -25,6 +26,7 @@ class ConviteRequest(BaseModel):
 
 class ConviteResponse(BaseModel):
     status_acesso: Status
+    convite_expira_em: Optional[datetime] = None
     link: Optional[str] = None
     email_enviado: bool = False
 

@@ -456,6 +456,10 @@ async def register(
     """
     Endpoint de registro de usuário (restrito a admin).
     """
+    # Mesma trava do POST /users: login de parceiro só nasce no card do parceiro.
+    from app.api.v1.endpoints.users import _recusar_login_de_parceiro
+    _recusar_login_de_parceiro(db, user_data.role_id)
+
     # Verifica se email já existe
     existing_email = db.query(User).filter(
         User.email == user_data.email,

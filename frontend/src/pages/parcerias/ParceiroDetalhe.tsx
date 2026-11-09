@@ -327,7 +327,7 @@ export default function ParceiroDetalhe() {
                         {m.name} {m.email && <span className="text-xs text-slate-500">· {m.email}</span>}
                       </span>
                       <span className="flex flex-wrap items-center justify-end gap-2">
-                        {m.user_id && <StatusDoAcesso status={m.status_acesso} />}
+                        {m.user_id && <StatusDoAcesso status={m.status_acesso} expiraEm={m.convite_expira_em} />}
                         {m.user_id && podeGerirLogin && (
                           <AcoesDoConvite
                             url={parceriasService.urlConviteMembro(id, m.id)}
@@ -387,7 +387,7 @@ export default function ParceiroDetalhe() {
                     <div key={a.id} className={linhaLista}>
                       <span className={a.is_active ? "text-slate-900 dark:text-white" : "text-slate-400 line-through"}>{a.email}</span>
                       <span className="flex flex-wrap items-center justify-end gap-2">
-                        <StatusDoAcesso status={a.status_acesso} />
+                        <StatusDoAcesso status={a.status_acesso} expiraEm={a.convite_expira_em} />
                         <AcoesDoConvite
                           url={parceriasService.urlConviteAcesso(id, a.id)}
                           status={a.status_acesso}
