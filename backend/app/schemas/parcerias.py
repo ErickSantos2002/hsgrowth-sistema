@@ -227,8 +227,14 @@ class MembroResponse(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     is_active: bool
+    user_id: Optional[int] = None
+    status_acesso: Optional[str] = None  # None = sem login
 
     model_config = {"from_attributes": True}
+
+
+class AcessoMembroCreate(ModoDeAcesso):
+    """Login do vendedor da equipe: usa o nome e o e-mail cadastrados no membro."""
 
 
 class AcessoCreate(ModoDeAcesso):

@@ -154,3 +154,116 @@ def test_trancado_fora_de_parcerias_e_usa_consulta_cnpj(client, db):
     assert r.status_code == 200 and r.json()["limite"] == 20
     assert client.get(f"{URL}/consulta-cnpj/historico", headers=h).status_code == 403
 
+
+# ─── Task 9: Equipe → Dar acesso ─────────────────────────────────────────────
+
+import pytest  # noqa: E402
+
+from app.services import envio_email  # noqa: E402
+from tests.unit.apoio_parcerias import role  # noqa: E402
+
+
+@pytest.fixture
+def emails(monkeypatch):
+    enviados = []
+    monkeypatch.setattr(envio_email, "enviar_email", lambda para, *a, **k: enviados.append(para) or True)
+    return enviados
+
+
+def test_dono_da_acesso_ao_vendedor_por_convite(client, db, emails):
+    role(db, "partner_member")
+    p = parceiro(db)
+    h = headers(usuario(db, "partner", "dono@dmap.com", p))
+    m = client.post(f"{URL}/parceiros/{p.id}/equipe", headers=h,
+                    json={"name": "Vini", "email": "vini@dmap.com"}).json()
+    assert m["user_id"] is None and m["status_acesso"] is None
+
+    r = client.post(f"{URL}/parceiros/{p.id}/equipe/{m['id']}/acesso", headers=h, json={"modo": "convite"})
+
+    assert r.status_code == 201
+    assert r.json()["status_acesso"] == "convite_pendente" and emails == ["vini@dmap.com"]
+    equipe = client.get(f"{URL}/parceiros/{p.id}/equipe", headers=h).json()
+    assert equipe[0]["user_id"] and equipe[0]["status_acesso"] == "convite_pendente"
+
+    from app.models.user import User
+    login = db.query(User).filter(User.id == equipe[0]["user_id"]).first()
+    assert (login.role.name, login.partner_id, login.email) == ("partner_member", p.id, "vini@dmap.com")
+
+    # Segunda vez: já tem acesso. Reenviar o convite pela rota própria.
+    assert client.post(f"{URL}/parceiros/{p.id}/equipe/{m['id']}/acesso", headers=h,
+                       json={"modo": "convite"}).status_code == 422
+    r = client.post(f"{URL}/parceiros/{p.id}/equipe/{m['id']}/acesso/convite", headers=h, json={"enviar": False})
+    assert r.status_code == 200 and r.json()["link"]
+
+
+def test_gestao_da_acesso_por_senha(client, db, admin_headers):
+    role(db, "partner_member")
+    p = parceiro(db)
+    membro = PartnerTeamMember(partner_id=p.id, name="Ana", email="ana@dmap.com")
+    db.add(membro); db.commit(); db.refresh(membro)
+    r = client.post(f"{URL}/parceiros/{p.id}/equipe/{membro.id}/acesso", headers=admin_headers,
+                    json={"modo": "senha", "password": "Senha@123"})
+    assert r.status_code == 201 and r.json()["status_acesso"] == "ativo"
+    db.refresh(membro)
+    assert membro.user_id
+
+
+def test_vendedor_sem_email_nao_ganha_acesso(client, db):
+    p = parceiro(db)
+    h = headers(usuario(db, "partner", "dono@dmap.com", p))
+    m = client.post(f"{URL}/parceiros/{p.id}/equipe", headers=h, json={"name": "Sem email"}).json()
+    r = client.post(f"{URL}/parceiros/{p.id}/equipe/{m['id']}/acesso", headers=h,
+                    json={"modo": "senha", "password": "Senha@123"})
+    assert r.status_code == 422
+
+
+def test_membro_inativo_nao_ganha_acesso(client, db):
+    role(db, "partner_member")
+    p = parceiro(db)
+    h = headers(usuario(db, "partner", "dono@dmap.com", p))
+    membro = PartnerTeamMember(partner_id=p.id, name="Ana", email="ana@dmap.com", is_active=False)
+    db.add(membro); db.commit(); db.refresh(membro)
+    r = client.post(f"{URL}/parceiros/{p.id}/equipe/{membro.id}/acesso", headers=h,
+                    json={"modo": "senha", "password": "Senha@123"})
+    assert r.status_code == 422
+
+
+def test_so_dono_ou_gestao_dao_acesso(client, db):
+    role(db, "partner_member")
+    responsavel = usuario(db, "salesperson", "resp@hs.com")
+    p = parceiro(db, hs_owner_id=responsavel.id)
+    outro = parceiro(db, "Outro")
+    eu, _ = _vendedor(db, p)
+    membro = PartnerTeamMember(partner_id=p.id, name="Ana", email="ana@dmap.com")
+    db.add(membro); db.commit(); db.refresh(membro)
+    corpo = {"modo": "senha", "password": "Senha@123"}
+    caminho = f"{URL}/parceiros/{p.id}/equipe/{membro.id}/acesso"
+
+    assert client.post(caminho, headers=headers(eu), json=corpo).status_code == 404
+    assert client.post(caminho, headers=headers(responsavel), json=corpo).status_code == 403
+    dono_de_outro = usuario(db, "partner", "dono@outro.com", outro)
+    assert client.post(caminho, headers=headers(dono_de_outro), json=corpo).status_code == 404
+    # Membro de outro parceiro pela URL do parceiro certo: 404.
+    dono = usuario(db, "partner", "dono@dmap.com", p)
+    alheio = PartnerTeamMember(partner_id=outro.id, name="Zé", email="ze@outro.com")
+    db.add(alheio); db.commit(); db.refresh(alheio)
+    assert client.post(f"{URL}/parceiros/{p.id}/equipe/{alheio.id}/acesso", headers=headers(dono),
+                       json=corpo).status_code == 404
+    db.refresh(membro)
+    assert membro.user_id is None
+
+
+def test_desativar_o_membro_desativa_o_login(client, db):
+    p = parceiro(db)
+    h = headers(usuario(db, "partner", "dono@dmap.com", p))
+    eu, meu = _vendedor(db, p)
+    client.put(f"{URL}/parceiros/{p.id}/equipe/{meu.id}", headers=h, json={"is_active": False})
+    db.refresh(eu)
+    assert eu.is_active is False
+    assert client.get(f"{URL}/oportunidades", headers=headers(eu)).status_code == 403
+
+    r = client.put(f"{URL}/parceiros/{p.id}/equipe/{meu.id}", headers=h, json={"is_active": True})
+    assert r.json()["status_acesso"] == "ativo"
+    db.refresh(eu)
+    assert eu.is_active is True
+    assert client.get(f"{URL}/oportunidades", headers=headers(eu)).status_code == 200

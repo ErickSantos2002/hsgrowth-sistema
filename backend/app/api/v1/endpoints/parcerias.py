@@ -17,6 +17,7 @@ from app.models.user import User
 from app.schemas.parcerias import (
     AcessoCreate,
     AcessoCriadoResponse,
+    AcessoMembroCreate,
     AcessoResponse,
     AcessoUpdate,
     AtividadeCreate,
@@ -98,19 +99,35 @@ def mover_parceiro(partner_id: int, req: MoverRequest, db: Session = Depends(get
 @router.get("/parceiros/{partner_id}/equipe", response_model=List[MembroResponse])
 def listar_equipe(partner_id: int, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_active_user)):
-    return parceiros.listar_equipe(db, current_user, partner_id)
+    return [respostas.membro_out(db, m) for m in parceiros.listar_equipe(db, current_user, partner_id)]
 
 
 @router.post("/parceiros/{partner_id}/equipe", response_model=MembroResponse, status_code=201)
 def criar_membro(partner_id: int, dados: MembroCreate, db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_active_user)):
-    return parceiros.criar_membro(db, current_user, partner_id, dados)
+    return respostas.membro_out(db, parceiros.criar_membro(db, current_user, partner_id, dados))
 
 
 @router.put("/parceiros/{partner_id}/equipe/{membro_id}", response_model=MembroResponse)
 def atualizar_membro(partner_id: int, membro_id: int, dados: MembroUpdate, db: Session = Depends(get_db),
                      current_user: User = Depends(get_current_active_user)):
-    return parceiros.atualizar_membro(db, current_user, partner_id, membro_id, dados)
+    return respostas.membro_out(db, parceiros.atualizar_membro(db, current_user, partner_id, membro_id, dados))
+
+
+@router.post("/parceiros/{partner_id}/equipe/{membro_id}/acesso", response_model=ConviteResponse, status_code=201)
+def dar_acesso_ao_membro(partner_id: int, membro_id: int, dados: AcessoMembroCreate,
+                         db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    r = parceiros.dar_acesso_ao_membro(db, current_user, partner_id, membro_id, dados)
+    return ConviteResponse(status_acesso=tokens_de_acesso.status_do_acesso(db, r.user),
+                           link=r.link, email_enviado=r.email_enviado)
+
+
+@router.post("/parceiros/{partner_id}/equipe/{membro_id}/acesso/convite", response_model=ConviteResponse)
+def convidar_membro(partner_id: int, membro_id: int, dados: ConviteRequest,
+                    db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    r = parceiros.convidar_membro(db, current_user, partner_id, membro_id, dados.enviar)
+    return ConviteResponse(status_acesso=tokens_de_acesso.status_do_acesso(db, r.user),
+                           link=r.link, email_enviado=r.email_enviado)
 
 
 @router.get("/parceiros/{partner_id}/acessos", response_model=List[AcessoResponse])

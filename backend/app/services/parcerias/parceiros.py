@@ -11,6 +11,7 @@ from app.models.role import Role
 from app.models.user import User
 from app.schemas.parcerias import (
     AcessoCreate,
+    AcessoMembroCreate,
     MembroCreate,
     MembroUpdate,
     MoverRequest,
@@ -125,16 +126,66 @@ def atualizar_membro(db: Session, user: User, partner_id: int, membro_id: int,
                      dados: MembroUpdate) -> PartnerTeamMember:
     acesso.exigir_escrita(user)
     p = acesso.buscar_parceiro(db, user, partner_id)
-    membro = db.query(PartnerTeamMember).filter(
-        PartnerTeamMember.id == membro_id, PartnerTeamMember.partner_id == p.id
-    ).first()
-    if not membro:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Vendedor não encontrado.")
-    for campo, valor in dados.model_dump(exclude_unset=True).items():
+    membro = _membro(db, p, membro_id)
+    mudancas = dados.model_dump(exclude_unset=True)
+    for campo, valor in mudancas.items():
         setattr(membro, campo, valor)
+    # Desativar o vendedor na Equipe desativa o login dele; reativar reativa.
+    if "is_active" in mudancas and membro.user_id:
+        login = db.query(User).filter(User.id == membro.user_id).first()
+        if login:
+            login.is_active = membro.is_active
     db.commit()
     db.refresh(membro)
     return membro
+
+
+def _membro(db: Session, p: Partner, membro_id: int) -> PartnerTeamMember:
+    membro = db.query(PartnerTeamMember).filter(
+        PartnerTeamMember.id == membro_id, PartnerTeamMember.partner_id == p.id).first()
+    if not membro:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Vendedor não encontrado.")
+    return membro
+
+
+def _exigir_dono_ou_gestao(user: User) -> None:
+    if not (acesso.eh_gestao(user) or acesso.eh_dono_do_parceiro(user)):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Só o dono do parceiro, admin ou gerente dão acesso à equipe.")
+
+
+def dar_acesso_ao_membro(db: Session, user: User, partner_id: int, membro_id: int,
+                         dados: AcessoMembroCreate) -> criacao_de_login.Resultado:
+    """Login partner_member para o vendedor da Equipe (dono do parceiro ou gestão)."""
+    acesso.exigir_escrita(user)
+    p = acesso.buscar_parceiro(db, user, partner_id)  # vendedor do parceiro recebe 404
+    _exigir_dono_ou_gestao(user)
+    membro = _membro(db, p, membro_id)
+    if membro.user_id:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Este vendedor já tem acesso.")
+    if not membro.email:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Cadastre o e-mail do vendedor antes.")
+    if not membro.is_active:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Reative o vendedor antes de dar acesso.")
+    nome, email = membro.name, membro.email
+    r = criacao_de_login.criar_login(db, user, nome=nome, email=email, papel="partner_member",
+                                     modo=dados.modo, senha=dados.password, partner_id=p.id)
+    # criar_login já gravou o login: liga ao membro antes de qualquer outro passo.
+    membro.user_id = r.user.id
+    atividades.registrar_evento(db, user, f"Acesso criado para o vendedor {nome}", partner_id=p.id)
+    db.commit()
+    return r
+
+
+def convidar_membro(db: Session, user: User, partner_id: int, membro_id: int,
+                    enviar: bool) -> criacao_de_login.Resultado:
+    acesso.exigir_escrita(user)
+    p = acesso.buscar_parceiro(db, user, partner_id)
+    _exigir_dono_ou_gestao(user)
+    membro = _membro(db, p, membro_id)
+    login = db.query(User).filter(User.id == membro.user_id).first() if membro.user_id else None
+    if not login:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Este vendedor ainda não tem acesso.")
+    return criacao_de_login.enviar_convite(db, user, login, enviar)
 
 
 # ─── Acessos (logins do parceiro) ────────────────────────────────────────────
