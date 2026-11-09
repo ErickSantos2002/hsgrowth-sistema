@@ -14,6 +14,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Senha inicial com troca obrigatória:** o login também pode ser criado com uma senha inicial; no primeiro acesso a pessoa é obrigada a trocá-la.
 - **Esqueci minha senha:** novo link na tela de login para pedir a redefinição por e-mail.
 - **Definir senha:** nova tela aberta pelo link do e-mail, usada no convite e na redefinição.
+- **Validade do convite:** Usuários, Acessos ao CRM e Equipe do parceiro mostram "Convite pendente — expira em dd/mm".
+- **API:** novo `PUT /users/me` para o próprio usuário salvar o perfil (nome, telefone, foto e assinatura).
 
 ### Corrigido
 - **Configurações — trocar senha:** a troca de senha funciona para todos os perfis.
@@ -21,9 +23,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Login:** o e-mail não diferencia mais maiúsculas de minúsculas.
 - **Esqueci minha senha:** agora realmente envia o e-mail.
 - **Login Microsoft:** os erros passam a aparecer na tela.
+- **Nomes curtos:** login com nome de 1 ou 2 letras (ex.: "Zé") não quebra mais a tela.
 
 ### Segurança
 - Trocar ou redefinir a senha derruba as sessões antigas.
+- A redefinição de senha pelo admin passa a obrigar a troca no próximo acesso e encerra as sessões da pessoa.
+- Senha mínima passa de 6 para 8 caracteres na troca de senha e na redefinição.
+- Enquanto a troca obrigatória estiver pendente, só respondem login, sessão, perfil e a própria troca.
+- Login de parceiro (dono ou vendedor) não aceita e-mail da Health & Safety (@healthsafetytech.com).
 - "Esqueci minha senha" tem limite de 3 pedidos por hora e responde igual exista ou não o e-mail cadastrado.
 
 ### Banco

@@ -52,6 +52,18 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "improvement",
         text: "Segurança: trocar ou redefinir a senha encerra as sessões antigas.",
       },
+      {
+        type: "improvement",
+        text: "Segurança: a redefinição de senha pelo admin obriga a troca no próximo acesso, a senha mínima passa a 8 caracteres e login de parceiro não aceita e-mail da Health & Safety.",
+      },
+      {
+        type: "improvement",
+        text: "Acessos: o convite pendente mostra a data em que expira.",
+      },
+      {
+        type: "fix",
+        text: "Login com nome de 1 ou 2 letras não quebra mais a tela.",
+      },
     ],
   },
   {
