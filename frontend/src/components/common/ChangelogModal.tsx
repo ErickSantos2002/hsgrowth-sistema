@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.16",
+    date: "09/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Parcerias: na Consulta de CNPJ, a consulta e o histórico ficam juntos, com 10 consultas por página e a paginação sempre à mostra.",
+      },
+    ],
+  },
+  {
     version: "1.11.15",
     date: "05/11/2026",
     entries: [

@@ -32,7 +32,7 @@ no backend, em `get_current_active_user`.
 - Armadilha: a rota `/api/v1/products` usa outro `get_db` que os testes não trocam —
   não teste por ela (não é usada aqui).
 - Versão em 3 lugares: `CHANGELOG.md`, `frontend/src/components/common/ChangelogModal.tsx`
-  e o rodapé em `frontend/src/layouts/MainLayout.tsx` ("HSGrowth CRM v1.11.15" → v1.11.16).
+  e o rodapé em `frontend/src/layouts/MainLayout.tsx` ("HSGrowth CRM v1.11.16" → v1.11.17).
 - Parcerias vai **só para o homo** (https://homo-hsgrowth.healthsafetytech.com).
 - O plano da Cadência de Serviço (`docs/superpowers/plans/` + memória) tem uma migration
   futura: quando for feita, o `down_revision` dela passa a ser `7b8c9d0e1f2a`.
@@ -1728,10 +1728,10 @@ export const PERFIS_DO_PARCEIRO = ["partner", "partner_member"];
 
 ## Task 15: Versão, verificação final e homo
 
-- [ ] **Step 1:** versão **1.11.16** nos 3 lugares (CHANGELOG com "### Banco: migration
+- [ ] **Step 1:** versão **1.11.17** nos 3 lugares (CHANGELOG com "### Banco: migration
   `7b8c9d0e1f2a`" e a variável `EMAIL_PROVIDER`).
 - [ ] **Step 2:** suíte inteira do backend passando; `npx tsc --noEmit -p . && npm run build`.
-- [ ] **Step 3: Commit** — `chore: versão 1.11.16 (Entrega 3 — acessos e login)`
+- [ ] **Step 3: Commit** — `chore: versão 1.11.17 (Entrega 3 — acessos e login)`
 - [ ] **Step 4: Homo** (quem faz o deploy):
   1. variáveis: `EMAIL_PROVIDER` (+ as do provedor escolhido) e conferir `FRONTEND_URL` =
      `https://homo-hsgrowth.healthsafetytech.com` (vai dentro dos links);

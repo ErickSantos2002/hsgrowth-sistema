@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.16] — 09/11/2026
+
+### Alterado
+- **Parcerias — Consulta de CNPJ:** a consulta e o histórico ficam juntos no mesmo quadro. O histórico mostra 10 consultas por página, e a paginação aparece sempre, mesmo com uma página só.
+
+---
+
 ## [1.11.15] — 05/11/2026
 
 ### Adicionado

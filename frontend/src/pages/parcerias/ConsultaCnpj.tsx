@@ -13,7 +13,7 @@ import parceriasService, {
 import userService from "../../services/userService";
 import { showError } from "../../utils/toast";
 
-const POR_PAGINA = 50;
+const POR_PAGINA = 10;
 
 /** "Livre" sozinho; nas outras cores, a cor e o motivo ("Bloqueado · Em negociação"). */
 const rotuloDoResultado = (resultado: string, motivo: string) =>
@@ -147,90 +147,94 @@ export default function ConsultaCnpj() {
           />
         </div>
 
-        <div className="max-w-2xl space-y-4 rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50">
-          <div className="flex items-end gap-2">
-            <FormField label="CNPJ" error={invalido ? "CNPJ inválido" : undefined} className="flex-1">
-              <Input
-                value={cnpj}
-                placeholder="00.000.000/0000-00"
-                maxLength={18}
-                inputMode="numeric"
-                onChange={(e) => setCnpj(mascarar("cnpj", e.target.value))}
-                onKeyDown={(e) => e.key === "Enter" && pronto && consultar()}
-              />
-            </FormField>
-            <Button onClick={consultar} loading={consultando} disabled={!pronto}>
-              <Search size={16} className="mr-1" /> Consultar
-            </Button>
-          </div>
-          {resultado && <ResultadoSemaforo consulta={resultado} />}
-        </div>
-
-        {gestao && (
-          <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50">
-            <div className="space-y-3 p-5">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Histórico de consultas</h2>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <SelectMenu
-                  value={filtro.user_id ? String(filtro.user_id) : ""}
-                  options={[{ value: "", label: "Todas as pessoas" }, ...pessoas]}
-                  onChange={(v) => mudarFiltro({ user_id: v ? Number(v) : undefined })}
+        {/* Consulta e histórico no mesmo card */}
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50">
+          <div className="max-w-2xl space-y-4 p-5">
+            <div className="flex items-end gap-2">
+              <FormField label="CNPJ" error={invalido ? "CNPJ inválido" : undefined} className="flex-1">
+                <Input
+                  value={cnpj}
+                  placeholder="00.000.000/0000-00"
+                  maxLength={18}
+                  inputMode="numeric"
+                  onChange={(e) => setCnpj(mascarar("cnpj", e.target.value))}
+                  onKeyDown={(e) => e.key === "Enter" && pronto && consultar()}
                 />
-                <SelectMenu
-                  value={filtro.partner_id ? String(filtro.partner_id) : ""}
-                  options={[{ value: "", label: "Todos os parceiros" }, ...parceiros.map((p) => ({ value: String(p.id), label: p.name }))]}
-                  onChange={(v) => mudarFiltro({ partner_id: v ? Number(v) : undefined })}
-                />
-                <Input type="date" value={filtro.desde ?? ""} title="Desde" onChange={(e) => mudarFiltro({ desde: e.target.value || undefined })} />
-                <Input type="date" value={filtro.ate ?? ""} title="Até" onChange={(e) => mudarFiltro({ ate: e.target.value || undefined })} />
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-gray-200 text-xs uppercase text-slate-500 dark:border-slate-700/50 dark:text-slate-400">
-                    <tr>
-                      <th className="py-2 pr-3">Quando</th>
-                      <th className="py-2 pr-3">Pessoa</th>
-                      <th className="py-2 pr-3">Parceiro</th>
-                      <th className="py-2 pr-3">CNPJ</th>
-                      <th className="py-2">Resultado</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
-                    {historico.itens.map((c) => (
-                      <tr key={c.id} className="text-slate-700 dark:text-slate-200">
-                        <td className="whitespace-nowrap py-2 pr-3">{new Date(`${c.created_at}Z`).toLocaleString("pt-BR")}</td>
-                        <td className="py-2 pr-3">{c.user_name ?? "—"}</td>
-                        <td className="py-2 pr-3">{c.partner_name ?? "H&S"}</td>
-                        <td className="whitespace-nowrap py-2 pr-3">{mascarar("cnpj", c.cnpj)}</td>
-                        <td className="py-2">
-                          <span className={`rounded border px-2 py-0.5 text-xs font-medium ${SEMAFORO_COR[c.resultado]}`}>
-                            {rotuloDoResultado(c.resultado, c.motivo)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {historico.itens.length === 0 && (
-                      <tr><td colSpan={5} className="py-6 text-center text-slate-400">Nenhuma consulta no período</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              </FormField>
+              <Button onClick={consultar} loading={consultando} disabled={!pronto}>
+                <Search size={16} className="mr-1" /> Consultar
+              </Button>
             </div>
-            <Pagination
-              currentPage={pagina}
-              totalPages={paginas}
-              totalItems={historico.total}
-              startIndex={(pagina - 1) * POR_PAGINA}
-              endIndex={Math.min(pagina * POR_PAGINA, historico.total)}
-              hasNextPage={pagina < paginas}
-              hasPrevPage={pagina > 1}
-              goToPage={irPara}
-              goToNextPage={() => irPara(pagina + 1)}
-              goToPrevPage={() => irPara(pagina - 1)}
-              itemLabel="consultas"
-            />
+            {resultado && <ResultadoSemaforo consulta={resultado} />}
           </div>
-        )}
+
+          {gestao && (
+            <div className="border-t border-gray-200 dark:border-slate-700/50">
+              <div className="space-y-3 p-5">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Histórico de consultas</h2>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <SelectMenu
+                    value={filtro.user_id ? String(filtro.user_id) : ""}
+                    options={[{ value: "", label: "Todas as pessoas" }, ...pessoas]}
+                    onChange={(v) => mudarFiltro({ user_id: v ? Number(v) : undefined })}
+                  />
+                  <SelectMenu
+                    value={filtro.partner_id ? String(filtro.partner_id) : ""}
+                    options={[{ value: "", label: "Todos os parceiros" }, ...parceiros.map((p) => ({ value: String(p.id), label: p.name }))]}
+                    onChange={(v) => mudarFiltro({ partner_id: v ? Number(v) : undefined })}
+                  />
+                  <Input type="date" value={filtro.desde ?? ""} title="Desde" onChange={(e) => mudarFiltro({ desde: e.target.value || undefined })} />
+                  <Input type="date" value={filtro.ate ?? ""} title="Até" onChange={(e) => mudarFiltro({ ate: e.target.value || undefined })} />
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="border-b border-gray-200 text-xs uppercase text-slate-500 dark:border-slate-700/50 dark:text-slate-400">
+                      <tr>
+                        <th className="py-2 pr-3">Quando</th>
+                        <th className="py-2 pr-3">Pessoa</th>
+                        <th className="py-2 pr-3">Parceiro</th>
+                        <th className="py-2 pr-3">CNPJ</th>
+                        <th className="py-2">Resultado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
+                      {historico.itens.map((c) => (
+                        <tr key={c.id} className="text-slate-700 dark:text-slate-200">
+                          <td className="whitespace-nowrap py-2 pr-3">{new Date(`${c.created_at}Z`).toLocaleString("pt-BR")}</td>
+                          <td className="py-2 pr-3">{c.user_name ?? "—"}</td>
+                          <td className="py-2 pr-3">{c.partner_name ?? "H&S"}</td>
+                          <td className="whitespace-nowrap py-2 pr-3">{mascarar("cnpj", c.cnpj)}</td>
+                          <td className="py-2">
+                            <span className={`rounded border px-2 py-0.5 text-xs font-medium ${SEMAFORO_COR[c.resultado]}`}>
+                              {rotuloDoResultado(c.resultado, c.motivo)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {historico.itens.length === 0 && (
+                        <tr><td colSpan={5} className="py-6 text-center text-slate-400">Nenhuma consulta no período</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <Pagination
+                currentPage={pagina}
+                totalPages={paginas}
+                totalItems={historico.total}
+                startIndex={(pagina - 1) * POR_PAGINA}
+                endIndex={Math.min(pagina * POR_PAGINA, historico.total)}
+                hasNextPage={pagina < paginas}
+                hasPrevPage={pagina > 1}
+                goToPage={irPara}
+                goToNextPage={() => irPara(pagina + 1)}
+                goToPrevPage={() => irPara(pagina - 1)}
+                itemLabel="consultas"
+                alwaysShow
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

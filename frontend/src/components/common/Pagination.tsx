@@ -12,6 +12,7 @@ interface PaginationProps {
   goToNextPage: () => void;
   goToPrevPage: () => void;
   itemLabel?: string; // Ex: "usuários", "produtos", "registros"
+  alwaysShow?: boolean; // Mostra mesmo com 1 página só (por padrão some)
   // pageNumbers é aceito mas ignorado — calculamos internamente a janela deslizante
   pageNumbers?: number[];
 }
@@ -60,20 +61,23 @@ export const Pagination: React.FC<PaginationProps> = ({
   goToNextPage,
   goToPrevPage,
   itemLabel = "registros",
+  alwaysShow = false,
 }) => {
-  // Não renderiza se tiver apenas 1 página
-  if (totalPages <= 1) {
+  // Não renderiza se tiver apenas 1 página (a não ser que peçam para mostrar sempre)
+  if (totalPages <= 1 && !alwaysShow) {
     return null;
   }
 
-  const visiblePages = getVisiblePages(currentPage, totalPages);
+  const visiblePages = getVisiblePages(currentPage, Math.max(totalPages, 1));
+  // Sem nenhum item, mostra "0 a 0" em vez de "1 a 0"
+  const firstShown = totalItems === 0 ? 0 : startIndex + 1;
 
   return (
     <div className="mt-6 border-t border-gray-200 px-6 pb-4 pt-4 dark:border-slate-700">
       {/* Desktop */}
       <div className="hidden items-center justify-between text-sm text-slate-500 dark:text-slate-400 md:flex">
         <div>
-          Mostrando {startIndex + 1} a {endIndex} de {totalItems} {itemLabel}
+          Mostrando {firstShown} a {endIndex} de {totalItems} {itemLabel}
         </div>
         <div className="flex gap-2">
           <button
@@ -114,7 +118,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       {/* Mobile */}
       <div className="flex flex-col items-center gap-2 text-sm text-slate-500 dark:text-slate-400 md:hidden">
         <div>
-          Mostrando {startIndex + 1} a {endIndex} de {totalItems} {itemLabel}
+          Mostrando {firstShown} a {endIndex} de {totalItems} {itemLabel}
         </div>
         <div className="flex items-center justify-center gap-2">
           <button

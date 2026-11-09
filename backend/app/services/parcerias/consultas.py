@@ -23,7 +23,7 @@ from app.services.parcerias import acesso, semaforo
 
 LIMITE_CONSULTAS_PARCEIRO = 20
 FUSO = ZoneInfo("America/Sao_Paulo")
-POR_PAGINA = 50
+POR_PAGINA = 10
 
 
 def _inicio_do_dia_utc(agora: Optional[datetime] = None) -> datetime:

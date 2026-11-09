@@ -1,6 +1,6 @@
 # Parcerias — Entrega 3: acessos e login (parceiro, equipe do parceiro e Financeiro)
 
-**Data:** 05/11/2026 · **Versão sugerida:** 1.11.16 · **Migration:** sim · **Ambiente:** só homo
+**Data:** 05/11/2026 · **Versão sugerida:** 1.11.17 · **Migration:** sim · **Ambiente:** só homo
 **Plano de implementação:** `docs/superpowers/plans/2026-11-05-parcerias-entrega-3-acessos-login.md`
 **Quem implementa:** Erick · **Desenho aprovado por:** Welton (05/11/2026)
 
