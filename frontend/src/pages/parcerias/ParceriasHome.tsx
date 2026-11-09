@@ -4,7 +4,7 @@ import { Eye, Grid3x3, Handshake, RefreshCw, Search } from "lucide-react";
 import EmptyState from "../../components/common/EmptyState";
 import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
-import { BOARDS_PARCERIAS, BoardParceria } from "../../constants/parcerias";
+import { BOARDS_PARCERIAS, BoardParceria, PERFIS_DO_PARCEIRO } from "../../constants/parcerias";
 import parceriasService, { mensagemDeErro } from "../../services/parceriasService";
 
 interface Contagem {
@@ -66,7 +66,7 @@ export default function ParceriasHome() {
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [contagens, setContagens] = useState<Record<string, Contagem>>({});
-  const ehParceiro = user?.role === "partner";
+  const ehParceiro = PERFIS_DO_PARCEIRO.includes(user?.role ?? "");
 
   const carregar = useCallback(async () => {
     setCarregando(true);

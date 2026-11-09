@@ -370,6 +370,8 @@ export default function MainLayout() {
                                             ? "Visualizador"
                                             : user?.role === "partner"
                                             ? "Parceiro"
+                                            : user?.role === "partner_member"
+                                            ? "Vendedor do parceiro"
                                             : user?.role === "finance"
                                             ? "Financeiro"
                                             : "Usuário"}

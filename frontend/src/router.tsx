@@ -100,6 +100,15 @@ const ParceriasGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <>{children}</>;
 };
 
+/** Rotas de Aquisição: o vendedor do parceiro não vê (o backend devolve 404) e volta às oportunidades. */
+const AquisicaoGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    if (user?.role === 'partner_member') {
+        return <Navigate to="/parcerias/oportunidades" replace />;
+    }
+    return <>{children}</>;
+};
+
 const ConsultaCnpjGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     if (user && !PERFIS_CONSULTA_CNPJ.includes(user.role)) {
@@ -192,8 +201,8 @@ const AppRoutes: React.FC = () => (
       <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceTeamGuard><ServiceCardDetails /></ServiceTeamGuard>} />
       <Route path="/parcerias" element={<ParceriasGuard><ParceriasHome /></ParceriasGuard>} />
       <Route path="/parcerias/consulta-cnpj" element={<ConsultaCnpjGuard><ConsultaCnpj /></ConsultaCnpjGuard>} />
-      <Route path="/parcerias/aquisicao" element={<ParceriasGuard><AquisicaoKanban /></ParceriasGuard>} />
-      <Route path="/parcerias/aquisicao/:partnerId" element={<ParceriasGuard><ParceiroDetalhe /></ParceriasGuard>} />
+      <Route path="/parcerias/aquisicao" element={<ParceriasGuard><AquisicaoGuard><AquisicaoKanban /></AquisicaoGuard></ParceriasGuard>} />
+      <Route path="/parcerias/aquisicao/:partnerId" element={<ParceriasGuard><AquisicaoGuard><ParceiroDetalhe /></AquisicaoGuard></ParceriasGuard>} />
       <Route path="/parcerias/oportunidades" element={<ParceriasGuard><OportunidadesKanban /></ParceriasGuard>} />
       <Route path="/parcerias/oportunidades/:opportunityId" element={<ParceriasGuard><OportunidadeDetalhe /></ParceriasGuard>} />
       <Route path="/cards/:cardId" element={<ServiceGuard><CardDetails /></ServiceGuard>} />
