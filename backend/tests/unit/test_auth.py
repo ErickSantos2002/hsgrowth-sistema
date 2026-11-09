@@ -263,15 +263,10 @@ class TestResetPassword:
 
     def test_reset_password_success(self, client: TestClient, db: Session, test_salesperson_user):
         """Testa reset de senha com token válido"""
-        # Primeiro solicita recuperação
-        client.post(
-            "/api/v1/auth/forgot-password",
-            json={"email": "sales@test.com"}
-        )
-
-        # Busca o token gerado no banco
-        db.refresh(test_salesperson_user)
-        reset_token = test_salesperson_user.reset_token
+        # Token de redefinição (o e-mail com o link é enviado pelo forgot-password)
+        from app.services import tokens_de_acesso as tokens
+        reset_token = tokens.criar(db, test_salesperson_user, "redefinir")
+        db.commit()
 
         # Agora reseta a senha
         response = client.post(
@@ -309,19 +304,12 @@ class TestResetPassword:
     def test_reset_password_expired_token(self, client: TestClient, db: Session, test_salesperson_user):
         """Testa reset de senha com token expirado"""
         from datetime import datetime, timedelta
+        from app.models.user_access_token import UserAccessToken
+        from app.services import tokens_de_acesso as tokens
 
-        # Solicita recuperação
-        client.post(
-            "/api/v1/auth/forgot-password",
-            json={"email": "sales@test.com"}
-        )
-
-        # Busca o token e expira manualmente
-        db.refresh(test_salesperson_user)
-        test_salesperson_user.reset_token_expires_at = datetime.utcnow() - timedelta(hours=2)
+        reset_token = tokens.criar(db, test_salesperson_user, "redefinir")
+        db.query(UserAccessToken).update({"expires_at": datetime.utcnow() - timedelta(hours=2)})
         db.commit()
-
-        reset_token = test_salesperson_user.reset_token
 
         # Tenta resetar com token expirado
         response = client.post(

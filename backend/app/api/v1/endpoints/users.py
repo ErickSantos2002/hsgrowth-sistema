@@ -166,6 +166,8 @@ async def get_current_user_data(
         updated_at=current_user.updated_at,
         role=current_user.role.name if current_user.role else None,
         role_name=current_user.role.display_name if current_user.role else None,
+        must_change_password=bool(current_user.must_change_password),
+        partner_id=getattr(current_user, "partner_id", None),
     )
 
 

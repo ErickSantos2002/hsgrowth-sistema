@@ -22,6 +22,8 @@ security = HTTPBearer(auto_error=False)
 # Perfis presos ao Programa de Parceiros. Para eles o CRM é negado por padrão:
 # só os caminhos abaixo respondem. Rota nova fica trancada sozinha.
 PERFIS_TRANCADOS = ("partner", "finance")
+CAMINHOS_COM_SENHA_PENDENTE = ("/api/v1/users/me", "/api/v1/users/me/change-password")
+
 CAMINHOS_DOS_TRANCADOS = (
     "/api/v1/auth/",
     "/api/v1/users/me",
@@ -201,6 +203,15 @@ async def get_current_active_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuário inativo"
         )
+
+    # Senha definida por outra pessoa: até trocar, só login/logout, /users/me e a troca.
+    if getattr(current_user, "must_change_password", False):
+        caminho = request.url.path
+        if not (caminho.startswith("/api/v1/auth/") or caminho in CAMINHOS_COM_SENHA_PENDENTE):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Troque a sua senha para continuar.",
+            )
 
     papel = current_user.role.name if current_user.role else None
     if papel in PERFIS_TRANCADOS and not caminho_liberado_para_trancado(request.url.path):

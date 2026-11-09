@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user, get_current_active_user, require_role
@@ -32,7 +33,11 @@ from app.schemas.auth import (
     ResetPasswordRequest,
     ClientCredentialsRequest,
 )
+from app.schemas.acessos import DefinirSenhaRequest, TokenInfoResponse
 from app.schemas.user import UserResponse
+from app.models.user_access_token import UserAccessToken
+from app.services import emails_de_acesso, envio_email
+from app.services import tokens_de_acesso as tokens
 
 router = APIRouter()
 
@@ -101,7 +106,7 @@ async def login(
     """
     # Busca o usuário por email
     user = db.query(User).filter(
-        User.email == login_data.email,
+        func.lower(User.email) == login_data.email.strip().lower(),
         User.is_deleted == False
     ).first()
 
@@ -189,6 +194,7 @@ async def login(
         "role_id": user.role_id,
         "is_active": user.is_active,
         "avatar_url": user.avatar_url,
+        "must_change_password": bool(user.must_change_password),
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 
@@ -522,6 +528,47 @@ async def register(
     )
 
 
+def _definir_senha(db: Session, token: str, nova_senha: str, request: Request) -> None:
+    """Troca a senha a partir de um link de acesso (convite ou redefinição), uso único."""
+    t = tokens.buscar_valido(db, token)
+    if t is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Link inválido ou expirado. Peça um novo.")
+    # Consumo atômico: só uma requisição concorrente consegue usar o link
+    consumido = db.query(UserAccessToken).filter(
+        UserAccessToken.id == t.id, UserAccessToken.used_at.is_(None)
+    ).update({"used_at": datetime.utcnow()}, synchronize_session=False)
+    if consumido == 0:
+        db.rollback()
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Link inválido ou expirado. Peça um novo.")
+    user = t.user
+    user.password_hash = hash_password(nova_senha)
+    user.password_changed_at = datetime.utcnow()
+    user.must_change_password = False
+    user.is_verified = True
+    tokens.invalidar_pendentes(db, user)
+    db.add(AuditLog(
+        user_id=user.id, action="PASSWORD_SET", entity_type="User", entity_id=user.id,
+        description=f"Senha definida pelo link ({t.kind}): {user.email}",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    ))
+    db.commit()
+
+
+@router.get("/token/{token}", response_model=TokenInfoResponse, summary="Conferir link de senha")
+async def conferir_token(token: str, db: Session = Depends(get_db)) -> Any:
+    t = tokens.buscar_valido(db, token)
+    if t is None:
+        return TokenInfoResponse(valido=False)
+    return TokenInfoResponse(valido=True, kind=t.kind, nome=t.user.name, email=t.user.email)
+
+
+@router.post("/definir-senha", summary="Criar ou redefinir a senha pelo link")
+async def definir_senha(request: Request, dados: DefinirSenhaRequest, db: Session = Depends(get_db)) -> Any:
+    _definir_senha(db, dados.token, dados.nova_senha, request)
+    return {"message": "Senha definida. Já pode entrar no CRM."}
+
+
 @router.post(
     "/forgot-password",
     summary="Solicitar reset de senha",
@@ -564,35 +611,19 @@ async def forgot_password(
     """
     Endpoint de solicitação de reset de senha.
     """
-    # Busca o usuário por email
     user = db.query(User).filter(
-        User.email == request_data.email,
+        func.lower(User.email) == request_data.email.strip().lower(),
         User.is_deleted == False
     ).first()
-
-    # Sempre retorna sucesso (segurança - não vaza se o email existe)
-    if not user:
-        return {
-            "message": "Se o email existir, você receberá instruções para reset de senha."
-        }
-
-    # Gera token de reset
-    reset_token = create_password_reset_token(user.email)
-
-    # Salva o token no banco de dados
-    user.reset_token = reset_token
-    user.reset_token_expires_at = datetime.utcnow() + timedelta(minutes=30)
+    # Sempre a mesma resposta (segurança - não vaza se o email existe)
+    resposta = {"message": "Se o email existir, você receberá instruções para reset de senha."}
+    if not user or not user.is_active:
+        return resposta
+    token = tokens.criar(db, user, "redefinir")
     db.commit()
-
-    # SEGURANÇA: o token NUNCA volta na resposta. Antes ele era devolvido aqui
-    # ("apenas para desenvolvimento") e qualquer pessoa conseguia redefinir a senha de
-    # qualquer conta só com o e-mail. O token só pode chegar ao dono por e-mail.
-    # TODO: enviar o e-mail com o link {FRONTEND_URL}/reset-password?token=...
-    # (EmailService.send_password_reset_email). Enquanto não houver envio, a senha
-    # é redefinida pelo admin na tela de Usuários.
-    return {
-        "message": "Se o email existir, você receberá instruções para reset de senha."
-    }
+    assunto, html, texto = emails_de_acesso.redefinir(user.name, tokens.link(token))
+    envio_email.enviar_email(user.email, assunto, html, texto)
+    return resposta
 
 
 @router.post(
@@ -652,71 +683,8 @@ async def reset_password(
     """
     Endpoint de reset de senha.
     """
-    # Verifica o token
-    email = verify_password_reset_token(reset_data.token)
-    if email is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token inválido ou expirado"
-        )
-
-    # Busca o usuário
-    user = db.query(User).filter(
-        User.email == email,
-        User.is_deleted == False
-    ).first()
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuário não encontrado"
-        )
-
-    # Verifica se o token no banco está expirado
-    if user.reset_token_expires_at and user.reset_token_expires_at < datetime.utcnow():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token expirado"
-        )
-
-    # Verifica se o token no banco corresponde ao fornecido
-    if user.reset_token != reset_data.token:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token inválido"
-        )
-
-    # Atualiza a senha e limpa o token de reset
-    user.password_hash = hash_password(reset_data.new_password)
-    user.reset_token = None
-    user.reset_token_expires_at = None
-    user.password_changed_at = datetime.utcnow()
-    db.commit()
-
-    # Registra no audit log
-    # X-Forwarded-For é preenchido pelo proxy reverso (Traefik/Nginx) com o IP real do cliente
-    client_ip = (
-        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        or request.headers.get("X-Real-IP", "")
-        or (request.client.host if request.client else "unknown")
-    )
-    user_agent = request.headers.get("user-agent", "unknown")
-
-    audit_log = AuditLog(
-        user_id=user.id,
-        action="PASSWORD_RESET",
-        entity_type="User",
-        entity_id=user.id,
-        description=f"Senha resetada via email: {user.name} ({user.email})",
-        ip_address=client_ip,
-        user_agent=user_agent
-    )
-    db.add(audit_log)
-    db.commit()
-
-    return {
-        "message": "Senha alterada com sucesso"
-    }
+    _definir_senha(db, reset_data.token, reset_data.new_password, request)
+    return {"message": "Senha alterada com sucesso"}
 
 
 @router.post("/client-credentials", response_model=TokenResponse)

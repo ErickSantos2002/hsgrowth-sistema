@@ -89,6 +89,8 @@ class UserResponse(UserBase):
     role: Optional[str] = Field(None, description="Role do usuário (admin/manager/salesperson)")
     role_name: Optional[str] = Field(None, description="Nome do role")
     email_signature: Optional[str] = Field(None, description="Assinatura HTML do e-mail")
+    must_change_password: bool = Field(False, description="Precisa trocar a senha no próximo acesso")
+    partner_id: Optional[int] = Field(None, description="ID do parceiro (perfis de parceiro)")
 
     model_config = {
         "from_attributes": True,  # Permite criar a partir de modelos SQLAlchemy
@@ -130,4 +132,4 @@ class ChangePasswordRequest(BaseModel):
     Schema para mudança de senha (usuário autenticado).
     """
     current_password: str = Field(..., description="Senha atual")
-    new_password: str = Field(..., min_length=6, description="Nova senha")
+    new_password: str = Field(..., min_length=8, description="Nova senha")
