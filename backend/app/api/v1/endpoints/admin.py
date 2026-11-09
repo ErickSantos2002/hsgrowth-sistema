@@ -33,6 +33,7 @@ from app.models.notification import Notification
 from app.models.audit_log import AuditLog
 from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
+from app.services import tokens_de_acesso
 from app.core.security import hash_password
 
 router = APIRouter()
@@ -286,6 +287,7 @@ async def admin_reset_user_password(
     user.password_hash = hash_password(temp_password)
     user.must_change_password = True
     user.password_changed_at = datetime.utcnow()
+    tokens_de_acesso.invalidar_pendentes(db, user)  # link antigo não pode sobrescrever a senha do admin
     db.commit()
 
     logger.info(f"Admin {current_user.id} resetou senha do usuário {user_id}")

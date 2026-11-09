@@ -17,8 +17,6 @@ from app.core.security import (
     decode_token,
     verify_token_type,
     hash_password,
-    create_password_reset_token,
-    verify_password_reset_token,
 )
 from app.core.config import settings
 from app.core.redis_sessions import session_manager
@@ -577,13 +575,13 @@ async def definir_senha(request: Request, dados: DefinirSenhaRequest, db: Sessio
 
     **Fluxo de recuperação:**
     1. Usuário fornece seu email
-    2. Sistema gera um token de reset (válido por 30 minutos)
+    2. Sistema gera um token de reset (válido por 1 hora)
     3. Email é enviado com link contendo o token
     4. Usuário acessa o link e usa o endpoint `/reset-password`
 
     **Segurança:**
     - Sempre retorna sucesso, mesmo se o email não existir (não vaza informações)
-    - Token expira em 30 minutos
+    - Token expira em 1 hora
     - Token é de uso único
 
     **Nota de Desenvolvimento:**
@@ -633,7 +631,7 @@ async def forgot_password(
     Completa o processo de recuperação de senha usando o token recebido por email.
 
     **Campos obrigatórios:**
-    - `token`: Token de reset recebido por email (válido por 30 minutos)
+    - `token`: Token de reset recebido por email (válido por 1 hora)
     - `new_password`: Nova senha (mínimo 6 caracteres)
 
     **Validações:**

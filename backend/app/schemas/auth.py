@@ -97,7 +97,7 @@ class ResetPasswordRequest(BaseModel):
     Request para resetar senha com token.
     """
     token: str = Field(..., description="Token de reset enviado por email")
-    new_password: str = Field(..., min_length=6, description="Nova senha")
+    new_password: str = Field(..., min_length=8, description="Nova senha")
 
 
 class ClientCredentialsRequest(BaseModel):
