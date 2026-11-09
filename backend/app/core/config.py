@@ -48,6 +48,13 @@ class Settings(BaseSettings):
     SMTP_FROM: str = ""
     SMTP_FROM_NAME: str = "HSGrowth CRM"
 
+    # Provedor do envio de e-mail do CRM (convite, redefinir senha): "smtp", "resend" ou
+    # vazio (não envia; só registra no log — a tela oferece "Copiar link").
+    # Resend: o domínio crm.healthsafetytech.com precisa estar verificado lá.
+    EMAIL_PROVIDER: str = ""
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM: str = "HSGrowth CRM <nao-responda@crm.healthsafetytech.com>"
+
     # Cache (cachetools)
     CACHE_TTL: int = 3600  # 1 hora
     CACHE_MAXSIZE: int = 1000
