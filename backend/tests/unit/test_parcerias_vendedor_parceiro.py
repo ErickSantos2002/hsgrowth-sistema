@@ -267,3 +267,70 @@ def test_desativar_o_membro_desativa_o_login(client, db):
     db.refresh(eu)
     assert eu.is_active is True
     assert client.get(f"{URL}/oportunidades", headers=headers(eu)).status_code == 200
+
+
+# ─── Revisão: escopo do convite e ativação do login ─────────────────────────
+
+def test_convite_do_membro_so_com_login_de_vendedor_do_parceiro(client, db):
+    p = parceiro(db)
+    outro = parceiro(db, "Outro")
+    h = headers(usuario(db, "partner", "dono@dmap.com", p))
+    # Membro apontando para um login que não é vendedor deste parceiro.
+    alheio = usuario(db, "partner_member", "alheio@outro.com", outro)
+    gerente = usuario(db, "manager", "ger@hs.com")
+    for login in (alheio, gerente):
+        m = PartnerTeamMember(partner_id=p.id, name="X", email=login.email, user_id=login.id)
+        db.add(m); db.commit(); db.refresh(m)
+        r = client.post(f"{URL}/parceiros/{p.id}/equipe/{m.id}/acesso/convite", headers=h, json={"enviar": False})
+        assert r.status_code == 404
+
+
+def test_convite_do_membro_inativo_e_recusado(client, db):
+    p = parceiro(db)
+    h = headers(usuario(db, "partner", "dono@dmap.com", p))
+    _, meu = _vendedor(db, p)
+    meu.is_active = False
+    db.commit()
+    r = client.post(f"{URL}/parceiros/{p.id}/equipe/{meu.id}/acesso/convite", headers=h, json={"enviar": False})
+    assert r.status_code == 422 and "Reative" in r.json()["detail"]
+
+
+def test_responsavel_hs_nao_liga_nem_desliga_o_login(client, db):
+    responsavel = usuario(db, "salesperson", "resp@hs.com")
+    p = parceiro(db, hs_owner_id=responsavel.id)
+    eu, meu = _vendedor(db, p)
+    h = headers(responsavel)
+    caminho = f"{URL}/parceiros/{p.id}/equipe/{meu.id}"
+    assert client.put(caminho, headers=h, json={"is_active": False}).status_code == 403
+    db.refresh(eu); db.refresh(meu)
+    assert eu.is_active is True and meu.is_active is True
+    # Outros campos continuam como hoje.
+    assert client.put(caminho, headers=h, json={"phone": "11999990000"}).status_code == 200
+    # Membro sem login: ativar/desativar continua liberado para ele.
+    solto = PartnerTeamMember(partner_id=p.id, name="Solto")
+    db.add(solto); db.commit(); db.refresh(solto)
+    assert client.put(f"{URL}/parceiros/{p.id}/equipe/{solto.id}", headers=h,
+                      json={"is_active": False}).status_code == 200
+
+
+def test_acessos_nao_mexe_no_login_do_vendedor(client, db, admin_headers):
+    p = parceiro(db)
+    eu, _ = _vendedor(db, p)
+    r = client.put(f"{URL}/parceiros/{p.id}/acessos/{eu.id}", headers=admin_headers, json={"is_active": False})
+    assert r.status_code == 404
+    db.refresh(eu)
+    assert eu.is_active is True
+
+
+def test_email_do_membro_com_login_nao_muda(client, db):
+    p = parceiro(db)
+    h = headers(usuario(db, "partner", "dono@dmap.com", p))
+    eu, meu = _vendedor(db, p)
+    caminho = f"{URL}/parceiros/{p.id}/equipe/{meu.id}"
+    r = client.put(caminho, headers=h, json={"email": "novo@dmap.com"})
+    assert r.status_code == 422 and "e-mail do login" in r.json()["detail"]
+    assert client.put(caminho, headers=h, json={"email": "V1@dmap.com"}).status_code == 200
+    r = client.put(caminho, headers=h, json={"name": "Vinicius"})
+    assert r.status_code == 200 and r.json()["name"] == "Vinicius"
+    db.refresh(eu)
+    assert (eu.email, eu.name) == ("v1@dmap.com", "v1")

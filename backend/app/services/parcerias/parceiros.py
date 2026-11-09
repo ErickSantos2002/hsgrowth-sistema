@@ -128,6 +128,13 @@ def atualizar_membro(db: Session, user: User, partner_id: int, membro_id: int,
     p = acesso.buscar_parceiro(db, user, partner_id)
     membro = _membro(db, p, membro_id)
     mudancas = dados.model_dump(exclude_unset=True)
+    if membro.user_id and "is_active" in mudancas:
+        # Ligar e desligar o login do vendedor é como dar acesso: só o dono ou a gestão.
+        _exigir_dono_ou_gestao(user)
+    if membro.user_id and "email" in mudancas \
+            and (mudancas["email"] or "").strip().lower() != (membro.email or "").strip().lower():
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            "Este vendedor já tem acesso ao CRM; o e-mail do login não muda por aqui.")
     for campo, valor in mudancas.items():
         setattr(membro, campo, valor)
     # Desativar o vendedor na Equipe desativa o login dele; reativar reativa.
@@ -182,9 +189,18 @@ def convidar_membro(db: Session, user: User, partner_id: int, membro_id: int,
     p = acesso.buscar_parceiro(db, user, partner_id)
     _exigir_dono_ou_gestao(user)
     membro = _membro(db, p, membro_id)
-    login = db.query(User).filter(User.id == membro.user_id).first() if membro.user_id else None
-    if not login:
+    if not membro.user_id:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Este vendedor ainda não tem acesso.")
+    if not membro.is_active:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Reative o vendedor antes de convidar.")
+    login = (
+        db.query(User).join(Role, User.role_id == Role.id)
+        .filter(User.id == membro.user_id, User.partner_id == p.id, User.is_deleted.is_(False),
+                Role.name == "partner_member")
+        .first()
+    )
+    if not login:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Acesso não encontrado.")
     return criacao_de_login.enviar_convite(db, user, login, enviar)
 
 
@@ -230,7 +246,12 @@ def convidar_acesso(db: Session, user: User, partner_id: int, user_id: int,
 def alterar_acesso(db: Session, user: User, partner_id: int, user_id: int, ativo: bool) -> User:
     acesso.exigir_gestao(user)
     p = acesso.buscar_parceiro(db, user, partner_id)
-    login = db.query(User).filter(User.id == user_id, User.partner_id == p.id).first()
+    # Só os logins do dono; o do vendedor liga e desliga pela Equipe.
+    login = (
+        db.query(User).join(Role, User.role_id == Role.id)
+        .filter(User.id == user_id, User.partner_id == p.id, Role.name == "partner")
+        .first()
+    )
     if not login:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Acesso não encontrado.")
     login.is_active = ativo
