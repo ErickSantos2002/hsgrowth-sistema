@@ -14,6 +14,9 @@ from app.schemas.user_notification_setting import (
     UserNotificationSettingResponse,
     UserNotificationSettingUpdate,
 )
+from app.core.config import settings
+from app.core.redis_sessions import session_manager
+from app.core.security import create_access_token, create_refresh_token
 from app.models.role import Role
 from app.models.user import User
 from app.models.audit_log import AuditLog
@@ -800,7 +803,22 @@ async def change_password(
     db.add(audit_log)
     db.commit()
 
-    return {"message": "Senha alterada com sucesso"}
+    # Sessões antigas morrem com a troca; devolve tokens novos para a sessão de quem trocou.
+    access_token = create_access_token(data={"sub": str(current_user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(current_user.id)})
+    session_id = await session_manager.create_session(
+        user_id=current_user.id, token=access_token, ip=client_ip, user_agent=user_agent,
+    )
+    if session_id:
+        access_token = create_access_token(data={"sub": str(current_user.id), "session_id": session_id})
+
+    return {
+        "message": "Senha alterada com sucesso",
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "expires_in": settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    }
 
 
 @router.get(

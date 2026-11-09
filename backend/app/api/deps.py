@@ -2,6 +2,7 @@
 Dependencies do FastAPI.
 Funções reutilizáveis como dependencies em rotas.
 """
+import calendar
 from datetime import datetime, timezone
 from typing import Generator, Optional
 from fastapi import Depends, Header, HTTPException, Request, status
@@ -49,6 +50,15 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+def token_anterior_a_senha(payload: dict, user: User) -> bool:
+    """True se o token foi emitido antes da última troca/definição de senha (sessão antiga)."""
+    trocada_em = getattr(user, "password_changed_at", None)
+    iat = payload.get("iat")
+    if not trocada_em or iat is None:
+        return False
+    return int(iat) < calendar.timegm(trocada_em.utctimetuple())
 
 
 async def get_current_user(
@@ -173,6 +183,13 @@ async def get_current_user(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Usuário não encontrado",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        if token_anterior_a_senha(payload, user):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Sessão expirada. Entre novamente.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 

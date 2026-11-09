@@ -3,9 +3,21 @@ import pytest
 
 from app.services import envio_email
 from app.services import tokens_de_acesso as tokens
-from tests.unit.apoio_parcerias import headers, usuario
+from tests.unit.apoio_parcerias import headers, parceiro, usuario
 
 AUTH = "/api/v1/auth"
+
+
+@pytest.fixture(autouse=True)
+def sem_limite_de_redefinicao(request, monkeypatch):
+    """O limite usa o Redis real (chaves duram 1h): neutraliza, exceto no teste do próprio limite."""
+    if "limita_3_por_hora" in request.node.name:
+        return
+    from app.api.v1.endpoints import auth as auth_mod
+
+    async def liberar(email):
+        return True
+    monkeypatch.setattr(auth_mod, "permitir_redefinicao", liberar)
 
 
 @pytest.fixture
@@ -125,7 +137,7 @@ def test_esqueci_senha_inativo_ou_excluido_nao_envia(client, db, emails, estado)
 
 
 def test_troca_de_senha_invalida_links_pendentes_e_libera_rotas(client, db):
-    u = usuario(db, "partner", "p@dmap.com")
+    u = usuario(db, "partner", "p@dmap.com", partner=parceiro(db))
     u.must_change_password = True
     db.commit()
     h = headers(u)
@@ -136,7 +148,9 @@ def test_troca_de_senha_invalida_links_pendentes_e_libera_rotas(client, db):
                         json={"current_password": "Senha@12345", "new_password": "Nova@12345"})
     assert troca.status_code == 200
     assert client.get(f"{AUTH}/token/{t}").json()["valido"] is False
-    r = client.get("/api/v1/parcerias/parceiros", headers=h)
+    novo = {"Authorization": f"Bearer {troca.json()['access_token']}"}  # o token antigo morre com a troca
+    r = client.get("/api/v1/parcerias/parceiros", headers=novo)
+    assert r.status_code != 403
     assert "Troque a sua senha" not in r.text
 
 
@@ -146,3 +160,80 @@ def test_token_expirado_nao_e_valido(client, db):
     db.query(UserAccessToken).update({"expires_at": datetime.utcnow() - timedelta(minutes=1)})
     db.commit()
     assert client.get(f"{AUTH}/token/{t}").json()["valido"] is False
+
+
+# ---------- fix round 2: sessões antigas e limite do esqueci senha ----------
+import uuid
+
+from app.core.security import create_access_token, create_refresh_token
+
+
+def _bearer(user):
+    return {"Authorization": f"Bearer {create_access_token(data={'sub': str(user.id)})}"}
+
+
+def test_token_emitido_antes_da_troca_de_senha_cai(client, db):
+    u = usuario(db, "salesperson", "ana@hs.com")
+    antigo = _bearer(u)
+    assert client.get("/api/v1/users/me", headers=antigo).status_code == 200
+    u.password_changed_at = datetime.utcnow() + timedelta(seconds=5)
+    db.commit()
+    r = client.get("/api/v1/users/me", headers=antigo)
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Sessão expirada. Entre novamente."
+
+
+def test_refresh_emitido_antes_da_troca_de_senha_cai(client, db):
+    u = usuario(db, "salesperson", "ana@hs.com")
+    refresh = create_refresh_token(data={"sub": str(u.id)})
+    u.password_changed_at = datetime.utcnow() + timedelta(seconds=5)
+    db.commit()
+    r = client.post(f"{AUTH}/refresh", json={"refresh_token": refresh})
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Sessão expirada. Entre novamente."
+
+
+def test_refresh_posterior_a_senha_continua_valendo(client, db):
+    u = usuario(db, "salesperson", "ana@hs.com")
+    u.password_changed_at = datetime.utcnow() - timedelta(seconds=30)
+    db.commit()
+    refresh = create_refresh_token(data={"sub": str(u.id)})
+    assert client.post(f"{AUTH}/refresh", json={"refresh_token": refresh}).status_code == 200
+
+
+def test_change_password_devolve_tokens_novos_e_derruba_os_antigos(client, db):
+    u = usuario(db, "salesperson", "ana@hs.com")
+    antigo = _bearer(u)
+    r = client.post("/api/v1/users/me/change-password", headers=antigo,
+                    json={"current_password": "Senha@12345", "new_password": "Nova@12345"})
+    assert r.status_code == 200
+    corpo = r.json()
+    assert corpo["message"] == "Senha alterada com sucesso"
+    novo = {"Authorization": f"Bearer {corpo['access_token']}"}
+    assert client.get("/api/v1/users/me", headers=novo).status_code == 200
+    assert client.post(f"{AUTH}/refresh", json={"refresh_token": corpo["refresh_token"]}).status_code == 200
+    # token antigo (de antes da troca): derrubado quando a troca cai num segundo posterior
+    u.password_changed_at = datetime.utcnow() + timedelta(seconds=5)
+    db.commit()
+    assert client.get("/api/v1/users/me", headers=antigo).status_code == 401
+
+
+def test_esqueci_senha_limita_3_por_hora_por_email(client, db, emails):
+    email = f"{uuid.uuid4().hex[:10]}@hs.com"  # único: não depende de chaves antigas no Redis
+    usuario(db, "salesperson", email)
+    respostas = [client.post(f"{AUTH}/forgot-password", json={"email": email}).json() for _ in range(4)]
+    assert all(r == respostas[0] for r in respostas)
+    assert len(emails) == 3
+
+
+def test_esqueci_senha_acima_do_limite_nao_cria_token(client, db, emails, monkeypatch):
+    from app.api.v1.endpoints import auth as auth_mod
+
+    async def negar(email):
+        return False
+    monkeypatch.setattr(auth_mod, "permitir_redefinicao", negar)
+    usuario(db, "salesperson", "ana@hs.com")
+    r = client.post(f"{AUTH}/forgot-password", json={"email": "ana@hs.com"})
+    assert r.status_code == 200
+    assert emails == []
+    assert db.query(UserAccessToken).count() == 0

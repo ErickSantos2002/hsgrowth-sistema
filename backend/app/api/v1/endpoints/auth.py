@@ -4,12 +4,13 @@ Rotas para login, refresh token, logout, reset de senha, etc.
 """
 from datetime import datetime, timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_user, get_current_active_user, require_role
+from app.api.deps import get_db, get_current_user, get_current_active_user, require_role, token_anterior_a_senha
+from app.core.limite_redefinicao import permitir_redefinicao
 from app.core.security import (
     verify_password,
     create_access_token,
@@ -300,6 +301,13 @@ async def refresh_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário não encontrado ou inativo",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if token_anterior_a_senha(payload, user):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sessão expirada. Entre novamente.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -604,6 +612,7 @@ async def definir_senha(request: Request, dados: DefinirSenhaRequest, db: Sessio
 )
 async def forgot_password(
     request_data: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -617,10 +626,14 @@ async def forgot_password(
     resposta = {"message": "Se o email existir, você receberá instruções para reset de senha."}
     if not user or not user.is_active:
         return resposta
+    # No máximo 3 pedidos por e-mail por hora; acima disso, mesma resposta sem token nem e-mail
+    if not await permitir_redefinicao(user.email):
+        return resposta
     token = tokens.criar(db, user, "redefinir")
     db.commit()
     assunto, html, texto = emails_de_acesso.redefinir(user.name, tokens.link(token))
-    envio_email.enviar_email(user.email, assunto, html, texto)
+    # Envio em segundo plano: o tempo de resposta não revela quem tem cadastro
+    background_tasks.add_task(envio_email.enviar_email, user.email, assunto, html, texto)
     return resposta
 
 
@@ -632,11 +645,11 @@ async def forgot_password(
 
     **Campos obrigatórios:**
     - `token`: Token de reset recebido por email (válido por 1 hora)
-    - `new_password`: Nova senha (mínimo 6 caracteres)
+    - `new_password`: Nova senha (mínimo 8 caracteres)
 
     **Validações:**
     - Token deve ser válido e não expirado
-    - Nova senha deve ter no mínimo 6 caracteres
+    - Nova senha deve ter no mínimo 8 caracteres
     - Usuário deve existir e não estar deletado
 
     **Após sucesso:**
