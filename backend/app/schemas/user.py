@@ -2,7 +2,7 @@
 Schemas Pydantic para Usuários.
 Define os modelos de entrada/saída para operações com usuários.
 """
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 
@@ -91,6 +91,7 @@ class UserResponse(UserBase):
     email_signature: Optional[str] = Field(None, description="Assinatura HTML do e-mail")
     must_change_password: bool = Field(False, description="Precisa trocar a senha no próximo acesso")
     partner_id: Optional[int] = Field(None, description="ID do parceiro (perfis de parceiro)")
+    status_acesso: Optional[str] = Field(None, description="ativo | convite_pendente | convite_expirado | desativado")
 
     model_config = {
         "from_attributes": True,  # Permite criar a partir de modelos SQLAlchemy
@@ -114,6 +115,21 @@ class UserResponse(UserBase):
             ]
         }
     }
+
+
+class UserCreateComModo(BaseModel):
+    """Novo usuário pela tela de Usuários: convite por e-mail (padrão) ou senha inicial."""
+    email: EmailStr
+    name: str = Field(..., min_length=1, max_length=255)
+    username: Optional[str] = Field(None, min_length=3, max_length=50)
+    phone: Optional[str] = Field(None, max_length=20)
+    role_id: int
+    modo: Literal["convite", "senha"] = "convite"
+    password: Optional[str] = Field(None, min_length=8, max_length=128)
+
+
+class UsuarioCriadoResponse(UserResponse):
+    email_enviado: bool = False
 
 
 class UserListResponse(BaseModel):

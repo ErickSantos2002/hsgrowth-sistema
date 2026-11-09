@@ -18,7 +18,7 @@ def test_vendedor_nao_lista_perfis(client, salesperson_headers):
 
 def test_nao_cria_login_de_parceiro_pela_tela_de_usuarios(client, db, admin_headers):
     papel = role(db, "partner")
-    dados = {"name": "Contato X", "email": "x@dmap.com", "password": "Senha@12345", "role_id": papel.id}
+    dados = {"name": "Contato X", "email": "x@dmap.com", "password": "Senha@12345", "role_id": papel.id, "modo": "senha"}
 
     resposta = client.post("/api/v1/users", json=dados, headers=admin_headers)
 
@@ -37,7 +37,7 @@ def test_nao_vira_parceiro_pela_edicao(client, db, admin_headers):
 
 def test_cria_financeiro(client, db, admin_headers):
     papel = role(db, "finance")
-    dados = {"name": "Fin", "email": "fin@hs.com", "password": "Senha@12345", "role_id": papel.id}
+    dados = {"name": "Fin", "email": "fin@hs.com", "password": "Senha@12345", "role_id": papel.id, "modo": "senha"}
 
     assert client.post("/api/v1/users", json=dados, headers=admin_headers).status_code == 201
 

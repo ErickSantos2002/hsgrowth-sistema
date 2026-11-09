@@ -9,7 +9,12 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_current_active_user, require_role, require_manager_or_admin
 from app.services.user_service import UserService
 from app.services.user_notification_service import UserNotificationService
-from app.schemas.user import UserCreate, UserUpdate, UserResponse, UserListResponse, ChangePasswordRequest
+from app.schemas.user import (
+    UserCreate, UserUpdate, UserResponse, UserListResponse, ChangePasswordRequest,
+    UserCreateComModo, UsuarioCriadoResponse,
+)
+from app.schemas.acessos import ConviteRequest, ConviteResponse
+from app.services import criacao_de_login, tokens_de_acesso
 from app.schemas.user_notification_setting import (
     UserNotificationSettingResponse,
     UserNotificationSettingUpdate,
@@ -22,6 +27,27 @@ from app.models.user import User
 from app.models.audit_log import AuditLog
 
 router = APIRouter()
+
+
+def _user_response(user: User) -> UserResponse:
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        username=user.username,
+        name=user.name,
+        avatar_url=user.avatar_url,
+        phone=getattr(user, 'phone', None),
+        email_signature=getattr(user, 'email_signature', None),
+        role_id=user.role_id,
+        is_active=user.is_active,
+        last_login_at=user.last_login_at,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+        role=user.role.name if user.role else None,
+        role_name=user.role.display_name if user.role else None,
+        must_change_password=bool(user.must_change_password),
+        partner_id=getattr(user, "partner_id", None),
+    )
 
 
 @router.get(
@@ -87,13 +113,20 @@ async def list_users(
     Endpoint de listagem de usuários.
     """
     service = UserService(db)
-    return service.list_users(
+    resultado = service.list_users(
         page=page,
         page_size=page_size,
         is_active=is_active,
         role=role,
         current_user=current_user
     )
+    ids = [u.id for u in resultado.users]
+    por_id = {u.id: u for u in db.query(User).filter(User.id.in_(ids)).all()} if ids else {}
+    for item in resultado.users:
+        alvo = por_id.get(item.id)
+        if alvo:
+            item.status_acesso = tokens_de_acesso.status_do_acesso(db, alvo)
+    return resultado
 
 
 @router.get(
@@ -154,24 +187,7 @@ async def get_current_user_data(
     Endpoint de dados do usuário autenticado.
     """
     # Converte para response schema
-    return UserResponse(
-        id=current_user.id,
-        email=current_user.email,
-        username=current_user.username,
-        name=current_user.name,
-        avatar_url=current_user.avatar_url,
-        phone=getattr(current_user, 'phone', None),
-        email_signature=getattr(current_user, 'email_signature', None),
-        role_id=current_user.role_id,
-        is_active=current_user.is_active,
-        last_login_at=current_user.last_login_at,
-        created_at=current_user.created_at,
-        updated_at=current_user.updated_at,
-        role=current_user.role.name if current_user.role else None,
-        role_name=current_user.role.display_name if current_user.role else None,
-        must_change_password=bool(current_user.must_change_password),
-        partner_id=getattr(current_user, "partner_id", None),
-    )
+    return _user_response(current_user)
 
 
 @router.get(
@@ -460,7 +476,7 @@ def _recusar_login_de_parceiro(db: Session, role_id: Optional[int], role_atual: 
     if role_id is None or role_id == role_atual:
         return
     papel = db.query(Role).filter(Role.id == role_id).first()
-    if papel and papel.name == "partner":
+    if papel and papel.name in ("partner", "partner_member"):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Login de parceiro se cria no card do parceiro, em Parcerias > Aquisição de Parceiros.",
@@ -482,27 +498,12 @@ async def get_user(
     user = service.get_user_by_id(user_id)
 
     # Converte para response schema
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        username=user.username,
-        name=user.name,
-        avatar_url=user.avatar_url,
-        phone=getattr(user, 'phone', None),
-            email_signature=getattr(user, 'email_signature', None),
-        role_id=user.role_id,
-        is_active=user.is_active,
-        last_login_at=user.last_login_at,
-        created_at=user.created_at,
-        updated_at=user.updated_at,
-        role=user.role.name if user.role else None,
-        role_name=user.role.display_name if user.role else None,
-    )
+    return _user_response(user)
 
 
 @router.post(
     "",
-    response_model=UserResponse,
+    response_model=UsuarioCriadoResponse,
     summary="Criar usuário",
     description="""
     Cria um novo usuário no sistema.
@@ -569,16 +570,23 @@ async def get_user(
 )
 async def create_user(
     request: Request,
-    user_data: UserCreate,
+    user_data: UserCreateComModo,
     current_user: User = Depends(require_role("admin")),
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Endpoint de criação de usuário.
+    Endpoint de criação de usuário: por convite (padrão) ou com senha inicial.
     """
     _recusar_login_de_parceiro(db, user_data.role_id)
-    service = UserService(db)
-    user = service.create_user(user_data)
+    papel = db.query(Role).filter(Role.id == user_data.role_id).first()
+    if not papel:
+        raise HTTPException(status_code=422, detail="Perfil inválido.")
+    resultado = criacao_de_login.criar_login(
+        db, current_user, nome=user_data.name, email=user_data.email, papel=papel.name,
+        modo=user_data.modo, senha=user_data.password,
+        extras={"username": user_data.username, "phone": user_data.phone},
+    )
+    user = resultado.user
 
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"
@@ -607,22 +615,26 @@ async def create_user(
     db.commit()
 
     # Converte para response schema
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        username=user.username,
-        name=user.name,
-        avatar_url=user.avatar_url,
-        phone=getattr(user, 'phone', None),
-            email_signature=getattr(user, 'email_signature', None),
-        role_id=user.role_id,
-        is_active=user.is_active,
-        last_login_at=user.last_login_at,
-        created_at=user.created_at,
-        updated_at=user.updated_at,
-        role=user.role.name if user.role else None,
-        role_name=user.role.display_name if user.role else None,
+    return UsuarioCriadoResponse(
+        **_user_response(user).model_dump(exclude={"status_acesso"}),
+        status_acesso=tokens_de_acesso.status_do_acesso(db, user),
+        email_enviado=resultado.email_enviado,
     )
+
+
+@router.post("/{user_id}/convite", response_model=ConviteResponse, summary="Reenviar convite ou copiar o link")
+async def convite_usuario(
+    user_id: int,
+    dados: ConviteRequest,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+) -> Any:
+    alvo = db.query(User).filter(User.id == user_id, User.is_deleted == False).first()
+    if not alvo:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    r = criacao_de_login.enviar_convite(db, current_user, alvo, enviar=dados.enviar)
+    return ConviteResponse(status_acesso=tokens_de_acesso.status_do_acesso(db, alvo),
+                           link=r.link, email_enviado=r.email_enviado)
 
 
 @router.put("/{user_id}", response_model=UserResponse, summary="Atualizar usuário")
@@ -697,22 +709,7 @@ async def update_user(
     db.commit()
 
     # Converte para response schema
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        username=user.username,
-        name=user.name,
-        avatar_url=user.avatar_url,
-        phone=getattr(user, 'phone', None),
-            email_signature=getattr(user, 'email_signature', None),
-        role_id=user.role_id,
-        is_active=user.is_active,
-        last_login_at=user.last_login_at,
-        created_at=user.created_at,
-        updated_at=user.updated_at,
-        role=user.role.name if user.role else None,
-        role_name=user.role.display_name if user.role else None,
-    )
+    return _user_response(user)
 
 
 @router.delete("/{user_id}", summary="Deletar usuário")

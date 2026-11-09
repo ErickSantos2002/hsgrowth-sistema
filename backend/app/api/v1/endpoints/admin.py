@@ -200,6 +200,8 @@ async def admin_create_user(
 
     **Requer:** Role de admin
     """
+    from app.api.v1.endpoints.users import _recusar_login_de_parceiro
+    _recusar_login_de_parceiro(db, data.role_id)
     service = UserService(db)
     return service.create_user(data)
 
