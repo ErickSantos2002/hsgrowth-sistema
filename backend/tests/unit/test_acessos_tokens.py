@@ -61,7 +61,7 @@ from datetime import datetime, timedelta
 
 from app.models.user_access_token import UserAccessToken
 from app.services import tokens_de_acesso as tokens
-from tests.unit.apoio_parcerias import usuario
+from tests.unit.apoio_parcerias import role, usuario
 
 
 def test_token_guarda_so_o_hash_e_vale_uma_vez(db):
@@ -107,3 +107,52 @@ def test_status_do_acesso(db):
     assert tokens.status_do_acesso(db, u) == "ativo"
     u.is_active = False; db.commit()
     assert tokens.status_do_acesso(db, u) == "desativado"
+
+
+import pytest
+from fastapi import HTTPException
+
+from app.services import criacao_de_login
+
+
+@pytest.fixture
+def emails(monkeypatch):
+    enviados = []
+    monkeypatch.setattr(envio_email, "enviar_email",
+                        lambda para, assunto, html, texto=None: enviados.append((para, assunto)) or True)
+    return enviados
+
+
+def test_criar_por_convite_envia_email_e_nao_tem_senha_conhecida(db, emails):
+    autor = usuario(db, "admin", "adm@hs.com")
+    role(db, "partner")
+    r = criacao_de_login.criar_login(db, autor, nome="Ana", email="Ana@Dmap.com", papel="partner", modo="convite")
+
+    assert r.user.email == "ana@dmap.com" and r.email_enviado and r.link is None
+    assert emails == [("ana@dmap.com", "Seu acesso ao HSGrowth CRM")]
+    assert r.user.must_change_password is False
+    assert tokens.status_do_acesso(db, r.user) == "convite_pendente"
+
+
+def test_criar_com_senha_obriga_trocar(db, emails):
+    autor = usuario(db, "admin", "adm@hs.com")
+    role(db, "finance")
+    r = criacao_de_login.criar_login(db, autor, nome="Bia", email="bia@hs.com", papel="finance",
+                                     modo="senha", senha="Senha@123")
+    assert r.user.must_change_password is True and emails == []
+
+
+def test_email_repetido_recusa(db, emails):
+    autor = usuario(db, "admin", "adm@hs.com")
+    with pytest.raises(HTTPException) as e:
+        criacao_de_login.criar_login(db, autor, nome="X", email="ADM@hs.com", papel="finance", modo="convite")
+    assert e.value.status_code == 400
+
+
+def test_copiar_link_nao_envia_email(db, emails):
+    autor = usuario(db, "admin", "adm@hs.com")
+    role(db, "partner")
+    r = criacao_de_login.criar_login(db, autor, nome="Ana", email="ana@dmap.com", papel="partner", modo="convite")
+    emails.clear()
+    r2 = criacao_de_login.enviar_convite(db, autor, r.user, enviar=False)
+    assert r2.link.startswith(settings.FRONTEND_URL.rstrip("/") + "/definir-senha?token=") and emails == []
